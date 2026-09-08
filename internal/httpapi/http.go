@@ -6,6 +6,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -60,6 +61,11 @@ type GatewayList struct {
 	Total int64     `json:"total"`
 	Items []Gateway `json:"items"`
 }
+type patchRequest struct {
+	ID    string
+	Patch gateways.PatchRequest
+}
+
 type pageRequest struct {
 	Page, Size int
 	Search     string
@@ -67,7 +73,11 @@ type pageRequest struct {
 }
 
 func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
-	service, err := gateways.New(repository)
+	options, err := gateways.OptionsFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	service, err := gateways.New(repository, options)
 	if err != nil {
 		return nil, err
 	}
@@ -140,6 +150,45 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
+	patch, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (patchRequest, error) {
+		if r.URL.RawQuery != "" {
+			return patchRequest{}, transport.ErrRequest
+		}
+		patch, err := transport.JSONBody[gateways.PatchRequest](r)
+		return patchRequest{ID: r.PathValue("id"), Patch: patch}, err
+	}, func(ctx context.Context, request patchRequest) (Gateway, error) {
+		row, err := service.Update(ctx, gateways.PrincipalFromContext(ctx), request.ID, request.Patch)
+		if err != nil {
+			return Gateway{}, err
+		}
+		creators, err := creatorNames(ctx, database, []string{row.ID})
+		if err != nil {
+			return Gateway{}, err
+		}
+		return present(row, creators[row.ID])
+	}, http.StatusOK, writeError)
+	if err != nil {
+		return nil, err
+	}
+	remove, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (string, error) {
+		if r.URL.RawQuery != "" {
+			return "", transport.ErrRequest
+		}
+		if r.Body != nil {
+			data, err := io.ReadAll(io.LimitReader(r.Body, 1))
+			if err != nil || len(data) > 0 {
+				return "", transport.ErrRequest
+			}
+		}
+		return r.PathValue("id"), nil
+	}, func(ctx context.Context, id string) (transport.NoContent, error) {
+		return transport.NoContent{}, service.Delete(ctx, gateways.PrincipalFromContext(ctx), id)
+	}, http.StatusNoContent, writeError)
+	if err != nil {
+		return nil, err
+	}
+	mux.Handle("PATCH "+collectionPath+"/{id}", patch)
+	mux.Handle("DELETE "+collectionPath+"/{id}", remove)
 	mux.Handle("POST "+collectionPath, create)
 	mux.Handle("GET "+collectionPath+"/{id}", get)
 	mux.Handle("GET "+collectionPath, list)
@@ -256,6 +305,9 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, contract.ErrNotFound):
 		code, reason = http.StatusNotFound, "Gateway not found"
 		errorID = 7
+	case errors.Is(err, contract.ErrSerialization):
+		code, reason = http.StatusConflict, "The resource changed during the request; retry the operation"
+		errorID = 6
 	case errors.Is(err, contract.ErrConflict):
 		code, reason = http.StatusConflict, "The resource conflicts with an existing record"
 		errorID = 6

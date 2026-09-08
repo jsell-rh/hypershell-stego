@@ -123,9 +123,9 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 103a4546f976198e96422470ecabec188c14846471d386d5dafed23a933aeb0d
-        application/transport/endpoint.go: 78ea0ce1691e5f62cfed97f5ecaa9b30fd7736bde7c4c75ab3dda479a3fe962a
+        application/transport/endpoint.go: 65c5ffadd5ae2f49a305e654a3cdce68fcefc955d2e3e84cad12dcd4d77d8ca7
         auth/middleware.go: 32cd075daf0687039ffbdae49820d67ac47251f726654d1b734cb8916010c7e1
-        contracts/storage/storage.go: 365213fa2c28c9a9a9a9e13d85434877ee7bff4b2498f02baef25ae351dce23e
+        contracts/storage/storage.go: 75aa1ba6d96bfb2590c0555edb43f027d0b9b9aef94d76fca81b5a2cba4bce49
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 6884fbb3901db782e0ee7c72be5b615cb4c388aea1488b7070d7c9be08c34734
@@ -144,4 +144,4 @@ last_applied:
         storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
         storage/store.go: bc1b6b26b25420a511124edc638fc598d589e950701ea72c661f0e6dfd03645c
-        storage/transaction.go: 03dbae99ce1a38c75dbe1839e60c9d8f4e1aca02e82520c4556240a60794a8c7
+        storage/transaction.go: f605600b9dda30b84dccb822f0eac1eaba75aa5a1fa29bec11401cdfad0750d1

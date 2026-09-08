@@ -7,7 +7,7 @@ entity name or application rule.
 
 The variant now has a Gateway domain service over STEGO-generated storage and
 event delivery. Its generated process now serves Gateway creation, retrieval,
-and filtered lists over REST and gRPC. It delivers committed events through mutual TLS.
+patches, deletion, and filtered lists over REST and gRPC. It delivers committed events through mutual TLS.
 PostgreSQL tests check atomic owner grants, verified identities, denied reads,
 rollback, and restart. Tests read the same resources across both transports.
 REST search and ordering are implemented. Field selection, related-resource
@@ -58,12 +58,37 @@ Kafka broker with TLS. gRPC also requires `STEGO_GRPC_TLS_CERT` and
 to `127.0.0.1:9090`. HTTP reads `PORT`, which defaults to 8080. Application
 startup does not apply migrations. The REST list supports `page`, `size`, `search`, and `orderBy`, including a
 zero-size count request, with a maximum page size of 100. Search and ordering use
-declared fields. Sparse fields, related-resource search, updates, and deletion
-remain open work.
+declared fields. Sparse fields and related-resource search remain open work.
 
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.
 The domain service limits page numbers to 1,000,000 for both transports.
-REST metadata size is the returned item count. Gateway update, delete, watch,
-and count adjustment methods currently return `Unimplemented`. Long-lived
+REST metadata size is the returned item count. Gateway watch and count adjustment
+methods currently return `Unimplemented`. Long-lived
 streams need a separate lifetime policy before watch support can be added.
+
+Gateway patches require an owner grant on that Gateway. Admin status alone does
+not allow a patch. Owners and admins can delete a Gateway. Denied mutations
+return the same not-found result as a missing Gateway. Each mutation checks
+access and writes the resource and its event in one serializable transaction.
+A concurrent write can produce HTTP 409 or gRPC `Aborted`; callers must retry
+from the start. STEGO does not replay the transaction callback.
+
+A patch preserves omitted fields. Null fields and an empty `server_dns_names`
+list also preserve the stored values, as in the reference. Placement owns
+`database_id` and `namespace`. Patches cannot set `active_sandbox_count`.
+The credential driver cannot change after a nonempty value has been stored.
+Both transports apply `supervisor_image` and `credential_driver` from their
+declared request contracts. The reference gRPC handler omits these assignments.
+
+`HYPERSHELL_CONTROL_PLANE_SUBJECTS` is an optional JSON array of up to 32 token
+subjects. The token verifier must first verify the configured issuer, audience,
+key, and expiry. Only subjects in this list can set `console_address` through
+gRPC. They can also perform Gateway operations without user grants. The list is
+empty by default. Usernames and role names do not grant this access. REST has no
+console-address patch field. This subject allowlist is the current design
+assumption; the requested identity-policy decision remains open.
+
+Deletion currently covers the stored Gateway and event. The service-account
+workflow is not implemented. Its cleanup and creation barrier must be connected
+before this variant can delete Gateways that have external service accounts.

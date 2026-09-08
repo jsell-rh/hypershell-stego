@@ -11,7 +11,6 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/google/uuid"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -52,13 +51,28 @@ type Repository interface {
 	store.Storage
 	store.Transactor
 }
-type Service struct{ repository Repository }
+type Service struct {
+	repository           Repository
+	controlPlaneSubjects map[string]bool
+}
 
-func New(repository Repository) (*Service, error) {
+func New(repository Repository, options ...Options) (*Service, error) {
 	if repository == nil {
 		return nil, errors.New("Gateway service requires storage")
 	}
-	return &Service{repository: repository}, nil
+	if len(options) > 1 {
+		return nil, errors.New("one Gateway options value is required")
+	}
+	subjects := map[string]bool{}
+	if len(options) == 1 {
+		if err := validateSubjects(options[0].ControlPlaneSubjects); err != nil {
+			return nil, err
+		}
+		for _, subject := range options[0].ControlPlaneSubjects {
+			subjects[subject] = true
+		}
+	}
+	return &Service{repository: repository, controlPlaneSubjects: subjects}, nil
 }
 
 // Create commits the resource, owner grant, and notification as one change.
@@ -67,7 +81,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 	if err := validatePrincipal(principal); err != nil {
 		return gateway, err
 	}
-	if !slices.Contains(principal.Roles, "gateway:creator") {
+	if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "gateway:creator") {
 		return gateway, ErrForbidden
 	}
 	if err := validateCreate(request); err != nil {
@@ -136,20 +150,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		if !ok {
 			return errors.New("unexpected Gateway storage result")
 		}
-		// Events contain an identifier. Configuration and credentials stay in storage.
-		payload, err := json.Marshal(struct {
-			Source    string `json:"source"`
-			SourceID  string `json:"source_id"`
-			EventType string `json:"event_type"`
-		}{"Gateways", gateway.ID, "Create"})
-		if err != nil {
-			return err
-		}
-		messageID, err := uuid.NewRandom()
-		if err != nil {
-			return err
-		}
-		return tx.Notify(store.Notification{ID: messageID, Destination: "kafka", ResourceKey: gateway.ID, Kind: "gateway.created", Payload: payload})
+		return notifyGateway(tx, gateway.ID, "Create", "gateway.created")
 	})
 	if err != nil {
 		return model.Gateway{}, err
@@ -204,7 +205,7 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 			ordering = append(ordering, store.OrderByField{Field: "id", Direction: "asc"})
 		}
 		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, Search: search, OrderBy: ordering}
-		if !slices.Contains(principal.Roles, "platform:admin") {
+		if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "platform:admin") {
 			owner, err := findRole(ctx, tx, "gateway:owner")
 			if err != nil {
 				return err

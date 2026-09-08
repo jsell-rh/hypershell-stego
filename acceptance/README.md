@@ -13,8 +13,8 @@ readiness goals remain open.
 | Event delivery | REST creation commits an event that the same generated process sends to a TLS Kafka protocol fixture |
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
 | Regeneration | Pinned compiler, apply, dependency check, repeated apply, and drift check |
-| REST | Create, get, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, and restart |
-| gRPC | Generated wire descriptors match the reference; TLS create/get/list, access, rollback, events, cross-transport reads, and restart |
+| REST | Create, get, patch, delete, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, and restart |
+| gRPC | Generated wire descriptors match the reference; TLS create/get/update/delete/list, access, rollback, events, cross-transport reads, and restart |
 
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
@@ -63,3 +63,28 @@ established and pending events are delivered before measurement. On the same
 local environment, 100 requests averaged 16.79 ms each. It does not measure
 concurrent capacity, startup, TLS handshakes, or server memory. Run
 `go test -run '^$' -bench BenchmarkGRPCFilteredPage -benchtime=100x ./acceptance`.
+
+Mutation tests cover REST patches, gRPC updates, and deletion through both
+transports. They check the pinned response schema, field presence, unchanged
+placement, protected fields, owner and viewer access, admin restrictions, and
+control-plane subjects. Event-write failures roll back updates and deletions.
+A paused patch and a concurrent PostgreSQL write prove that a stale whole-row
+update cannot overwrite a newer sandbox count. The failed patch returns a
+serialization conflict and leaves no event.
+
+The generated-process test changes resources across transports. It then stops
+the process, commits an update and deletion, and restarts the process. The
+runtime delivers both events in commit order, and both transports exclude the
+deleted resource. Separate successful REST and gRPC deletion requests verify
+HTTP 204 without a body and the protobuf delete response. PostgreSQL tombstones
+remain available for the future watch implementation. Service-account cleanup
+and production broker tests remain open.
+
+A local gRPC patch benchmark performed 100 updates to one Gateway through a
+separate generated process. It averaged 3.297 ms per request on the same local
+Go 1.26.8, PostgreSQL 18.6, and Intel Core Ultra 9 185H environment. Each request
+included token verification, an owner check, a serializable mutation, and an
+outbox insert. The runtime worker delivered events in the background. The
+measurement excludes startup and TLS connection setup. It does not establish
+concurrent capacity, delivery latency, or server memory use. Run
+`go test -run '^$' -bench '^BenchmarkGRPCGatewayPatch$' -benchtime=100x ./acceptance`.

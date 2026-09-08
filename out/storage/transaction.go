@@ -17,6 +17,7 @@ import (
 var ErrTransactionRequired = stegostorage.ErrTransactionRequired
 var ErrTransactionNested = stegostorage.ErrTransactionNested
 var ErrTransactionClosed = stegostorage.ErrTransactionClosed
+var ErrSerialization = stegostorage.ErrSerialization
 var ErrNotificationLimit = stegostorage.ErrNotificationLimit
 var ErrNotificationsUnavailable = stegostorage.ErrNotificationsUnavailable
 
@@ -34,7 +35,13 @@ type transactionState struct {
 // It must not retain that store or start work that continues after return.
 // SQL work has a ten-second deadline. Callback code must honor cancellation.
 // The callback runs once. Serialization errors are returned without replay.
-func (s *Store) WithTransaction(ctx context.Context, fn func(context.Context, stegostorage.Transaction) error) error {
+func (s *Store) WithTransaction(ctx context.Context, fn func(context.Context, stegostorage.Transaction) error) (result error) {
+	defer func() {
+		var state interface{ SQLState() string }
+		if errors.As(result, &state) && (state.SQLState() == "40001" || state.SQLState() == "40P01") {
+			result = errors.Join(ErrSerialization, result)
+		}
+	}()
 	if s == nil || s.db == nil || s.db.Statement == nil {
 		return errors.New("store requires a database")
 	}

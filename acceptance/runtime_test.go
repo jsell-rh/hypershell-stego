@@ -155,11 +155,14 @@ func startBoth(t testing.TB, binary, dsn string, config Config, settings ...stri
 	return stop, httpAddress, grpcAddress
 }
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
+	return readGatewayEvent(t, consumer, id, "Create", "gateway.created")
+}
+func readGatewayEvent(t *testing.T, consumer *kgo.Client, id, eventType, kind string) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for ctx.Err() == nil {
-		fetches := consumer.PollRecords(ctx, 10)
+		fetches := consumer.PollRecords(ctx, 1)
 		for _, record := range fetches.Records() {
 			if string(record.Key) != id {
 				continue
@@ -168,14 +171,14 @@ func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 			if err := json.Unmarshal(record.Value, &payload); err != nil {
 				t.Fatal(err)
 			}
-			if len(payload) != 3 || payload["source"] != "Gateways" || payload["source_id"] != id || payload["event_type"] != "Create" {
+			if len(payload) != 3 || payload["source"] != "Gateways" || payload["source_id"] != id || payload["event_type"] != eventType {
 				t.Fatalf("wrong event payload: %s", record.Value)
 			}
 			headers := map[string]string{}
 			for _, h := range record.Headers {
 				headers[h.Key] = string(h.Value)
 			}
-			if headers["stego-message-kind"] != "gateway.created" {
+			if headers["stego-message-kind"] != kind {
 				t.Fatal("event kind was lost")
 			}
 			return headers["stego-message-id"]

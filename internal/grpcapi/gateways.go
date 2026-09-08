@@ -23,7 +23,11 @@ type server struct {
 }
 
 func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository) error {
-	service, err := gateways.New(repository)
+	options, err := gateways.OptionsFromEnvironment()
+	if err != nil {
+		return err
+	}
+	service, err := gateways.New(repository, options)
 	if err != nil {
 		return err
 	}
@@ -58,6 +62,41 @@ func (s *server) GetGateway(ctx context.Context, request *pb.GetGatewayRequest) 
 		return nil, mapError(err)
 	}
 	return &pb.GetGatewayResponse{Gateway: gateway}, nil
+}
+func (s *server) UpdateGateway(ctx context.Context, request *pb.UpdateGatewayRequest) (*pb.UpdateGatewayResponse, error) {
+	if request.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+	patch := gateways.PatchRequest{
+		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId, DatabaseID: request.DatabaseId,
+		ExternalDNS: request.ExternalDns, TLSMode: request.TlsMode, ServiceType: request.ServiceType, Status: request.Status, Phase: request.Phase,
+		Image: request.Image, SupervisorImage: request.SupervisorImage, ServerDNSNames: request.ServerDnsNames, RouteAddress: request.RouteAddress,
+		OIDC: request.Oidc, Route: request.Route, CredentialDriver: request.CredentialDriver,
+	}
+	var row model.Gateway
+	var err error
+	if request.ConsoleAddress != nil {
+		row, err = s.service.UpdateControlPlane(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch, request.ConsoleAddress)
+	} else {
+		row, err = s.service.Update(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch)
+	}
+	if err != nil {
+		return nil, mapError(err)
+	}
+	gateway, err := present(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.UpdateGatewayResponse{Gateway: gateway}, nil
+}
+func (s *server) DeleteGateway(ctx context.Context, request *pb.DeleteGatewayRequest) (*pb.DeleteGatewayResponse, error) {
+	if request.Id == "" {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+	if err := s.service.Delete(ctx, gateways.PrincipalFromContext(ctx), request.Id); err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.DeleteGatewayResponse{}, nil
 }
 func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysRequest) (*pb.ListGatewaysResponse, error) {
 	page, size := request.Page, request.Size
@@ -112,6 +151,8 @@ func mapError(err error) error {
 		return status.Error(codes.InvalidArgument, "request is invalid")
 	case errors.Is(err, storage.ErrNotFound):
 		return status.Error(codes.NotFound, "resource was not found")
+	case errors.Is(err, storage.ErrSerialization):
+		return status.Error(codes.Aborted, "resource changed during the request; retry the operation")
 	case errors.Is(err, storage.ErrConflict):
 		return status.Error(codes.AlreadyExists, "resource conflicts with existing state")
 	case errors.Is(err, context.Canceled), errors.Is(err, context.DeadlineExceeded):

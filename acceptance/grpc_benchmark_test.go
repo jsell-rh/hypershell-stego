@@ -50,3 +50,38 @@ func BenchmarkGRPCFilteredPage(b *testing.B) {
 	}
 	b.StopTimer()
 }
+
+func BenchmarkGRPCGatewayPatch(b *testing.B) {
+	f := database(b)
+	row, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("before"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	_, config := broker(b, identity(b, "localhost"))
+	key, settings := issuer(b)
+	tlsIdentity := identity(b, "localhost")
+	directory := filepath.Dir(tlsIdentity.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	stop, _, address := startBoth(b, buildApplication(b), f.dsn, config, settings...)
+	defer stop()
+	awaitQueueEmpty(b, f)
+	client, _ := grpcClient(b, address, tlsIdentity)
+	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(b, key, "alice")))
+	warmup, cancel := context.WithTimeout(ctx, 5*time.Second)
+	if _, err := client.GetGateway(warmup, &pb.GetGatewayRequest{Id: row.ID}); err != nil {
+		b.Fatal(err)
+	}
+	cancel()
+	request := &pb.UpdateGatewayRequest{Id: row.ID, Name: pointer("after")}
+	b.ResetTimer()
+	for range b.N {
+		call, cancel := context.WithTimeout(ctx, 5*time.Second)
+		response, err := client.UpdateGateway(call, request)
+		cancel()
+		if err != nil || response.Gateway.Name != "after" {
+			b.Fatalf("gRPC patch: %v %v", response, err)
+		}
+	}
+	b.StopTimer()
+	awaitQueueEmpty(b, f)
+}

@@ -65,10 +65,14 @@ func ParseOrderBy(value string, fields map[string]string) ([]storage.OrderByFiel
 type Authenticate func(context.Context, string) (context.Context, error)
 type ErrorHandler func(http.ResponseWriter, *http.Request, error)
 
+// NoContent is the response type for HTTP 204 and 205 endpoints.
+type NoContent struct{}
+
 // Endpoint binds one typed domain operation. It verifies identity before
 // decoding input and uses the same bounded context for the complete operation.
 func Endpoint[Request, Response any](authenticate Authenticate, decode func(*http.Request) (Request, error), call func(context.Context, Request) (Response, error), success int, writeError ErrorHandler) (http.Handler, error) {
-	if authenticate == nil || decode == nil || call == nil || writeError == nil || success < 200 || success > 299 || success == 204 {
+	empty := success == http.StatusNoContent || success == http.StatusResetContent
+	if authenticate == nil || decode == nil || call == nil || writeError == nil || success < 200 || success > 299 || empty && reflect.TypeFor[Response]() != reflect.TypeFor[NoContent]() {
 		return nil, errors.New("invalid HTTP endpoint configuration")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -124,6 +128,18 @@ func Endpoint[Request, Response any](authenticate Authenticate, decode func(*htt
 		result, err := call(ctx, input)
 		if err != nil {
 			writeError(w, request, err)
+			return
+		}
+		if empty {
+			if err := ctx.Err(); err != nil {
+				writeError(w, request, err)
+				return
+			}
+			w.Header().Del("Content-Type")
+			if success == http.StatusResetContent {
+				w.Header().Set("Content-Length", "0")
+			}
+			w.WriteHeader(success)
 			return
 		}
 		data, err := json.Marshal(result)
