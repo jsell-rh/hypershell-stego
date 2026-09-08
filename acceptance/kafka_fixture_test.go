@@ -27,7 +27,7 @@ type testIdentity struct {
 	server *tls.Config
 }
 
-func identity(t *testing.T, hostname string) testIdentity {
+func identity(t testing.TB, hostname string) testIdentity {
 	t.Helper()
 	rootKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
 	if err != nil {
@@ -91,7 +91,7 @@ func identity(t *testing.T, hostname string) testIdentity {
 	}
 }
 
-func broker(t *testing.T, identity testIdentity, extra ...kfake.Opt) (*kfake.Cluster, Config) {
+func broker(t testing.TB, identity testIdentity, extra ...kfake.Opt) (*kfake.Cluster, Config) {
 	t.Helper()
 	options := []kfake.Opt{kfake.NumBrokers(1), kfake.TLS(identity.server), kfake.SeedTopics(1, "events")}
 	options = append(options, extra...)

@@ -24,7 +24,7 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-func issuer(t *testing.T) (*rsa.PrivateKey, []string) {
+func issuer(t testing.TB) (*rsa.PrivateKey, []string) {
 	t.Helper()
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -40,7 +40,7 @@ func issuer(t *testing.T) (*rsa.PrivateKey, []string) {
 	}
 	return key, []string{"STEGO_AUTH_PUBLIC_KEY_FILE=" + name, "STEGO_AUTH_ISSUER=https://issuer.example", "STEGO_AUTH_AUDIENCE=hypershell", "STEGO_AUTH_ROLES_CLAIM=realm_access.roles"}
 }
-func token(t *testing.T, key *rsa.PrivateKey, user string, roles ...string) string {
+func token(t testing.TB, key *rsa.PrivateKey, user string, roles ...string) string {
 	t.Helper()
 	claims := jwt.MapClaims{"iss": "https://issuer.example", "aud": "hypershell", "sub": user, "preferred_username": user, "email": user + "@example.test", "given_name": user, "iat": time.Now().Add(-time.Minute).Unix(), "exp": time.Now().Add(time.Hour).Unix(), "realm_access": map[string]any{"roles": roles}}
 	if roles == nil {
@@ -78,7 +78,7 @@ func requestJSON(t *testing.T, method, address, bearer string, body []byte) (int
 	}
 	return response.StatusCode, data
 }
-func buildApplication(t *testing.T) string {
+func buildApplication(t testing.TB) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), "hypershell")
 	command := exec.Command("go", "build", "-mod=readonly", "-o", binary, "./out")

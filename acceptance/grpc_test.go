@@ -48,7 +48,7 @@ func TestGeneratedGatewayDescriptorsMatchReference(t *testing.T) {
 	}
 }
 
-func grpcClient(t *testing.T, address string, identity testIdentity) (pb.GatewayServiceClient, *grpc.ClientConn) {
+func grpcClient(t testing.TB, address string, identity testIdentity) (pb.GatewayServiceClient, *grpc.ClientConn) {
 	t.Helper()
 	ca, err := os.ReadFile(identity.config.CAFile)
 	if err != nil {

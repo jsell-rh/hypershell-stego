@@ -1,5 +1,9 @@
-The Gateway workflow has local REST, gRPC, event, and restart evidence.
-Pinned regeneration and remote CI must pass for this revision before the gate closes.
+The requested Gateway workflow gate passed. Local race tests, pinned
+regeneration, and remote CI passed for
+[the implementation](https://github.com/jsell-rh/hypershell-stego/actions/runs/34286086055)
+and [its compiler](https://github.com/jsell-rh/stego/actions/runs/34286053277).
+This is the first application workflow. The complete Hypershell and enterprise
+readiness goals remain open.
 
 | Check | Current evidence |
 | --- | --- |
@@ -50,3 +54,11 @@ JSON output to a 20-row filtered page from the same 200-row data set. It measure
 It uses an in-process HTTP recorder and excludes network latency. Creator-name
 lookup uses one parameterized query for the whole page. Run
 `go test -run '^$' -bench BenchmarkRESTFilteredPage -benchtime=100x ./acceptance`.
+
+The gRPC benchmark reads a 20-row filtered page from the same 200-row data set
+through a separate generated application process. It includes TLS, token
+verification, PostgreSQL access, and protobuf messages. The connection is
+established and pending events are delivered before measurement. On the same
+local environment, 100 requests averaged 16.79 ms each. It does not measure
+concurrent capacity, startup, TLS handshakes, or server memory. Run
+`go test -run '^$' -bench BenchmarkGRPCFilteredPage -benchtime=100x ./acceptance`.

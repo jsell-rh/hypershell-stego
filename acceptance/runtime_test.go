@@ -90,7 +90,7 @@ func startApplication(t *testing.T, binary, dsn string, config Config, settings 
 	stop, address, _ := startBoth(t, binary, dsn, config, settings...)
 	return stop, address
 }
-func startBoth(t *testing.T, binary, dsn string, config Config, settings ...string) (func(), string, string) {
+func startBoth(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
@@ -184,7 +184,7 @@ func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	t.Fatalf("no event for Gateway %s: %v", id, ctx.Err())
 	return ""
 }
-func awaitQueueEmpty(t *testing.T, f *fixture) {
+func awaitQueueEmpty(t testing.TB, f *fixture) {
 	t.Helper()
 	deadline := time.Now().Add(5 * time.Second)
 	for count(t, f.db, "stego_outbox.messages") != 0 {

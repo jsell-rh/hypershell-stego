@@ -145,7 +145,7 @@ func (f *fixture) request(name string) gateways.CreateRequest {
 func principal(name string, roles ...string) gateways.Principal {
 	return gateways.Principal{Subject: name, Username: name, Email: name + "@example.test", Name: name, Roles: roles}
 }
-func count(t *testing.T, db *sql.DB, table string) int {
+func count(t testing.TB, db *sql.DB, table string) int {
 	t.Helper()
 	var count int
 	if err := db.QueryRow("SELECT count(*) FROM " + table).Scan(&count); err != nil {

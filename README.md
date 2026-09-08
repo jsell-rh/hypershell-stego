@@ -61,6 +61,7 @@ Search, custom ordering, sparse fields, updates, and deletion remain open work.
 
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.
+The domain service limits page numbers to 1,000,000 for both transports.
 REST metadata size is the returned item count. Gateway update, delete, watch,
 and count adjustment methods currently return `Unimplemented`. Long-lived
 streams need a separate lifetime policy before watch support can be added.
