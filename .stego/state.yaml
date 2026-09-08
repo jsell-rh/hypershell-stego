@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: a94457e5e531018457ea60c20c710697ce1580e777889691a4dbf4973e0d20d0
+    service_hash: 70fff00dc3507377caaf796d47cd20c11ce588c0b85b322a311e27d612143aa0
     registry_sha: gateway-workflow
     components:
         jwt-auth:
@@ -113,7 +113,7 @@ last_applied:
               type: string
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
-        auth/middleware.go: 300e5207852333e8054a7488b2cb8ccfbcb4b6539fdf9aab6aa20e0773a3b034
+        auth/middleware.go: b45502d7b1a06ada6920276b7b56ddafbf67952439271e8d51c31f6c878d53c1
         contracts/storage/storage.go: 79690be5b2e0807582de762c6ea48e621591d1f64caa7a3b9c4d9fe14ee190ee
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d

@@ -22,9 +22,12 @@ is the upstream franz-go protocol fixture with verified mutual TLS. It is not a
 production Kafka deployment.
 
 The current application service accepts a verified principal from a transport
-adapter. Direct domain tests supply this principal. They do not prove token
-verification or REST/gRPC access enforcement. Both transports must use the same
-domain service before the acceptance gate can pass. Deployment database
+adapter. Direct domain tests supply this principal. A separate signed-token test
+uses the generated verifier and configured issuer roles to create a Gateway and
+check access after creator-role removal. It also rejects an incorrect issuer
+and a role from an unselected claim. This does not prove REST/gRPC endpoint
+enforcement. Both transports must use the same domain service before the
+acceptance gate can pass. Deployment database
 placement, platform-role projections, complete user and role models, and all
 other Hypershell workflows remain open.
 

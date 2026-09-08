@@ -52,3 +52,7 @@ entities:
 
 collections: {}
 slots: []
+
+overrides:
+  jwt-auth:
+    roles_claim: realm_access.roles

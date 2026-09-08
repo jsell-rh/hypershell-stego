@@ -31,6 +31,11 @@ type Identity struct {
 	UserID     string            `json:"user_id"`
 	Role       string            `json:"role"`
 	Attributes map[string]string `json:"attributes"`
+	Username   string            `json:"username"`
+	Email      string            `json:"email"`
+	GivenName  string            `json:"given_name"`
+	FamilyName string            `json:"family_name"`
+	Roles      []string          `json:"roles"`
 }
 
 type contextKey struct{}
@@ -44,21 +49,27 @@ func IdentityFromContext(ctx context.Context) Identity {
 
 // Config fixes the trust rules for one token issuer and one API audience.
 type Config struct {
-	Issuer    string
-	Audience  string
-	PublicKey *rsa.PublicKey
+	Issuer     string
+	Audience   string
+	PublicKey  *rsa.PublicKey
+	RolesClaim string
 }
 
 // Verifier can be shared by HTTP and application transport adapters.
 type Verifier struct {
-	parser *jwt.Parser
-	key    *rsa.PublicKey
+	parser    *jwt.Parser
+	key       *rsa.PublicKey
+	rolesPath []string
 }
 
 type jwtClaims struct {
 	jwt.RegisteredClaims
 	Role       string            `json:"role"`
 	Attributes map[string]string `json:"attributes"`
+	Username   string            `json:"preferred_username"`
+	Email      string            `json:"email"`
+	GivenName  string            `json:"given_name"`
+	FamilyName string            `json:"family_name"`
 }
 
 func (claims jwtClaims) Validate() error {
@@ -73,6 +84,10 @@ func (claims jwtClaims) Validate() error {
 
 // NewVerifier validates configuration before any requests can be accepted.
 func NewVerifier(config Config) (*Verifier, error) {
+	rolesPath, err := claimPath(config.RolesClaim)
+	if err != nil {
+		return nil, err
+	}
 	issuer, err := url.Parse(config.Issuer)
 	if err != nil || issuer.Scheme != "https" || issuer.Host == "" || issuer.User != nil || issuer.Fragment != "" {
 		return nil, errors.New("authentication issuer must be an HTTPS URL")
@@ -93,7 +108,8 @@ func NewVerifier(config Config) (*Verifier, error) {
 			jwt.WithIssuedAt(),
 			jwt.WithStrictDecoding(),
 		),
-		key: &rsa.PublicKey{N: new(big.Int).Set(key.N), E: key.E},
+		key:       &rsa.PublicKey{N: new(big.Int).Set(key.N), E: key.E},
+		rolesPath: rolesPath,
 	}, nil
 }
 
@@ -136,7 +152,78 @@ func (v *Verifier) Verify(raw string) (Identity, error) {
 	if err != nil || token == nil || !token.Valid {
 		return Identity{}, errors.New("invalid authentication token")
 	}
-	return Identity{UserID: claims.Subject, Role: claims.Role, Attributes: claims.Attributes}, nil
+	roles, err := v.roles(parts[1])
+	if err != nil {
+		return Identity{}, err
+	}
+	return Identity{UserID: claims.Subject, Role: claims.Role, Attributes: claims.Attributes,
+		Username: claims.Username, Email: claims.Email, GivenName: claims.GivenName, FamilyName: claims.FamilyName, Roles: roles}, nil
+}
+
+// Authenticate supplies the same verified identity to each transport.
+func (v *Verifier) Authenticate(ctx context.Context, raw string) (context.Context, error) {
+	if ctx == nil {
+		return nil, errors.New("authentication requires a context")
+	}
+	id, err := v.Verify(raw)
+	if err != nil {
+		return nil, err
+	}
+	return context.WithValue(ctx, identityKey, id), nil
+}
+
+func claimPath(value string) ([]string, error) {
+	if value == "" {
+		return nil, nil
+	}
+	parts := strings.Split(value, ".")
+	if len(value) > 128 || len(parts) > 8 {
+		return nil, errors.New("invalid role claim path")
+	}
+	for _, part := range parts {
+		if part == "" {
+			return nil, errors.New("invalid role claim path")
+		}
+		for _, ch := range part {
+			if !(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '-') {
+				return nil, errors.New("invalid role claim path")
+			}
+		}
+	}
+	return parts, nil
+}
+
+// roles reads only the configured claim after signature and claim validation.
+// An absent claim grants no roles. A malformed claim fails authentication.
+func (v *Verifier) roles(encoded string) ([]string, error) {
+	if len(v.rolesPath) == 0 {
+		return nil, nil
+	}
+	data, err := base64.RawURLEncoding.Strict().DecodeString(encoded)
+	if err != nil {
+		return nil, errors.New("invalid role claim")
+	}
+	for _, part := range v.rolesPath {
+		var object map[string]json.RawMessage
+		if err := json.Unmarshal(data, &object); err != nil || object == nil {
+			return nil, errors.New("invalid role claim")
+		}
+		child, present := object[part]
+		if !present {
+			return nil, nil
+		}
+		data = child
+	}
+	var roles []string
+	if len(data) == 0 || data[0] != '[' || json.Unmarshal(data, &roles) != nil || len(roles) > 128 {
+		return nil, errors.New("invalid role claim")
+	}
+	for _, role := range roles {
+		if len(role) == 0 || len(role) > 256 || strings.TrimSpace(role) != role {
+			return nil, errors.New("invalid role claim")
+		}
+	}
+	return roles, nil
 }
 
 // checkJSONObject rejects duplicate names and invalid Unicode before JWT
@@ -227,12 +314,11 @@ func (v *Verifier) Middleware(next http.Handler) http.Handler {
 			writeAuthError(w, r, "missing authentication token")
 			return
 		}
-		id, err := v.Verify(raw)
+		ctx, err := v.Authenticate(r.Context(), raw)
 		if err != nil {
 			writeAuthError(w, r, "invalid authentication token")
 			return
 		}
-		ctx := context.WithValue(r.Context(), identityKey, id)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -246,6 +332,15 @@ func envOrDefault(name, fallback string) string {
 
 // NewAuthMiddleware loads a public key once. Restart after a key change.
 func NewAuthMiddleware() (func(http.Handler) http.Handler, error) {
+	verifier, err := NewVerifierFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	return verifier.Middleware, nil
+}
+
+// NewVerifierFromEnvironment loads one verifier for all application transports.
+func NewVerifierFromEnvironment() (*Verifier, error) {
 	keyFile := envOrDefault("STEGO_AUTH_PUBLIC_KEY_FILE", "")
 	if keyFile == "" {
 		return nil, errors.New("STEGO_AUTH_PUBLIC_KEY_FILE is required")
@@ -276,14 +371,15 @@ func NewAuthMiddleware() (func(http.Handler) http.Handler, error) {
 		return nil, fmt.Errorf("invalid authentication public key: %w", err)
 	}
 	verifier, err := NewVerifier(Config{
-		Issuer:    envOrDefault("STEGO_AUTH_ISSUER", ""),
-		Audience:  envOrDefault("STEGO_AUTH_AUDIENCE", ""),
-		PublicKey: key,
+		Issuer:     envOrDefault("STEGO_AUTH_ISSUER", ""),
+		Audience:   envOrDefault("STEGO_AUTH_AUDIENCE", ""),
+		PublicKey:  key,
+		RolesClaim: envOrDefault("STEGO_AUTH_ROLES_CLAIM", "realm_access.roles"),
 	})
 	if err != nil {
 		return nil, err
 	}
-	return verifier.Middleware, nil
+	return verifier, nil
 }
 
 func writeAuthError(w http.ResponseWriter, r *http.Request, detail string) {
