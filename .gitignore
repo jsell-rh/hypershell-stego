@@ -1,0 +1,4 @@
+/.stego/apply.lock
+/.stego/dependencies.lock
+/bin/
+*.test

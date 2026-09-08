@@ -1,0 +1,54 @@
+kind: service
+name: hypershell
+archetype: service-core
+language: go
+base_path: /api/hypershell/v1
+
+entities:
+  - name: User
+    fields:
+      - { name: username, type: string, unique: true, min_length: 1, max_length: 255 }
+      - { name: email, type: string, max_length: 320 }
+      - { name: name, type: string, max_length: 255 }
+  - name: Role
+    fields:
+      - { name: name, type: string, unique: true, max_length: 64 }
+  - name: ManagedCluster
+    fields:
+      - { name: name, type: string, max_length: 255 }
+  - name: GatewayRelease
+    fields:
+      - { name: name, type: string, max_length: 255 }
+  - name: ManagedDatabase
+    fields:
+      - { name: name, type: string, max_length: 255 }
+  - name: Gateway
+    fields:
+      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: cluster_id, type: ref, to: ManagedCluster }
+      - { name: release_id, type: ref, to: GatewayRelease }
+      - { name: database_id, type: ref, to: ManagedDatabase }
+      - { name: namespace, type: string, unique: true, max_length: 26 }
+      - { name: external_dns, type: string, optional: true }
+      - { name: tls_mode, type: string, optional: true }
+      - { name: service_type, type: string, optional: true }
+      - { name: status, type: string, optional: true }
+      - { name: phase, type: string, optional: true }
+      - { name: image, type: string, optional: true }
+      - { name: supervisor_image, type: string, optional: true }
+      - { name: server_dns_names, type: jsonb, optional: true }
+      - { name: route_address, type: string, optional: true }
+      - { name: console_address, type: string, optional: true }
+      - { name: oidc, type: string, optional: true }
+      - { name: route, type: string, optional: true }
+      - { name: credential_driver, type: string, optional: true }
+      - { name: active_sandbox_count, type: int32, optional: true }
+  - name: RoleBinding
+    fields:
+      - { name: user_id, type: ref, to: User, unique_composite: [user_id, role_id, gateway_id] }
+      - { name: role_id, type: ref, to: Role, unique_composite: [user_id, role_id, gateway_id] }
+      - { name: gateway_id, type: ref, to: Gateway, unique_composite: [user_id, role_id, gateway_id] }
+      - { name: scope, type: enum, values: [gateway] }
+
+collections: {}
+slots: []

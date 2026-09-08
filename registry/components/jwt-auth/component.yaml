@@ -1,0 +1,22 @@
+kind: component
+name: jwt-auth
+version: 2.0.0
+output_namespace: auth
+
+config:
+  header:
+    type: string
+    default: Authorization
+  issuer:
+    type: string
+  audience:
+    type: string
+  public_key_file:
+    type: string
+
+requires: []
+
+provides:
+  - auth-provider
+
+slots: []

@@ -1,0 +1,15 @@
+kind: component
+name: postgres-adapter
+version: 2.0.0
+output_namespace: storage
+
+config:
+  connection_string:
+    type: string
+
+requires: []
+
+provides:
+  - storage-adapter
+
+slots: []

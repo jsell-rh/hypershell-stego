@@ -5,8 +5,13 @@ Hypershell must supply its unique business rules and application workflows
 through explicit extension points. No STEGO component may depend on a Hypershell
 entity name or application rule.
 
-The variant is not implemented yet. The initial commit records the reference
-REST and gRPC contracts under `contracts/reference/`. `contracts/upstream.json`
+The variant now has a Gateway domain service over STEGO-generated storage and
+event delivery. PostgreSQL tests check atomic owner grants, access filters,
+denied reads, rollback, and restart. A separate generated event process delivers
+pending events through mutual TLS. REST and gRPC adapters remain pending. The
+Gateway acceptance gate is not complete. See [the checks](acceptance/README.md).
+
+The reference REST and gRPC contracts are under `contracts/reference/`. `contracts/upstream.json`
 records their source revision and SHA-256 hashes. These files are acceptance
 inputs, not generated implementation. The source is Apache-2.0 licensed; see
 `LICENSE`.
@@ -29,6 +34,9 @@ Compiler correctness and reusable infrastructure changes belong in STEGO.
 Behavioral acceptance tests and Hypershell domain code belong here. Passing
 compilation alone does not establish compatibility or production readiness.
 
+Run `scripts/generate.sh` to regenerate with the pinned STEGO compiler. Run
+`scripts/generate.sh --check` from a clean checkout to check committed output.
+
 Run `go test ./...` to verify the source hashes, validate OpenAPI references, and
 compile the protobuf contracts. The checks cover 37 REST operations, 41 gRPC
 methods, and six server watch streams. They also check gateway field ownership,
@@ -36,5 +44,6 @@ reserved wire numbers, and the restriction on returning service-account secrets.
 Run `go run ./cmd/contracts` to print the operation inventory as JSON. Contract
 resolution uses embedded files and cannot fetch remote schemas.
 
-These tests validate the reference inputs. They do not test an implemented
-Hypershell service. The CI workflow runs them with the Go race detector.
+The contract tests validate the reference inputs. The separate acceptance tests
+exercise the Gateway domain service and generated event process. CI requires
+PostgreSQL, the race detector, and a regeneration check.

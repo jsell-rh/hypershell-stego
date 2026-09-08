@@ -1,0 +1,129 @@
+last_applied:
+    service_hash: a94457e5e531018457ea60c20c710697ce1580e777889691a4dbf4973e0d20d0
+    registry_sha: gateway-workflow
+    components:
+        jwt-auth:
+            version: 2.0.0
+            sha: gateway-workflow
+        kafka-producer:
+            version: 1.0.0
+            sha: gateway-workflow
+        outbox:
+            version: 1.0.0
+            sha: gateway-workflow
+        postgres-adapter:
+            version: 2.0.0
+            sha: gateway-workflow
+    entities:
+        Gateway:
+            - name: name
+              type: string
+              hash: a1363e7ac6734db40f0407bd20e7cf157495198f015dbb505cf58f506ab9c79f
+            - name: cluster_id
+              type: ref
+              hash: 2ba649efd9981e34a607f9fc5f9676985ffedacdb04d0b975afd8541265d0d32
+            - name: release_id
+              type: ref
+              hash: b0d8cc972a66919a45bd3f299822cd8a117bb92c8b3eb1e40a9db115376081a6
+            - name: database_id
+              type: ref
+              hash: 5a1047228d1d0b496b75c03febbbcdd68182ede3b590bacde8f305dcb6e9868c
+            - name: namespace
+              type: string
+              hash: d82af01663a4c3d75dd99bc2e43532716a5af4046b106eaf22be99e8e2daee26
+            - name: external_dns
+              type: string
+              hash: fcf479109f0d75dd2b0be9bf66df4d528566244a119f734c22e440090a5ec9c8
+            - name: tls_mode
+              type: string
+              hash: 092f55a5e56fa53e6be8c6842aed13e84e4a7905219b7a62ab42bd74de0580ea
+            - name: service_type
+              type: string
+              hash: 5dbb4246fd38b4c64818036e20f93a733e38495c6ae589329fc6c91c177131c9
+            - name: status
+              type: string
+              hash: c9716ad445d31ff4db92311dcb697bc903ae83ef587f00a065830d76e9ec26db
+            - name: phase
+              type: string
+              hash: 1262d533c4535b7f0743fa73fe9b7636aab36374509a65297db6a073074ffb80
+            - name: image
+              type: string
+              hash: 3fa43fe10119954a97ea0930a83805381c459b90f3a7c67621ce3e3946b785b0
+            - name: supervisor_image
+              type: string
+              hash: 98e07c6006a41b24b0e6bfb81775da6fc2ef45201771b663b07cde8e44422af1
+            - name: server_dns_names
+              type: jsonb
+              hash: 001f556aaa0bded25a204c1f3a5b55644f3827381dc2e4ef07317d8a52625233
+            - name: route_address
+              type: string
+              hash: 12ae1ac7a4a78e4866d805db8c765ffd11e6d380523162c8d930b3a7f1c0202b
+            - name: console_address
+              type: string
+              hash: 99fe88a41c2948760263798ebf194a04cb536cb16330f8b5c8034638cdd23144
+            - name: oidc
+              type: string
+              hash: 6c0f44b071db47bafe9f3f009630f13e7aec0d650171dd61b715ad3fb69cf726
+            - name: route
+              type: string
+              hash: 948e541aebe4f20bbc9112d1a75f333c5cd4091be347a97a08076973d887b15f
+            - name: credential_driver
+              type: string
+              hash: 691263f8a8cb8f45918205ba05004d18ffb9e4ef8d0cc8092d0cdd5b35d54792
+            - name: active_sandbox_count
+              type: int32
+              hash: 55e1cae999fbed6d8a19778f79dc3db11a652988e38c02746d44b7fa37fcf203
+        GatewayRelease:
+            - name: name
+              type: string
+              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+        ManagedCluster:
+            - name: name
+              type: string
+              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+        ManagedDatabase:
+            - name: name
+              type: string
+              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+        Role:
+            - name: name
+              type: string
+              hash: 4cf8a1336fa6072ec6080777db700aad0828fa2f6c5b388c7a6c53605da29df3
+        RoleBinding:
+            - name: user_id
+              type: ref
+              hash: a16f217e7c3f4ac7b2d0a3bd61040ee5b995b1bc840d876e538d52d936780b19
+            - name: role_id
+              type: ref
+              hash: 7bb0f6a85f2fb3eec7ac175ba7300f867557c5e7242351bf4df43d521bac2d8a
+            - name: gateway_id
+              type: ref
+              hash: 4bd3decd41f94dc9971b88d314f9c508878c11bed65bbf8ae141200ef85189ab
+            - name: scope
+              type: enum
+              hash: ff12b7d84505998e5d1935ab8fdc0c8d8953596594c21fe41677ffb455a74f51
+        User:
+            - name: username
+              type: string
+              hash: 2821cc6f2e041058ecc92eca0a33e963cf38e858c3d95281fb93437fc50bd4c9
+            - name: email
+              type: string
+              hash: 54a569d4e4c27c0a15c13a4cf94ead2a5260ff91fb0602ee3c0a4e9632913344
+            - name: name
+              type: string
+              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+    files:
+        auth/middleware.go: 300e5207852333e8054a7488b2cb8ccfbcb4b6539fdf9aab6aa20e0773a3b034
+        contracts/storage/storage.go: 79690be5b2e0807582de762c6ea48e621591d1f64caa7a3b9c4d9fe14ee190ee
+        events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
+        events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
+        main.go: 58f1e43c121e2d05ffa86d524eed6b20748d7a38a2efdf2b43b6dadb0b6d350d
+        outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
+        outbox/queue.go: 6efeff2fa119bcb06c909a144990eb20d95e1ce3b801ed6c19795be75b7fb8b8
+        outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
+        storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
+        storage/migrate.go: e078de5693bc8790a4f78da819b7698358cfbf9764549694f48b70327422ac36
+        storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
+        storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
+        storage/store.go: 409e621294e4d9bbe448efd0bfe9212501fb63c03f8c48498bcaa9493c614904
+        storage/transaction.go: 03dbae99ce1a38c75dbe1839e60c9d8f4e1aca02e82520c4556240a60794a8c7
