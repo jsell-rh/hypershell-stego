@@ -50,6 +50,7 @@ type CreateRequest struct {
 type Repository interface {
 	store.Storage
 	store.Transactor
+	store.ResourceLocker
 }
 type Service struct {
 	repository           Repository

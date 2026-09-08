@@ -6,12 +6,15 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
 	stegostorage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
-	stegooutbox "github.com/jsell-rh/hypershell-stego/out/outbox"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
+
+	stegooutbox "github.com/jsell-rh/hypershell-stego/out/outbox"
 )
 
 var ErrTransactionRequired = stegostorage.ErrTransactionRequired
@@ -35,7 +38,153 @@ type transactionState struct {
 // It must not retain that store or start work that continues after return.
 // SQL work has a ten-second deadline. Callback code must honor cancellation.
 // The callback runs once. Serialization errors are returned without replay.
-func (s *Store) WithTransaction(ctx context.Context, fn func(context.Context, stegostorage.Transaction) error) (result error) {
+func (s *Store) WithTransaction(ctx context.Context, fn func(context.Context, stegostorage.Transaction) error) error {
+	if fn == nil {
+		return errors.New("store transaction requires a callback")
+	}
+	return s.withTransaction(ctx, sql.LevelSerializable, func(ctx context.Context, tx *Store) error { return fn(ctx, tx) })
+}
+
+// WithLockedResource locks one live row before calling application code.
+// The callback sees the latest row after any earlier writer completes. This
+// scope uses read-committed isolation; other rows have no snapshot guarantee.
+func (s *Store) WithLockedResource(ctx context.Context, entity, field, value string, fn func(context.Context, stegostorage.Transaction, any) error) error {
+	if fn == nil {
+		return errors.New("resource transaction requires a callback")
+	}
+	switch entity {
+	case "User":
+		switch field {
+		case "id", "username":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "Role":
+		switch field {
+		case "id", "name":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "ManagedCluster":
+		switch field {
+		case "id":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "GatewayRelease":
+		switch field {
+		case "id":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "ManagedDatabase":
+		switch field {
+		case "id":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "Gateway":
+		switch field {
+		case "id", "namespace":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	case "RoleBinding":
+		switch field {
+		case "id":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
+	default:
+		return errors.New("unknown resource entity")
+	}
+	return s.withTransaction(ctx, sql.LevelReadCommitted, func(ctx context.Context, tx *Store) error {
+		row, err := tx.lockResource(ctx, entity, field, value)
+		if err != nil {
+			return err
+		}
+		return fn(ctx, tx, row)
+	})
+}
+
+func (s *Store) lockResource(ctx context.Context, entity, field, value string) (any, error) {
+	switch entity {
+	case "User":
+		var row User
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "Role":
+		var row Role
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "ManagedCluster":
+		var row ManagedCluster
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "GatewayRelease":
+		var row GatewayRelease
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "ManagedDatabase":
+		var row ManagedDatabase
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "Gateway":
+		var row Gateway
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "RoleBinding":
+		var row RoleBinding
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	default:
+		return nil, fmt.Errorf("unknown resource entity: %s", entity)
+	}
+}
+
+func (s *Store) withTransaction(ctx context.Context, isolation sql.IsolationLevel, fn func(context.Context, *Store) error) (result error) {
 	defer func() {
 		var state interface{ SQLState() string }
 		if errors.As(result, &state) && (state.SQLState() == "40001" || state.SQLState() == "40P01") {
@@ -62,7 +211,7 @@ func (s *Store) WithTransaction(ctx context.Context, fn func(context.Context, st
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	db := s.db.WithContext(ctx).Begin(&sql.TxOptions{Isolation: sql.LevelSerializable})
+	db := s.db.WithContext(ctx).Begin(&sql.TxOptions{Isolation: isolation})
 	if db.Error != nil {
 		return db.Error
 	}

@@ -98,6 +98,20 @@ func (s *server) DeleteGateway(ctx context.Context, request *pb.DeleteGatewayReq
 	}
 	return &pb.DeleteGatewayResponse{}, nil
 }
+func (s *server) AdjustActiveSandboxCount(ctx context.Context, request *pb.AdjustActiveSandboxCountRequest) (*pb.AdjustActiveSandboxCountResponse, error) {
+	count, err := s.service.AdjustActiveSandboxCount(ctx, gateways.PrincipalFromContext(ctx), request.Namespace, request.Delta)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.AdjustActiveSandboxCountResponse{ActiveSandboxCount: count}, nil
+}
+func (s *server) SetActiveSandboxCount(ctx context.Context, request *pb.SetActiveSandboxCountRequest) (*pb.SetActiveSandboxCountResponse, error) {
+	count, err := s.service.SetActiveSandboxCount(ctx, gateways.PrincipalFromContext(ctx), request.Namespace, request.Count)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.SetActiveSandboxCountResponse{ActiveSandboxCount: count}, nil
+}
 func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysRequest) (*pb.ListGatewaysResponse, error) {
 	page, size := request.Page, request.Size
 	if page < 1 {
@@ -147,6 +161,8 @@ func mapError(err error) error {
 		return status.Error(codes.Unauthenticated, "authentication is required")
 	case errors.Is(err, gateways.ErrForbidden):
 		return status.Error(codes.PermissionDenied, "request is forbidden")
+	case errors.Is(err, gateways.ErrCountRange):
+		return status.Error(codes.OutOfRange, "sandbox count exceeds its range")
 	case errors.Is(err, gateways.ErrInvalid):
 		return status.Error(codes.InvalidArgument, "request is invalid")
 	case errors.Is(err, storage.ErrNotFound):

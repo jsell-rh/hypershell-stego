@@ -63,8 +63,8 @@ declared fields. Sparse fields and related-resource search remain open work.
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.
 The domain service limits page numbers to 1,000,000 for both transports.
-REST metadata size is the returned item count. Gateway watch and count adjustment
-methods currently return `Unimplemented`. Long-lived
+REST metadata size is the returned item count. The Gateway watch
+method currently returns `Unimplemented`. Long-lived
 streams need a separate lifetime policy before watch support can be added.
 
 Gateway patches require an owner grant on that Gateway. Admin status alone does
@@ -92,3 +92,19 @@ assumption; the requested identity-policy decision remains open.
 Deletion currently covers the stored Gateway and event. The service-account
 workflow is not implemented. Its cleanup and creation barrier must be connected
 before this variant can delete Gateways that have external service accounts.
+
+The gRPC `AdjustActiveSandboxCount` and `SetActiveSandboxCount` methods now use
+STEGO's resource-locking transaction. Only configured control-plane subjects
+can call them. Owners, viewers, creators, and admins have no implicit access.
+The count is floored at zero. An unset count becomes zero on the first operation.
+An unchanged stored value emits no event. A missing or deleted namespace returns
+zero and emits no event. A result above the signed 32-bit limit returns gRPC
+`OutOfRange` without a state change.
+
+Each changed count and its update event commit together. Concurrent increments
+wait for the resource lock and read the current value. Count changes update the
+resource timestamp through generated storage; unchanged values leave it intact.
+REST and gRPC Gateway reads expose the same count. Relative adjustments do not
+have request deduplication: after a connection failure with an uncertain result,
+a caller must reconcile the observed count instead of assuming a retry is safe.
+The control-plane reconciliation workflow still needs to be ported.

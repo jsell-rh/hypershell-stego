@@ -11,10 +11,7 @@ import (
 )
 
 // Repository supplies operations and one atomic commit boundary.
-type Repository interface {
-	storage.Storage
-	storage.Transactor
-}
+type Repository = storage.Repository
 
 // NewHandler connects application code to compiler-owned resources.
 func NewHandler(repository Repository, verifier *auth.Verifier, database *sql.DB) (http.Handler, error) {

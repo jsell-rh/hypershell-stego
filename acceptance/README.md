@@ -14,7 +14,7 @@ readiness goals remain open.
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
 | Regeneration | Pinned compiler, apply, dependency check, repeated apply, and drift check |
 | REST | Create, get, patch, delete, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, and restart |
-| gRPC | Generated wire descriptors match the reference; TLS create/get/update/delete/list, access, rollback, events, cross-transport reads, and restart |
+| gRPC | Generated wire descriptors match the reference; TLS create/get/update/delete/list, count adjustment and set, access, rollback, events, cross-transport reads, and restart |
 
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
@@ -88,3 +88,24 @@ outbox insert. The runtime worker delivered events in the background. The
 measurement excludes startup and TLS connection setup. It does not establish
 concurrent capacity, delivery latency, or server memory use. Run
 `go test -run '^$' -bench '^BenchmarkGRPCGatewayPatch$' -benchtime=100x ./acceptance`.
+
+Sandbox-count tests cover adjustment, absolute set, NULL-to-zero conversion,
+zero flooring, unchanged values, and the signed 32-bit limit. Only configured
+control-plane subjects can write a count. Missing and deleted namespaces return
+zero without an event. An event-write failure rolls back the count. A changed
+count updates the resource timestamp; an unchanged count does not.
+
+The generated-process test issues 32 concurrent gRPC increments and a competing
+Gateway patch. Every increment is retained. The test checks counts through REST
+and gRPC, consumes all committed update events, and verifies recovery after a
+count changes while the process is stopped. Reference protobuf descriptors
+remain unchanged. The full local race suite passed with PostgreSQL required.
+
+On Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9 185H, a local benchmark
+ran 100 increments against one Gateway. Sequential requests averaged 2.035 ms.
+The concurrent run measured 2.226 ms per operation as a throughput measure,
+not individual request latency. Both runs used a separate generated process,
+TLS, signed tokens, row locks, and outbox writes. The worker delivered events
+in the background. The measurements exclude startup and TLS connection setup.
+They do not establish production capacity or end-to-end event latency. Run
+`go test -run '^$' -bench '^BenchmarkGRPCSandboxCount$' -benchtime=100x ./acceptance`.

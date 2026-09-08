@@ -26,6 +26,7 @@ var ErrConflict = stegostorage.ErrConflict
 var ErrSearch = stegostorage.ErrSearch
 var _ stegostorage.Storage = (*Store)(nil)
 var _ stegostorage.Transactor = (*Store)(nil)
+var _ stegostorage.Repository = (*Store)(nil)
 var _ stegostorage.Transaction = (*Store)(nil)
 
 // Store provides GORM-backed storage for all entities.
