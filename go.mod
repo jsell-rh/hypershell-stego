@@ -3,6 +3,7 @@ module github.com/jsell-rh/hypershell-stego
 go 1.26.8
 
 require (
+	github.com/antlr/antlr4 v0.0.0-20200712162734-eb1adaa8a7a6
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/getkin/kin-openapi v0.149.0
 )
@@ -37,6 +38,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/twmb/franz-go v1.21.6
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260908033342-6b0b6509f117
+	github.com/yaacov/tree-search-language/v5 v5.2.12
 	golang.org/x/sync v0.20.0 // indirect
 	golang.org/x/text v0.36.0 // indirect
 	google.golang.org/grpc v1.82.1

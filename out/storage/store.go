@@ -10,7 +10,9 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/jackc/pgx/v5/pgconn"
 	stegostorage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	search "github.com/jsell-rh/hypershell-stego/out/search"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
@@ -459,6 +461,14 @@ func (s *Store) Delete(ctx context.Context, entity string, id string) error {
 	}
 }
 
+func searchInputError(err error) bool {
+	var failure *pgconn.PgError
+	if !errors.As(err, &failure) {
+		return false
+	}
+	return strings.HasPrefix(failure.Code, "22") || failure.Code == "42883" || failure.Code == "42804" || failure.Code == "42846"
+}
+
 // List retrieves entities with optional scope filtering, ordering, and pagination.
 // It performs a COUNT(*) query first to get the total matching records,
 // then applies ordering and fetches the requested page via OFFSET/LIMIT.
@@ -483,12 +493,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []User{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("User", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -497,6 +509,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []User{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -517,6 +539,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []User
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -539,12 +564,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []Role{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("Role", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -553,6 +580,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []Role{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -573,6 +610,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []Role
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -595,12 +635,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []ManagedCluster{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("ManagedCluster", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -609,6 +651,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ManagedCluster{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -629,6 +681,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []ManagedCluster
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -651,12 +706,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []GatewayRelease{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("GatewayRelease", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -665,6 +722,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []GatewayRelease{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -685,6 +752,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []GatewayRelease
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -707,12 +777,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []ManagedDatabase{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("ManagedDatabase", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -721,6 +793,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ManagedDatabase{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -741,6 +823,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []ManagedDatabase
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -763,12 +848,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []Gateway{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("Gateway", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -777,6 +864,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []Gateway{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -797,6 +894,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []Gateway
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
@@ -819,12 +919,14 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(field+" = ?", value)
 		}
-		var total int64
-		if err := query.Count(&total).Error; err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if opts.CountOnly {
-			return stegostorage.ListResult{Items: []RoleBinding{}, Total: total}, nil
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("RoleBinding", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -833,6 +935,16 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			if validCols[ob.Field] {
 				query = query.Order(ob.Field + " " + ob.Direction)
 			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []RoleBinding{}, Total: total}, nil
 		}
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
@@ -853,6 +965,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		var result []RoleBinding
 		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil

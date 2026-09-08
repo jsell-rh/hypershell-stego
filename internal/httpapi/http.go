@@ -16,6 +16,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	search "github.com/jsell-rh/hypershell-stego/out/search"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
@@ -59,7 +60,11 @@ type GatewayList struct {
 	Total int64     `json:"total"`
 	Items []Gateway `json:"items"`
 }
-type pageRequest struct{ Page, Size int }
+type pageRequest struct {
+	Page, Size int
+	Search     string
+	OrderBy    []contract.OrderByField
+}
 
 func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
 	service, err := gateways.New(repository)
@@ -106,7 +111,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 		return nil, err
 	}
 	list, err := transport.Endpoint(verifier.Authenticate, parsePage, func(ctx context.Context, request pageRequest) (GatewayList, error) {
-		result, err := service.List(ctx, gateways.PrincipalFromContext(ctx), request.Page, request.Size)
+		result, err := service.Search(ctx, gateways.PrincipalFromContext(ctx), request.Page, request.Size, request.Search, request.OrderBy)
 		if err != nil {
 			return GatewayList{}, err
 		}
@@ -163,6 +168,13 @@ func parsePage(r *http.Request) (pageRequest, error) {
 			return pageRequest{}, transport.ErrRequest
 		}
 		switch name {
+		case "search":
+			request.Search = value[0]
+		case "orderBy":
+			request.OrderBy, err = transport.ParseOrderBy(value[0], search.EntityFieldMaps["Gateway"])
+			if err != nil {
+				return pageRequest{}, err
+			}
 		case "page", "size":
 			n, err := strconv.Atoi(value[0])
 			if err != nil {
@@ -235,7 +247,7 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 		errorID = 15
 	case errors.Is(err, transport.ErrRequest):
 		code, reason, errorID = http.StatusBadRequest, "The request is invalid", 17
-	case errors.Is(err, gateways.ErrInvalid):
+	case errors.Is(err, gateways.ErrInvalid), errors.Is(err, contract.ErrSearch):
 		code, reason = http.StatusBadRequest, "The request is invalid"
 		errorID = 8
 	case errors.Is(err, gateways.ErrForbidden):

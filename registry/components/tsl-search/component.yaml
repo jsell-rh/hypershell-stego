@@ -1,0 +1,9 @@
+kind: component
+name: tsl-search
+version: 1.0.0
+output_namespace: search
+requires:
+  - storage-adapter
+provides:
+  - search-engine
+slots: []

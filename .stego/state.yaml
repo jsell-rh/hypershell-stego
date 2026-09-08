@@ -20,6 +20,9 @@ last_applied:
         postgres-adapter:
             version: 2.0.0
             sha: gateway-workflow
+        tsl-search:
+            version: 1.0.0
+            sha: gateway-workflow
     entities:
         Gateway:
             - name: name
@@ -120,7 +123,7 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 103a4546f976198e96422470ecabec188c14846471d386d5dafed23a933aeb0d
-        application/transport/endpoint.go: d4878eb1af0b8b0bf2e01a5cfd913b63956870c7e88feb9024343721a38fd21a
+        application/transport/endpoint.go: 78ea0ce1691e5f62cfed97f5ecaa9b30fd7736bde7c4c75ab3dda479a3fe962a
         auth/middleware.go: 32cd075daf0687039ffbdae49820d67ac47251f726654d1b734cb8916010c7e1
         contracts/storage/storage.go: 365213fa2c28c9a9a9a9e13d85434877ee7bff4b2498f02baef25ae351dce23e
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
@@ -134,9 +137,11 @@ last_applied:
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: 6efeff2fa119bcb06c909a144990eb20d95e1ce3b801ed6c19795be75b7fb8b8
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
+        search/field_map.go: 064feeda58027fcd687fbbac1eaed669d19338f708d1a58781c1efe224dd1e7b
+        search/search.go: a4593023117c71c9749063164e89aab041fac9000c43457d3a8166ffaae758f9
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: e078de5693bc8790a4f78da819b7698358cfbf9764549694f48b70327422ac36
         storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: d975795f9df00a0bed7a7c8e000c8d189b0f81aff62fe92db5219122e9363b48
+        storage/store.go: bc1b6b26b25420a511124edc638fc598d589e950701ea72c661f0e6dfd03645c
         storage/transaction.go: 03dbae99ce1a38c75dbe1839e60c9d8f4e1aca02e82520c4556240a60794a8c7

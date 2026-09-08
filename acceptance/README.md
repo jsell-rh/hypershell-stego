@@ -13,7 +13,7 @@ readiness goals remain open.
 | Event delivery | REST creation commits an event that the same generated process sends to a TLS Kafka protocol fixture |
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
 | Regeneration | Pinned compiler, apply, dependency check, repeated apply, and drift check |
-| REST | Create, get, filtered list, response schema, error shape, viewer access, grant removal, rollback, and restart |
+| REST | Create, get, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, and restart |
 | gRPC | Generated wire descriptors match the reference; TLS create/get/list, access, rollback, events, cross-transport reads, and restart |
 
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
@@ -36,8 +36,9 @@ case aliases, invalid Unicode, and NUL characters that PostgreSQL cannot store.
 It also forces owner-grant and event-write failures and checks rollback.
 The gRPC transport uses the same domain service. Its list defaults and page
 size metadata follow the reference gRPC adapter. REST and gRPC requests can
-retrieve each other's created resources. Full REST list search, custom ordering,
-sparse fields, REST page sizes above 100,
+retrieve each other's created resources. REST search and ordering tests include
+`OR` expressions, literal injection attempts, invalid fields and value types, and
+count-only requests. Related-resource search, sparse fields, REST page sizes above 100,
 deployment database placement, platform-role projections, complete user and role models, and all
 other Hypershell workflows remain open.
 

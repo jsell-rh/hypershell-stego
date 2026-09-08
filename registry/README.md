@@ -17,3 +17,7 @@ The `grpc-application` component compiles the pinned Gateway protobuf contracts.
 Its domain factory is `internal/grpcapi`. The public `out/grpcapi/pb` packages
 contain messages and client/server interfaces; the generated runtime owns TLS,
 authentication, deadlines, and service shutdown.
+
+The `tsl-search` component supplies declared-field search and common metadata
+aliases. It has no custom field resolver in this variant. Search remains separate
+from the domain access filter, which always applies before count and pagination.

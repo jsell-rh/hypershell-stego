@@ -10,7 +10,8 @@ event delivery. Its generated process now serves Gateway creation, retrieval,
 and filtered lists over REST and gRPC. It delivers committed events through mutual TLS.
 PostgreSQL tests check atomic owner grants, verified identities, denied reads,
 rollback, and restart. Tests read the same resources across both transports.
-Full REST query support and the other application workflows remain open. See
+REST search and ordering are implemented. Field selection, related-resource
+search, and the other application workflows remain open. See
 [the checks](acceptance/README.md).
 
 The reference REST and gRPC contracts are under `contracts/reference/`. `contracts/upstream.json`
@@ -55,9 +56,10 @@ the `DATABASE_URL` setting, a verified JWT issuer configuration, and a reachable
 Kafka broker with TLS. gRPC also requires `STEGO_GRPC_TLS_CERT` and
 `STEGO_GRPC_TLS_KEY`. It uses TLS 1.3 and reads `STEGO_GRPC_ADDR`, which defaults
 to `127.0.0.1:9090`. HTTP reads `PORT`, which defaults to 8080. Application
-startup does not apply migrations. The current REST list supports `page` and
-`size`, including a zero-size count request, with a maximum page size of 100.
-Search, custom ordering, sparse fields, updates, and deletion remain open work.
+startup does not apply migrations. The REST list supports `page`, `size`, `search`, and `orderBy`, including a
+zero-size count request, with a maximum page size of 100. Search and ordering use
+declared fields. Sparse fields, related-resource search, updates, and deletion
+remain open work.
 
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.

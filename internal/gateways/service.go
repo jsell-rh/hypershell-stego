@@ -164,7 +164,7 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 	if !validID(id) {
 		return model.Gateway{}, store.ErrNotFound
 	}
-	result, err := s.list(ctx, principal, id, 1, 1)
+	result, err := s.list(ctx, principal, id, 1, 1, "", nil)
 	if err != nil {
 		return model.Gateway{}, err
 	}
@@ -179,13 +179,17 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 }
 
 func (s *Service) List(ctx context.Context, principal Principal, page, size int) (store.ListResult, error) {
+	return s.Search(ctx, principal, page, size, "", nil)
+}
+
+func (s *Service) Search(ctx context.Context, principal Principal, page, size int, search string, order []store.OrderByField) (store.ListResult, error) {
 	if page < 1 || size < 0 || size > 500 || page > 1000000 {
 		return store.ListResult{}, ErrInvalid
 	}
-	return s.list(ctx, principal, "", page, size)
+	return s.list(ctx, principal, "", page, size, search, order)
 }
 
-func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int) (store.ListResult, error) {
+func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int, search string, order []store.OrderByField) (store.ListResult, error) {
 	var result store.ListResult
 	if err := validatePrincipal(principal); err != nil {
 		return result, err
@@ -195,7 +199,11 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 		if err != nil {
 			return err
 		}
-		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
+		ordering := append([]store.OrderByField(nil), order...)
+		if !slices.ContainsFunc(ordering, func(item store.OrderByField) bool { return item.Field == "id" }) {
+			ordering = append(ordering, store.OrderByField{Field: "id", Direction: "asc"})
+		}
+		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, Search: search, OrderBy: ordering}
 		if !slices.Contains(principal.Roles, "platform:admin") {
 			owner, err := findRole(ctx, tx, "gateway:owner")
 			if err != nil {

@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"io"
 	"mime"
 	"net/http"
@@ -23,6 +24,43 @@ const RequestTimeout = 10 * time.Second
 
 var ErrRequest = errors.New("invalid request")
 var ErrUnauthenticated = errors.New("authentication is required")
+
+// ParseOrderBy maps public field names to declared storage columns.
+func ParseOrderBy(value string, fields map[string]string) ([]storage.OrderByField, error) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil, nil
+	}
+	if len(value) > 512 {
+		return nil, ErrRequest
+	}
+	terms := strings.Split(value, ",")
+	if len(terms) > 8 {
+		return nil, ErrRequest
+	}
+	result := make([]storage.OrderByField, 0, len(terms))
+	seen := map[string]bool{}
+	for _, term := range terms {
+		words := strings.Fields(term)
+		if len(words) < 1 || len(words) > 2 {
+			return nil, ErrRequest
+		}
+		column, ok := fields[words[0]]
+		if !ok || seen[column] {
+			return nil, ErrRequest
+		}
+		seen[column] = true
+		direction := "asc"
+		if len(words) == 2 {
+			direction = strings.ToLower(words[1])
+		}
+		if direction != "asc" && direction != "desc" {
+			return nil, ErrRequest
+		}
+		result = append(result, storage.OrderByField{Field: column, Direction: direction})
+	}
+	return result, nil
+}
 
 type Authenticate func(context.Context, string) (context.Context, error)
 type ErrorHandler func(http.ResponseWriter, *http.Request, error)
