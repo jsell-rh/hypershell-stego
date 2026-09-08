@@ -13,8 +13,8 @@ readiness goals remain open.
 | Event delivery | REST creation commits an event that the same generated process sends to a TLS Kafka protocol fixture |
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
 | Regeneration | Pinned compiler, apply, dependency check, repeated apply, and drift check |
-| REST | Create, get, patch, delete, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, and restart |
-| gRPC | Generated wire descriptors match the reference; TLS create/get/update/delete/list, count adjustment and set, access, rollback, events, cross-transport reads, and restart |
+| REST | Create, get, patch, delete, search, ordering, filtered counts, response schema, error shape, viewer access, grant removal, rollback, watch streams, and restart |
+| gRPC | Generated wire descriptors match the reference; TLS create/get/update/delete/list, count adjustment and set, access, rollback, events, cross-transport reads, watch streams, and restart |
 
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
@@ -77,7 +77,7 @@ the process, commits an update and deletion, and restarts the process. The
 runtime delivers both events in commit order, and both transports exclude the
 deleted resource. Separate successful REST and gRPC deletion requests verify
 HTTP 204 without a body and the protobuf delete response. PostgreSQL tombstones
-remain available for the future watch implementation. Service-account cleanup
+supply authorized delete events to the watch implementation. Service-account cleanup
 and production broker tests remain open.
 
 A local gRPC patch benchmark performed 100 updates to one Gateway through a
@@ -109,3 +109,37 @@ TLS, signed tokens, row locks, and outbox writes. The worker delivered events
 in the background. The measurements exclude startup and TLS connection setup.
 They do not establish production capacity or end-to-end event latency. Run
 `go test -run '^$' -bench '^BenchmarkGRPCSandboxCount$' -benchtime=100x ./acceptance`.
+
+Gateway watch acceptance now runs through the generated application process.
+Two owner streams receive the same events. Viewer, admin, and control-plane
+streams follow the current access rules. Hidden events and revoked grants do
+not expose data. A forged delete notice for a live Gateway is ignored. The
+next visible event acts as a barrier in each denied-event check.
+
+The test subscribes before the initial list. It creates through REST, updates
+through gRPC and REST, changes the sandbox count, and deletes through both
+transports. Event fields match the gRPC response. An independent process writes
+to the same database and its events also reach the streams. An event-write
+failure rolls back the change. Kafka delivery remains active throughout.
+
+Restart closes old streams. After an offline change, a new subscription and
+list recover current state, and later events arrive normally. A separate test
+terminates the dedicated PostgreSQL listener connection. The generated supervisor
+closes both network listeners and exits with an error. Restart and a new list
+recover the changed state. Signed-token tests check unauthenticated requests,
+actual token expiry, and the configured stream lifetime.
+
+These checks use PostgreSQL 18.6 and a TLS Kafka protocol fixture. They do not
+prove broker failover, production watch capacity, or a complete control-plane
+client. The STEGO tests separately check subscription overflow, process and
+subject limits, unary availability, slow-peer I/O, and shutdown.
+
+A local watch benchmark ran 100 sequential updates to one Gateway. It measured
+4.773 ms per operation from the start of the gRPC update through receipt of its
+watch event. It includes token verification, the database transaction, outbox
+insert, live notice, access check, and response delivery through a separate
+process with TLS. Kafka delivery ran in the background. The environment used
+Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9 185H. The measurement excludes
+startup and TLS connection setup. It does not establish concurrent capacity,
+latency percentiles, or server memory use. Run
+`go test -run '^$' -bench '^BenchmarkGRPCGatewayWatch$' -benchtime=100x ./acceptance`.

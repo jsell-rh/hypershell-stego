@@ -18,6 +18,7 @@ import (
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	events "github.com/jsell-rh/hypershell-stego/out/events"
 	grpcapi "github.com/jsell-rh/hypershell-stego/out/grpcapi"
+	outbox "github.com/jsell-rh/hypershell-stego/out/outbox"
 	storage "github.com/jsell-rh/hypershell-stego/out/storage"
 	postgres "gorm.io/driver/postgres"
 	gorm "gorm.io/gorm"
@@ -53,6 +54,11 @@ func run() error {
 		return err
 	}
 	defer runtime.Close()
+	source, err := outbox.NewSource(ctx, sqlDB)
+	if err != nil {
+		return err
+	}
+	defer source.Close()
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
@@ -61,7 +67,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment)
+	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment, source)
 	if err != nil {
 		return err
 	}
@@ -86,7 +92,8 @@ func run() error {
 			return stegoServeHTTP(ctx, listener, stegoHTTPServer(mux), 10*time.Second)
 		}},
 		{name: "kafka-producer[0]", run: runtime.Run},
-		{name: "grpc-application[0]", run: gRPCRuntime.Run},
+		{name: "grpc-application[0]", run: source.Run},
+		{name: "grpc-application[1]", run: gRPCRuntime.Run},
 	})
 }
 

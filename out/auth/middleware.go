@@ -37,6 +37,7 @@ type Identity struct {
 	GivenName  string            `json:"given_name"`
 	FamilyName string            `json:"family_name"`
 	Roles      []string          `json:"roles"`
+	ExpiresAt  time.Time         `json:"expires_at"`
 }
 
 type contextKey struct{}
@@ -158,7 +159,7 @@ func (v *Verifier) Verify(raw string) (Identity, error) {
 		return Identity{}, err
 	}
 	return Identity{UserID: claims.Subject, Role: claims.Role, Attributes: claims.Attributes,
-		Username: claims.Username, Email: claims.Email, GivenName: claims.GivenName, FamilyName: claims.FamilyName, Roles: roles}, nil
+		Username: claims.Username, Email: claims.Email, GivenName: claims.GivenName, FamilyName: claims.FamilyName, Roles: roles, ExpiresAt: claims.ExpiresAt.Time}, nil
 }
 
 // Authenticate supplies the same verified identity to each transport.

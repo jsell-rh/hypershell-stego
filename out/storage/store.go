@@ -478,6 +478,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "User":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "email": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&User{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "User", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -549,6 +552,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "Role":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&Role{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "Role", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -620,6 +626,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ManagedCluster":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&ManagedCluster{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "ManagedCluster", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -691,6 +700,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "GatewayRelease":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&GatewayRelease{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "GatewayRelease", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -762,6 +774,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ManagedDatabase":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&ManagedDatabase{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "ManagedDatabase", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -833,6 +848,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "Gateway":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "Gateway", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err
@@ -904,6 +922,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "RoleBinding":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 		query := s.db.WithContext(ctx).Model(&RoleBinding{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
 		query, err := s.applyRelated(ctx, query, "RoleBinding", opts.Related)
 		if err != nil {
 			return stegostorage.ListResult{}, err

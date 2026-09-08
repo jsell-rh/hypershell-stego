@@ -125,6 +125,13 @@ func Enqueue(ctx context.Context, tx *sql.Tx, messages ...Message) error {
 			message.ID, message.Destination, message.ResourceKey, message.Kind, string(message.Payload)); err != nil {
 			return err
 		}
+		notice, err := encodeEvent(Event{ID: message.ID, Destination: message.Destination, ResourceKey: message.ResourceKey, Kind: message.Kind})
+		if err != nil {
+			return err
+		}
+		if _, err := tx.ExecContext(ctx, `SELECT pg_notify($1,$2)`, eventChannel, notice); err != nil {
+			return err
+		}
 	}
 	return nil
 }

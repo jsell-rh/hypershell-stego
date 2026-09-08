@@ -146,3 +146,42 @@ func benchmarkGRPCSandboxCount(b *testing.B, parallel bool) {
 	}
 	awaitQueueEmpty(b, f)
 }
+
+// Measure request start through receipt of the matching committed watch event.
+func BenchmarkGRPCGatewayWatch(b *testing.B) {
+	f := database(b)
+	row, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("watch"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	_, config := broker(b, identity(b, "localhost"))
+	key, settings := issuer(b)
+	tlsIdentity := identity(b, "localhost")
+	directory := filepath.Dir(tlsIdentity.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	stop, _, address := startBoth(b, buildApplication(b), f.dsn, config, settings...)
+	defer stop()
+	awaitQueueEmpty(b, f)
+	client, _ := grpcClient(b, address, tlsIdentity)
+	ctx := metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(b, key, "alice")))
+	watch := watchGateways(b, client, ctx)
+	warmup, cancel := context.WithTimeout(ctx, 5*time.Second)
+	if _, err := client.ListGateways(warmup, &pb.ListGatewaysRequest{}); err != nil {
+		b.Fatal(err)
+	}
+	cancel()
+	b.ResetTimer()
+	for i := range b.N {
+		name := fmt.Sprintf("watch-%d", i)
+		call, cancel := context.WithTimeout(ctx, 5*time.Second)
+		_, err := client.UpdateGateway(call, &pb.UpdateGatewayRequest{Id: row.ID, Name: &name})
+		cancel()
+		if err != nil {
+			b.Fatal(err)
+		}
+		watch.expect(b, pb.EventType_EVENT_TYPE_UPDATED, row.ID, name)
+	}
+	b.StopTimer()
+	watch.cancel()
+	awaitQueueEmpty(b, f)
+}

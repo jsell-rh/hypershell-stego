@@ -7,7 +7,9 @@ entity name or application rule.
 
 The variant now has a Gateway domain service over STEGO-generated storage and
 event delivery. Its generated process now serves Gateway creation, retrieval,
-patches, deletion, and filtered lists over REST and gRPC. It delivers committed events through mutual TLS.
+patches, deletion, and filtered lists over REST and gRPC. Gateway watch streams
+return current authorized data. The runtime also delivers durable events through
+mutual TLS.
 PostgreSQL tests check atomic owner grants, verified identities, denied reads,
 rollback, and restart. Tests read the same resources across both transports.
 REST search and ordering are implemented. Field selection, related-resource
@@ -63,9 +65,30 @@ declared fields. Sparse fields and related-resource search remain open work.
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.
 The domain service limits page numbers to 1,000,000 for both transports.
-REST metadata size is the returned item count. The Gateway watch
-method currently returns `Unimplemented`. Long-lived
-streams need a separate lifetime policy before watch support can be added.
+REST metadata size is the returned item count.
+
+`WatchGateways` subscribes before it sends response headers. The client must
+wait for those headers, list current Gateways, then apply watch events. Repeat
+this sequence after any stream failure. The reference protocol has no cursor
+or history. An event contains the current authorized resource state, not a
+historical snapshot. A delete event uses the stored tombstone and live grants.
+Revoked grants stop further data delivery; clients must also clear stale local
+state when access changes or they repeat the initial list.
+
+STEGO supplies the event source and transport limits. Hypershell supplies event
+selection, Gateway field mapping, and access checks. The source uses one dedicated
+PostgreSQL LISTEN session per process. Use a direct database connection or session
+pooling. Transaction pooling is not supported. An event-source failure stops the
+process, so a broken stream cannot appear healthy. Kafka retains durable events
+across process downtime; watch clients recover through a new list.
+
+Streams stop at token expiry or after five minutes by default.
+`STEGO_GRPC_STREAM_TIMEOUT` accepts one second through 30 minutes. The separate
+stream limit is 32 per process and four per verified subject. A slow client that
+blocks I/O for ten seconds loses its TCP connection; other calls on that
+connection must reconnect. `STEGO_GRPC_STREAM_IO_TIMEOUT` accepts one through
+ten seconds. The runtime accepts at most 128 connections. These bounds do not
+establish production capacity.
 
 Gateway patches require an owner grant on that Gateway. Admin status alone does
 not allow a patch. Owners and admins can delete a Gateway. Denied mutations

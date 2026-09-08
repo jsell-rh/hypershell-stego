@@ -166,7 +166,7 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 	if !validID(id) {
 		return model.Gateway{}, store.ErrNotFound
 	}
-	result, err := s.list(ctx, principal, id, 1, 1, "", nil)
+	result, err := s.list(ctx, principal, id, 1, 1, "", nil, false)
 	if err != nil {
 		return model.Gateway{}, err
 	}
@@ -188,10 +188,10 @@ func (s *Service) Search(ctx context.Context, principal Principal, page, size in
 	if page < 1 || size < 0 || size > 500 || page > 1000000 {
 		return store.ListResult{}, ErrInvalid
 	}
-	return s.list(ctx, principal, "", page, size, search, order)
+	return s.list(ctx, principal, "", page, size, search, order, false)
 }
 
-func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int, search string, order []store.OrderByField) (store.ListResult, error) {
+func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int, search string, order []store.OrderByField, includeDeleted bool) (store.ListResult, error) {
 	var result store.ListResult
 	if err := validatePrincipal(principal); err != nil {
 		return result, err
@@ -206,6 +206,7 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 			ordering = append(ordering, store.OrderByField{Field: "id", Direction: "asc"})
 		}
 		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, Search: search, OrderBy: ordering}
+		opts.IncludeDeleted = includeDeleted
 		if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "platform:admin") {
 			owner, err := findRole(ctx, tx, "gateway:owner")
 			if err != nil {

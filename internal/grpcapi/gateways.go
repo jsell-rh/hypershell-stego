@@ -8,6 +8,7 @@ import (
 	"math"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -20,9 +21,13 @@ import (
 type server struct {
 	pb.UnimplementedGatewayServiceServer
 	service *gateways.Service
+	source  events.Source
 }
 
-func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository) error {
+func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, source events.Source) error {
+	if source == nil {
+		return errors.New("Gateway watch requires an event source")
+	}
 	options, err := gateways.OptionsFromEnvironment()
 	if err != nil {
 		return err
@@ -31,7 +36,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository) e
 	if err != nil {
 		return err
 	}
-	pb.RegisterGatewayServiceServer(registrar, &server{service: service})
+	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
 	return nil
 }
 

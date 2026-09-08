@@ -91,6 +91,10 @@ func startApplication(t *testing.T, binary, dsn string, config Config, settings 
 	return stop, address
 }
 func startBoth(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string) {
+	stop, httpAddress, grpcAddress, _ := startBothManaged(t, binary, dsn, config, settings...)
+	return stop, httpAddress, grpcAddress
+}
+func startBothManaged(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string, func() string) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
@@ -152,7 +156,22 @@ func startBoth(t testing.TB, binary, dsn string, config Config, settings ...stri
 			t.Fatalf("runtime did not report its listeners\n%s", output.String())
 		}
 	}
-	return stop, httpAddress, grpcAddress
+	waitFailure := func() string {
+		t.Helper()
+		select {
+		case err := <-done:
+			stopped = true
+			cancel()
+			if err == nil {
+				t.Fatal("runtime reported success after a source failure")
+			}
+			return output.String()
+		case <-time.After(12 * time.Second):
+			t.Fatal("runtime did not stop after a source failure")
+			return ""
+		}
+	}
+	return stop, httpAddress, grpcAddress, waitFailure
 }
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	return readGatewayEvent(t, consumer, id, "Create", "gateway.created")
