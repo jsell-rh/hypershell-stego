@@ -28,3 +28,13 @@ The compatibility target includes:
 Compiler correctness and reusable infrastructure changes belong in STEGO.
 Behavioral acceptance tests and Hypershell domain code belong here. Passing
 compilation alone does not establish compatibility or production readiness.
+
+Run `go test ./...` to verify the source hashes, validate OpenAPI references, and
+compile the protobuf contracts. The checks cover 37 REST operations, 41 gRPC
+methods, and six server watch streams. They also check gateway field ownership,
+reserved wire numbers, and the restriction on returning service-account secrets.
+Run `go run ./cmd/contracts` to print the operation inventory as JSON. Contract
+resolution uses embedded files and cannot fetch remote schemas.
+
+These tests validate the reference inputs. They do not test an implemented
+Hypershell service. The CI workflow runs them with the Go race detector.
