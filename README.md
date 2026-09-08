@@ -50,8 +50,10 @@ Run `go run ./cmd/contracts` to print the operation inventory as JSON. Contract
 resolution uses embedded files and cannot fetch remote schemas.
 
 The contract tests validate the reference inputs. The separate acceptance tests
-exercise the Gateway domain service and generated event process. CI requires
-PostgreSQL, the race detector, and a regeneration check.
+exercise the Gateway domain service and generated event process. Run
+`scripts/check-gateway.sh` with `STEGO_TEST_POSTGRES_DSN` set for the complete
+[Gateway gate](acceptance/gateway-workflow.md). CI uses the same command. It
+requires PostgreSQL, the race detector, and a regeneration check.
 
 The generated entry point is `go run ./out`. It requires the database schema,
 the `DATABASE_URL` setting, a verified JWT issuer configuration, and a reachable

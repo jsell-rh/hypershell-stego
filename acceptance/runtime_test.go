@@ -25,12 +25,7 @@ import (
 func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
-	binary := filepath.Join(t.TempDir(), "hypershell-events")
-	build := exec.Command("go", "build", "-mod=readonly", "-o", binary, "./out")
-	build.Dir = ".."
-	if output, err := build.CombinedOutput(); err != nil {
-		t.Fatalf("build generated runtime: %v\n%s", err, output)
-	}
+	binary := buildApplication(t)
 	consumer := kafkaConsumer(t, config)
 	p := principal("alice", "gateway:creator")
 	first, err := f.service.Create(context.Background(), p, f.request("before-start"))
@@ -109,6 +104,9 @@ func startBothManaged(t testing.TB, binary, dsn string, config Config, settings 
 	tlsIdentity := identity(t, "localhost")
 	command.Env = append(command.Env, "STEGO_GRPC_ADDR=127.0.0.1:0", "STEGO_GRPC_TLS_CERT="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server-key.pem"))
 	command.Env = append(command.Env, settings...)
+	if raceEnabled {
+		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
+	}
 	output := runtimeOutput{ready: make(chan string, 1), grpcReady: make(chan string, 1)}
 	command.Stdout = &output
 	command.Stderr = &output

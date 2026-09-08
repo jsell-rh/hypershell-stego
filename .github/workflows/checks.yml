@@ -33,9 +33,6 @@ jobs:
         with:
           go-version: '1.26.8'
           cache: true
-      - run: go mod verify
-      - run: scripts/generate.sh --check
-      - run: go test -race -count=1 -mod=readonly ./...
+      - run: scripts/check-gateway.sh
         env:
-          STEGO_REQUIRE_POSTGRES: '1'
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable

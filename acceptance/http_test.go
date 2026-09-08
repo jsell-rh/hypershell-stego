@@ -81,7 +81,11 @@ func requestJSON(t testing.TB, method, address, bearer string, body []byte) (int
 func buildApplication(t testing.TB) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), "hypershell")
-	command := exec.Command("go", "build", "-mod=readonly", "-o", binary, "./out")
+	arguments := []string{"build", "-mod=readonly", "-o", binary}
+	if raceEnabled {
+		arguments = append(arguments, "-race")
+	}
+	command := exec.Command("go", append(arguments, "./out")...)
 	command.Dir = ".."
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("build generated application: %v\n%s", err, output)
