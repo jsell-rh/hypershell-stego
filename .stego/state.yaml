@@ -1,7 +1,10 @@
 last_applied:
-    service_hash: 70fff00dc3507377caaf796d47cd20c11ce588c0b85b322a311e27d612143aa0
+    service_hash: cd1a5d46762c6b11e399d3c6bc96a4cecda144245a91290a695b2a8e09e28da4
     registry_sha: gateway-workflow
     components:
+        http-application:
+            version: 1.0.0
+            sha: gateway-workflow
         jwt-auth:
             version: 2.0.0
             sha: gateway-workflow
@@ -113,11 +116,13 @@ last_applied:
               type: string
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
-        auth/middleware.go: b45502d7b1a06ada6920276b7b56ddafbf67952439271e8d51c31f6c878d53c1
-        contracts/storage/storage.go: 79690be5b2e0807582de762c6ea48e621591d1f64caa7a3b9c4d9fe14ee190ee
+        application/bridge.go: 103a4546f976198e96422470ecabec188c14846471d386d5dafed23a933aeb0d
+        application/transport/endpoint.go: d4878eb1af0b8b0bf2e01a5cfd913b63956870c7e88feb9024343721a38fd21a
+        auth/middleware.go: 32cd075daf0687039ffbdae49820d67ac47251f726654d1b734cb8916010c7e1
+        contracts/storage/storage.go: 365213fa2c28c9a9a9a9e13d85434877ee7bff4b2498f02baef25ae351dce23e
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
-        main.go: 58f1e43c121e2d05ffa86d524eed6b20748d7a38a2efdf2b43b6dadb0b6d350d
+        main.go: eca8ad1f907bdba531db417d021c77ce9a533429394a6bcf8a2b093bab107aa0
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: 6efeff2fa119bcb06c909a144990eb20d95e1ce3b801ed6c19795be75b7fb8b8
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
@@ -125,5 +130,5 @@ last_applied:
         storage/migrate.go: e078de5693bc8790a4f78da819b7698358cfbf9764549694f48b70327422ac36
         storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 409e621294e4d9bbe448efd0bfe9212501fb63c03f8c48498bcaa9493c614904
+        storage/store.go: d975795f9df00a0bed7a7c8e000c8d189b0f81aff62fe92db5219122e9363b48
         storage/transaction.go: 03dbae99ce1a38c75dbe1839e60c9d8f4e1aca02e82520c4556240a60794a8c7

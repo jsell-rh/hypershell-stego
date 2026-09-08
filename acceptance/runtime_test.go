@@ -3,13 +3,13 @@ package acceptance
 import (
 	"bytes"
 	"context"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/json"
+	"net"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"testing"
 	"time"
@@ -31,23 +31,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if output, err := build.CombinedOutput(); err != nil {
 		t.Fatalf("build generated runtime: %v\n%s", err, output)
 	}
-	ca, err := os.ReadFile(config.CAFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(ca) {
-		t.Fatal("invalid test CA")
-	}
-	pair, err := tls.LoadX509KeyPair(config.ClientCertificateFile, config.ClientKeyFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	consumer, err := kgo.NewClient(kgo.SeedBrokers(config.Brokers...), kgo.DialTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, Certificates: []tls.Certificate{pair}}), kgo.ConsumeTopics(config.Topic), kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer consumer.Close()
+	consumer := kafkaConsumer(t, config)
 	p := principal("alice", "gateway:creator")
 	first, err := f.service.Create(context.Background(), p, f.request("before-start"))
 	if err != nil {
@@ -99,16 +83,23 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 }
 
 func startRuntime(t *testing.T, binary, dsn string, config Config) func() {
+	stop, _ := startApplication(t, binary, dsn, config)
+	return stop
+}
+func startApplication(t *testing.T, binary, dsn string, config Config, settings ...string) (func(), string) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
 	command.Env = append(os.Environ(),
-		"DATABASE_URL="+dsn,
+		"DATABASE_URL="+dsn, "PORT=0",
 		"STEGO_KAFKA_BROKERS="+strings.Join(config.Brokers, ","), "STEGO_KAFKA_TOPIC="+config.Topic,
 		"STEGO_KAFKA_AUTHENTICATION="+config.Authentication, "STEGO_KAFKA_CA_FILE="+config.CAFile,
 		"STEGO_KAFKA_CLIENT_CERTIFICATE_FILE="+config.ClientCertificateFile, "STEGO_KAFKA_CLIENT_KEY_FILE="+config.ClientKeyFile,
 	)
-	var output bytes.Buffer
+	_, authSettings := issuer(t)
+	command.Env = append(command.Env, authSettings...)
+	command.Env = append(command.Env, settings...)
+	output := runtimeOutput{ready: make(chan string, 1)}
 	command.Stdout = &output
 	command.Stderr = &output
 	if err := command.Start(); err != nil {
@@ -139,7 +130,18 @@ func startRuntime(t *testing.T, binary, dsn string, config Config) func() {
 		}
 	}
 	t.Cleanup(stop)
-	return stop
+	select {
+	case address := <-output.ready:
+		return stop, address
+	case err := <-done:
+		stopped = true
+		cancel()
+		t.Fatalf("runtime did not start: %v\n%s", err, output.String())
+	case <-time.After(8 * time.Second):
+		stop()
+		t.Fatalf("runtime did not report its listener\n%s", output.String())
+	}
+	return stop, ""
 }
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	t.Helper()
@@ -181,3 +183,32 @@ func awaitQueueEmpty(t *testing.T, f *fixture) {
 		time.Sleep(10 * time.Millisecond)
 	}
 }
+
+// runtimeOutput captures process output without racing with startup detection.
+type runtimeOutput struct {
+	mu    sync.Mutex
+	data  bytes.Buffer
+	ready chan string
+}
+
+func (w *runtimeOutput) Write(data []byte) (int, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	n, err := w.data.Write(data)
+	for _, line := range strings.Split(w.data.String(), "\n") {
+		_, value, found := strings.Cut(line, "starting server on ")
+		if !found {
+			continue
+		}
+		_, port, err := net.SplitHostPort(strings.TrimSpace(value))
+		if err != nil {
+			continue
+		}
+		select {
+		case w.ready <- "http://127.0.0.1:" + port:
+		default:
+		}
+	}
+	return n, err
+}
+func (w *runtimeOutput) String() string { w.mu.Lock(); defer w.mu.Unlock(); return w.data.String() }

@@ -6,6 +6,7 @@ components:
   - postgres-adapter
   - outbox
   - kafka-producer
+  - http-application
 default_auth: jwt-auth
 conventions:
   layout: flat

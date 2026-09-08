@@ -54,5 +54,10 @@ collections: {}
 slots: []
 
 overrides:
+  postgres-adapter:
+    migrations: external
   jwt-auth:
     roles_claim: realm_access.roles
+    mode: verifier
+  http-application:
+    factory_package: internal/httpapi

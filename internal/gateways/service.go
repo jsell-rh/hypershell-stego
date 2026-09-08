@@ -179,7 +179,7 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 }
 
 func (s *Service) List(ctx context.Context, principal Principal, page, size int) (store.ListResult, error) {
-	if page < 1 || size < 1 || size > 100 || page > 1000000 {
+	if page < 1 || size < 0 || size > 100 || page > 1000000 {
 		return store.ListResult{}, ErrInvalid
 	}
 	return s.list(ctx, principal, "", page, size)
@@ -195,7 +195,7 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 		if err != nil {
 			return err
 		}
-		opts := store.ListOptions{Page: page, Size: size, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
+		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
 		if !slices.Contains(principal.Roles, "platform:admin") {
 			owner, err := findRole(ctx, tx, "gateway:owner")
 			if err != nil {
@@ -260,25 +260,25 @@ func validID(value string) bool {
 	return err == nil && id != ksuid.Nil && id.String() == value
 }
 func validatePrincipal(p Principal) error {
-	if strings.TrimSpace(p.Subject) == "" || strings.TrimSpace(p.Username) == "" || len(p.Username) > 255 || len(p.Email) > 320 || len(p.Name) > 255 || !utf8.ValidString(p.Username+p.Email+p.Name) {
+	if strings.TrimSpace(p.Subject) == "" || strings.TrimSpace(p.Username) == "" || len(p.Username) > 255 || len(p.Email) > 320 || len(p.Name) > 255 || !utf8.ValidString(p.Username+p.Email+p.Name) || strings.ContainsRune(p.Subject+p.Username+p.Email+p.Name, 0) {
 		return ErrIdentity
 	}
 	return nil
 }
 func validateCreate(r CreateRequest) error {
-	if strings.TrimSpace(r.Name) == "" || len(r.Name) > 255 || !utf8.ValidString(r.Name) || !validID(r.ClusterID) || !validID(r.ReleaseID) || strings.TrimSpace(r.DatabaseID) == "" {
+	if strings.TrimSpace(r.Name) == "" || len(r.Name) > 255 || !utf8.ValidString(r.Name) || strings.ContainsRune(r.Name, 0) || !validID(r.ClusterID) || !validID(r.ReleaseID) || strings.TrimSpace(r.DatabaseID) == "" {
 		return ErrInvalid
 	}
 	if len(r.ServerDNSNames) > 128 {
 		return ErrInvalid
 	}
 	for _, v := range r.ServerDNSNames {
-		if len(v) > 253 || !utf8.ValidString(v) {
+		if len(v) > 253 || !utf8.ValidString(v) || strings.ContainsRune(v, 0) {
 			return ErrInvalid
 		}
 	}
 	for _, v := range []*string{r.ExternalDNS, r.TLSMode, r.ServiceType, r.Status, r.Phase, r.Image, r.SupervisorImage, r.OIDC, r.Route, r.CredentialDriver} {
-		if v != nil && (len(*v) > 8192 || !utf8.ValidString(*v)) {
+		if v != nil && (len(*v) > 8192 || !utf8.ValidString(*v) || strings.ContainsRune(*v, 0)) {
 			return ErrInvalid
 		}
 	}

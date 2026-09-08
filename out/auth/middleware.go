@@ -15,6 +15,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unicode/utf8"
@@ -229,7 +230,7 @@ func (v *Verifier) roles(encoded string) ([]string, error) {
 // checkJSONObject rejects duplicate names and invalid Unicode before JWT
 // decoding. This prevents different consumers from reading different claims.
 func checkJSONObject(data []byte) error {
-	if !utf8.Valid(data) {
+	if !utf8.Valid(data) || !validUnicodeEscapes(data) {
 		return errors.New("invalid token Unicode")
 	}
 	decoder := json.NewDecoder(strings.NewReader(string(data)))
@@ -394,4 +395,44 @@ func writeAuthError(w http.ResponseWriter, r *http.Request, detail string) {
 	w.WriteHeader(http.StatusUnauthorized)
 	// Once headers are sent, a client write error cannot change this response.
 	_ = json.NewEncoder(w).Encode(response)
+}
+
+// encoding/json replaces unmatched UTF-16 surrogates. Reject these sequences
+// before decoding so distinct invalid inputs cannot become one stored value.
+func validUnicodeEscapes(data []byte) bool {
+	for i := 0; i < len(data); i++ {
+		if data[i] != '\\' {
+			continue
+		}
+		i++
+		if i >= len(data) {
+			return false
+		}
+		if data[i] != 'u' {
+			continue
+		}
+		if i+4 >= len(data) {
+			return false
+		}
+		value, err := strconv.ParseUint(string(data[i+1:i+5]), 16, 16)
+		if err != nil {
+			return false
+		}
+		i += 4
+		if value >= 0xDC00 && value <= 0xDFFF {
+			return false
+		}
+		if value < 0xD800 || value > 0xDBFF {
+			continue
+		}
+		if i+6 >= len(data) || data[i+1] != '\\' || data[i+2] != 'u' {
+			return false
+		}
+		low, err := strconv.ParseUint(string(data[i+3:i+7]), 16, 16)
+		if err != nil || low < 0xDC00 || low > 0xDFFF {
+			return false
+		}
+		i += 6
+	}
+	return true
 }

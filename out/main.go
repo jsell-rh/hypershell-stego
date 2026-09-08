@@ -4,16 +4,22 @@ package main
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
+	application "github.com/jsell-rh/hypershell-stego/out/application"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	events "github.com/jsell-rh/hypershell-stego/out/events"
+	storage "github.com/jsell-rh/hypershell-stego/out/storage"
+	postgres "gorm.io/driver/postgres"
+	gorm "gorm.io/gorm"
 )
 
 func main() {
@@ -30,21 +36,93 @@ func run() error {
 	if dsn == "" {
 		return errors.New("DATABASE_URL environment variable is required")
 	}
-	db, err := sql.Open("pgx", dsn)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		return err
 	}
-	defer db.Close()
+	sqlDB, err := db.DB()
+	if err != nil {
+		return err
+	}
+	defer sqlDB.Close()
 
-	runtime, err := events.NewRuntime(ctx, db)
+	store := storage.NewStore(db)
+	runtime, err := events.NewRuntime(ctx, sqlDB)
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
+	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
+	if err != nil {
+		return err
+	}
+	handler, err := application.NewHandler(store, verifierFromEnvironment, sqlDB)
+	if err != nil {
+		return err
+	}
 
+	mux := http.NewServeMux()
+	mux.Handle("/", handler)
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+	addr := ":" + port
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		return err
+	}
+	log.Printf("starting server on %s", listener.Addr())
+	defer listener.Close()
 	return stegoRunTasks(ctx, []stegoTask{
+		{name: "http", run: func(ctx context.Context) error {
+			return stegoServeHTTP(ctx, listener, stegoHTTPServer(mux), 10*time.Second)
+		}},
 		{name: "kafka-producer[0]", run: runtime.Run},
 	})
+}
+
+// stegoHTTPServer sets limits for the generated request-response API.
+func stegoHTTPServer(handler http.Handler) *http.Server {
+	return &http.Server{
+		Handler:           handler,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       60 * time.Second,
+		MaxHeaderBytes:    32 << 10,
+	}
+}
+
+// stegoServeHTTP owns the listener. Shutdown first drains active requests.
+// After the deadline, it closes remaining connections and returns an error.
+func stegoServeHTTP(ctx context.Context, listener net.Listener, server *http.Server, drainTimeout time.Duration) error {
+	defer listener.Close()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	result := make(chan error, 1)
+	go func() { result <- server.Serve(listener) }()
+	select {
+	case err := <-result:
+		return errors.Join(stegoHTTPError(err), server.Close())
+	case <-ctx.Done():
+		drain, cancel := context.WithTimeout(context.Background(), drainTimeout)
+		defer cancel()
+		err := server.Shutdown(drain)
+		if err != nil {
+			err = errors.Join(err, server.Close())
+		}
+		return errors.Join(err, stegoHTTPError(<-result))
+	}
+}
+
+func stegoHTTPError(err error) error {
+	if errors.Is(err, http.ErrServerClosed) {
+		return nil
+	}
+	return err
 }
 
 // stegoTask runs until cancellation. It must return after cancellation.

@@ -487,6 +487,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []User{}, Total: total}, nil
+		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
@@ -539,6 +542,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		var total int64
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []Role{}, Total: total}, nil
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -593,6 +599,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ManagedCluster{}, Total: total}, nil
+		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
@@ -645,6 +654,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		var total int64
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []GatewayRelease{}, Total: total}, nil
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
@@ -699,6 +711,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ManagedDatabase{}, Total: total}, nil
+		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
@@ -752,6 +767,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []Gateway{}, Total: total}, nil
+		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
@@ -804,6 +822,9 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		var total int64
 		if err := query.Count(&total).Error; err != nil {
 			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []RoleBinding{}, Total: total}, nil
 		}
 		for _, ob := range opts.OrderBy {
 			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {

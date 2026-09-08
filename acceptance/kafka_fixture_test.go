@@ -17,6 +17,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/out/events"
 	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kgo"
 )
 
 type Config = events.Config
@@ -102,4 +103,26 @@ func broker(t *testing.T, identity testIdentity, extra ...kfake.Opt) (*kfake.Clu
 	config := identity.config
 	config.Brokers = cluster.ListenAddrs()
 	return cluster, config
+}
+
+func kafkaConsumer(t *testing.T, config Config) *kgo.Client {
+	t.Helper()
+	ca, err := os.ReadFile(config.CAFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	roots := x509.NewCertPool()
+	if !roots.AppendCertsFromPEM(ca) {
+		t.Fatal("invalid test CA")
+	}
+	pair, err := tls.LoadX509KeyPair(config.ClientCertificateFile, config.ClientKeyFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	consumer, err := kgo.NewClient(kgo.SeedBrokers(config.Brokers...), kgo.DialTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, Certificates: []tls.Certificate{pair}}), kgo.ConsumeTopics(config.Topic), kgo.ConsumeResetOffset(kgo.NewOffset().AtStart()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(consumer.Close)
+	return consumer
 }
