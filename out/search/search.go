@@ -280,6 +280,7 @@ func (b *sqlBuilder) predicate(n tsl.Node, depth int) (string, error) {
 	if err := b.checkOperands(n); err != nil {
 		return "", err
 	}
+	previousArgs := len(b.args)
 	l, err := b.value(left, depth+1)
 	if err != nil {
 		return "", err
@@ -310,6 +311,7 @@ func (b *sqlBuilder) predicate(n tsl.Node, depth int) (string, error) {
 		switch n.Func {
 		case tsl.InOp, tsl.NotInOp:
 			if len(parts) == 0 {
+				b.args = b.args[:previousArgs]
 				if n.Func == tsl.InOp {
 					return "FALSE", nil
 				}

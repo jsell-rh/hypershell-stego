@@ -138,7 +138,7 @@ last_applied:
         outbox/queue.go: 6efeff2fa119bcb06c909a144990eb20d95e1ce3b801ed6c19795be75b7fb8b8
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
         search/field_map.go: 064feeda58027fcd687fbbac1eaed669d19338f708d1a58781c1efe224dd1e7b
-        search/search.go: a4593023117c71c9749063164e89aab041fac9000c43457d3a8166ffaae758f9
+        search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: e078de5693bc8790a4f78da819b7698358cfbf9764549694f48b70327422ac36
         storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
