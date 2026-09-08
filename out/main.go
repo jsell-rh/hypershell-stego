@@ -67,6 +67,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	defer handler.Close()
 	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment, source)
 	if err != nil {
 		return err
@@ -92,6 +93,7 @@ func run() error {
 			return stegoServeHTTP(ctx, listener, stegoHTTPServer(mux), 10*time.Second)
 		}},
 		{name: "kafka-producer[0]", run: runtime.Run},
+		{name: "http-application[0]", run: handler.Run},
 		{name: "grpc-application[0]", run: source.Run},
 		{name: "grpc-application[1]", run: gRPCRuntime.Run},
 	})

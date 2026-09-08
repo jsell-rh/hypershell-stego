@@ -96,8 +96,11 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 	return row, nil
 }
 
-// Delete commits the soft deletion and event together. Service-account cleanup
-// must join this workflow when that domain is introduced.
+// Delete locks the Gateway against concurrent service-account reservations.
+// Until provider cleanup is composed into this operation, live account metadata
+// prevents deletion. Callers can delete those accounts through their lifecycle.
+var ErrServiceAccountsExist = errors.New("service accounts require cleanup before Gateway deletion")
+
 func (s *Service) Delete(ctx context.Context, p Principal, id string) error {
 	if err := validatePrincipal(p); err != nil {
 		return err
@@ -105,9 +108,16 @@ func (s *Service) Delete(ctx context.Context, p Principal, id string) error {
 	if !validID(id) {
 		return store.ErrNotFound
 	}
-	return s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+	return s.repository.WithLockedResource(ctx, "Gateway", "id", id, func(ctx context.Context, tx store.Transaction, _ any) error {
 		if _, err := s.mutationTarget(ctx, tx, p, id, true); err != nil {
 			return err
+		}
+		accounts, err := tx.List(ctx, "ServiceAccount", "gateway_id", id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
+		if err != nil {
+			return err
+		}
+		if accounts.Total != 0 {
+			return ErrServiceAccountsExist
 		}
 		if err := tx.Delete(ctx, "Gateway", id); err != nil {
 			return err

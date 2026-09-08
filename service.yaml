@@ -50,6 +50,34 @@ entities:
       - { name: gateway_id, type: ref, to: Gateway, unique_composite: [user_id, role_id, gateway_id] }
       - { name: scope, type: enum, values: [gateway] }
 
+  - name: ServiceAccount
+    fields:
+      - { name: gateway_id, type: ref, to: Gateway, unique_composite: [gateway_id, active_name] }
+      - { name: active_name, type: string, optional: true, unique_composite: [gateway_id, active_name], max_length: 128 }
+      - { name: name, type: string, min_length: 1, max_length: 128 }
+      - { name: description, type: string, optional: true, max_length: 1024 }
+      - { name: credential_type, type: enum, values: [client_secret] }
+      - { name: role, type: enum, values: [openshell-user, openshell-admin] }
+      - { name: status, type: enum, values: [provisioning, ready, degraded, expired, revoking, revoked, deleting, error] }
+      - { name: created_by_user_id, type: ref, to: User }
+      - { name: client_id, type: string, unique: true, max_length: 128 }
+      - { name: client_uuid, type: string, max_length: 255 }
+      - { name: subject, type: string, max_length: 255 }
+      - { name: expires_at, type: timestamp }
+      - { name: revoked_at, type: timestamp, optional: true }
+      - { name: last_error, type: string, optional: true, max_length: 64 }
+      - { name: active, type: bool }
+  - name: ServiceAccountAudit
+    fields:
+      - { name: service_account_id, type: ref, to: ServiceAccount }
+      - { name: gateway_id, type: ref, to: Gateway }
+      - { name: actor_user_id, type: string, max_length: 64 }
+      - { name: creator_user_id, type: ref, to: User }
+      - { name: action, type: string, max_length: 32 }
+      - { name: outcome, type: string, max_length: 32 }
+      - { name: role, type: string, max_length: 32 }
+      - { name: expires_at, type: timestamp }
+
 collections: {}
 slots: []
 
@@ -68,3 +96,5 @@ overrides:
         import_path: hypershell/v1/common.proto
       - path: contracts/reference/proto/hypershell/v1/gateways.proto
         import_path: hypershell/v1/gateways.proto
+      - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
+        import_path: hypershell/provisioner/v1/service_accounts.proto

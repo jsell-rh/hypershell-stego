@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -83,6 +84,20 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	}
 	if verifier == nil || database == nil {
 		return nil, errors.New("HTTP application requires a verifier")
+	}
+	provider, closeProvider, err := serviceaccounts.ProvisionerFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
+	complete := false
+	defer func() {
+		if !complete {
+			closeProvider()
+		}
+	}()
+	accounts, err := serviceaccounts.New(repository, provider)
+	if err != nil {
+		return nil, err
 	}
 	mux := http.NewServeMux()
 	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.CreateRequest, error) {
@@ -192,7 +207,11 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	mux.Handle("POST "+collectionPath, create)
 	mux.Handle("GET "+collectionPath+"/{id}", get)
 	mux.Handle("GET "+collectionPath, list)
-	return mux, nil
+	if err := registerAccounts(mux, verifier, accounts); err != nil {
+		return nil, err
+	}
+	complete = true
+	return &managedApplication{Handler: mux, accounts: accounts, close: closeProvider}, nil
 }
 
 func present(row model.Gateway, creator string) (Gateway, error) {
@@ -291,6 +310,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	code, reason := http.StatusInternalServerError, "An internal error occurred"
 	errorID := 9
 	switch {
+	case errors.Is(err, gateways.ErrServiceAccountsExist):
+		code, reason, errorID = http.StatusConflict, "service accounts require cleanup before Gateway deletion", 6
 	case errors.Is(err, transport.ErrUnauthenticated), errors.Is(err, gateways.ErrIdentity):
 		code, reason = http.StatusUnauthorized, "Authentication is required"
 		errorID = 15

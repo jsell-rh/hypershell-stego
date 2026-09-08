@@ -295,3 +295,12 @@ func validateCreate(r CreateRequest) error {
 	}
 	return nil
 }
+
+// ResolvePrincipal validates a verified principal and supplies its stored User.
+// Domain operations call this through their own transaction boundary.
+func ResolvePrincipal(ctx context.Context, storage store.Storage, principal Principal) (model.User, error) {
+	if err := validatePrincipal(principal); err != nil {
+		return model.User{}, err
+	}
+	return syncUser(ctx, storage, principal)
+}

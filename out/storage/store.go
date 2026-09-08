@@ -156,6 +156,38 @@ func (s *Store) Create(ctx context.Context, entity string, value any) error {
 			return err
 		}
 		return nil
+	case "ServiceAccount":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling ServiceAccount: %w", err)
+		}
+		var v ServiceAccount
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling ServiceAccount: %w", err)
+		}
+		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
+			if isUniqueConstraintError(err) {
+				return stegostorage.ErrConflict
+			}
+			return err
+		}
+		return nil
+	case "ServiceAccountAudit":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling ServiceAccountAudit: %w", err)
+		}
+		var v ServiceAccountAudit
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling ServiceAccountAudit: %w", err)
+		}
+		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
+			if isUniqueConstraintError(err) {
+				return stegostorage.ErrConflict
+			}
+			return err
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown entity: %s", entity)
 	}
@@ -221,6 +253,24 @@ func (s *Store) Get(ctx context.Context, entity string, id string) (any, error) 
 		return v, nil
 	case "RoleBinding":
 		var v RoleBinding
+		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, stegostorage.ErrNotFound
+			}
+			return nil, err
+		}
+		return v, nil
+	case "ServiceAccount":
+		var v ServiceAccount
+		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, stegostorage.ErrNotFound
+			}
+			return nil, err
+		}
+		return v, nil
+	case "ServiceAccountAudit":
+		var v ServiceAccountAudit
 		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, stegostorage.ErrNotFound
@@ -385,6 +435,48 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return stegostorage.ErrNotFound
 		}
 		return nil
+	case "ServiceAccount":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling ServiceAccount: %w", err)
+		}
+		var v ServiceAccount
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling ServiceAccount: %w", err)
+		}
+		v.ID = id
+		result := s.db.WithContext(ctx).Model(&ServiceAccount{}).Where("id = ?", id).Select([]string{"gateway_id", "active_name", "name", "description", "credential_type", "role", "status", "created_by_user_id", "client_id", "client_uuid", "subject", "expires_at", "revoked_at", "last_error", "active"}).Updates(&v)
+		if result.Error != nil {
+			if isUniqueConstraintError(result.Error) {
+				return stegostorage.ErrConflict
+			}
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
+	case "ServiceAccountAudit":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling ServiceAccountAudit: %w", err)
+		}
+		var v ServiceAccountAudit
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling ServiceAccountAudit: %w", err)
+		}
+		v.ID = id
+		result := s.db.WithContext(ctx).Model(&ServiceAccountAudit{}).Where("id = ?", id).Select([]string{"service_account_id", "gateway_id", "actor_user_id", "creator_user_id", "action", "outcome", "role", "expires_at"}).Updates(&v)
+		if result.Error != nil {
+			if isUniqueConstraintError(result.Error) {
+				return stegostorage.ErrConflict
+			}
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
 	default:
 		return fmt.Errorf("unknown entity: %s", entity)
 	}
@@ -450,6 +542,24 @@ func (s *Store) Delete(ctx context.Context, entity string, id string) error {
 		return nil
 	case "RoleBinding":
 		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&RoleBinding{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
+	case "ServiceAccount":
+		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&ServiceAccount{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
+	case "ServiceAccountAudit":
+		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&ServiceAccountAudit{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -993,6 +1103,154 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
+	case "ServiceAccount":
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
+		query := s.db.WithContext(ctx).Model(&ServiceAccount{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
+		query, err := s.applyRelated(ctx, query, "ServiceAccount", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		if scopeField != "" && scopeValue != "" {
+			if !validCols[scopeField] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ServiceAccount", scopeField)
+			}
+			query = query.Where(scopeField+" = ?", scopeValue)
+		}
+		for field, value := range opts.ImplicitFilters {
+			if !validCols[field] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ServiceAccount", field)
+			}
+			query = query.Where(field+" = ?", value)
+		}
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("ServiceAccount", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
+		}
+		for _, ob := range opts.OrderBy {
+			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
+			}
+			if validCols[ob.Field] {
+				query = query.Order(ob.Field + " " + ob.Direction)
+			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ServiceAccount{}, Total: total}, nil
+		}
+		if len(opts.Fields) > 0 {
+			// Always include id; add requested fields that exist.
+			selectCols := []string{"id"}
+			for _, f := range opts.Fields {
+				if validCols[f] {
+					selectCols = append(selectCols, f)
+				}
+			}
+			query = query.Select(selectCols)
+		}
+		offset := (opts.Page - 1) * opts.Size
+		if offset > 0 {
+			query = query.Offset(offset)
+		}
+		if opts.Size > 0 {
+			query = query.Limit(opts.Size)
+		}
+		var result []ServiceAccount
+		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		return stegostorage.ListResult{Items: result, Total: total}, nil
+	case "ServiceAccountAudit":
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
+		query := s.db.WithContext(ctx).Model(&ServiceAccountAudit{})
+		if opts.IncludeDeleted {
+			query = query.Unscoped()
+		}
+		query, err := s.applyRelated(ctx, query, "ServiceAccountAudit", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		if scopeField != "" && scopeValue != "" {
+			if !validCols[scopeField] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ServiceAccountAudit", scopeField)
+			}
+			query = query.Where(scopeField+" = ?", scopeValue)
+		}
+		for field, value := range opts.ImplicitFilters {
+			if !validCols[field] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ServiceAccountAudit", field)
+			}
+			query = query.Where(field+" = ?", value)
+		}
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("ServiceAccountAudit", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
+		}
+		for _, ob := range opts.OrderBy {
+			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
+			}
+			if validCols[ob.Field] {
+				query = query.Order(ob.Field + " " + ob.Direction)
+			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []ServiceAccountAudit{}, Total: total}, nil
+		}
+		if len(opts.Fields) > 0 {
+			// Always include id; add requested fields that exist.
+			selectCols := []string{"id"}
+			for _, f := range opts.Fields {
+				if validCols[f] {
+					selectCols = append(selectCols, f)
+				}
+			}
+			query = query.Select(selectCols)
+		}
+		offset := (opts.Page - 1) * opts.Size
+		if offset > 0 {
+			query = query.Offset(offset)
+		}
+		if opts.Size > 0 {
+			query = query.Limit(opts.Size)
+		}
+		var result []ServiceAccountAudit
+		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		return stegostorage.ListResult{Items: result, Total: total}, nil
 	default:
 		return stegostorage.ListResult{}, fmt.Errorf("unknown entity: %s", entity)
 	}
@@ -1082,6 +1340,40 @@ func (s *Store) applyRelated(ctx context.Context, query *gorm.DB, target string,
 			}
 			related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
 			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
+		case "ServiceAccount":
+			switch filter.ForeignField {
+			case "gateway_id":
+				if target != "Gateway" {
+					return nil, fmt.Errorf("related filter target does not match its reference")
+				}
+			case "created_by_user_id":
+				if target != "User" {
+					return nil, fmt.Errorf("related filter target does not match its reference")
+				}
+			default:
+				return nil, fmt.Errorf("related filter requires a declared reference")
+			}
+			related = s.db.WithContext(ctx).Model(&ServiceAccount{}).Select(filter.ForeignField)
+			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
+		case "ServiceAccountAudit":
+			switch filter.ForeignField {
+			case "service_account_id":
+				if target != "ServiceAccount" {
+					return nil, fmt.Errorf("related filter target does not match its reference")
+				}
+			case "gateway_id":
+				if target != "Gateway" {
+					return nil, fmt.Errorf("related filter target does not match its reference")
+				}
+			case "creator_user_id":
+				if target != "User" {
+					return nil, fmt.Errorf("related filter target does not match its reference")
+				}
+			default:
+				return nil, fmt.Errorf("related filter requires a declared reference")
+			}
+			related = s.db.WithContext(ctx).Model(&ServiceAccountAudit{}).Select(filter.ForeignField)
+			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
 		default:
 			return nil, fmt.Errorf("unknown related entity")
 		}
@@ -1592,6 +1884,142 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			return false, err
 		}
 		return created, nil
+	case "ServiceAccount":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return false, fmt.Errorf("marshaling ServiceAccount: %w", err)
+		}
+		var v ServiceAccount
+		if err := json.Unmarshal(data, &v); err != nil {
+			return false, fmt.Errorf("unmarshaling ServiceAccount: %w", err)
+		}
+		validCols := map[string]bool{"gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
+		for _, k := range upsertKey {
+			if !validCols[k] {
+				return false, fmt.Errorf("invalid upsert key field %q for entity ServiceAccount", k)
+			}
+		}
+		conflictCols := make([]clause.Column, len(upsertKey))
+		for i, k := range upsertKey {
+			conflictCols[i] = clause.Column{Name: k}
+		}
+		keySet := make(map[string]bool, len(upsertKey))
+		for _, k := range upsertKey {
+			keySet[k] = true
+		}
+		var updateCols []string
+		for _, col := range []string{"gateway_id", "active_name", "name", "description", "credential_type", "role", "status", "created_by_user_id", "client_id", "client_uuid", "subject", "expires_at", "revoked_at", "last_error", "active"} {
+			if !keySet[col] {
+				updateCols = append(updateCols, col)
+			}
+		}
+		onConflict := clause.OnConflict{
+			Columns: conflictCols,
+		}
+		if len(updateCols) > 0 {
+			onConflict.DoUpdates = clause.AssignmentColumns(updateCols)
+			if concurrency == "optimistic" {
+				return false, fmt.Errorf("optimistic concurrency requires a 'generation' field on entity ServiceAccount")
+			}
+		} else {
+			onConflict.DoNothing = true
+		}
+		var created bool
+		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			var valueMap map[string]any
+			if err := json.Unmarshal(data, &valueMap); err != nil {
+				return fmt.Errorf("unmarshaling ServiceAccount to map: %w", err)
+			}
+			whereClause := make(map[string]any, len(upsertKey))
+			for _, k := range upsertKey {
+				whereClause[k] = valueMap[k]
+			}
+			var existingCount int64
+			if err := tx.Model(&ServiceAccount{}).Where(whereClause).Count(&existingCount).Error; err != nil {
+				return err
+			}
+			result := tx.Clauses(onConflict).Create(&v)
+			if result.Error != nil {
+				return result.Error
+			}
+			if concurrency == "optimistic" && result.RowsAffected == 0 {
+				return stegostorage.ErrConflict
+			}
+			created = existingCount == 0
+			return nil
+		}, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		if err != nil {
+			return false, err
+		}
+		return created, nil
+	case "ServiceAccountAudit":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return false, fmt.Errorf("marshaling ServiceAccountAudit: %w", err)
+		}
+		var v ServiceAccountAudit
+		if err := json.Unmarshal(data, &v); err != nil {
+			return false, fmt.Errorf("unmarshaling ServiceAccountAudit: %w", err)
+		}
+		validCols := map[string]bool{"service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
+		for _, k := range upsertKey {
+			if !validCols[k] {
+				return false, fmt.Errorf("invalid upsert key field %q for entity ServiceAccountAudit", k)
+			}
+		}
+		conflictCols := make([]clause.Column, len(upsertKey))
+		for i, k := range upsertKey {
+			conflictCols[i] = clause.Column{Name: k}
+		}
+		keySet := make(map[string]bool, len(upsertKey))
+		for _, k := range upsertKey {
+			keySet[k] = true
+		}
+		var updateCols []string
+		for _, col := range []string{"service_account_id", "gateway_id", "actor_user_id", "creator_user_id", "action", "outcome", "role", "expires_at"} {
+			if !keySet[col] {
+				updateCols = append(updateCols, col)
+			}
+		}
+		onConflict := clause.OnConflict{
+			Columns: conflictCols,
+		}
+		if len(updateCols) > 0 {
+			onConflict.DoUpdates = clause.AssignmentColumns(updateCols)
+			if concurrency == "optimistic" {
+				return false, fmt.Errorf("optimistic concurrency requires a 'generation' field on entity ServiceAccountAudit")
+			}
+		} else {
+			onConflict.DoNothing = true
+		}
+		var created bool
+		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			var valueMap map[string]any
+			if err := json.Unmarshal(data, &valueMap); err != nil {
+				return fmt.Errorf("unmarshaling ServiceAccountAudit to map: %w", err)
+			}
+			whereClause := make(map[string]any, len(upsertKey))
+			for _, k := range upsertKey {
+				whereClause[k] = valueMap[k]
+			}
+			var existingCount int64
+			if err := tx.Model(&ServiceAccountAudit{}).Where(whereClause).Count(&existingCount).Error; err != nil {
+				return err
+			}
+			result := tx.Clauses(onConflict).Create(&v)
+			if result.Error != nil {
+				return result.Error
+			}
+			if concurrency == "optimistic" && result.RowsAffected == 0 {
+				return stegostorage.ErrConflict
+			}
+			created = existingCount == 0
+			return nil
+		}, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		if err != nil {
+			return false, err
+		}
+		return created, nil
 	default:
 		return false, fmt.Errorf("unknown entity: %s", entity)
 	}
@@ -1639,6 +2067,18 @@ func (s *Store) Exists(ctx context.Context, entity string, id string) (bool, err
 	case "RoleBinding":
 		var count int64
 		if err := s.db.WithContext(ctx).Model(&RoleBinding{}).Where("id = ?", id).Count(&count).Error; err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	case "ServiceAccount":
+		var count int64
+		if err := s.db.WithContext(ctx).Model(&ServiceAccount{}).Where("id = ?", id).Count(&count).Error; err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	case "ServiceAccountAudit":
+		var count int64
+		if err := s.db.WithContext(ctx).Model(&ServiceAccountAudit{}).Where("id = ?", id).Count(&count).Error; err != nil {
 			return false, err
 		}
 		return count > 0, nil

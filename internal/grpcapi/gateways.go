@@ -162,6 +162,8 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 }
 func mapError(err error) error {
 	switch {
+	case errors.Is(err, gateways.ErrServiceAccountsExist):
+		return status.Error(codes.FailedPrecondition, "service accounts require cleanup before Gateway deletion")
 	case errors.Is(err, gateways.ErrIdentity):
 		return status.Error(codes.Unauthenticated, "authentication is required")
 	case errors.Is(err, gateways.ErrForbidden):

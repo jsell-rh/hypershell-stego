@@ -52,7 +52,7 @@ func token(t testing.TB, key *rsa.PrivateKey, user string, roles ...string) stri
 	}
 	return value
 }
-func requestJSON(t *testing.T, method, address, bearer string, body []byte) (int, []byte) {
+func requestJSON(t testing.TB, method, address, bearer string, body []byte) (int, []byte) {
 	t.Helper()
 	request, err := http.NewRequest(method, address, bytes.NewReader(body))
 	if err != nil {

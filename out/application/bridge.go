@@ -3,17 +3,63 @@
 package application
 
 import (
+	"context"
 	"database/sql"
+	"errors"
 	application "github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"net/http"
+	"sync"
 )
 
 // Repository supplies operations and one atomic commit boundary.
 type Repository = storage.Repository
 
+// ManagedHandler adds application tasks and cleanup to the generated supervisor.
+type ManagedHandler interface {
+	http.Handler
+	Run(context.Context) error
+	Close()
+}
+type Runtime struct {
+	http.Handler
+	managed   ManagedHandler
+	closeOnce sync.Once
+}
+
+func (r *Runtime) Run(ctx context.Context) error {
+	if r.managed != nil {
+		return r.managed.Run(ctx)
+	}
+	<-ctx.Done()
+	return nil
+}
+func (r *Runtime) Close() {
+	r.closeOnce.Do(func() {
+		if r.managed != nil {
+			r.managed.Close()
+		}
+	})
+}
+
 // NewHandler connects application code to compiler-owned resources.
-func NewHandler(repository Repository, verifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
-	return application.New(repository, verifier, database)
+func NewHandler(repository Repository, verifier *auth.Verifier, database *sql.DB) (*Runtime, error) {
+	handler, err := application.New(repository, verifier, database)
+	if err != nil {
+		return nil, err
+	}
+	if handler == nil {
+		return nil, errors.New("application returned no handler")
+	}
+	managed, _ := any(handler).(ManagedHandler)
+	_, hasRun := any(handler).(interface{ Run(context.Context) error })
+	closer, hasClose := any(handler).(interface{ Close() })
+	if hasRun != hasClose {
+		if hasClose {
+			closer.Close()
+		}
+		return nil, errors.New("application lifecycle requires both Run and Close")
+	}
+	return &Runtime{Handler: handler, managed: managed}, nil
 }

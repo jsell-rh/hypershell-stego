@@ -100,3 +100,41 @@ type RoleBinding struct {
 	GatewayIDRef *Gateway `json:"-" gorm:"foreignKey:GatewayID"`
 	Scope        string   `json:"scope" gorm:"column:scope;not null"`
 }
+
+// ServiceAccount represents the ServiceAccount entity.
+type ServiceAccount struct {
+	Meta
+	GatewayID          string     `json:"gateway_id" gorm:"column:gateway_id;not null;uniqueIndex:composite_gateway_id_active_name"`
+	GatewayIDRef       *Gateway   `json:"-" gorm:"foreignKey:GatewayID"`
+	ActiveName         *string    `json:"active_name,omitempty" gorm:"column:active_name;uniqueIndex:composite_gateway_id_active_name;size:128"`
+	Name               string     `json:"name" gorm:"column:name;not null;size:128;check:length(name) >= 1"`
+	Description        *string    `json:"description,omitempty" gorm:"column:description;size:1024"`
+	CredentialType     string     `json:"credential_type" gorm:"column:credential_type;not null"`
+	Role               string     `json:"role" gorm:"column:role;not null"`
+	Status             string     `json:"status" gorm:"column:status;not null"`
+	CreatedByUserID    string     `json:"created_by_user_id" gorm:"column:created_by_user_id;not null"`
+	CreatedByUserIDRef *User      `json:"-" gorm:"foreignKey:CreatedByUserID"`
+	ClientID           string     `json:"client_id" gorm:"column:client_id;not null;uniqueIndex;size:128"`
+	ClientUuid         string     `json:"client_uuid" gorm:"column:client_uuid;not null;size:255"`
+	Subject            string     `json:"subject" gorm:"column:subject;not null;size:255"`
+	ExpiresAt          time.Time  `json:"expires_at" gorm:"column:expires_at;not null"`
+	RevokedAt          *time.Time `json:"revoked_at,omitempty" gorm:"column:revoked_at"`
+	LastError          *string    `json:"last_error,omitempty" gorm:"column:last_error;size:64"`
+	Active             bool       `json:"active" gorm:"column:active;not null"`
+}
+
+// ServiceAccountAudit represents the ServiceAccountAudit entity.
+type ServiceAccountAudit struct {
+	Meta
+	ServiceAccountID    string          `json:"service_account_id" gorm:"column:service_account_id;not null"`
+	ServiceAccountIDRef *ServiceAccount `json:"-" gorm:"foreignKey:ServiceAccountID"`
+	GatewayID           string          `json:"gateway_id" gorm:"column:gateway_id;not null"`
+	GatewayIDRef        *Gateway        `json:"-" gorm:"foreignKey:GatewayID"`
+	ActorUserID         string          `json:"actor_user_id" gorm:"column:actor_user_id;not null;size:64"`
+	CreatorUserID       string          `json:"creator_user_id" gorm:"column:creator_user_id;not null"`
+	CreatorUserIDRef    *User           `json:"-" gorm:"foreignKey:CreatorUserID"`
+	Action              string          `json:"action" gorm:"column:action;not null;size:32"`
+	Outcome             string          `json:"outcome" gorm:"column:outcome;not null;size:32"`
+	Role                string          `json:"role" gorm:"column:role;not null;size:32"`
+	ExpiresAt           time.Time       `json:"expires_at" gorm:"column:expires_at;not null"`
+}

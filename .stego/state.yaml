@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: 7e06db134fec2af615d085347f643e7dcaa566dd6f4e12328afff1ef673cd1f3
+    service_hash: 9700f3407f6f075bb488af1cab86729f741c9f7474b450cfd6ceddfae855ea05
     registry_sha: gateway-workflow
     components:
         grpc-application:
@@ -111,6 +111,77 @@ last_applied:
             - name: scope
               type: enum
               hash: ff12b7d84505998e5d1935ab8fdc0c8d8953596594c21fe41677ffb455a74f51
+        ServiceAccount:
+            - name: gateway_id
+              type: ref
+              hash: 13324b34fa11b3d48b5e155f6f48ad07786da279c888c74bd855e8aeb4d30794
+            - name: active_name
+              type: string
+              hash: bdf4f9655e9d5920216ee47f6391a36e0836ea6ebc048ffe46b53154df146904
+            - name: name
+              type: string
+              hash: a2c242e0ff30ce14931780b9e8e6212740af9657483198529d135136ee97b45d
+            - name: description
+              type: string
+              hash: 1feffe68f016503e30825b6af52941118280c5b35cacfdbca61a6851d3ee37f9
+            - name: credential_type
+              type: enum
+              hash: f01b79b75a05dba6e73a5cdb2b4e1a8fc59959813be32f27859d14b84b2208d4
+            - name: role
+              type: enum
+              hash: 08bf574ef3c8b3e76d00bbe99f143b95566da929e2f5d065db7f71dc626dc09f
+            - name: status
+              type: enum
+              hash: a24af57d2d24779d1c9db9e75c3d6f85d49088a2b9441fda5c5cebc10e18af62
+            - name: created_by_user_id
+              type: ref
+              hash: dde34581e425f75f427130920092454235690c71c3a351ab7d7a77dc577207c3
+            - name: client_id
+              type: string
+              hash: 4b7d9a0bc95b3f5ab37201c3cabe64189fa12cfef1c36359ed974d999c9921fe
+            - name: client_uuid
+              type: string
+              hash: cf10b13ea447107588fa9f8fa2eaa6942617e7f458b6f4f186483e3851435af5
+            - name: subject
+              type: string
+              hash: bb9ae476e0a595223fe5be9a3bd134ac97c429202099a56c65c57f1b23d182e9
+            - name: expires_at
+              type: timestamp
+              hash: 238f0fdadee84e7c1bd0dc7f28c4b42c377e21bc67d5e60bcee73df79171c7a2
+            - name: revoked_at
+              type: timestamp
+              hash: 6fcf3b8c307df23446d86a8f6f92c0422d0169db6b303589c811a30aaa3a257a
+            - name: last_error
+              type: string
+              hash: f9136e13cf19e6ecd5b09a738f4fd75f3e36e65a4fd79853514f27eee0998466
+            - name: active
+              type: bool
+              hash: ba370dc088c87d14062fb59975fe4fe2ec861a2e5ba30a60abf2f63eff114169
+        ServiceAccountAudit:
+            - name: service_account_id
+              type: ref
+              hash: ad7b5f095e7191cf4a582345b43b2f41b028e358cf63475c9bb0be079cf9f218
+            - name: gateway_id
+              type: ref
+              hash: b084d95f7ba2043b4eb6d7c0fa6258e1f7eacceaa534b72d96cd5db15cb93b8b
+            - name: actor_user_id
+              type: string
+              hash: 4c9a88ced7a3983760def84c7b0597b7c964f2fca7e40b8daa7e7a424537838a
+            - name: creator_user_id
+              type: ref
+              hash: 772e2ba97db474360452d8b5afc897ad9fde9b825f7644d321a4d1ef850dafdb
+            - name: action
+              type: string
+              hash: 7d809c132125022f8395140bb1ebc73eaf5b0c45e6ddb9d150514c81893d49fd
+            - name: outcome
+              type: string
+              hash: 852f9b74a42147b6dac76868ae72e205cf91f84f4d7b61dbe916ca54ea97dec1
+            - name: role
+              type: string
+              hash: 63515fccbebf84a7d997de580420fba01b3900dd873ebc3b9cc650a50fbda85b
+            - name: expires_at
+              type: timestamp
+              hash: 238f0fdadee84e7c1bd0dc7f28c4b42c377e21bc67d5e60bcee73df79171c7a2
         User:
             - name: username
               type: string
@@ -122,28 +193,31 @@ last_applied:
               type: string
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
-        application/bridge.go: b94350af9a4c13cb294f7f13c41204768995d8122e30e4b73a28c00447499148
-        application/transport/endpoint.go: 65c5ffadd5ae2f49a305e654a3cdce68fcefc955d2e3e84cad12dcd4d77d8ca7
+        application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
+        application/transport/endpoint.go: a3a239430bee46fb7e98b248135ff48671692bf61f3a22196f4a3d2bac2778b5
         auth/middleware.go: d0070a69277aa7b198b664a7e88368fc3be4b9494146a1e10861a6b36c17eead
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d69d379a2db901ed2e8bc06e15b86b43a6b51e7da15bbe04174720ee6977e195
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
+        grpcapi/client/client.go: 7adc4f92a73837ae3b69b583b468079e9f7e5171dbb913c68f473fc6cec111b2
+        grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
+        grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
         grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e
         grpcapi/pb/hypershell/v1/gateways.pb.go: 4104a8ad6413ef2fffd03f98fde05a9940b23abf0548216410cb9315c19c1394
         grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
         grpcapi/transport/runtime.go: 1e51327091e797b1af4eb76270f55f0669b0cfb6d7b1e2c1f4e2c9d61daffe18
-        main.go: 369a441c2e806542840f841360e59ebb34106cdc245fdc4edb33b1f8958ecde7
+        main.go: a79aa692fd0fb155a40a7bf51f827f087de1f36070b3d17a5304e375aa984074
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
-        search/field_map.go: 064feeda58027fcd687fbbac1eaed669d19338f708d1a58781c1efe224dd1e7b
+        search/field_map.go: c20096ba32392b40a4ec0fec0c2638bd987d1cab4e4ba32a9459f31b6aaa85c6
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
-        storage/migrate.go: e078de5693bc8790a4f78da819b7698358cfbf9764549694f48b70327422ac36
-        storage/models.go: 93a2854e7fc6dd66dedd568995a99ba5f92f718352f20f3a45135c7d16e50b11
+        storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
+        storage/models.go: 10d4351701557315260709a16d5eb759335cf554b396e0cbe1ea46ff882929d4
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: b5c7f8fce90d577d1b0c6da1eb6427b43b3a61b861350c47b2a387adb919e0ae
-        storage/transaction.go: d47847ba0463101b46ff4cfa8ef9f163b075bc536b9e1cd3db028c45a3feb26f
+        storage/store.go: d802c1754489ee23862014a5a627ff6e55f44f56e64f347374f176f9096f9cb3
+        storage/transaction.go: fe1319d0e90680c5d27d03635679c4ba7a7572c6e5ac42b883f9914836cb301f

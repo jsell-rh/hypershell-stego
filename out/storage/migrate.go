@@ -44,6 +44,8 @@ func init() {
 			&ManagedDatabase{},
 			&Gateway{},
 			&RoleBinding{},
+			&ServiceAccount{},
+			&ServiceAccountAudit{},
 		)
 	})
 }

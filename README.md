@@ -93,7 +93,8 @@ establish production capacity.
 Gateway patches require an owner grant on that Gateway. Admin status alone does
 not allow a patch. Owners and admins can delete a Gateway. Denied mutations
 return the same not-found result as a missing Gateway. Each mutation checks
-access and writes the resource and its event in one serializable transaction.
+access and commits the resource and its event together. Patches use a serializable
+transaction. Deletion locks the Gateway row against account reservations.
 A concurrent write can produce HTTP 409 or gRPC `Aborted`; callers must retry
 from the start. STEGO does not replay the transaction callback.
 
@@ -112,9 +113,10 @@ empty by default. Usernames and role names do not grant this access. REST has no
 console-address patch field. This subject allowlist is the current design
 assumption; the requested identity-policy decision remains open.
 
-Deletion currently covers the stored Gateway and event. The service-account
-workflow is not implemented. Its cleanup and creation barrier must be connected
-before this variant can delete Gateways that have external service accounts.
+Gateway deletion refuses a Gateway that still has live service-account metadata.
+Delete those accounts first. The shared Gateway row lock prevents a concurrent
+account reservation from bypassing this guard. Automatic provider cleanup within
+Gateway deletion remains required for full reference compatibility.
 
 The gRPC `AdjustActiveSandboxCount` and `SetActiveSandboxCount` methods now use
 STEGO's resource-locking transaction. Only configured control-plane subjects
@@ -131,3 +133,10 @@ REST and gRPC Gateway reads expose the same count. Relative adjustments do not
 have request deduplication: after a connection failure with an uncertain result,
 a caller must reconcile the observed count instead of assuming a retry is safe.
 The control-plane reconciliation workflow still needs to be ported.
+
+Service-account create, list, get, revoke, and delete now run through the generated
+HTTP process and a TLS provisioner client. Only creation returns a client secret.
+Pending operations recover after restart. Recovery also enforces expiration and
+the creator's current Gateway grant. See [service-account evidence and limits](acceptance/service-accounts.md).
+The current acceptance provider is a gRPC fixture. The actual Keycloak adapter,
+complete list filters, automatic Gateway cleanup, and client ports remain open.

@@ -143,3 +143,9 @@ Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9 185H. The measurement excl
 startup and TLS connection setup. It does not establish concurrent capacity,
 latency percentiles, or server memory use. Run
 `go test -run '^$' -bench '^BenchmarkGRPCGatewayWatch$' -benchtime=100x ./acceptance`.
+
+The [service-account workflow](service-accounts.md) now covers a separate domain
+through the generated REST process, TLS unary RPC client, storage, and recovery
+task. It includes one-time secrets, role limits, pending revoke and delete,
+audit failures, creator-grant changes, expiration, and restart. The provider is
+a protocol fixture; the Keycloak implementation and production limits remain open.
