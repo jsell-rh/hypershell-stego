@@ -1,0 +1,230 @@
+openapi: 3.0.3
+info:
+  title: HyperShell API
+  description: HyperShell gateway management API
+  version: "1.0.0"
+  license:
+    name: Apache-2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+servers:
+  - url: http://localhost:8000
+    description: localhost
+  - url: /
+    description: current domain
+tags:
+  - name: default
+    description: Default API operations
+paths:
+  /api/hypershell/v1/metadata:
+    get:
+      summary: Service metadata
+      operationId: getMetadata
+      responses:
+        '200':
+          description: Service metadata
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ObjectReference'
+  /api/hypershell/v1/managed_clusters:
+    $ref: 'openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters'
+  /api/hypershell/v1/managed_clusters/{id}:
+    $ref: 'openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters~1{id}'
+  /api/hypershell/v1/managed_databases:
+    $ref: 'openapi.managedDatabases.yaml#/paths/~1api~1hypershell~1v1~1managed_databases'
+  /api/hypershell/v1/managed_databases/{id}:
+    $ref: 'openapi.managedDatabases.yaml#/paths/~1api~1hypershell~1v1~1managed_databases~1{id}'
+  /api/hypershell/v1/gateway_releases:
+    $ref: 'openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases'
+  /api/hypershell/v1/gateway_releases/{id}:
+    $ref: 'openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases~1{id}'
+  /api/hypershell/v1/gateways:
+    $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways'
+  /api/hypershell/v1/gateways/{id}:
+    $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{id}'
+  /api/hypershell/v1/gateways/{gateway_id}/service_accounts:
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts'
+  /api/hypershell/v1/gateways/{gateway_id}/service_accounts/{service_account_id}:
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}'
+  /api/hypershell/v1/gateways/{gateway_id}/service_accounts/{service_account_id}/revoke:
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}~1revoke'
+  /api/hypershell/v1/gateway_networks:
+    $ref: 'openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks'
+  /api/hypershell/v1/gateway_networks/{id}:
+    $ref: 'openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks~1{id}'
+  /api/hypershell/v1/roles:
+    $ref: 'openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles'
+  /api/hypershell/v1/roles/{id}:
+    $ref: 'openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles~1{id}'
+  /api/hypershell/v1/role_bindings:
+    $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings'
+  /api/hypershell/v1/role_bindings/{id}:
+    $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings~1{id}'
+  # AUTO-ADD NEW PATHS
+components:
+  schemas:
+    List:
+      allOf:
+        - type: object
+          properties:
+            kind:
+              type: string
+            page:
+              type: integer
+            size:
+              type: integer
+            total:
+              type: integer
+        - $ref: '#/components/schemas/ObjectReference'
+    ObjectReference:
+      type: object
+      properties:
+        id:
+          type: string
+        kind:
+          type: string
+        href:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Error:
+      allOf:
+        - $ref: '#/components/schemas/ObjectReference'
+        - type: object
+          properties:
+            code:
+              type: string
+            reason:
+              type: string
+            operation_id:
+              type: string
+    ManagedCluster:
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedCluster'
+    ManagedClusterList:
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedClusterList'
+    ManagedClusterPatchRequest:
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedClusterPatchRequest'
+    ManagedDatabase:
+      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabase'
+    ManagedDatabaseList:
+      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabaseList'
+    ManagedDatabasePatchRequest:
+      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabasePatchRequest'
+    GatewayRelease:
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayRelease'
+    GatewayReleaseList:
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayReleaseList'
+    GatewayReleasePatchRequest:
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayReleasePatchRequest'
+    Gateway:
+      $ref: 'openapi.gateways.yaml#/components/schemas/Gateway'
+    GatewayList:
+      $ref: 'openapi.gateways.yaml#/components/schemas/GatewayList'
+    GatewayPatchRequest:
+      $ref: 'openapi.gateways.yaml#/components/schemas/GatewayPatchRequest'
+    OpenShellGatewayServiceAccountRole:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountRole'
+    OpenShellGatewayServiceAccountStatus:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountStatus'
+    OpenShellGatewayServiceAccountCreateRequest:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateRequest'
+    OpenShellGatewayServiceAccountListItem:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountListItem'
+    OpenShellGatewayServiceAccountConnection:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountConnection'
+    OpenShellGatewayServiceAccountCredential:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCredential'
+    OpenShellGatewayServiceAccountGetResponse:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountGetResponse'
+    OpenShellGatewayServiceAccountCreateResponse:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateResponse'
+    OpenShellGatewayServiceAccountExpirationPolicy:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountExpirationPolicy'
+    OpenShellGatewayServiceAccountCapabilities:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCapabilities'
+    OpenShellGatewayServiceAccountList:
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountList'
+    GatewayNetwork:
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetwork'
+    GatewayNetworkList:
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkList'
+    GatewayNetworkPatchRequest:
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkPatchRequest'
+    Role:
+      $ref: 'openapi.roles.yaml#/components/schemas/Role'
+    RoleList:
+      $ref: 'openapi.roles.yaml#/components/schemas/RoleList'
+    RoleBinding:
+      $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBinding'
+    RoleBindingList:
+      $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBindingList'
+    # AUTO-ADD NEW SCHEMAS
+  parameters:
+    id:
+      name: id
+      in: path
+      description: The id of record
+      required: true
+      schema:
+        type: string
+    page:
+      name: page
+      in: query
+      description: Page number of record list when record list exceeds specified page size
+      schema:
+        type: integer
+        default: 1
+        minimum: 1
+      required: false
+    size:
+      name: size
+      in: query
+      description: Maximum number of records to return
+      schema:
+        type: integer
+        default: 100
+        minimum: 0
+      required: false
+    search:
+      name: search
+      in: query
+      required: false
+      description: Specifies the search criteria
+      schema:
+        type: string
+    orderBy:
+      name: orderBy
+      in: query
+      required: false
+      description: Specifies the order by criteria
+      schema:
+        type: string
+    fields:
+      name: fields
+      in: query
+      required: false
+      description: Supplies a comma-separated list of fields to be returned
+      schema:
+        type: string
+  responses:
+    UnauthorizedError:
+      description: Access token is missing or invalid
+    ForbiddenError:
+      description: Access token does not have sufficient privileges
+    InternalServerError:
+      description: Unexpected error occurred
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+  securitySchemes:
+    Bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+security:
+  - Bearer: []

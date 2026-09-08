@@ -1,0 +1,156 @@
+syntax = "proto3";
+
+package hypershell.v1;
+
+option go_package = "github.com/openshift-online/hypershell/components/api-server/pkg/api/grpc/hypershell/v1;hypershell_v1";
+
+import "hypershell/v1/common.proto";
+
+message Gateway {
+  ObjectReference metadata = 1;
+  string name = 2;
+  reserved 3;
+  reserved "fleet_id";
+  string cluster_id = 4;
+  string release_id = 5;
+  string database_id = 6;
+  string namespace = 7;
+  optional string external_dns = 8;
+  optional string tls_mode = 9;
+  optional string service_type = 10;
+  optional string status = 11;
+  optional string phase = 12;
+  optional string image = 13;
+  optional string supervisor_image = 19;
+  repeated string server_dns_names = 14;
+  optional string route_address = 15;
+  optional string oidc = 16;
+  optional string route = 17;
+  optional string credential_driver = 20;
+  optional int32 active_sandbox_count = 21;
+  optional string console_address = 22;
+}
+
+message CreateGatewayRequest {
+  string name = 1;
+  reserved 2;
+  reserved "fleet_id";
+  string cluster_id = 3;
+  string release_id = 4;
+  string database_id = 5;
+  optional string external_dns = 6;
+  optional string tls_mode = 7;
+  optional string service_type = 8;
+  optional string status = 9;
+  optional string phase = 10;
+  optional string image = 11;
+  optional string supervisor_image = 12;
+  repeated string server_dns_names = 13;
+  optional string oidc = 14;
+  optional string route = 15;
+  optional string credential_driver = 17;
+}
+
+message CreateGatewayResponse {
+  Gateway gateway = 1;
+}
+
+message GetGatewayRequest {
+  string id = 1;
+}
+
+message GetGatewayResponse {
+  Gateway gateway = 1;
+}
+
+message UpdateGatewayRequest {
+  string id = 1;
+  optional string name = 2;
+  reserved 3;
+  reserved "fleet_id";
+  optional string cluster_id = 4;
+  optional string release_id = 5;
+  optional string database_id = 6;
+  optional string external_dns = 7;
+  optional string tls_mode = 8;
+  optional string service_type = 9;
+  optional string status = 10;
+  optional string phase = 11;
+  optional string image = 12;
+  optional string supervisor_image = 13;
+  repeated string server_dns_names = 14;
+  optional string route_address = 15;
+  optional string oidc = 16;
+  optional string route = 17;
+  optional string credential_driver = 19;
+  // active_sandbox_count is intentionally absent: the count is control-plane
+  // owned and written only through AdjustActiveSandboxCount / SetActiveSandboxCount
+  // so the whole-row UpdateGateway path can never clobber it. See
+  // openshell-gateway-sandbox-count.spec.md.
+  optional string console_address = 20;
+}
+
+message UpdateGatewayResponse {
+  Gateway gateway = 1;
+}
+
+// AdjustActiveSandboxCountRequest applies a relative delta to a gateway's
+// active_sandbox_count, keyed by the gateway's namespace. Deltas are applied
+// atomically at the database and the stored count is floored at zero.
+message AdjustActiveSandboxCountRequest {
+  string namespace = 1;
+  int32 delta = 2;
+}
+
+message AdjustActiveSandboxCountResponse {
+  // The resulting count after the adjustment. Zero when no live gateway backs
+  // the namespace (the adjustment is a no-op in that case).
+  int32 active_sandbox_count = 1;
+}
+
+// SetActiveSandboxCountRequest sets a gateway's active_sandbox_count to an
+// absolute observed value, keyed by the gateway's namespace. Used by the
+// periodic self-heal that reconciles the stored count to the watch cache.
+message SetActiveSandboxCountRequest {
+  string namespace = 1;
+  int32 count = 2;
+}
+
+message SetActiveSandboxCountResponse {
+  int32 active_sandbox_count = 1;
+}
+
+message DeleteGatewayRequest {
+  string id = 1;
+}
+
+message ListGatewaysRequest {
+  int32 page = 1;
+  int32 size = 2;
+}
+
+message ListGatewaysResponse {
+  repeated Gateway items = 1;
+  ListMeta metadata = 2;
+}
+
+message DeleteGatewayResponse {}
+
+message WatchGatewaysRequest {}
+
+message WatchGatewaysResponse {
+  EventType type = 1;
+  Gateway gateway = 2;
+  string resource_id = 3;
+}
+
+service GatewayService {
+  rpc GetGateway(GetGatewayRequest) returns (GetGatewayResponse);
+  rpc CreateGateway(CreateGatewayRequest) returns (CreateGatewayResponse);
+  rpc UpdateGateway(UpdateGatewayRequest) returns (UpdateGatewayResponse);
+  rpc DeleteGateway(DeleteGatewayRequest) returns (DeleteGatewayResponse);
+  rpc ListGateways(ListGatewaysRequest) returns (ListGatewaysResponse);
+  rpc WatchGateways(WatchGatewaysRequest) returns (stream WatchGatewaysResponse);
+  rpc AdjustActiveSandboxCount(AdjustActiveSandboxCountRequest) returns (AdjustActiveSandboxCountResponse);
+  rpc SetActiveSandboxCount(SetActiveSandboxCountRequest) returns (SetActiveSandboxCountResponse);
+}

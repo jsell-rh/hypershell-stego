@@ -1,0 +1,42 @@
+syntax = "proto3";
+
+package hypershell.v1;
+
+option go_package = "github.com/openshift-online/hypershell/components/api-server/pkg/api/grpc/hypershell/v1;hypershell_v1";
+
+import "hypershell/v1/common.proto";
+
+message RoleBinding {
+  ObjectReference metadata = 1;
+  string role_id = 2;
+  string scope = 3;
+  optional string user_id = 4;
+  optional string gateway_id = 5;
+  string role_name = 6;
+  string username = 7;
+}
+
+message WatchRoleBindingsRequest {}
+
+message WatchRoleBindingsResponse {
+  EventType type = 1;
+  RoleBinding role_binding = 2;
+  string resource_id = 3;
+}
+
+message ListRoleBindingsRequest {
+  // Filters to the active role bindings for this user. Required: the control
+  // plane uses this to recompute a user's effective Keycloak roles on a gateway.
+  optional string user_id = 1;
+  // Optional additional filter to a single gateway.
+  optional string gateway_id = 2;
+}
+
+message ListRoleBindingsResponse {
+  repeated RoleBinding items = 1;
+}
+
+service RoleBindingService {
+  rpc WatchRoleBindings(WatchRoleBindingsRequest) returns (stream WatchRoleBindingsResponse);
+  rpc ListRoleBindings(ListRoleBindingsRequest) returns (ListRoleBindingsResponse);
+}

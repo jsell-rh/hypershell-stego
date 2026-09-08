@@ -1,0 +1,91 @@
+{
+  "repository": "https://github.com/openshift-online/hypershell",
+  "commit": "14256be29bcfe4fff38bcaf4a41511cb394ea8e1",
+  "files": [
+    {
+      "source": "components/api-server/openapi/openapi.gatewayNetworks.yaml",
+      "snapshot": "reference/openapi/openapi.gatewayNetworks.yaml",
+      "sha256": "bbe191a86efe586659d2d3fcc2078ec3e52c55c16cec5ff276f51317bc8a11e1"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.gatewayReleases.yaml",
+      "snapshot": "reference/openapi/openapi.gatewayReleases.yaml",
+      "sha256": "d664b5c2cf58fc3690c4cd41e3fd6bb5ee82551d7e32cef658738aa0995db135"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.gateways.yaml",
+      "snapshot": "reference/openapi/openapi.gateways.yaml",
+      "sha256": "b7758843defe17d4f3df3dd9ccbc59afc4a4ee92bc9f27f6f3169f24d5e4274a"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.managedClusters.yaml",
+      "snapshot": "reference/openapi/openapi.managedClusters.yaml",
+      "sha256": "af6dd6dc32d1b52f543343faee5da6a7eae42b02b7d23525d4a76d4b529013c7"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.managedDatabases.yaml",
+      "snapshot": "reference/openapi/openapi.managedDatabases.yaml",
+      "sha256": "498ff69362816341d4dd1fec184fbae63907cf5a4890f6b376b0a665fe4d7e74"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.roleBindings.yaml",
+      "snapshot": "reference/openapi/openapi.roleBindings.yaml",
+      "sha256": "7bb7416d3a507dc868b09ea06575f3a697a6e7c0f54d00af395a67f8bacea273"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.roles.yaml",
+      "snapshot": "reference/openapi/openapi.roles.yaml",
+      "sha256": "7e80d4c5d090ecde1755b9c651c6ba87464d2a78b6b31a104961a53b9d82f8e8"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.serviceAccounts.yaml",
+      "snapshot": "reference/openapi/openapi.serviceAccounts.yaml",
+      "sha256": "8227acdc6912e1408e2dff81c17cfb67a229073b8c86abf31742adfad62bc6ca"
+    },
+    {
+      "source": "components/api-server/openapi/openapi.yaml",
+      "snapshot": "reference/openapi/openapi.yaml",
+      "sha256": "a9815d0b0ad761770035ada57903491d410a9df1e1e3a543ca1b2f235b483da7"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/provisioner/v1/service_accounts.proto",
+      "snapshot": "reference/proto/hypershell/provisioner/v1/service_accounts.proto",
+      "sha256": "3045710da55d46d93687d4e52524e07cb5998a4bdc558168bba975e90cde2c15"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/common.proto",
+      "snapshot": "reference/proto/hypershell/v1/common.proto",
+      "sha256": "c53d0bd311a8c066ae4b16ce102b274ecf988579b414365afb26fc38c5a52d07"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/gateway_networks.proto",
+      "snapshot": "reference/proto/hypershell/v1/gateway_networks.proto",
+      "sha256": "61de59fe632ff9bf02978f03612de333522c34c4a2ff29b3542fe8ec5c046d26"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/gateway_releases.proto",
+      "snapshot": "reference/proto/hypershell/v1/gateway_releases.proto",
+      "sha256": "02d77553d3b4c02e209edd71fe470065343236f7bf75f33be6ec397331f67a86"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/gateways.proto",
+      "snapshot": "reference/proto/hypershell/v1/gateways.proto",
+      "sha256": "0e914cb960518a908971f55ee5f60ffa4dc2efcfc3767ecae617f26306344ae5"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/managed_clusters.proto",
+      "snapshot": "reference/proto/hypershell/v1/managed_clusters.proto",
+      "sha256": "d6faf0c02a37a167b1fada90746ace4c95874504fc20344a94ab3b8a30941db4"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/managed_databases.proto",
+      "snapshot": "reference/proto/hypershell/v1/managed_databases.proto",
+      "sha256": "111da14b826b09078af23eb241729a23a4d5cb0b9026189f5eba1a00bf5183f8"
+    },
+    {
+      "source": "components/api-server/proto/hypershell/v1/role_bindings.proto",
+      "snapshot": "reference/proto/hypershell/v1/role_bindings.proto",
+      "sha256": "8b95aa1707a0fa8b129fa030d72fa3cb4bc56e5c7d5b7744f916fc08be92e843"
+    }
+  ]
+}
