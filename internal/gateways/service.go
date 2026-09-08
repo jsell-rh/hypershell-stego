@@ -29,7 +29,7 @@ type Principal struct {
 }
 
 // CreateRequest contains client fields. Namespace and ownership are absent.
-// DatabaseID is a required API placeholder. Placement replaces its value.
+// DatabaseID is a REST placeholder. Placement supplies the stored value.
 type CreateRequest struct {
 	Name             string   `json:"name"`
 	ClusterID        string   `json:"cluster_id"`
@@ -179,7 +179,7 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 }
 
 func (s *Service) List(ctx context.Context, principal Principal, page, size int) (store.ListResult, error) {
-	if page < 1 || size < 0 || size > 100 || page > 1000000 {
+	if page < 1 || size < 0 || size > 500 || page > 1000000 {
 		return store.ListResult{}, ErrInvalid
 	}
 	return s.list(ctx, principal, "", page, size)
@@ -266,7 +266,7 @@ func validatePrincipal(p Principal) error {
 	return nil
 }
 func validateCreate(r CreateRequest) error {
-	if strings.TrimSpace(r.Name) == "" || len(r.Name) > 255 || !utf8.ValidString(r.Name) || strings.ContainsRune(r.Name, 0) || !validID(r.ClusterID) || !validID(r.ReleaseID) || strings.TrimSpace(r.DatabaseID) == "" {
+	if strings.TrimSpace(r.Name) == "" || len(r.Name) > 255 || !utf8.ValidString(r.Name) || strings.ContainsRune(r.Name, 0) || !validID(r.ClusterID) || !validID(r.ReleaseID) {
 		return ErrInvalid
 	}
 	if len(r.ServerDNSNames) > 128 {

@@ -61,3 +61,10 @@ overrides:
     mode: verifier
   http-application:
     factory_package: internal/httpapi
+  grpc-application:
+    factory_package: internal/grpcapi
+    proto_files:
+      - path: contracts/reference/proto/hypershell/v1/common.proto
+        import_path: hypershell/v1/common.proto
+      - path: contracts/reference/proto/hypershell/v1/gateways.proto
+        import_path: hypershell/v1/gateways.proto

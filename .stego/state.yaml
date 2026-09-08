@@ -1,7 +1,10 @@
 last_applied:
-    service_hash: cd1a5d46762c6b11e399d3c6bc96a4cecda144245a91290a695b2a8e09e28da4
+    service_hash: 7e06db134fec2af615d085347f643e7dcaa566dd6f4e12328afff1ef673cd1f3
     registry_sha: gateway-workflow
     components:
+        grpc-application:
+            version: 1.0.0
+            sha: gateway-workflow
         http-application:
             version: 1.0.0
             sha: gateway-workflow
@@ -122,7 +125,12 @@ last_applied:
         contracts/storage/storage.go: 365213fa2c28c9a9a9a9e13d85434877ee7bff4b2498f02baef25ae351dce23e
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
-        main.go: eca8ad1f907bdba531db417d021c77ce9a533429394a6bcf8a2b093bab107aa0
+        grpcapi/bridge.go: 6884fbb3901db782e0ee7c72be5b615cb4c388aea1488b7070d7c9be08c34734
+        grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e
+        grpcapi/pb/hypershell/v1/gateways.pb.go: 4104a8ad6413ef2fffd03f98fde05a9940b23abf0548216410cb9315c19c1394
+        grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
+        grpcapi/transport/runtime.go: d10c4283e0b66bc71f125916186dde9529c7bd7eb5221f9a92fbb843a03f7eb9
+        main.go: 2823a8f4277f2b7936857bf0a34e417248bc948895bdc1579a660dfab1dbca91
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: 6efeff2fa119bcb06c909a144990eb20d95e1ce3b801ed6c19795be75b7fb8b8
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122

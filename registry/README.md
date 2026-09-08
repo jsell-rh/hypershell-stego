@@ -12,3 +12,8 @@ are in `internal/gateways`. The declaration in `service.yaml` contains the
 fields needed by this workflow. Cluster, database, release, user, and role
 entities are partial models for this gate. They do not establish compatibility
 for the other Hypershell workflows.
+
+The `grpc-application` component compiles the pinned Gateway protobuf contracts.
+Its domain factory is `internal/grpcapi`. The public `out/grpcapi/pb` packages
+contain messages and client/server interfaces; the generated runtime owns TLS,
+authentication, deadlines, and service shutdown.

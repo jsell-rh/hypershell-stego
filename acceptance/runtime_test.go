@@ -87,6 +87,10 @@ func startRuntime(t *testing.T, binary, dsn string, config Config) func() {
 	return stop
 }
 func startApplication(t *testing.T, binary, dsn string, config Config, settings ...string) (func(), string) {
+	stop, address, _ := startBoth(t, binary, dsn, config, settings...)
+	return stop, address
+}
+func startBoth(t *testing.T, binary, dsn string, config Config, settings ...string) (func(), string, string) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
@@ -98,8 +102,10 @@ func startApplication(t *testing.T, binary, dsn string, config Config, settings 
 	)
 	_, authSettings := issuer(t)
 	command.Env = append(command.Env, authSettings...)
+	tlsIdentity := identity(t, "localhost")
+	command.Env = append(command.Env, "STEGO_GRPC_ADDR=127.0.0.1:0", "STEGO_GRPC_TLS_CERT="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server-key.pem"))
 	command.Env = append(command.Env, settings...)
-	output := runtimeOutput{ready: make(chan string, 1)}
+	output := runtimeOutput{ready: make(chan string, 1), grpcReady: make(chan string, 1)}
 	command.Stdout = &output
 	command.Stderr = &output
 	if err := command.Start(); err != nil {
@@ -130,18 +136,23 @@ func startApplication(t *testing.T, binary, dsn string, config Config, settings 
 		}
 	}
 	t.Cleanup(stop)
-	select {
-	case address := <-output.ready:
-		return stop, address
-	case err := <-done:
-		stopped = true
-		cancel()
-		t.Fatalf("runtime did not start: %v\n%s", err, output.String())
-	case <-time.After(8 * time.Second):
-		stop()
-		t.Fatalf("runtime did not report its listener\n%s", output.String())
+	var httpAddress, grpcAddress string
+	timer := time.NewTimer(8 * time.Second)
+	defer timer.Stop()
+	for httpAddress == "" || grpcAddress == "" {
+		select {
+		case httpAddress = <-output.ready:
+		case grpcAddress = <-output.grpcReady:
+		case err := <-done:
+			stopped = true
+			cancel()
+			t.Fatalf("runtime did not start: %v\n%s", err, output.String())
+		case <-timer.C:
+			stop()
+			t.Fatalf("runtime did not report its listeners\n%s", output.String())
+		}
 	}
-	return stop, ""
+	return stop, httpAddress, grpcAddress
 }
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	t.Helper()
@@ -186,9 +197,10 @@ func awaitQueueEmpty(t *testing.T, f *fixture) {
 
 // runtimeOutput captures process output without racing with startup detection.
 type runtimeOutput struct {
-	mu    sync.Mutex
-	data  bytes.Buffer
-	ready chan string
+	mu        sync.Mutex
+	data      bytes.Buffer
+	ready     chan string
+	grpcReady chan string
 }
 
 func (w *runtimeOutput) Write(data []byte) (int, error) {
@@ -196,6 +208,15 @@ func (w *runtimeOutput) Write(data []byte) (int, error) {
 	defer w.mu.Unlock()
 	n, err := w.data.Write(data)
 	for _, line := range strings.Split(w.data.String(), "\n") {
+		if _, value, found := strings.Cut(line, "gRPC server started address="); found {
+			address := strings.Trim(strings.TrimSpace(value), "\"")
+			if _, _, err := net.SplitHostPort(address); err == nil {
+				select {
+				case w.grpcReady <- address:
+				default:
+				}
+			}
+		}
 		_, value, found := strings.Cut(line, "starting server on ")
 		if !found {
 			continue

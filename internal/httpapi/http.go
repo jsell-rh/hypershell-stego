@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
@@ -69,7 +70,13 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 		return nil, errors.New("HTTP application requires a verifier")
 	}
 	mux := http.NewServeMux()
-	create, err := transport.Endpoint(verifier.Authenticate, transport.JSONBody[gateways.CreateRequest], func(ctx context.Context, request gateways.CreateRequest) (Gateway, error) {
+	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.CreateRequest, error) {
+		request, err := transport.JSONBody[gateways.CreateRequest](r)
+		if err == nil && strings.TrimSpace(request.DatabaseID) == "" {
+			err = gateways.ErrInvalid
+		}
+		return request, err
+	}, func(ctx context.Context, request gateways.CreateRequest) (Gateway, error) {
 		row, err := service.Create(ctx, gateways.PrincipalFromContext(ctx), request)
 		if err != nil {
 			return Gateway{}, err
@@ -169,6 +176,9 @@ func parsePage(r *http.Request) (pageRequest, error) {
 		default:
 			return pageRequest{}, transport.ErrRequest
 		}
+	}
+	if request.Size > 100 {
+		return pageRequest{}, gateways.ErrInvalid
 	}
 	return request, nil
 }

@@ -1,4 +1,5 @@
-The Gateway acceptance gate remains open.
+The Gateway workflow has local REST, gRPC, event, and restart evidence.
+Pinned regeneration and remote CI must pass for this revision before the gate closes.
 
 | Check | Current evidence |
 | --- | --- |
@@ -9,7 +10,7 @@ The Gateway acceptance gate remains open.
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
 | Regeneration | Pinned compiler, apply, dependency check, repeated apply, and drift check |
 | REST | Create, get, filtered list, response schema, error shape, viewer access, grant removal, rollback, and restart |
-| gRPC | Pending |
+| gRPC | Generated wire descriptors match the reference; TLS create/get/list, access, rollback, events, cross-transport reads, and restart |
 
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
@@ -29,8 +30,10 @@ and a role from an unselected claim. The REST process test uses signed tokens
 and the same domain service. It rejects reserved fields, duplicate JSON members,
 case aliases, invalid Unicode, and NUL characters that PostgreSQL cannot store.
 It also forces owner-grant and event-write failures and checks rollback.
-The gRPC transport must use this same service before the acceptance gate can
-pass. Full list search, custom ordering, sparse fields, page sizes above 100,
+The gRPC transport uses the same domain service. Its list defaults and page
+size metadata follow the reference gRPC adapter. REST and gRPC requests can
+retrieve each other's created resources. Full REST list search, custom ordering,
+sparse fields, REST page sizes above 100,
 deployment database placement, platform-role projections, complete user and role models, and all
 other Hypershell workflows remain open.
 

@@ -78,7 +78,7 @@ func identity(t *testing.T, hostname string) testIdentity {
 	roots := x509.NewCertPool()
 	roots.AppendCertsFromPEM(rootPEM)
 	directory := t.TempDir()
-	for name, data := range map[string][]byte{"ca.pem": rootPEM, "client.pem": clientCert, "key.pem": clientKey} {
+	for name, data := range map[string][]byte{"ca.pem": rootPEM, "client.pem": clientCert, "key.pem": clientKey, "server.pem": serverCert, "server-key.pem": serverKey} {
 		if err := os.WriteFile(filepath.Join(directory, name), data, 0600); err != nil {
 			t.Fatal(err)
 		}
