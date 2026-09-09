@@ -85,3 +85,7 @@ with the PostgreSQL test settings.
 
 The final focused race run passed after the timeout fix. It repeated the real
 login workflow and the current-state checks in 29.032 seconds.
+
+The login test now discovers owner and viewer role IDs through the authenticated
+[role catalog](role-catalog.md). Recipient user ID discovery still uses the test
+database. The public user-discovery policy remains open.

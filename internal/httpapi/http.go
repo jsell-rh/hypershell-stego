@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/roles"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
@@ -207,6 +208,13 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	mux.Handle("POST "+collectionPath, create)
 	mux.Handle("GET "+collectionPath+"/{id}", get)
 	mux.Handle("GET "+collectionPath, list)
+	catalog, err := roles.New(repository)
+	if err != nil {
+		return nil, err
+	}
+	if err := registerRoles(mux, verifier, catalog); err != nil {
+		return nil, err
+	}
 	if err := registerAccounts(mux, verifier, accounts); err != nil {
 		return nil, err
 	}
@@ -333,7 +341,7 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 		code, reason = http.StatusForbidden, "The request is forbidden"
 		errorID = 4
 	case errors.Is(err, contract.ErrNotFound):
-		code, reason = http.StatusNotFound, "Gateway not found"
+		code, reason = http.StatusNotFound, "The resource was not found"
 		errorID = 7
 	case errors.Is(err, contract.ErrSerialization):
 		code, reason = http.StatusConflict, "The resource changed during the request; retry the operation"

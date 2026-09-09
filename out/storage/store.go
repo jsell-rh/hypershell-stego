@@ -351,7 +351,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling Role: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&Role{}).Where("id = ?", id).Select([]string{"name"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&Role{}).Where("id = ?", id).Select([]string{"name", "display_name", "description", "permissions", "built_in"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -696,7 +696,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "Role":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 		query := s.db.WithContext(ctx).Model(&Role{})
 		if opts.IncludeDeleted {
 			query = query.Unscoped()
@@ -1416,7 +1416,7 @@ func filterColumns(entity string) map[string]bool {
 	case "User":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
 	case "Role":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 	case "ManagedCluster":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
 	case "GatewayRelease":
@@ -1667,7 +1667,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling Role: %w", err)
 		}
-		validCols := map[string]bool{"name": true}
+		validCols := map[string]bool{"name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity Role", k)
@@ -1682,7 +1682,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name"} {
+		for _, col := range []string{"name", "display_name", "description", "permissions", "built_in"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}

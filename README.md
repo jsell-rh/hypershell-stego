@@ -184,3 +184,7 @@ Already issued tokens retain their claims; online revocation remains open.
 Grant discovery now uses REST lists and the reference gRPC list and watch service.
 The generated runtime sends initial owner-grant events and replays active grants
 after restart. See [the evidence and limits](acceptance/grant-discovery.md).
+
+The [role catalog](acceptance/role-catalog.md) now supplies role IDs through REST.
+The browser grant workflow uses this API. Stable IDs, migration recovery,
+authentication, access limits, and restart have acceptance checks.

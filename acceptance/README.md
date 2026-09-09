@@ -173,3 +173,7 @@ See [the user login evidence and remaining scope](gateway-user-login.md).
 The application now supplies filtered REST grant lists and the reference gRPC
 grant list and watch service. See [the grant discovery evidence](grant-discovery.md)
 for access rules, restart behavior, and limits.
+
+The [role catalog](role-catalog.md) now supplies role IDs through REST.
+The browser grant workflow uses this API. Stable IDs, migration recovery,
+authentication, access limits, and restart have acceptance checks.

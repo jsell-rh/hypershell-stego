@@ -63,7 +63,11 @@ var EntityFieldMaps = map[string]map[string]string{
 		"updated_time": "updated_time",
 		"created_at":   "created_time",
 		"updated_at":   "updated_time",
+		"built_in":     "built_in",
+		"description":  "description",
+		"display_name": "display_name",
 		"name":         "name",
+		"permissions":  "permissions",
 	},
 	"RoleBinding": {
 		"id":           "id",
@@ -184,6 +188,10 @@ var entityFieldTypes = map[string]map[string]string{
 		"created_at":   "timestamp",
 		"updated_at":   "timestamp",
 		"name":         "string",
+		"display_name": "string",
+		"description":  "string",
+		"permissions":  "jsonb",
+		"built_in":     "bool",
 	},
 	"RoleBinding": {
 		"id":           "string",

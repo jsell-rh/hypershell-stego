@@ -43,7 +43,11 @@ type User struct {
 // Role represents the Role entity.
 type Role struct {
 	Meta
-	Name string `json:"name" gorm:"column:name;not null;uniqueIndex;size:64"`
+	Name        string         `json:"name" gorm:"column:name;not null;uniqueIndex;size:64"`
+	DisplayName *string        `json:"display_name,omitempty" gorm:"column:display_name;size:255"`
+	Description *string        `json:"description,omitempty" gorm:"column:description;size:1024"`
+	Permissions datatypes.JSON `json:"permissions,omitempty" gorm:"column:permissions;type:jsonb"`
+	BuiltIn     bool           `json:"built_in" gorm:"column:built_in;not null"`
 }
 
 // ManagedCluster represents the ManagedCluster entity.

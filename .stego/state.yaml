@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: f3fc98bf7cd0a0b0b7a8c31d103cc32842c55057d77e926be91666cd1f734c83
+    service_hash: 5fd37e82ddb7335f8b0f953dbe1a35ed1c067a511e5d08aa50aa44682b9d0607
     registry_sha: gateway-workflow
     components:
         grpc-application:
@@ -98,6 +98,18 @@ last_applied:
             - name: name
               type: string
               hash: 4cf8a1336fa6072ec6080777db700aad0828fa2f6c5b388c7a6c53605da29df3
+            - name: display_name
+              type: string
+              hash: f31a17ffb61f8716de7ac974bf91a2da234c97124d8dc70aedda9d49a4e69b31
+            - name: description
+              type: string
+              hash: 1feffe68f016503e30825b6af52941118280c5b35cacfdbca61a6851d3ee37f9
+            - name: permissions
+              type: jsonb
+              hash: e89d228ac933a2128afc5ded18f11bcf6d674ee699e5a543172edb687433c80e
+            - name: built_in
+              type: bool
+              hash: 3f8f18cdf97bea6ac25a1d6106f1eaaf4774fcedcde0043f357805ffd657185b
         RoleBinding:
             - name: user_id
               type: ref
@@ -225,11 +237,11 @@ last_applied:
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
-        search/field_map.go: 7ea5f687170785dd1783ebbe042eeac04465274027c2714861cb44733e6a6767
+        search/field_map.go: 7018b67bc865589d86f144dd728056d2f1c3429efd7371ab8867bf1b7d8675b8
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
-        storage/models.go: 891e7c3e9172410bdba38507da1b4e79f13d06be66b584e332b728b9c62fba92
+        storage/models.go: 13602f496f0434a3605e2f5cf4d7d2280d8b3eb76ef59723117424953c97b5a7
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: a8f30e910c67b53e6ade4d9a18c8eb085ae4a22425bd4750444fba2fce5d151c
+        storage/store.go: 5aac01e8745ffa9a099a28b7df26c442f2275feb222849e4d0bb88e6b2e3caea
         storage/transaction.go: 3285b3f6948b627a1d9f22c5787e3d2b5136ca7653a609589ddf1f1d76f1bbe4

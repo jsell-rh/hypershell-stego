@@ -113,10 +113,8 @@ func database(t testing.TB) *fixture {
 			t.Fatal(err)
 		}
 	}
-	for _, name := range []string{"gateway:owner", "gateway:viewer"} {
-		if err := s.Create(ctx, "Role", model.Role{Meta: model.Meta{ID: ksuid.New().String()}, Name: name}); err != nil {
-			t.Fatal(err)
-		}
+	if err := applyRoleCatalog(ctx, db); err != nil {
+		t.Fatal(err)
 	}
 	return f
 }

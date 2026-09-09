@@ -15,6 +15,11 @@ entities:
   - name: Role
     fields:
       - { name: name, type: string, unique: true, max_length: 64 }
+
+      - { name: display_name, type: string, optional: true, max_length: 255 }
+      - { name: description, type: string, optional: true, max_length: 1024 }
+      - { name: permissions, type: jsonb, optional: true }
+      - { name: built_in, type: bool }
   - name: ManagedCluster
     fields:
       - { name: name, type: string, max_length: 255 }

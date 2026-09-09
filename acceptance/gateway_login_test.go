@@ -302,9 +302,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if err := f.db.QueryRow("SELECT id FROM users WHERE issuer=$1 AND subject=$2", k.options.ServerURL+"/realms/workflow", bobID).Scan(&grant.UserID); err != nil {
 		t.Fatal(err)
 	}
-	if err := f.db.QueryRow("SELECT id FROM roles WHERE name='gateway:viewer'").Scan(&grant.RoleID); err != nil {
-		t.Fatal(err)
-	}
+	grant.RoleID = discoverRole(t, root, alice, "gateway:viewer").ID
 	body, _ = json.Marshal(grant)
 	code, body = requestJSON(t, "POST", root+"/role_bindings", alice, body)
 	var binding struct {
@@ -328,9 +326,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	waitRoles("renamed-bob", bobID, []string{keycloak.RoleUser})
 	// Owner and viewer grants form a union. Removing owner must retain user access.
 	ownerGrant := grant
-	if err := f.db.QueryRow("SELECT id FROM roles WHERE name='gateway:owner'").Scan(&ownerGrant.RoleID); err != nil {
-		t.Fatal(err)
-	}
+	ownerGrant.RoleID = discoverRole(t, root, alice, "gateway:owner").ID
 	encoded, _ := json.Marshal(ownerGrant)
 	code, body = requestJSON(t, "POST", root+"/role_bindings", alice, encoded)
 	var ownerBinding struct {
