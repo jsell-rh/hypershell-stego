@@ -247,7 +247,7 @@ func TestRecoveryScanRejectsInvalidPages(t *testing.T) {
 	for _, page := range [][]string{{"invalid"}, {id, id}, make([]string, 101)} {
 		state := &recoveryFixture{pages: [][]string{page}}
 		c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
-		if err := c.seed(context.Background(), make(chan string, QueueCapacity)); err == nil {
+		if err := c.seed(context.Background(), func(string) error { return nil }); err == nil {
 			t.Fatal("invalid page was accepted")
 		}
 	}
@@ -261,7 +261,7 @@ func TestRecoveryScanAdvancesAcrossPages(t *testing.T) {
 	state := &recoveryFixture{pages: [][]string{ids[:100], ids[100:]}}
 	c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
 	queue := make(chan string, QueueCapacity)
-	if err := c.seed(context.Background(), queue); err != nil {
+	if err := c.seed(context.Background(), func(id string) error { queue <- id; return nil }); err != nil {
 		t.Fatal(err)
 	}
 	if !slices.Equal(state.cursors, []string{"", ids[99]}) {
@@ -307,7 +307,7 @@ func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), ResyncInterval+5*time.Second)
 	defer cancel()
 	done := make(chan error, 1)
-	go func() { done <- c.session(ctx) }()
+	go func() { done <- c.Run(ctx) }()
 	select {
 	case got := <-state.observed:
 		if got != id {

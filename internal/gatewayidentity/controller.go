@@ -6,9 +6,9 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"sync"
 	"time"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
@@ -39,101 +39,48 @@ func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceC
 	return &Controller{gateways: gateways, state: state, provider: provider, userScans: make(map[string]userScan)}, nil
 }
 
-// Run uses one worker. A watch starts before the state scan. Queue overflow
-// causes a reconnect and a new scan. No event is treated as an authoritative
-// deletion. The worker always obtains current, privileged state from the API.
+// Run connects domain state and actions to the generated controller runtime.
 func (c *Controller) Run(ctx context.Context) error {
-	for ctx.Err() == nil {
-		err := c.session(ctx)
-		if ctx.Err() != nil {
-			return nil
-		}
-		if status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated {
-			return errors.New("Gateway controller access was denied")
-		}
-		if err != nil {
-			slog.Warn("Gateway identity watch will reconnect")
-		}
-		timer := time.NewTimer(time.Second)
-		select {
-		case <-ctx.Done():
-			timer.Stop()
-			return nil
-		case <-timer.C:
-		}
-	}
-	return nil
+	return runtime.Run(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
+		QueueCapacity: QueueCapacity, ResyncInterval: ResyncInterval,
+		ReconcileTimeout: ReconcileTimeout, ReconnectDelay: time.Second,
+		Terminal: func(err error) bool {
+			return status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+		},
+		Observe: func(event runtime.Event) {
+			switch event.Phase {
+			case "watch_started":
+				slog.Info("Gateway identity watch started")
+			case "scan_completed":
+				slog.Info("Gateway identity scan completed")
+			case "reconnect":
+				slog.Warn("Gateway identity watch will reconnect")
+			case "reconcile_failed":
+				slog.Warn("Gateway identity needs another pass")
+			}
+		},
+	})
 }
-func (c *Controller) session(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, ResyncInterval)
-	var workers sync.WaitGroup
-	defer func() { cancel(); workers.Wait() }()
+func (c *Controller) watch(ctx context.Context) (func() (string, error), error) {
 	stream, err := c.gateways.WatchGateways(ctx, &pb.WatchGatewaysRequest{})
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if _, err := stream.Header(); err != nil {
-		return err
+		return nil, err
 	}
-	slog.Info("Gateway identity watch started")
-	keys := make(chan string, QueueCapacity)
-	failures := make(chan error, 2)
-	workers.Go(func() {
-		for {
-			event, err := stream.Recv()
-			if err != nil {
-				failures <- err
-				return
-			}
-			if event.GetResourceId() == "" {
-				failures <- errors.New("Gateway watch returned an empty ID")
-				return
-			}
-			select {
-			case keys <- event.GetResourceId():
-			case <-ctx.Done():
-				return
-			default:
-				failures <- errors.New("Gateway watch queue exceeded its limit")
-				return
-			}
+	return func() (string, error) {
+		event, err := stream.Recv()
+		if err != nil {
+			return "", err
 		}
-	})
-	workers.Go(func() {
-		if err := c.seed(ctx, keys); err != nil {
-			failures <- err
-		} else {
-			slog.Info("Gateway identity scan completed")
+		if event.GetResourceId() == "" {
+			return "", errors.New("Gateway watch returned an empty ID")
 		}
-	})
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-failures:
-			return err
-		case id := <-keys:
-			operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
-			err := c.reconcile(operation, id)
-			stop()
-			if status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated {
-				return err
-			}
-			if err != nil {
-				slog.Warn("Gateway identity needs another pass", "gateway_id", id, "error", err)
-			}
-		}
-	}
+		return event.GetResourceId(), nil
+	}, nil
 }
-func (c *Controller) seed(ctx context.Context, keys chan<- string) error {
-	enqueue := func(id string) error {
-		select {
-		case keys <- id:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error {
 	// Small pages keep responses within the generated message limit. The scan
 	// has a fixed resource bound. Capacity beyond this limit requires measurement.
 	for page := int32(1); page <= 10000; page++ {

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"sync"
 	"time"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -36,24 +36,31 @@ func New(api pb.ManagedDatabaseServiceClient, provider Provider) (*Controller, e
 	return &Controller{api, provider}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
-	for ctx.Err() == nil {
-		err := c.session(ctx)
-		if ctx.Err() != nil {
-			return nil
-		}
-		if status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated {
-			return errors.New("database controller access was denied")
-		}
-		if err != nil && !errors.Is(err, context.DeadlineExceeded) {
-			slog.Warn("database controller will reconnect", "error", err)
-		}
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-time.After(time.Second):
-		}
+	return runtime.Run(ctx, runtime.Source[*pb.WatchManagedDatabasesResponse]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
+		QueueCapacity: queueCapacity, ResyncInterval: resyncInterval,
+		ReconcileTimeout: 20 * time.Second, ReconnectDelay: time.Second,
+		Terminal: func(err error) bool {
+			return status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+		},
+		Observe: func(event runtime.Event) {
+			if event.Phase == "reconnect" {
+				slog.Warn("database controller will reconnect")
+			}
+			if event.Phase == "reconcile_failed" && !errors.Is(event.Err, ErrPending) {
+				slog.Warn("database needs another pass")
+			}
+		},
+	})
+}
+func (c *Controller) watch(ctx context.Context) (func() (*pb.WatchManagedDatabasesResponse, error), error) {
+	stream, err := c.api.WatchManagedDatabases(ctx, &pb.WatchManagedDatabasesRequest{})
+	if err != nil {
+		return nil, err
 	}
-	return nil
+	if err := checkHeader(stream); err != nil {
+		return nil, err
+	}
+	return stream.Recv, nil
 }
 func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) error {
 	header, err := stream.Header()
@@ -67,78 +74,8 @@ func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) e
 	return nil
 }
 
-// A live subscription starts and is drained before the replay and list scans.
-// Each new session repeats both scans. Failed cleanup remains in durable replay.
-// A full queue closes this session, so loss cannot pass without another scan.
-func (c *Controller) session(parent context.Context) error {
-	ctx, cancel := context.WithCancel(parent)
-	var workers sync.WaitGroup
-	defer func() { cancel(); workers.Wait() }()
-	stream, err := c.api.WatchManagedDatabases(ctx, &pb.WatchManagedDatabasesRequest{})
-	if err != nil {
-		return err
-	}
-	if err := checkHeader(stream); err != nil {
-		return err
-	}
-	queue := make(chan *pb.WatchManagedDatabasesResponse, queueCapacity)
-	failures := make(chan error, 2)
-	workers.Go(func() {
-		for {
-			event, err := stream.Recv()
-			if err != nil {
-				failures <- err
-				return
-			}
-			select {
-			case queue <- event:
-			case <-ctx.Done():
-				return
-			default:
-				failures <- errors.New("database watch queue exceeded its limit")
-				return
-			}
-		}
-	})
-	workers.Go(func() {
-		for {
-			if err := c.seed(ctx, queue); err != nil {
-				failures <- err
-				return
-			}
-			select {
-			case <-ctx.Done():
-				return
-			case <-time.After(resyncInterval):
-			}
-		}
-	})
-	for {
-		select {
-		case <-ctx.Done():
-			return ctx.Err()
-		case err := <-failures:
-			return err
-		case event := <-queue:
-			err := c.reconcile(ctx, event)
-			if status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated {
-				return err
-			}
-			if err != nil && !errors.Is(err, ErrPending) {
-				slog.Warn("database needs another pass", "database_id", event.GetResourceId(), "error", err)
-			}
-		}
-	}
-}
-func (c *Controller) seed(ctx context.Context, queue chan<- *pb.WatchManagedDatabasesResponse) error {
-	send := func(event *pb.WatchManagedDatabasesResponse) error {
-		select {
-		case queue <- event:
-			return nil
-		case <-ctx.Done():
-			return ctx.Err()
-		}
-	}
+// Deleted rows use the retained replay contract. Live events remain hints.
+func (c *Controller) seed(ctx context.Context, send func(*pb.WatchManagedDatabasesResponse) error) error {
 	md, _ := metadata.FromOutgoingContext(ctx)
 	md = md.Copy()
 	md.Set(replayMode, "deleted-v1")

@@ -5,6 +5,9 @@ last_applied:
         cli-application:
             version: 1.0.0
             sha: gateway-workflow
+        controller:
+            version: 1.0.0
+            sha: gateway-workflow
         grpc-application:
             version: 1.2.0
             sha: gateway-workflow
@@ -304,6 +307,7 @@ last_applied:
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 49ce44e7d453982cf06bbcb7c0fe806a08e657c08dd4ed100cb17b32ad1ee517
+        controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14

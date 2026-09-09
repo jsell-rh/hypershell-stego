@@ -265,3 +265,6 @@ catalogs and Gateways from resource documents. It checks dry runs without API
 contact, complete preflight, partial failures, access, events, restart, and both
 database modes. The common runtime is supplied by STEGO. Remaining apply kinds,
 Kustomize rendering, and the complete CLI port remain open.
+
+[Controller runtime](controller-runtime.md) records the common STEGO lifecycle
+and the remaining extraction work.

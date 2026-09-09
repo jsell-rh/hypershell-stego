@@ -9,6 +9,7 @@ components:
   - cli-application
   - http-application
   - grpc-application
+  - controller
   - kubernetes-client
   - tsl-search
 default_auth: jwt-auth

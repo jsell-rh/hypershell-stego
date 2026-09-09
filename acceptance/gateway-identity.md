@@ -63,7 +63,8 @@ provider ownership rules, and OIDC fields.
 The controller has one worker and a queue of 1,024 resource IDs. It subscribes
 before it reads current state. It drains the watch during that scan. An overflow
 causes a new watch and scan. Each operation has a 20-second limit. A new scan
-follows each 30-second session and a one-second delay. Each scan permits at most
+starts 30 seconds after the previous scan finishes. A reconnect has a one-second
+delay and repeats the full scan. Each scan permits at most
 10,000 Gateway rows and 10,000
 provider clients. These limits are bounds, not measured production capacity.
 The initial implementation uses one Gateway per API page to respect the generated
