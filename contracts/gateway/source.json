@@ -1,0 +1,10 @@
+{
+  "repository": "https://github.com/opendatahub-io/openshell",
+  "revision": "681c9b2d8b9887f230cee4871bdbdbc9a362dfc8",
+  "files": {
+    "openshell.proto": "467239fc7c0d740d2916dbdc0d7d2f4ff9abbabce10b92641a3add9fb1814e14",
+    "datamodel.proto": "48a071f5e61c975938999a0d7a41855a0a7bd82d611d22f21f353cacd55e5b51",
+    "options.proto": "10c8a99b505047f759951285fdae6068afd267ef672d00a65385a91ee8d027ee",
+    "sandbox.proto": "b2f05ac1a74790a335541b810ae17eb6cbe2372e78188954bb630d29b266d4ec"
+  }
+}

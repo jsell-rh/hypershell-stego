@@ -1,0 +1,53 @@
+# Bind this account to the configured cluster and Gateway controller identity.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: gateway-workload-controller
+  namespace: hypershell-control-plane
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hypershell-gateway-workload-controller
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, list, create, patch, delete]
+  - apiGroups: [""]
+    resources: [secrets, configmaps, services, serviceaccounts]
+    verbs: [get, create, patch]
+  - apiGroups: [apps]
+    resources: [deployments]
+    verbs: [get, create, patch]
+  - apiGroups: [cert-manager.io]
+    resources: [certificates]
+    verbs: [get, create, patch]
+  - apiGroups: [rbac.authorization.k8s.io]
+    resources: [roles, rolebindings, clusterroles, clusterrolebindings]
+    verbs: [get, list, create, patch, delete]
+  # Kubernetes checks these rights before it accepts the Gateway role bindings.
+  - apiGroups: [authentication.k8s.io]
+    resources: [tokenreviews]
+    verbs: [create]
+  - apiGroups: [""]
+    resources: [nodes, events]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get]
+  - apiGroups: [agents.x-k8s.io]
+    resources: [sandboxes, sandboxes/status]
+    verbs: [get, list, watch, create, update, patch, delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hypershell-gateway-workload-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hypershell-gateway-workload-controller
+subjects:
+  - kind: ServiceAccount
+    name: gateway-workload-controller
+    namespace: hypershell-control-plane

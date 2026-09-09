@@ -69,8 +69,9 @@ This result covers all five rows in the evidence table. The generated process
 serves REST and gRPC and delivers the committed events. Hypershell supplies its
 placement and access rules. Separate database workload tests also passed with
 the generated Kubernetes client; see [their results](database-workflow.md).
-Actual OpenShell Gateway startup and use remain open. The Kafka protocol fixture
-does not establish production broker behavior or capacity.
+The later [Gateway workload gate](gateway-workload.md) tests actual OpenShell
+startup and provider management. Sandbox execution remains open. The Kafka
+protocol fixture does not establish production broker behavior or capacity.
 
 Hosted [variant checks](https://github.com/jsell-rh/hypershell-stego/actions/runs/34314163495)
 passed both the full acceptance job and the database workflow job on this code.

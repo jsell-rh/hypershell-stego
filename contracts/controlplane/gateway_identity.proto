@@ -2,7 +2,7 @@ syntax = "proto3";
 package hypershell.controlplane.v1;
 import "hypershell/v1/gateways.proto";
 
-// This contract is specific to the Hypershell identity controller.
+// This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
  rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);

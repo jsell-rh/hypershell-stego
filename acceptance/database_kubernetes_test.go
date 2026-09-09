@@ -102,7 +102,7 @@ func kubernetesFixture(t *testing.T) *kubeFixture {
 	k.options = databasecontroller.KubernetesOptions{ServerURL: address, CAFile: caPath, TokenFile: tokenPath, ClusterIssuer: name}
 	return k
 }
-func startDatabaseController(t *testing.T, binary string, k *kubeFixture, address, ca, bearer string) (func(), func() string) {
+func startDatabaseController(t *testing.T, binary string, k *kubeFixture, address, ca, bearer string, settings ...string) (func(), func() string) {
 	t.Helper()
 	file := filepath.Join(t.TempDir(), "token")
 	if err := os.WriteFile(file, []byte(bearer), 0600); err != nil {
@@ -111,6 +111,7 @@ func startDatabaseController(t *testing.T, binary string, k *kubeFixture, addres
 	cmd := exec.Command(binary)
 	cmd.Env = append(os.Environ(), "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+file,
 		"HYPERSHELL_KUBERNETES_URL="+k.options.ServerURL, "HYPERSHELL_KUBERNETES_CA_FILE="+k.options.CAFile, "HYPERSHELL_KUBERNETES_TOKEN_FILE="+k.options.TokenFile, "HYPERSHELL_DATABASE_CLUSTER_ISSUER="+k.options.ClusterIssuer)
+	cmd.Env = append(cmd.Env, settings...)
 	if raceEnabled {
 		cmd.Env = append(cmd.Env, "GORACE=halt_on_error=1 exitcode=66")
 	}

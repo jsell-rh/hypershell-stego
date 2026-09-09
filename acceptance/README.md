@@ -5,6 +5,10 @@ and [its compiler](https://github.com/jsell-rh/stego/actions/runs/34286053277).
 This is the first application workflow. The complete Hypershell and enterprise
 readiness goals remain open.
 
+The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway
+image with the provisioned database and identity configuration. It tests owner
+access, provider data, restart, namespace replacement, and deletion recovery.
+
 Run `scripts/check-gateway.sh` for the complete gate. See
 [the five requirements and their tests](gateway-workflow.md). CI uses the same
 command. The generated application processes also use the race detector.

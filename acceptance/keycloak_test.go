@@ -37,11 +37,15 @@ type keycloakFixture struct {
 func startKeycloak(t *testing.T) *keycloakFixture { return startKeycloakConfigured(t, nil) }
 
 func startKeycloakConfigured(t *testing.T, configure func(map[string]any)) *keycloakFixture {
+	return startKeycloakAt(t, "127.0.0.1", configure)
+}
+
+func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)) *keycloakFixture {
 	t.Helper()
 	if os.Getenv("STEGO_REQUIRE_KEYCLOAK") != "1" {
 		t.Skip("set STEGO_REQUIRE_KEYCLOAK=1 for the real Keycloak workflow")
 	}
-	identity := identity(t, "localhost")
+	identity := identity(t, bindIP)
 	certDir := filepath.Dir(identity.config.CAFile)
 	realmDir := t.TempDir()
 	realm := map[string]any{
@@ -78,7 +82,7 @@ func startKeycloakConfigured(t *testing.T, configure func(map[string]any)) *keyc
 	if err := os.Chmod(realmFile, 0444); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"run", "--detach", "--name", name, "--memory=2g", "--cpus=2", "--publish", "127.0.0.1::8443",
+	args := []string{"run", "--detach", "--name", name, "--memory=2g", "--cpus=2", "--publish", bindIP + "::8443",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server.pem") + ",target=/certs/server.pem,readonly",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server-key.pem") + ",target=/certs/server-key.pem,readonly",
 		"--mount", "type=bind,source=" + realmFile + ",target=/opt/keycloak/data/import/workflow-realm.json,readonly",

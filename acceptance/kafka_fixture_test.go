@@ -55,6 +55,8 @@ func identity(t testing.TB, hostname string) testIdentity {
 			if hostname == "localhost" {
 				cert.IPAddresses = []net.IP{net.ParseIP("127.0.0.1"), net.ParseIP("::1")}
 				cert.DNSNames = []string{"localhost"}
+			} else if ip := net.ParseIP(hostname); ip != nil {
+				cert.IPAddresses = []net.IP{ip}
 			} else {
 				cert.DNSNames = []string{hostname}
 			}

@@ -30,7 +30,7 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 //
-// This contract is specific to the Hypershell identity controller.
+// This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceClient interface {
 	ListGatewayIdentityUsers(ctx context.Context, in *ListGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ListGatewayIdentityUsersResponse, error)
@@ -80,7 +80,7 @@ func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Conte
 // All implementations must embed UnimplementedGatewayIdentityServiceServer
 // for forward compatibility.
 //
-// This contract is specific to the Hypershell identity controller.
+// This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceServer interface {
 	ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error)
