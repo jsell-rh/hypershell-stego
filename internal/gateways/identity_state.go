@@ -19,18 +19,23 @@ func (s *Service) IdentityState(ctx context.Context, p Principal, id string) (mo
 	if !validID(id) {
 		return model.Gateway{}, store.ErrNotFound
 	}
-	result, err := s.list(ctx, p, id, 1, 1, "", nil, true)
-	if err != nil {
-		return model.Gateway{}, err
-	}
-	rows, ok := result.Items.([]model.Gateway)
-	if !ok {
-		return model.Gateway{}, errors.New("unexpected Gateway storage result")
-	}
-	if len(rows) != 1 {
-		return model.Gateway{}, store.ErrNotFound
-	}
-	return rows[0], nil
+	var row model.Gateway
+	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		reader, ok := tx.(store.RetainedReader)
+		if !ok {
+			return errors.New("Gateway storage does not support retained reads")
+		}
+		value, err := reader.GetRetained(ctx, "Gateway", id)
+		if err != nil {
+			return err
+		}
+		row, ok = value.(model.Gateway)
+		if !ok {
+			return errors.New("unexpected Gateway storage result")
+		}
+		return nil
+	})
+	return row, err
 }
 
 // ReconcileIDs supplies bounded recovery pages without resource contents. The
@@ -68,4 +73,30 @@ func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after string) (
 		return nil, err
 	}
 	return ids, nil
+}
+
+// ObserveCleanup commits the observation and its deletion notice together.
+func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, version int64, owner string, complete bool) error {
+	if err := validatePrincipal(p); err != nil {
+		return err
+	}
+	if !s.isControlPlane(p) || owner != "identity" {
+		return ErrForbidden
+	}
+	if !validID(id) {
+		return store.ErrNotFound
+	}
+	if version < 1 {
+		return ErrObservationRequired
+	}
+	return s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		writer, ok := tx.(store.CleanupWriter)
+		if !ok {
+			return errors.New("Gateway storage does not support cleanup observations")
+		}
+		if err := writer.ObserveCleanupIfVersion(ctx, "Gateway", id, version, owner, complete); err != nil {
+			return err
+		}
+		return notifyGateway(tx, id, "Delete", "gateway.deleted")
+	})
 }

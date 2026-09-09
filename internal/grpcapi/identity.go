@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -23,7 +24,11 @@ func (s *identityServer) GetGatewayIdentityState(ctx context.Context, request *p
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetGatewayIdentityStateResponse{Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
+	cleanup, err := row.CleanupObservations()
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GetGatewayIdentityStateResponse{Cleanup: cleanup, Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
 }
 
 func (s *identityServer) ListGatewayIdentityUsers(ctx context.Context, request *pb.ListGatewayIdentityUsersRequest) (*pb.ListGatewayIdentityUsersResponse, error) {
@@ -61,4 +66,21 @@ func (s *identityServer) SetObservedSandboxCount(ctx context.Context, request *p
 		return nil, mapError(err)
 	}
 	return &pb.SetObservedSandboxCountResponse{Count: count}, nil
+}
+
+func (s *identityServer) ObserveGatewayCleanup(ctx context.Context, request *pb.ObserveGatewayCleanupRequest) (*pb.ObserveGatewayCleanupResponse, error) {
+	if request.GetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+	version, present, err := transport.ResourceVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, mapError(gateways.ErrObservationRequired)
+	}
+	if err := s.service.ObserveCleanup(ctx, gateways.PrincipalFromContext(ctx), request.Id, version, request.Owner, request.Complete); err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.ObserveGatewayCleanupResponse{}, nil
 }

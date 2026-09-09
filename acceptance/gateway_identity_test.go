@@ -275,6 +275,47 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	_, cleanupConnection := grpcClient(t, grpcAddress, tlsIdentity)
+	cleanupStates := control.NewGatewayIdentityServiceClient(cleanupConnection)
+	awaitCleanup := func() int64 {
+		t.Helper()
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			state, err := cleanupStates.GetGatewayIdentityState(controlContext, &control.GetGatewayIdentityStateRequest{Id: secondID})
+			if err == nil && state.Deleted && state.Cleanup["identity"] {
+				return state.ResourceVersion
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("identity cleanup was not recorded: %v\n%s", err, logs())
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	completedVersion := awaitCleanup()
+	stopController()
+	provider, err := keycloak.NewClient(k.options)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer provider.Close()
+	if _, err := provider.EnsureGateway(context.Background(), secondID, "late-effect"); err != nil {
+		t.Fatal(err)
+	}
+	if k.gatewayClient(t, secondID) == nil {
+		t.Fatal("late identity effect was not created")
+	}
+	stopController, logs = startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	defer stopController()
+	deadline = time.Now().Add(15 * time.Second)
+	for k.gatewayClient(t, secondID) != nil {
+		if time.Now().After(deadline) {
+			t.Fatalf("completed cleanup skipped a late identity effect\n%s", logs())
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if revision := awaitCleanup(); revision != completedVersion {
+		t.Fatal("unchanged cleanup repeated its write", revision, completedVersion)
+	}
 	if live := k.gatewayClient(t, created.ID); live == nil || live["name"] != "renamed-identity" {
 		t.Fatal("restart did not retain the live Gateway identity")
 	}

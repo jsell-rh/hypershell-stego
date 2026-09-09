@@ -102,6 +102,7 @@ type GatewayNetwork struct {
 type Gateway struct {
 	Meta
 	ResourceVersion     int64            `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
+	CleanupState        datatypes.JSON   `json:"-" gorm:"column:stego_cleanup;type:jsonb;not null;default:'{}';->"`
 	ResourceGeneration  int64            `json:"-" gorm:"column:stego_generation;type:bigint;not null;default:1;->"`
 	ObservedGenerations datatypes.JSON   `json:"-" gorm:"column:stego_observations;type:jsonb;not null;default:'{}';->"`
 	Name                string           `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`

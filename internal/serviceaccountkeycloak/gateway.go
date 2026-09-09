@@ -215,7 +215,17 @@ func (c *Client) DeleteGateway(ctx context.Context, id string) error {
 	if _, err := c.requireGateway(ctx, uuid, id); err != nil {
 		return err
 	}
-	return c.deleteClient(ctx, uuid)
+	if err := c.deleteClient(ctx, uuid); err != nil {
+		return err
+	}
+	remaining, err := c.clientUUID(ctx, clientID)
+	if err != nil {
+		return err
+	}
+	if remaining != "" {
+		return errors.New("Gateway identity cleanup is pending")
+	}
+	return nil
 }
 
 // GatewayIDs supplies a bounded inventory for recovery after an offline deletion.

@@ -5,6 +5,7 @@ import "hypershell/v1/gateways.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc ObserveGatewayCleanup(ObserveGatewayCleanupRequest) returns (ObserveGatewayCleanupResponse);
  rpc SetObservedSandboxCount(SetObservedSandboxCountRequest) returns (SetObservedSandboxCountResponse);
  rpc ListGatewayReconcileIDs(ListGatewayReconcileIDsRequest) returns (ListGatewayReconcileIDsResponse);
  rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);
@@ -19,6 +20,7 @@ message GetGatewayIdentityStateResponse {
  int64 resource_version = 3;
  int64 resource_generation = 4;
  int64 observed_generation = 5;
+ map<string, bool> cleanup = 6;
 }
 
 // Pages contain retained grant references, including deleted grants.
@@ -43,3 +45,6 @@ message ListGatewayReconcileIDsResponse { repeated string ids = 1; }
 // The current cluster assignment is checked under the same row lock as the count.
 message SetObservedSandboxCountRequest { string namespace = 1; string cluster_id = 2; int32 count = 3; }
 message SetObservedSandboxCountResponse { int32 count = 1; }
+
+message ObserveGatewayCleanupRequest { string id = 1; string owner = 2; bool complete = 3; }
+message ObserveGatewayCleanupResponse {}

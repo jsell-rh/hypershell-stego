@@ -97,3 +97,6 @@ Browser login and Gateway user-role changes now have
 [a separate application check](gateway-user-login.md). It covers subject identity,
 role union, removal, and restart. It also states the limits of token revocation
 and provider synchronization.
+
+[Durable identity cleanup](gateway-identity-cleanup.md) now records confirmed
+client absence through STEGO and checks for late effects after completion.

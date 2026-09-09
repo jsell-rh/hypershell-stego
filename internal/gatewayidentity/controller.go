@@ -114,8 +114,23 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return errors.New("Gateway state has no resource version")
 	}
 	if state.GetDeleted() {
+		complete, declared := state.GetCleanup()["identity"]
+		if !declared {
+			return errors.New("Gateway state has no identity cleanup observation")
+		}
 		delete(c.userScans, id)
-		return c.provider.DeleteGateway(ctx, id)
+		failure := c.provider.DeleteGateway(ctx, id)
+		observed := failure == nil
+		if complete != observed {
+			writeContext, err := rpc.WithResourceVersion(ctx, state.ResourceVersion)
+			if err != nil {
+				return err
+			}
+			if _, err := c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "identity", Complete: observed}); err != nil {
+				return err
+			}
+		}
+		return failure
 	}
 	oidc, err := c.provider.EnsureGateway(ctx, id, gateway.GetName())
 	if err != nil {

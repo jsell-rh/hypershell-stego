@@ -104,11 +104,13 @@ DO $disable$ BEGIN
  END IF;
  END; $disable$;
 ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_generation bigint NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS stego_observations jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_cleanup jsonb NOT NULL DEFAULT '{}';
 DO $owners$ BEGIN
- IF EXISTS (SELECT 1 FROM pg_catalog.pg_attribute WHERE attrelid=E'gateways'::regclass AND attname='stego_cleanup' AND NOT attisdropped) THEN
-  IF EXISTS (SELECT 1 FROM "gateways" WHERE stego_cleanup <> '{}'::jsonb) THEN
-   RAISE EXCEPTION 'cleanup owners cannot be removed from retained resources';
-  END IF;
+ IF EXISTS (SELECT 1 FROM "gateways" WHERE jsonb_typeof(stego_cleanup) IS DISTINCT FROM 'object') THEN
+  RAISE EXCEPTION 'invalid stored cleanup state';
+ END IF;
+ IF EXISTS (SELECT 1 FROM "gateways" WHERE stego_cleanup - ARRAY[E'identity']::text[] <> '{}'::jsonb) THEN
+  RAISE EXCEPTION 'cleanup owners cannot be removed from retained resources';
  END IF;
  END; $owners$;
 DO $upgrade$ BEGIN
@@ -138,12 +140,32 @@ BEGIN
   END IF;
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
+
+ IF TG_OP = ''INSERT'' THEN
+  NEW.stego_cleanup := E''{"identity":false}''::jsonb;
+ ELSE
+  IF NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
+   (to_jsonb(NEW) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'']) IS DISTINCT FROM
+   (to_jsonb(OLD) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'']) THEN
+   NEW.stego_cleanup := E''{"identity":false}''::jsonb;
+  ELSE
+   IF jsonb_typeof(NEW.stego_cleanup) IS DISTINCT FROM ''object'' THEN
+    RAISE EXCEPTION ''invalid cleanup state'' USING ERRCODE = ''23514'';
+   END IF;
+   IF NOT (NEW.stego_cleanup ?& ARRAY[E''identity'']::text[]) OR NEW.stego_cleanup - ARRAY[E''identity'']::text[] <> ''{}''::jsonb OR
+    EXISTS (SELECT 1 FROM jsonb_each(NEW.stego_cleanup) WHERE jsonb_typeof(value) IS DISTINCT FROM ''boolean'') THEN
+    RAISE EXCEPTION ''invalid cleanup owners or observations'' USING ERRCODE = ''23514'';
+   END IF;
+  END IF;
+ END IF;
+ -- cleanup fields b0b625515599cc389479173f4f49e97328846358ac537208054c00da3c2c2206
  RETURN NEW;
 END;
 ') THEN
-  UPDATE "gateways" SET stego_revision=stego_revision+1, stego_generation=stego_generation+1, stego_observations='{}'::jsonb;
+  UPDATE "gateways" SET stego_revision=stego_revision+1, stego_generation=stego_generation+1, stego_observations='{}'::jsonb, stego_cleanup=E'{"identity":false}'::jsonb;
  END IF;
  END; $upgrade$;
+UPDATE "gateways" SET stego_cleanup=E'{"identity":false}'::jsonb || stego_cleanup WHERE NOT (stego_cleanup ?& ARRAY[E'identity']::text[]);
 CREATE OR REPLACE FUNCTION "stego_revision_a74e503354fdd464eff1440f"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$
 BEGIN
  IF TG_OP = 'DELETE' THEN
@@ -170,6 +192,25 @@ BEGIN
   END IF;
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
+
+ IF TG_OP = 'INSERT' THEN
+  NEW.stego_cleanup := E'{"identity":false}'::jsonb;
+ ELSE
+  IF NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
+   (to_jsonb(NEW) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time']) IS DISTINCT FROM
+   (to_jsonb(OLD) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time']) THEN
+   NEW.stego_cleanup := E'{"identity":false}'::jsonb;
+  ELSE
+   IF jsonb_typeof(NEW.stego_cleanup) IS DISTINCT FROM 'object' THEN
+    RAISE EXCEPTION 'invalid cleanup state' USING ERRCODE = '23514';
+   END IF;
+   IF NOT (NEW.stego_cleanup ?& ARRAY[E'identity']::text[]) OR NEW.stego_cleanup - ARRAY[E'identity']::text[] <> '{}'::jsonb OR
+    EXISTS (SELECT 1 FROM jsonb_each(NEW.stego_cleanup) WHERE jsonb_typeof(value) IS DISTINCT FROM 'boolean') THEN
+    RAISE EXCEPTION 'invalid cleanup owners or observations' USING ERRCODE = '23514';
+   END IF;
+  END IF;
+ END IF;
+ -- cleanup fields b0b625515599cc389479173f4f49e97328846358ac537208054c00da3c2c2206
  RETURN NEW;
 END;
 $stego$;

@@ -205,6 +205,9 @@ Database provider actions now read current retained state. Failed reads and
 missing deletion evidence stop cleanup. Event data alone cannot permit deletion.
 The provider records [durable cleanup observations](acceptance/database-cleanup.md)
 and continues periodic checks after success. Late effects reopen pending cleanup.
+Gateway login identity now uses [the same cleanup contract](acceptance/gateway-identity-cleanup.md).
+The controller confirms provider absence and checks again after completion.
+Workload cleanup still needs obligations for each cluster that held resources.
 These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified

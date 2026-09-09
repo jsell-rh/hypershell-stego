@@ -9,13 +9,16 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
 type stateFixture struct {
 	control.GatewayIdentityServiceClient
-	state *control.GetGatewayIdentityStateResponse
-	err   error
+	state        *control.GetGatewayIdentityStateResponse
+	err          error
+	observations int
+	conflict     bool
 }
 
 func (f *stateFixture) GetGatewayIdentityState(context.Context, *control.GetGatewayIdentityStateRequest, ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
@@ -58,7 +61,7 @@ func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
 		{name: "unavailable", err: status.Error(codes.Unavailable, "unavailable")},
 		{name: "empty state", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1}},
 		{name: "other resource", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
-		{name: "explicit deletion", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
+		{name: "explicit deletion", state: &control.GetGatewayIdentityStateResponse{Cleanup: map[string]bool{"identity": false}, ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			provider := new(providerFixture)
@@ -247,5 +250,53 @@ func TestUserScanRetriesLastUserAfterTimeout(t *testing.T) {
 	}
 	if provider.firstCalls != 1 || provider.secondCalls != 2 {
 		t.Fatalf("last user lost its retry position: first=%d second=%d", provider.firstCalls, provider.secondCalls)
+	}
+}
+
+func (f *stateFixture) ObserveGatewayCleanup(ctx context.Context, request *control.ObserveGatewayCleanupRequest, _ ...grpc.CallOption) (*control.ObserveGatewayCleanupResponse, error) {
+	f.observations++
+	md, _ := metadata.FromOutgoingContext(ctx)
+	version := md.Get("if-resource-version")
+	if len(version) != 1 || version[0] != "1" || request.Owner != "identity" || request.Id != f.state.Gateway.Metadata.Id {
+		return nil, status.Error(codes.InvalidArgument, "invalid observation")
+	}
+	if f.conflict {
+		return nil, status.Error(codes.Aborted, "revision changed")
+	}
+	f.state.Cleanup[request.Owner] = request.Complete
+	return &control.ObserveGatewayCleanupResponse{}, nil
+}
+
+func TestIdentityCleanupRequiresFreshProviderWork(t *testing.T) {
+	provider := new(providerFixture)
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Cleanup: map[string]bool{"identity": false}}, conflict: true}
+	controller, _ := New(new(apiFixture), state, provider)
+	if err := controller.reconcile(context.Background(), "gateway"); status.Code(err) != codes.Aborted || provider.deletes != 1 || state.state.Cleanup["identity"] {
+		t.Fatal("stale completion was accepted", err)
+	}
+	state.conflict = false
+	if err := controller.reconcile(context.Background(), "gateway"); err != nil || provider.deletes != 2 || !state.state.Cleanup["identity"] {
+		t.Fatal("retry did not repeat provider work", err)
+	}
+	if err := controller.reconcile(context.Background(), "gateway"); err != nil || provider.deletes != 3 || state.observations != 2 {
+		t.Fatal("completed cleanup stopped checks or repeated its write", err)
+	}
+	provider.err = errors.New("late provider effect")
+	if err := controller.reconcile(context.Background(), "gateway"); err == nil || state.state.Cleanup["identity"] || state.observations != 3 {
+		t.Fatal("failed cleanup did not reopen the observation", err)
+	}
+	provider.err = nil
+	controller, _ = New(new(apiFixture), state, provider)
+	if err := controller.reconcile(context.Background(), "gateway"); err != nil || !state.state.Cleanup["identity"] || provider.deletes != 5 {
+		t.Fatal("new controller did not recover pending cleanup", err)
+	}
+}
+
+func TestMissingCleanupDeclarationStopsIdentityDeletion(t *testing.T) {
+	provider := new(providerFixture)
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}}}
+	controller, _ := New(new(apiFixture), state, provider)
+	if err := controller.reconcile(context.Background(), "gateway"); err == nil || provider.deletes != 0 {
+		t.Fatal("missing cleanup declaration permitted deletion", err)
 	}
 }
