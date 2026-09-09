@@ -53,19 +53,37 @@ type Role struct {
 // ManagedCluster represents the ManagedCluster entity.
 type ManagedCluster struct {
 	Meta
-	Name string `json:"name" gorm:"column:name;not null;size:255"`
+	Name             string  `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	Provider         string  `json:"provider" gorm:"column:provider;not null;size:64;check:length(provider) >= 1"`
+	Region           *string `json:"region,omitempty" gorm:"column:region;size:255"`
+	KubeconfigSecret string  `json:"kubeconfig_secret" gorm:"column:kubeconfig_secret;not null;size:253;check:length(kubeconfig_secret) >= 1"`
+	Status           *string `json:"status,omitempty" gorm:"column:status;size:255"`
+	ApiServerUrl     *string `json:"api_server_url,omitempty" gorm:"column:api_server_url;size:2048"`
 }
 
 // GatewayRelease represents the GatewayRelease entity.
 type GatewayRelease struct {
 	Meta
-	Name string `json:"name" gorm:"column:name;not null;size:255"`
+	Name            string  `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	Image           string  `json:"image" gorm:"column:image;not null;size:2048;check:length(image) >= 1"`
+	RolloutStrategy *string `json:"rollout_strategy,omitempty" gorm:"column:rollout_strategy;size:64"`
+	CanaryPercent   *int32  `json:"canary_percent,omitempty" gorm:"column:canary_percent;check:\"canary_percent\" >= 0 AND \"canary_percent\" <= 100"`
+	CanaryDuration  *string `json:"canary_duration,omitempty" gorm:"column:canary_duration;size:64"`
+	Status          *string `json:"status,omitempty" gorm:"column:status;size:255"`
 }
 
 // ManagedDatabase represents the ManagedDatabase entity.
 type ManagedDatabase struct {
 	Meta
-	Name string `json:"name" gorm:"column:name;not null;size:255"`
+	Name             string  `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	Provider         string  `json:"provider" gorm:"column:provider;not null"`
+	Namespace        string  `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:29;check:length(namespace) >= 1"`
+	Region           *string `json:"region,omitempty" gorm:"column:region;size:255"`
+	Engine           *string `json:"engine,omitempty" gorm:"column:engine;size:64"`
+	EngineVersion    *string `json:"engine_version,omitempty" gorm:"column:engine_version;size:64"`
+	InstanceClass    *string `json:"instance_class,omitempty" gorm:"column:instance_class;size:255"`
+	ConnectionSecret *string `json:"connection_secret,omitempty" gorm:"column:connection_secret;size:253"`
+	Status           *string `json:"status,omitempty" gorm:"column:status;size:255"`
 }
 
 // Gateway represents the Gateway entity.

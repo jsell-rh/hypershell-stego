@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -32,7 +33,9 @@ type fixture struct {
 	cluster, release, database string
 }
 
-func database(t testing.TB) *fixture {
+func database(t testing.TB) *fixture { return databaseSetup(t, true) }
+
+func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	t.Helper()
 	dsn := os.Getenv("STEGO_TEST_POSTGRES_DSN")
 	if dsn == "" {
@@ -104,19 +107,32 @@ func database(t testing.TB) *fixture {
 		t.Fatal(err)
 	}
 	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String(), database: ksuid.New().String()}
-	for entity, value := range map[string]any{
-		"ManagedCluster":  model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster"},
-		"GatewayRelease":  model.GatewayRelease{Meta: model.Meta{ID: f.release}, Name: "release"},
-		"ManagedDatabase": model.ManagedDatabase{Meta: model.Meta{ID: f.database}, Name: "database"},
-	} {
-		if err := s.Create(ctx, entity, value); err != nil {
-			t.Fatal(err)
+	databaseNamespace, err := catalog.DatabaseNamespace(f.database)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if seedPlacement {
+		for entity, value := range map[string]any{
+			"ManagedCluster":  model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"},
+			"GatewayRelease":  model.GatewayRelease{Meta: model.Meta{ID: f.release}, Name: "release", Image: "registry.example/gateway:v1"},
+			"ManagedDatabase": model.ManagedDatabase{Meta: model.Meta{ID: f.database}, Name: "database", Provider: "cnpg", Namespace: databaseNamespace},
+		} {
+			if err := s.Create(ctx, entity, value); err != nil {
+				t.Fatal(err)
+			}
 		}
 	}
 	if err := applyRoleCatalog(ctx, db); err != nil {
 		t.Fatal(err)
 	}
 	migration, err = os.ReadFile("../migrations/000005_global_roles.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
+	migration, err = os.ReadFile("../migrations/000006_placement_catalog.sql")
 	if err != nil {
 		t.Fatal(err)
 	}

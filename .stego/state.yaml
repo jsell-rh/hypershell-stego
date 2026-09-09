@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: 80b16c39700842f85db4f98064b26f45ac78e761cc697cbc38fa75fb60c284ee
+    service_hash: 454265446b8df25f6dbdfbe4283737cc15432ec0db7eed95ba314ea77c295827
     registry_sha: gateway-workflow
     components:
         grpc-application:
@@ -18,7 +18,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.2.0
+            version: 3.3.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -85,15 +85,69 @@ last_applied:
         GatewayRelease:
             - name: name
               type: string
-              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+              hash: a1363e7ac6734db40f0407bd20e7cf157495198f015dbb505cf58f506ab9c79f
+            - name: image
+              type: string
+              hash: b3972a11b0f7bd9ff1d61677b0964aca33a2e3f1fea2bcdbe4db4d7015b495c1
+            - name: rollout_strategy
+              type: string
+              hash: d425d7f1b34250259150cdaf9395efcc172128b47cfd76647164b2508faa74d1
+            - name: canary_percent
+              type: int32
+              hash: 645fbba56f94d42833b6981a2be6de51509acfd6257602e1f54f667a0e2dd527
+            - name: canary_duration
+              type: string
+              hash: 54b4a9133c2a2e5de3f53755b0563e64d50e1ebf4788c70e5f9a3ecbdfef23e8
+            - name: status
+              type: string
+              hash: fe736ad272d4bd4e4b785cd1d2f4ac63c83b5e1a724580842cf21e6608288e83
         ManagedCluster:
             - name: name
               type: string
-              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+              hash: a1363e7ac6734db40f0407bd20e7cf157495198f015dbb505cf58f506ab9c79f
+            - name: provider
+              type: string
+              hash: 54acc9f527e2a92cad3278126ebf7d841688beffc6fef00966970dea045cb21a
+            - name: region
+              type: string
+              hash: d8040619787e3480672d9c2f00d6829e36cee6e9ffea656cf23a01d392e3df86
+            - name: kubeconfig_secret
+              type: string
+              hash: 85e0c5cd88e114220ae3fb3618b391f49a88b2af142f92e15e96f4e9575ea8a5
+            - name: status
+              type: string
+              hash: fe736ad272d4bd4e4b785cd1d2f4ac63c83b5e1a724580842cf21e6608288e83
+            - name: api_server_url
+              type: string
+              hash: c25b4fa14ffc75d754fbda4dfd1017a1ffe0053ff43ce127f26b92a9744d8db0
         ManagedDatabase:
             - name: name
               type: string
-              hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
+              hash: a1363e7ac6734db40f0407bd20e7cf157495198f015dbb505cf58f506ab9c79f
+            - name: provider
+              type: enum
+              hash: d59346c0032d9900ec086e2656dff21c8e7374f25afbce6d2d3d63289cc16879
+            - name: namespace
+              type: string
+              hash: 8126045c4cc79c28f6048ad535eb2c7e1e650991fdbb2a848802482c856b5140
+            - name: region
+              type: string
+              hash: d8040619787e3480672d9c2f00d6829e36cee6e9ffea656cf23a01d392e3df86
+            - name: engine
+              type: string
+              hash: e9ccaa0d7ce1c920ae5a0a547712d86005027b5f9410ad5c0759fb940b22d618
+            - name: engine_version
+              type: string
+              hash: d061898a49cbe9d43706d39d69cbcaafc25e34589db532e82f912a97cf77db09
+            - name: instance_class
+              type: string
+              hash: bdddccb96358dde786624d49ebea900497fb8fd63ac20a7c0ab68ce5c30539a4
+            - name: connection_secret
+              type: string
+              hash: 9cdc45e5398e6cafd9b48de8aaa1b1556c3a8d6110c7000e434eb309a3918cbd
+            - name: status
+              type: string
+              hash: fe736ad272d4bd4e4b785cd1d2f4ac63c83b5e1a724580842cf21e6608288e83
         Role:
             - name: name
               type: string
@@ -227,8 +281,14 @@ last_applied:
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
         grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e
+        grpcapi/pb/hypershell/v1/gateway_releases.pb.go: fa323b2558aca9f9c3b38059102bae3836f12afecae40e158c80f9aaa8f42dd6
+        grpcapi/pb/hypershell/v1/gateway_releases_grpc.pb.go: f36e68264492625508c714e182c33ff3e1c7b42df7b56a3b1f0152db06847156
         grpcapi/pb/hypershell/v1/gateways.pb.go: 4104a8ad6413ef2fffd03f98fde05a9940b23abf0548216410cb9315c19c1394
         grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
+        grpcapi/pb/hypershell/v1/managed_clusters.pb.go: d23a61cecd3af2a4ca6295cc6d7b030c08a2665bbe077794232b66bbddcd7ebd
+        grpcapi/pb/hypershell/v1/managed_clusters_grpc.pb.go: aa087866ba13e2a773645b22753cef3ae236746d962f720b0c19cd02b364cc93
+        grpcapi/pb/hypershell/v1/managed_databases.pb.go: 4e331ea93e18b6f22cf1864946526a67f6b79897f1e89f266ba397345342a2a3
+        grpcapi/pb/hypershell/v1/managed_databases_grpc.pb.go: b4390743b458806268c2ac498468fe64a0b0530a336c87a2714348e229fbe4d5
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
         grpcapi/transport/runtime.go: 4594691d6b46ba2ca23348c8e39bb321c200689e2039de08d4f32ba6fee93492
@@ -237,11 +297,11 @@ last_applied:
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
-        search/field_map.go: 7018b67bc865589d86f144dd728056d2f1c3429efd7371ab8867bf1b7d8675b8
+        search/field_map.go: baf8c62ed88ccecd560a6a1e36b7866368fd3bfc64ef1d25e88f50f50b359a05
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
-        storage/models.go: f8032988b808adeef9445ec1ffece18e7f6c08e45ba36c10e1aaf63064bf2b19
+        storage/models.go: a150aee190c083fc2cd92cc73f7a386c6f296f7bbc22a199c3d13ffc18cd5ecc
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 5aac01e8745ffa9a099a28b7df26c442f2275feb222849e4d0bb88e6b2e3caea
-        storage/transaction.go: 3285b3f6948b627a1d9f22c5787e3d2b5136ca7653a609589ddf1f1d76f1bbe4
+        storage/store.go: 7719168fe500730892e4779ae2d7ab4892104d65563f158a9dc8fe4f5d7fffd4
+        storage/transaction.go: 258339dc94c597dd6417cdb16005878ad36a683b50227a13cdaee6f28012c087

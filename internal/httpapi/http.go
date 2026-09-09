@@ -13,6 +13,7 @@ import (
 	"strings"
 	"time"
 
+	placement "github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/roles"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
@@ -105,6 +106,13 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		return nil, err
 	}
 	mux := http.NewServeMux()
+	placementService, err := placement.New(repository, service)
+	if err != nil {
+		return nil, err
+	}
+	if err := registerPlacement(mux, verifier, placementService); err != nil {
+		return nil, err
+	}
 	create, err := endpoint(verifier, func(r *http.Request) (gateways.CreateRequest, error) {
 		request, err := transport.JSONBody[gateways.CreateRequest](r)
 		if err == nil && strings.TrimSpace(request.DatabaseID) == "" {

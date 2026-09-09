@@ -7,6 +7,7 @@ import (
 	"errors"
 	"math"
 
+	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -47,6 +48,13 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	if err != nil {
 		return err
 	}
+	placement, err := catalog.New(repository, service)
+	if err != nil {
+		return err
+	}
+	pb.RegisterManagedClusterServiceServer(registrar, &clusterServer{resource: placement.Clusters, source: source})
+	pb.RegisterGatewayReleaseServiceServer(registrar, &releaseServer{resource: placement.Releases, source: source})
+	pb.RegisterManagedDatabaseServiceServer(registrar, &databaseServer{resource: placement.Databases, source: source})
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
 	pb.RegisterRoleBindingServiceServer(registrar, &grantServer{service: service, source: source})
 	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})

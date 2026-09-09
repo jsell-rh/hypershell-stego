@@ -372,7 +372,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling ManagedCluster: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&ManagedCluster{}).Where("id = ?", id).Select([]string{"name"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&ManagedCluster{}).Where("id = ?", id).Select([]string{"name", "provider", "region", "kubeconfig_secret", "status", "api_server_url"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -393,7 +393,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling GatewayRelease: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&GatewayRelease{}).Where("id = ?", id).Select([]string{"name"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&GatewayRelease{}).Where("id = ?", id).Select([]string{"name", "image", "rollout_strategy", "canary_percent", "canary_duration", "status"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -414,7 +414,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Select([]string{"name"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Select([]string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -774,7 +774,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "ManagedCluster":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 		query := s.db.WithContext(ctx).Model(&ManagedCluster{})
 		if opts.IncludeDeleted {
 			query = query.Unscoped()
@@ -852,7 +852,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "GatewayRelease":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&GatewayRelease{})
 		if opts.IncludeDeleted {
 			query = query.Unscoped()
@@ -930,7 +930,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "ManagedDatabase":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&ManagedDatabase{})
 		if opts.IncludeDeleted {
 			query = query.Unscoped()
@@ -1418,11 +1418,11 @@ func filterColumns(entity string) map[string]bool {
 	case "Role":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 	case "ManagedCluster":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 	case "GatewayRelease":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 	case "ManagedDatabase":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
 	case "Gateway":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 	case "RoleBinding":
@@ -1735,7 +1735,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling ManagedCluster: %w", err)
 		}
-		validCols := map[string]bool{"name": true}
+		validCols := map[string]bool{"name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity ManagedCluster", k)
@@ -1750,7 +1750,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name"} {
+		for _, col := range []string{"name", "provider", "region", "kubeconfig_secret", "status", "api_server_url"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}
@@ -1803,7 +1803,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling GatewayRelease: %w", err)
 		}
-		validCols := map[string]bool{"name": true}
+		validCols := map[string]bool{"name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity GatewayRelease", k)
@@ -1818,7 +1818,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name"} {
+		for _, col := range []string{"name", "image", "rollout_strategy", "canary_percent", "canary_duration", "status"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}
@@ -1871,7 +1871,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
 		}
-		validCols := map[string]bool{"name": true}
+		validCols := map[string]bool{"name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity ManagedDatabase", k)
@@ -1886,7 +1886,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name"} {
+		for _, col := range []string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}

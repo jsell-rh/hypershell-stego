@@ -79,7 +79,7 @@ func (s *Store) WithLockedResource(ctx context.Context, entity, field, value str
 		}
 	case "ManagedDatabase":
 		switch field {
-		case "id":
+		case "id", "namespace":
 		default:
 			return errors.New("resource lookup requires a unique string field")
 		}

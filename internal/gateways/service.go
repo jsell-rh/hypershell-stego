@@ -102,8 +102,8 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		if !ok {
 			return errors.New("unexpected database storage result")
 		}
-		if databases.Total != 1 || len(rows) != 1 {
-			return fmt.Errorf("%w: zero or multiple managed databases", ErrInvalid)
+		if databases.Total != 1 || len(rows) != 1 || rows[0].Provider != "cnpg" {
+			return fmt.Errorf("%w: CNPG placement requires one managed database with provider cnpg", ErrInvalid)
 		}
 		for entity, id := range map[string]string{"ManagedCluster": request.ClusterID, "GatewayRelease": request.ReleaseID} {
 			if _, err := tx.Get(ctx, entity, id); err != nil {

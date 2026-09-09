@@ -186,3 +186,9 @@ decision.
 [Global role synchronization](global-roles.md) now follows verified
 claims through REST and gRPC. Removal preserves Gateway ownership. The workflow
 covers event delivery, old streams, failures, real provider changes, and restart.
+
+The [placement catalog workflow](placement-catalog.md) now creates cluster, release,
+and database records through the generated API before Gateway creation. REST,
+gRPC, access checks, atomic events, watches, restart, and migration checks cover
+this path. Catalog writes require a platform admin or configured controller.
+Workload deployment and per-Gateway deployment databases remain open.

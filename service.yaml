@@ -22,13 +22,31 @@ entities:
       - { name: built_in, type: bool }
   - name: ManagedCluster
     fields:
-      - { name: name, type: string, max_length: 255 }
+      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: provider, type: string, min_length: 1, max_length: 64 }
+      - { name: region, type: string, optional: true, max_length: 255 }
+      - { name: kubeconfig_secret, type: string, min_length: 1, max_length: 253 }
+      - { name: status, type: string, optional: true, max_length: 255 }
+      - { name: api_server_url, type: string, optional: true, max_length: 2048 }
   - name: GatewayRelease
     fields:
-      - { name: name, type: string, max_length: 255 }
+      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: image, type: string, min_length: 1, max_length: 2048 }
+      - { name: rollout_strategy, type: string, optional: true, max_length: 64 }
+      - { name: canary_percent, type: int32, optional: true, min: 0, max: 100 }
+      - { name: canary_duration, type: string, optional: true, max_length: 64 }
+      - { name: status, type: string, optional: true, max_length: 255 }
   - name: ManagedDatabase
     fields:
-      - { name: name, type: string, max_length: 255 }
+      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: provider, type: enum, values: [cnpg, deployment] }
+      - { name: namespace, type: string, min_length: 1, max_length: 29, unique: true }
+      - { name: region, type: string, optional: true, max_length: 255 }
+      - { name: engine, type: string, optional: true, max_length: 64 }
+      - { name: engine_version, type: string, optional: true, max_length: 64 }
+      - { name: instance_class, type: string, optional: true, max_length: 255 }
+      - { name: connection_secret, type: string, optional: true, max_length: 253 }
+      - { name: status, type: string, optional: true, max_length: 255 }
   - name: Gateway
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
@@ -109,3 +127,9 @@ overrides:
         import_path: hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto
         import_path: hypershell/controlplane/v1/gateway_identity.proto
+      - path: contracts/reference/proto/hypershell/v1/managed_clusters.proto
+        import_path: hypershell/v1/managed_clusters.proto
+      - path: contracts/reference/proto/hypershell/v1/gateway_releases.proto
+        import_path: hypershell/v1/gateway_releases.proto
+      - path: contracts/reference/proto/hypershell/v1/managed_databases.proto
+        import_path: hypershell/v1/managed_databases.proto

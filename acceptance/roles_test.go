@@ -150,6 +150,10 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		"gateway:owner":   {"gateways": {"read", "update", "delete"}, "role_bindings": {"create", "read", "delete", "list"}},
 		"gateway:viewer":  {"gateways": {"read"}},
 	}
+	for _, entity := range []string{"managed_clusters", "gateway_releases", "managed_databases"} {
+		expected["platform:admin"][entity] = []string{"create", "read", "update", "delete", "list"}
+		expected["gateway:creator"][entity] = []string{"read", "list"}
+	}
 	ids := map[string]string{}
 	for _, role := range got.Items {
 		var permissions map[string][]string
