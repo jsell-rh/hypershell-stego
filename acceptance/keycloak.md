@@ -55,6 +55,26 @@ PostgreSQL, and separate API and provisioner processes. It proves:
 - A revocation committed while the provider is stopped returns HTTP 202.
 - Restart recovery stops new token issuance, and deletion removes the client.
 
+Terminal revocation now removes the Keycloak client. The account row, its
+`revoked` or `expired` state, and its audit history remain in PostgreSQL. A later
+delete request removes the visible account record. This differs from the
+reference, which retains a disabled Keycloak client after revocation. Deletion
+is the current design choice after the user was asked about identity retention.
+
+`TestRevocationSurvivesDelayedEnableAfterDatabaseLoss` exposed a failure in the
+disabled-client policy. The test holds an accepted enable request at a TLS
+proxy. It terminates the PostgreSQL connection that holds the Gateway lock,
+then revokes through REST. It stops the API process before releasing the old
+request, so recovery cannot hide a temporary reactivation. Before the fix, the
+delayed update returned HTTP 204 and the revoked credential obtained a token.
+With client deletion, the same update returns HTTP 404 and issuance stays denied.
+
+The test also checks retained metadata, restoration of the owner grant, process
+restart, repeated revocation, and later deletion with audit retention. The
+application uses the existing generated Delete RPC for terminal revocation;
+the protobuf contract and the provider's separate Disable operation are unchanged.
+The domain provider interface now names this terminal operation `Revoke`.
+
 Set `STEGO_REQUIRE_KEYCLOAK=1` to require this test. Docker must be available.
 `scripts/check-gateway.sh` and CI require it. The container is isolated, uses
 test credentials, and exposes only its TLS port on the loopback interface.
@@ -63,8 +83,9 @@ choices, not production deployment instructions. The first successful local run
 completed in 33.14 seconds with Go 1.26.8 and PostgreSQL 18.6.
 
 Remaining work includes automatic scans for provider drift and orphan clients,
-production administrator permissions, recovery capacity, and failure tests for
-stale external operations after database or network connection loss. Revocation
+production administrator permissions, recovery capacity, and other external
+failure cases, including late creation after cleanup. The delayed-update test
+does not prove all provider failure orderings. Revocation
 stops new token issuance. Already issued access tokens can remain valid until
 their five-minute expiry. Internal caller signing-key rotation still requires
 a process restart. Provider token verification fetches current signing keys for

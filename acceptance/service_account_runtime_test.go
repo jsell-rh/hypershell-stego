@@ -206,10 +206,10 @@ func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	provider.mu.Lock()
-	disabled := provider.disabled[id]
+	_, exists := provider.clients[id]
 	provider.mu.Unlock()
-	if !disabled {
-		t.Fatal("recovery did not disable provider identity")
+	if exists {
+		t.Fatal("recovery did not remove the revoked provider identity")
 	}
 	code, data = requestJSON(t, "DELETE", path+"/"+id, owner, nil)
 	if code != 204 {

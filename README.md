@@ -142,5 +142,8 @@ Pending operations recover after restart. Recovery also enforces expiration and
 the creator's current Gateway grant. See [service-account evidence and limits](acceptance/service-accounts.md).
 The [Keycloak provider](acceptance/keycloak.md) now runs through the generated
 TLS transport. CI tests actual token issuance and revocation with a pinned
-Keycloak container. Complete list filters, automatic Gateway cleanup, provider
-failure ordering, production capacity, and client ports remain open.
+Keycloak container. Revocation removes the provider identity and retains its
+account record and audit history. A failure test proves that a delayed enable
+cannot undo revocation after database connection loss. Complete list filters,
+automatic Gateway cleanup, other provider failure cases, production capacity,
+and client ports remain open.

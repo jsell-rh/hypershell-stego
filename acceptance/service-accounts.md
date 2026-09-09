@@ -21,7 +21,9 @@ no credential. Stable Gateway and account IDs permit cleanup when a provider
 reply is lost. Canceled creation attempts cleanup with a separate bounded
 context. Recovery reclaims abandoned reservations after 15 minutes.
 
-Revoke and delete first store their pending state. A provider failure returns
+Revoke and delete first store their pending state. Terminal revocation removes
+the Keycloak client and retains the account record and audit history. This
+prevents a delayed update from enabling that identity again. A provider failure returns
 HTTP 202. The generated supervisor runs recovery after restart. Recovery also
 checks expiration and creator grants. A lost grant revokes the account. An owner
 to viewer change lowers an admin account to `openshell-user`. A failed downgrade
@@ -61,6 +63,8 @@ reservations, and concurrent Gateway deletion.
 
 The [real Keycloak workflow](keycloak.md) now checks client configuration, signed
 token issuance, role reduction, drift repair, and revocation after restart.
+It also proves that a delayed enable cannot undo revocation after the database
+connection and its Gateway lock are lost.
 The protocol fixture remains useful for controlled failures.
 Service-account search, status filters, custom ordering, configurable expiration
 policy, deployment manifests, SDKs, CLI, and web-console workflows remain open.

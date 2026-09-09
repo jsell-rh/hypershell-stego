@@ -65,6 +65,16 @@ func (p *accountProvider) Disable(_ context.Context, gatewayID, id, clientUUID s
 	p.disabled[id] = true
 	return nil
 }
+func (p *accountProvider) Revoke(_ context.Context, gatewayID, id, clientUUID string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.failChange {
+		return errors.New("private revoke failure")
+	}
+	p.disabled[id] = true
+	delete(p.clients, id)
+	return nil
+}
 func (p *accountProvider) Delete(_ context.Context, gatewayID, id, clientUUID string) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()

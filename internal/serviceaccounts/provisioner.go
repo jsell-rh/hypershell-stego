@@ -36,12 +36,10 @@ func (p *rpcProvisioner) Provision(ctx context.Context, spec Spec) (Credential, 
 	}
 	return Credential{ClientID: response.GetClientId(), ClientUUID: response.GetClientUuid(), Subject: response.GetSubject(), Secret: response.GetClientSecret()}, nil
 }
-func (p *rpcProvisioner) Disable(ctx context.Context, gatewayID, id, clientUUID string) error {
-	if clientUUID == "" {
-		return p.Delete(ctx, gatewayID, id, "")
-	}
-	_, err := p.client.Disable(ctx, &pb.DisableRequest{GatewayId: gatewayID, ServiceAccountId: id, ClientUuid: clientUUID})
-	return terminalError(err)
+func (p *rpcProvisioner) Revoke(ctx context.Context, gatewayID, id, clientUUID string) error {
+	// A delayed update can enable a disabled client. Deletion prevents that
+	// update from restoring the identity. The domain retains metadata and audit.
+	return p.Delete(ctx, gatewayID, id, clientUUID)
 }
 func (p *rpcProvisioner) Delete(ctx context.Context, gatewayID, id, clientUUID string) error {
 	var err error

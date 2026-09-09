@@ -42,7 +42,8 @@ type Credential struct{ ClientID, ClientUUID, Subject, Secret string }
 type Provisioner interface {
 	Provision(context.Context, Spec) (Credential, error)
 	Reconcile(context.Context, Spec, string, string) error
-	Disable(context.Context, string, string, string) error
+	// Revoke permanently stops issuance. Later updates must not restore it.
+	Revoke(context.Context, string, string, string) error
 	Delete(context.Context, string, string, string) error
 }
 type CreateRequest struct {
@@ -563,7 +564,7 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 		if remove {
 			err = s.provider.Delete(call, row.GatewayID, row.ID, row.ClientUuid)
 		} else {
-			err = s.provider.Disable(call, row.GatewayID, row.ID, row.ClientUuid)
+			err = s.provider.Revoke(call, row.GatewayID, row.ID, row.ClientUuid)
 		}
 		if err != nil {
 			return ErrUnavailable
