@@ -5,6 +5,7 @@ import "hypershell/v1/gateways.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc ListGatewayReconcileIDs(ListGatewayReconcileIDsRequest) returns (ListGatewayReconcileIDsResponse);
  rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);
  rpc GetGatewayIdentityUser(GetGatewayIdentityUserRequest) returns (GetGatewayIdentityUserResponse);
  rpc GetGatewayIdentityState(GetGatewayIdentityStateRequest) returns (GetGatewayIdentityStateResponse);
@@ -27,3 +28,9 @@ message GetGatewayIdentityUserResponse {
  // Empty means that no live grant permits access.
  string role = 5;
 }
+
+// Recovery includes live and deleted rows. Only configured controllers can read
+// these IDs. Pages contain at most 100 IDs in database ID order. Start a live watch
+// before the first page, and repeat the scan to recover concurrent changes.
+message ListGatewayReconcileIDsRequest { string after_id = 1; }
+message ListGatewayReconcileIDsResponse { repeated string ids = 1; }

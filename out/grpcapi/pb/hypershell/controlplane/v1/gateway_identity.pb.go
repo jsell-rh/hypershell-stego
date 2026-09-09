@@ -354,6 +354,97 @@ func (x *GetGatewayIdentityUserResponse) GetRole() string {
 	return ""
 }
 
+// Recovery includes live and deleted rows. Only configured controllers can read
+// these IDs. Pages contain at most 100 IDs in database ID order. Start a live watch
+// before the first page, and repeat the scan to recover concurrent changes.
+type ListGatewayReconcileIDsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	AfterId       string                 `protobuf:"bytes,1,opt,name=after_id,json=afterId,proto3" json:"after_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGatewayReconcileIDsRequest) Reset() {
+	*x = ListGatewayReconcileIDsRequest{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGatewayReconcileIDsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGatewayReconcileIDsRequest) ProtoMessage() {}
+
+func (x *ListGatewayReconcileIDsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGatewayReconcileIDsRequest.ProtoReflect.Descriptor instead.
+func (*ListGatewayReconcileIDsRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ListGatewayReconcileIDsRequest) GetAfterId() string {
+	if x != nil {
+		return x.AfterId
+	}
+	return ""
+}
+
+type ListGatewayReconcileIDsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Ids           []string               `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListGatewayReconcileIDsResponse) Reset() {
+	*x = ListGatewayReconcileIDsResponse{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListGatewayReconcileIDsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListGatewayReconcileIDsResponse) ProtoMessage() {}
+
+func (x *ListGatewayReconcileIDsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListGatewayReconcileIDsResponse.ProtoReflect.Descriptor instead.
+func (*ListGatewayReconcileIDsResponse) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ListGatewayReconcileIDsResponse) GetIds() []string {
+	if x != nil {
+		return x.Ids
+	}
+	return nil
+}
+
 var File_hypershell_controlplane_v1_gateway_identity_proto protoreflect.FileDescriptor
 
 const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
@@ -381,8 +472,13 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x16\n" +
 	"\x06issuer\x18\x03 \x01(\tR\x06issuer\x12\x18\n" +
 	"\asubject\x18\x04 \x01(\tR\asubject\x12\x12\n" +
-	"\x04role\x18\x05 \x01(\tR\x04role2\xd7\x03\n" +
-	"\x16GatewayIdentityService\x12\x95\x01\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\";\n" +
+	"\x1eListGatewayReconcileIDsRequest\x12\x19\n" +
+	"\bafter_id\x18\x01 \x01(\tR\aafterId\"3\n" +
+	"\x1fListGatewayReconcileIDsResponse\x12\x10\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids2\xec\x04\n" +
+	"\x16GatewayIdentityService\x12\x92\x01\n" +
+	"\x17ListGatewayReconcileIDs\x12:.hypershell.controlplane.v1.ListGatewayReconcileIDsRequest\x1a;.hypershell.controlplane.v1.ListGatewayReconcileIDsResponse\x12\x95\x01\n" +
 	"\x18ListGatewayIdentityUsers\x12;.hypershell.controlplane.v1.ListGatewayIdentityUsersRequest\x1a<.hypershell.controlplane.v1.ListGatewayIdentityUsersResponse\x12\x8f\x01\n" +
 	"\x16GetGatewayIdentityUser\x129.hypershell.controlplane.v1.GetGatewayIdentityUserRequest\x1a:.hypershell.controlplane.v1.GetGatewayIdentityUserResponse\x12\x92\x01\n" +
 	"\x17GetGatewayIdentityState\x12:.hypershell.controlplane.v1.GetGatewayIdentityStateRequest\x1a;.hypershell.controlplane.v1.GetGatewayIdentityStateResponseBPZNgithub.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1b\x06proto3"
@@ -399,7 +495,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP() []byte
 	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescData
 }
 
-var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
+var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*GetGatewayIdentityStateRequest)(nil),   // 0: hypershell.controlplane.v1.GetGatewayIdentityStateRequest
 	(*GetGatewayIdentityStateResponse)(nil),  // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse
@@ -407,18 +503,22 @@ var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*ListGatewayIdentityUsersResponse)(nil), // 3: hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
 	(*GetGatewayIdentityUserRequest)(nil),    // 4: hypershell.controlplane.v1.GetGatewayIdentityUserRequest
 	(*GetGatewayIdentityUserResponse)(nil),   // 5: hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	(*v1.Gateway)(nil),                       // 6: hypershell.v1.Gateway
+	(*ListGatewayReconcileIDsRequest)(nil),   // 6: hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	(*ListGatewayReconcileIDsResponse)(nil),  // 7: hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	(*v1.Gateway)(nil),                       // 8: hypershell.v1.Gateway
 }
 var file_hypershell_controlplane_v1_gateway_identity_proto_depIdxs = []int32{
-	6, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
-	2, // 1: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
-	4, // 2: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
-	0, // 3: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
-	3, // 4: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
-	5, // 5: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	1, // 6: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
-	4, // [4:7] is the sub-list for method output_type
-	1, // [1:4] is the sub-list for method input_type
+	8, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
+	6, // 1: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	2, // 2: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
+	4, // 3: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
+	0, // 4: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
+	7, // 5: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	3, // 6: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
+	5, // 7: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
+	1, // 8: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
+	5, // [5:9] is the sub-list for method output_type
+	1, // [1:5] is the sub-list for method input_type
 	1, // [1:1] is the sub-list for extension type_name
 	1, // [1:1] is the sub-list for extension extendee
 	0, // [0:1] is the sub-list for field type_name
@@ -435,7 +535,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc), len(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   6,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

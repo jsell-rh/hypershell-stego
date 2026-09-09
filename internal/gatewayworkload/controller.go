@@ -66,7 +66,7 @@ func (c *Controller) Run(ctx context.Context) error {
 	return nil
 }
 func (c *Controller) session(parent context.Context) error {
-	ctx, cancel := context.WithTimeout(parent, ResyncInterval)
+	ctx, cancel := context.WithCancel(parent)
 	var workers sync.WaitGroup
 	defer func() { cancel(); workers.Wait() }()
 	stream, err := c.gateways.WatchGateways(ctx, &pb.WatchGatewaysRequest{})
@@ -101,10 +101,17 @@ func (c *Controller) session(parent context.Context) error {
 		}
 	})
 	workers.Go(func() {
-		if err := c.seed(ctx, keys); err != nil {
-			failures <- err
-		} else {
+		for {
+			if err := c.seed(ctx, keys); err != nil {
+				failures <- err
+				return
+			}
 			slog.Info("Gateway workload scan completed")
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(ResyncInterval):
+			}
 		}
 	})
 	for {
@@ -135,31 +142,37 @@ func (c *Controller) seed(ctx context.Context, keys chan<- string) error {
 			return ctx.Err()
 		}
 	}
-	// Small pages keep responses within the generated message limit. The scan
-	// has a fixed resource bound. Capacity beyond this limit requires measurement.
-	for page := int32(1); page <= 10000; page++ {
-		response, err := c.gateways.ListGateways(ctx, &pb.ListGatewaysRequest{Page: page, Size: 1})
+	// Each page is bounded. A scan can exceed the resync interval; it must
+	// finish before another scan starts. A reconnect repeats retained state.
+	after := ""
+	for {
+		operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
+		response, err := c.state.ListGatewayReconcileIDs(operation, &control.ListGatewayReconcileIDsRequest{AfterId: after})
+		stop()
 		if err != nil {
 			return err
 		}
-		if len(response.GetItems()) == 0 {
+		if response == nil || len(response.Ids) > 100 {
+			return errors.New("invalid Gateway recovery page")
+		}
+		seen := make(map[string]bool, len(response.Ids))
+		for _, id := range response.Ids {
+			if _, err := Namespace(id); err != nil || id == after || seen[id] {
+				return errors.New("Gateway recovery cursor did not advance")
+			}
+			if err := enqueue(id); err != nil {
+				return err
+			}
+			seen[id] = true
+			after = id
+		}
+		if len(response.Ids) < 100 {
 			break
 		}
-		if len(response.GetItems()) != 1 {
-			return errors.New("invalid Gateway list size")
-		}
-		id := response.Items[0].GetMetadata().GetId()
-		if id == "" {
-			return errors.New("Gateway list returned an empty ID")
-		}
-		if err := enqueue(id); err != nil {
-			return err
-		}
-		if page == 10000 {
-			return errors.New("Gateway scan exceeds its limit")
-		}
 	}
-	ids, err := c.provider.GatewayIDs(ctx)
+	operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
+	ids, err := c.provider.GatewayIDs(operation)
+	stop()
 	if err != nil {
 		return err
 	}

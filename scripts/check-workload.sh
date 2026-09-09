@@ -52,7 +52,7 @@ if [[ $workflow == gateway ]]; then
   kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n agent-sandbox-system rollout status deployment/agent-sandbox-controller --timeout=120s
   export STEGO_REQUIRE_KEYCLOAK=1
   go test -race -count=1 ./internal/gatewayworkload
-  go test -race -count=1 -v ./acceptance -run '^TestGatewayWorkloadWithDatabaseAndIdentity$'
+  go test -race -count=1 -v ./acceptance -run '^TestGateway(WorkloadWithDatabaseAndIdentity|DeletionBeforeWorkloadStartup)$'
 else
   go test -race -count=1 ./internal/databasecontroller
   go test -race -count=1 -v ./acceptance -run '^TestDatabase(WorkloadAndOfflineDeletion|DeleteReplayThroughGeneratedRuntime)$'

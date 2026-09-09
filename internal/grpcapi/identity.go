@@ -43,3 +43,11 @@ func (s *identityServer) GetGatewayIdentityUser(ctx context.Context, request *pb
 	}
 	return &pb.GetGatewayIdentityUserResponse{GatewayId: state.GatewayID, UserId: state.UserID, Issuer: state.Issuer, Subject: state.Subject, Role: state.Role}, nil
 }
+
+func (s *identityServer) ListGatewayReconcileIDs(ctx context.Context, request *pb.ListGatewayReconcileIDsRequest) (*pb.ListGatewayReconcileIDsResponse, error) {
+	ids, err := s.service.ReconcileIDs(ctx, gateways.PrincipalFromContext(ctx), request.GetAfterId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.ListGatewayReconcileIDsResponse{Ids: ids}, nil
+}

@@ -3,12 +3,16 @@ package gatewayworkload
 import (
 	"context"
 	"errors"
+	"github.com/segmentio/ksuid"
+	"slices"
 	"testing"
+	"time"
 
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -200,5 +204,109 @@ func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
 	}
 	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 1 || database.deletes != 1 {
 		t.Fatal("former cluster retained deleted Gateway", err)
+	}
+}
+
+type recoveryFixture struct {
+	control.GatewayIdentityServiceClient
+	pages   [][]string
+	cursors []string
+	delay   time.Duration
+}
+
+func (f *recoveryFixture) ListGatewayReconcileIDs(ctx context.Context, r *control.ListGatewayReconcileIDsRequest, _ ...grpc.CallOption) (*control.ListGatewayReconcileIDsResponse, error) {
+	f.cursors = append(f.cursors, r.AfterId)
+	if f.delay > 0 {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		case <-time.After(f.delay):
+		}
+	}
+	page := f.pages[0]
+	f.pages = f.pages[1:]
+	return &control.ListGatewayReconcileIDsResponse{Ids: page}, nil
+}
+func TestRecoveryScanRejectsInvalidPages(t *testing.T) {
+	id := ksuid.New().String()
+	for _, page := range [][]string{{"invalid"}, {id, id}, make([]string, 101)} {
+		state := &recoveryFixture{pages: [][]string{page}}
+		c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
+		if err := c.seed(context.Background(), make(chan string, QueueCapacity)); err == nil {
+			t.Fatal("invalid page was accepted")
+		}
+	}
+}
+func TestRecoveryScanAdvancesAcrossPages(t *testing.T) {
+	ids := make([]string, 101)
+	for i := range ids {
+		ids[i] = ksuid.New().String()
+	}
+	slices.Sort(ids)
+	state := &recoveryFixture{pages: [][]string{ids[:100], ids[100:]}}
+	c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
+	queue := make(chan string, QueueCapacity)
+	if err := c.seed(context.Background(), queue); err != nil {
+		t.Fatal(err)
+	}
+	if !slices.Equal(state.cursors, []string{"", ids[99]}) {
+		t.Fatal("scan did not use the last ID as its cursor")
+	}
+	for _, id := range ids {
+		if got := <-queue; got != id {
+			t.Fatal("scan lost an ID")
+		}
+	}
+}
+
+type recoveryWatch struct {
+	grpc.ClientStream
+	ctx context.Context
+}
+
+func (w *recoveryWatch) Header() (metadata.MD, error) { return nil, nil }
+func (w *recoveryWatch) Recv() (*pb.WatchGatewaysResponse, error) {
+	<-w.ctx.Done()
+	return nil, w.ctx.Err()
+}
+
+type recoveryAPI struct{ apiFixture }
+
+func (a *recoveryAPI) WatchGateways(ctx context.Context, _ *pb.WatchGatewaysRequest, _ ...grpc.CallOption) (pb.GatewayService_WatchGatewaysClient, error) {
+	return &recoveryWatch{ctx: ctx}, nil
+}
+
+type slowRecovery struct {
+	recoveryFixture
+	observed chan string
+}
+
+func (s *slowRecovery) GetGatewayIdentityState(_ context.Context, r *control.GetGatewayIdentityStateRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
+	s.observed <- r.Id
+	return &control.GetGatewayIdentityStateResponse{Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
+}
+func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
+	id := ksuid.New().String()
+	state := &slowRecovery{recoveryFixture: recoveryFixture{pages: [][]string{{id}}, delay: ResyncInterval + 100*time.Millisecond}, observed: make(chan string, 1)}
+	c, _ := New(new(recoveryAPI), state, &databaseFixture{err: status.Error(codes.NotFound, "absent")}, new(releaseFixture), new(providerFixture))
+	ctx, cancel := context.WithTimeout(context.Background(), ResyncInterval+5*time.Second)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- c.session(ctx) }()
+	select {
+	case got := <-state.observed:
+		if got != id {
+			t.Error("scan changed its ID")
+		}
+	case err := <-done:
+		t.Fatalf("scan ended before it processed its retained ID: %v", err)
+	case <-ctx.Done():
+		t.Error("long scan did not process its retained ID")
+	}
+	cancel()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("scan did not stop")
 	}
 }

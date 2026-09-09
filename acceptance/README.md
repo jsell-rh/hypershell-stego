@@ -209,3 +209,7 @@ persistent data, stable credentials, foreign namespace denial, and cleanup after
 offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
 are part of this path. The cluster test has its own required CI job. Gateway
 workload deployment and production database operations remain open.
+
+The Gateway workload gate also checks deletion before the workload controller
+first starts, followed by API restart and automatic database cleanup. The
+private recovery API has separate paging and access tests in the full suite.

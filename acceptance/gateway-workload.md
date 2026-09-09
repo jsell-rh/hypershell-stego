@@ -122,26 +122,44 @@ The isolated test uses a private Keycloak CA and a private Docker bridge address
 The same issuer URL is reachable from the host and Gateway Pod. No TLS verification
 is disabled.
 
-The final actual-image test passed in 163.20 seconds. Its acceptance package took
-164.243 seconds with the race detector. This run included former-cluster cleanup
-and a forced database deletion failure. These are workflow durations, not
+The actual-image regression after the retained-ID recovery change passed in
+167.88 seconds. The combined recovery and workload package took 224.754 seconds
+with the race detector. This run included former-cluster cleanup and a forced
+database deletion failure. The separate recovery check with an empty event queue
+passed in 45.50 seconds; its package took 46.553 seconds. These are workflow durations, not
 production latency measurements.
 
 The complete variant race suite passed with PostgreSQL and Keycloak required;
-its acceptance package took 331.637 seconds. The database workflow and deletion
-replay regression package passed in 74.076 seconds. Focused race tests and vet
-passed after the final ownership and trust-file checks. The Go vulnerability
+its acceptance package took 334.339 seconds. The preceding database workflow
+and deletion replay regression package passed in 74.076 seconds. Focused race
+tests and vet passed for the recovery changes. The Go vulnerability
 scan found no known vulnerabilities. Pinned generation completed without drift;
-the committed output must also pass `scripts/generate.sh --check`.
+CI also requires `scripts/generate.sh --check` from the committed files.
 
 The trust-file check exports only parsed certificates to the public ConfigMap.
 It rejects private-key blocks. It does not copy unrelated file content.
 
-Deletion before the first workload reconciliation remains an open recovery case.
-If no Gateway resource or database namespace link exists, the current live watch
-and resource scan cannot recover that deleted Gateway ID. A retained-ID replay
-test must close this gap. Progress through large resource lists also needs a
-separate test; the current scan has a time limit and starts again on reconnect.
+`TestGatewayDeletionBeforeWorkloadStartup` covers deletion before the workload
+controller first observes a Gateway. It creates a real database, verifies that
+no Gateway namespace or database link exists, deletes the Gateway, drains the
+event queue, and restarts the API. The controller must recover the deleted ID and remove the database.
+The test failed against the previous implementation after repeated empty scans.
+
+The private `ListGatewayReconcileIDs` RPC returns at most 100 retained IDs in
+database ID order. It includes live and deleted rows. Only configured controllers
+can read these pages; platform administrator status alone does not permit access.
+The generated storage adapter selects only the ID field. Each cursor must be a
+canonical KSUID. A fresh privileged state read remains required before cleanup.
+The live watch starts before the scan. Each completed scan repeats after ten
+seconds. A scan can take longer than that interval; each request has its own
+deadline. Restart repeats the scan from retained state.
+
+`TestGatewayRecoveryIDsThroughGeneratedRuntime` checks 205 IDs across three pages,
+a concurrent deletion, denied callers, invalid cursors, and the end of the scan.
+`TestRecoveryScanCanExceedTheResyncInterval` checks progress through a slow scan.
+Capacity under sustained watch overflow and very large retained histories still
+needs measurement. The generated list adapter also counts matching rows; the
+current recovery caller does not use that count.
 
 The pinned image requires workspace membership in addition to its standard user
 role. The user was asked whether a Hypershell viewer grant should also create
