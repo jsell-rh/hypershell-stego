@@ -48,7 +48,10 @@ func run() error {
 	}
 	defer sqlDB.Close()
 
-	store := storage.NewStore(db)
+	store, err := storage.NewStore(db)
+	if err != nil {
+		return err
+	}
 	runtime, err := events.NewRuntime(ctx, sqlDB)
 	if err != nil {
 		return err

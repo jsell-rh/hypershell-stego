@@ -53,7 +53,11 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	}
 	t.Cleanup(func() { db.Close() })
 	f.db = db
-	service, err := gateways.New(storage.NewStore(orm))
+	repository, err := storage.NewStore(orm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := gateways.New(repository)
 	if err != nil {
 		t.Fatal(err)
 	}

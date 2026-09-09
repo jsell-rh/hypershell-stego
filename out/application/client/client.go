@@ -138,6 +138,12 @@ func (c *Client) Do(ctx context.Context, method, relative string, headers http.H
 	if err != nil || len(data) > MaxResponseBytes {
 		return failure, errors.New("invalid HTTP response body")
 	}
+	if ctx.Err() != nil {
+		return failure, errors.New("HTTP service request canceled")
+	}
+	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+		return failure, errors.New("HTTP service request expired")
+	}
 	if response.StatusCode >= 300 && response.StatusCode < 400 {
 		return failure, errors.New("HTTP service redirect is forbidden")
 	}

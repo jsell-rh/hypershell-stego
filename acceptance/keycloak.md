@@ -173,3 +173,21 @@ correction passed focused race tests in 11.978 seconds. Pinned regeneration had
 no output changes or drift, and dependency verification passed. CI requires all
 these tests on the final commit. These are correctness checks, not production
 capacity measurements.
+
+The first hosted run of this gate found a GORM schema data race. A Gateway
+request and account recovery initialized related model metadata at the same
+time. The race detector stopped the generated API process. The compiler pin now
+includes schema preparation before the store becomes available to either path.
+This changes no database tables and requires no startup migration. Generated
+startup handles preparation errors before listeners or recovery tasks start.
+STEGO also has an independent Record/Membership test for cold schema caches.
+
+The full local race suite then passed with PostgreSQL and Keycloak required;
+the acceptance package completed in 211.673 seconds. The final compiler pin
+also includes an HTTPS completion check. Canceled or expired requests return
+no response data, even when the body read completes at the cancellation boundary.
+The compiler tests control this ordering and check resource cleanup. The final
+variant CI run checks the complete application gate with both compiler fixes.
+The real Keycloak audience and role workflow passed in 38.247 seconds with both
+fixes. Final regeneration had no output changes or drift. The final compiler
+revision also rejects entity names that collide with its schema helper.

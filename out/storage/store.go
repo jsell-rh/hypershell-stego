@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"sync"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	stegostorage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -35,9 +36,40 @@ type Store struct {
 	transaction *transactionState
 }
 
-// NewStore creates a new Store with the given GORM connection.
-func NewStore(db *gorm.DB) *Store {
-	return &Store{db: db}
+var schemaInitialization sync.Mutex
+
+// NewStore prepares all model metadata before concurrent queries can start.
+// Construct the store before other code uses these models on the connection.
+// Preparation does not read or change database tables.
+func NewStore(db *gorm.DB) (*Store, error) {
+	if db == nil {
+		return nil, errors.New("storage requires an initialized GORM database")
+	}
+	if db.Error != nil {
+		return nil, db.Error
+	}
+	if db.Config == nil || db.Statement == nil || db.NamingStrategy == nil {
+		return nil, errors.New("storage requires an initialized GORM database")
+	}
+	schemaInitialization.Lock()
+	defer schemaInitialization.Unlock()
+	for _, model := range []any{
+		&User{},
+		&Role{},
+		&ManagedCluster{},
+		&GatewayRelease{},
+		&ManagedDatabase{},
+		&Gateway{},
+		&RoleBinding{},
+		&ServiceAccount{},
+		&ServiceAccountAudit{},
+	} {
+		statement := &gorm.Statement{DB: db}
+		if err := statement.Parse(model); err != nil {
+			return nil, fmt.Errorf("prepare storage schema: %w", err)
+		}
+	}
+	return &Store{db: db}, nil
 }
 
 // Create inserts a new entity record. Computed fields are excluded.

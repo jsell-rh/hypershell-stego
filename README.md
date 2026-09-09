@@ -159,3 +159,9 @@ access defect. Failed role reduction now queues terminal revocation, including
 when OIDC settings are invalid or the provider binding is lost. The tests check
 restart and restored owner access. Control-plane creation of these bindings,
 existing-client migration, and production recovery latency remain open.
+
+The workflow also exposed a data race during GORM model initialization. The
+compiler now prepares model metadata before it starts concurrent application
+work. This runs with external migrations and changes no database tables.
+The generated store constructor returns an error, which startup and the test
+fixtures now handle.

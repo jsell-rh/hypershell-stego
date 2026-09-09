@@ -95,7 +95,10 @@ func database(t testing.TB) *fixture {
 	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
 		t.Fatal(err)
 	}
-	s := model.NewStore(orm)
+	s, err := model.NewStore(orm)
+	if err != nil {
+		t.Fatal(err)
+	}
 	svc, err := gateways.New(s)
 	if err != nil {
 		t.Fatal(err)

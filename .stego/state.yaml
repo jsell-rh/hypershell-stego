@@ -194,7 +194,7 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: 21e288964c29c5577c79100ffeb9d9d27b0e210dd9060cdad92d04a84120fae0
+        application/client/client.go: 9ea37d0bf1fe0707ba2cdd50980bfd67cb09478b5574eb49ba6c45a4765d7cb5
         application/transport/endpoint.go: a3a239430bee46fb7e98b248135ff48671692bf61f3a22196f4a3d2bac2778b5
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: d0070a69277aa7b198b664a7e88368fc3be4b9494146a1e10861a6b36c17eead
@@ -210,7 +210,7 @@ last_applied:
         grpcapi/pb/hypershell/v1/gateways.pb.go: 4104a8ad6413ef2fffd03f98fde05a9940b23abf0548216410cb9315c19c1394
         grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
         grpcapi/transport/runtime.go: 1e51327091e797b1af4eb76270f55f0669b0cfb6d7b1e2c1f4e2c9d61daffe18
-        main.go: a79aa692fd0fb155a40a7bf51f827f087de1f36070b3d17a5304e375aa984074
+        main.go: ffc42b76bbbbe3c16cb8741c4da3002b4ef91db19be7129f53a25489f4e9f457
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
@@ -221,5 +221,5 @@ last_applied:
         storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
         storage/models.go: 10d4351701557315260709a16d5eb759335cf554b396e0cbe1ea46ff882929d4
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: d802c1754489ee23862014a5a627ff6e55f44f56e64f347374f176f9096f9cb3
+        storage/store.go: 3a3401cdfaa70f0c364042d7324107e53c066cbc1af291293782d7dfa71212a7
         storage/transaction.go: fe1319d0e90680c5d27d03635679c4ba7a7572c6e5ac42b883f9914836cb301f
