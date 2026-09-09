@@ -87,5 +87,6 @@ The final focused race run passed after the timeout fix. It repeated the real
 login workflow and the current-state checks in 29.032 seconds.
 
 The login test now discovers owner and viewer role IDs through the authenticated
-[role catalog](role-catalog.md). Recipient user ID discovery still uses the test
-database. The public user-discovery policy remains open.
+[role catalog](role-catalog.md). The recipient now obtains their stored ID through the
+[self-identity route](current-user.md). The sharing test uses no direct database
+lookup for role or recipient IDs. A searchable user directory remains open.

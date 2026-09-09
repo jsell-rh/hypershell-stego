@@ -188,3 +188,8 @@ after restart. See [the evidence and limits](acceptance/grant-discovery.md).
 The [role catalog](acceptance/role-catalog.md) now supplies role IDs through REST.
 The browser grant workflow uses this API. Stable IDs, migration recovery,
 authentication, access limits, and restart have acceptance checks.
+
+The [self-identity route](acceptance/current-user.md) lets a signed-in recipient
+obtain their stored user ID. The real browser sharing test now obtains both
+recipient and role IDs through REST. A user directory remains a separate policy
+decision.

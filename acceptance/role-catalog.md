@@ -50,7 +50,7 @@ and Keycloak required. The focused role and browser-login race checks passed in
 took 295.363 seconds. Dependency verification passed.
 
 Sparse fields and REST page sizes above 100 remain open. The reference has no
-public user-discovery route. The browser fixture still reads the recipient user
-ID from its test database. The choice between recipient-supplied IDs and a user
-directory remains open. These limits prevent a claim of complete sharing API
-coverage. Production capacity has not been measured for the role catalog.
+public user-discovery route. The browser workflow now obtains the recipient ID through the
+[self-identity route](current-user.md). A searchable user directory remains a
+separate policy decision. Production capacity has not been measured for the
+role catalog.

@@ -243,9 +243,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatalf("create Gateway with provider token: %d %s", code, body)
 	}
-	if code, _ := requestJSON(t, "GET", root+"/gateways", bob, nil); code != 200 {
-		t.Fatal("register viewer identity", code)
-	}
+	recipient := currentUser(t, root, bob)
 	stopController, logs := startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
 	defer stopController()
 	gatewayClient, _ := keycloak.GatewayClientID(gateway.ID)
@@ -299,9 +297,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	}
 	waitRoles("bob", bobID, nil)
 	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway"}
-	if err := f.db.QueryRow("SELECT id FROM users WHERE issuer=$1 AND subject=$2", k.options.ServerURL+"/realms/workflow", bobID).Scan(&grant.UserID); err != nil {
-		t.Fatal(err)
-	}
+	grant.UserID = recipient.ID
 	grant.RoleID = discoverRole(t, root, alice, "gateway:viewer").ID
 	body, _ = json.Marshal(grant)
 	code, body = requestJSON(t, "POST", root+"/role_bindings", alice, body)

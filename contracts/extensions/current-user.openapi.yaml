@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: Hypershell current user extension
+  version: 1.0.0
+  description: This route extends the pinned reference API. It returns only the authenticated caller.
+paths:
+  /api/hypershell/v1/users/me:
+    get:
+      operationId: getCurrentUser
+      description: Resolve the verified issuer and subject. Create the user record if absent. Update profile fields from verified claims. Do not assign roles. Query parameters and request bodies are rejected.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The committed user record. The ID remains stable across profile changes.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CurrentUser'
+        '400':
+          description: The request contains query parameters or a body.
+        '401':
+          description: The access token or required identity claims are invalid.
+        '409':
+          description: A concurrent write caused a conflict, or the stored identity is deleted. Retry a concurrent conflict. A deleted identity requires an operator action.
+        '500':
+          description: The user record could not be committed or read. No successful user response is returned.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    CurrentUser:
+      type: object
+      additionalProperties: false
+      required: [id, kind, href, created_at, updated_at, username, email, name]
+      properties:
+        id:
+          type: string
+          pattern: '^[0-9A-Za-z]{27}$'
+        kind:
+          type: string
+          enum: [User]
+        href:
+          type: string
+          enum: [/api/hypershell/v1/users/me]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        username:
+          type: string
+          minLength: 1
+          maxLength: 255
+        email:
+          type: string
+          maxLength: 320
+        name:
+          type: string
+          maxLength: 255

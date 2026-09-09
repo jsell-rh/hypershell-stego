@@ -16,6 +16,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/roles"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
+	"github.com/jsell-rh/hypershell-stego/internal/users"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -208,6 +209,13 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	mux.Handle("POST "+collectionPath, create)
 	mux.Handle("GET "+collectionPath+"/{id}", get)
 	mux.Handle("GET "+collectionPath, list)
+	userService, err := users.New(repository)
+	if err != nil {
+		return nil, err
+	}
+	if err := registerCurrentUser(mux, verifier, userService); err != nil {
+		return nil, err
+	}
 	catalog, err := roles.New(repository)
 	if err != nil {
 		return nil, err
