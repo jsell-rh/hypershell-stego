@@ -53,7 +53,7 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 			t.Fatalf("invalid patch: %v", err)
 		}
 	}
-	if count(t, f.db, "stego_outbox.messages") != 2 {
+	if count(t, f.db, "stego_outbox.messages") != 3 {
 		t.Fatal("failed update committed an event")
 	}
 	// Role names in a token do not substitute for a grant on this Gateway.
@@ -93,7 +93,7 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 	if err := f.db.QueryRow(`SELECT deleted_at IS NOT NULL FROM gateways WHERE id=$1`, created.ID).Scan(&deleted); err != nil || !deleted {
 		t.Fatalf("missing tombstone: %v", err)
 	}
-	if count(t, f.db, "stego_outbox.messages") != 3 {
+	if count(t, f.db, "stego_outbox.messages") != 4 {
 		t.Fatal("delete did not commit exactly one event")
 	}
 }
@@ -106,7 +106,7 @@ func TestMutationEventFailureRollsBack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_mutations CHECK(kind='gateway.created')`); err != nil {
+	if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_mutations CHECK(kind IN ('gateway.created','rolebinding.created'))`); err != nil {
 		t.Fatal(err)
 	}
 	row, err := f.service.Update(ctx, owner, created.ID, gateways.PatchRequest{Name: pointer("must roll back")})
@@ -120,7 +120,7 @@ func TestMutationEventFailureRollsBack(t *testing.T) {
 	if err != nil || current.Name != created.Name || !current.UpdatedTime.Equal(created.UpdatedTime) {
 		t.Fatalf("failed mutation changed Gateway: %+v %v", current, err)
 	}
-	if count(t, f.db, "stego_outbox.messages") != 1 {
+	if count(t, f.db, "stego_outbox.messages") != 2 {
 		t.Fatal("failed mutation changed events")
 	}
 }
@@ -194,7 +194,7 @@ func TestConcurrentChangeCannotBeOverwrittenByGatewayPatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	got := stored.(model.Gateway)
-	if got.Name != "original" || got.ActiveSandboxCount == nil || *got.ActiveSandboxCount != 9 || count(t, f.db, "stego_outbox.messages") != 1 {
+	if got.Name != "original" || got.ActiveSandboxCount == nil || *got.ActiveSandboxCount != 9 || count(t, f.db, "stego_outbox.messages") != 2 {
 		t.Fatal("stale patch overwrote the new state or committed an event")
 	}
 }

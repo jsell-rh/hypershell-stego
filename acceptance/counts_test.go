@@ -46,7 +46,7 @@ func TestSandboxCountTransitionsAndEvents(t *testing.T) {
 		} else {
 			value, err = service.AdjustActiveSandboxCount(ctx, controller, row.Namespace, step.input)
 		}
-		if err != nil || value != step.want || count(t, f.db, "stego_outbox.messages") != step.events {
+		if err != nil || value != step.want || count(t, f.db, "stego_outbox.messages") != step.events+1 {
 			t.Fatalf("step %+v: value=%d error=%v", step, value, err)
 		}
 		stored, err := f.storage.Get(ctx, "Gateway", row.ID)
@@ -74,7 +74,7 @@ func TestSandboxCountTransitionsAndEvents(t *testing.T) {
 		t.Fatal(err)
 	}
 	after := stored.(model.Gateway)
-	if *after.ActiveSandboxCount != math.MaxInt32 || !after.UpdatedTime.Equal(before.UpdatedTime) || count(t, f.db, "stego_outbox.messages") != 10 {
+	if *after.ActiveSandboxCount != math.MaxInt32 || !after.UpdatedTime.Equal(before.UpdatedTime) || count(t, f.db, "stego_outbox.messages") != 11 {
 		t.Fatal("overflow or equal value wrote state")
 	}
 	if value, err := service.AdjustActiveSandboxCount(ctx, controller, row.Namespace, math.MinInt32); err != nil || value != 0 {
@@ -107,7 +107,7 @@ func TestSandboxCountEventFailureRollsBack(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if stored.(model.Gateway).ActiveSandboxCount != nil || count(t, f.db, "stego_outbox.messages") != 1 {
+		if stored.(model.Gateway).ActiveSandboxCount != nil || count(t, f.db, "stego_outbox.messages") != 2 {
 			t.Fatal("failed event committed a count")
 		}
 	}
@@ -200,7 +200,7 @@ func TestConcurrentSandboxCountsKeepEveryIncrement(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if *stored.(model.Gateway).ActiveSandboxCount != workers || count(t, f.db, "stego_outbox.messages") != workers+1 {
+	if *stored.(model.Gateway).ActiveSandboxCount != workers || count(t, f.db, "stego_outbox.messages") != workers+2 {
 		t.Fatal("concurrent count or event was lost")
 	}
 }

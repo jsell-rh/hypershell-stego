@@ -38,6 +38,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 		return err
 	}
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
+	pb.RegisterRoleBindingServiceServer(registrar, &grantServer{service: service, source: source})
 	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})
 	return nil
 }
@@ -164,6 +165,8 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 }
 func mapError(err error) error {
 	switch {
+	case errors.Is(err, gateways.ErrGrantCapacity):
+		return status.Error(codes.ResourceExhausted, "grant response exceeds its resource limit")
 	case errors.Is(err, gateways.ErrServiceAccountsExist):
 		return status.Error(codes.FailedPrecondition, "service accounts require cleanup before Gateway deletion")
 	case errors.Is(err, gateways.ErrIdentity):

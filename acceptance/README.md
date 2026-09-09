@@ -12,7 +12,7 @@ command. The generated application processes also use the race detector.
 | Check | Current evidence |
 | --- | --- |
 | Create and retrieve | Domain service, KSUID, namespace, placement, timestamps |
-| Atomic creation | Gateway, owner grant, and event commit or roll back together |
+| Atomic creation | Gateway, owner grant, and both creation events commit or roll back together |
 | Access | Owner, viewer, admin, removed grants, opaque reads, filtered pages and totals |
 | Event delivery | REST creation commits an event that the same generated process sends to a TLS Kafka protocol fixture |
 | Restart | New store retains the Gateway and grant; new event process drains pending events |
@@ -169,3 +169,7 @@ The user login workflow now uses real Keycloak browser forms and PKCE S256.
 Gateway tokens reflect owner and viewer grants, profile changes, removal, and
 restart. The test exposed a missing subject mapper in the managed Gateway client.
 See [the user login evidence and remaining scope](gateway-user-login.md).
+
+The application now supplies filtered REST grant lists and the reference gRPC
+grant list and watch service. See [the grant discovery evidence](grant-discovery.md)
+for access rules, restart behavior, and limits.

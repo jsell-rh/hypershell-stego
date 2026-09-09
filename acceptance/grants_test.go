@@ -127,7 +127,7 @@ func TestGrantEventsCommitWithGrantChanges(t *testing.T) {
 	if _, err := f.service.Get(ctx, principal("bob"), gateway.ID); !errors.Is(err, store.ErrNotFound) {
 		t.Fatal("failed grant exposed Gateway", err)
 	}
-	if count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 1 {
+	if count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 2 {
 		t.Fatal("failed grant left partial state")
 	}
 	if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_grant_update`); err != nil {
@@ -149,7 +149,7 @@ func TestGrantEventsCommitWithGrantChanges(t *testing.T) {
 	if _, err := f.service.Get(ctx, principal("bob"), gateway.ID); err != nil {
 		t.Fatal("failed delete removed access", err)
 	}
-	if count(t, f.db, "stego_outbox.messages") != 3 {
+	if count(t, f.db, "stego_outbox.messages") != 4 {
 		t.Fatal("failed delete left an event")
 	}
 }
@@ -231,7 +231,7 @@ func TestGrantRejectsInvalidTargets(t *testing.T) {
 	if _, err := f.service.CreateGrant(ctx, owner, valid); !errors.Is(err, gateways.ErrInvalid) {
 		t.Fatal("unbound profile received grant", err)
 	}
-	if count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 1 {
+	if count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 2 {
 		t.Fatal("invalid target changed grants or events")
 	}
 }

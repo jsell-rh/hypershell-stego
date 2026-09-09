@@ -21,11 +21,36 @@ type grantItem struct {
 	Scope     string `json:"scope"`
 }
 
+type grantList struct {
+	Kind  string      `json:"kind"`
+	Href  string      `json:"href"`
+	Page  int         `json:"page"`
+	Size  int         `json:"size"`
+	Total int64       `json:"total"`
+	Items []grantItem `json:"items"`
+}
+
 func presentGrant(row model.RoleBinding) grantItem {
 	return grantItem{Reference: Reference{ID: row.ID, Kind: "RoleBinding", Href: grantPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, RoleID: row.RoleID, UserID: row.UserID, GatewayID: row.GatewayID, Scope: row.Scope}
 }
 
 func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gateways.Service) error {
+	list, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (pageRequest, error) {
+		return parseEntityPage(r, "RoleBinding")
+	}, func(ctx context.Context, q pageRequest) (grantList, error) {
+		page, err := service.ListGrants(ctx, gateways.PrincipalFromContext(ctx), gateways.GrantQuery{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
+		if err != nil {
+			return grantList{}, err
+		}
+		result := grantList{Kind: "RoleBindingList", Href: grantPath, Page: q.Page, Size: len(page.Items), Total: page.Total, Items: make([]grantItem, 0, len(page.Items))}
+		for _, item := range page.Items {
+			result.Items = append(result.Items, presentGrant(item.Grant))
+		}
+		return result, nil
+	}, http.StatusOK, writeError)
+	if err != nil {
+		return err
+	}
 	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.GrantRequest, error) {
 		if r.URL.RawQuery != "" {
 			return gateways.GrantRequest{}, transport.ErrRequest
@@ -70,6 +95,7 @@ func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gatewa
 		return err
 	}
 	mux.Handle("POST "+grantPath, create)
+	mux.Handle("GET "+grantPath, list)
 	mux.Handle("GET "+grantPath+"/{id}", get)
 	mux.Handle("DELETE "+grantPath+"/{id}", remove)
 	return nil

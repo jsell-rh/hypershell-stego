@@ -32,7 +32,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count(t, f.db, "stego_outbox.messages") != 1 {
+	if count(t, f.db, "stego_outbox.messages") != 2 {
 		t.Fatal("event was lost before runtime start")
 	}
 	stop := startRuntime(t, binary, f.dsn, config)
@@ -69,7 +69,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if count(t, db, "stego_outbox.messages") != 1 {
+	if count(t, db, "stego_outbox.messages") != 2 {
 		t.Fatal("offline event is not durable")
 	}
 	stop = startRuntime(t, binary, f.dsn, config)

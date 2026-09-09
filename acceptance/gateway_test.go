@@ -178,8 +178,8 @@ func TestGatewayCreationCommitsOwnerAndEvent(t *testing.T) {
 	if gateway.CreatedTime.IsZero() || gateway.UpdatedTime.IsZero() {
 		t.Fatal("stored timestamps are missing")
 	}
-	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 1 {
-		t.Fatal("creation did not commit all three records")
+	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != 1 || count(t, f.db, "stego_outbox.messages") != 2 {
+		t.Fatal("creation did not commit the resource, grant, and both events")
 	}
 	var username, role, scope, key, kind, payload string
 	if err := f.db.QueryRow(`SELECT u.username,r.name,b.scope FROM role_bindings b JOIN users u ON u.id=b.user_id JOIN roles r ON r.id=b.role_id WHERE b.gateway_id=$1`, gateway.ID).Scan(&username, &role, &scope); err != nil {
@@ -188,7 +188,7 @@ func TestGatewayCreationCommitsOwnerAndEvent(t *testing.T) {
 	if username != "alice" || role != "gateway:owner" || scope != "gateway" {
 		t.Fatalf("owner grant: %s %s %s", username, role, scope)
 	}
-	if err := f.db.QueryRow("SELECT resource_key,kind,payload FROM stego_outbox.messages").Scan(&key, &kind, &payload); err != nil {
+	if err := f.db.QueryRow("SELECT resource_key,kind,payload FROM stego_outbox.messages WHERE kind='gateway.created'").Scan(&key, &kind, &payload); err != nil {
 		t.Fatal(err)
 	}
 	if key != gateway.ID || kind != "gateway.created" || !strings.Contains(payload, gateway.ID) {
@@ -221,17 +221,22 @@ func TestOwnerGrantFailureRollsBackGatewayAndEvent(t *testing.T) {
 }
 
 func TestEventFailureRollsBackGatewayAndOwner(t *testing.T) {
-	f := database(t)
-	if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages ADD CONSTRAINT test_reject_event CHECK (kind <> 'gateway.created')`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("rollback")); err == nil {
-		t.Fatal("failed event reported success")
-	}
-	for _, table := range []string{"gateways", "role_bindings", "stego_outbox.messages"} {
-		if count(t, f.db, table) != 0 {
-			t.Fatalf("failed event left a row in %s", table)
-		}
+	for _, kind := range []string{"gateway.created", "rolebinding.created"} {
+		t.Run(kind, func(t *testing.T) {
+			f := database(t)
+			if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages ADD CONSTRAINT test_reject_event CHECK (kind <> '` + kind + `')`); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("rollback")); err == nil {
+				t.Fatal("failed event reported success")
+			}
+			for _, table := range []string{"gateways", "role_bindings", "stego_outbox.messages"} {
+				if count(t, f.db, table) != 0 {
+					t.Fatalf("failed event left a row in %s", table)
+				}
+			}
+
+		})
 	}
 }
 

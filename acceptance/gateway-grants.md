@@ -46,7 +46,7 @@ and a Kafka protocol fixture with mutual TLS. The fixture reads opaque user
 and role IDs from the database. It does not insert the tested grants. Grant
 changes use REST or the domain service while the process is stopped.
 
-RoleBinding list and watch APIs, full Users and Roles APIs, global role
+Full Users and Roles APIs, global role
 synchronization and device login remain open. Browser login now has
 [a separate application check](gateway-user-login.md). Gateway
 watch remains a live stream. Clients must list current resources after they
@@ -64,3 +64,5 @@ A local benchmark performed 100 owner-grant creation and removal cycles with
 and event writes. It excludes transport, event delivery, and concurrent load.
 Run `go test -run '^$' -bench '^BenchmarkGatewayOwnerGrantCycle$' -benchtime=100x ./acceptance`
 with the PostgreSQL test settings.
+
+The next increment adds [grant lists and watch streams](grant-discovery.md).

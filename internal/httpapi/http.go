@@ -229,6 +229,10 @@ func present(row model.Gateway, creator string) (Gateway, error) {
 }
 
 func parsePage(r *http.Request) (pageRequest, error) {
+	return parseEntityPage(r, "Gateway")
+}
+
+func parseEntityPage(r *http.Request, entity string) (pageRequest, error) {
 	values, err := urlValues(r)
 	if err != nil {
 		return pageRequest{}, err
@@ -242,7 +246,7 @@ func parsePage(r *http.Request) (pageRequest, error) {
 		case "search":
 			request.Search = value[0]
 		case "orderBy":
-			request.OrderBy, err = transport.ParseOrderBy(value[0], search.EntityFieldMaps["Gateway"])
+			request.OrderBy, err = transport.ParseOrderBy(value[0], search.EntityFieldMaps[entity])
 			if err != nil {
 				return pageRequest{}, err
 			}

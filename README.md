@@ -180,3 +180,7 @@ trusted mapping for legacy users before access can be preserved.
 browser login and PKCE exchange. The controller maps current grants by verified
 issuer and subject. Tests cover role union, profile reuse, removal, and restart.
 Already issued tokens retain their claims; online revocation remains open.
+
+Grant discovery now uses REST lists and the reference gRPC list and watch service.
+The generated runtime sends initial owner-grant events and replays active grants
+after restart. See [the evidence and limits](acceptance/grant-discovery.md).

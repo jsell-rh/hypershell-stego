@@ -171,6 +171,13 @@ func (s *Service) DeleteGrant(ctx context.Context, p Principal, id string) error
 	})
 }
 func notifyGrant(tx store.Transaction, grant model.RoleBinding, eventType, kind string) error {
+	if err := notifyGrantChange(tx, grant, eventType, kind); err != nil {
+		return err
+	}
+	return notifyGateway(tx, grant.GatewayID, "Update", "gateway.updated")
+}
+
+func notifyGrantChange(tx store.Transaction, grant model.RoleBinding, eventType, kind string) error {
 	payload, err := json.Marshal(map[string]string{"source": "RoleBindings", "source_id": grant.ID, "event_type": eventType, "gateway_id": grant.GatewayID})
 	if err != nil {
 		return err
@@ -179,8 +186,5 @@ func notifyGrant(tx store.Transaction, grant model.RoleBinding, eventType, kind 
 	if err != nil {
 		return err
 	}
-	if err := tx.Notify(store.Notification{ID: id, Destination: "kafka", ResourceKey: grant.ID, Kind: kind, Payload: payload}); err != nil {
-		return err
-	}
-	return notifyGateway(tx, grant.GatewayID, "Update", "gateway.updated")
+	return tx.Notify(store.Notification{ID: id, Destination: "kafka", ResourceKey: grant.ID, Kind: kind, Payload: payload})
 }
