@@ -106,8 +106,12 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 		after = response.Ids[len(response.Ids)-1]
 		// A deletion after the first page must not shift the next page.
 		if page == 0 {
-			if _, err := f.db.Exec("UPDATE gateways SET deleted_at=now() WHERE id=$1", ids[101]); err != nil {
+			var deleted string
+			if err := f.db.QueryRow(`UPDATE gateways SET deleted_at=now() WHERE id=(SELECT id FROM gateways WHERE deleted_at IS NULL AND id > $1 ORDER BY id LIMIT 1) RETURNING id`, after).Scan(&deleted); err != nil {
 				t.Fatal(err)
+			}
+			if !slices.Contains(ids[100:], deleted) {
+				t.Fatal("deletion did not target a live row after the first page")
 			}
 		}
 	}
