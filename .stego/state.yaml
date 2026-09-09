@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: fc77bcbc2174036003478e503f19bbe6c21df9f6579efe2d2096084ae5b3eddd
+    service_hash: 1d1137b7b1b7c7f50d31bf287a22b1cb4e49ab5ab561c2b922d704a91cf8a7bf
     registry_sha: gateway-workflow
     components:
         cli-application:
@@ -27,7 +27,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.8.0
+            version: 3.9.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -306,7 +306,7 @@ last_applied:
         cli/command/runtime.go: 89b9242c41d3b9aac378dd13fa6d50fd09c3d22aa4db14ca9c93abd3d04d2dcb
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
-        contracts/storage/storage.go: 3ea26aae6afb77e51059e41678d05521880ca38a55b0b4d90b1acf06dbabff4e
+        contracts/storage/storage.go: 4661306d5e1dc31a69a44fc281c4f4a1b526268a1e029bc892b966eef1a3f166
         controller/keyed.go: 677569b839e364da3371f5a78fee8706739d9e8363d65b300be31e509bc9b6b8
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         controller/scan.go: 7adaa466d40cd1f2283995ff9ac7286151b23d9d817f18af8d7b9b9c558d0745
@@ -317,7 +317,7 @@ last_applied:
         grpcapi/client/client.go: ec946cf68b7068ac3a605ebf33e8e7ba684af35ec7135dfaa672056e8f13f063
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: e7b79f6acc18b71d850427e01a3886232ce98de6c6137943af3544c9815559be
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup_grpc.pb.go: 62b4aa89e270a7979fa728d6729b425bb65f1e2baffaec1028f342c5c2fc87dc
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 0cfc55b4f64fbf80208b2239a39d285570a75269a29731e0f42b345a0d4b19e3
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 712aadb17c3847191b5f5085bf445af8366d6c2b9f984734d826a0166cdb5eed
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: b46d1fa6be73082970e40f5f62aede84df75de657ad427de4e6a1e07f2b771c7
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
@@ -346,11 +346,12 @@ last_applied:
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 7730a4a9097229e704fc8058fc60fcf5ca7482444e618e556d7a95494cb03e23
-        storage/migrations/000002_resource_versions.sql: 9fae7048e830562d45f2ac6bdc8d320e7cd286aca4da2150b977eec3c75a3af0
-        storage/migrations/000003_resource_generations.sql: 9fae7048e830562d45f2ac6bdc8d320e7cd286aca4da2150b977eec3c75a3af0
-        storage/migrations/000004_resource_cleanup.sql: 9fae7048e830562d45f2ac6bdc8d320e7cd286aca4da2150b977eec3c75a3af0
-        storage/models.go: df6add534dd53787eb95127d34232e2cad469e62bf0eba9962cfb224e39b5160
+        storage/migrations/000002_resource_versions.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
+        storage/migrations/000003_resource_generations.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
+        storage/migrations/000004_resource_cleanup.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
+        storage/migrations/000005_cleanup_targets.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
+        storage/models.go: 0c53d7abfe93522b17cbe801a12a0e31565336c075b21136ce3dae12cfd5874d
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: ab186e09aa3458597924b37078cd9e1ecfb0207271e8e41354e7ddbf053e6723
+        storage/store.go: 67c5a57261e7fe8c83aa8f19ce67b3d1b7793ea3fd05f446444bc212d37ff5b6
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
-        storage/versions.go: 8fdeebb04e2d548bd5cec70a82aeda1dfe61a708d2b39de13157dc5427506cc8
+        storage/versions.go: 3364a0942cc6ad9c707211863369dcf5f3f856973228233ab174adcd52daa8e9

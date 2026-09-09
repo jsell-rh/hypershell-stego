@@ -28,7 +28,15 @@ func (s *identityServer) GetGatewayIdentityState(ctx context.Context, request *p
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetGatewayIdentityStateResponse{Cleanup: cleanup, Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
+	targets, err := row.CleanupTargets()
+	if err != nil {
+		return nil, mapError(err)
+	}
+	observations := make(map[string]*pb.CleanupTargetObservations, len(targets))
+	for owner, values := range targets {
+		observations[owner] = &pb.CleanupTargetObservations{Targets: values}
+	}
+	return &pb.GetGatewayIdentityStateResponse{CleanupTargets: observations, Cleanup: cleanup, Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
 }
 
 func (s *identityServer) ListGatewayIdentityUsers(ctx context.Context, request *pb.ListGatewayIdentityUsersRequest) (*pb.ListGatewayIdentityUsersResponse, error) {
@@ -79,7 +87,7 @@ func (s *identityServer) ObserveGatewayCleanup(ctx context.Context, request *pb.
 	if !present {
 		return nil, mapError(gateways.ErrObservationRequired)
 	}
-	if err := s.service.ObserveCleanup(ctx, gateways.PrincipalFromContext(ctx), request.Id, version, request.Owner, request.Complete); err != nil {
+	if err := s.service.ObserveCleanup(ctx, gateways.PrincipalFromContext(ctx), request.Id, version, request.Owner, request.Target, request.Complete); err != nil {
 		return nil, mapError(err)
 	}
 	return &pb.ObserveGatewayCleanupResponse{}, nil

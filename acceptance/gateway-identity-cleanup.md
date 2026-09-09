@@ -27,8 +27,6 @@ controllers. A controller refuses deletion when its state response has no
 identity cleanup declaration. Older controllers do not record completion.
 
 This owner covers the Gateway login client. Service-account cleanup has its own
-existing workflow. Workload and sandbox cleanup do not yet record completion.
-A Gateway can change clusters. One global workload flag cannot prove cleanup in
-every former cluster. STEGO needs a contract for cleanup obligations by target
-before the application can make that claim. Cross-process fencing, owner-specific
+existing workflow. Workload and sandbox cleanup now use
+[separate cluster targets](gateway-target-cleanup.md). Cross-process fencing, owner-specific
 subject permissions, safe purge, and production recovery bounds also remain open.

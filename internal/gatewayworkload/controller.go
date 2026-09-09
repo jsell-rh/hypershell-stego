@@ -22,7 +22,7 @@ const ReconcileTimeout = 20 * time.Second
 
 type Provider interface {
 	Handles(*pb.Gateway) bool
-	Owns(context.Context, *pb.Gateway) (bool, error)
+	CleanupTarget() string
 	Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error
 	Delete(context.Context, string) error
 	GatewayIDs(context.Context) ([]string, error)
@@ -114,18 +114,29 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if state.GetResourceVersion() < 1 || state.GetResourceGeneration() < 1 {
 		return errors.New("Gateway state has no resource version")
 	}
+	target := c.provider.CleanupTarget()
+	observations := state.GetCleanupTargets()["workload"]
+	if observations == nil || target == "" {
+		return errors.New("Gateway state has no workload cleanup target history")
+	}
+	complete, recorded := observations.GetTargets()[target]
 	if state.GetDeleted() {
-		if !c.provider.Handles(gw) {
-			owned, err := c.provider.Owns(ctx, gw)
+		if !recorded {
+			return nil
+		}
+		failure := c.provider.Delete(ctx, id)
+		observed := failure == nil
+		if complete != observed {
+			writeContext, err := rpc.WithResourceVersion(ctx, state.ResourceVersion)
 			if err != nil {
 				return err
 			}
-			if !owned {
-				return nil
+			if _, err := c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: target, Complete: observed}); err != nil {
+				return err
 			}
 		}
-		if err := c.provider.Delete(ctx, id); err != nil {
-			return err
+		if failure != nil {
+			return failure
 		}
 		database, err := c.databases.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: gw.GetDatabaseId()})
 		if status.Code(err) == codes.NotFound {
@@ -153,6 +164,9 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	}
 	if !c.provider.Handles(gw) {
 		return nil
+	}
+	if !recorded {
+		return errors.New("current workload target was not recorded before provider work")
 	}
 	database, err := c.databases.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: gw.GetDatabaseId()})
 	var release *pb.GetGatewayReleaseResponse

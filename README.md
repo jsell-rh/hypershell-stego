@@ -207,7 +207,9 @@ The provider records [durable cleanup observations](acceptance/database-cleanup.
 and continues periodic checks after success. Late effects reopen pending cleanup.
 Gateway login identity now uses [the same cleanup contract](acceptance/gateway-identity-cleanup.md).
 The controller confirms provider absence and checks again after completion.
-Workload cleanup still needs obligations for each cluster that held resources.
+Workload cleanup now [retains each cluster target](acceptance/gateway-target-cleanup.md).
+A former cluster can complete its own cleanup without completing another cluster.
+Database placement history and parent finalization remain open.
 These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified

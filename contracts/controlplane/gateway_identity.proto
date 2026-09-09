@@ -21,6 +21,7 @@ message GetGatewayIdentityStateResponse {
  int64 resource_generation = 4;
  int64 observed_generation = 5;
  map<string, bool> cleanup = 6;
+ map<string, CleanupTargetObservations> cleanup_targets = 7;
 }
 
 // Pages contain retained grant references, including deleted grants.
@@ -46,5 +47,7 @@ message ListGatewayReconcileIDsResponse { repeated string ids = 1; }
 message SetObservedSandboxCountRequest { string namespace = 1; string cluster_id = 2; int32 count = 3; }
 message SetObservedSandboxCountResponse { int32 count = 1; }
 
-message ObserveGatewayCleanupRequest { string id = 1; string owner = 2; bool complete = 3; }
+message ObserveGatewayCleanupRequest { string id = 1; string owner = 2; bool complete = 3; string target = 4; }
 message ObserveGatewayCleanupResponse {}
+
+message CleanupTargetObservations { map<string, bool> targets = 1; }

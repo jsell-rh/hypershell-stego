@@ -5,6 +5,7 @@ import (
 	"errors"
 	"github.com/segmentio/ksuid"
 	"slices"
+	"strconv"
 	"testing"
 	"time"
 
@@ -18,8 +19,10 @@ import (
 
 type stateFixture struct {
 	control.GatewayIdentityServiceClient
-	state *control.GetGatewayIdentityStateResponse
-	err   error
+	state        *control.GetGatewayIdentityStateResponse
+	err          error
+	observations int
+	conflict     bool
 }
 
 func (f *stateFixture) GetGatewayIdentityState(context.Context, *control.GetGatewayIdentityStateRequest, ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
@@ -68,14 +71,36 @@ func (f *releaseFixture) GetGatewayRelease(context.Context, *pb.GetGatewayReleas
 }
 
 type providerFixture struct {
-	owned            bool
+	target           string
 	unassigned       bool
 	creates, deletes int
 	err              error
 }
 
-func (f *providerFixture) Handles(*pb.Gateway) bool                        { return !f.unassigned }
-func (f *providerFixture) Owns(context.Context, *pb.Gateway) (bool, error) { return f.owned, nil }
+func workloadHistory(target string) map[string]*control.CleanupTargetObservations {
+	return map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{target: false}}}
+}
+func (f *providerFixture) CleanupTarget() string {
+	if f.target != "" {
+		return f.target
+	}
+	return "cluster"
+}
+func (f *stateFixture) ObserveGatewayCleanup(ctx context.Context, r *control.ObserveGatewayCleanupRequest, _ ...grpc.CallOption) (*control.ObserveGatewayCleanupResponse, error) {
+	f.observations++
+	md, _ := metadata.FromOutgoingContext(ctx)
+	versions := md.Get("if-resource-version")
+	if len(versions) != 1 || versions[0] != strconv.FormatInt(f.state.ResourceVersion, 10) || r.Owner != "workload" || r.Target != "cluster" || r.Id != f.state.Gateway.Metadata.Id {
+		return nil, status.Error(codes.InvalidArgument, "invalid target observation")
+	}
+	if f.conflict {
+		return nil, status.Error(codes.Aborted, "resource changed")
+	}
+	f.state.CleanupTargets["workload"].Targets[r.Target] = r.Complete
+	f.state.ResourceVersion++
+	return &control.ObserveGatewayCleanupResponse{}, nil
+}
+func (f *providerFixture) Handles(*pb.Gateway) bool { return !f.unassigned }
 
 func (f *providerFixture) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
 	f.creates++
@@ -91,12 +116,12 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 		err     error
 		deleted bool
 	}{
-		{name: "missing revision", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}},
+		{name: "missing revision", state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}},
 		{name: "denied", err: status.Error(codes.PermissionDenied, "denied")},
 		{name: "absent", err: status.Error(codes.NotFound, "absent")},
-		{name: "empty", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1}},
-		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
-		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
+		{name: "empty", state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1}},
+		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
+		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := new(providerFixture)
@@ -124,7 +149,7 @@ func TestDatabaseDeletionCanRetryAfterGatewayRemoval(t *testing.T) {
 	gw, db, release := records(t)
 	provider := new(providerFixture)
 	database := &databaseFixture{row: db, deleteErr: status.Error(codes.Unavailable, "retry")}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -144,10 +169,10 @@ func TestDatabaseDeletionCanRetryAfterGatewayRemoval(t *testing.T) {
 func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
 	gw, db, release := records(t)
 	for _, deleted := range []bool{false, true} {
-		provider := &providerFixture{unassigned: true}
+		provider := &providerFixture{unassigned: true, target: "other"}
 		database := &databaseFixture{row: db}
 		api := new(apiFixture)
-		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
+		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,7 +190,7 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: ErrPending}
 	api := new(apiFixture)
 	database := &databaseFixture{row: db}
-	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,9 +237,9 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 
 func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
 	gw, db, release := records(t)
-	provider := &providerFixture{unassigned: true, owned: true}
+	provider := &providerFixture{unassigned: true}
 	database := &databaseFixture{row: db}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +328,7 @@ type slowRecovery struct {
 
 func (s *slowRecovery) GetGatewayIdentityState(_ context.Context, r *control.GetGatewayIdentityStateRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
 	s.observed <- r.Id
-	return &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
+	return &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
 }
 func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	id := ksuid.New().String()
@@ -335,7 +360,7 @@ func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
 	gw, db, release := records(t)
 	healthy, running := "Healthy", "Running"
 	gw.Status, gw.Phase = &healthy, &running
-	state := &control.GetGatewayIdentityStateResponse{Gateway: gw, ResourceVersion: 9, ResourceGeneration: 2, ObservedGeneration: 1}
+	state := &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), Gateway: gw, ResourceVersion: 9, ResourceGeneration: 2, ObservedGeneration: 1}
 	api := new(apiFixture)
 	provider := new(providerFixture)
 	c, err := New(api, &stateFixture{state: state}, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
@@ -348,5 +373,48 @@ func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
 	state.ObservedGeneration = 2
 	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 2 {
 		t.Fatal("current generation bypassed drift repair or repeated status", err)
+	}
+}
+
+func (f *recoveryFixture) ObserveGatewayCleanup(context.Context, *control.ObserveGatewayCleanupRequest, ...grpc.CallOption) (*control.ObserveGatewayCleanupResponse, error) {
+	return &control.ObserveGatewayCleanupResponse{}, nil
+}
+
+func TestTargetCleanupRetriesAndChecksLateEffects(t *testing.T) {
+	gw, db, release := records(t)
+	provider := &providerFixture{unassigned: true}
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory("cluster"), ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: true}, conflict: true}
+	c, _ := New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted || provider.deletes != 1 {
+		t.Fatal("stale target observation was accepted", err)
+	}
+	state.conflict = false
+	// The provider still identifies this cluster after its last local object is gone.
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets["cluster"] {
+		t.Fatal("retry lost the recorded target", err)
+	}
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 3 || state.observations != 2 {
+		t.Fatal("completed target stopped checks or repeated a write", err)
+	}
+	provider.err = ErrPending
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || state.state.CleanupTargets["workload"].Targets["cluster"] {
+		t.Fatal("late effect did not reopen the target", err)
+	}
+	provider.err = nil
+	c, _ = New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || !state.state.CleanupTargets["workload"].Targets["cluster"] {
+		t.Fatal("new controller did not recover its target", err)
+	}
+}
+
+func TestMissingTargetHistoryStopsProviderWork(t *testing.T) {
+	gw, db, release := records(t)
+	for _, deleted := range []bool{false, true} {
+		provider := new(providerFixture)
+		state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: deleted}}
+		c, _ := New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+		if err := c.reconcile(context.Background(), gw.Metadata.Id); err == nil || provider.creates != 0 || provider.deletes != 0 {
+			t.Fatal("missing history reached the provider", err)
+		}
 	}
 }

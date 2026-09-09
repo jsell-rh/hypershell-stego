@@ -22,6 +22,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
@@ -406,6 +407,42 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		t.Fatal(err)
 	}
 	absent("namespace", dbNamespace)
+	_, cleanupConnection := grpcClient(t, rpcAddress, apiTLS)
+	cleanupState := control.NewGatewayIdentityServiceClient(cleanupConnection)
+	awaitTarget := func(want bool) {
+		t.Helper()
+		deadline := time.Now().Add(30 * time.Second)
+		for {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+controllerToken))
+			state, err := cleanupState.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+			cancel()
+			if err == nil {
+				targets := state.GetCleanupTargets()["workload"].GetTargets()
+				old, oldFound := targets[f.cluster]
+				current, currentFound := targets[foreignID]
+				if len(targets) == 2 && oldFound && currentFound && old == want && !current && !state.Cleanup["workload"] {
+					return
+				}
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("cluster cleanup observation did not converge: %v\n%s", err, logs())
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	awaitTarget(true)
 	stopWorkload()
+	late, _ := json.Marshal(map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": map[string]any{"name": gateway.Namespace, "labels": map[string]string{"hypershell.redhat.io/gateway-id": gateway.ID, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}, "finalizers": []string{"acceptance.hypershell.test/hold"}}})
+	k.must(t, string(late), "create", "-f", "-")
+	stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
+	awaitTarget(false)
+	stopWorkload()
+	stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
+	k.must(t, "", "patch", "namespace", gateway.Namespace, "--type=merge", "-p", `{"metadata":{"finalizers":[]}}`)
+	absent("namespace", gateway.Namespace)
+	awaitTarget(true)
+	stopWorkload()
+	t.Log("Former-cluster cleanup survived restart, reopened for a late namespace, and kept the new cluster pending")
 	t.Logf("Gateway %s: verified database and OIDC, owner access, denial, provider persistence, Pod and database restart, namespace replacement, stable keys, and offline deletion passed", gateway.ID)
 }

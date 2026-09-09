@@ -14,6 +14,13 @@ DO $owners$ BEGIN
   RAISE EXCEPTION 'cleanup owners cannot be removed from retained resources';
  END IF;
  END; $owners$;
+DO $targets$ BEGIN
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_attribute WHERE attrelid=E'managed_databases'::regclass AND attname='stego_cleanup_targets' AND NOT attisdropped) THEN
+  IF EXISTS(SELECT 1 FROM "managed_databases" WHERE stego_cleanup_targets<>'{}'::jsonb) THEN
+   RAISE EXCEPTION 'cleanup target declarations cannot be removed from retained resources';
+  END IF;
+ END IF;
+ END; $targets$;
 DO $upgrade$ BEGIN
  IF EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid WHERE t.tgrelid=E'managed_databases'::regclass AND t.tgname='stego_resource_revision' AND p.prosrc IS DISTINCT FROM E'
 BEGIN
@@ -109,12 +116,25 @@ DO $owners$ BEGIN
  IF EXISTS (SELECT 1 FROM "gateways" WHERE jsonb_typeof(stego_cleanup) IS DISTINCT FROM 'object') THEN
   RAISE EXCEPTION 'invalid stored cleanup state';
  END IF;
- IF EXISTS (SELECT 1 FROM "gateways" WHERE stego_cleanup - ARRAY[E'identity']::text[] <> '{}'::jsonb) THEN
+ IF EXISTS (SELECT 1 FROM "gateways" WHERE stego_cleanup - ARRAY[E'identity',E'workload']::text[] <> '{}'::jsonb) THEN
   RAISE EXCEPTION 'cleanup owners cannot be removed from retained resources';
  END IF;
  END; $owners$;
+ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_cleanup_targets jsonb NOT NULL DEFAULT '{}';
+DO $targets$ BEGIN
+ IF EXISTS(SELECT 1 FROM "gateways") AND NOT EXISTS(
+  SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid
+  WHERE t.tgrelid=E'gateways'::regclass AND t.tgname='stego_resource_revision' AND strpos(p.prosrc,E'-- cleanup target fields 48fcfc33e677423a56576ee81f06da25710abdb8f91254182c6a8bb63db37ca1')>0
+ ) THEN
+  RAISE EXCEPTION 'cleanup target history requires an explicit migration for existing resources';
+ END IF;
+END; $targets$;
 DO $upgrade$ BEGIN
- IF EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid WHERE t.tgrelid=E'gateways'::regclass AND t.tgname='stego_resource_revision' AND p.prosrc IS DISTINCT FROM E'
+ IF EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid WHERE t.tgrelid=E'gateways'::regclass AND t.tgname='stego_resource_revision' AND p.prosrc IS DISTINCT FROM E'DECLARE
+ target_owner text; target_field text; target_value text;
+ target_state jsonb; target_reset boolean; target_keys text[];
+ target_total integer := 0;
+
 BEGIN
  IF TG_OP = ''DELETE'' THEN
   RAISE EXCEPTION ''versioned resource history cannot be removed'' USING ERRCODE = ''23514'';
@@ -142,31 +162,81 @@ BEGIN
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
 
  IF TG_OP = ''INSERT'' THEN
-  NEW.stego_cleanup := E''{"identity":false}''::jsonb;
+  NEW.stego_cleanup := E''{"identity":false,"workload":false}''::jsonb;
  ELSE
   IF NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
-   (to_jsonb(NEW) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'']) IS DISTINCT FROM
-   (to_jsonb(OLD) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'']) THEN
-   NEW.stego_cleanup := E''{"identity":false}''::jsonb;
+   (to_jsonb(NEW) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'',''stego_cleanup_targets'']) IS DISTINCT FROM
+   (to_jsonb(OLD) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'',''stego_cleanup_targets'']) THEN
+   NEW.stego_cleanup := E''{"identity":false,"workload":false}''::jsonb;
   ELSE
    IF jsonb_typeof(NEW.stego_cleanup) IS DISTINCT FROM ''object'' THEN
     RAISE EXCEPTION ''invalid cleanup state'' USING ERRCODE = ''23514'';
    END IF;
-   IF NOT (NEW.stego_cleanup ?& ARRAY[E''identity'']::text[]) OR NEW.stego_cleanup - ARRAY[E''identity'']::text[] <> ''{}''::jsonb OR
+   IF NOT (NEW.stego_cleanup ?& ARRAY[E''identity'',E''workload'']::text[]) OR NEW.stego_cleanup - ARRAY[E''identity'',E''workload'']::text[] <> ''{}''::jsonb OR
     EXISTS (SELECT 1 FROM jsonb_each(NEW.stego_cleanup) WHERE jsonb_typeof(value) IS DISTINCT FROM ''boolean'') THEN
     RAISE EXCEPTION ''invalid cleanup owners or observations'' USING ERRCODE = ''23514'';
    END IF;
   END IF;
  END IF;
  -- cleanup fields b0b625515599cc389479173f4f49e97328846358ac537208054c00da3c2c2206
+
+ target_reset := TG_OP = ''INSERT'';
+ IF TG_OP = ''INSERT'' THEN
+  NEW.stego_cleanup_targets := ''{}''::jsonb;
+ ELSE
+  target_reset := NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
+   (to_jsonb(NEW) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'',''stego_cleanup_targets'']) IS DISTINCT FROM (to_jsonb(OLD) - ARRAY[''stego_revision'',''stego_generation'',''stego_observations'',''stego_cleanup'',''updated_time'',''stego_cleanup_targets'']);
+  IF target_reset THEN NEW.stego_cleanup_targets := OLD.stego_cleanup_targets; END IF;
+ END IF;
+ IF jsonb_typeof(NEW.stego_cleanup_targets) IS DISTINCT FROM ''object'' THEN
+  RAISE EXCEPTION ''invalid cleanup target state'' USING ERRCODE=''23514'';
+ END IF;
+ FOR target_owner,target_field IN SELECT * FROM (VALUES (E''workload'',E''cluster_id'')) AS fields(owner,field) LOOP
+  target_value := to_jsonb(NEW)->>target_field;
+  IF target_value IS NULL OR octet_length(target_value) NOT BETWEEN 1 AND 256 THEN
+   RAISE EXCEPTION ''cleanup target must contain 1 through 256 bytes'' USING ERRCODE=''23514'';
+  END IF;
+  IF TG_OP = ''INSERT'' THEN target_state := ''{}''::jsonb;
+  ELSE
+   target_state := NEW.stego_cleanup_targets->target_owner;
+   IF jsonb_typeof(target_state) IS DISTINCT FROM ''object'' OR jsonb_typeof(OLD.stego_cleanup_targets->target_owner) IS DISTINCT FROM ''object'' THEN
+    RAISE EXCEPTION ''missing cleanup target history'' USING ERRCODE=''23514'';
+   END IF;
+   SELECT COALESCE(array_agg(key ORDER BY key COLLATE "C"),ARRAY[]::text[]) INTO target_keys FROM jsonb_object_keys(OLD.stego_cleanup_targets->target_owner) AS keys(key);
+   IF NOT (target_state ?& target_keys) OR target_state - target_keys <> ''{}''::jsonb THEN
+    RAISE EXCEPTION ''cleanup target history is immutable'' USING ERRCODE=''23514'';
+   END IF;
+  END IF;
+  IF NOT (target_state ? target_value) THEN
+   IF NOT target_reset THEN RAISE EXCEPTION ''current cleanup target is missing'' USING ERRCODE=''23514''; END IF;
+   target_state := target_state || jsonb_build_object(target_value,false);
+  END IF;
+  IF target_reset THEN
+   SELECT jsonb_object_agg(key,false) INTO target_state FROM jsonb_object_keys(target_state) AS keys(key);
+  END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_each(target_state) WHERE octet_length(key) NOT BETWEEN 1 AND 256 OR jsonb_typeof(value) IS DISTINCT FROM ''boolean'') THEN
+   RAISE EXCEPTION ''invalid cleanup target observation'' USING ERRCODE=''23514'';
+  END IF;
+  target_total := target_total + (SELECT count(*) FROM jsonb_object_keys(target_state));
+  NEW.stego_cleanup_targets := jsonb_set(NEW.stego_cleanup_targets,ARRAY[target_owner],target_state);
+  NEW.stego_cleanup := jsonb_set(NEW.stego_cleanup,ARRAY[target_owner],to_jsonb(NEW.deleted_at IS NOT NULL AND (SELECT bool_and(value=''true''::jsonb) FROM jsonb_each(target_state))));
+ END LOOP;
+ IF NOT (NEW.stego_cleanup_targets ?& ARRAY[E''workload'']::text[]) OR NEW.stego_cleanup_targets - ARRAY[E''workload'']::text[] <> ''{}''::jsonb OR target_total>128 OR octet_length(NEW.stego_cleanup_targets::text)>65536 THEN
+  RAISE EXCEPTION ''invalid or excessive cleanup target history'' USING ERRCODE=''23514'';
+ END IF;
+ -- cleanup target fields 48fcfc33e677423a56576ee81f06da25710abdb8f91254182c6a8bb63db37ca1
  RETURN NEW;
 END;
 ') THEN
-  UPDATE "gateways" SET stego_revision=stego_revision+1, stego_generation=stego_generation+1, stego_observations='{}'::jsonb, stego_cleanup=E'{"identity":false}'::jsonb;
+  UPDATE "gateways" SET stego_revision=stego_revision+1, stego_generation=stego_generation+1, stego_observations='{}'::jsonb, stego_cleanup=E'{"identity":false,"workload":false}'::jsonb, stego_cleanup_targets=(SELECT jsonb_object_agg(owner.key,(SELECT jsonb_object_agg(target.key,false) FROM jsonb_object_keys(owner.value) AS target(key))) FROM jsonb_each(stego_cleanup_targets) AS owner);
  END IF;
  END; $upgrade$;
-UPDATE "gateways" SET stego_cleanup=E'{"identity":false}'::jsonb || stego_cleanup WHERE NOT (stego_cleanup ?& ARRAY[E'identity']::text[]);
-CREATE OR REPLACE FUNCTION "stego_revision_a74e503354fdd464eff1440f"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$
+UPDATE "gateways" SET stego_cleanup=E'{"identity":false,"workload":false}'::jsonb || stego_cleanup WHERE NOT (stego_cleanup ?& ARRAY[E'identity',E'workload']::text[]);
+CREATE OR REPLACE FUNCTION "stego_revision_a74e503354fdd464eff1440f"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$DECLARE
+ target_owner text; target_field text; target_value text;
+ target_state jsonb; target_reset boolean; target_keys text[];
+ target_total integer := 0;
+
 BEGIN
  IF TG_OP = 'DELETE' THEN
   RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';
@@ -194,23 +264,69 @@ BEGIN
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
 
  IF TG_OP = 'INSERT' THEN
-  NEW.stego_cleanup := E'{"identity":false}'::jsonb;
+  NEW.stego_cleanup := E'{"identity":false,"workload":false}'::jsonb;
  ELSE
   IF NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
-   (to_jsonb(NEW) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time']) IS DISTINCT FROM
-   (to_jsonb(OLD) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time']) THEN
-   NEW.stego_cleanup := E'{"identity":false}'::jsonb;
+   (to_jsonb(NEW) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time','stego_cleanup_targets']) IS DISTINCT FROM
+   (to_jsonb(OLD) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time','stego_cleanup_targets']) THEN
+   NEW.stego_cleanup := E'{"identity":false,"workload":false}'::jsonb;
   ELSE
    IF jsonb_typeof(NEW.stego_cleanup) IS DISTINCT FROM 'object' THEN
     RAISE EXCEPTION 'invalid cleanup state' USING ERRCODE = '23514';
    END IF;
-   IF NOT (NEW.stego_cleanup ?& ARRAY[E'identity']::text[]) OR NEW.stego_cleanup - ARRAY[E'identity']::text[] <> '{}'::jsonb OR
+   IF NOT (NEW.stego_cleanup ?& ARRAY[E'identity',E'workload']::text[]) OR NEW.stego_cleanup - ARRAY[E'identity',E'workload']::text[] <> '{}'::jsonb OR
     EXISTS (SELECT 1 FROM jsonb_each(NEW.stego_cleanup) WHERE jsonb_typeof(value) IS DISTINCT FROM 'boolean') THEN
     RAISE EXCEPTION 'invalid cleanup owners or observations' USING ERRCODE = '23514';
    END IF;
   END IF;
  END IF;
  -- cleanup fields b0b625515599cc389479173f4f49e97328846358ac537208054c00da3c2c2206
+
+ target_reset := TG_OP = 'INSERT';
+ IF TG_OP = 'INSERT' THEN
+  NEW.stego_cleanup_targets := '{}'::jsonb;
+ ELSE
+  target_reset := NEW.deleted_at IS NULL OR OLD.deleted_at IS NULL OR
+   (to_jsonb(NEW) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time','stego_cleanup_targets']) IS DISTINCT FROM (to_jsonb(OLD) - ARRAY['stego_revision','stego_generation','stego_observations','stego_cleanup','updated_time','stego_cleanup_targets']);
+  IF target_reset THEN NEW.stego_cleanup_targets := OLD.stego_cleanup_targets; END IF;
+ END IF;
+ IF jsonb_typeof(NEW.stego_cleanup_targets) IS DISTINCT FROM 'object' THEN
+  RAISE EXCEPTION 'invalid cleanup target state' USING ERRCODE='23514';
+ END IF;
+ FOR target_owner,target_field IN SELECT * FROM (VALUES (E'workload',E'cluster_id')) AS fields(owner,field) LOOP
+  target_value := to_jsonb(NEW)->>target_field;
+  IF target_value IS NULL OR octet_length(target_value) NOT BETWEEN 1 AND 256 THEN
+   RAISE EXCEPTION 'cleanup target must contain 1 through 256 bytes' USING ERRCODE='23514';
+  END IF;
+  IF TG_OP = 'INSERT' THEN target_state := '{}'::jsonb;
+  ELSE
+   target_state := NEW.stego_cleanup_targets->target_owner;
+   IF jsonb_typeof(target_state) IS DISTINCT FROM 'object' OR jsonb_typeof(OLD.stego_cleanup_targets->target_owner) IS DISTINCT FROM 'object' THEN
+    RAISE EXCEPTION 'missing cleanup target history' USING ERRCODE='23514';
+   END IF;
+   SELECT COALESCE(array_agg(key ORDER BY key COLLATE "C"),ARRAY[]::text[]) INTO target_keys FROM jsonb_object_keys(OLD.stego_cleanup_targets->target_owner) AS keys(key);
+   IF NOT (target_state ?& target_keys) OR target_state - target_keys <> '{}'::jsonb THEN
+    RAISE EXCEPTION 'cleanup target history is immutable' USING ERRCODE='23514';
+   END IF;
+  END IF;
+  IF NOT (target_state ? target_value) THEN
+   IF NOT target_reset THEN RAISE EXCEPTION 'current cleanup target is missing' USING ERRCODE='23514'; END IF;
+   target_state := target_state || jsonb_build_object(target_value,false);
+  END IF;
+  IF target_reset THEN
+   SELECT jsonb_object_agg(key,false) INTO target_state FROM jsonb_object_keys(target_state) AS keys(key);
+  END IF;
+  IF EXISTS(SELECT 1 FROM jsonb_each(target_state) WHERE octet_length(key) NOT BETWEEN 1 AND 256 OR jsonb_typeof(value) IS DISTINCT FROM 'boolean') THEN
+   RAISE EXCEPTION 'invalid cleanup target observation' USING ERRCODE='23514';
+  END IF;
+  target_total := target_total + (SELECT count(*) FROM jsonb_object_keys(target_state));
+  NEW.stego_cleanup_targets := jsonb_set(NEW.stego_cleanup_targets,ARRAY[target_owner],target_state);
+  NEW.stego_cleanup := jsonb_set(NEW.stego_cleanup,ARRAY[target_owner],to_jsonb(NEW.deleted_at IS NOT NULL AND (SELECT bool_and(value='true'::jsonb) FROM jsonb_each(target_state))));
+ END LOOP;
+ IF NOT (NEW.stego_cleanup_targets ?& ARRAY[E'workload']::text[]) OR NEW.stego_cleanup_targets - ARRAY[E'workload']::text[] <> '{}'::jsonb OR target_total>128 OR octet_length(NEW.stego_cleanup_targets::text)>65536 THEN
+  RAISE EXCEPTION 'invalid or excessive cleanup target history' USING ERRCODE='23514';
+ END IF;
+ -- cleanup target fields 48fcfc33e677423a56576ee81f06da25710abdb8f91254182c6a8bb63db37ca1
  RETURN NEW;
 END;
 $stego$;

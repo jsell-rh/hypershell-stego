@@ -205,3 +205,7 @@ Sandbox isolation, network policy enforcement, public routes, OpenShift behavior
 image vulnerability scans, certificate renewal, backup, restore, capacity, and
 complete CLI and console behavior remain open. The Go vulnerability scan does
 not assess the external container images.
+
+[Cleanup by cluster target](gateway-target-cleanup.md) preserves obligations after
+a cluster move and checks late effects after recorded completion. Database
+cleanup remains a separate obligation.

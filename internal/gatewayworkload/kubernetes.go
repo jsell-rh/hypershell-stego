@@ -82,7 +82,9 @@ func certificateBundle(input []byte) ([]byte, error) {
 	}
 	return output, nil
 }
-func (k *Kubernetes) Close()                      { k.client.Close() }
+func (k *Kubernetes) Close()                { k.client.Close() }
+func (k *Kubernetes) CleanupTarget() string { return k.options.ClusterID }
+
 func (k *Kubernetes) Handles(gw *pb.Gateway) bool { return gw.GetClusterId() == k.options.ClusterID }
 func owner(id string) kube.Owner                  { return kube.Owner{ownerLabel: id, managerLabel: manager} }
 func definition(api, kind, name, id string) object {
@@ -298,49 +300,6 @@ func (k *Kubernetes) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
-// Owns permits cleanup of retained resources after a cluster assignment changed.
-// An unassigned live Gateway is never created or changed by this provider.
-func (k *Kubernetes) Owns(ctx context.Context, gw *pb.Gateway) (bool, error) {
-	id := gw.GetMetadata().GetId()
-	ns, err := Namespace(id)
-	if err != nil {
-		return false, err
-	}
-	sandboxNS, _ := SandboxNamespace(id)
-	dbNS, err := gateways.DatabaseNamespace(gw.GetDatabaseId())
-	if err != nil {
-		return false, err
-	}
-	for _, entry := range []struct {
-		path     string
-		database bool
-	}{
-		{"/api/v1/namespaces/" + ns, false},
-		{"/api/v1/namespaces/" + sandboxNS, false},
-		{"/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/" + ns, false},
-		{"/apis/rbac.authorization.k8s.io/v1/clusterroles/" + ns, false},
-		{"/api/v1/namespaces/" + dbNS, true},
-	} {
-		row, code, err := k.client.Request(ctx, http.MethodGet, entry.path, nil)
-		if err != nil {
-			return false, err
-		}
-		if code == 404 {
-			continue
-		}
-		if entry.database {
-			if databaseOwner(gw.GetDatabaseId()).Matches(row) && kube.String(row, "metadata", "labels", ownerLabel) == id {
-				return true, nil
-			}
-		} else if owner(id).Matches(row) {
-			return true, nil
-		}
-	}
-	return false, nil
-}
-
-// GatewayIDs includes orphan cluster bindings after namespace removal. Every
-// deletion still requires an explicit deleted state from the application API.
 func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {
 	seen := map[string]bool{}
 	ids := []string{}
