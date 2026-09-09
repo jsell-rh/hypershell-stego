@@ -294,11 +294,13 @@ last_applied:
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
         cli/client/client.go: b539dc426fe44304cd9d2694dbdbb1929e4ee195e1d2f3d73b0f909c6e925e18
         cli/cmd/main.go: 55e38ef059bbc114ade87e8ec1071e105ceb74a226a00679be05028c8204ec8b
+        cli/command/apply.go: 74a5611e68029653a31c05e143432d65c34ffe3fcca265917262b0186317354d
+        cli/command/apply_input.go: b4a69f31724d5a08afb1194e76e17ba7b7e86fcdad3022fa116e84e79b0409d9
         cli/command/browser.go: 1b7622b0ac0b7d577604aa14fe5d81d4045a9112d49bcf954a656c165e15063c
         cli/command/config.go: 8283163266206ded95bf226228d4605bbef625c11d419b2979255b5b918f97c0
         cli/command/oauth.go: a2aefcb0a3550424f475df17ffc2388c6ed7495e4a72fa60fc431f18448be459
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
-        cli/command/runtime.go: 0a2dc624ea6020d9ce83fd9c47bf6eae55a5d18ddeda20507a31ec3af8792d5b
+        cli/command/runtime.go: 89b9242c41d3b9aac378dd13fa6d50fd09c3d22aa4db14ca9c93abd3d04d2dcb
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 49ce44e7d453982cf06bbcb7c0fe806a08e657c08dd4ed100cb17b32ad1ee517

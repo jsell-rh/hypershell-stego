@@ -259,3 +259,9 @@ record CRUD, access, CLI commands, watch events, rollback, restart, and database
 upgrade. It preserves the reference metadata behavior. Neither this port nor
 the reference network controller sets up tunnels. The complete Hypershell port
 and production acceptance remain open.
+
+The [generated apply workflow](cli-apply.md) now creates and patches
+catalogs and Gateways from resource documents. It checks dry runs without API
+contact, complete preflight, partial failures, access, events, restart, and both
+database modes. The common runtime is supplied by STEGO. Remaining apply kinds,
+Kustomize rendering, and the complete CLI port remain open.

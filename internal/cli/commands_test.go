@@ -80,3 +80,23 @@ func TestCatalogCreationFieldsFollowDomainContract(t *testing.T) {
 		}
 	}
 }
+
+func TestApplyPatchFieldsFollowDomainContracts(t *testing.T) {
+	types := map[string]reflect.Type{
+		"Gateway":         reflect.TypeFor[gateways.PatchRequest](),
+		"ManagedCluster":  reflect.TypeFor[catalog.ClusterPatch](),
+		"GatewayRelease":  reflect.TypeFor[catalog.ReleasePatch](),
+		"ManagedDatabase": reflect.TypeFor[catalog.DatabasePatch](),
+		"GatewayNetwork":  reflect.TypeFor[catalog.NetworkPatch](),
+	}
+	resources := Commands().Resources
+	if len(resources) != len(types) {
+		t.Fatal("apply resource coverage differs")
+	}
+	for _, resource := range resources {
+		checkFields(t, resource.PatchFields, types[resource.Kind])
+		if resource.Kind == "Gateway" {
+			checkFields(t, resource.CreateFields, reflect.TypeFor[gateways.CreateRequest]())
+		}
+	}
+}

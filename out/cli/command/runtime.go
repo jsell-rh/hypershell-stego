@@ -38,6 +38,7 @@ type Command struct {
 type Application struct {
 	ConfigEnv, ConfigName, OIDCClientID string
 	Commands                            []Command
+	Resources                           []ApplyResource
 }
 
 var word = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,63}$`)
@@ -51,7 +52,7 @@ func validate(app Application) error {
 	if app.OIDCClientID != "" && !safeClientID(app.OIDCClientID) {
 		return errors.New("invalid OIDC client ID")
 	}
-	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || len(app.Commands) == 0 || len(app.Commands) > 128 {
+	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || (len(app.Commands) == 0 && len(app.Resources) == 0) || len(app.Commands) > 128 {
 		return errors.New("invalid CLI definition")
 	}
 	seen := map[string]bool{}
@@ -64,7 +65,7 @@ func validate(app Application) error {
 				return errors.New("invalid CLI command name")
 			}
 		}
-		if c.Name[0] == "login" || c.Name[0] == "logout" || c.Name[0] == "help" {
+		if c.Name[0] == "apply" || c.Name[0] == "login" || c.Name[0] == "logout" || c.Name[0] == "help" {
 			return errors.New("reserved CLI command name")
 		}
 		name := strings.Join(c.Name, " ")
@@ -132,7 +133,7 @@ func validate(app Application) error {
 			return errors.New("CLI read and delete fields require query mode")
 		}
 	}
-	return nil
+	return validateApply(app.Resources)
 }
 
 func reservedFlag(flag string) bool {
@@ -163,12 +164,18 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	}
 	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "help")) {
 		names := []string{"login --url URL --token-file FILE [--ca-file FILE]", "login --url URL --issuer-url URL [--client-id ID] [--no-browser] [--ca-file FILE] [--issuer-ca-file FILE]", "logout"}
+		if len(app.Resources) > 0 {
+			names = append(names, "apply -f FILE [--dry-run] [-o json]")
+		}
 		for _, c := range app.Commands {
 			names = append(names, strings.Join(c.Name, " "))
 		}
 		sort.Strings(names)
 		_, err := fmt.Fprintln(output, strings.Join(names, "\n"))
 		return err
+	}
+	if args[0] == "apply" {
+		return runApply(ctx, app, args[1:], output)
 	}
 	if args[0] == "login" {
 		return login(ctx, app, args[1:], output)

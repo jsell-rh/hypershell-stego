@@ -60,7 +60,7 @@ hsctl delete gatewayNetwork NETWORK_ID --yes
 Creation also accepts `--body FILE`. The aliases `gatewayNetwork` and
 `gateway-network` are accepted. Get and list also accept plural names. The CLI
 returns JSON. Reference tables, automatic pagination, and interactive prompts
-remain open. CLI patch still needs the missing `apply` command.
+remain open. CLI patch is now available through the [apply workflow](cli-apply.md).
 See the [CLI port table](cli-port.md).
 
 Stop the API before an upgrade. Apply earlier migrations, then apply
