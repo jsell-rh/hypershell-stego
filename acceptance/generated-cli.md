@@ -66,7 +66,8 @@ Unicode, file permissions, FIFO inputs, token rotation, and invalid commands.
 
 This is a Linux CLI workflow. Browser and device login, refresh tokens, legacy
 configuration migration, interactive delete prompts, connection instructions,
-other resource commands, and protected credential output remain open. The old
+and other resource commands remain open. Protected credential output is now
+covered by the [service-account CLI workflow](service-account-cli.md). The old
 `--token` and `--insecure` flags are not accepted. Input and output bounds are
 specified in the pinned STEGO CLI component documentation. The complete client
 port and enterprise goal remain active.

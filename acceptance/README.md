@@ -236,3 +236,7 @@ revocation, restart, and deletion. A local probe also runs the reference CLI.
 The [generated CLI workflow](generated-cli.md) adds a separate executable over
 STEGO's common HTTPS client. It covers token files, Gateway creation and grants,
 filtered access, events, gRPC reads, rollback, API restart, deletion, and logout.
+
+The [service-account CLI workflow](service-account-cli.md) adds protected secret
+output, real token issuance, filtered access, restart, and revocation through
+the generated API and gRPC provisioner.

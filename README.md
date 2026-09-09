@@ -239,3 +239,7 @@ creation and command execution under Kata. It checks admission denials, client
 key protection, a hard process limit, stored data after Gateway restart, and
 cleanup. Run `scripts/check-sandbox-workload.sh` on Linux amd64 with usable KVM.
 The runtime choice and production isolation requirements remain open.
+
+The generated CLI also supports [service accounts](acceptance/service-account-cli.md).
+It creates a private credential file, retrieves and lists accounts, and revokes
+or deletes them through the generated runtime.

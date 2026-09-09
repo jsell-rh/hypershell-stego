@@ -2,14 +2,23 @@ package cli
 
 import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
+	command "github.com/jsell-rh/hypershell-stego/out/cli/command"
 	"reflect"
 	"strings"
 	"testing"
 )
 
 func TestGatewayCreationFieldsFollowDomainContract(t *testing.T) {
-	fields := Commands().Commands[0].Fields
-	request := reflect.TypeFor[gateways.CreateRequest]()
+	checkFields(t, Commands().Commands[0].Fields, reflect.TypeFor[gateways.CreateRequest]())
+}
+
+func TestAccountCreationFieldsFollowDomainContract(t *testing.T) {
+	checkFields(t, accountCommands()[0].Fields, reflect.TypeFor[serviceaccounts.CreateRequest]())
+}
+
+func checkFields(t *testing.T, fields []command.Field, request reflect.Type) {
+	t.Helper()
 	if len(fields) != request.NumField() {
 		t.Fatal("CLI creation fields differ from domain request")
 	}

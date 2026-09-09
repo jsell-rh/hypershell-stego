@@ -26,12 +26,14 @@ type Field struct {
 	Flag, Key, Type    string
 	Required, Nullable bool
 }
+type PathParameter struct{ Flag, Key string }
 type Command struct {
-	Name               []string
-	Method, Path       string
-	ID, Query, Confirm bool
-	Fields             []Field
-	Success            []int
+	Name                          []string
+	Method, Path                  string
+	ID, Query, Confirm, Sensitive bool
+	PathParameters                []PathParameter
+	Fields                        []Field
+	Success                       []int
 }
 type Application struct {
 	ConfigEnv, ConfigName string
@@ -73,15 +75,29 @@ func validate(app Application) error {
 		if err != nil || u.IsAbs() || u.Host != "" || !strings.HasPrefix(c.Path, "/") || strings.HasPrefix(c.Path, "//") || u.RawQuery != "" || u.Fragment != "" || strings.ContainsAny(c.Path, "%\\\x00\r\n") || len(c.Path) > 1024 {
 			return errors.New("invalid CLI route")
 		}
+		parameters := map[string]bool{}
+		pathFlags := map[string]bool{}
+		if len(c.PathParameters) > 8 {
+			return errors.New("too many CLI path parameters")
+		}
+		for _, p := range c.PathParameters {
+			if !word.MatchString(p.Flag) || !property.MatchString(p.Key) || p.Key == "id" || reservedFlag(p.Flag) || parameters[p.Key] || pathFlags[p.Flag] || strings.Count(c.Path, "{"+p.Key+"}") != 1 {
+				return errors.New("invalid CLI path parameter")
+			}
+			parameters[p.Key], pathFlags[p.Flag] = true, true
+		}
 		for _, part := range strings.Split(strings.TrimPrefix(c.Path, "/"), "/") {
 			if part == "{id}" && c.ID {
+				continue
+			}
+			if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") && parameters[part[1:len(part)-1]] {
 				continue
 			}
 			if part == "." || part == ".." || !pathPart.MatchString(part) {
 				return errors.New("invalid CLI route segment")
 			}
 		}
-		if c.ID != (strings.Count(c.Path, "{id}") == 1) || (!c.ID && strings.Contains(c.Path, "{")) {
+		if c.ID != (strings.Count(c.Path, "{id}") == 1) {
 			return errors.New("invalid CLI route parameter")
 		}
 		switch c.Method {
@@ -99,7 +115,7 @@ func validate(app Application) error {
 		}
 		flags, keys := map[string]bool{}, map[string]bool{}
 		for _, f := range c.Fields {
-			if !word.MatchString(f.Flag) || !property.MatchString(f.Key) || flags[f.Flag] || keys[f.Key] || f.Flag == "body" || f.Flag == "yes" || f.Flag == "help" {
+			if !word.MatchString(f.Flag) || !property.MatchString(f.Key) || flags[f.Flag] || keys[f.Key] || reservedFlag(f.Flag) || pathFlags[f.Flag] {
 				return errors.New("invalid CLI field")
 			}
 			flags[f.Flag], keys[f.Key] = true, true
@@ -114,6 +130,10 @@ func validate(app Application) error {
 		}
 	}
 	return nil
+}
+
+func reservedFlag(flag string) bool {
+	return flag == "body" || flag == "yes" || flag == "help" || flag == "output-file"
 }
 
 // Run performs one command. Cancellation bounds network work. Configuration
@@ -188,6 +208,10 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		for _, f := range c.Fields {
 			names = append(names, "--"+f.Flag+" ("+f.Type+")")
 		}
+		for _, p := range c.PathParameters {
+			names = append(names, "--"+p.Flag+" ID (required)")
+		}
+		names = append(names, "--output-file FILE (- selects stdout)")
 		if c.Method == "POST" || c.Method == "PUT" || c.Method == "PATCH" {
 			names = append(names, "--body FILE")
 		}
@@ -211,6 +235,19 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 			return errArguments
 		}
 		route = strings.Replace(route, "{id}", url.PathEscape(positions[0]), 1)
+	}
+	for _, p := range c.PathParameters {
+		value, ok := values[p.Flag]
+		if !ok || !identifier.MatchString(value) {
+			return errArguments
+		}
+		route = strings.Replace(route, "{"+p.Key+"}", url.PathEscape(value), 1)
+		delete(values, p.Flag)
+	}
+	outputFile, outputSet := values["output-file"]
+	delete(values, "output-file")
+	if (outputSet && outputFile == "") || (c.Sensitive && !outputSet) {
+		return errors.New("this command requires --output-file FILE; use - only for explicit stdout output")
 	}
 	if c.Confirm {
 		if values["yes"] != "true" {
@@ -300,6 +337,11 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	if payload != nil {
 		headers.Set("Content-Type", "application/json")
 	}
+	destination, err := reserveOutput(outputFile, output)
+	if err != nil {
+		return err
+	}
+	defer destination.close()
 	response, err := transport.Do(ctx, c.Method, route, headers, payload)
 	if err != nil {
 		return err
@@ -317,7 +359,7 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		if len(response.Body) != 0 {
 			return errors.New("unexpected response body")
 		}
-		return nil
+		return destination.write(nil)
 	}
 	if !validJSON(response.Body) {
 		return errors.New("invalid API JSON response")
@@ -327,8 +369,7 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		return errors.New("invalid API JSON response")
 	}
 	formatted.WriteByte('\n')
-	_, err = output.Write(formatted.Bytes())
-	return err
+	return destination.write(formatted.Bytes())
 }
 
 func parse(args []string, confirm bool) (map[string]string, []string, error) {
