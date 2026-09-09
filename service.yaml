@@ -112,6 +112,8 @@ overrides:
   jwt-auth:
     roles_claim: realm_access.roles
     mode: verifier
+  cli-application:
+    factory_package: internal/cli
   http-application:
     factory_package: internal/httpapi
   grpc-application:

@@ -232,3 +232,7 @@ The [account discovery workflow](service-account-discovery.md) adds status,
 literal search, and all reference sort fields through the generated process.
 It preserves access filters in counts and pages and repeats discovery after
 revocation, restart, and deletion. A local probe also runs the reference CLI.
+
+The [generated CLI workflow](generated-cli.md) adds a separate executable over
+STEGO's common HTTPS client. It covers token files, Gateway creation and grants,
+filtered access, events, gRPC reads, rollback, API restart, deletion, and logout.

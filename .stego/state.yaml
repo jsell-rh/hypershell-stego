@@ -1,7 +1,10 @@
 last_applied:
-    service_hash: 92fb54588c329115a875ba9cc89b76636ad7fb2809130220d0a0b6c038210189
+    service_hash: 9b14674efd161020e7687d212ed2f6539367057b9b454e4627fbd01e873ff9a3
     registry_sha: gateway-workflow
     components:
+        cli-application:
+            version: 1.0.0
+            sha: gateway-workflow
         grpc-application:
             version: 1.2.0
             sha: gateway-workflow
@@ -269,10 +272,14 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: a9d20c9620f2ebe2c5feb138c3c6bcbcde36a73d4c46da7b93fec1fc03e4b910
+        application/client/client.go: b539dc426fe44304cd9d2694dbdbb1929e4ee195e1d2f3d73b0f909c6e925e18
         application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
+        cli/client/client.go: b539dc426fe44304cd9d2694dbdbb1929e4ee195e1d2f3d73b0f909c6e925e18
+        cli/cmd/main.go: 55e38ef059bbc114ade87e8ec1071e105ceb74a226a00679be05028c8204ec8b
+        cli/command/config.go: 26199c158f31ff5458ddd7e96fbffc87581f4cac61710e077f94c13bc9a67aa7
+        cli/command/runtime.go: 0fa3001f20f545bd26a601617f1227ecc47544f987bf671b2c25fcae39bd49b7
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 49ce44e7d453982cf06bbcb7c0fe806a08e657c08dd4ed100cb17b32ad1ee517
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6

@@ -6,6 +6,7 @@ components:
   - postgres-adapter
   - outbox
   - kafka-producer
+  - cli-application
   - http-application
   - grpc-application
   - kubernetes-client

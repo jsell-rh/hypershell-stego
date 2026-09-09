@@ -16,6 +16,11 @@ REST search and ordering are implemented. Field selection, related-resource
 search, and the other application workflows remain open. See
 [the checks](acceptance/README.md).
 
+The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
+`out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes
+Gateways over verified HTTPS. It shares STEGO's HTTP client with the service
+components. Browser login and the complete client port remain open.
+
 The reference REST and gRPC contracts are under `contracts/reference/`. `contracts/upstream.json`
 records their source revision and SHA-256 hashes. These files are acceptance
 inputs. STEGO also uses the Gateway and common protobuf files as generation inputs. The source is Apache-2.0 licensed; see
