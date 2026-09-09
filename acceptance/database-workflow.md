@@ -25,6 +25,18 @@ Ordinary users, Gateway creators, and platform administrators are denied. Invali
 replay modes are rejected. The test crosses a 100-record replay page and checks
 IDs, order, provider, namespace, completeness, and exclusion of live rows.
 
+Replay now uses STEGO's cursor scanner for pagination, complete-page checks,
+request deadlines, and a page-count limit. Hypershell supplies the authorized
+deleted-state query and the reference event shape. The scanner preserves database
+order. A Go string comparison cannot validate an opaque database cursor.
+
+The replay test runs with C and ICU collations. Two fixed IDs ensure that ICU
+ordering differs from Go string ordering. Expected results come from an ordered
+database query. Each case repeats after API restart, verifies denied requests,
+and checks an empty authorized replay. Denied requests must not confirm the
+replay capability. The old replay loop failed the ICU case with an internal
+error; the generated scanner passed both collations.
+
 STEGO postgres-adapter 3.4.0 adds `ListOptions.OnlyDeleted`. It filters deleted
 root records before counting and paging. Related access records must still be
 live. A separate generated Record service checks this behavior with PostgreSQL.
@@ -163,3 +175,10 @@ replay passed in 2.93 seconds; the acceptance package took 73.740 seconds. Five
 stable reconciliations took 75.8 ms and did not change the Deployment. These
 results check the client extraction; they do not establish production capacity.
 The compiler and variant vulnerability scans reported no known vulnerabilities.
+
+The generated-scanner replay change passed the complete database workflow on
+2026-09-09. The real workload took 65.21 seconds. Replay with C and ICU ordering,
+API restart, denied capability confirmation, and empty results took 8.56 seconds.
+The acceptance package took 74.819 seconds. Static checks and pinned regeneration
+also passed. The compiler remains at `639b95bb49bc9020b849f5f9ee6180a7b1a1ee09`;
+this change reuses its scanner without a new runtime API.

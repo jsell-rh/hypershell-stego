@@ -4,11 +4,13 @@ import (
 	"context"
 	"errors"
 	"math"
+	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
@@ -294,28 +296,41 @@ func (s *databaseServer) WatchManagedDatabases(_ *pb.WatchManagedDatabasesReques
 func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse]) error {
 	ctx := stream.Context()
 	principal := gateways.PrincipalFromContext(ctx)
-	after := ""
-	for {
-		rows, err := s.resource.Deleted(ctx, principal, after)
-		if err != nil {
-			return mapError(err)
-		}
-		if after == "" {
-			if err := stream.SendHeader(metadata.Pairs("hypershell-managed-database-delete-tombstones", "v1")); err != nil {
-				return err
-			}
-		}
-		for _, row := range rows {
-			if row.ID <= after {
-				return status.Error(codes.Internal, "invalid database replay order")
-			}
-			if err := stream.Send(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_DELETED, ResourceId: row.ID, ManagedDatabase: presentManagedDatabase(row)}); err != nil {
-				return err
-			}
-			after = row.ID
-		}
-		if len(rows) < 100 {
+	headerSent := false
+	sendHeader := func() error {
+		if headerSent {
 			return nil
 		}
+		if err := stream.SendHeader(metadata.Pairs("hypershell-managed-database-delete-tombstones", "v1")); err != nil {
+			return err
+		}
+		headerSent = true
+		return nil
 	}
+	source := func(operation context.Context, after string, limit int) (runtime.CursorPage[model.ManagedDatabase], error) {
+		var page runtime.CursorPage[model.ManagedDatabase]
+		rows, err := s.resource.Deleted(operation, principal, after)
+		if err != nil {
+			return page, mapError(err)
+		}
+		for _, row := range rows {
+			page.Items = append(page.Items, runtime.CursorItem[model.ManagedDatabase]{Cursor: row.ID, Value: row})
+		}
+		page.More = len(rows) == limit
+		return page, nil
+	}
+	err := runtime.Scan(ctx, source, func(row model.ManagedDatabase) error {
+		if err := sendHeader(); err != nil {
+			return err
+		}
+		return stream.Send(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_DELETED, ResourceId: row.ID, ManagedDatabase: presentManagedDatabase(row)})
+	}, runtime.ScanOptions{PageSize: 100, MaxPages: 10000, PageTimeout: 20 * time.Second})
+	if errors.Is(err, runtime.ErrScanContract) {
+		return status.Error(codes.Internal, "invalid database replay page")
+	}
+	if err != nil {
+		return err
+	}
+	// An empty authorized replay still confirms the capability.
+	return sendHeader()
 }
