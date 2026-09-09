@@ -31,7 +31,13 @@ Hypershell retains Pod classification, count calculation, and cluster ownership.
 Its changed-namespace set describes one cache update; STEGO holds pending work.
 The [count workflow](sandbox-counts.md) records application evidence.
 
-Shared recovery scans, worker pools, and distributed fencing remain STEGO work.
+Service-account recovery also uses this component through `RunSweep`. STEGO owns
+its cursor progress, page checks, worker pool, pass deadlines, and group rotation.
+Hypershell supplies state groups, storage filters, and recovery actions. The
+[account workflow](service-accounts.md) covers late provider effects, expiry,
+role limits, restart, and partial-page progress.
+
+Shared storage adapters, durable claims, and distributed fencing remain STEGO work.
 The first extractions do not establish that every remaining application helper
 is domain-specific. Further changes must remove common application code and pass
 an existing application workflow.

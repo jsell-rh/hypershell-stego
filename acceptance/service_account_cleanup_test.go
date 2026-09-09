@@ -127,3 +127,87 @@ func TestDeletedServiceAccountCleanupRetriesAcrossPages(t *testing.T) {
 		t.Fatal("cleanup changed a live account")
 	}
 }
+
+type slowCleanupProvider struct {
+	*accountProvider
+	slow map[string]bool
+}
+
+func (p *slowCleanupProvider) Delete(ctx context.Context, gatewayID, id, uuid string) error {
+	if p.slow[id] {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	return p.accountProvider.Delete(ctx, gatewayID, id, uuid)
+}
+
+func TestServiceAccountRecoveryResumesPartialPage(t *testing.T) {
+	f := database(t)
+	provider := newAccountProvider()
+	service, gateway := accountService(t, f, provider)
+	ctx := context.Background()
+	live, err := service.Create(ctx, principal("alice"), gateway.ID, accountInput("live"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 0; i < 17; i++ {
+		id := ksuid.New().String()
+		row := model.ServiceAccount{Meta: model.Meta{ID: id}, GatewayID: gateway.ID, Name: fmt.Sprintf("partial-%d", i), CredentialType: "client_secret", Role: serviceaccounts.RoleUser, Status: "error", CreatedByUserID: live.Account.CreatedByUserID, ClientID: "hs-sa-" + gateway.ID + "-" + id, ExpiresAt: time.Now().Add(time.Hour)}
+		if err := f.storage.Create(ctx, "ServiceAccount", row); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.storage.Delete(ctx, "ServiceAccount", id); err != nil {
+			t.Fatal(err)
+		}
+		provider.clients[id] = serviceaccounts.Credential{ClientID: row.ClientID}
+	}
+	// Use the database's cursor order, which need not match Go string ordering.
+	result, err := f.storage.List(ctx, "ServiceAccount", "status", "error", contract.ListOptions{Page: 1, Size: 100, IncludeDeleted: true, OrderBy: []contract.OrderByField{{Field: "id", Direction: "asc"}}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	rows := result.Items.([]model.ServiceAccount)
+	if len(rows) != 17 {
+		t.Fatal("unexpected cleanup fixture size")
+	}
+	slow := map[string]bool{}
+	for _, row := range rows[:8] {
+		slow[row.ID] = true
+	}
+	target := rows[len(rows)-1].ID
+	worker, err := serviceaccounts.New(f.storage, &slowCleanupProvider{accountProvider: provider, slow: slow})
+	if err != nil {
+		t.Fatal(err)
+	}
+	run, cancel := context.WithCancel(ctx)
+	done := make(chan error, 1)
+	go func() { done <- worker.Run(run) }()
+	t.Cleanup(func() {
+		cancel()
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Error(err)
+			}
+		case <-time.After(5 * time.Second):
+			t.Error("recovery did not stop")
+		}
+	})
+	deadline := time.Now().Add(20 * time.Second)
+	for {
+		provider.mu.Lock()
+		_, present := provider.clients[target]
+		_, livePresent := provider.clients[live.Account.ID]
+		provider.mu.Unlock()
+		if !livePresent {
+			t.Fatal("recovery removed a live account")
+		}
+		if !present {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("slow first workers prevented later records in the partial page from receiving a turn")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+}

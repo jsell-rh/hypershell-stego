@@ -46,8 +46,9 @@ need work.
 The task also revisits deleted records for failed, deleting, and abandoned
 accounts. This removes a provider client whose creation completes after initial
 cleanup. It uses stable resource IDs and does not require a live Gateway.
-Current work runs before historical checks, with separate cursors and a shared
-deadline. Deleted records remain hidden from normal queries. Large-history capacity and
+Current work initially runs before historical checks, with separate cursors and
+a shared deadline. When a stream uses the pass budget, the next pass starts with
+the next stream so that slow work cannot starve history. Deleted records remain hidden from normal queries. Large-history capacity and
 cleanup-record retention need further verification.
 
 The current provider settings are:
@@ -101,3 +102,29 @@ PostgreSQL 18.6, and an Intel Core Ultra 9 185H. Process startup is outside the 
 setup. This is a local workflow baseline. It does not
 measure Keycloak, concurrent capacity, latency percentiles, or server memory.
 Run `go test -run '^$' -bench '^BenchmarkServiceAccountLifecycle$' -benchtime=100x ./acceptance`.
+
+Service-account recovery now uses STEGO's generated `RunSweep`. Hypershell declares
+nine state groups and twelve streams, plus their storage filters and domain
+actions. STEGO owns the timer, cursors, page validation, worker pool, deadlines,
+and group rotation. It validates the whole page before an action starts. Each
+stream is limited to 10,000 page advances per cycle. Failed work stays eligible
+through retained state; cursor progress does not acknowledge a provider effect.
+
+A regression test uses 17 deleted records and keeps the first eight provider
+calls slow until their contexts end. The former short-page reset prevented later
+records from receiving a turn; that run failed after 20.41 seconds. The generated
+sweep retains partial-page progress. The final test passed in 13.31 seconds.
+A separate generated test proves that slow current work cannot starve history.
+
+The focused application race suite passed in 157.916 seconds. It includes late
+Keycloak creation and restart, revocation after database loss, the real Keycloak
+account lifecycle, cleanup across pages, partial-page recovery, generated REST
+and gRPC transports, role limits, and expiry. The compiler race suite and static
+checks passed. These are correctness checks, not proof of production recovery
+latency. The [sweep contract](https://github.com/jsell-rh/stego/blob/025aa22555b84d4e14ff8055f62eb7db9ee6107d/specs/controller-sweep.md)
+records bounds, cursor ownership, and dispatch measurements.
+
+Compiler pin `025aa22555b84d4e14ff8055f62eb7db9ee6107d` passed CI run
+`34392328767`. Regeneration from that pin produced the same controller bytes used
+by the application tests, and application static checks passed. The new remote
+application gates run after publication of this migration.

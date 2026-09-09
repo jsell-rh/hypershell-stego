@@ -2,115 +2,110 @@ package serviceaccounts
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"sync"
+	"log/slog"
 	"time"
 
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
-// Run recovers terminal actions and checks expiry and creator access. It never
-// provisions a client, raises an existing role, or reconstructs a credential.
+type recoveryTask struct {
+	row     model.ServiceAccount
+	deleted bool
+}
+
+// Run supplies account rules to the generated page scheduler. It never provisions
+// a client, raises an existing role, or reconstructs a credential.
 func (s *Service) Run(ctx context.Context) error {
+	if ctx == nil {
+		return errors.New("service-account recovery requires a context")
+	}
 	if s.provider == nil {
 		<-ctx.Done()
 		return nil
 	}
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	cursors := map[string]string{}
-	states := []string{"error", "deleting", "revoking", "provisioning", "ready", "degraded", "drift", "revoked", "expired"}
-	position := 0
-	for {
-		scan, cancel := context.WithTimeout(ctx, 4*time.Second)
-		state := states[position]
-		passes := []bool{false}
+	groups := []runtime.SweepGroup[recoveryTask]{}
+	for _, state := range []string{"error", "deleting", "revoking", "provisioning", "ready", "degraded", "drift", "revoked", "expired"} {
+		streams := []runtime.SweepStream[recoveryTask]{s.recoveryStream(state, false)}
 		if state == "error" || state == "deleting" || state == "provisioning" {
-			passes = append(passes, true)
+			streams = append(streams, s.recoveryStream(state, true))
 		}
-		// Current work precedes historical checks. Both share the scan deadline.
-		for _, includeDeleted := range passes {
-			cursorKey := state
-			if includeDeleted {
-				cursorKey += "/deleted"
-			}
-			if scan.Err() != nil {
-				break
-			}
-			search := ""
-			if cursor := cursors[cursorKey]; cursor != "" {
-				search = "id > '" + cursor + "'"
-			}
-			condition := ""
-			queryState := state
-			if state == "drift" {
-				queryState = "ready"
-			}
-			if state == "ready" {
-				condition = "expires_at <= '" + s.now().UTC().Format(time.RFC3339Nano) + "'"
-			}
-			if state == "provisioning" {
-				condition = "created_time <= '" + s.now().Add(-ReclaimAfter).UTC().Format(time.RFC3339Nano) + "'"
-			}
-			if condition != "" {
-				if search != "" {
-					search += " and "
-				}
-				search += condition
-			}
-			result, err := s.repository.List(scan, "ServiceAccount", "status", queryState, storage.ListOptions{Page: 1, Size: 100, Search: search, IncludeDeleted: includeDeleted, OrderBy: []storage.OrderByField{{Field: "id", Direction: "asc"}}})
-			if err != nil {
-				continue
-			}
-			rows, ok := result.Items.([]model.ServiceAccount)
-			if !ok {
-				cancel()
-				return fmt.Errorf("unexpected service-account recovery result")
-			}
-			permits := make(chan struct{}, 8)
-			var wait sync.WaitGroup
-			for _, row := range rows {
-				if !validID(row.ID) {
-					cancel()
-					wait.Wait()
-					return fmt.Errorf("invalid service-account recovery ID")
-				}
-				cursors[cursorKey] = row.ID
-				// The historical query includes live roots; their normal pass owns them.
-				if row.DeletedAt.Valid != includeDeleted {
-					continue
-				}
-				select {
-				case permits <- struct{}{}:
-				case <-scan.Done():
-					break
-				}
-				if scan.Err() != nil {
-					break
-				}
-				wait.Go(func() {
-					defer func() { <-permits }()
-					if row.DeletedAt.Valid {
-						// A terminal record cannot be restored. Cleanup needs no live
-						// parent and uses stable IDs, even if the provider UUID was lost.
-						_ = s.provider.Delete(scan, row.GatewayID, row.ID, "")
-						return
-					}
-					_ = s.Recover(scan, row.GatewayID, row.ID)
-				})
-			}
-			wait.Wait()
-			if len(rows) < 100 {
-				cursors[cursorKey] = ""
-			}
-		}
-		cancel()
-		position = (position + 1) % len(states)
-		select {
-		case <-ctx.Done():
-			return nil
-		case <-ticker.C:
-		}
+		groups = append(groups, runtime.SweepGroup[recoveryTask]{Name: state, Streams: streams})
 	}
+	return runtime.RunSweep(ctx, groups, s.recoverTask, runtime.SweepOptions{
+		Workers: 8, PageSize: 100, MaxPagesPerCycle: 10000, PassTimeout: 4 * time.Second, Interval: time.Second,
+		// Provider and storage outages remain retryable. Invalid source data stops
+		// the worker. Recovery actions still enforce their current access rules.
+		Terminal: func(err error) bool { return errors.Is(err, runtime.ErrSweepContract) },
+		Observe: func(event runtime.SweepEvent) {
+			if event.Err != nil {
+				slog.Warn("service-account recovery needs another pass", "group", event.Group, "stream", event.Stream, "started", event.Started, "failed", event.Failed)
+			}
+		},
+	})
+}
+func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream[recoveryTask] {
+	name := "live"
+	if deleted {
+		name = "deleted"
+	}
+	return runtime.SweepStream[recoveryTask]{Name: name, Page: func(ctx context.Context, after string, limit int) (runtime.SweepPage[recoveryTask], error) {
+		page := runtime.SweepPage[recoveryTask]{}
+		if after != "" && !validID(after) {
+			return page, fmt.Errorf("%w: invalid account cursor", runtime.ErrSweepContract)
+		}
+		search := ""
+		if after != "" {
+			search = "id > '" + after + "'"
+		}
+		queryState := state
+		if state == "drift" {
+			queryState = "ready"
+		}
+		condition := ""
+		if state == "ready" {
+			condition = "expires_at <= '" + s.now().UTC().Format(time.RFC3339Nano) + "'"
+		}
+		if state == "provisioning" {
+			condition = "created_time <= '" + s.now().Add(-ReclaimAfter).UTC().Format(time.RFC3339Nano) + "'"
+		}
+		if condition != "" {
+			if search != "" {
+				search += " and "
+			}
+			search += condition
+		}
+		result, err := s.repository.List(ctx, "ServiceAccount", "status", queryState, storage.ListOptions{Page: 1, Size: limit, Search: search, IncludeDeleted: deleted, OrderBy: []storage.OrderByField{{Field: "id", Direction: "asc"}}})
+		if err != nil {
+			return page, err
+		}
+		rows, ok := result.Items.([]model.ServiceAccount)
+		if !ok || len(rows) > limit {
+			return page, fmt.Errorf("%w: unexpected account result", runtime.ErrSweepContract)
+		}
+		for _, row := range rows {
+			if !validID(row.ID) {
+				return page, fmt.Errorf("%w: invalid account ID", runtime.ErrSweepContract)
+			}
+			page.Items = append(page.Items, runtime.SweepItem[recoveryTask]{Cursor: row.ID, Value: recoveryTask{row: row, deleted: deleted}})
+		}
+		page.More = len(rows) == limit
+		return page, nil
+	}}
+}
+func (s *Service) recoverTask(ctx context.Context, task recoveryTask) error {
+	row := task.row
+	// Historical queries include live roots. Their live stream owns them.
+	if row.DeletedAt.Valid != task.deleted {
+		return nil
+	}
+	if row.DeletedAt.Valid {
+		// Deleted records cannot be restored. Stable IDs identify late provider
+		// resources even when the former provider UUID is no longer valid.
+		return s.provider.Delete(ctx, row.GatewayID, row.ID, "")
+	}
+	return s.Recover(ctx, row.GatewayID, row.ID)
 }
