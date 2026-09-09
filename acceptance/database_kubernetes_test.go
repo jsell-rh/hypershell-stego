@@ -215,7 +215,23 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
 	k.must(t, "", "-n", namespace, "delete", "pod", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--wait=true")
 	k.must(t, "", "-n", namespace, "wait", "pods", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--for=condition=Ready", "--timeout=90s")
-	output = k.must(t, "", "-n", namespace, "exec", "deployment/openshell-gateway-db", "--", "sh", "-ec", `export PGPASSWORD="$APP_PASSWORD" PGSSLMODE=verify-full PGSSLROOTCERT=/tls/ca.crt; psql -h openshell-gateway-db.`+namespace+`.svc.cluster.local -U openshell -d openshell -Atc 'SELECT value FROM acceptance_marker'`)
+	// Pod readiness does not wait for Service routing to reach the new Pod.
+	// Retry this read only. The first successful result must contain the marker.
+	readContext, stopRead := context.WithTimeout(context.Background(), 30*time.Second)
+	defer stopRead()
+	for {
+		attempt, stopAttempt := context.WithTimeout(readContext, 5*time.Second)
+		output, err = k.command(attempt, "", "-n", namespace, "exec", "deployment/openshell-gateway-db", "--", "sh", "-ec", `export PGPASSWORD="$APP_PASSWORD" PGSSLMODE=verify-full PGSSLROOTCERT=/tls/ca.crt PGCONNECT_TIMEOUT=2; psql -h openshell-gateway-db.`+namespace+`.svc.cluster.local -U openshell -d openshell -v ON_ERROR_STOP=1 -Atc 'SELECT value FROM acceptance_marker'`)
+		stopAttempt()
+		if err == nil {
+			break
+		}
+		select {
+		case <-readContext.Done():
+			t.Fatalf("database Service read after restart did not recover: %v\n%s", err, output)
+		case <-time.After(250 * time.Millisecond):
+		}
+	}
 	if strings.TrimSpace(string(output)) != "42" {
 		t.Fatal("persistent data changed", string(output))
 	}

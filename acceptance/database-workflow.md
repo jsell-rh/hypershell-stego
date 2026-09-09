@@ -11,6 +11,21 @@ role has no superuser, role creation, database creation, replication, or row pol
 bypass privileges. Data and the application password survive Pod and controller
 restart. Five repeated reconciliations must leave the Deployment unchanged.
 
+After Pod restart, the marker query waits up to 30 seconds for a successful TLS
+read through the Service. Each attempt has a five-second limit. Pod readiness
+alone does not confirm that Service routing has reached the replacement Pod.
+Only this read is retried. The first successful result must contain the original
+marker; a missing or changed value fails the test.
+
+In [run 34416352961](https://github.com/jsell-rh/hypershell-stego/actions/runs/34416352961),
+the previous one-attempt query failed with connection refused after the Pod
+readiness check. That log does not establish whether Service propagation caused
+the refusal. The bounded read checks the required end-to-end recovery directly.
+The revised real Kubernetes workflow passed in 76.20 seconds. With deletion
+replay checks, the acceptance package passed in 88.948 seconds under race
+detection. This successful run does not establish the cause of the earlier
+connection refusal.
+
 The test then stops the controller, deletes the Gateway and database through REST,
 and restarts the API. It first denies the controller's Kubernetes delete request.
 The namespace must remain, and the failure must be reported. After access is
