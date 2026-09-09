@@ -96,7 +96,7 @@ func TestOwnershipChecksBeforeMutation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer c.Close()
-	for _, ids := range [][2]string{{"", "account"}, {"gateway", ""}, {"other", "account"}, {"gateway", "other"}} {
+	for _, ids := range [][2]string{{"", "account"}, {"gateway", ""}, {"other", "account"}, {"gateway", "other"}, {"gateway", "account"}} {
 		for _, remove := range []bool{false, true} {
 			var err error
 			if remove {

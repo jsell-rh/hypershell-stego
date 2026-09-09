@@ -221,3 +221,8 @@ The actual Gateway gate now tests a viewer granted through Hypershell REST.
 It preserves separate OpenShell workspace membership, filters workspace lists,
 checks credential redaction and denied writes, repeats access after restart,
 and checks both grant removal and workspace membership removal.
+
+The [Gateway account cleanup workflow](gateway-account-cleanup.md) now joins
+Gateway deletion with automation-account cleanup. It tests provider failure,
+restart, orphan clients, concurrent creation, atomic audit and event failure,
+and token use against the actual Gateway.

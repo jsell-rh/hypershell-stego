@@ -9,6 +9,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -35,6 +36,19 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	if err != nil {
 		return err
 	}
+	provider, closeProvider, err := serviceaccounts.ProvisionerFromEnvironment()
+	if err != nil {
+		return err
+	}
+	if err := transport.OnClose(registrar, closeProvider); err != nil {
+		closeProvider()
+		return err
+	}
+	accounts, err := serviceaccounts.New(repository, provider)
+	if err != nil {
+		return err
+	}
+	options.AccountCleaner = accounts
 	service, err := gateways.New(repository, options)
 	if err != nil {
 		return err
@@ -185,6 +199,8 @@ func mapError(err error) error {
 	switch {
 	case errors.Is(err, gateways.ErrGrantCapacity):
 		return status.Error(codes.ResourceExhausted, "grant response exceeds its resource limit")
+	case errors.Is(err, gateways.ErrGatewayCleanupUnavailable):
+		return status.Error(codes.Unavailable, "Gateway service-account cleanup is unavailable")
 	case errors.Is(err, gateways.ErrServiceAccountsExist):
 		return status.Error(codes.FailedPrecondition, "service accounts require cleanup before Gateway deletion")
 	case errors.Is(err, gateways.ErrIdentity):

@@ -85,11 +85,12 @@ The protocol fixture remains useful for controlled failures.
 Service-account search, status filters, custom ordering, configurable expiration
 policy, deployment manifests, SDKs, CLI, and web-console workflows remain open.
 
-Gateway deletion currently refuses a Gateway that has live account metadata.
-Delete the accounts first. The Gateway lock closes the race with a new account
-reservation. Automatic provider cleanup as part of Gateway deletion remains
-required for full reference compatibility. Production migration management and
-upgrades from the reference table layout also remain open.
+Gateway deletion now removes stored and orphan provider clients before it
+commits account tombstones, cleanup audits, the Gateway tombstone, and its event.
+The Gateway lock closes the race with account creation. See the
+[cleanup workflow](gateway-account-cleanup.md) for failure and restart behavior.
+Production migration management and upgrades from the reference table layout
+remain open.
 
 A local benchmark ran 100 complete create, get, revoke, and delete cycles. Each
 cycle averaged 20.503 ms through a separate generated REST process and the TLS

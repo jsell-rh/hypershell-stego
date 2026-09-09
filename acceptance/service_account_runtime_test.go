@@ -164,9 +164,15 @@ func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code, data := requestJSON(t, "GET", path+"/"+id, token(t, key, "mallory", "platform:admin"), nil); code != 404 {
 		t.Fatalf("admin bypassed grant: %d %s", code, data)
 	}
-	if code, data := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil); code != 409 {
+	provider.mu.Lock()
+	provider.failChange = true
+	provider.mu.Unlock()
+	if code, data := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil); code != 503 {
 		t.Fatalf("Gateway deletion bypassed cleanup: %d %s", code, data)
 	}
+	provider.mu.Lock()
+	provider.failChange = false
+	provider.mu.Unlock()
 	// A correctly signed token for another subject cannot provision identities.
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "wrong-service")), 0600); err != nil {
 		t.Fatal(err)
@@ -306,4 +312,14 @@ func BenchmarkServiceAccountLifecycle(b *testing.B) {
 		}
 	}
 	b.StopTimer()
+}
+
+func (s *accountRPC) DeleteGateway(ctx context.Context, r *pb.DeleteGatewayRequest) (*pb.DeleteGatewayResponse, error) {
+	if err := provisionerCaller(ctx); err != nil {
+		return nil, err
+	}
+	if err := s.provider.DeleteGateway(ctx, r.GatewayId); err != nil {
+		return nil, status.Error(codes.Unavailable, "Gateway cleanup failed")
+	}
+	return &pb.DeleteGatewayResponse{}, nil
 }

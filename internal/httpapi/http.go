@@ -80,16 +80,6 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err != nil {
 		return nil, err
 	}
-	service, err := gateways.New(repository, options)
-	if err != nil {
-		return nil, err
-	}
-	if rawVerifier == nil || database == nil {
-		return nil, errors.New("HTTP application requires a verifier")
-	}
-	verifier := &requestAuth{Authenticate: rawVerifier.Authenticate, Prepare: func(ctx context.Context) error {
-		return service.PrepareRequest(ctx, gateways.PrincipalFromContext(ctx))
-	}}
 	provider, closeProvider, err := serviceaccounts.ProvisionerFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -104,6 +94,17 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err != nil {
 		return nil, err
 	}
+	options.AccountCleaner = accounts
+	service, err := gateways.New(repository, options)
+	if err != nil {
+		return nil, err
+	}
+	if rawVerifier == nil || database == nil {
+		return nil, errors.New("HTTP application requires a verifier")
+	}
+	verifier := &requestAuth{Authenticate: rawVerifier.Authenticate, Prepare: func(ctx context.Context) error {
+		return service.PrepareRequest(ctx, gateways.PrincipalFromContext(ctx))
+	}}
 	mux := http.NewServeMux()
 	placementService, err := placement.New(repository, service)
 	if err != nil {
@@ -341,6 +342,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	switch {
 	case errors.Is(err, gateways.ErrLastOwner):
 		code, reason, errorID = http.StatusConflict, "The last Gateway owner cannot be removed", 6
+	case errors.Is(err, gateways.ErrGatewayCleanupUnavailable):
+		code, reason = http.StatusServiceUnavailable, "Gateway service-account cleanup is unavailable"
 	case errors.Is(err, gateways.ErrServiceAccountsExist):
 		code, reason, errorID = http.StatusConflict, "service accounts require cleanup before Gateway deletion", 6
 	case errors.Is(err, transport.ErrUnauthenticated), errors.Is(err, gateways.ErrIdentity):

@@ -294,7 +294,7 @@ last_applied:
         grpcapi/pb/hypershell/v1/managed_databases_grpc.pb.go: b4390743b458806268c2ac498468fe64a0b0530a336c87a2714348e229fbe4d5
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
-        grpcapi/transport/runtime.go: 4594691d6b46ba2ca23348c8e39bb321c200689e2039de08d4f32ba6fee93492
+        grpcapi/transport/runtime.go: 638ea594029c662a0b2813a70e485b48fde1bcebfda47d600314c1e8341a4492
         kubernetes/client.go: 246cbe45e5599c89de89a76840c6e2eb7057c89a335c951c93584875ac6ef699
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         main.go: ffc42b76bbbbe3c16cb8741c4da3002b4ef91db19be7129f53a25489f4e9f457

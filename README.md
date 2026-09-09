@@ -115,10 +115,11 @@ empty by default. Usernames and role names do not grant this access. REST has no
 console-address patch field. This subject allowlist is the current design
 assumption; the requested identity-policy decision remains open.
 
-Gateway deletion refuses a Gateway that still has live service-account metadata.
-Delete those accounts first. The shared Gateway row lock prevents a concurrent
-account reservation from bypassing this guard. Automatic provider cleanup within
-Gateway deletion remains required for full reference compatibility.
+Gateway deletion removes related provider clients before it commits the Gateway,
+account metadata, cleanup audits, and deletion event. The Gateway row lock
+prevents concurrent account creation from escaping cleanup. Provider failure
+returns HTTP 503 or gRPC `Unavailable` and keeps the Gateway. See the
+[Gateway account cleanup workflow](acceptance/gateway-account-cleanup.md).
 
 The gRPC `AdjustActiveSandboxCount` and `SetActiveSandboxCount` methods now use
 STEGO's resource-locking transaction. Only configured control-plane subjects

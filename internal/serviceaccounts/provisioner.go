@@ -64,3 +64,8 @@ func (p *rpcProvisioner) Reconcile(ctx context.Context, spec Spec, clientUUID, s
 	}
 	return nil
 }
+
+func (p *rpcProvisioner) DeleteGateway(ctx context.Context, gatewayID string) error {
+	_, err := p.client.DeleteGateway(ctx, &pb.DeleteGatewayRequest{GatewayId: gatewayID})
+	return terminalError(err)
+}

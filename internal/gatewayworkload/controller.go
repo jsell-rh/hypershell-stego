@@ -240,14 +240,17 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if err == nil {
 		err = c.provider.Ensure(ctx, gw, database.GetManagedDatabase(), release.GetGatewayRelease())
 	}
-	desired := "ready"
+	phase, desired := "Running", "Healthy"
 	if errors.Is(err, ErrPending) {
-		desired = "provisioning"
+		phase, desired = "Provisioning", "WorkloadNotReady"
+		if gw.GetPhase() == "Running" || gw.GetPhase() == "Degraded" {
+			phase = "Degraded"
+		}
 	} else if err != nil {
-		desired = "error"
+		phase, desired = "Degraded", "WorkloadUnavailable"
 	}
-	if gw.GetStatus() != desired {
-		_, writeErr := c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Status: &desired})
+	if gw.GetStatus() != desired || gw.GetPhase() != phase {
+		_, writeErr := c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
 		if writeErr != nil {
 			return errors.Join(err, writeErr)
 		}

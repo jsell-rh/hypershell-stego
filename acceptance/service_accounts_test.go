@@ -589,3 +589,18 @@ func TestServiceAccountGatewayQuota(t *testing.T) {
 		t.Fatal("quota failure had a provisioning effect")
 	}
 }
+
+func (p *accountProvider) DeleteGateway(_ context.Context, gatewayID string) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	if p.failChange {
+		return errors.New("private Gateway cleanup failure")
+	}
+	for id, client := range p.clients {
+		if strings.HasPrefix(client.ClientID, "hs-sa-"+gatewayID+"-") {
+			p.disabled[id] = true
+			delete(p.clients, id)
+		}
+	}
+	return nil
+}

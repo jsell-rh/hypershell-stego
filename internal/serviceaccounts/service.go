@@ -40,6 +40,7 @@ type Spec struct {
 // Credential exists only for the synchronous create result. Do not persist it.
 type Credential struct{ ClientID, ClientUUID, Subject, Secret string }
 type Provisioner interface {
+	DeleteGateway(context.Context, string) error
 	Provision(context.Context, Spec) (Credential, error)
 	Reconcile(context.Context, Spec, string, string) error
 	// Revoke permanently stops issuance. Later updates must not restore it.

@@ -473,7 +473,7 @@ func (c *Client) requireManagedClient(ctx context.Context, clientUUID, gatewayID
 	if gatewayID == "" || client.Attributes[gatewayIDAttribute] != gatewayID {
 		return nil, ErrNotManaged
 	}
-	if serviceAccountID == "" || client.Attributes[serviceAccountIDAttribute] != serviceAccountID {
+	if serviceAccountID == "" || client.Attributes[serviceAccountIDAttribute] != serviceAccountID || client.ClientID != "hs-sa-"+gatewayID+"-"+serviceAccountID {
 		return nil, ErrNotManaged
 	}
 	return client, nil

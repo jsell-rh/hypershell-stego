@@ -30,12 +30,14 @@ type apiFixture struct {
 	pb.GatewayServiceClient
 	updates int
 	desired string
+	phase   string
 	err     error
 }
 
 func (f *apiFixture) UpdateGateway(_ context.Context, r *pb.UpdateGatewayRequest, _ ...grpc.CallOption) (*pb.UpdateGatewayResponse, error) {
 	f.updates++
 	f.desired = r.GetStatus()
+	f.phase = r.GetPhase()
 	return &pb.UpdateGatewayResponse{}, f.err
 }
 
@@ -155,7 +157,9 @@ func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
 }
 func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	gw, db, release := records(t)
-	ready := "ready"
+	ready := "Healthy"
+	running := "Running"
+	gw.Phase = &running
 	gw.Status = &ready
 	provider := &providerFixture{err: ErrPending}
 	api := new(apiFixture)
@@ -164,11 +168,16 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || api.desired != "provisioning" {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || (api.desired != "WorkloadNotReady" || api.phase != "Degraded") {
 		t.Fatal("pending workload retained ready state", err)
 	}
+	gw.Phase = nil
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || api.phase != "Provisioning" {
+		t.Fatal("new workload did not remain provisioning", err)
+	}
+	gw.Phase = &running
 	provider.err = errors.New("Kubernetes unavailable")
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || api.desired != "error" {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || (api.desired != "WorkloadUnavailable" || api.phase != "Degraded") {
 		t.Fatal("failed workload retained ready state", err)
 	}
 	failed := "error"
@@ -179,7 +188,7 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 		t.Fatal("status write failure was lost", err)
 	}
 	api.err = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.desired != "ready" {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || (api.desired != "Healthy" || api.phase != "Running") {
 		t.Fatal("status recovery failed", err)
 	}
 	gw.Status = &ready
@@ -187,9 +196,15 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != before {
 		t.Fatal("stable workload emitted an update", err)
 	}
+	legacy := "ready"
+	gw.Status = &legacy
+	gw.Phase = nil
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.desired != "Healthy" || api.phase != "Running" {
+		t.Fatal("legacy health state was not repaired", err)
+	}
 	database.err = status.Error(codes.NotFound, "database missing")
 	before = provider.creates
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || api.desired != "error" || provider.creates != before {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || (api.desired != "WorkloadUnavailable" || api.phase != "Degraded") || provider.creates != before {
 		t.Fatal("missing database reached provider", err)
 	}
 }

@@ -156,6 +156,10 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	dir := filepath.Dir(apiTLS.config.CAFile)
 	allowed, _ := json.Marshal([]string{controllerID})
 	settings = append(settings, "DATABASE_PROVIDER=deployment", "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
+	accountKey, accountAuth := issuer(t)
+	accountSettings, stopAccountProvider := startRealProvisioner(t, identityProvider, accountKey, accountAuth)
+	defer stopAccountProvider()
+	settings = append(settings, accountSettings...)
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary := buildApplication(t)
 	stopAPI, address, rpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
@@ -204,7 +208,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		for {
 			code, body := requestJSON(t, "GET", root+"/"+gateway.ID, alice, nil)
 			var current httpapi.Gateway
-			if code == 200 && json.Unmarshal(body, &current) == nil && current.Status != nil && *current.Status == "ready" {
+			if code == 200 && json.Unmarshal(body, &current) == nil && current.Status != nil && *current.Status == "Healthy" && current.Phase != nil && *current.Phase == "Running" {
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 				body, err := k.command(ctx, "", "-n", gateway.Namespace, "get", "deployment/openshell-gateway", "-o", "json")
 				cancel()
@@ -341,6 +345,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if finishSandbox != nil {
 		finishSandbox(connection, ownerToken)
 	}
+	checkDeletedAccounts := gatewayAccountWorkflow(t, identityProvider, address, gateway.ID, alice, call)
 	stopWorkload()
 	connection.Close()
 	stopForward()
@@ -360,6 +365,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if code != 204 {
 		t.Fatal("Gateway deletion", code, string(body))
 	}
+	checkDeletedAccounts()
 	stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
 	absent := func(kind, name string) {
 		t.Helper()
