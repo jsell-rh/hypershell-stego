@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"sort"
-	"sync"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -43,92 +42,62 @@ func New(source Source, gateways pb.GatewayServiceClient, counts control.Gateway
 func denied(err error) bool {
 	return status.Code(err) == codes.Unauthenticated || status.Code(err) == codes.PermissionDenied
 }
-func (c *Controller) Run(parent context.Context) error {
-	ctx, cancel := context.WithCancel(parent)
-	var workers sync.WaitGroup
-	defer func() { cancel(); workers.Wait() }()
-	stopped := make(chan error, 1)
-	workers.Go(func() {
-		stopped <- c.source.Observe(ctx, kube.Collection{Path: "/api/v1/pods", LabelSelector: SandboxLabel}, c.state.consume)
-	})
-	ticker := time.NewTicker(time.Second)
-	defer ticker.Stop()
-	nextRefresh := time.Time{}
-	retry := map[string]time.Time{}
-	for {
-		select {
-		case <-ctx.Done():
-			return nil
-		case err := <-stopped:
-			if ctx.Err() != nil {
-				return nil
-			}
-			if err == nil {
-				err = errors.New("sandbox watch stopped")
-			}
-			return err
-		case <-c.state.wake:
-		case <-ticker.C:
-		}
-		c.state.mu.Lock()
-		ready := c.state.ready
-		c.state.mu.Unlock()
-		if !ready {
-			continue
-		}
-		if !time.Now().Before(nextRefresh) {
-			err := c.refresh(ctx)
-			if denied(err) {
-				return err
-			}
-			if err != nil {
+func (c *Controller) Run(ctx context.Context) error {
+	return runtime.RunKeyed(ctx, runtime.KeyedSource[string]{Observe: c.observe, Scan: c.refresh}, c.reconcile, runtime.KeyedOptions{
+		Capacity: kube.MaxObservedObjects, ResyncInterval: c.resync, Timeout: 5 * time.Second,
+		RetryMin: time.Second, RetryMax: 16 * time.Second, Terminal: denied,
+		Observe: func(event runtime.Event) {
+			if event.Phase == "scan_failed" {
 				slog.Warn("Sandbox count catalog needs another pass")
-				nextRefresh = time.Now().Add(time.Second)
-			} else {
-				nextRefresh = time.Now().Add(c.resync)
 			}
-		}
+			if event.Phase == "reconcile_failed" {
+				slog.Warn("Sandbox count write needs another pass")
+			}
+		},
+	})
+}
+
+// The cache defines the count. The generated sink schedules changed namespaces.
+func (c *Controller) observe(ctx context.Context, sink *runtime.KeySink[string]) error {
+	return c.source.Observe(ctx, kube.Collection{Path: "/api/v1/pods", LabelSelector: SandboxLabel}, func(change kube.Change) error {
+		err := c.state.consume(change)
 		c.state.mu.Lock()
-		names := []string{}
-		for ns := range c.state.dirty {
-			if !time.Now().Before(retry[ns]) {
-				names = append(names, ns)
-			}
+		defer c.state.mu.Unlock()
+		if err != nil {
+			sink.SetReady(false)
+			return err
 		}
-		c.state.mu.Unlock()
-		sort.Strings(names)
-		for _, ns := range names {
-			c.state.mu.Lock()
-			if !c.state.ready {
-				c.state.mu.Unlock()
-				break
+		if c.state.ready {
+			for ns := range c.state.changed {
+				if err := sink.Add(ns); err != nil {
+					sink.SetReady(false)
+					return err
+				}
 			}
-			count := c.state.counts[ns]
-			delete(c.state.dirty, ns)
-			c.state.mu.Unlock()
-			call, stop := context.WithTimeout(ctx, 5*time.Second)
-			_, err := c.counts.SetObservedSandboxCount(call, &control.SetObservedSandboxCountRequest{Namespace: ns, ClusterId: c.cluster, Count: count})
-			stop()
-			if denied(err) {
-				return err
-			}
-			if err != nil && status.Code(err) != codes.FailedPrecondition {
-				c.state.mu.Lock()
-				c.state.dirty[ns] = true
-				c.state.mu.Unlock()
-				retry[ns] = time.Now().Add(time.Second)
-				slog.Warn("Sandbox count write needs another pass", "namespace", ns)
-			} else {
-				delete(retry, ns)
-			}
+			clear(c.state.changed)
 		}
+		sink.SetReady(c.state.ready)
+		return nil
+	})
+}
+func (c *Controller) reconcile(ctx context.Context, ns string) error {
+	c.state.mu.Lock()
+	ready, count := c.state.ready, c.state.counts[ns]
+	c.state.mu.Unlock()
+	if !ready {
+		return runtime.ErrNotReady
 	}
+	_, err := c.counts.SetObservedSandboxCount(ctx, &control.SetObservedSandboxCountRequest{Namespace: ns, ClusterId: c.cluster, Count: count})
+	if status.Code(err) == codes.FailedPrecondition {
+		return nil
+	}
+	return err
 }
 
 // Catalog refresh finds zero counts too. Pod state always comes from the watch
 // cache. Events and refreshes share one writer, so an old write cannot overtake
 // this controller's newer observation. The count remains advisory.
-func (c *Controller) refresh(ctx context.Context) error {
+func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) error {
 	namespaces := []string{}
 	seen := map[string]bool{}
 	for page := int32(1); ; page++ {
@@ -159,19 +128,10 @@ func (c *Controller) refresh(ctx context.Context) error {
 			break
 		}
 	}
-	c.state.mu.Lock()
-	defer c.state.mu.Unlock()
-	added := 0
 	for _, ns := range namespaces {
-		if !c.state.dirty[ns] {
-			added++
+		if err := enqueue(ns); err != nil {
+			return err
 		}
-	}
-	if len(c.state.dirty)+added > kube.MaxObservedObjects {
-		return errors.New("sandbox count queue exceeds its limit")
-	}
-	for _, ns := range namespaces {
-		c.state.dirty[ns] = true
 	}
 	return nil
 }

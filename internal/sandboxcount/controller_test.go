@@ -36,10 +36,10 @@ func TestActiveTransitionsDuplicateDeliveryAndReset(t *testing.T) {
 	if err := o.consume(kube.Change{Type: "REPLACE", Objects: []kube.Object{record("one", ns, "Pending", "opaque-a"), record("two", separate, "Running", "opaque-b")}}); err != nil {
 		t.Fatal(err)
 	}
-	o.dirty = map[string]bool{}
+	o.changed = map[string]bool{}
 	apply("ADDED", record("one", ns, "Pending", "opaque-a"), 2)
 	apply("MODIFIED", record("one", ns, "Running", "opaque-c"), 2)
-	if len(o.dirty) != 0 {
+	if len(o.changed) != 0 {
 		t.Fatal("active transition changed count")
 	}
 	apply("MODIFIED", record("one", ns, "Failed", "opaque-d"), 1)
@@ -57,7 +57,7 @@ func TestActiveTransitionsDuplicateDeliveryAndReset(t *testing.T) {
 	if err := o.consume(kube.Change{Type: "MODIFIED", Object: record("replacement", ns, "Failed", "b")}); err == nil {
 		t.Fatal("used partial baseline")
 	}
-	if err := o.consume(kube.Change{Type: "REPLACE", Objects: []kube.Object{}}); err != nil || !o.ready || o.counts[ns] != 0 || !o.dirty[ns] {
+	if err := o.consume(kube.Change{Type: "REPLACE", Objects: []kube.Object{}}); err != nil || !o.ready || o.counts[ns] != 0 || !o.changed[ns] {
 		t.Fatal("reset did not remove missing Pods", err)
 	}
 }
@@ -230,5 +230,64 @@ func TestCountAccessLossStopsWatch(t *testing.T) {
 		}
 	case <-time.After(3 * time.Second):
 		t.Fatal("access loss did not stop the watch")
+	}
+}
+
+func TestCountWaitsForReplacementAfterReset(t *testing.T) {
+	id, cluster := ksuid.New().String(), ksuid.New().String()
+	ns, _ := gatewayworkload.Namespace(id)
+	source := &sourceFixture{make(chan func(kube.Change) error, 1)}
+	calls := make(chan int32, 10)
+	release := make(chan struct{})
+	var once sync.Once
+	unblock := func() { once.Do(func() { close(release) }) }
+	defer unblock()
+	number := 0
+	writer := &writerFixture{write: func(r *control.SetObservedSandboxCountRequest) error {
+		number++
+		calls <- r.Count
+		if number == 1 {
+			<-release
+		}
+		return nil
+	}}
+	c, err := New(source, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, writer, cluster, time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- c.Run(ctx) }()
+	t.Cleanup(func() {
+		unblock()
+		cancel()
+		select {
+		case <-done:
+		case <-time.After(2 * time.Second):
+			t.Error("count controller did not stop")
+		}
+	})
+	apply := <-source.ready
+	if err := apply(kube.Change{Type: "REPLACE", Objects: []kube.Object{record("one", ns, "Running", "a")}}); err != nil {
+		t.Fatal(err)
+	}
+	if take(t, calls) != 1 {
+		t.Fatal("wrong initial count")
+	}
+	// The existing write may finish, but no later write may use an incomplete cache.
+	if err := apply(kube.Change{Type: "RESET"}); err != nil {
+		t.Fatal(err)
+	}
+	unblock()
+	select {
+	case got := <-calls:
+		t.Fatalf("wrote %d before a complete replacement", got)
+	case <-time.After(1100 * time.Millisecond):
+	}
+	if err := apply(kube.Change{Type: "REPLACE"}); err != nil {
+		t.Fatal(err)
+	}
+	if take(t, calls) != 0 {
+		t.Fatal("replacement did not clear the missing Pod")
 	}
 }

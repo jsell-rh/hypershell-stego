@@ -1,5 +1,5 @@
-Three Hypershell controllers now use the STEGO `controller` component:
-Gateway identity, Gateway workload, and managed database. Their `Run` methods
+Four Hypershell controllers now use the STEGO `controller` component:
+Gateway identity, Gateway workload, managed database, and Pod count. Their `Run` methods
 supply typed watch and scan adapters, domain actions, and limits. They no longer
 implement their own queue, scan scheduler, reconnect loop, or worker shutdown.
 
@@ -9,7 +9,7 @@ Gateway events cause a fresh privileged state read. Database deletion uses the
 retained replay contract. Moving the runtime does not make a watch event or a
 missing read sufficient authority for deletion.
 
-Each controller uses one worker, a queue of 1,024 items, a 20-second operation
+The three event controllers use one worker, a queue of 1,024 items, a 20-second operation
 limit, and a one-second reconnect delay. Identity scans repeat 30 seconds after
 each scan finishes. Workload and database scans repeat after 10 seconds. The
 runtime lets a slow scan finish, cancels an action when its source fails, and
@@ -23,10 +23,16 @@ repeated execution. Each source must respect cancellation and bound its requests
 The generated runtime preserves FIFO items; it does not coalesce deletion and
 live records or schedule individual retries.
 
-The Pod count controller still contains a domain observation cache and scheduling
-code. Common dirty-key scheduling and observation lifecycle support remain STEGO
-work. Retained scans and typed watch adapters are also candidates for generation.
-The first extraction does not establish that every remaining application helper
+The Pod count controller uses the generated keyed queue. It holds at most 10,000
+keys, including active and delayed keys. Its action limit is five seconds. Retry
+delay grows from one to 16 seconds. The runtime combines duplicate keys, retains
+changes during a write, and pauses new queue takes during an incomplete baseline.
+Hypershell retains Pod classification, count calculation, and cluster ownership.
+Its changed-namespace set describes one cache update; STEGO holds pending work.
+The [count workflow](sandbox-counts.md) records application evidence.
+
+Shared recovery scans, worker pools, and distributed fencing remain STEGO work.
+The first extractions do not establish that every remaining application helper
 is domain-specific. Further changes must remove common application code and pass
 an existing application workflow.
 
@@ -43,3 +49,11 @@ Gateway recovery IDs (3.21 seconds), database deletion replay (3.29 seconds), an
 CLI apply (8.03 seconds). These durations include fixture setup. They are not
 production capacity results. CI runs the complete application suite and the
 real database, Gateway, and sandbox workload gates.
+
+Full CI on the first migration found missing failure diagnostics in the database,
+Gateway, and sandbox workload tests. The tests were not weakened. Generated
+clients now supply safe protocol summaries. The application reports Kubernetes
+methods and status codes or gRPC codes, without remote messages or response bodies.
+The corrected local sandbox workflow passed in 317.874 seconds, including the
+cleanup diagnostic check. The three original failure jobs are not counted as
+passes. New CI checks the corrected compiler pin and Pod count migration.

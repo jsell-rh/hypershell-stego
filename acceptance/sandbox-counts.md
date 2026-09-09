@@ -2,7 +2,7 @@
 
 The count controller runs as `cmd/sandbox-count-controller`. It uses STEGO's
 HTTP stream client, Kubernetes list and watch client, gRPC client, transaction,
-row lock, storage, and event runtime. Hypershell owns the sandbox classification
+row lock, storage, event runtime, and keyed controller scheduler. Hypershell owns the sandbox classification
 and cluster assignment rules. STEGO has no sandbox or Gateway types.
 
 A Pod is active when its phase is Pending or Running and its labels contain
@@ -61,3 +61,29 @@ The full variant race suite passed; its acceptance package took 404.162 seconds.
 Regeneration from compiler `9abcea993bfb0eb1c8d3dcd7f38b0ead0a2b32f5` reported no
 drift. The count transport test then passed again in 7.992 seconds with that
 output. The count unit tests and static checks also passed.
+
+The controller now uses STEGO's `RunKeyed` scheduler. Hypershell no longer owns a
+polling timer, retry map, wakeup channel, or worker lifecycle. It supplies an
+observer, a catalog scan, and an action that reads the latest count. The changed
+namespace set is drained after each cache update; it does not hold pending work.
+
+The queue combines repeated keys. A key changed during a write receives another
+pass. Failed writes use exponential delay from one to 16 seconds. New events do
+not bypass that delay, and due retries precede newer keys. Capacity includes
+queued, delayed, and active keys. A baseline reset pauses new work. An existing
+write can finish, but later writes wait for a complete replacement and read the
+new count. This advisory count still requires one active controller per cluster.
+
+The local workload gate passed in 317.874 seconds with the generated keyed
+runtime. Gateway recovery before controller startup took 57.69 seconds. The real
+sandbox workflow took 259.14 seconds. It proved count repair through REST and
+gRPC, count-controller restart, access rules, actual sandbox execution, Gateway
+and database restart, namespace replacement, and offline cleanup. The count
+race suite, including reset during an active write, passed in 3.137 seconds.
+These durations include test setup and are not production capacity results.
+
+Pinned generation from compiler
+`50e393410fb9eb77ccfc523155f2b7ccbe60c74d` produced the same runtime and client
+bytes used by the workload test. The separate count transport workflow passed
+in 7.23 seconds with that pin. Application static checks passed. Compiler CI
+passed in run `34390663953`; the new application CI run follows publication.

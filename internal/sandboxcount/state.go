@@ -17,16 +17,15 @@ type pod struct {
 	active                       bool
 }
 type observation struct {
-	mu     sync.Mutex
-	ready  bool
-	pods   map[string]pod
-	counts map[string]int32
-	dirty  map[string]bool
-	wake   chan struct{}
+	mu      sync.Mutex
+	ready   bool
+	pods    map[string]pod
+	counts  map[string]int32
+	changed map[string]bool
 }
 
 func newObservation() *observation {
-	return &observation{pods: map[string]pod{}, counts: map[string]int32{}, dirty: map[string]bool{}, wake: make(chan struct{}, 1)}
+	return &observation{pods: map[string]pod{}, counts: map[string]int32{}, changed: map[string]bool{}}
 }
 func classify(o kube.Object) (string, pod, error) {
 	uid := kube.String(o, "metadata", "uid")
@@ -44,12 +43,6 @@ func classify(o kube.Object) (string, pod, error) {
 	_, sandbox := labels[SandboxLabel]
 	phase := kube.String(o, "status", "phase")
 	return uid, pod{canonical, version, ns, canonical != "" && sandbox && (phase == "Pending" || phase == "Running")}, nil
-}
-func (o *observation) notify() {
-	select {
-	case o.wake <- struct{}{}:
-	default:
-	}
 }
 func (o *observation) consume(change kube.Change) (err error) {
 	o.mu.Lock()
@@ -71,17 +64,16 @@ func (o *observation) consume(change kube.Change) (err error) {
 			}
 		}
 		for ns := range o.counts {
-			next.dirty[ns] = true
+			next.changed[ns] = true
 		}
-		for ns := range o.dirty {
-			next.dirty[ns] = true
+		for ns := range o.changed {
+			next.changed[ns] = true
 		}
-		if len(next.dirty) > kube.MaxObservedObjects {
+		if len(next.changed) > kube.MaxObservedObjects {
 			return errors.New("sandbox count queue exceeds its limit")
 		}
-		o.pods, o.counts, o.dirty = next.pods, next.counts, next.dirty
+		o.pods, o.counts, o.changed = next.pods, next.counts, next.changed
 		o.ready = true
-		o.notify()
 		return nil
 	}
 	if !o.ready {
@@ -90,7 +82,6 @@ func (o *observation) consume(change kube.Change) (err error) {
 	if err := o.update(change.Type, change.Object); err != nil {
 		return err
 	}
-	o.notify()
 	return nil
 }
 func (o *observation) update(kind string, object kube.Object) error {
@@ -131,8 +122,8 @@ func (o *observation) update(kind string, object kube.Object) error {
 		if o.counts[ns] == 0 {
 			delete(o.counts, ns)
 		}
-		o.dirty[ns] = true
-		if len(o.dirty) > kube.MaxObservedObjects {
+		o.changed[ns] = true
+		if len(o.changed) > kube.MaxObservedObjects {
 			return errors.New("sandbox count queue exceeds its limit")
 		}
 	}
