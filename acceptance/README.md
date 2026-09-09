@@ -29,7 +29,7 @@ command. The generated application processes also use the race detector.
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
 creates and removes its own database. It does not migrate or delete the supplied
-database. Run `go test -race -mod=readonly -timeout=12m ./...`.
+database. Run `go test -race -mod=readonly -timeout=18m ./...`.
 
 The tests apply generated model and outbox migrations during setup. The application
 process does not apply migrations. It fails if the queue is absent. The broker
@@ -268,3 +268,12 @@ Kustomize rendering, and the complete CLI port remain open.
 
 [Controller runtime](controller-runtime.md) records the common STEGO lifecycle
 and the remaining extraction work.
+
+The full-suite budget is 18 minutes. Its CI job allows 25 minutes for setup and
+execution. [Run 34414730663](https://github.com/jsell-rh/hypershell-stego/actions/runs/34414730663)
+reached the previous 12-minute suite limit while
+`TestGatewayWatchThroughGeneratedRuntime` had run for four seconds. The log records no
+earlier assertion failure. The larger budget covers the growing suite,
+including retained-lease recovery and backlog checks. Individual request and
+workflow deadlines remain in their tests. All packages still run with race
+detection; no test is omitted to reduce elapsed time.

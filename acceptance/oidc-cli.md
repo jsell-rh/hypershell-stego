@@ -47,7 +47,7 @@ of the provider refresh token.
 The existing [Gateway CLI workflow](generated-cli.md) covers atomic Gateway,
 owner-grant, and event writes, REST and gRPC reads, denied access, event delivery,
 rollback, and restart. Both workflows run in the full acceptance suite. The
-suite permits 12 minutes because the earlier hosted run took 571 seconds
+suite initially permitted 12 minutes because the earlier hosted run took 571 seconds
 before this workflow was added. Individual network deadlines are unchanged.
 Regeneration uses the committed compiler pin and checks generated state.
 
@@ -69,3 +69,6 @@ Its acceptance package took 441.456 seconds. Static checks passed, and the
 full dependency scan found no known vulnerabilities. Pinned regeneration
 reported no drift before the run. Hosted checks repeat the application,
 database, Gateway, and sandbox workflows after the commit.
+
+The current [full-suite budget](README.md) is 18 minutes. This includes the later
+workflow tests and does not change the OIDC request or polling limits.
