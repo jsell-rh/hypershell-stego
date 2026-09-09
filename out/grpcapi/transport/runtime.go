@@ -50,6 +50,15 @@ func ResourceVersion(ctx context.Context) (int64, bool, error) {
 	return version, true, nil
 }
 
+// SetResourceVersion attaches the revision of a returned resource. Call it once
+// after the authorized read, before returning a successful unary response.
+func SetResourceVersion(ctx context.Context, version int64) error {
+	if ctx == nil || version < 1 {
+		return status.Error(codes.Internal, "resource response requires a context and positive revision")
+	}
+	return grpc.SetHeader(ctx, metadata.Pairs("resource-version", strconv.FormatInt(version, 10)))
+}
+
 type Authenticate func(context.Context, string) (context.Context, error)
 
 // IdentityInfo reads only claims that Authenticate has verified.

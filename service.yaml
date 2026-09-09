@@ -37,6 +37,7 @@ entities:
       - { name: canary_duration, type: string, optional: true, max_length: 64 }
       - { name: status, type: string, optional: true, max_length: 255 }
   - name: ManagedDatabase
+    versioned: true
     fields:
       - { name: name, type: string, min_length: 1, max_length: 261 }
       - { name: provider, type: enum, values: [cnpg, deployment] }

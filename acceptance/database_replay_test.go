@@ -176,10 +176,13 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 			client = pb.NewManagedDatabaseServiceClient(connection)
 		}
 	}
-	// Remove fixture history to test an authorized empty replay.
-	if _, err := f.db.Exec("DELETE FROM managed_databases WHERE deleted_at IS NOT NULL"); err != nil {
-		t.Fatal(err)
-	}
+	// A separate database has no deletion history. Retained rows cannot be purged.
+	stop()
+	emptyFixture := database(t)
+	emptyStop, _, emptyAddress := startBoth(t, binary, emptyFixture.dsn, config, settings...)
+	defer emptyStop()
+	_, emptyConnection := grpcClient(t, emptyAddress, tlsIdentity)
+	client = pb.NewManagedDatabaseServiceClient(emptyConnection)
 	empty := replay(token(t, key, "controller"), "deleted-v1")
 	header, err := empty.Header()
 	if err != nil || !slices.Equal(header.Get("hypershell-managed-database-delete-tombstones"), []string{"v1"}) {

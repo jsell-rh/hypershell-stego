@@ -36,6 +36,7 @@ type Resource[T, C, P any] struct {
 	entity, foreignField, eventPrefix string
 	create                            func(string, C) (T, error)
 	patch                             func(*T, P) error
+	requireControllerVersion          bool
 }
 
 func New(repository store.Transactor, policy *gateways.Service) (*Service, error) {
@@ -43,10 +44,10 @@ func New(repository store.Transactor, policy *gateways.Service) (*Service, error
 		return nil, errors.New("catalog requires storage and access rules")
 	}
 	return &Service{
-		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork},
-		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster},
-		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease},
-		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase},
+		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork, false},
+		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster, false},
+		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease, false},
+		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase, true},
 	}, nil
 }
 func validID(id string) bool {
@@ -140,9 +141,31 @@ func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, in
 	return row, nil
 }
 func (r *Resource[T, C, P]) Update(ctx context.Context, p gateways.Principal, id string, input P) (T, error) {
+	return r.update(ctx, p, id, input, 0)
+}
+
+// UpdateIfVersion binds a controller result to the revision read before its work.
+func (r *Resource[T, C, P]) UpdateIfVersion(ctx context.Context, p gateways.Principal, id string, input P, version int64) (T, error) {
+	var zero T
+	if err := r.authorizeRecovery(p); err != nil {
+		return zero, err
+	}
+	if !r.requireControllerVersion {
+		return zero, gateways.ErrInvalid
+	}
+	if version < 1 {
+		return zero, gateways.ErrObservationRequired
+	}
+	return r.update(ctx, p, id, input, version)
+}
+
+func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id string, input P, version int64) (T, error) {
 	var row T
 	if err := r.authorize(p, true); err != nil {
 		return row, err
+	}
+	if r.requireControllerVersion && version == 0 && r.authorizeRecovery(p) == nil {
+		return row, gateways.ErrObservationRequired
 	}
 	if !validID(id) {
 		return row, store.ErrNotFound
@@ -160,7 +183,15 @@ func (r *Resource[T, C, P]) Update(ctx context.Context, p gateways.Principal, id
 		if err := r.patch(&row, input); err != nil {
 			return err
 		}
-		if err := tx.Replace(ctx, r.entity, id, row); err != nil {
+		if version > 0 {
+			writer, ok := tx.(store.VersionedWriter)
+			if !ok {
+				return errors.New("catalog storage does not support conditional writes")
+			}
+			if err := writer.ReplaceIfVersion(ctx, r.entity, id, version, row); err != nil {
+				return err
+			}
+		} else if err := tx.Replace(ctx, r.entity, id, row); err != nil {
 			return err
 		}
 		value, err = tx.Get(ctx, r.entity, id)

@@ -9,6 +9,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"strconv"
 	"testing"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
@@ -18,6 +19,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 func testKubernetes(t *testing.T, handler http.HandlerFunc) (*Kubernetes, string) {
@@ -198,20 +200,43 @@ func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 
 type stateAPI struct {
 	pb.ManagedDatabaseServiceClient
-	db          *pb.ManagedDatabase
-	updateError error
-	updates     []string
+	db             *pb.ManagedDatabase
+	updateError    error
+	updates        []string
+	version        int64
+	headerOverride metadata.MD
 }
 
-func (a *stateAPI) GetManagedDatabase(context.Context, *pb.GetManagedDatabaseRequest, ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
-	return &pb.GetManagedDatabaseResponse{ManagedDatabase: a.db}, nil
+func (a *stateAPI) GetManagedDatabase(_ context.Context, _ *pb.GetManagedDatabaseRequest, options ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
+	if a.version == 0 {
+		a.version = 1
+	}
+	header := metadata.Pairs("resource-version", strconv.FormatInt(a.version, 10))
+	if a.headerOverride != nil {
+		header = a.headerOverride
+	}
+	for _, option := range options {
+		if h, ok := option.(grpc.HeaderCallOption); ok && h.HeaderAddr != nil {
+			*h.HeaderAddr = header.Copy()
+		}
+	}
+	return &pb.GetManagedDatabaseResponse{ManagedDatabase: proto.Clone(a.db).(*pb.ManagedDatabase)}, nil
 }
-func (a *stateAPI) UpdateManagedDatabase(_ context.Context, r *pb.UpdateManagedDatabaseRequest, _ ...grpc.CallOption) (*pb.UpdateManagedDatabaseResponse, error) {
+func (a *stateAPI) UpdateManagedDatabase(ctx context.Context, r *pb.UpdateManagedDatabaseRequest, _ ...grpc.CallOption) (*pb.UpdateManagedDatabaseResponse, error) {
+	md, _ := metadata.FromOutgoingContext(ctx)
+	versions := md.Get("if-resource-version")
+	if len(versions) != 1 || versions[0] != strconv.FormatInt(a.version, 10) {
+		return nil, status.Error(codes.Aborted, "resource changed")
+	}
 	a.updates = append(a.updates, r.GetStatus())
 	if a.updateError != nil {
 		return nil, a.updateError
 	}
 	a.db.Status = r.Status
+	if r.ConnectionSecret != nil {
+		a.db.ConnectionSecret = r.ConnectionSecret
+	}
+	a.version++
 	return &pb.UpdateManagedDatabaseResponse{ManagedDatabase: a.db}, nil
 }
 
@@ -265,5 +290,76 @@ func TestUnsupportedDatabaseOptionsCannotProvisionDifferentResources(t *testing.
 	}
 	if err := validateDatabase(db); err != nil {
 		t.Fatal("default placement", err)
+	}
+}
+
+func TestMissingDatabaseRevisionStopsProviderWork(t *testing.T) {
+	for _, header := range []metadata.MD{{}, {"resource-version": []string{"0"}}, {"resource-version": []string{"1", "1"}}} {
+		db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
+		api := &stateAPI{db: db, headerOverride: header}
+		provider := &rejectProvider{}
+		c, _ := New(api, provider)
+		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
+		if err := c.reconcile(context.Background(), event); err == nil {
+			t.Fatal("missing revision accepted")
+		}
+		if provider.calls != 0 || len(api.updates) != 0 {
+			t.Fatal("invalid revision reached external work")
+		}
+	}
+}
+
+type changeDuringEnsure struct {
+	calls  int
+	change func()
+}
+
+func (p *changeDuringEnsure) Ensure(context.Context, *pb.ManagedDatabase) error {
+	p.calls++
+	if p.change != nil {
+		p.change()
+		p.change = nil
+	}
+	return nil
+}
+func (*changeDuringEnsure) Delete(context.Context, *pb.ManagedDatabase) error { return nil }
+func TestDatabaseConflictRequiresAnotherProviderObservation(t *testing.T) {
+	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
+	api := &stateAPI{db: db}
+	provider := &changeDuringEnsure{change: func() { api.version++ }}
+	c, _ := New(api, provider)
+	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
+	if err := c.reconcile(context.Background(), event); status.Code(err) != codes.Aborted {
+		t.Fatal("old observation did not fail", err)
+	}
+	if provider.calls != 1 || len(api.updates) != 0 || api.db.GetStatus() == "ready" {
+		t.Fatal("conflict published or retried the old result")
+	}
+	if err := c.reconcile(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
+	if provider.calls != 2 || len(api.updates) != 1 || api.db.GetStatus() != "ready" {
+		t.Fatal("fresh observation was not committed")
+	}
+}
+
+func TestLiveDatabaseEventUsesCurrentProvider(t *testing.T) {
+	for _, test := range []struct {
+		hint, current string
+		calls         int
+	}{{"cnpg", "deployment", 1}, {"deployment", "cnpg", 0}} {
+		row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: test.current}
+		api := &stateAPI{db: row}
+		provider := &rejectProvider{}
+		c, _ := New(api, provider)
+		hint := proto.Clone(row).(*pb.ManagedDatabase)
+		hint.Provider = test.hint
+		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: hint}
+		if err := c.reconcile(context.Background(), event); err != nil {
+			t.Fatal(err)
+		}
+		if provider.calls != test.calls {
+			t.Fatal("event provider replaced current state", test, provider.calls)
+		}
 	}
 }

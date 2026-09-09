@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: 6a5f03725caa2764d7a8cb870c912ad279e350afcd7d09da50a1c8df71433e1d
+    service_hash: 96eed6ef92875289e1f2ed8ca1047ae2a7c28da4cdf1adfe882140556b432155
     registry_sha: gateway-workflow
     components:
         cli-application:
@@ -9,7 +9,7 @@ last_applied:
             version: 1.3.0
             sha: gateway-workflow
         grpc-application:
-            version: 1.3.0
+            version: 1.4.0
             sha: gateway-workflow
         http-application:
             version: 1.2.0
@@ -314,7 +314,7 @@ last_applied:
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
-        grpcapi/client/client.go: 99b03ffbf456f100c9dfef38870df3d35dc862868718bae111b9560f5c8a5d81
+        grpcapi/client/client.go: 50c4f03942e5d0bcb58d36a3c5c009b9341acbf7f6b9f9c255dc7f50a14d627c
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 3c11092a71d92e346b75a5b56ee999f82b44d037a3f424ac74f4cf4eea4c9743
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 084b29fb9232551dd42c3c5ef7fa4864523f0aed2d1dd9b90ffb07cc00713681
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
@@ -332,7 +332,7 @@ last_applied:
         grpcapi/pb/hypershell/v1/managed_databases_grpc.pb.go: b4390743b458806268c2ac498468fe64a0b0530a336c87a2714348e229fbe4d5
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
-        grpcapi/transport/runtime.go: 312b291b17127be7874feacf1fc6aa47c7cb50a06d3fa1b12e977dcc5ff72910
+        grpcapi/transport/runtime.go: 461e263a385702092f66c7b82438d7e76ee8493961b47e5244a118ccf95389b4
         kubernetes/client.go: 957a7b90631ed51c7aeb7e16066437a27d8803bedc1c9d6c0d7bb09f3bb82f5e
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         main.go: ffc42b76bbbbe3c16cb8741c4da3002b4ef91db19be7129f53a25489f4e9f457
@@ -344,10 +344,10 @@ last_applied:
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 7730a4a9097229e704fc8058fc60fcf5ca7482444e618e556d7a95494cb03e23
-        storage/migrations/000002_resource_versions.sql: 0e106831ba422922f2a4b54432b487d9c24ce4a59c3eae989240f112bcac07e7
-        storage/migrations/000003_resource_generations.sql: 0e106831ba422922f2a4b54432b487d9c24ce4a59c3eae989240f112bcac07e7
-        storage/models.go: 274452cc7bb3bec56f883db034c34e0457a3fff3ec1a1fa9f4060a0c04ec1af9
+        storage/migrations/000002_resource_versions.sql: 932ffa35ae151bd928151042f7c8733d6f46cd31f2b064288bd0f7f38dbfbda6
+        storage/migrations/000003_resource_generations.sql: 932ffa35ae151bd928151042f7c8733d6f46cd31f2b064288bd0f7f38dbfbda6
+        storage/models.go: e47ef17ce1caaf530e24d1c7ef85a76d0ba63f3d12314843e51d351b32aa4f87
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: c67c62ff02313e98d03287ec3cc49db7c3ae3a72c1df61f7e4201a87e9e10c35
+        storage/store.go: d8ef9e86d2abbbd4f7de1adf53f4a83bf5d6f57771d0ab9fea46057b37707696
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
-        storage/versions.go: 7d61202dd5601166c52c10ec0564e8b11678b1ae36ca9110f627074fea37a440
+        storage/versions.go: 32809eec3d560d4fb3fdae38b33bff3836544bd55abb183d4543dc6ae3c65d1d

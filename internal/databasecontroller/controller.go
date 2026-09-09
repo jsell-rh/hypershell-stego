@@ -8,8 +8,10 @@ import (
 	"time"
 
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -126,10 +128,10 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db == nil || db.GetMetadata().GetId() != event.GetResourceId() || event.GetResourceId() == "" {
 		return errors.New("database event has no matching resource")
 	}
-	if db.GetProvider() != "deployment" {
-		return nil
-	}
 	if event.GetType() == pb.EventType_EVENT_TYPE_DELETED {
+		if db.GetProvider() != "deployment" {
+			return nil
+		}
 		return c.provider.Delete(ctx, db)
 	}
 	switch event.GetType() {
@@ -138,7 +140,8 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 		return errors.New("database event type is invalid")
 	}
 	// Live events are hints. Fetch current state to avoid applying stale changes.
-	response, err := c.api.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: event.ResourceId})
+	var header metadata.MD
+	response, err := c.api.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: event.ResourceId}, grpc.Header(&header))
 	if status.Code(err) == codes.NotFound {
 		return nil
 	}
@@ -149,13 +152,24 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db.GetMetadata().GetId() != event.ResourceId {
 		return errors.New("database state has a different ID")
 	}
+	if db.GetProvider() != "deployment" {
+		return nil
+	}
+	version, err := rpc.ObservedResourceVersion(header)
+	if err != nil {
+		return err
+	}
+	writeContext, err := rpc.WithResourceVersion(ctx, version)
+	if err != nil {
+		return err
+	}
 	if err := c.provider.Ensure(ctx, db); err != nil {
 		desired := "error"
 		if errors.Is(err, ErrPending) {
 			desired = "provisioning"
 		}
 		if db.GetStatus() != desired {
-			_, updateError := c.api.UpdateManagedDatabase(ctx, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String(desired)})
+			_, updateError := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String(desired)})
 			if updateError != nil {
 				return updateError
 			}
@@ -165,6 +179,6 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db.GetStatus() == "ready" && db.GetConnectionSecret() == CredentialsName {
 		return nil
 	}
-	_, err = c.api.UpdateManagedDatabase(ctx, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
+	_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
 	return err
 }

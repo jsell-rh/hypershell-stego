@@ -12,6 +12,7 @@ import (
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	rpctransport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -238,7 +239,17 @@ func (s *databaseServer) UpdateManagedDatabase(ctx context.Context, r *pb.Update
 	if r.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
-	row, err := s.resource.Update(ctx, gateways.PrincipalFromContext(ctx), r.Id, catalog.DatabasePatch{Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status})
+	version, present, err := rpctransport.ResourceVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	input := catalog.DatabasePatch{Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status}
+	var row model.ManagedDatabase
+	if present {
+		row, err = s.resource.UpdateIfVersion(ctx, gateways.PrincipalFromContext(ctx), r.Id, input, version)
+	} else {
+		row, err = s.resource.Update(ctx, gateways.PrincipalFromContext(ctx), r.Id, input)
+	}
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -251,6 +262,9 @@ func (s *databaseServer) GetManagedDatabase(ctx context.Context, r *pb.GetManage
 	row, err := s.resource.Get(ctx, gateways.PrincipalFromContext(ctx), r.Id)
 	if err != nil {
 		return nil, mapError(err)
+	}
+	if err := rpctransport.SetResourceVersion(ctx, row.ResourceVersion); err != nil {
+		return nil, err
 	}
 	return &pb.GetManagedDatabaseResponse{ManagedDatabase: presentManagedDatabase(row)}, nil
 }

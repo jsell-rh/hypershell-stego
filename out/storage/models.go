@@ -75,6 +75,7 @@ type GatewayRelease struct {
 // ManagedDatabase represents the ManagedDatabase entity.
 type ManagedDatabase struct {
 	Meta
+	ResourceVersion  int64   `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
 	Name             string  `json:"name" gorm:"column:name;not null;size:261;check:length(name) >= 1"`
 	Provider         string  `json:"provider" gorm:"column:provider;not null"`
 	Namespace        string  `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:29;check:length(namespace) >= 1"`

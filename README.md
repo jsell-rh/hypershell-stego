@@ -197,10 +197,11 @@ The [revision acceptance test](acceptance/gateway-revisions.md) rejects an older
 observation after a REST desired-state change and checks event rollback and
 restart. Gateway now uses generated desired generations and a workload
 observation group. Phase and status are controller-owned. Reads, status search,
-and credential readiness checks reject stale observations. Database status
-revisions, per-subject group authority, durable cleanup completion, and controller
-metrics remain open. These correctness
-requirements take priority over recovery-query optimization.
+and credential readiness checks reject stale observations. The database
+controller now also requires [revision preconditions](acceptance/database-observations.md)
+for its writes. Database generations, field ownership, per-subject group
+authority, durable cleanup completion, and controller metrics remain open.
+These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified
 issuer and subject. Username changes preserve grants; username reuse cannot

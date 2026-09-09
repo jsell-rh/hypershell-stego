@@ -1076,6 +1076,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
 			selectCols := []string{"id"}
+			selectCols = append(selectCols, "stego_revision")
 			for _, f := range opts.Fields {
 				if validCols[f] {
 					selectCols = append(selectCols, f)

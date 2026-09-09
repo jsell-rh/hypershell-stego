@@ -16,10 +16,12 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
 	"github.com/twmb/franz-go/pkg/kgo"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -231,7 +233,19 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code != 200 || json.Unmarshal(data, &restRelease) != nil || restRelease.CanaryPercent == nil || *restRelease.CanaryPercent != 0 {
 		t.Fatal("release zero patch", code, string(data))
 	}
-	dbUpdate, err := databases.UpdateManagedDatabase(call(controller), &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")})
+	var databaseHeader metadata.MD
+	if _, err := databases.GetManagedDatabase(call(controller), &pb.GetManagedDatabaseRequest{Id: database.ID}, grpc.Header(&databaseHeader)); err != nil {
+		t.Fatal(err)
+	}
+	revision, err := rpc.ObservedResourceVersion(databaseHeader)
+	if err != nil {
+		t.Fatal(err)
+	}
+	observedCall, err := rpc.WithResourceVersion(call(controller), revision)
+	if err != nil {
+		t.Fatal(err)
+	}
+	dbUpdate, err := databases.UpdateManagedDatabase(observedCall, &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")})
 	if err != nil || dbUpdate.ManagedDatabase.GetEngineVersion() != "18.1" || dbUpdate.ManagedDatabase.Namespace != wantNamespace {
 		t.Fatal("database update", dbUpdate, err)
 	}

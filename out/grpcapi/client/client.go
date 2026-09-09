@@ -43,6 +43,20 @@ func WithResourceVersion(ctx context.Context, version int64) (context.Context, e
 	return metadata.NewOutgoingContext(ctx, md), nil
 }
 
+// ObservedResourceVersion reads the header from a successful single-resource
+// response. Capture it with grpc.Header and retain it with that response.
+func ObservedResourceVersion(header metadata.MD) (int64, error) {
+	values := header.Get("resource-version")
+	if len(values) != 1 || len(values[0]) > 19 {
+		return 0, errors.New("resource response has no valid revision")
+	}
+	version, err := strconv.ParseInt(values[0], 10, 64)
+	if err != nil || version < 1 || strconv.FormatInt(version, 10) != values[0] {
+		return 0, errors.New("resource response has no valid revision")
+	}
+	return version, nil
+}
+
 // Options come from trusted application configuration. Address is host:port.
 // TokenFile is read for each call so the operator can replace an expiring token.
 type Options struct{ Address, CAFile, TokenFile string }
