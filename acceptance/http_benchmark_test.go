@@ -1,10 +1,8 @@
 package acceptance
 
 import (
-	"context"
 	"crypto/rand"
 	"crypto/rsa"
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -16,16 +14,7 @@ import (
 )
 
 func BenchmarkRESTFilteredPage(b *testing.B) {
-	f := database(b)
-	for i := range 200 {
-		owner := "alice"
-		if i%2 == 1 {
-			owner = "bob"
-		}
-		if _, err := f.service.Create(context.Background(), principal(owner, "gateway:creator"), f.request(fmt.Sprintf("gateway-%d", i))); err != nil {
-			b.Fatal(err)
-		}
-	}
+	f := gatewayPageBenchmarkFixture(b, true)
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
 		b.Fatal(err)

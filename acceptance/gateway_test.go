@@ -156,7 +156,8 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	return f
 }
 
-func BenchmarkGatewayFilteredPage(b *testing.B) {
+func gatewayPageBenchmarkFixture(b *testing.B, analyzed bool) *fixture {
+	b.Helper()
 	f := database(b)
 	ctx := context.Background()
 	for i := range 200 {
@@ -168,6 +169,21 @@ func BenchmarkGatewayFilteredPage(b *testing.B) {
 			b.Fatal(err)
 		}
 	}
+	if analyzed {
+		if _, err := f.db.Exec("ANALYZE gateways; ANALYZE role_bindings; ANALYZE users; ANALYZE roles"); err != nil {
+			b.Fatal(err)
+		}
+	}
+	return f
+}
+
+func BenchmarkGatewayFilteredPage(b *testing.B) { benchmarkGatewayFilteredPage(b, true) }
+func BenchmarkGatewayFilteredPageFreshStatistics(b *testing.B) {
+	benchmarkGatewayFilteredPage(b, false)
+}
+func benchmarkGatewayFilteredPage(b *testing.B, analyzed bool) {
+	f := gatewayPageBenchmarkFixture(b, analyzed)
+	ctx := context.Background()
 	b.ReportAllocs()
 	b.ResetTimer()
 	for range b.N {
@@ -177,6 +193,7 @@ func BenchmarkGatewayFilteredPage(b *testing.B) {
 		}
 	}
 }
+
 func (f *fixture) request(name string) gateways.CreateRequest {
 	return gateways.CreateRequest{Name: name, ClusterID: f.cluster, ReleaseID: f.release, DatabaseID: "client-placeholder"}
 }

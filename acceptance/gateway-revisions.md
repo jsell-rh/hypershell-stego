@@ -99,3 +99,7 @@ metadata and current observations, samples averaged 9.60–10.97 ms and allocate
 111–113 kB. The new contract has a measured allocation cost and higher latency
 in two samples. This small test does not establish concurrent capacity or a
 production latency bound. Query and allocation profiling remain required work.
+
+The later [query profile](query-performance.md) separates fresh statistics from
+current statistics. It explains the high count cost in the earlier list samples
+and records the generated query-cache correction.

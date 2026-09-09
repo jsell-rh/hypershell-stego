@@ -27,7 +27,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.6.0
+            version: 3.6.1
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -348,6 +348,6 @@ last_applied:
         storage/migrations/000003_resource_generations.sql: 0e106831ba422922f2a4b54432b487d9c24ce4a59c3eae989240f112bcac07e7
         storage/models.go: 274452cc7bb3bec56f883db034c34e0457a3fff3ec1a1fa9f4060a0c04ec1af9
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 75a1b912474d07f45a03b5c0f0911c2b88711816bbd8edfe3f32f9b3fd3e2065
+        storage/store.go: c67c62ff02313e98d03287ec3cc49db7c3ae3a72c1df61f7e4201a87e9e10c35
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 7d61202dd5601166c52c10ec0564e8b11678b1ae36ca9110f627074fea37a440

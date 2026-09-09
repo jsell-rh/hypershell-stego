@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	sort "sort"
 	"strings"
 	"sync"
 	"unicode/utf8"
@@ -18,6 +19,16 @@ import (
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
+
+// filterKeys keeps equivalent maps on one prepared-query shape.
+func filterKeys[V any](values map[string]V) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
 
 type OrderByField = stegostorage.OrderByField
 type ListOptions = stegostorage.ListOptions
@@ -700,7 +711,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity User", field)
 			}
@@ -781,7 +793,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity Role", field)
 			}
@@ -862,7 +875,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ManagedCluster", field)
 			}
@@ -943,7 +957,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity GatewayRelease", field)
 			}
@@ -1024,7 +1039,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ManagedDatabase", field)
 			}
@@ -1105,7 +1121,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity GatewayNetwork", field)
 			}
@@ -1187,7 +1204,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity Gateway", field)
 			}
@@ -1270,7 +1288,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity RoleBinding", field)
 			}
@@ -1351,7 +1370,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ServiceAccount", field)
 			}
@@ -1432,7 +1452,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			}
 			query = query.Where(scopeField+" = ?", scopeValue)
 		}
-		for field, value := range opts.ImplicitFilters {
+		for _, field := range filterKeys(opts.ImplicitFilters) {
+			value := opts.ImplicitFilters[field]
 			if !validCols[field] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ServiceAccountAudit", field)
 			}
@@ -1678,7 +1699,8 @@ func (s *Store) relatedExpression(ctx context.Context, target string, filter ste
 		return nil, fmt.Errorf("unknown related entity")
 	}
 	columns := filterColumns(filter.Entity)
-	for field, values := range filter.Values {
+	for _, field := range filterKeys(filter.Values) {
+		values := filter.Values[field]
 		if !columns[field] {
 			return nil, fmt.Errorf("invalid related filter field")
 		}

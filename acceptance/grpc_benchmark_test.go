@@ -12,16 +12,7 @@ import (
 )
 
 func BenchmarkGRPCFilteredPage(b *testing.B) {
-	f := database(b)
-	for i := range 200 {
-		owner := "alice"
-		if i%2 == 1 {
-			owner = "bob"
-		}
-		if _, err := f.service.Create(context.Background(), principal(owner, "gateway:creator"), f.request(fmt.Sprintf("gateway-%d", i))); err != nil {
-			b.Fatal(err)
-		}
-	}
+	f := gatewayPageBenchmarkFixture(b, true)
 	_, config := broker(b, identity(b, "localhost"))
 	key, settings := issuer(b)
 	tlsIdentity := identity(b, "localhost")
