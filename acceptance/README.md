@@ -50,7 +50,7 @@ retrieve each other's created resources. REST search and ordering tests include
 `OR` expressions, literal injection attempts, invalid fields and value types, and
 count-only requests. Related-resource search, sparse fields, REST page sizes above 100,
 user administration, remaining role query options, and other
-other Hypershell workflows remain open.
+Hypershell workflows remain open.
 
 One local benchmark used PostgreSQL 18.6, Go 1.26.8, and an Intel Core Ultra 9
 185H. It read a 20-row page from 200 Gateways, of which 100 were visible to the
@@ -87,8 +87,9 @@ the process, commits an update and deletion, and restarts the process. The
 runtime delivers both events in commit order, and both transports exclude the
 deleted resource. Separate successful REST and gRPC deletion requests verify
 HTTP 204 without a body and the protobuf delete response. PostgreSQL tombstones
-supply authorized delete events to the watch implementation. Service-account cleanup
-and production broker tests remain open.
+supply authorized delete events to the watch implementation. The
+[Gateway account cleanup workflow](gateway-account-cleanup.md) also covers
+service-account removal. Production broker tests remain open.
 
 A local gRPC patch benchmark performed 100 updates to one Gateway through a
 separate generated process. It averaged 3.297 ms per request on the same local
