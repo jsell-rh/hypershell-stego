@@ -244,3 +244,7 @@ The runtime choice and production isolation requirements remain open.
 The generated CLI also supports [service accounts](acceptance/service-account-cli.md).
 It creates a private credential file, retrieves and lists accounts, and revokes
 or deletes them through the generated runtime.
+
+The [grant CLI workflow](acceptance/grant-cli.md) now changes Gateway access
+through generated commands. See the [CLI port status](acceptance/cli-port.md)
+for the remaining reference behavior.

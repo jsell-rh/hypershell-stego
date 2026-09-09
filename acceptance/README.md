@@ -244,3 +244,8 @@ the generated API and gRPC provisioner.
 The [OIDC CLI workflow](oidc-cli.md) checks real browser and device login,
 Gateway access, API restart, concurrent refresh, and provider token revocation
 through the generated CLI.
+
+The [grant CLI workflow](grant-cli.md) checks role discovery, grants, denied
+changes, last-owner protection, rollback, events, restart, and grant restoration.
+It uses the existing generated command runtime. The [CLI port status](cli-port.md)
+lists the remaining work.

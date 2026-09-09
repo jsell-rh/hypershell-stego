@@ -27,6 +27,7 @@ func Commands() command.Application {
 		{Name: []string{"delete", "gateway"}, Method: "DELETE", Path: path + "/{id}", ID: true, Confirm: true, Success: []int{204}},
 	}}
 	app.Commands = append(app.Commands, accountCommands()...)
+	app.Commands = append(app.Commands, grantCommands()...)
 	return app
 }
 

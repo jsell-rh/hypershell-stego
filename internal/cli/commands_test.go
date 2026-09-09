@@ -48,3 +48,11 @@ func checkFields(t *testing.T, fields []command.Field, request reflect.Type) {
 		}
 	}
 }
+
+func TestGrantCreationFieldsFollowDomainContract(t *testing.T) {
+	for _, definition := range grantCommands() {
+		if definition.Method == "POST" {
+			checkFields(t, definition.Fields, reflect.TypeFor[gateways.GrantRequest]())
+		}
+	}
+}
