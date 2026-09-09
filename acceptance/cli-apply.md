@@ -100,3 +100,16 @@ Role and role-binding apply mappings remain open. Kustomize rendering is also
 open; `-k` fails before any request. The port does not claim Kubernetes field
 ownership, pruning, an atomic server upsert, or a complete CLI port. The
 [CLI port table](cli-port.md) records the remaining work.
+
+A full-suite run on 2026-09-09 found a queue-drain timeout after the API mode
+restart. Five diagnostic reruns did not reproduce that failure. They confirmed
+that the test restarts with pending events. A fixed five-second drain limit is
+shorter than the generated 30-second outbox lease. The original failure's exact
+remaining rows were not captured, so an unfinished claim is a possible cause.
+
+The restart check now allows the generated lease duration, one delivery attempt,
+and five seconds for polling and completion. Other queue-drain checks retain
+their five-second limit. A new runtime test leaves actual claims unfinished,
+starts the runtime, verifies that the leases remain held, and requires delivery
+of the original Gateway event ID after expiry. Queue failures now report bounded
+kind, attempt, retry, and lease data without payloads or resource IDs.

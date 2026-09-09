@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/outbox"
 	"github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/twmb/franz-go/pkg/kgo"
 	"gorm.io/driver/postgres"
@@ -79,6 +80,47 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if firstMessage == "" || secondMessage == "" || firstMessage == secondMessage {
 		t.Fatal("distinct events did not keep distinct message IDs")
 	}
+}
+
+func TestGeneratedRuntimeRecoversUnfinishedClaim(t *testing.T) {
+	f := database(t)
+	_, config := broker(t, identity(t, "localhost"))
+	binary := buildApplication(t)
+	consumer := kafkaConsumer(t, config)
+	row, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("claimed-before-start"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	queue, err := outbox.New(f.db)
+	if err != nil {
+		t.Fatal(err)
+	}
+	deliveries, err := queue.Claim(context.Background(), outbox.MaxBatchSize, outbox.DefaultWorkerConfig().LeaseDuration)
+	if err != nil || len(deliveries) != 2 {
+		t.Fatal("claim committed events", len(deliveries), err)
+	}
+	messageID := ""
+	for _, delivery := range deliveries {
+		if delivery.ResourceKey == row.ID && delivery.Kind == "gateway.created" {
+			messageID = delivery.ID.String()
+		}
+	}
+	if messageID == "" {
+		t.Fatal("Gateway event was not claimed")
+	}
+	// The former worker never returns its receipt. The new runtime must wait for
+	// its lease, then deliver the same message identity without a manual reset.
+	stop := startRuntime(t, binary, f.dsn, config)
+	defer stop()
+	var pending int
+	if err := f.db.QueryRow(`SELECT count(*) FROM stego_outbox.messages WHERE attempts=1 AND lease_until > clock_timestamp()+interval '5 seconds'`).Scan(&pending); err != nil || pending != 2 {
+		t.Fatal("runtime did not preserve unfinished claims", pending, err)
+	}
+	awaitQueueEmptyAfterRestart(t, f)
+	if got := readEvent(t, consumer, row.ID); got != messageID {
+		t.Fatal("lease recovery changed event identity", got, messageID)
+	}
+	t.Log("unfinished claims expired and the generated runtime delivered the original Gateway event")
 }
 
 func startRuntime(t *testing.T, binary, dsn string, config Config) func() {
@@ -216,12 +258,55 @@ func readGatewayEvent(t *testing.T, consumer *kgo.Client, id, eventType, kind st
 }
 func awaitQueueEmpty(t testing.TB, f *fixture) {
 	t.Helper()
-	deadline := time.Now().Add(5 * time.Second)
+	awaitQueueEmptyWithin(t, f, 5*time.Second)
+}
+
+// Restart can retain a claim whose database result was not received. Allow the
+// generated lease and one delivery attempt before requiring an empty queue.
+func awaitQueueEmptyAfterRestart(t testing.TB, f *fixture) {
+	t.Helper()
+	config := outbox.DefaultWorkerConfig()
+	awaitQueueEmptyWithin(t, f, config.LeaseDuration+config.AttemptTimeout+5*time.Second)
+}
+
+func awaitQueueEmptyWithin(t testing.TB, f *fixture, timeout time.Duration) {
+	t.Helper()
+	deadline := time.Now().Add(timeout)
 	for count(t, f.db, "stego_outbox.messages") != 0 {
 		if time.Now().After(deadline) {
-			t.Fatal("acknowledged event remains in the queue")
+			logQueueState(t, f)
+			t.Fatalf("event queue did not drain within %s", timeout)
 		}
 		time.Sleep(10 * time.Millisecond)
+	}
+}
+
+// Log bounded delivery metadata. Do not include payloads, tokens, or resource IDs.
+func logQueueState(t testing.TB, f *fixture) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	rows, err := f.db.QueryContext(ctx, `SELECT kind, failure_code, count(*), max(attempts),
+ max(GREATEST(0, EXTRACT(EPOCH FROM available_at-now())))::double precision,
+ max(GREATEST(0, EXTRACT(EPOCH FROM lease_until-now())))::double precision
+ FROM stego_outbox.messages GROUP BY kind, failure_code ORDER BY kind, failure_code LIMIT 10`)
+	if err != nil {
+		t.Log("queue diagnostic failed", err)
+		return
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var kind, code string
+		var count, attempts int64
+		var available, lease float64
+		if err := rows.Scan(&kind, &code, &count, &attempts, &available, &lease); err != nil {
+			t.Log("queue diagnostic failed", err)
+			return
+		}
+		t.Logf("queue kind=%s code=%s count=%d attempts=%d available_in=%.3fs lease_left=%.3fs", kind, code, count, attempts, available, lease)
+	}
+	if err := rows.Err(); err != nil {
+		t.Log("queue diagnostic failed", err)
 	}
 }
 

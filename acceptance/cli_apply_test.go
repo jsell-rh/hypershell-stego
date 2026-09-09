@@ -307,7 +307,7 @@ spec: {topology: mesh, status: planned}
 	for kind, path := range map[string]string{"ManagedCluster": "managedCluster", "GatewayRelease": "gatewayRelease", "ManagedDatabase": "managedDatabase", "GatewayNetwork": "gatewayNetwork"} {
 		success("admin", "delete", path, ids[kind], "--yes")
 	}
-	awaitQueueEmpty(t, f)
+	awaitQueueEmptyAfterRestart(t, f)
 	for _, name := range []string{"admin", "alice", "owner", "bob"} {
 		success(name, "logout")
 	}
