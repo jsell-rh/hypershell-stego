@@ -8,6 +8,7 @@ components:
   - kafka-producer
   - http-application
   - grpc-application
+  - kubernetes-client
   - tsl-search
 default_auth: jwt-auth
 conventions:
@@ -19,6 +20,7 @@ conventions:
   request_validation: openapi-schema
   cors: disabled
 bindings:
+  application-http: http-application
   durable-outbox: outbox
   storage-adapter: postgres-adapter
   auth-provider: jwt-auth

@@ -11,14 +11,12 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
 
 const PostgresImage = "postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2"
@@ -33,84 +31,40 @@ var ErrPending = errors.New("database workload is not ready")
 
 type KubernetesOptions struct{ ServerURL, CAFile, TokenFile, ClusterIssuer string }
 type Kubernetes struct {
-	client            *transport.Client
-	tokenFile, issuer string
+	client *kube.Client
+	issuer string
 }
-type object map[string]any
+type object = kube.Object
 
 func NewKubernetes(o KubernetesOptions) (*Kubernetes, error) {
 	if !dnsName.MatchString(o.ClusterIssuer) {
 		return nil, errors.New("database controller requires a ClusterIssuer name")
 	}
-	if _, err := readToken(o.TokenFile); err != nil {
-		return nil, err
-	}
-	c, err := transport.New(transport.Options{BaseURL: o.ServerURL, CAFile: o.CAFile})
+	c, err := kube.New(kube.Options{ServerURL: o.ServerURL, CAFile: o.CAFile, TokenFile: o.TokenFile})
 	if err != nil {
 		return nil, err
 	}
-	return &Kubernetes{c, o.TokenFile, o.ClusterIssuer}, nil
+	return &Kubernetes{c, o.ClusterIssuer}, nil
 }
 func (k *Kubernetes) Close() { k.client.Close() }
-func readToken(file string) (string, error) {
-	value, err := transport.ReadPrivateFile(file)
-	if err != nil {
-		return "", err
-	}
-	token := strings.TrimSpace(string(value))
-	if token == "" || strings.ContainsAny(token, " \t\r\n") {
-		return "", errors.New("invalid Kubernetes token")
-	}
-	return token, nil
-}
 func (k *Kubernetes) request(ctx context.Context, method, path string, input object) (object, int, error) {
-	token, err := readToken(k.tokenFile)
-	if err != nil {
-		return nil, 0, err
-	}
-	var body []byte
-	if input != nil {
-		body, err = json.Marshal(input)
-		if err != nil {
-			return nil, 0, err
-		}
-	}
-	headers := http.Header{"Authorization": {"Bearer " + token}, "Content-Type": {"application/json"}, "Accept": {"application/json"}}
-	if method == http.MethodPatch {
-		headers.Set("Content-Type", "application/merge-patch+json")
-	}
-	response, err := k.client.Do(ctx, method, path, headers, body)
-	if err != nil {
-		return nil, 0, err
-	}
-	if response.StatusCode == 404 && (method == http.MethodGet || method == http.MethodDelete) {
-		return nil, 404, nil
-	}
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		return nil, response.StatusCode, fmt.Errorf("Kubernetes %s failed with status %d", method, response.StatusCode)
-	}
-	var result object
-	if json.Unmarshal(response.Body, &result) != nil {
-		return nil, response.StatusCode, errors.New("invalid Kubernetes object")
-	}
-	return result, response.StatusCode, nil
+	return k.client.Request(ctx, method, path, input)
 }
-func nested(o object, keys ...string) any {
-	var value any = map[string]any(o)
-	for _, key := range keys {
-		m, ok := value.(map[string]any)
-		if !ok {
-			if typed, yes := value.(object); yes {
-				m = typed
-			} else {
-				return nil
-			}
-		}
-		value = m[key]
+func nested(o object, keys ...string) any  { return kube.Nested(o, keys...) }
+func str(o object, keys ...string) string  { return kube.String(o, keys...) }
+func owner(id string) kube.Owner           { return kube.Owner{ownerLabel: id, managerLabel: manager} }
+func contains(actual, desired object) bool { return kube.Contains(actual, desired) }
+func integer(o object, keys ...string) int64 {
+	number, ok := nested(o, keys...).(json.Number)
+	if !ok {
+		return -1
+	}
+	value, err := number.Int64()
+	if err != nil {
+		return -1
 	}
 	return value
 }
-func str(o object, keys ...string) string { v, _ := nested(o, keys...).(string); return v }
 func labels(id string) object {
 	return object{ownerLabel: id, managerLabel: manager, "app.kubernetes.io/name": "openshell", "app.kubernetes.io/component": "database"}
 }
@@ -155,68 +109,8 @@ func validateDatabase(db *pb.ManagedDatabase) error {
 	return nil
 }
 
-// ensure checks ownership before a write. Resource versions prevent a concurrent
-// replacement from being overwritten. A conflict is retried on the next pass.
 func (k *Kubernetes) ensure(ctx context.Context, collection string, want object, id string) (object, error) {
-	path := collection + "/" + str(want, "metadata", "name")
-	old, code, err := k.request(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return nil, err
-	}
-	if code == 404 {
-		created, _, err := k.request(ctx, http.MethodPost, collection, want)
-		return created, err
-	}
-	if !owned(old, id) || str(old, "metadata", "deletionTimestamp") != "" {
-		return nil, errors.New("Kubernetes resource has a different owner or is being deleted")
-	}
-	// A subset comparison ignores API defaults and status. It prevents needless
-	// writes and rollouts when the requested fields already match.
-	if contains(old, want) {
-		return old, nil
-	}
-	metadata := want["metadata"].(object)
-	metadata["resourceVersion"] = str(old, "metadata", "resourceVersion")
-	metadata["uid"] = str(old, "metadata", "uid")
-	updated, _, err := k.request(ctx, http.MethodPatch, path, want)
-	return updated, err
-}
-func contains(actual, desired any) bool {
-	encoded, _ := json.Marshal(desired)
-	var normalized any
-	_ = json.Unmarshal(encoded, &normalized)
-	return subset(actual, normalized)
-}
-func subset(actual, desired any) bool {
-	if m, ok := actual.(object); ok {
-		actual = map[string]any(m)
-	}
-	switch d := desired.(type) {
-	case map[string]any:
-		a, ok := actual.(map[string]any)
-		if !ok {
-			return false
-		}
-		for key, v := range d {
-			if !subset(a[key], v) {
-				return false
-			}
-		}
-		return true
-	case []any:
-		a, ok := actual.([]any)
-		if !ok || len(a) != len(d) {
-			return false
-		}
-		for i := range d {
-			if !subset(a[i], d[i]) {
-				return false
-			}
-		}
-		return true
-	default:
-		return actual == desired
-	}
+	return k.client.Ensure(ctx, collection, want, owner(id))
 }
 func (k *Kubernetes) Ensure(ctx context.Context, db *pb.ManagedDatabase) error {
 	if err := validateDatabase(db); err != nil {
@@ -285,10 +179,10 @@ SQL
 	if err != nil {
 		return err
 	}
-	generation, _ := nested(current, "metadata", "generation").(float64)
-	observed, _ := nested(current, "status", "observedGeneration").(float64)
-	ready, _ := nested(current, "status", "readyReplicas").(float64)
-	updated, _ := nested(current, "status", "updatedReplicas").(float64)
+	generation := integer(current, "metadata", "generation")
+	observed := integer(current, "status", "observedGeneration")
+	ready := integer(current, "status", "readyReplicas")
+	updated := integer(current, "status", "updatedReplicas")
 	if generation <= 0 || observed < generation || ready != 1 || updated != 1 {
 		return ErrPending
 	}
@@ -376,32 +270,14 @@ func (k *Kubernetes) Delete(ctx context.Context, db *pb.ManagedDatabase) error {
 	if err := validatePlacement(db); err != nil {
 		return err
 	}
-	path := "/api/v1/namespaces/" + db.Namespace
-	old, code, err := k.request(ctx, http.MethodGet, path, nil)
+	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+db.Namespace, owner(db.Metadata.Id))
 	if err != nil {
 		return err
 	}
-	if code == 404 {
-		return nil
-	}
-	if !owned(old, db.Metadata.Id) {
-		return errors.New("database namespace has a different owner")
-	}
-	uid, version := str(old, "metadata", "uid"), str(old, "metadata", "resourceVersion")
-	if uid == "" || version == "" {
-		return errors.New("database namespace has no identity")
-	}
-	if str(old, "metadata", "deletionTimestamp") != "" {
+	if !gone {
 		return ErrPending
 	}
-	_, code, err = k.request(ctx, http.MethodDelete, path, object{"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": object{"uid": uid, "resourceVersion": version}, "propagationPolicy": "Foreground"})
-	if err != nil {
-		return err
-	}
-	if code == 404 {
-		return nil
-	}
-	return ErrPending
+	return nil
 }
 
 func verifyCertificate(caEncoded, certificateEncoded, hostname string) error {

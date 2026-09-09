@@ -151,3 +151,15 @@ The final full race suite passed with PostgreSQL and Keycloak required. Its
 acceptance package took 325.383 seconds. The separate Kubernetes run and the
 focused controller tests cover the final provisioning checks. Module verification
 and formatting checks passed.
+
+The database controller now uses STEGO's generated Kubernetes client. The
+compiler pin is `e6b4d6ceb198c89c9ad4eaedb486a1b2e81e7037`. Common HTTPS requests,
+ownership checks, update preconditions, and deletion checks are generated.
+Hypershell retains its database definitions, placement, and readiness rules.
+The client retains exact JSON numbers; readiness checks require valid integers.
+
+The real-cluster workflow with this client passed in 69.77 seconds. Deletion
+replay passed in 2.93 seconds; the acceptance package took 73.740 seconds. Five
+stable reconciliations took 75.8 ms and did not change the Deployment. These
+results check the client extraction; they do not establish production capacity.
+The compiler and variant vulnerability scans reported no known vulnerabilities.

@@ -14,6 +14,9 @@ last_applied:
         kafka-producer:
             version: 1.0.0
             sha: gateway-workflow
+        kubernetes-client:
+            version: 1.0.0
+            sha: gateway-workflow
         outbox:
             version: 1.0.0
             sha: gateway-workflow
@@ -292,6 +295,7 @@ last_applied:
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
         grpcapi/transport/runtime.go: 4594691d6b46ba2ca23348c8e39bb321c200689e2039de08d4f32ba6fee93492
+        kubernetes/client.go: ace8f3038d7169ba8b782c72adeb4e0cd7f28a1634973c7b6fa302c0badb1737
         main.go: ffc42b76bbbbe3c16cb8741c4da3002b4ef91db19be7129f53a25489f4e9f457
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
