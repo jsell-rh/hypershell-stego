@@ -134,7 +134,7 @@ resource timestamp through generated storage; unchanged values leave it intact.
 REST and gRPC Gateway reads expose the same count. Relative adjustments do not
 have request deduplication: after a connection failure with an uncertain result,
 a caller must reconcile the observed count instead of assuming a retry is safe.
-The control-plane reconciliation workflow still needs to be ported.
+The workload and sandbox-count controller workflows still need to be ported.
 
 Service-account create, list, get, revoke, and delete now run through the generated
 HTTP process and a TLS provisioner client. Only creation returns a client secret.
@@ -157,11 +157,16 @@ The provider now requires a trusted Gateway ID binding on each Keycloak Gateway
 client. A real API test exposed, then verified the fix for, a foreign-audience
 access defect. Failed role reduction now queues terminal revocation, including
 when OIDC settings are invalid or the provider binding is lost. The tests check
-restart and restored owner access. Control-plane creation of these bindings,
-existing-client migration, and production recovery latency remain open.
+restart and restored owner access. The identity controller now creates these
+bindings. Existing-client migration and production recovery latency remain open.
 
 The workflow also exposed a data race during GORM model initialization. The
 compiler now prepares model metadata before it starts concurrent application
 work. This runs with external migrations and changes no database tables.
 The generated store constructor returns an error, which startup and the test
 fixtures now handle.
+
+The [Gateway identity workflow](acceptance/gateway-identity.md) adds a separate
+controller over generated gRPC and HTTPS clients. It creates trusted Keycloak
+bindings from Gateway state and recovers after API or controller restart.
+The identity controller does not deploy workloads or set Gateway health.

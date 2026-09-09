@@ -35,8 +35,9 @@ The provider checks the client ID and binding before it reads roles, creates an
 account, or repairs account settings. OIDC fields from an API caller cannot
 establish the binding. Missing or incorrect attributes cause refusal. Existing
 clients need a trusted migration; the provider does not adopt them from caller
-input. The acceptance fixture uses its administrator to set the binding. The
-control-plane port and migration procedure remain open.
+input. Provider failure fixtures use their administrator to set the binding. The
+[Gateway identity workflow](gateway-identity.md) uses the real controller to create
+the binding. Existing-client migration and the workload controller remain open.
 
 New clients start disabled. The provider removes unrelated role mappings, assigns
 the selected Gateway roles, installs restricted audience and role mappers, and

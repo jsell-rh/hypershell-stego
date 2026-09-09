@@ -835,7 +835,11 @@ func (c *Client) replaceRoleMappings(ctx context.Context, clientUUID, subject, g
 		return statusError("assign service-account roles", status)
 	}
 
-	body, status, err = c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/scope-mappings", c.realm, url.PathEscape(clientUUID)), nil)
+	return c.replaceScopeMappings(ctx, clientUUID, gatewayUUID, roles)
+}
+
+func (c *Client) replaceScopeMappings(ctx context.Context, clientUUID, gatewayUUID string, roles []kcRole) error {
+	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/scope-mappings", c.realm, url.PathEscape(clientUUID)), nil)
 	if err != nil {
 		return err
 	}
@@ -876,6 +880,7 @@ func (c *Client) replaceRoleMappings(ctx context.Context, clientUUID, subject, g
 		}
 	}
 	scopePath := fmt.Sprintf("/admin/realms/%s/clients/%s/scope-mappings/clients/%s", c.realm, url.PathEscape(clientUUID), url.PathEscape(gatewayUUID))
+	payload, _ := json.Marshal(roles)
 	if _, status, err = c.admin(ctx, http.MethodPost, scopePath, payload); err != nil || status >= 300 {
 		if err != nil {
 			return err

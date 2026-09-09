@@ -1,0 +1,14 @@
+syntax = "proto3";
+package hypershell.controlplane.v1;
+import "hypershell/v1/gateways.proto";
+
+// This contract is specific to the Hypershell identity controller.
+// A denied or missing row must never cause provider deletion.
+service GatewayIdentityService {
+ rpc GetGatewayIdentityState(GetGatewayIdentityStateRequest) returns (GetGatewayIdentityStateResponse);
+}
+message GetGatewayIdentityStateRequest { string id = 1; }
+message GetGatewayIdentityStateResponse {
+ hypershell.v1.Gateway gateway = 1;
+ bool deleted = 2;
+}

@@ -154,3 +154,7 @@ task. It includes one-time secrets, role limits, pending revoke and delete,
 audit failures, creator-grant changes, expiration, and restart. The
 [Keycloak test](keycloak.md) also proves actual token issuance, role reduction,
 drift repair, and revocation after restart. Production limits remain open.
+
+The [Gateway identity workflow](gateway-identity.md) tests the generated stream
+client with a real controller and Keycloak. It covers initial state, live events,
+trusted provider bindings, token use, API restart, and offline deletion recovery.

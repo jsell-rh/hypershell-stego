@@ -10,6 +10,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
@@ -37,6 +38,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 		return err
 	}
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
+	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})
 	return nil
 }
 
