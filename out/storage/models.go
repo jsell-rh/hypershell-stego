@@ -33,9 +33,11 @@ func (m *Meta) BeforeCreate(tx *gorm.DB) error {
 // User represents the User entity.
 type User struct {
 	Meta
-	Username string `json:"username" gorm:"column:username;not null;uniqueIndex;size:255;check:length(username) >= 1"`
-	Email    string `json:"email" gorm:"column:email;not null;size:320"`
-	Name     string `json:"name" gorm:"column:name;not null;size:255"`
+	Username string  `json:"username" gorm:"column:username;not null;size:255;check:length(username) >= 1"`
+	Issuer   *string `json:"issuer,omitempty" gorm:"column:issuer;uniqueIndex:composite_issuer_subject;size:1024"`
+	Subject  *string `json:"subject,omitempty" gorm:"column:subject;uniqueIndex:composite_issuer_subject;size:255"`
+	Email    string  `json:"email" gorm:"column:email;not null;size:320"`
+	Name     string  `json:"name" gorm:"column:name;not null;size:255"`
 }
 
 // Role represents the Role entity.

@@ -7,7 +7,9 @@ base_path: /api/hypershell/v1
 entities:
   - name: User
     fields:
-      - { name: username, type: string, unique: true, min_length: 1, max_length: 255 }
+      - { name: username, type: string, min_length: 1, max_length: 255 }
+      - { name: issuer, type: string, optional: true, max_length: 1024, unique_composite: [issuer, subject] }
+      - { name: subject, type: string, optional: true, max_length: 255, unique_composite: [issuer, subject] }
       - { name: email, type: string, max_length: 320 }
       - { name: name, type: string, max_length: 255 }
   - name: Role

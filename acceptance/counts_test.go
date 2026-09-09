@@ -121,7 +121,7 @@ func TestSandboxCountAccessAndMissingResources(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), principal("creator", "gateway:creator"), principal("viewer", "gateway:viewer"), {Subject: "ordinary", Username: "controller"}} {
+	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), principal("creator", "gateway:creator"), principal("viewer", "gateway:viewer"), {Issuer: "https://issuer.example", Subject: "ordinary", Username: "controller"}} {
 		for _, namespace := range []string{row.Namespace, "missing"} {
 			if _, err := service.AdjustActiveSandboxCount(ctx, p, namespace, 1); !errors.Is(err, gateways.ErrForbidden) {
 				t.Fatalf("untrusted count adjustment: %v", err)

@@ -23,8 +23,8 @@ var ErrIdentity = errors.New("verified user identity is required")
 // Principal must come from a verified access token. Platform roles apply to
 // this request. Stored Gateway grants remain valid after creator-role removal.
 type Principal struct {
-	Subject, Username, Email, Name string
-	Roles                          []string
+	Issuer, Subject, Username, Email, Name string
+	Roles                                  []string
 }
 
 // CreateRequest contains client fields. Namespace and ownership are absent.
@@ -241,7 +241,7 @@ func findRole(ctx context.Context, storage store.Storage, name string) (model.Ro
 }
 
 func syncUser(ctx context.Context, storage store.Storage, principal Principal) (model.User, error) {
-	result, err := storage.List(ctx, "User", "username", principal.Username, store.ListOptions{Page: 1, Size: 1})
+	result, err := storage.List(ctx, "User", "subject", principal.Subject, store.ListOptions{Page: 1, Size: 1, ImplicitFilters: map[string]string{"issuer": principal.Issuer}})
 	if err != nil {
 		return model.User{}, err
 	}
@@ -254,11 +254,16 @@ func syncUser(ctx context.Context, storage store.Storage, principal Principal) (
 		if err != nil {
 			return model.User{}, err
 		}
-		user := model.User{Meta: model.Meta{ID: id.String()}, Username: principal.Username, Email: principal.Email, Name: principal.Name}
+		user := model.User{Meta: model.Meta{ID: id.String()}, Issuer: &principal.Issuer, Subject: &principal.Subject, Username: principal.Username, Email: principal.Email, Name: principal.Name}
 		return user, storage.Create(ctx, "User", user)
 	}
 	user := rows[0]
-	if user.Email != principal.Email || user.Name != principal.Name {
+	// Keep identity comparison exact even if a database collation is broader.
+	if user.Issuer == nil || user.Subject == nil || *user.Issuer != principal.Issuer || *user.Subject != principal.Subject {
+		return model.User{}, ErrIdentity
+	}
+	if user.Username != principal.Username || user.Email != principal.Email || user.Name != principal.Name {
+		user.Username = principal.Username
 		user.Email, user.Name = principal.Email, principal.Name
 		if err := storage.Replace(ctx, "User", user.ID, user); err != nil {
 			return model.User{}, err
@@ -271,7 +276,7 @@ func validID(value string) bool {
 	return err == nil && id != ksuid.Nil && id.String() == value
 }
 func validatePrincipal(p Principal) error {
-	if strings.TrimSpace(p.Subject) == "" || strings.TrimSpace(p.Username) == "" || len(p.Username) > 255 || len(p.Email) > 320 || len(p.Name) > 255 || !utf8.ValidString(p.Username+p.Email+p.Name) || strings.ContainsRune(p.Subject+p.Username+p.Email+p.Name, 0) {
+	if strings.TrimSpace(p.Issuer) == "" || len(p.Issuer) > 1024 || len(p.Subject) > 255 || strings.TrimSpace(p.Subject) == "" || strings.TrimSpace(p.Username) == "" || len(p.Username) > 255 || len(p.Email) > 320 || len(p.Name) > 255 || !utf8.ValidString(p.Issuer+p.Subject+p.Username+p.Email+p.Name) || strings.ContainsRune(p.Issuer+p.Subject+p.Username+p.Email+p.Name, 0) {
 		return ErrIdentity
 	}
 	return nil

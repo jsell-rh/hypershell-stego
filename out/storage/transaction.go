@@ -55,7 +55,7 @@ func (s *Store) WithLockedResource(ctx context.Context, entity, field, value str
 	switch entity {
 	case "User":
 		switch field {
-		case "id", "username":
+		case "id":
 		default:
 			return errors.New("resource lookup requires a unique string field")
 		}

@@ -170,3 +170,8 @@ The [Gateway identity workflow](acceptance/gateway-identity.md) adds a separate
 controller over generated gRPC and HTTPS clients. It creates trusted Keycloak
 bindings from Gateway state and recovers after API or controller restart.
 The identity controller does not deploy workloads or set Gateway health.
+
+[Persistent user identity](acceptance/user-identity.md) now uses the verified
+issuer and subject. Username changes preserve grants; username reuse cannot
+transfer them. Existing databases need the explicit identity migration and a
+trusted mapping for legacy users before access can be preserved.

@@ -120,7 +120,9 @@ var EntityFieldMaps = map[string]map[string]string{
 		"created_at":   "created_time",
 		"updated_at":   "updated_time",
 		"email":        "email",
+		"issuer":       "issuer",
 		"name":         "name",
+		"subject":      "subject",
 		"username":     "username",
 	},
 }
@@ -238,6 +240,8 @@ var entityFieldTypes = map[string]map[string]string{
 		"created_at":   "timestamp",
 		"updated_at":   "timestamp",
 		"username":     "string",
+		"issuer":       "string",
+		"subject":      "string",
 		"email":        "string",
 		"name":         "string",
 	},

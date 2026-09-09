@@ -330,7 +330,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling User: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Select([]string{"username", "email", "name"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&User{}).Where("id = ?", id).Select([]string{"username", "issuer", "subject", "email", "name"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -618,7 +618,7 @@ func searchInputError(err error) bool {
 func (s *Store) List(ctx context.Context, entity string, scopeField string, scopeValue string, opts stegostorage.ListOptions) (stegostorage.ListResult, error) {
 	switch entity {
 	case "User":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "email": true, "name": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&User{})
 		if opts.IncludeDeleted {
 			query = query.Unscoped()
@@ -1305,7 +1305,7 @@ func (s *Store) applyRelated(ctx context.Context, query *gorm.DB, target string,
 				return nil, fmt.Errorf("related filter requires a declared reference")
 			}
 			related = s.db.WithContext(ctx).Model(&User{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "email": true, "name": true}
+			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
 		case "Role":
 			switch filter.ForeignField {
 			default:
@@ -1449,7 +1449,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling User: %w", err)
 		}
-		validCols := map[string]bool{"username": true, "email": true, "name": true}
+		validCols := map[string]bool{"username": true, "issuer": true, "subject": true, "email": true, "name": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity User", k)
@@ -1464,7 +1464,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"username", "email", "name"} {
+		for _, col := range []string{"username", "issuer", "subject", "email", "name"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}

@@ -211,12 +211,12 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 		t.Fatal(err)
 	}
 	console := pointer("https://console.example.test")
-	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), {Subject: "ordinary", Username: "controller-subject", Roles: []string{"control-plane"}}} {
+	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), {Issuer: "https://issuer.example", Subject: "ordinary", Username: "controller-subject", Roles: []string{"control-plane"}}} {
 		if _, err := service.UpdateControlPlane(ctx, p, row.ID, gateways.PatchRequest{}, console); !errors.Is(err, gateways.ErrForbidden) {
 			t.Fatalf("control-plane identity accepted: %v", err)
 		}
 	}
-	controller := gateways.Principal{Subject: "controller-subject", Username: "controller"}
+	controller := gateways.Principal{Issuer: "https://issuer.example", Subject: "controller-subject", Username: "controller"}
 	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console); !errors.Is(err, gateways.ErrForbidden) {
 		t.Fatalf("missing allowlist accepted: %v", err)
 	}

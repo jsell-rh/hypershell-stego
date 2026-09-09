@@ -104,8 +104,16 @@ func resolveAccess(ctx context.Context, tx storage.Storage, p gateways.Principal
 	return accessForUser(ctx, tx, gatewayID, user.ID)
 }
 func accessForUser(ctx context.Context, tx storage.Storage, gatewayID, userID string) (Access, error) {
-	if _, err := tx.Get(ctx, "User", userID); err != nil {
+	value, err := tx.Get(ctx, "User", userID)
+	if err != nil {
 		return Access{}, err
+	}
+	user, ok := value.(model.User)
+	if !ok {
+		return Access{}, errors.New("unexpected user storage result")
+	}
+	if user.Issuer == nil || user.Subject == nil || *user.Issuer == "" || *user.Subject == "" {
+		return Access{}, storage.ErrNotFound
 	}
 	access := Access{UserID: userID}
 	for _, name := range []string{"gateway:owner", "gateway:viewer"} {

@@ -12,7 +12,7 @@ import (
 func PrincipalFromContext(ctx context.Context) Principal {
 	identity := auth.IdentityFromContext(ctx)
 	return Principal{
-		Subject: identity.UserID, Username: identity.Username, Email: identity.Email,
+		Issuer: identity.Issuer, Subject: identity.UserID, Username: identity.Username, Email: identity.Email,
 		Name: strings.TrimSpace(identity.GivenName + " " + identity.FamilyName), Roles: identity.Roles,
 	}
 }

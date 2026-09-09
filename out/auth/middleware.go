@@ -29,6 +29,7 @@ const maxKeyFileBytes = 65536
 // Identity contains claims from a verified token. Authorization remains a
 // separate decision. A role claim alone does not grant access to a resource.
 type Identity struct {
+	Issuer     string            `json:"issuer"`
 	UserID     string            `json:"user_id"`
 	Role       string            `json:"role"`
 	Attributes map[string]string `json:"attributes"`
@@ -158,7 +159,7 @@ func (v *Verifier) Verify(raw string) (Identity, error) {
 	if err != nil {
 		return Identity{}, err
 	}
-	return Identity{UserID: claims.Subject, Role: claims.Role, Attributes: claims.Attributes,
+	return Identity{Issuer: claims.Issuer, UserID: claims.Subject, Role: claims.Role, Attributes: claims.Attributes,
 		Username: claims.Username, Email: claims.Email, GivenName: claims.GivenName, FamilyName: claims.FamilyName, Roles: roles, ExpiresAt: claims.ExpiresAt.Time}, nil
 }
 

@@ -146,7 +146,7 @@ func (f *fixture) request(name string) gateways.CreateRequest {
 	return gateways.CreateRequest{Name: name, ClusterID: f.cluster, ReleaseID: f.release, DatabaseID: "client-placeholder"}
 }
 func principal(name string, roles ...string) gateways.Principal {
-	return gateways.Principal{Subject: name, Username: name, Email: name + "@example.test", Name: name, Roles: roles}
+	return gateways.Principal{Issuer: "https://issuer.example", Subject: name, Username: name, Email: name + "@example.test", Name: name, Roles: roles}
 }
 func count(t testing.TB, db *sql.DB, table string) int {
 	t.Helper()
