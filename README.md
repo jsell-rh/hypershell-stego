@@ -122,6 +122,10 @@ console-address patch field. This subject allowlist is the current design
 assumption; the requested identity-policy decision remains open. Cleanup writes
 also require [explicit owner and target grants](acceptance/cleanup-permissions.md)
 in `HYPERSHELL_CLEANUP_GRANTS`. Missing grants deny these writes.
+Conditional Gateway patches also require [field-group and target grants](acceptance/controller-write-permissions.md)
+in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. A configured subject alone cannot patch
+Gateway fields. Workload status, OIDC settings, and console address each require
+a separate operation grant. Other controller patch fields are denied.
 
 Gateway deletion removes related provider clients before it commits the Gateway,
 account metadata, cleanup audits, and deletion event. The Gateway row lock

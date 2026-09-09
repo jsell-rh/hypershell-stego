@@ -206,7 +206,7 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller-subject"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller-subject"}, ControllerWritePolicy: controllerWritePolicy(t, "https://issuer.example", writeGrant("controller-subject", "configure.console", f.cluster))})
 	if err != nil {
 		t.Fatal(err)
 	}

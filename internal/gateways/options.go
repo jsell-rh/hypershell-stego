@@ -18,10 +18,11 @@ type AccountCleaner interface {
 }
 
 type Options struct {
-	AccountCleaner       AccountCleaner
-	ControlPlaneSubjects []string
-	CleanupPolicy        *auth.GrantPolicy
-	DatabaseProvider     string
+	AccountCleaner        AccountCleaner
+	ControlPlaneSubjects  []string
+	CleanupPolicy         *auth.GrantPolicy
+	ControllerWritePolicy *auth.GrantPolicy
+	DatabaseProvider      string
 }
 
 const ProviderDeployment = "deployment"
@@ -47,6 +48,12 @@ func OptionsFromEnvironment() (Options, error) {
 	}
 	if raw := os.Getenv("HYPERSHELL_CLEANUP_GRANTS"); raw != "" {
 		options.CleanupPolicy, err = auth.ParseGrantPolicy([]byte(raw))
+		if err != nil {
+			return Options{}, err
+		}
+	}
+	if raw := os.Getenv("HYPERSHELL_CONTROLLER_WRITE_GRANTS"); raw != "" {
+		options.ControllerWritePolicy, err = auth.ParseGrantPolicy([]byte(raw))
 		if err != nil {
 			return Options{}, err
 		}

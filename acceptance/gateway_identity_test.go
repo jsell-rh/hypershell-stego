@@ -112,6 +112,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	dir := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["gateway-controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	settings = withCleanupGrants(t, settings, cleanupGrant("gateway-controller", "Gateway", "identity", ""))
+	settings = withControllerWriteGrants(t, settings, writeGrant("gateway-controller", "configure.identity", ""))
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary := buildApplication(t)
 	controllerBinary := buildProgram(t, "./cmd/gateway-identity-controller")

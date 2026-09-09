@@ -109,6 +109,12 @@ The controller requires these settings:
 | `HYPERSHELL_GATEWAY_TRUST_BUNDLE` | PEM CA bundle used by Gateway outbound TLS |
 | `HYPERSHELL_GATEWAY_SANDBOX_IMAGE`, `HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE` | Images pinned by digest |
 
+The API must give this subject a `Gateway` / `observe.workload` grant whose
+target is `HYPERSHELL_MANAGED_CLUSTER_ID`. Set the grant in
+`HYPERSHELL_CONTROLLER_WRITE_GRANTS`. Cleanup requires a separate
+`cleanup.workload` grant for the same target in `HYPERSHELL_CLEANUP_GRANTS`.
+See the [controller write permissions](controller-write-permissions.md).
+
 Token files must have mode 0400 or 0600. Replace them before expiry; generated
 clients read them for each request. Apply
 `deploy/gateway-workload-controller-rbac.yaml` in the configured cluster. The

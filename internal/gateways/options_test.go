@@ -100,3 +100,25 @@ func TestCleanupConfigurationDoesNotFallBackToControllerAccess(t *testing.T) {
 		}
 	}
 }
+
+func TestControllerWriteConfigurationFailsClosed(t *testing.T) {
+	t.Setenv("DATABASE_PROVIDER", "")
+	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", `["worker"]`)
+	t.Setenv("HYPERSHELL_CLEANUP_GRANTS", `[{"issuer":"https://issuer.example","subject":"worker","resource":"Gateway","operation":"observe.workload","target":"a"}]`)
+	for _, raw := range []string{"", `[]`} {
+		t.Setenv("HYPERSHELL_CONTROLLER_WRITE_GRANTS", raw)
+		options, err := OptionsFromEnvironment()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if options.ControllerWritePolicy.Allows(auth.Identity{Issuer: "https://issuer.example", UserID: "worker"}, "Gateway", "observe.workload", "a") {
+			t.Fatal("missing write grant used another policy")
+		}
+	}
+	for _, raw := range []string{`null`, `{}`, `[{"subject":"worker"}]`, `[{"issuer":"https://issuer.example","subject":"worker","resource":"Gateway","operation":"observe.workload","target":"a","target":"b"}]`} {
+		t.Setenv("HYPERSHELL_CONTROLLER_WRITE_GRANTS", raw)
+		if _, err := OptionsFromEnvironment(); err == nil {
+			t.Fatal("invalid write policy was accepted")
+		}
+	}
+}

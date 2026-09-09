@@ -608,7 +608,7 @@ func (p *accountProvider) DeleteGateway(_ context.Context, gatewayID string) err
 func observeGatewayFixture(t testing.TB, f *fixture, id string) model.Gateway {
 	t.Helper()
 	controller := principal("fixture-workload-controller")
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: "cnpg", ControlPlaneSubjects: []string{controller.Subject}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: "cnpg", ControlPlaneSubjects: []string{controller.Subject}, ControllerWritePolicy: controllerWritePolicy(t, controller.Issuer, writeGrant(controller.Subject, "observe.workload", f.cluster))})
 	if err != nil {
 		t.Fatal(err)
 	}

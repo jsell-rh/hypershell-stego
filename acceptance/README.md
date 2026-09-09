@@ -269,6 +269,10 @@ Kustomize rendering, and the complete CLI port remain open.
 [Controller runtime](controller-runtime.md) records the common STEGO lifecycle
 and the remaining extraction work.
 
+[Controller write permissions](controller-write-permissions.md) checks separate
+Gateway field groups and cluster scopes through gRPC, REST denial, events,
+placement changes, and grant removal after API restart.
+
 The full-suite budget is 18 minutes. Its CI job allows 25 minutes for setup and
 execution. [Run 34414730663](https://github.com/jsell-rh/hypershell-stego/actions/runs/34414730663)
 reached the previous 12-minute suite limit while

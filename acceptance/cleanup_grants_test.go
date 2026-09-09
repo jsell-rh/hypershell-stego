@@ -14,6 +14,20 @@ func cleanupGrant(subject, resource, owner, target string) auth.Grant {
 
 func withCleanupGrants(t testing.TB, settings []string, grants ...auth.Grant) []string {
 	t.Helper()
+	return withExactGrants(t, "HYPERSHELL_CLEANUP_GRANTS", settings, grants...)
+}
+
+func writeGrant(subject, operation, target string) auth.Grant {
+	return auth.Grant{Subject: subject, Resource: "Gateway", Operation: operation, Target: target}
+}
+
+func withControllerWriteGrants(t testing.TB, settings []string, grants ...auth.Grant) []string {
+	t.Helper()
+	return withExactGrants(t, "HYPERSHELL_CONTROLLER_WRITE_GRANTS", settings, grants...)
+}
+
+func withExactGrants(t testing.TB, name string, settings []string, grants ...auth.Grant) []string {
+	t.Helper()
 	issuer := ""
 	for _, setting := range settings {
 		if value, ok := strings.CutPrefix(setting, "STEGO_AUTH_ISSUER="); ok {
@@ -21,7 +35,7 @@ func withCleanupGrants(t testing.TB, settings []string, grants ...auth.Grant) []
 		}
 	}
 	if issuer == "" {
-		t.Fatal("cleanup grants require the API issuer")
+		t.Fatal("grants require the API issuer")
 	}
 	for i := range grants {
 		if grants[i].Issuer == "" {
@@ -35,5 +49,17 @@ func withCleanupGrants(t testing.TB, settings []string, grants ...auth.Grant) []
 	if err != nil {
 		t.Fatal(err)
 	}
-	return append(settings, "HYPERSHELL_CLEANUP_GRANTS="+string(data))
+	return append(settings, name+"="+string(data))
+}
+
+func controllerWritePolicy(t testing.TB, issuer string, grants ...auth.Grant) *auth.GrantPolicy {
+	t.Helper()
+	for i := range grants {
+		grants[i].Issuer = issuer
+	}
+	policy, err := auth.NewGrantPolicy(grants)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return policy
 }

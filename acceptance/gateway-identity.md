@@ -56,6 +56,10 @@ Run `go run ./cmd/gateway-identity-controller`. Supply these settings:
 | `HYPERSHELL_KEYCLOAK_CA_FILE` | Trusted provider certificate authority |
 
 The API must allow the controller subject through its control-plane setting.
+The API must also give that subject a `Gateway` / `configure.identity` grant
+with an empty target in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. Cleanup requires
+its separate `cleanup.identity` grant in `HYPERSHELL_CLEANUP_GRANTS`. See the
+[controller write permissions](controller-write-permissions.md).
 STEGO supplies TLS, token-file reads, message limits, call limits, deadlines, and
 cancellation. Hypershell supplies the identity contract, reconciliation order,
 provider ownership rules, and OIDC fields.

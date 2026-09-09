@@ -54,11 +54,12 @@ type Repository interface {
 	store.ResourceLocker
 }
 type Service struct {
-	accountCleaner       AccountCleaner
-	repository           Repository
-	controlPlaneSubjects map[string]bool
-	cleanupPolicy        *auth.GrantPolicy
-	databaseProvider     string
+	accountCleaner        AccountCleaner
+	repository            Repository
+	controlPlaneSubjects  map[string]bool
+	cleanupPolicy         *auth.GrantPolicy
+	controllerWritePolicy *auth.GrantPolicy
+	databaseProvider      string
 }
 
 func New(repository Repository, options ...Options) (*Service, error) {
@@ -85,7 +86,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider}, nil
+	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.

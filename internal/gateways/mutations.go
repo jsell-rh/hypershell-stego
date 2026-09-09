@@ -62,14 +62,6 @@ func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string
 	if version < 1 {
 		return model.Gateway{}, ErrObservationRequired
 	}
-	if patch.Phase != nil || patch.Status != nil {
-		rest := patch
-		rest.Phase, rest.Status = nil, nil
-		data, err := json.Marshal(rest)
-		if err != nil || string(data) != "{}" || consoleAddress != nil || patch.Phase == nil || patch.Status == nil {
-			return model.Gateway{}, ErrInvalid
-		}
-	}
 	return s.update(ctx, p, id, patch, consoleAddress, version)
 }
 
@@ -85,6 +77,11 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 		current, err := s.mutationTarget(ctx, tx, p, id, false)
 		if err != nil {
 			return err
+		}
+		if version > 0 {
+			if err := s.authorizeControllerWrite(p, current.ClusterID, patch, consoleAddress); err != nil {
+				return err
+			}
 		}
 		if err := applyPatch(&current, patch, consoleAddress); err != nil {
 			return err
