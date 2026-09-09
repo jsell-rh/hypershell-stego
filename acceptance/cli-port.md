@@ -10,9 +10,9 @@ alone does not establish compatibility with all reference options.
 | Service account | Create, get, list, revoke, delete, protected credential output | Relative expiry, remaining output and confirmation options |
 | Role binding | Create, get, list, delete, grant access and removal | Reference list output and automatic pagination |
 | Role | Get and list | Create and delete, reference list output |
-| Managed cluster | API behavior has separate acceptance tests | CLI commands and their workflow tests |
-| Managed database | API behavior has separate acceptance tests | CLI commands and their workflow tests |
-| Gateway release | API behavior has separate acceptance tests | CLI commands and their workflow tests |
+| Managed cluster | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
+| Managed database | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
+| Gateway release | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
 | Gateway network | Reference contracts are present | Application behavior, CLI commands, and workflow tests |
 | Login and logout | Browser and device OIDC, private token files, refresh, provider token revocation | Legacy configuration migration and remaining reference options |
 | Apply | Not supplied | Resource dispatch, input contracts, and tests |
@@ -27,6 +27,6 @@ ID needed for grants. It does not replace reference `whoami` behavior.
 STEGO supplies common command execution. Hypershell supplies command paths,
 fields, and domain rules. Provider and API acceptance tests verify actual
 behavior. The [Gateway](generated-cli.md), [service-account](service-account-cli.md),
-[OIDC](oidc-cli.md), and [grant](grant-cli.md) workflows are executable evidence.
+[OIDC](oidc-cli.md), [grant](grant-cli.md), and [catalog](catalog-cli.md) workflows are executable evidence.
 The full CLI port remains incomplete. Unsafe reference behavior, such as
 bypassing TLS checks, must not become a default or an accepted insecure path.

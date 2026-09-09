@@ -249,3 +249,7 @@ The [grant CLI workflow](grant-cli.md) checks role discovery, grants, denied
 changes, last-owner protection, rollback, events, restart, and grant restoration.
 It uses the existing generated command runtime. The [CLI port status](cli-port.md)
 lists the remaining work.
+
+The [catalog CLI workflow](catalog-cli.md) starts with empty placement catalogs
+and creates records through generated commands. It checks both placement modes,
+access rules, input bounds, event rollback, restart, and protected deletion.

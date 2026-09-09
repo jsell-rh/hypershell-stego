@@ -28,6 +28,7 @@ func Commands() command.Application {
 	}}
 	app.Commands = append(app.Commands, accountCommands()...)
 	app.Commands = append(app.Commands, grantCommands()...)
+	app.Commands = append(app.Commands, catalogCommands()...)
 	return app
 }
 

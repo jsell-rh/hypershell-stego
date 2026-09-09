@@ -248,3 +248,7 @@ or deletes them through the generated runtime.
 The [grant CLI workflow](acceptance/grant-cli.md) now changes Gateway access
 through generated commands. See the [CLI port status](acceptance/cli-port.md)
 for the remaining reference behavior.
+
+The [catalog CLI workflow](acceptance/catalog-cli.md) creates placement records
+and Gateways under CNPG and default deployment modes. It also tests protected
+deletion and event rollback.
