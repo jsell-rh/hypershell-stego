@@ -36,8 +36,8 @@ type Command struct {
 	Success                       []int
 }
 type Application struct {
-	ConfigEnv, ConfigName string
-	Commands              []Command
+	ConfigEnv, ConfigName, OIDCClientID string
+	Commands                            []Command
 }
 
 var word = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,63}$`)
@@ -48,6 +48,9 @@ var identifier = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,255}$`)
 var errArguments = errors.New("invalid command arguments; use --help")
 
 func validate(app Application) error {
+	if app.OIDCClientID != "" && !safeClientID(app.OIDCClientID) {
+		return errors.New("invalid OIDC client ID")
+	}
 	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || len(app.Commands) == 0 || len(app.Commands) > 128 {
 		return errors.New("invalid CLI definition")
 	}
@@ -133,11 +136,11 @@ func validate(app Application) error {
 }
 
 func reservedFlag(flag string) bool {
-	return flag == "body" || flag == "yes" || flag == "help" || flag == "output-file"
+	return flag == "body" || flag == "yes" || flag == "help" || flag == "output-file" || flag == "no-browser"
 }
 
 // Run performs one command. Cancellation bounds network work. Configuration
-// stores a token-file reference; each process reads the current private file.
+// stores a token-file reference or a private OIDC session.
 func Run(ctx context.Context, app Application, args []string, output io.Writer) error {
 	if ctx == nil || output == nil {
 		return errors.New("CLI context and output are required")
@@ -159,7 +162,7 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		}
 	}
 	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "help")) {
-		names := []string{"login --url URL --token-file FILE [--ca-file FILE]", "logout"}
+		names := []string{"login --url URL --token-file FILE [--ca-file FILE]", "login --url URL --issuer-url URL [--client-id ID] [--no-browser] [--ca-file FILE] [--issuer-ca-file FILE]", "logout"}
 		for _, c := range app.Commands {
 			names = append(names, strings.Join(c.Name, " "))
 		}
@@ -168,13 +171,13 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		return err
 	}
 	if args[0] == "login" {
-		return login(app, args[1:], output)
+		return login(ctx, app, args[1:], output)
 	}
 	if args[0] == "logout" {
 		if len(args) != 1 {
 			return errArguments
 		}
-		return logout(app)
+		return logout(ctx, app)
 	}
 	var selected *Command
 	for i := range app.Commands {
@@ -320,7 +323,12 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	if len(payload) > 65536 {
 		return errors.New("request body exceeds CLI limit")
 	}
-	cfg, err := load(app)
+	destination, err := reserveOutput(outputFile, output)
+	if err != nil {
+		return err
+	}
+	defer destination.close()
+	cfg, token, err := requestCredentials(ctx, app)
 	if err != nil {
 		return err
 	}
@@ -329,19 +337,10 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		return err
 	}
 	defer transport.Close()
-	token, err := readToken(cfg.TokenFile)
-	if err != nil {
-		return err
-	}
 	headers := http.Header{"Authorization": {"Bearer " + token}, "Accept": {"application/json"}}
 	if payload != nil {
 		headers.Set("Content-Type", "application/json")
 	}
-	destination, err := reserveOutput(outputFile, output)
-	if err != nil {
-		return err
-	}
-	defer destination.close()
 	response, err := transport.Do(ctx, c.Method, route, headers, payload)
 	if err != nil {
 		return err
@@ -388,7 +387,7 @@ func parse(args []string, confirm bool) (map[string]string, []string, error) {
 		if _, ok := values[key]; ok {
 			return nil, nil, errArguments
 		}
-		if key == "yes" && confirm {
+		if key == "no-browser" || (key == "yes" && confirm) {
 			if !has {
 				value = "true"
 			}

@@ -4,6 +4,7 @@ package command
 
 import (
 	"bytes"
+	"context"
 	"crypto/rand"
 	"encoding/json"
 	"errors"
@@ -18,9 +19,10 @@ import (
 )
 
 type configuration struct {
-	URL       string `json:"url"`
-	CAFile    string `json:"ca_file"`
-	TokenFile string `json:"token_file"`
+	URL       string        `json:"url"`
+	CAFile    string        `json:"ca_file"`
+	TokenFile string        `json:"token_file"`
+	OAuth     *oauthSession `json:"oauth,omitempty"`
 }
 
 func configLocation(app Application) (string, error) {
@@ -55,24 +57,22 @@ func configRoot(app Application, create bool) (*os.Root, string, error) {
 	}
 	return root, filepath.Base(location), nil
 }
-func login(app Application, args []string, output io.Writer) error {
+func login(ctx context.Context, app Application, args []string, output io.Writer) error {
 	values, positions, err := parse(args, false)
 	if err != nil || len(positions) != 0 {
 		return errArguments
 	}
 	for key := range values {
-		if key != "url" && key != "token-file" && key != "ca-file" {
+		switch key {
+		case "url", "token-file", "ca-file", "issuer-url", "issuer-ca-file", "client-id", "no-browser":
+		default:
 			return errArguments
 		}
 	}
-	if values["url"] == "" || values["token-file"] == "" {
-		return errors.New("login requires --url and --token-file")
+	if values["url"] == "" {
+		return errors.New("login requires --url")
 	}
 	cfg := configuration{URL: values["url"]}
-	cfg.TokenFile, err = filepath.Abs(values["token-file"])
-	if err != nil {
-		return errors.New("invalid token file")
-	}
 	if values["ca-file"] != "" {
 		cfg.CAFile, err = filepath.Abs(values["ca-file"])
 		if err != nil {
@@ -84,14 +84,40 @@ func login(app Application, args []string, output io.Writer) error {
 		return err
 	}
 	transport.Close()
-	if _, err := readToken(cfg.TokenFile); err != nil {
-		return err
-	}
-	root, name, err := configRoot(app, true)
+	root, name, release, err := configGuard(ctx, app, true)
 	if err != nil {
 		return err
 	}
-	defer root.Close()
+	defer release()
+	if values["token-file"] != "" {
+		for _, key := range []string{"issuer-url", "issuer-ca-file", "client-id", "no-browser"} {
+			if _, present := values[key]; present {
+				return errArguments
+			}
+		}
+		cfg.TokenFile, err = filepath.Abs(values["token-file"])
+		if err != nil {
+			return errors.New("invalid token file")
+		}
+		if _, err := readToken(cfg.TokenFile); err != nil {
+			return err
+		}
+	} else {
+		if _, present := values["token-file"]; present {
+			return errArguments
+		}
+		cfg.OAuth, err = oidcLogin(ctx, app, values, output)
+		if err != nil {
+			return err
+		}
+	}
+	if err := saveConfiguration(root, name, cfg); err != nil {
+		return err
+	}
+	_, err = fmt.Fprintln(output, "Configuration saved.")
+	return err
+}
+func saveConfiguration(root *os.Root, name string, cfg configuration) error {
 	if info, err := root.Lstat(name); err == nil {
 		if !info.Mode().IsRegular() || info.Mode().Perm()&0077 != 0 {
 			return errors.New("invalid existing configuration file")
@@ -99,7 +125,10 @@ func login(app Application, args []string, output io.Writer) error {
 	} else if !os.IsNotExist(err) {
 		return errors.New("cannot inspect configuration file")
 	}
-	data, _ := json.Marshal(cfg)
+	data, err := json.Marshal(cfg)
+	if err != nil || len(data) > 65536 {
+		return errors.New("configuration exceeds its limit")
+	}
 	// Open the directory through os.Root. A random, exclusive file and rename
 	// prevent a partial configuration and do not follow an existing leaf link.
 	temporary := ".stego-cli-" + rand.Text()
@@ -127,8 +156,7 @@ func login(app Application, args []string, output io.Writer) error {
 	if err != nil {
 		return errors.New("cannot sync configuration directory")
 	}
-	_, err = fmt.Fprintln(output, "Configuration saved.")
-	return err
+	return nil
 }
 func load(app Application) (configuration, error) {
 	var cfg configuration
@@ -137,12 +165,16 @@ func load(app Application) (configuration, error) {
 		return cfg, err
 	}
 	defer root.Close()
+	return loadConfiguration(root, name)
+}
+func loadConfiguration(root *os.Root, name string) (configuration, error) {
+	var cfg configuration
 	file, err := root.OpenFile(name, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_NOFOLLOW, 0)
 	if err != nil {
 		return cfg, errors.New("cannot read configuration file")
 	}
 	defer file.Close()
-	data, err := readRegular(file, 16384, true)
+	data, err := readRegular(file, 65536, true)
 	if err != nil {
 		return cfg, err
 	}
@@ -151,21 +183,37 @@ func load(app Application) (configuration, error) {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
-	if decoder.Decode(&cfg) != nil || cfg.URL == "" || !filepath.IsAbs(cfg.TokenFile) || (cfg.CAFile != "" && !filepath.IsAbs(cfg.CAFile)) {
+	if decoder.Decode(&cfg) != nil || cfg.URL == "" || (cfg.OAuth == nil && !filepath.IsAbs(cfg.TokenFile)) || (cfg.OAuth != nil && (cfg.TokenFile != "" || !validSession(cfg.OAuth))) || (cfg.CAFile != "" && !filepath.IsAbs(cfg.CAFile)) {
 		return configuration{}, errors.New("invalid configuration file")
 	}
 	return cfg, nil
 }
-func logout(app Application) error {
-	root, name, err := configRoot(app, false)
+func logout(ctx context.Context, app Application) error {
+	root, name, release, err := configGuard(ctx, app, false)
 	if err != nil {
 		return err
 	}
-	defer root.Close()
+	defer release()
+	cfg, err := loadConfiguration(root, name)
+	if err != nil {
+		return err
+	}
+	var revokeErr error
+	if cfg.OAuth != nil {
+		revokeErr = revokeSession(ctx, cfg.OAuth)
+	}
 	if err := root.Remove(name); err != nil && !os.IsNotExist(err) {
 		return errors.New("cannot remove configuration")
 	}
-	return nil
+	directory, err := root.Open(".")
+	if err != nil {
+		return errors.New("cannot sync configuration directory")
+	}
+	defer directory.Close()
+	if err := directory.Sync(); err != nil {
+		return errors.New("cannot sync configuration directory")
+	}
+	return revokeErr
 }
 func readToken(name string) (string, error) {
 	data, err := client.ReadPrivateFile(name)

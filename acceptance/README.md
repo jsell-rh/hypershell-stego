@@ -29,7 +29,7 @@ command. The generated application processes also use the race detector.
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
 creates and removes its own database. It does not migrate or delete the supplied
-database. Run `go test -race -mod=readonly ./...`.
+database. Run `go test -race -mod=readonly -timeout=12m ./...`.
 
 The tests apply generated model and outbox migrations during setup. The application
 process does not apply migrations. It fails if the queue is absent. The broker
@@ -240,3 +240,7 @@ filtered access, events, gRPC reads, rollback, API restart, deletion, and logout
 The [service-account CLI workflow](service-account-cli.md) adds protected secret
 output, real token issuance, filtered access, restart, and revocation through
 the generated API and gRPC provisioner.
+
+The [OIDC CLI workflow](oidc-cli.md) checks real browser and device login,
+Gateway access, API restart, concurrent refresh, and provider token revocation
+through the generated CLI.
