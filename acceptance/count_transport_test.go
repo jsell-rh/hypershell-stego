@@ -42,6 +42,14 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	id, namespace := created.Gateway.Metadata.Id, created.Gateway.Namespace
 	readEvent(t, consumer, id)
+	bearers := []string{owner, token(t, key, "admin", "platform:admin"), token(t, key, "creator", "gateway:creator"), token(t, key, "viewer", "gateway:viewer")}
+	// Prepare caller roles before measuring sandbox-count events. Role projection
+	// has its own events and commits before domain authorization.
+	for _, bearer := range bearers {
+		if code, _ := requestJSON(t, "GET", httpAddress+"/api/hypershell/v1/roles", bearer, nil); code != 200 {
+			t.Fatal("prepare count caller", code)
+		}
+	}
 	awaitQueueEmpty(t, f)
 	eventIDs := map[string]bool{}
 	updateEvent := func() {
@@ -62,7 +70,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 			t.Fatalf("REST count: %d %s", code, data)
 		}
 	}
-	for _, bearer := range []string{owner, token(t, key, "admin", "platform:admin"), token(t, key, "creator", "gateway:creator"), token(t, key, "viewer", "gateway:viewer")} {
+	for _, bearer := range bearers {
 		if _, err := client.AdjustActiveSandboxCount(call(bearer), &pb.AdjustActiveSandboxCountRequest{Namespace: namespace, Delta: 1}); status.Code(err) != codes.PermissionDenied {
 			t.Fatalf("count access: %v", err)
 		}

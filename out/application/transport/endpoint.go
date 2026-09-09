@@ -65,12 +65,16 @@ func ParseOrderBy(value string, fields map[string]string) ([]storage.OrderByFiel
 type Authenticate func(context.Context, string) (context.Context, error)
 type ErrorHandler func(http.ResponseWriter, *http.Request, error)
 
+// Prepare runs once after verification and decoding, before the domain call.
+// It must honor cancellation. Its error goes to the application error handler.
+type Prepare func(context.Context) error
+
 // NoContent is the response type for HTTP 204 and 205 endpoints.
 type NoContent struct{}
 
 // Endpoint binds one typed domain operation. It verifies identity before
 // decoding input and uses the same bounded context for the complete operation.
-func Endpoint[Request, Response any](authenticate Authenticate, decode func(*http.Request) (Request, error), call func(context.Context, Request) (Response, error), success int, writeError ErrorHandler) (http.Handler, error) {
+func Endpoint[Request, Response any](authenticate Authenticate, decode func(*http.Request) (Request, error), call func(context.Context, Request) (Response, error), success int, writeError ErrorHandler, prepare ...Prepare) (http.Handler, error) {
 	empty := success == http.StatusNoContent || success == http.StatusResetContent
 	if call == nil || success < 200 || success > 299 || empty && reflect.TypeFor[Response]() != reflect.TypeFor[NoContent]() {
 		return nil, errors.New("invalid HTTP endpoint configuration")
@@ -81,7 +85,7 @@ func Endpoint[Request, Response any](authenticate Authenticate, decode func(*htt
 			return Reply[Response]{Status: success}, err
 		}
 		return Reply[Response]{Status: success, Value: &result}, err
-	}, writeError)
+	}, writeError, prepare...)
 }
 
 // Reply permits a typed response with a dynamic successful status. Empty
@@ -91,8 +95,8 @@ type Reply[T any] struct {
 	Value  *T
 }
 
-func ReplyEndpoint[Request, Response any](authenticate Authenticate, decode func(*http.Request) (Request, error), call func(context.Context, Request) (Reply[Response], error), writeError ErrorHandler) (http.Handler, error) {
-	if authenticate == nil || decode == nil || call == nil || writeError == nil {
+func ReplyEndpoint[Request, Response any](authenticate Authenticate, decode func(*http.Request) (Request, error), call func(context.Context, Request) (Reply[Response], error), writeError ErrorHandler, prepare ...Prepare) (http.Handler, error) {
+	if authenticate == nil || decode == nil || call == nil || writeError == nil || len(prepare) > 1 || len(prepare) == 1 && prepare[0] == nil {
 		return nil, errors.New("invalid HTTP endpoint configuration")
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -144,6 +148,20 @@ func ReplyEndpoint[Request, Response any](authenticate Authenticate, decode func
 			}
 			writeError(w, request, err)
 			return
+		}
+		if err := ctx.Err(); err != nil {
+			writeError(w, request, err)
+			return
+		}
+		if len(prepare) == 1 {
+			if err := prepare[0](ctx); err != nil {
+				writeError(w, request, err)
+				return
+			}
+			if err := ctx.Err(); err != nil {
+				writeError(w, request, err)
+				return
+			}
 		}
 		result, err := call(ctx, input)
 		if err != nil {

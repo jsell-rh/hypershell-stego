@@ -30,7 +30,7 @@ func presentGrant(view gateways.GrantView) (*pb.RoleBinding, error) {
 	if err := updated.CheckValid(); err != nil {
 		return nil, err
 	}
-	return &pb.RoleBinding{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "RoleBinding", Href: "/api/hypershell/v1/role_bindings/" + row.ID, CreatedAt: created, UpdatedAt: updated}, RoleId: row.RoleID, UserId: &row.UserID, GatewayId: &row.GatewayID, Scope: row.Scope, RoleName: view.RoleName, Username: view.Username}, nil
+	return &pb.RoleBinding{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "RoleBinding", Href: "/api/hypershell/v1/role_bindings/" + row.ID, CreatedAt: created, UpdatedAt: updated}, RoleId: row.RoleID, UserId: &row.UserID, GatewayId: row.GatewayID, Scope: row.Scope, RoleName: view.RoleName, Username: view.Username}, nil
 }
 func (s *grantServer) ListRoleBindings(ctx context.Context, req *pb.ListRoleBindingsRequest) (*pb.ListRoleBindingsResponse, error) {
 	if req.GetUserId() == "" || (req.GatewayId != nil && req.GetGatewayId() == "") {
@@ -65,14 +65,14 @@ func (s *grantServer) WatchRoleBindings(_ *pb.WatchRoleBindingsRequest, stream g
 		return watchError(err)
 	}
 	defer subscription.Close()
-	if err := stream.SendHeader(nil); err != nil {
-		return err
-	}
 	// The reference stream replays active grants after the subscription starts.
 	// Each send repeats the access check, including during a long replay.
 	views, err := s.service.AllGrants(ctx, principal, "", "")
 	if err != nil {
 		return mapError(err)
+	}
+	if err := stream.SendHeader(nil); err != nil {
+		return err
 	}
 	send := func(id string, kind pb.EventType, deleted bool) error {
 		view, err := s.service.EventGrant(ctx, principal, id, deleted)

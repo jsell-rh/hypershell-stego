@@ -31,7 +31,7 @@ func (s *Service) grantOptions(ctx context.Context, tx store.Transaction, p Prin
 	if err != nil {
 		return store.ListOptions{}, err
 	}
-	conditions := []store.RowFilter{{Related: &store.RelatedFilter{Entity: "Gateway", LocalField: "gateway_id", ForeignField: "id"}}}
+	conditions := []store.RowFilter{{Field: "scope", Values: []string{"gateway"}}, {Related: &store.RelatedFilter{Entity: "Gateway", LocalField: "gateway_id", ForeignField: "id"}}}
 	if !s.isControlPlane(p) {
 		owner, err := findRole(ctx, tx, "gateway:owner")
 		if err != nil {
@@ -46,7 +46,7 @@ func (s *Service) grantOptions(ctx context.Context, tx store.Transaction, p Prin
 	if !slices.ContainsFunc(ordering, func(v store.OrderByField) bool { return v.Field == "id" }) {
 		ordering = append(ordering, store.OrderByField{Field: "id", Direction: "asc"})
 	}
-	opts := store.ListOptions{Page: q.Page, Size: q.Size, CountOnly: q.Size == 0, Search: q.Search, OrderBy: ordering, Filter: &store.RowFilter{All: conditions}, ImplicitFilters: map[string]string{"scope": "gateway"}}
+	opts := store.ListOptions{Page: q.Page, Size: q.Size, CountOnly: q.Size == 0, Search: q.Search, OrderBy: ordering, Filter: &store.RowFilter{Any: []store.RowFilter{{All: conditions}, {All: []store.RowFilter{{Field: "scope", Values: []string{"global"}}, {Field: "user_id", Values: []string{user.ID}}}}}}, ImplicitFilters: map[string]string{}}
 	if q.UserID != "" {
 		opts.ImplicitFilters["user_id"] = q.UserID
 	}
@@ -190,6 +190,9 @@ func projectGrants(ctx context.Context, tx store.Transaction, rows []model.RoleB
 			}
 		}
 		for _, row := range batch {
+			if row.Scope == "global" && row.GatewayID != nil || row.Scope == "gateway" && row.GatewayID == nil || row.Scope != "global" && row.Scope != "gateway" {
+				return nil, errors.New("invalid grant scope")
+			}
 			// Consumers must not treat an unresolved role as an absent grant.
 			if roleNames[row.RoleID] == "" {
 				return nil, errors.New("grant role cannot be resolved")

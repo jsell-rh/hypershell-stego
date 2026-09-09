@@ -13,8 +13,9 @@ Its `href` points to the same self-identity route. The response has
 
 The generated verifier must accept the token before the handler runs. The
 verified issuer and subject select the user. Query parameters and request bodies
-are rejected. The caller cannot select another user or assign roles through this
-route. No user directory or arbitrary user lookup is exposed.
+are rejected. The caller cannot select another user or request arbitrary roles through this
+route. [Global role preparation](global-roles.md) now projects the two managed
+roles from verified claims before this handler runs. No user directory or arbitrary user lookup is exposed.
 
 On the first valid request, the application creates a user record. Later
 requests update profile fields from the verified claims when those fields change.
@@ -45,7 +46,8 @@ transfer the stored identity.
 
 STEGO supplies verification, request handling, storage, and transactions. The
 variant supplies the public response and the rule that only the caller's record
-can be returned. This change needs no compiler extension or new database schema.
+can be returned. The self-identity handler uses existing storage contracts. Global-role
+preparation requires the migration in [its workflow notes](global-roles.md).
 
 The focused race checks passed with PostgreSQL and Keycloak required in
 34.467 seconds. The full local race suite also passed; the acceptance package
@@ -59,7 +61,8 @@ A local benchmark read the current user with 10,000 unrelated users. Across 100
 calls, it averaged 0.356 ms, 26,644 bytes, and 354 allocations per call. It used
 Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9 185H. It includes the
 transaction, identity lookup, and stored-row read. It excludes token verification,
-HTTP, first-time registration, profile writes, and concurrent load. Run
+HTTP, global-role preparation, first-time registration, profile writes, and
+concurrent load. Run
 `go test -mod=readonly -run '^$' -bench '^BenchmarkCurrentUserLookup$' -benchtime=100x ./acceptance`
 with the PostgreSQL test settings. This is a local measurement, not a production
 capacity claim.

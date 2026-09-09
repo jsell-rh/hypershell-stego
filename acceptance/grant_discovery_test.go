@@ -52,6 +52,10 @@ func watchGrants(t testing.TB, client pb.RoleBindingServiceClient, ctx context.C
 func (w *grantWatch) expect(t testing.TB, kind pb.EventType, id, role, username string) *pb.RoleBinding {
 	t.Helper()
 	event, err := w.stream.Recv()
+	// This helper checks Gateway notices. Global projections have their own workflow.
+	for err == nil && event.GetRoleBinding().GetScope() == "global" {
+		event, err = w.stream.Recv()
+	}
 	if err != nil || event.GetType() != kind || event.GetResourceId() != id {
 		t.Fatalf("grant watch: %v %v, want %v %s", event, err, kind, id)
 	}
@@ -143,7 +147,7 @@ func TestGrantDiscoveryThroughGeneratedRuntime(t *testing.T) {
 	listREST("alice", 2, "")
 	listREST("bob", 1, "")
 	listREST("mallory", 0, "")
-	code, body = requestJSON(t, "GET", base+"/role_bindings", token(t, key, "admin", "platform:admin"), nil)
+	code, body = requestJSON(t, "GET", base+"/role_bindings?search="+url.QueryEscape("scope = 'gateway'"), token(t, key, "admin", "platform:admin"), nil)
 	var admin grantListResponse
 	if code != 200 || json.Unmarshal(body, &admin) != nil || admin.Total != 0 {
 		t.Fatal("admin bypass", code, string(body))

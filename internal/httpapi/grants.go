@@ -7,7 +7,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
-	"github.com/jsell-rh/hypershell-stego/out/auth"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
@@ -15,10 +14,10 @@ const grantPath = "/api/hypershell/v1/role_bindings"
 
 type grantItem struct {
 	Reference
-	RoleID    string `json:"role_id"`
-	UserID    string `json:"user_id"`
-	GatewayID string `json:"gateway_id"`
-	Scope     string `json:"scope"`
+	RoleID    string  `json:"role_id"`
+	UserID    string  `json:"user_id"`
+	GatewayID *string `json:"gateway_id,omitempty"`
+	Scope     string  `json:"scope"`
 }
 
 type grantList struct {
@@ -34,8 +33,8 @@ func presentGrant(row model.RoleBinding) grantItem {
 	return grantItem{Reference: Reference{ID: row.ID, Kind: "RoleBinding", Href: grantPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, RoleID: row.RoleID, UserID: row.UserID, GatewayID: row.GatewayID, Scope: row.Scope}
 }
 
-func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gateways.Service) error {
-	list, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (pageRequest, error) {
+func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways.Service) error {
+	list, err := endpoint(verifier, func(r *http.Request) (pageRequest, error) {
 		return parseEntityPage(r, "RoleBinding")
 	}, func(ctx context.Context, q pageRequest) (grantList, error) {
 		page, err := service.ListGrants(ctx, gateways.PrincipalFromContext(ctx), gateways.GrantQuery{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
@@ -51,7 +50,7 @@ func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gatewa
 	if err != nil {
 		return err
 	}
-	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.GrantRequest, error) {
+	create, err := endpoint(verifier, func(r *http.Request) (gateways.GrantRequest, error) {
 		if r.URL.RawQuery != "" {
 			return gateways.GrantRequest{}, transport.ErrRequest
 		}
@@ -78,7 +77,7 @@ func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gatewa
 		}
 		return r.PathValue("id"), nil
 	}
-	get, err := transport.Endpoint(verifier.Authenticate, target, func(ctx context.Context, id string) (grantItem, error) {
+	get, err := endpoint(verifier, target, func(ctx context.Context, id string) (grantItem, error) {
 		row, err := service.GetGrant(ctx, gateways.PrincipalFromContext(ctx), id)
 		if err != nil {
 			return grantItem{}, err
@@ -88,7 +87,7 @@ func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gatewa
 	if err != nil {
 		return err
 	}
-	remove, err := transport.Endpoint(verifier.Authenticate, target, func(ctx context.Context, id string) (transport.NoContent, error) {
+	remove, err := endpoint(verifier, target, func(ctx context.Context, id string) (transport.NoContent, error) {
 		return transport.NoContent{}, service.DeleteGrant(ctx, gateways.PrincipalFromContext(ctx), id)
 	}, http.StatusNoContent, writeError)
 	if err != nil {

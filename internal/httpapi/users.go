@@ -8,7 +8,6 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
-	"github.com/jsell-rh/hypershell-stego/out/auth"
 )
 
 const currentUserPath = "/api/hypershell/v1/users/me"
@@ -20,8 +19,8 @@ type CurrentUser struct {
 	Name     string `json:"name"`
 }
 
-func registerCurrentUser(mux *http.ServeMux, verifier *auth.Verifier, service *users.Service) error {
-	handler, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (struct{}, error) {
+func registerCurrentUser(mux *http.ServeMux, verifier *requestAuth, service *users.Service) error {
+	handler, err := endpoint(verifier, func(r *http.Request) (struct{}, error) {
 		if r.URL.RawQuery != "" {
 			return struct{}{}, transport.ErrRequest
 		}

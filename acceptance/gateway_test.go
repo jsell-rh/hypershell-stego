@@ -116,6 +116,13 @@ func database(t testing.TB) *fixture {
 	if err := applyRoleCatalog(ctx, db); err != nil {
 		t.Fatal(err)
 	}
+	migration, err = os.ReadFile("../migrations/000005_global_roles.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
 	return f
 }
 

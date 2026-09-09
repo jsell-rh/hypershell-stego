@@ -90,3 +90,8 @@ The login test now discovers owner and viewer role IDs through the authenticated
 [role catalog](role-catalog.md). The recipient now obtains their stored ID through the
 [self-identity route](current-user.md). The sharing test uses no direct database
 lookup for role or recipient IDs. A searchable user directory remains open.
+
+The real provider test now includes [global role synchronization](global-roles.md).
+A fresh API token after creator-role removal deletes the global record and denies
+new Gateway creation. Existing Gateway ownership remains valid. Re-grant creates
+a new global record with the same user ID.

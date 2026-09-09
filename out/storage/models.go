@@ -102,7 +102,7 @@ type RoleBinding struct {
 	UserIDRef    *User    `json:"-" gorm:"foreignKey:UserID"`
 	RoleID       string   `json:"role_id" gorm:"column:role_id;not null;uniqueIndex:stego_live_unique_a4b2f39ea673d046e72e82bd886a1565,where:deleted_at IS NULL,priority:2"`
 	RoleIDRef    *Role    `json:"-" gorm:"foreignKey:RoleID"`
-	GatewayID    string   `json:"gateway_id" gorm:"column:gateway_id;not null;uniqueIndex:stego_live_unique_a4b2f39ea673d046e72e82bd886a1565,where:deleted_at IS NULL,priority:1"`
+	GatewayID    *string  `json:"gateway_id,omitempty" gorm:"column:gateway_id;uniqueIndex:stego_live_unique_a4b2f39ea673d046e72e82bd886a1565,where:deleted_at IS NULL,priority:1"`
 	GatewayIDRef *Gateway `json:"-" gorm:"foreignKey:GatewayID"`
 	Scope        string   `json:"scope" gorm:"column:scope;not null"`
 }

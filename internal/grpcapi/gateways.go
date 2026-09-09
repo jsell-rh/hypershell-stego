@@ -12,6 +12,7 @@ import (
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -34,6 +35,15 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 		return err
 	}
 	service, err := gateways.New(repository, options)
+	if err != nil {
+		return err
+	}
+	registrar, err = transport.PrepareRegistrar(registrar, func(ctx context.Context) error {
+		if err := service.PrepareRequest(ctx, gateways.PrincipalFromContext(ctx)); err != nil {
+			return mapError(err)
+		}
+		return nil
+	})
 	if err != nil {
 		return err
 	}

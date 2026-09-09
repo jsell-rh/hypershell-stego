@@ -54,8 +54,8 @@ entities:
     fields:
       - { name: user_id, type: ref, to: User, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
       - { name: role_id, type: ref, to: Role, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
-      - { name: gateway_id, type: ref, to: Gateway, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
-      - { name: scope, type: enum, values: [gateway] }
+      - { name: gateway_id, type: ref, to: Gateway, optional: true, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
+      - { name: scope, type: enum, values: [gateway, global] }
 
   - name: ServiceAccount
     fields:

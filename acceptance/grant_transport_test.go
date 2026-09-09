@@ -195,7 +195,14 @@ func readGrantEvent(t *testing.T, consumer *kgo.Client, id, gatewayID, eventType
 			if err := json.Unmarshal(record.Value, &payload); err != nil {
 				t.Fatal(err)
 			}
-			if len(payload) != 4 || payload["source"] != "RoleBindings" || payload["source_id"] != id || payload["gateway_id"] != gatewayID || payload["event_type"] != eventType {
+			fields := 4
+			if gatewayID == "" {
+				fields = 3
+				if _, present := payload["gateway_id"]; present {
+					t.Fatal("global event has a Gateway")
+				}
+			}
+			if len(payload) != fields || payload["source"] != "RoleBindings" || payload["source_id"] != id || payload["gateway_id"] != gatewayID || payload["event_type"] != eventType {
 				t.Fatal("grant event payload", string(record.Value))
 			}
 			headers := map[string]string{}

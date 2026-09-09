@@ -75,7 +75,7 @@ type pageRequest struct {
 	OrderBy    []contract.OrderByField
 }
 
-func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
+func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
 	options, err := gateways.OptionsFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -84,9 +84,12 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
-	if verifier == nil || database == nil {
+	if rawVerifier == nil || database == nil {
 		return nil, errors.New("HTTP application requires a verifier")
 	}
+	verifier := &requestAuth{Authenticate: rawVerifier.Authenticate, Prepare: func(ctx context.Context) error {
+		return service.PrepareRequest(ctx, gateways.PrincipalFromContext(ctx))
+	}}
 	provider, closeProvider, err := serviceaccounts.ProvisionerFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -102,7 +105,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 		return nil, err
 	}
 	mux := http.NewServeMux()
-	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.CreateRequest, error) {
+	create, err := endpoint(verifier, func(r *http.Request) (gateways.CreateRequest, error) {
 		request, err := transport.JSONBody[gateways.CreateRequest](r)
 		if err == nil && strings.TrimSpace(request.DatabaseID) == "" {
 			err = gateways.ErrInvalid
@@ -118,7 +121,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
-	get, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (string, error) {
+	get, err := endpoint(verifier, func(r *http.Request) (string, error) {
 		if r.URL.RawQuery != "" {
 			return "", transport.ErrRequest
 		}
@@ -137,7 +140,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
-	list, err := transport.Endpoint(verifier.Authenticate, parsePage, func(ctx context.Context, request pageRequest) (GatewayList, error) {
+	list, err := endpoint(verifier, parsePage, func(ctx context.Context, request pageRequest) (GatewayList, error) {
 		result, err := service.Search(ctx, gateways.PrincipalFromContext(ctx), request.Page, request.Size, request.Search, request.OrderBy)
 		if err != nil {
 			return GatewayList{}, err
@@ -167,7 +170,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
-	patch, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (patchRequest, error) {
+	patch, err := endpoint(verifier, func(r *http.Request) (patchRequest, error) {
 		if r.URL.RawQuery != "" {
 			return patchRequest{}, transport.ErrRequest
 		}
@@ -187,7 +190,7 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err != nil {
 		return nil, err
 	}
-	remove, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (string, error) {
+	remove, err := endpoint(verifier, func(r *http.Request) (string, error) {
 		if r.URL.RawQuery != "" {
 			return "", transport.ErrRequest
 		}

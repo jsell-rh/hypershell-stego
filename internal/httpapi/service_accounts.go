@@ -12,7 +12,6 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
-	"github.com/jsell-rh/hypershell-stego/out/auth"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
@@ -79,9 +78,9 @@ func accountTarget(r *http.Request) (accountInput, error) {
 	}
 	return accountInput{GatewayID: r.PathValue("gateway_id"), ID: r.PathValue("account_id")}, nil
 }
-func registerAccounts(mux *http.ServeMux, verifier *auth.Verifier, service *serviceaccounts.Service) error {
+func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *serviceaccounts.Service) error {
 	path := collectionPath + "/{gateway_id}/service_accounts"
-	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (accountInput, error) {
+	create, err := endpoint(verifier, func(r *http.Request) (accountInput, error) {
 		target, err := accountTarget(r)
 		if err != nil {
 			return target, err
@@ -102,7 +101,7 @@ func registerAccounts(mux *http.ServeMux, verifier *auth.Verifier, service *serv
 		w.Header().Set("Pragma", "no-cache")
 		create.ServeHTTP(w, r)
 	}))
-	get, err := transport.Endpoint(verifier.Authenticate, accountTarget, func(ctx context.Context, input accountInput) (accountGetResponse, error) {
+	get, err := endpoint(verifier, accountTarget, func(ctx context.Context, input accountInput) (accountGetResponse, error) {
 		row, connection, err := service.Get(ctx, gateways.PrincipalFromContext(ctx), input.GatewayID, input.ID)
 		if err != nil {
 			return accountGetResponse{}, err
@@ -113,7 +112,7 @@ func registerAccounts(mux *http.ServeMux, verifier *auth.Verifier, service *serv
 		return err
 	}
 	mux.Handle("GET "+path+"/{account_id}", get)
-	list, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (accountInput, error) {
+	list, err := endpoint(verifier, func(r *http.Request) (accountInput, error) {
 		input := accountInput{GatewayID: r.PathValue("gateway_id"), Page: 1, Size: 20}
 		query, err := url.ParseQuery(r.URL.RawQuery)
 		if err != nil {
@@ -161,7 +160,7 @@ func registerAccounts(mux *http.ServeMux, verifier *auth.Verifier, service *serv
 	}
 	mux.Handle("GET "+path, list)
 	for _, remove := range []bool{false, true} {
-		handler, err := transport.ReplyEndpoint(verifier.Authenticate, accountTarget, func(ctx context.Context, input accountInput) (transport.Reply[accountItem], error) {
+		handler, err := replyEndpoint(verifier, accountTarget, func(ctx context.Context, input accountInput) (transport.Reply[accountItem], error) {
 			row, complete, err := service.Change(ctx, gateways.PrincipalFromContext(ctx), input.GatewayID, input.ID, remove)
 			if err != nil {
 				return transport.Reply[accountItem]{}, err

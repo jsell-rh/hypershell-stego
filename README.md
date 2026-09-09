@@ -193,3 +193,7 @@ The [self-identity route](acceptance/current-user.md) lets a signed-in recipient
 obtain their stored user ID. The real browser sharing test now obtains both
 recipient and role IDs through REST. A user directory remains a separate policy
 decision.
+
+[Global role synchronization](acceptance/global-roles.md) now follows verified
+claims through REST and gRPC. Removal preserves Gateway ownership. The workflow
+covers event delivery, old streams, failures, real provider changes, and restart.

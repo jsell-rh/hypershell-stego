@@ -363,6 +363,34 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, bob, nil); code != 404 {
 		t.Fatal("API retained removed access", code)
 	}
+
+	// Global role records follow fresh API claims, including an empty role set.
+	readGlobals := func(bearer string, want int) []grantResponse {
+		t.Helper()
+		code, body := requestJSON(t, "GET", root+"/role_bindings?search="+url.QueryEscape("scope = 'global'"), bearer, nil)
+		var result grantListResponse
+		if code != 200 || json.Unmarshal(body, &result) != nil || result.Total != int64(want) || len(result.Items) != want {
+			t.Fatal("provider global role projection", code, string(body))
+		}
+		return result.Items
+	}
+	originalGlobal := readGlobals(freshAlice, 1)[0]
+	k.adminRequest(t, "DELETE", "/users/"+aliceID+"/role-mappings/clients/"+clients[0].ID, []any{creator})
+	revokedAlice := k.browserLogin(t, "hypershell", "alice")
+	request, _ := json.Marshal(f.request("revoked-creator"))
+	if code, _ := requestJSON(t, "POST", root+"/gateways", revokedAlice, request); code != 403 {
+		t.Fatal("provider role removal retained creation", code)
+	}
+	readGlobals(revokedAlice, 0)
+	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, revokedAlice, nil); code != 200 {
+		t.Fatal("provider global removal lost Gateway ownership", code)
+	}
+	k.adminRequest(t, "POST", "/users/"+aliceID+"/role-mappings/clients/"+clients[0].ID, []any{creator})
+	restoredAlice := k.browserLogin(t, "hypershell", "alice")
+	restoredGlobal := readGlobals(restoredAlice, 1)[0]
+	if restoredGlobal.ID == originalGlobal.ID || restoredGlobal.UserID != originalGlobal.UserID {
+		t.Fatal("provider role re-grant changed identity or restored history")
+	}
 }
 func equalStringSet(left, right []string) bool {
 	if len(left) != len(right) {

@@ -9,7 +9,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/roles"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
-	"github.com/jsell-rh/hypershell-stego/out/auth"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
@@ -41,8 +40,8 @@ func presentRole(row model.Role) (Role, error) {
 	}
 	return Role{Reference: Reference{ID: row.ID, Kind: "Role", Href: rolePath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, DisplayName: row.DisplayName, Description: row.Description, Permissions: json.RawMessage(row.Permissions), BuiltIn: row.BuiltIn}, nil
 }
-func registerRoles(mux *http.ServeMux, verifier *auth.Verifier, service *roles.Service) error {
-	list, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, "Role") }, func(ctx context.Context, q pageRequest) (RoleList, error) {
+func registerRoles(mux *http.ServeMux, verifier *requestAuth, service *roles.Service) error {
+	list, err := endpoint(verifier, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, "Role") }, func(ctx context.Context, q pageRequest) (RoleList, error) {
 		result, err := service.List(ctx, roles.Query{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
 		if err != nil {
 			return RoleList{}, err
@@ -64,7 +63,7 @@ func registerRoles(mux *http.ServeMux, verifier *auth.Verifier, service *roles.S
 	if err != nil {
 		return err
 	}
-	get, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (string, error) {
+	get, err := endpoint(verifier, func(r *http.Request) (string, error) {
 		if r.URL.RawQuery != "" {
 			return "", transport.ErrRequest
 		}

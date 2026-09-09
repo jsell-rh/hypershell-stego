@@ -140,7 +140,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		if err != nil {
 			return err
 		}
-		grant := model.RoleBinding{Meta: model.Meta{ID: bindingID.String()}, UserID: user.ID, RoleID: role.ID, GatewayID: gateway.ID, Scope: "gateway"}
+		grant := model.RoleBinding{Meta: model.Meta{ID: bindingID.String()}, UserID: user.ID, RoleID: role.ID, GatewayID: &gateway.ID, Scope: "gateway"}
 		if err := tx.Create(ctx, "RoleBinding", grant); err != nil {
 			return err
 		}

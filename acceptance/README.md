@@ -43,7 +43,7 @@ size metadata follow the reference gRPC adapter. REST and gRPC requests can
 retrieve each other's created resources. REST search and ordering tests include
 `OR` expressions, literal injection attempts, invalid fields and value types, and
 count-only requests. Related-resource search, sparse fields, REST page sizes above 100,
-deployment database placement, platform-role projections, complete user and role models, and all
+deployment database placement, user administration, remaining role query options, and all
 other Hypershell workflows remain open.
 
 One local benchmark used PostgreSQL 18.6, Go 1.26.8, and an Intel Core Ultra 9
@@ -182,3 +182,7 @@ The [self-identity route](current-user.md) lets a signed-in recipient
 obtain their stored user ID. The real browser sharing test now obtains both
 recipient and role IDs through REST. A user directory remains a separate policy
 decision.
+
+[Global role synchronization](global-roles.md) now follows verified
+claims through REST and gRPC. Removal preserves Gateway ownership. The workflow
+covers event delivery, old streams, failures, real provider changes, and restart.

@@ -244,7 +244,7 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatal("create from catalog workflow", code, string(body))
 	}
-	code, body = requestJSON(t, "GET", root+"/role_bindings", owner, nil)
+	code, body = requestJSON(t, "GET", root+"/role_bindings?search="+url.QueryEscape("scope = 'gateway'"), owner, nil)
 	var grants grantListResponse
 	if code != 200 || json.Unmarshal(body, &grants) != nil || len(grants.Items) != 1 {
 		t.Fatal("discover owner grant", code, string(body))

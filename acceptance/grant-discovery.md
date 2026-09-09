@@ -67,7 +67,7 @@ The acceptance checks are:
 - `TestEventFailureRollsBackGatewayAndOwner`: either creation event can fail
   without leaving a partial Gateway or grant.
 
-Full Users and Roles APIs, global role synchronization, device login, workload
+User administration, remaining role query options, device login, workload
 deployment, immediate token revocation, production capacity, and the remaining
 enterprise requirements are still part of the active goal.
 
@@ -118,3 +118,8 @@ They include complete and excessive snapshots, the gRPC byte limit, current
 access, REST and protobuf shapes, event delivery, and restart. The small-page
 benchmark on the final code averaged 4.095 ms, 91,536 bytes, and 1,091 allocations
 per call across 100 calls without the race detector.
+
+[Global role synchronization](global-roles.md) extends this inventory. Callers
+can now read their own global records. These records omit the Gateway ID.
+Existing Gateway access rules still apply. Watch preparation runs once per
+stream; later events do not project the stream's old role claims again.

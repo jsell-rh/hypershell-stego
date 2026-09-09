@@ -27,8 +27,8 @@ built-in role causes the whole migration to fail. The migration does not restore
 that role or its access as a side effect.
 
 The permission maps describe the reference catalog. Domain handlers still enforce
-authority and resource scope. A catalog entry alone cannot grant access. Global
-grant projection remains open.
+authority and resource scope. A catalog entry alone cannot grant access.
+[Global grant projection](global-roles.md) now follows verified claims.
 
 | Check | Evidence |
 | --- | --- |
