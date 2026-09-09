@@ -192,6 +192,11 @@ the API requires a configured control-plane subject. Actions still read current
 state and enforce the domain rules. Invalid scan contracts stop the controllers.
 Storage and replay adapters still need generation in STEGO.
 
+The workload controller now uses [generated keyed scheduling](acceptance/gateway-scheduling.md)
+with four workers. A blocked Gateway action does not stop another admitted
+Gateway from completing cleanup. Actions for the same Gateway remain serial
+within that controller process.
+
 The [reconciliation contract review](https://github.com/jsell-rh/stego/blob/main/specs/reconciliation-contract-review.md)
 records remaining gaps against Hypershell PR 200. Gateway workload and identity
 controllers now use generated resource revisions for conditional status writes.

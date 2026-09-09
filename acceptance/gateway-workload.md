@@ -209,3 +209,7 @@ not assess the external container images.
 [Cleanup by cluster target](gateway-target-cleanup.md) preserves obligations after
 a cluster move and checks late effects after recorded completion. Database
 cleanup remains a separate obligation.
+
+The workload controller uses [STEGO keyed scheduling](gateway-scheduling.md).
+A separate REST and TLS gRPC acceptance check blocks one provider action and
+requires another Gateway to complete cleanup after API restart.

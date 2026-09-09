@@ -27,7 +27,9 @@ type KeyedSource[K ~string] struct {
 }
 
 type KeyedOptions struct {
-	Capacity       int
+	Capacity int
+	// Workers bounds concurrent actions for distinct keys. Zero selects one.
+	Workers        int
 	ResyncInterval time.Duration
 	Timeout        time.Duration
 	RetryMin       time.Duration
@@ -41,6 +43,9 @@ type KeyedOptions struct {
 func (o KeyedOptions) validate() error {
 	if o.Capacity < 1 || o.Capacity > 65536 {
 		return errors.New("controller key capacity must be between 1 and 65536")
+	}
+	if o.Workers < 0 || o.Workers > 64 || o.Workers > o.Capacity {
+		return errors.New("controller workers must be between 1 and the smaller of capacity and 64; zero selects one")
 	}
 	if o.ResyncInterval < time.Millisecond || o.ResyncInterval > 24*time.Hour {
 		return errors.New("controller key resync is outside its limits")
@@ -225,8 +230,10 @@ func (q *keyQueue[K]) finish(key K, failed bool, minimum, maximum time.Duration)
 	q.notify()
 }
 
-// RunKeyed owns one serial writer, the observer lifecycle, periodic scans, and a
-// bounded queue. It reads the latest domain state on every action. It retries
+// RunKeyed owns bounded workers, the observer lifecycle, periodic scans, and a
+// bounded queue. Only one action for each key can run at a time in this call.
+// Different keys can run concurrently. The action must read current state and
+// must support concurrent calls when Workers exceeds one. The runtime retries
 // failures with a capped exponential delay. It does not retry terminal errors.
 // The caller must make repeated actions safe. A pause prevents new takes; it
 // cannot retract an external write already in progress. Such writes require a
@@ -253,7 +260,11 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 			options.Observe(Event{Phase: phase, Err: err})
 		}
 	}
-	failures := make(chan error, 2)
+	count := options.Workers
+	if count == 0 {
+		count = 1
+	}
+	failures := make(chan error, count+2)
 	fail := func(err error) { failures <- err; cancel() }
 	workers.Go(func() {
 		err := source.Observe(ctx, &KeySink[K]{queue: q})
@@ -297,28 +308,34 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 			}
 		}
 	})
-	for ctx.Err() == nil {
-		key, err := q.take(ctx)
-		if err != nil {
-			break
-		}
-		if ctx.Err() != nil {
-			break
-		}
-		operation, stop := context.WithTimeout(ctx, options.Timeout)
-		err = reconcile(operation, key)
-		if err == nil {
-			err = operation.Err()
-		}
-		stop()
-		if err != nil && options.Terminal(err) {
-			return err
-		}
-		q.finish(key, err != nil, options.RetryMin, options.RetryMax)
-		if err != nil {
-			notice("reconcile_failed", err)
-		}
+	for i := 0; i < count; i++ {
+		workers.Go(func() {
+			for ctx.Err() == nil {
+				key, err := q.take(ctx)
+				if err != nil {
+					return
+				}
+				if ctx.Err() != nil {
+					return
+				}
+				operation, stop := context.WithTimeout(ctx, options.Timeout)
+				err = reconcile(operation, key)
+				if err == nil {
+					err = operation.Err()
+				}
+				stop()
+				if err != nil && options.Terminal(err) {
+					fail(err)
+					return
+				}
+				q.finish(key, err != nil, options.RetryMin, options.RetryMax)
+				if err != nil {
+					notice("reconcile_failed", err)
+				}
+			}
+		})
 	}
+	<-ctx.Done()
 	cancel()
 	workers.Wait()
 	if parent.Err() != nil {

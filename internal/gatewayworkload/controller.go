@@ -17,9 +17,12 @@ import (
 )
 
 const QueueCapacity = 1024
+const Workers = 4
 const ResyncInterval = 10 * time.Second
 const ReconcileTimeout = 20 * time.Second
 
+// Provider methods can run concurrently for different Gateway IDs.
+// The generated runtime serializes actions for each ID within one Run call.
 type Provider interface {
 	Handles(*pb.Gateway) bool
 	CleanupTarget() string
@@ -44,23 +47,28 @@ func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceC
 
 // Run connects domain state and actions to the generated controller runtime.
 func (c *Controller) Run(ctx context.Context) error {
-	return runtime.Run(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
-		QueueCapacity: QueueCapacity, ResyncInterval: ResyncInterval,
-		ReconcileTimeout: ReconcileTimeout, ReconnectDelay: time.Second,
-		Terminal: func(err error) bool {
-			return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
-		},
-		Observe: func(event runtime.Event) {
-			switch event.Phase {
-			case "watch_started":
-				slog.Info("Gateway workload watch started")
-			case "scan_completed":
-				slog.Info("Gateway workload scan completed")
-			case "reconnect":
-				slog.Warn("Gateway workload watch will reconnect")
-			case "reconcile_failed":
-				slog.Warn("Gateway workload needs another pass", "failure", rpc.FailureSummary(event.Err))
-			}
+	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
+		ReconnectDelay: time.Second,
+		KeyedOptions: runtime.KeyedOptions{
+			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
+			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
+			Terminal: func(err error) bool {
+				return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+			},
+			Observe: func(event runtime.Event) {
+				switch event.Phase {
+				case "watch_started":
+					slog.Info("Gateway workload watch started")
+				case "scan_completed":
+					slog.Info("Gateway workload scan completed")
+				case "scan_failed":
+					slog.Warn("Gateway workload scan needs another pass", "failure", rpc.FailureSummary(event.Err))
+				case "reconnect":
+					slog.Warn("Gateway workload watch will reconnect")
+				case "reconcile_failed":
+					slog.Warn("Gateway workload needs another pass", "failure", rpc.FailureSummary(event.Err))
+				}
+			},
 		},
 	})
 }
