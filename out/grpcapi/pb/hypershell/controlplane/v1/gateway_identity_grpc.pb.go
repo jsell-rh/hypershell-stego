@@ -21,7 +21,9 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GatewayIdentityService_GetGatewayIdentityState_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
+	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
+	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName   = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
+	GatewayIdentityService_GetGatewayIdentityState_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
 )
 
 // GatewayIdentityServiceClient is the client API for GatewayIdentityService service.
@@ -31,6 +33,8 @@ const (
 // This contract is specific to the Hypershell identity controller.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceClient interface {
+	ListGatewayIdentityUsers(ctx context.Context, in *ListGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ListGatewayIdentityUsersResponse, error)
+	GetGatewayIdentityUser(ctx context.Context, in *GetGatewayIdentityUserRequest, opts ...grpc.CallOption) (*GetGatewayIdentityUserResponse, error)
 	GetGatewayIdentityState(ctx context.Context, in *GetGatewayIdentityStateRequest, opts ...grpc.CallOption) (*GetGatewayIdentityStateResponse, error)
 }
 
@@ -40,6 +44,26 @@ type gatewayIdentityServiceClient struct {
 
 func NewGatewayIdentityServiceClient(cc grpc.ClientConnInterface) GatewayIdentityServiceClient {
 	return &gatewayIdentityServiceClient{cc}
+}
+
+func (c *gatewayIdentityServiceClient) ListGatewayIdentityUsers(ctx context.Context, in *ListGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ListGatewayIdentityUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGatewayIdentityUsersResponse)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) GetGatewayIdentityUser(ctx context.Context, in *GetGatewayIdentityUserRequest, opts ...grpc.CallOption) (*GetGatewayIdentityUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetGatewayIdentityUserResponse)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_GetGatewayIdentityUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Context, in *GetGatewayIdentityStateRequest, opts ...grpc.CallOption) (*GetGatewayIdentityStateResponse, error) {
@@ -59,6 +83,8 @@ func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Conte
 // This contract is specific to the Hypershell identity controller.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceServer interface {
+	ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error)
+	GetGatewayIdentityUser(context.Context, *GetGatewayIdentityUserRequest) (*GetGatewayIdentityUserResponse, error)
 	GetGatewayIdentityState(context.Context, *GetGatewayIdentityStateRequest) (*GetGatewayIdentityStateResponse, error)
 	mustEmbedUnimplementedGatewayIdentityServiceServer()
 }
@@ -70,6 +96,12 @@ type GatewayIdentityServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGatewayIdentityServiceServer struct{}
 
+func (UnimplementedGatewayIdentityServiceServer) ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListGatewayIdentityUsers not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) GetGatewayIdentityUser(context.Context, *GetGatewayIdentityUserRequest) (*GetGatewayIdentityUserResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetGatewayIdentityUser not implemented")
+}
 func (UnimplementedGatewayIdentityServiceServer) GetGatewayIdentityState(context.Context, *GetGatewayIdentityStateRequest) (*GetGatewayIdentityStateResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetGatewayIdentityState not implemented")
 }
@@ -93,6 +125,42 @@ func RegisterGatewayIdentityServiceServer(s grpc.ServiceRegistrar, srv GatewayId
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&GatewayIdentityService_ServiceDesc, srv)
+}
+
+func _GatewayIdentityService_ListGatewayIdentityUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGatewayIdentityUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).ListGatewayIdentityUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).ListGatewayIdentityUsers(ctx, req.(*ListGatewayIdentityUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_GetGatewayIdentityUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGatewayIdentityUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).GetGatewayIdentityUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_GetGatewayIdentityUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).GetGatewayIdentityUser(ctx, req.(*GetGatewayIdentityUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _GatewayIdentityService_GetGatewayIdentityState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -120,6 +188,14 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hypershell.controlplane.v1.GatewayIdentityService",
 	HandlerType: (*GatewayIdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "ListGatewayIdentityUsers",
+			Handler:    _GatewayIdentityService_ListGatewayIdentityUsers_Handler,
+		},
+		{
+			MethodName: "GetGatewayIdentityUser",
+			Handler:    _GatewayIdentityService_GetGatewayIdentityUser_Handler,
+		},
 		{
 			MethodName: "GetGatewayIdentityState",
 			Handler:    _GatewayIdentityService_GetGatewayIdentityState_Handler,

@@ -5,10 +5,25 @@ import "hypershell/v1/gateways.proto";
 // This contract is specific to the Hypershell identity controller.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);
+ rpc GetGatewayIdentityUser(GetGatewayIdentityUserRequest) returns (GetGatewayIdentityUserResponse);
  rpc GetGatewayIdentityState(GetGatewayIdentityStateRequest) returns (GetGatewayIdentityStateResponse);
 }
 message GetGatewayIdentityStateRequest { string id = 1; }
 message GetGatewayIdentityStateResponse {
  hypershell.v1.Gateway gateway = 1;
  bool deleted = 2;
+}
+
+// Pages contain retained grant references, including deleted grants.
+message ListGatewayIdentityUsersRequest { string gateway_id = 1; int32 page = 2; }
+message ListGatewayIdentityUsersResponse { repeated string user_ids = 1; bool has_more = 2; }
+message GetGatewayIdentityUserRequest { string gateway_id = 1; string user_id = 2; }
+message GetGatewayIdentityUserResponse {
+ string gateway_id = 1;
+ string user_id = 2;
+ string issuer = 3;
+ string subject = 4;
+ // Empty means that no live grant permits access.
+ string role = 5;
 }

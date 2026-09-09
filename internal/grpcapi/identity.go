@@ -2,8 +2,11 @@ package grpcapi
 
 import (
 	"context"
+	"errors"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type identityServer struct {
@@ -21,4 +24,22 @@ func (s *identityServer) GetGatewayIdentityState(ctx context.Context, request *p
 		return nil, mapError(err)
 	}
 	return &pb.GetGatewayIdentityStateResponse{Gateway: gateway, Deleted: row.DeletedAt.Valid}, nil
+}
+
+func (s *identityServer) ListGatewayIdentityUsers(ctx context.Context, request *pb.ListGatewayIdentityUsersRequest) (*pb.ListGatewayIdentityUsersResponse, error) {
+	ids, more, err := s.service.IdentityUsers(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), int(request.GetPage()))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.ListGatewayIdentityUsersResponse{UserIds: ids, HasMore: more}, nil
+}
+func (s *identityServer) GetGatewayIdentityUser(ctx context.Context, request *pb.GetGatewayIdentityUserRequest) (*pb.GetGatewayIdentityUserResponse, error) {
+	state, err := s.service.IdentityUserState(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetUserId())
+	if errors.Is(err, gateways.ErrUnboundUser) {
+		return nil, status.Error(codes.FailedPrecondition, "The stored user has no verified provider identity")
+	}
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GetGatewayIdentityUserResponse{GatewayId: state.GatewayID, UserId: state.UserID, Issuer: state.Issuer, Subject: state.Subject, Role: state.Role}, nil
 }

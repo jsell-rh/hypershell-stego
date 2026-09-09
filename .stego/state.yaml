@@ -210,8 +210,8 @@ last_applied:
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
         grpcapi/client/client.go: c7cc35ac1783a7756bb6d4db6bb975f62ecc037f68d1ded74c7c0fc50bbcc179
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 62cd91dfeab6821657b388f3a5711164f269d6a5602b49efe3205ddf3dcc9761
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 83d25f46cfb516c6723d23af4ed95ecf722f00383144de30b789d6e19c72df15
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 3c0db31d7781aa84f13f253ec8d9240aa297199565e326d958b140e075a006ae
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 31439a1a9c936a4548e0c75f41ed620e53ab98daade41236950795c084caeee6
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
         grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e
