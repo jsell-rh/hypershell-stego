@@ -147,3 +147,8 @@ account record and audit history. A failure test proves that a delayed enable
 cannot undo revocation after database connection loss. Complete list filters,
 automatic Gateway cleanup, other provider failure cases, production capacity,
 and client ports remain open.
+
+Recovery also removes clients created after their initial cleanup. It retains
+deleted account records for repeated cleanup by stable IDs, including after
+Gateway deletion and process restart. Normal API queries exclude these records.
+Large-history cleanup capacity and bounded retention remain open.

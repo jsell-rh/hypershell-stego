@@ -38,6 +38,13 @@ one-minute revocation target at production scale. Backlog capacity, recovery
 indexes, counters, readiness, provider drift checks, and orphan discovery still
 need work.
 
+The task also revisits deleted records for failed, deleting, and abandoned
+accounts. This removes a provider client whose creation completes after initial
+cleanup. It uses stable resource IDs and does not require a live Gateway.
+Current work runs before historical checks, with separate cursors and a shared
+deadline. Deleted records remain hidden from normal queries. Large-history capacity and
+cleanup-record retention need further verification.
+
 The current provider settings are:
 
 - `HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR`: host and port.

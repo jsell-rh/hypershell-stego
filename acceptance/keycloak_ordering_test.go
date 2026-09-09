@@ -33,9 +33,9 @@ func (w *responseStatus) WriteHeader(status int) {
 	w.ResponseWriter.WriteHeader(status)
 }
 
-// delayedKeycloak accepts one enable request, then applies it after release.
+// delayedKeycloak holds one selected request, then applies it after release.
 // The accepted work continues after the caller cancels its connection.
-func delayedKeycloak(t *testing.T, upstream *keycloakFixture) (*keycloakFixture, *atomic.Bool, <-chan struct{}, func(), <-chan int) {
+func delayedKeycloak(t *testing.T, upstream *keycloakFixture, operation string) (*keycloakFixture, *atomic.Bool, <-chan struct{}, func(), <-chan int) {
 	t.Helper()
 	target, err := url.Parse(upstream.options.ServerURL)
 	if err != nil {
@@ -60,7 +60,8 @@ func delayedKeycloak(t *testing.T, upstream *keycloakFixture) (*keycloakFixture,
 	unlock := func() { once.Do(func() { close(release) }) }
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		delayed := false
-		if r.Method == http.MethodPut && armed.Load() {
+		match := (operation == "enable" && r.Method == http.MethodPut) || (operation == "create" && r.Method == http.MethodPost && r.URL.Path == "/admin/realms/workflow/clients")
+		if match && armed.Load() {
 			body, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
 			r.Body.Close()
 			if err != nil {
@@ -71,7 +72,7 @@ func delayedKeycloak(t *testing.T, upstream *keycloakFixture) (*keycloakFixture,
 			var update struct {
 				Enabled bool `json:"enabled"`
 			}
-			if json.Unmarshal(body, &update) == nil && update.Enabled && armed.CompareAndSwap(true, false) {
+			if json.Unmarshal(body, &update) == nil && (operation == "create" || update.Enabled) && armed.CompareAndSwap(true, false) {
 				delayed = true
 				close(entered)
 				<-release
@@ -101,7 +102,7 @@ func delayedKeycloak(t *testing.T, upstream *keycloakFixture) (*keycloakFixture,
 
 func TestRevocationSurvivesDelayedEnableAfterDatabaseLoss(t *testing.T) {
 	k := startKeycloak(t)
-	delayed, arm, entered, release, completed := delayedKeycloak(t, k)
+	delayed, arm, entered, release, completed := delayedKeycloak(t, k, "enable")
 	defer release()
 	f := database(t)
 	_, gateway := accountService(t, f, newAccountProvider())

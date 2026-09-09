@@ -75,6 +75,29 @@ application uses the existing generated Delete RPC for terminal revocation;
 the protobuf contract and the provider's separate Disable operation are unchanged.
 The domain provider interface now names this terminal operation `Revoke`.
 
+`TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart` exposed a separate
+cleanup defect. It delays client creation until the API has returned failure,
+removed the reservation, and deleted the Gateway. The delayed request then
+creates a client. Previously, that client survived restart because recovery
+excluded the deleted account record.
+
+Recovery now includes deleted records for failed, deleting, and abandoned
+accounts. These records retain the stable Gateway and account IDs. The task
+repeats provider cleanup by those IDs, without requiring a live parent Gateway
+or using an obsolete provider UUID. Normal API queries still exclude deleted
+records. STEGO's existing trusted recovery query supplies this behavior.
+
+The real-provider test now passes after restart and retains the account's audit
+history. `TestDeletedServiceAccountCleanupRetriesAcrossPages` also checks 101
+deleted records, a failed first cleanup attempt, and a live account that must
+remain unchanged. It also puts a current failed account after the history in ID
+order. A mixed scan delayed that account; separate cursors now keep current work
+ahead of historical checks. Both passes share the four-second scan deadline.
+Recovery retains a 100-row limit per pass and an eight-worker concurrency limit.
+The existing transport deadlines still apply. Deleted account records currently
+remain available for repeated cleanup.
+Large-history capacity and a bounded retention policy remain unverified.
+
 Set `STEGO_REQUIRE_KEYCLOAK=1` to require this test. Docker must be available.
 `scripts/check-gateway.sh` and CI require it. The container is isolated, uses
 test credentials, and exposes only its TLS port on the loopback interface.
@@ -83,8 +106,8 @@ choices, not production deployment instructions. The first successful local run
 completed in 33.14 seconds with Go 1.26.8 and PostgreSQL 18.6.
 
 Remaining work includes automatic scans for provider drift and orphan clients,
-production administrator permissions, recovery capacity, and other external
-failure cases, including late creation after cleanup. The delayed-update test
+production administrator permissions, recovery capacity, discovery of provider
+objects with no retained database record, and other external failure cases. The delayed-update test
 does not prove all provider failure orderings. Revocation
 stops new token issuance. Already issued access tokens can remain valid until
 their five-minute expiry. Internal caller signing-key rotation still requires
@@ -99,3 +122,8 @@ the reference HTTP transport and unverified token inspection. See Keycloak's
 [container guide](https://www.keycloak.org/server/containers),
 [TLS guide](https://www.keycloak.org/server/enabletls), and
 [service-account administration guide](https://www.keycloak.org/docs/latest/server_admin/).
+
+The final local race suite passed with PostgreSQL and Keycloak required. The
+acceptance package completed in 172.666 seconds. Pinned regeneration had no
+output changes or drift. These results verify the cleanup paths above; they
+are not production capacity measurements.

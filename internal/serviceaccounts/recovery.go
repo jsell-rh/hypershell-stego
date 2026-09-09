@@ -24,12 +24,22 @@ func (s *Service) Run(ctx context.Context) error {
 	position := 0
 	for {
 		scan, cancel := context.WithTimeout(ctx, 4*time.Second)
-		for _, state := range []string{states[position]} {
+		state := states[position]
+		passes := []bool{false}
+		if state == "error" || state == "deleting" || state == "provisioning" {
+			passes = append(passes, true)
+		}
+		// Current work precedes historical checks. Both share the scan deadline.
+		for _, includeDeleted := range passes {
+			cursorKey := state
+			if includeDeleted {
+				cursorKey += "/deleted"
+			}
 			if scan.Err() != nil {
 				break
 			}
 			search := ""
-			if cursor := cursors[state]; cursor != "" {
+			if cursor := cursors[cursorKey]; cursor != "" {
 				search = "id > '" + cursor + "'"
 			}
 			condition := ""
@@ -49,7 +59,7 @@ func (s *Service) Run(ctx context.Context) error {
 				}
 				search += condition
 			}
-			result, err := s.repository.List(scan, "ServiceAccount", "status", queryState, storage.ListOptions{Page: 1, Size: 100, Search: search, OrderBy: []storage.OrderByField{{Field: "id", Direction: "asc"}}})
+			result, err := s.repository.List(scan, "ServiceAccount", "status", queryState, storage.ListOptions{Page: 1, Size: 100, Search: search, IncludeDeleted: includeDeleted, OrderBy: []storage.OrderByField{{Field: "id", Direction: "asc"}}})
 			if err != nil {
 				continue
 			}
@@ -66,7 +76,11 @@ func (s *Service) Run(ctx context.Context) error {
 					wait.Wait()
 					return fmt.Errorf("invalid service-account recovery ID")
 				}
-				cursors[state] = row.ID
+				cursors[cursorKey] = row.ID
+				// The historical query includes live roots; their normal pass owns them.
+				if row.DeletedAt.Valid != includeDeleted {
+					continue
+				}
 				select {
 				case permits <- struct{}{}:
 				case <-scan.Done():
@@ -75,11 +89,20 @@ func (s *Service) Run(ctx context.Context) error {
 				if scan.Err() != nil {
 					break
 				}
-				wait.Go(func() { defer func() { <-permits }(); _ = s.Recover(scan, row.GatewayID, row.ID) })
+				wait.Go(func() {
+					defer func() { <-permits }()
+					if row.DeletedAt.Valid {
+						// A terminal record cannot be restored. Cleanup needs no live
+						// parent and uses stable IDs, even if the provider UUID was lost.
+						_ = s.provider.Delete(scan, row.GatewayID, row.ID, "")
+						return
+					}
+					_ = s.Recover(scan, row.GatewayID, row.ID)
+				})
 			}
 			wait.Wait()
 			if len(rows) < 100 {
-				cursors[state] = ""
+				cursors[cursorKey] = ""
 			}
 		}
 		cancel()
