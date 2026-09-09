@@ -98,23 +98,20 @@ func (s *Service) AllGrants(ctx context.Context, p Principal, userID, gatewayID 
 		if err != nil {
 			return err
 		}
-		for {
-			page, err := readGrantPage(ctx, tx, opts)
-			if err != nil {
-				return err
-			}
-			if page.Total > 10000 {
-				return ErrGrantCapacity
-			}
-			rows = append(rows, page.Items...)
-			if int64(len(rows)) >= page.Total {
-				return nil
-			}
-			if len(page.Items) == 0 {
-				return errors.New("grant snapshot is incomplete")
-			}
-			opts.Page++
+		opts.Size = 10000
+		result, err := tx.List(ctx, "RoleBinding", "", "", opts)
+		if err != nil {
+			return err
 		}
+		if result.Total > 10000 {
+			return ErrGrantCapacity
+		}
+		grants, ok := result.Items.([]model.RoleBinding)
+		if !ok || int64(len(grants)) != result.Total {
+			return errors.New("grant snapshot is incomplete")
+		}
+		rows, err = projectGrants(ctx, tx, grants)
+		return err
 	})
 	if err != nil {
 		return nil, err
@@ -131,53 +128,76 @@ func readGrantPage(ctx context.Context, tx store.Transaction, opts store.ListOpt
 	if !ok {
 		return GrantPage{}, errors.New("unexpected grant storage result")
 	}
-	page := GrantPage{Total: result.Total, Items: make([]GrantView, 0, len(rows))}
-	if len(rows) == 0 {
-		return page, nil
-	}
-	roleIDs, userIDs := []string{}, []string{}
-	for _, row := range rows {
-		if !slices.Contains(roleIDs, row.RoleID) {
-			roleIDs = append(roleIDs, row.RoleID)
-		}
-		if !slices.Contains(userIDs, row.UserID) {
-			userIDs = append(userIDs, row.UserID)
-		}
-	}
-	lookup := func(entity string, ids []string) (store.ListResult, error) {
-		return tx.List(ctx, entity, "", "", store.ListOptions{Page: 1, Size: 100, Filter: &store.RowFilter{Field: "id", Values: ids}})
-	}
-	roles, err := lookup("Role", roleIDs)
+	views, err := projectGrants(ctx, tx, rows)
 	if err != nil {
 		return GrantPage{}, err
 	}
-	users, err := lookup("User", userIDs)
-	if err != nil {
-		return GrantPage{}, err
-	}
-	roleRows, ok := roles.Items.([]model.Role)
-	if !ok {
-		return GrantPage{}, errors.New("unexpected role storage result")
-	}
-	userRows, ok := users.Items.([]model.User)
-	if !ok {
-		return GrantPage{}, errors.New("unexpected user storage result")
+	return GrantPage{Total: result.Total, Items: views}, nil
+}
+
+// projectGrants reads each distinct role and user once per snapshot. Each
+// lookup remains bounded to 100 IDs and uses the caller's transaction.
+func projectGrants(ctx context.Context, tx store.Transaction, rows []model.RoleBinding) ([]GrantView, error) {
+	views := make([]GrantView, 0, len(rows))
+	if len(rows) > 10000 {
+		return nil, ErrGrantCapacity
 	}
 	roleNames, usernames := map[string]string{}, map[string]string{}
-	for _, row := range roleRows {
-		roleNames[row.ID] = row.Name
-	}
-	for _, row := range userRows {
-		usernames[row.ID] = row.Username
-	}
-	for _, row := range rows {
-		// Consumers must not treat an unresolved role as an absent grant.
-		if roleNames[row.RoleID] == "" {
-			return GrantPage{}, errors.New("grant role cannot be resolved")
+	lookup := func(entity string, ids []string) (store.ListResult, error) {
+		fields := []string{"id", "name"}
+		if entity == "User" {
+			fields = []string{"id", "username"}
 		}
-		page.Items = append(page.Items, GrantView{Grant: row, RoleName: roleNames[row.RoleID], Username: usernames[row.UserID]})
+		return tx.List(ctx, entity, "", "", store.ListOptions{Page: 1, Size: 100, Fields: fields, Filter: &store.RowFilter{Field: "id", Values: ids}})
 	}
-	return page, nil
+	for start := 0; start < len(rows); start += 100 {
+		batch := rows[start:min(start+100, len(rows))]
+		roleIDs, userIDs := []string{}, []string{}
+		for _, row := range batch {
+			if _, seen := roleNames[row.RoleID]; !seen {
+				roleIDs = append(roleIDs, row.RoleID)
+				roleNames[row.RoleID] = ""
+			}
+			if _, seen := usernames[row.UserID]; !seen {
+				userIDs = append(userIDs, row.UserID)
+				usernames[row.UserID] = ""
+			}
+		}
+		if len(roleIDs) > 0 {
+			result, err := lookup("Role", roleIDs)
+			if err != nil {
+				return nil, err
+			}
+			roleRows, ok := result.Items.([]model.Role)
+			if !ok {
+				return nil, errors.New("unexpected role storage result")
+			}
+			for _, row := range roleRows {
+				roleNames[row.ID] = row.Name
+			}
+		}
+		if len(userIDs) > 0 {
+			result, err := lookup("User", userIDs)
+			if err != nil {
+				return nil, err
+			}
+			userRows, ok := result.Items.([]model.User)
+			if !ok {
+				return nil, errors.New("unexpected user storage result")
+			}
+			for _, row := range userRows {
+				usernames[row.ID] = row.Username
+			}
+		}
+		for _, row := range batch {
+			// Consumers must not treat an unresolved role as an absent grant.
+			if roleNames[row.RoleID] == "" {
+				return nil, errors.New("grant role cannot be resolved")
+			}
+			views = append(views, GrantView{Grant: row, RoleName: roleNames[row.RoleID], Username: usernames[row.UserID]})
+		}
+	}
+	return views, nil
 }
 
 // EventGrant checks current access and the stored deletion state.

@@ -87,3 +87,34 @@ and role and user details. It excludes transport, concurrent load, and watch
 replay. It does not establish production capacity. Run
 `go test -run '^$' -bench '^BenchmarkGrantDiscoveryFilteredPage$' -benchtime=100x ./acceptance`
 with the PostgreSQL test settings.
+
+Hosted CI then exposed a timeout at the 10,000-grant boundary. The initial
+snapshot repeated the root count and page scan 100 times. The fixture also
+loaded users in bulk without updating planner statistics. PostgreSQL estimated
+three live users where the table held 10,001. It chose the deletion index and
+repeatedly scanned the user set during detail lookups.
+
+The snapshot now counts and reads its bounded grant set once. It caches role
+and user details within the transaction, reads each distinct ID once, and selects
+only the ID and display field. Each detail lookup remains limited to 100 IDs.
+The bulk fixture now runs `ANALYZE` before response-limit checks. The application
+does not run `ANALYZE` during requests. The transaction deadline is unchanged.
+
+A local diagnostic run measured user-detail reads at 3.94 seconds before
+`ANALYZE` and 0.17 seconds after it. The query plan then used the primary-key
+index with the correct row estimate. These measurements explain the fixture
+correction; they do not establish a production latency bound.
+
+With unchanged stale statistics, the code change reduced one local snapshot
+sample from 6.48 seconds to 4.08 seconds. With current statistics, ten final
+10,000-grant snapshots averaged 316.48 ms, 35,755,411 bytes, and 377,492 allocations
+per call. The run used `GOMAXPROCS=2` and the race detector on the same local
+environment. Run `go test -race -run '^$' -bench '^BenchmarkGrantDiscoverySnapshot$' -benchtime=10x ./acceptance`
+with those processor and PostgreSQL settings. This excludes transport and
+concurrent load.
+
+The final focused race checks passed with `GOMAXPROCS=2` in 10.301 seconds.
+They include complete and excessive snapshots, the gRPC byte limit, current
+access, REST and protobuf shapes, event delivery, and restart. The small-page
+benchmark on the final code averaged 4.095 ms, 91,536 bytes, and 1,091 allocations
+per call across 100 calls without the race detector.

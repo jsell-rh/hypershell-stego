@@ -333,6 +333,7 @@ func TestGrantDiscoveryRejectsOversizedGRPCResponse(t *testing.T) {
  SELECT lpad(n::text,27,'0'),$1,$2,lpad(n::text,27,'0'),'gateway',now(),now() FROM generate_series(1,7000) n`, input.UserID, input.RoleID); err != nil {
 		t.Fatal(err)
 	}
+	analyzeDiscoveryFixture(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")

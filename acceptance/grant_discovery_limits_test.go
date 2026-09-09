@@ -22,7 +22,10 @@ func seedDiscoveryGrants(t testing.TB, f *fixture, gatewayID, roleID string, siz
  FROM generate_series(1,$3::integer) AS n`, roleID, gatewayID, size); err != nil {
 		t.Fatal(err)
 	}
+
+	analyzeDiscoveryFixture(t, f)
 }
+
 func TestGrantDiscoveryUnpagedResponseIsCompleteOrFails(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
@@ -55,6 +58,7 @@ func TestGrantDiscoveryUnpagedResponseIsCompleteOrFails(t *testing.T) {
  FROM generate_series(106,10000) AS n`, input.RoleID, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
+	analyzeDiscoveryFixture(t, f)
 	rows, err = f.service.AllGrants(ctx, owner, "", gateway.ID)
 	if !errors.Is(err, gateways.ErrGrantCapacity) || rows != nil {
 		t.Fatal("oversized snapshot returned partial rows", len(rows), err)
@@ -110,5 +114,33 @@ func BenchmarkGrantDiscoveryFilteredPage(b *testing.B) {
 		if err != nil || page.Total != 2 || len(page.Items) != 2 {
 			b.Fatal("visible page", page.Total, err)
 		}
+	}
+}
+
+func BenchmarkGrantDiscoverySnapshot(b *testing.B) {
+	f := database(b)
+	ctx := context.Background()
+	owner := principal("alice", "gateway:creator")
+	gateway, err := f.service.Create(ctx, owner, f.request("snapshot"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	input := grantInput(b, f, gateway.ID, "bob", "gateway:viewer")
+	seedDiscoveryGrants(b, f, gateway.ID, input.RoleID, 9999)
+	b.ReportAllocs()
+	b.ResetTimer()
+	for range b.N {
+		rows, err := f.service.AllGrants(ctx, owner, "", gateway.ID)
+		if err != nil || len(rows) != 10000 {
+			b.Fatal("snapshot", len(rows), err)
+		}
+	}
+}
+
+// Bulk fixtures update planner statistics before they test response limits.
+func analyzeDiscoveryFixture(t testing.TB, f *fixture) {
+	t.Helper()
+	if _, err := f.db.Exec("ANALYZE users; ANALYZE role_bindings; ANALYZE gateways"); err != nil {
+		t.Fatal(err)
 	}
 }
