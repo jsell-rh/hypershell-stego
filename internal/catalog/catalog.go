@@ -114,6 +114,36 @@ func (r *Resource[T, C, P]) GetRetained(ctx context.Context, p gateways.Principa
 	})
 	return row, err
 }
+
+// ObserveCleanup records a controller observation and its event together.
+func (r *Resource[T, C, P]) ObserveCleanup(ctx context.Context, p gateways.Principal, id string, version int64, owner string, complete bool) error {
+	if err := r.authorizeRecovery(p); err != nil {
+		return err
+	}
+	if err := r.authorize(p, true); err != nil {
+		return err
+	}
+	if !validID(id) {
+		return store.ErrNotFound
+	}
+	if version < 1 {
+		return gateways.ErrObservationRequired
+	}
+	if r.entity != "ManagedDatabase" || owner != "provider" {
+		return gateways.ErrForbidden
+	}
+	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		writer, ok := tx.(store.CleanupWriter)
+		if !ok {
+			return errors.New("catalog storage does not support cleanup observations")
+		}
+		if err := writer.ObserveCleanupIfVersion(ctx, r.entity, id, version, owner, complete); err != nil {
+			return err
+		}
+		// A deletion notice requests another current-state check.
+		return r.notify(tx, id, "Delete", "deleted")
+	})
+}
 func (r *Resource[T, C, P]) List(ctx context.Context, p gateways.Principal, q Query) (store.ListResult, error) {
 	if err := r.authorize(p, false); err != nil {
 		return store.ListResult{}, err

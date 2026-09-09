@@ -36,7 +36,7 @@ requirements.
 
 ## Revision contract
 
-The pinned compiler is `8d17da296668b2d7111c131d5ce2362ace72a354`.
+The compiler revision is recorded in [the compiler pin](../.stego/compiler-revision).
 `grpc-application` 1.4.0 generates `transport.SetResourceVersion` and
 `client.ObservedResourceVersion`. The database Get method returns its revision
 in response metadata. The controller captures that metadata with the returned
@@ -99,7 +99,8 @@ revision check covers changes to this field without deciding that ownership.
 
 The next step must define the observation fields, apply generation-aware
 presentation and search, and require fresh confirmation even when status text is
-unchanged. Durable cleanup completion, per-subject field authority, cross-process fencing,
+unchanged. The provider now has [durable cleanup observations](database-cleanup.md).
+Cleanup for other resources, per-subject field authority, cross-process fencing,
 and production capacity remain open.
 
 ## Authoritative deletion reads
@@ -146,8 +147,8 @@ The full application suite passed with race detection, PostgreSQL, and Keycloak
 required. Its acceptance package completed in 546.600 seconds. Module verification
 and `go vet ./...` also passed.
 
-This change does not record pending cleanup owners or conditional completion.
-It does not fence another controller process or undo an external action already
+The later [cleanup contract](database-cleanup.md) records the provider owner and
+conditional observations. It does not fence another controller process or undo an external action already
 in progress. Periodic recovery remains necessary. The schema prevents ordinary
 ID reuse and reversal of deletion; database restore and administrator changes
 remain outside this contract. Replace all old controllers after the API upgrade

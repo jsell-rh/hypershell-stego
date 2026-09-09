@@ -38,6 +38,7 @@ entities:
       - { name: status, type: string, optional: true, max_length: 255 }
   - name: ManagedDatabase
     versioned: true
+    cleanup_owners: [provider]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 261 }
       - { name: provider, type: enum, values: [cnpg, deployment] }
@@ -142,6 +143,8 @@ overrides:
         import_path: hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto
         import_path: hypershell/controlplane/v1/gateway_identity.proto
+      - path: contracts/controlplane/database_cleanup.proto
+        import_path: hypershell/controlplane/v1/database_cleanup.proto
       - path: contracts/reference/proto/hypershell/v1/managed_clusters.proto
         import_path: hypershell/v1/managed_clusters.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_releases.proto

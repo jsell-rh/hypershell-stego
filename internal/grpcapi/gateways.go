@@ -70,6 +70,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	pb.RegisterManagedClusterServiceServer(registrar, &clusterServer{resource: placement.Clusters, source: source})
 	pb.RegisterGatewayReleaseServiceServer(registrar, &releaseServer{resource: placement.Releases, source: source})
 	pb.RegisterManagedDatabaseServiceServer(registrar, &databaseServer{resource: placement.Databases, source: source})
+	control.RegisterDatabaseCleanupServiceServer(registrar, &databaseCleanupServer{resource: placement.Databases})
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
 	pb.RegisterRoleBindingServiceServer(registrar, &grantServer{service: service, source: source})
 	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})

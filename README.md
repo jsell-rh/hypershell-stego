@@ -200,9 +200,11 @@ observation group. Phase and status are controller-owned. Reads, status search,
 and credential readiness checks reject stale observations. The database
 controller now also requires [revision preconditions](acceptance/database-observations.md)
 for its writes. Database generations, field ownership, per-subject group
-authority, durable cleanup completion, and controller metrics remain open.
+authority, cleanup for other resources, and controller metrics remain open.
 Database provider actions now read current retained state. Failed reads and
 missing deletion evidence stop cleanup. Event data alone cannot permit deletion.
+The provider records [durable cleanup observations](acceptance/database-cleanup.md)
+and continues periodic checks after success. Late effects reopen pending cleanup.
 These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified

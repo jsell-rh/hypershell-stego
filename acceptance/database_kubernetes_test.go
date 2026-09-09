@@ -281,6 +281,10 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	}
 	k.must(t, "", "get", "namespace", namespace)
 	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/0/verbs","value":["get","create","patch","delete"]}]`)
+	var deniedComplete bool
+	if err := f.db.QueryRow("SELECT (stego_cleanup->>'provider')::boolean FROM managed_databases WHERE id=$1", gateway.DatabaseID).Scan(&deniedComplete); err != nil || deniedComplete {
+		t.Fatal("denied cleanup was recorded as complete", err)
+	}
 	deadline = time.Now().Add(90 * time.Second)
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -294,5 +298,40 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 		}
 		time.Sleep(time.Second)
 	}
-	t.Log(fmt.Sprintf("Gateway %s: TLS database, persisted data, stable password, foreign namespace denial, and offline cleanup passed", gateway.ID))
+	awaitCleanup := func(want bool) {
+		t.Helper()
+		until := time.Now().Add(30 * time.Second)
+		for {
+			var complete bool
+			if err := f.db.QueryRow("SELECT (stego_cleanup->>'provider')::boolean FROM managed_databases WHERE id=$1", gateway.DatabaseID).Scan(&complete); err != nil {
+				t.Fatal(err)
+			}
+			if complete == want {
+				return
+			}
+			if time.Now().After(until) {
+				t.Fatalf("cleanup observation did not become %t\n%s", want, logs())
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
+	awaitCleanup(true)
+	stopController()
+	// A late external effect must reopen cleanup after a recorded success.
+	late, _ := json.Marshal(map[string]any{
+		"apiVersion": "v1", "kind": "Namespace",
+		"metadata": map[string]any{"name": namespace,
+			"labels":     map[string]string{"hypershell.redhat.io/database-id": gateway.DatabaseID, "app.kubernetes.io/managed-by": "hypershell-database-controller"},
+			"finalizers": []string{"acceptance.hypershell.test/hold"}},
+	})
+	k.must(t, string(late), "create", "-f", "-")
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	awaitCleanup(false)
+	k.must(t, "", "get", "namespace", namespace)
+	stopController()
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	k.must(t, "", "patch", "namespace", namespace, "--type=merge", "-p", `{"metadata":{"finalizers":[]}}`)
+	k.must(t, "", "wait", "--for=delete", "namespace/"+namespace, "--timeout=90s")
+	awaitCleanup(true)
+	t.Log(fmt.Sprintf("Gateway %s: TLS database, persisted data, stable password, foreign namespace denial, offline cleanup, and late-effect cleanup passed", gateway.ID))
 }

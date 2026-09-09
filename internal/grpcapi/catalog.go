@@ -275,6 +275,15 @@ func (s *databaseServer) GetManagedDatabase(ctx context.Context, r *pb.GetManage
 	if err := rpctransport.SetResourceState(ctx, row.ResourceVersion, row.DeletedAt.Valid); err != nil {
 		return nil, err
 	}
+	if retained {
+		observations, err := row.CleanupObservations()
+		if err != nil {
+			return nil, mapError(err)
+		}
+		if err := rpctransport.SetCleanupObservations(ctx, observations); err != nil {
+			return nil, err
+		}
+	}
 	return &pb.GetManagedDatabaseResponse{ManagedDatabase: presentManagedDatabase(row)}, nil
 }
 func (s *databaseServer) DeleteManagedDatabase(ctx context.Context, r *pb.DeleteManagedDatabaseRequest) (*pb.DeleteManagedDatabaseResponse, error) {

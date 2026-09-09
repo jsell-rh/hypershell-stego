@@ -9,6 +9,7 @@ import (
 
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc"
@@ -29,14 +30,15 @@ type Provider interface {
 }
 type Controller struct {
 	api      pb.ManagedDatabaseServiceClient
+	cleanup  control.DatabaseCleanupServiceClient
 	provider Provider
 }
 
-func New(api pb.ManagedDatabaseServiceClient, provider Provider) (*Controller, error) {
-	if api == nil || provider == nil {
+func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, provider Provider) (*Controller, error) {
+	if api == nil || cleanup == nil || provider == nil {
 		return nil, errors.New("database controller dependencies are required")
 	}
-	return &Controller{api, provider}, nil
+	return &Controller{api: api, cleanup: cleanup, provider: provider}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
 	return runtime.Run(ctx, runtime.Source[*pb.WatchManagedDatabasesResponse]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
@@ -154,18 +156,34 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if err != nil {
 		return err
 	}
+	cleanup, err := rpc.ObservedCleanupObservations(header)
+	if err != nil {
+		return err
+	}
+	complete, declared := cleanup["provider"]
+	if !declared {
+		return errors.New("database has no declared provider cleanup owner")
+	}
 	if event.GetType() == pb.EventType_EVENT_TYPE_DELETED && !deleted {
 		return errors.New("database deletion has no current deletion intent")
 	}
 	if db.GetProvider() != "deployment" {
 		return nil
 	}
-	if deleted {
-		return c.provider.Delete(ctx, db)
-	}
 	writeContext, err := rpc.WithResourceVersion(ctx, version)
 	if err != nil {
 		return err
+	}
+	if deleted {
+		failure := c.provider.Delete(ctx, db)
+		observed := failure == nil
+		if complete != observed {
+			_, err := c.cleanup.ObserveDatabaseCleanup(writeContext, &control.ObserveDatabaseCleanupRequest{Id: db.GetMetadata().GetId(), Owner: "provider", Complete: observed})
+			if err != nil {
+				return err
+			}
+		}
+		return failure
 	}
 	if err := c.provider.Ensure(ctx, db); err != nil {
 		desired := "error"

@@ -9,6 +9,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
@@ -31,7 +32,7 @@ func run() error {
 		return err
 	}
 	defer connection.Close()
-	controller, err := databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), provider)
+	controller, err := databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), provider)
 	if err != nil {
 		return err
 	}

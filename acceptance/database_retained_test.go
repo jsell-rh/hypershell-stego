@@ -11,6 +11,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -154,7 +155,7 @@ func TestDatabaseRetainedReadAndCleanupAfterRestart(t *testing.T) {
 		t.Fatal("absence returned deletion evidence", err)
 	}
 	provider := &retainedDatabaseProvider{deleted: make(chan *pb.ManagedDatabase, 8), ensured: make(chan struct{}, 1)}
-	reconciler, err := databasecontroller.New(databaseHintClient{client}, provider)
+	reconciler, err := databasecontroller.New(databaseHintClient{client}, control.NewDatabaseCleanupServiceClient(connection), provider)
 	if err != nil {
 		t.Fatal(err)
 	}

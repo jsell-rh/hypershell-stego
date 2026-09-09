@@ -1,0 +1,14 @@
+syntax = "proto3";
+package hypershell.controlplane.v1;
+
+// Cleanup observations require a configured controller and an exact revision.
+// The retained read supplies the revision before provider work.
+service DatabaseCleanupService {
+ rpc ObserveDatabaseCleanup(ObserveDatabaseCleanupRequest) returns (ObserveDatabaseCleanupResponse);
+}
+message ObserveDatabaseCleanupRequest {
+ string id = 1;
+ string owner = 2;
+ bool complete = 3;
+}
+message ObserveDatabaseCleanupResponse {}

@@ -14,6 +14,7 @@ import (
 	"testing"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
@@ -173,6 +174,7 @@ func TestDatabaseWatchRequiresOneKnownCapability(t *testing.T) {
 
 type staleAPI struct {
 	pb.ManagedDatabaseServiceClient
+	control.DatabaseCleanupServiceClient
 }
 
 func (staleAPI) GetManagedDatabase(context.Context, *pb.GetManagedDatabaseRequest, ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
@@ -185,7 +187,7 @@ func (p *rejectProvider) Ensure(context.Context, *pb.ManagedDatabase) error { p.
 func (p *rejectProvider) Delete(context.Context, *pb.ManagedDatabase) error { p.calls++; return nil }
 func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 	p := &rejectProvider{}
-	c, _ := New(staleAPI{}, p)
+	c, _ := New(staleAPI{}, staleAPI{}, p)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "old", Type: pb.EventType_EVENT_TYPE_CREATED, ManagedDatabase: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "old"}, Provider: "deployment"}}
 	if err := c.reconcile(context.Background(), event); err != nil {
 		t.Fatal(err)
@@ -201,14 +203,18 @@ func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 
 type stateAPI struct {
 	pb.ManagedDatabaseServiceClient
-	db             *pb.ManagedDatabase
-	updateError    error
-	updates        []string
-	version        int64
-	headerOverride metadata.MD
-	deleted        bool
-	readError      error
-	reads          int
+	control.DatabaseCleanupServiceClient
+	cleanupComplete bool
+	cleanupCalls    []bool
+	cleanupError    error
+	db              *pb.ManagedDatabase
+	updateError     error
+	updates         []string
+	version         int64
+	headerOverride  metadata.MD
+	deleted         bool
+	readError       error
+	reads           int
 }
 
 func (a *stateAPI) GetManagedDatabase(ctx context.Context, _ *pb.GetManagedDatabaseRequest, options ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
@@ -223,7 +229,7 @@ func (a *stateAPI) GetManagedDatabase(ctx context.Context, _ *pb.GetManagedDatab
 	if a.version == 0 {
 		a.version = 1
 	}
-	header := metadata.Pairs("resource-version", strconv.FormatInt(a.version, 10), "resource-deleted", strconv.FormatBool(a.deleted))
+	header := metadata.Pairs("resource-version", strconv.FormatInt(a.version, 10), "resource-deleted", strconv.FormatBool(a.deleted), "resource-cleanup", `{"provider":`+strconv.FormatBool(a.cleanupComplete)+`}`)
 	if a.headerOverride != nil {
 		header = a.headerOverride
 	}
@@ -261,7 +267,7 @@ func TestReadinessLossAndFailedStatusWritesRemainVisible(t *testing.T) {
 	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment", Status: &ready}
 	failure := errors.New("status update failed")
 	api := &stateAPI{db: db, updateError: failure}
-	c, _ := New(api, pendingProvider{})
+	c, _ := New(api, api, pendingProvider{})
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 	if err := c.reconcile(context.Background(), event); !errors.Is(err, failure) {
 		t.Fatal("status update failure was lost", err)
@@ -310,7 +316,7 @@ func TestMissingDatabaseRevisionStopsProviderWork(t *testing.T) {
 		db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 		api := &stateAPI{db: db, headerOverride: header}
 		provider := &rejectProvider{}
-		c, _ := New(api, provider)
+		c, _ := New(api, api, provider)
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 		if err := c.reconcile(context.Background(), event); err == nil {
 			t.Fatal("missing revision accepted")
@@ -339,7 +345,7 @@ func TestDatabaseConflictRequiresAnotherProviderObservation(t *testing.T) {
 	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 	api := &stateAPI{db: db}
 	provider := &changeDuringEnsure{change: func() { api.version++ }}
-	c, _ := New(api, provider)
+	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 	if err := c.reconcile(context.Background(), event); status.Code(err) != codes.Aborted {
 		t.Fatal("old observation did not fail", err)
@@ -363,7 +369,7 @@ func TestLiveDatabaseEventUsesCurrentProvider(t *testing.T) {
 		row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: test.current}
 		api := &stateAPI{db: row}
 		provider := &rejectProvider{}
-		c, _ := New(api, provider)
+		c, _ := New(api, api, provider)
 		hint := proto.Clone(row).(*pb.ManagedDatabase)
 		hint.Provider = test.hint
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: hint}
@@ -380,7 +386,7 @@ func TestDatabaseDeleteRequiresCurrentDeletedState(t *testing.T) {
 	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 	api := &stateAPI{db: row}
 	provider := &rejectProvider{}
-	c, _ := New(api, provider)
+	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
 	if err := c.reconcile(context.Background(), event); err == nil {
 		t.Error("deletion accepted without current deleted state")
@@ -409,7 +415,7 @@ func TestDatabaseDeleteUsesCurrentRetainedRecord(t *testing.T) {
 		current := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment", Namespace: "current"}
 		api := &stateAPI{db: current, deleted: true, version: 7}
 		provider := &recordingProvider{}
-		c, _ := New(api, provider)
+		c, _ := New(api, api, provider)
 		hint := proto.Clone(current).(*pb.ManagedDatabase)
 		hint.Namespace = "old"
 		hint.Provider = "cnpg"
@@ -455,7 +461,7 @@ func TestDatabaseDeleteStopsWithoutAuthoritativeEvidence(t *testing.T) {
 			current := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Provider: "deployment"}
 			api := &stateAPI{db: current, deleted: true, readError: test.readError, headerOverride: test.header}
 			provider := &recordingProvider{}
-			c, _ := New(api, provider)
+			c, _ := New(api, api, provider)
 			hint := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 			event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: hint}
 			if err := c.reconcile(context.Background(), event); err == nil {
@@ -465,5 +471,72 @@ func TestDatabaseDeleteStopsWithoutAuthoritativeEvidence(t *testing.T) {
 				t.Fatal("failed read reached provider or write")
 			}
 		})
+	}
+}
+
+func (a *stateAPI) ObserveDatabaseCleanup(ctx context.Context, request *control.ObserveDatabaseCleanupRequest, _ ...grpc.CallOption) (*control.ObserveDatabaseCleanupResponse, error) {
+	md, _ := metadata.FromOutgoingContext(ctx)
+	if !a.deleted || !slices.Equal(md.Get("if-resource-version"), []string{strconv.FormatInt(a.version, 10)}) {
+		return nil, status.Error(codes.Aborted, "resource changed")
+	}
+	if request.Id != a.db.GetMetadata().GetId() || request.Owner != "provider" {
+		return nil, status.Error(codes.PermissionDenied, "wrong cleanup owner")
+	}
+	if a.cleanupError != nil {
+		return nil, a.cleanupError
+	}
+	a.cleanupComplete = request.Complete
+	a.cleanupCalls = append(a.cleanupCalls, request.Complete)
+	a.version++
+	return &control.ObserveDatabaseCleanupResponse{}, nil
+}
+
+func TestCompletedDatabaseCleanupStillChecksForLateEffects(t *testing.T) {
+	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
+	api := &stateAPI{db: row, deleted: true, version: 4, cleanupComplete: true}
+	provider := &recordingProvider{}
+	c, _ := New(api, api, provider)
+	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
+	if err := c.reconcile(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
+	if len(provider.deleted) != 1 || len(api.cleanupCalls) != 0 {
+		t.Fatal("completed cleanup skipped observation or rewrote stable state")
+	}
+	provider.failure = ErrPending
+	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+		t.Fatal(err)
+	}
+	if api.cleanupComplete || !slices.Equal(api.cleanupCalls, []bool{false}) {
+		t.Fatal("late effects kept cleanup complete")
+	}
+	provider.failure = nil
+	if err := c.reconcile(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
+	if !api.cleanupComplete || !slices.Equal(api.cleanupCalls, []bool{false, true}) || len(provider.deleted) != 3 {
+		t.Fatal("fresh absence was not confirmed")
+	}
+}
+
+func TestDatabaseCleanupConflictRequiresFreshProviderWork(t *testing.T) {
+	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
+	api := &stateAPI{db: row, deleted: true, version: 2, cleanupError: status.Error(codes.Aborted, "resource changed")}
+	provider := &recordingProvider{}
+	c, _ := New(api, api, provider)
+	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
+	if err := c.reconcile(context.Background(), event); status.Code(err) != codes.Aborted {
+		t.Fatal(err)
+	}
+	if api.cleanupComplete || len(provider.deleted) != 1 || api.reads != 1 {
+		t.Fatal("old cleanup result was retried")
+	}
+	api.cleanupError = nil
+	api.version++
+	if err := c.reconcile(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
+	if !api.cleanupComplete || len(provider.deleted) != 2 || api.reads != 2 {
+		t.Fatal("conflict did not require fresh cleanup work")
 	}
 }
