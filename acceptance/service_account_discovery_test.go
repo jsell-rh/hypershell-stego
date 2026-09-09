@@ -52,7 +52,8 @@ func TestServiceAccountDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		}
 		return row
 	}
-	first := create(owner, "Build%_!\\Night")
+	// Keep punctuation in the search fixture without using it to set list order.
+	first := create(owner, "Build z%_!\\Night")
 	second := create(owner, "Build plain")
 	other := create(viewer, "Build viewer")
 	list := func(bearer, query string, want int, ids ...string) {

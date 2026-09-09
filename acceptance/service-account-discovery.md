@@ -19,7 +19,8 @@ omits degraded, but OpenAPI permits it. The variant follows OpenAPI, and the
 test checks each status choice from that contract.
 
 Sort fields are name, role, status, expires_at, and created_at. Order is asc or
-desc. The account ID supplies a second sort key in the same direction. Both
+desc. Text order follows the database collation. The account ID supplies a
+second sort key in the same direction. Both
 count and paging follow the Gateway scope, current grant, creator restriction,
 status, and search conditions. Owners see their Gateway's accounts. Viewers see
 only their own accounts. Admin status alone does not grant account access.
