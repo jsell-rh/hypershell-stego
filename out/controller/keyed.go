@@ -68,8 +68,13 @@ func (o KeyedOptions) validate() error {
 // concurrent callbacks. A sink must not be retained after Observe returns.
 type KeySink[K ~string] struct{ queue *keyQueue[K] }
 
-func (s *KeySink[K]) Add(key K) error     { return s.queue.add(key) }
-func (s *KeySink[K]) SetReady(ready bool) { s.queue.setReady(ready) }
+func (s *KeySink[K]) Add(key K) error { return s.queue.add(key) }
+
+// AddWait applies backpressure until capacity is available or ctx ends.
+// It does not discard another key or reset that key's retry delay. Callers must
+// bound concurrent emitters. A paused or fully failing queue can keep it waiting.
+func (s *KeySink[K]) AddWait(ctx context.Context, key K) error { return s.queue.addWait(ctx, key) }
+func (s *KeySink[K]) SetReady(ready bool)                      { s.queue.setReady(ready) }
 
 type keyEntry[K ~string] struct {
 	key    K
@@ -100,17 +105,18 @@ func (h *keyHeap[K]) Pop() any {
 }
 
 type keyQueue[K ~string] struct {
-	mu       sync.Mutex
-	ready    bool
-	capacity int
-	next     uint64
-	entries  map[K]*keyEntry[K]
-	pending  keyHeap[K]
-	changed  chan struct{}
+	mu        sync.Mutex
+	ready     bool
+	capacity  int
+	next      uint64
+	entries   map[K]*keyEntry[K]
+	pending   keyHeap[K]
+	changed   chan struct{}
+	admission chan struct{}
 }
 
 func newKeyQueue[K ~string](capacity int) *keyQueue[K] {
-	return &keyQueue[K]{capacity: capacity, entries: make(map[K]*keyEntry[K]), changed: make(chan struct{})}
+	return &keyQueue[K]{capacity: capacity, entries: make(map[K]*keyEntry[K]), changed: make(chan struct{}), admission: make(chan struct{}, 1)}
 }
 func (q *keyQueue[K]) notify() { close(q.changed); q.changed = make(chan struct{}) }
 func (q *keyQueue[K]) setReady(ready bool) {
@@ -127,6 +133,9 @@ func (q *keyQueue[K]) add(key K) error {
 	}
 	q.mu.Lock()
 	defer q.mu.Unlock()
+	return q.addLocked(key)
+}
+func (q *keyQueue[K]) addLocked(key K) error {
 	if entry := q.entries[key]; entry != nil {
 		entry.dirty = true
 		return nil
@@ -140,6 +149,40 @@ func (q *keyQueue[K]) add(key K) error {
 	heap.Push(&q.pending, entry)
 	q.notify()
 	return nil
+}
+func (q *keyQueue[K]) addWait(ctx context.Context, key K) error {
+	if ctx == nil {
+		return errors.New("controller admission requires a context")
+	}
+	if len(key) == 0 || len(key) > 1024 || !utf8.ValidString(string(key)) {
+		return ErrKey
+	}
+	// Serialize the generated scan and watch emitters while they wait for a slot.
+	// Waiting emitters retain one key each outside the admitted queue.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case q.admission <- struct{}{}:
+	}
+	defer func() { <-q.admission }()
+	for {
+		q.mu.Lock()
+		if err := ctx.Err(); err != nil {
+			q.mu.Unlock()
+			return err
+		}
+		changed := q.changed
+		err := q.addLocked(key)
+		q.mu.Unlock()
+		if !errors.Is(err, ErrOverflow) {
+			return err
+		}
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-changed:
+		}
+	}
 }
 func (q *keyQueue[K]) waitReady(ctx context.Context) error {
 	for ctx.Err() == nil {
@@ -279,7 +322,7 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 			if err := q.waitReady(ctx); err != nil {
 				return
 			}
-			err := source.Scan(ctx, q.add)
+			err := source.Scan(ctx, func(key K) error { return q.addWait(ctx, key) })
 			if err != nil && (options.Terminal(err) || errors.Is(err, ErrOverflow) || errors.Is(err, ErrKey)) {
 				fail(err)
 				return
