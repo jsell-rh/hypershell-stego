@@ -41,9 +41,10 @@ A workload confirmation does not prove database removal or permit parent purge.
 The database provider still has no declared history of cluster placement.
 Cluster IDs must remain bound to their provider locations. Rebinding the same
 cluster ID to a different Kubernetes cluster is not covered by this history.
-Live moves do not yet remove former targets before Gateway deletion. Controller
-credentials also need permissions for specific owners and targets. Cross-process
-fencing, target retirement, and parent finalization remain open.
+Live moves do not yet remove former targets before Gateway deletion. Cleanup
+observations now require exact grants. Other controller operations still need
+separate permissions. Cross-process fencing, target retirement, and parent
+finalization remain open.
 
 Apply the generated migrations and update all API instances before controllers.
 The compiler revision is in [the pin file](../.stego/compiler-revision).
@@ -54,7 +55,10 @@ restarts of the same target contract are covered by the application tests.
 
 Local validation on 2026-09-09 passed the controller race tests, the focused API
 checks, the complete Gateway Kubernetes workflow, and the full application race
-suite. The Gateway workflow took 247.538 seconds; the full acceptance package
-took 567.254 seconds. Pinned regeneration reproduced all 68 generated and
-dependency file hashes. Use `scripts/check-gateway.sh` and
+suite. The Gateway workflow took 243.581 seconds; the full acceptance package
+took 555.058 seconds. Pinned regeneration reproduced all 69 generated, dependency,
+and state file hashes. Use `scripts/check-gateway.sh` and
 `scripts/check-gateway-workload.sh` to repeat the application checks.
+
+Cleanup observation writes also require [explicit grants](cleanup-permissions.md)
+for the verified issuer, subject, resource, operation, and target.

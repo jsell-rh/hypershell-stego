@@ -33,6 +33,7 @@ type Resource[T, C, P any] struct {
 	repository                        store.Transactor
 	authorize                         func(gateways.Principal, bool) error
 	authorizeRecovery                 func(gateways.Principal) error
+	authorizeCleanup                  func(gateways.Principal, string, string, string) error
 	entity, foreignField, eventPrefix string
 	create                            func(string, C) (T, error)
 	patch                             func(*T, P) error
@@ -44,10 +45,10 @@ func New(repository store.Transactor, policy *gateways.Service) (*Service, error
 		return nil, errors.New("catalog requires storage and access rules")
 	}
 	return &Service{
-		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork, false},
-		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster, false},
-		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease, false},
-		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase, true},
+		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork, false},
+		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster, false},
+		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease, false},
+		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase, true},
 	}, nil
 }
 func validID(id string) bool {
@@ -131,6 +132,9 @@ func (r *Resource[T, C, P]) ObserveCleanup(ctx context.Context, p gateways.Princ
 	}
 	if r.entity != "ManagedDatabase" || owner != "provider" {
 		return gateways.ErrForbidden
+	}
+	if err := r.authorizeCleanup(p, r.entity, owner, ""); err != nil {
+		return err
 	}
 	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
 		writer, ok := tx.(store.CleanupWriter)

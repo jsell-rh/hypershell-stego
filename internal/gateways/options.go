@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"os"
 	"strings"
@@ -19,6 +20,7 @@ type AccountCleaner interface {
 type Options struct {
 	AccountCleaner       AccountCleaner
 	ControlPlaneSubjects []string
+	CleanupPolicy        *auth.GrantPolicy
 	DatabaseProvider     string
 }
 
@@ -42,6 +44,12 @@ func OptionsFromEnvironment() (Options, error) {
 	options.DatabaseProvider, err = resolveDatabaseProvider(os.Getenv("DATABASE_PROVIDER"))
 	if err != nil {
 		return Options{}, err
+	}
+	if raw := os.Getenv("HYPERSHELL_CLEANUP_GRANTS"); raw != "" {
+		options.CleanupPolicy, err = auth.ParseGrantPolicy([]byte(raw))
+		if err != nil {
+			return Options{}, err
+		}
 	}
 	raw := os.Getenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS")
 	if raw == "" {
@@ -67,4 +75,15 @@ func validateSubjects(subjects []string) error {
 }
 func (s *Service) isControlPlane(principal Principal) bool {
 	return s.controlPlaneSubjects[principal.Subject]
+}
+
+// AuthorizeCleanup requires an exact grant for the verified caller and target.
+func (s *Service) AuthorizeCleanup(p Principal, resource, owner, target string) error {
+	if err := validatePrincipal(p); err != nil {
+		return err
+	}
+	if !s.isControlPlane(p) || !s.cleanupPolicy.Allows(auth.Identity{Issuer: p.Issuer, UserID: p.Subject}, resource, "cleanup."+owner, target) {
+		return ErrForbidden
+	}
+	return nil
 }

@@ -24,7 +24,8 @@ func TestDatabaseCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","gateway-controller"]`)
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""), cleanupGrant("gateway-controller", "Gateway", "provider", ""))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -91,6 +92,7 @@ func TestDatabaseCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	read(true, false, 2)
 	observe(call(admin), 2, "provider", true, codes.PermissionDenied)
 	observe(call(token(t, key, "outsider")), 2, "provider", true, codes.PermissionDenied)
+	observe(call(token(t, key, "gateway-controller")), 2, "provider", true, codes.PermissionDenied)
 	observe(controller, 2, "other", true, codes.PermissionDenied)
 	observe(controller, 0, "provider", true, codes.FailedPrecondition)
 	observe(metadata.AppendToOutgoingContext(controller, "if-resource-version", "01"), 0, "provider", true, codes.InvalidArgument)
@@ -101,7 +103,7 @@ func TestDatabaseCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	observe(controller, 2, "provider", true, codes.Internal)
 	read(true, false, 2)
 	var queued int
-	if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages").Scan(&queued); err != nil || queued != 0 {
+	if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages WHERE resource_key=$1 AND kind='manageddatabase.deleted'", row.ID).Scan(&queued); err != nil || queued != 0 {
 		t.Fatal("rejected cleanup committed an event", queued, err)
 	}
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_cleanup_event"); err != nil {

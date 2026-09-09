@@ -119,7 +119,9 @@ key, and expiry. Only subjects in this list can set `console_address` through
 gRPC. They can also perform Gateway operations without user grants. The list is
 empty by default. Usernames and role names do not grant this access. REST has no
 console-address patch field. This subject allowlist is the current design
-assumption; the requested identity-policy decision remains open.
+assumption; the requested identity-policy decision remains open. Cleanup writes
+also require [explicit owner and target grants](acceptance/cleanup-permissions.md)
+in `HYPERSHELL_CLEANUP_GRANTS`. Missing grants deny these writes.
 
 Gateway deletion removes related provider clients before it commits the Gateway,
 account metadata, cleanup audits, and deletion event. The Gateway row lock

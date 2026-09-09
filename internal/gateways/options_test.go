@@ -1,6 +1,8 @@
 package gateways
 
 import (
+	"errors"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	"strings"
 	"testing"
 )
@@ -49,6 +51,52 @@ func TestDatabaseProviderConfiguration(t *testing.T) {
 		t.Setenv("DATABASE_PROVIDER", value)
 		if _, err := OptionsFromEnvironment(); err == nil {
 			t.Fatal("invalid provider accepted", value)
+		}
+	}
+}
+
+func TestCleanupRequiresAnExactGrant(t *testing.T) {
+	caller := Principal{Issuer: "https://issuer.example", Subject: "worker", Username: "worker", Roles: []string{"platform:admin"}}
+	service := &Service{controlPlaneSubjects: map[string]bool{"worker": true}}
+	if err := service.AuthorizeCleanup(caller, "Gateway", "workload", "cluster-a"); !errors.Is(err, ErrForbidden) {
+		t.Fatal("broad controller access granted cleanup", err)
+	}
+	policy, err := auth.NewGrantPolicy([]auth.Grant{{Issuer: caller.Issuer, Subject: caller.Subject, Resource: "Gateway", Operation: "cleanup.workload", Target: "cluster-a"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service.cleanupPolicy = policy
+	if err := service.AuthorizeCleanup(caller, "Gateway", "workload", "cluster-a"); err != nil {
+		t.Fatal(err)
+	}
+	for _, scope := range [][3]string{{"Gateway", "workload", "cluster-b"}, {"Gateway", "identity", ""}, {"ManagedDatabase", "provider", ""}} {
+		if err := service.AuthorizeCleanup(caller, scope[0], scope[1], scope[2]); !errors.Is(err, ErrForbidden) {
+			t.Fatal("cleanup grant crossed its scope", err)
+		}
+	}
+	caller.Issuer = "https://other.example"
+	if err := service.AuthorizeCleanup(caller, "Gateway", "workload", "cluster-a"); !errors.Is(err, ErrForbidden) {
+		t.Fatal("subject crossed its issuer", err)
+	}
+}
+
+func TestCleanupConfigurationDoesNotFallBackToControllerAccess(t *testing.T) {
+	t.Setenv("DATABASE_PROVIDER", "")
+	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", `["worker"]`)
+	for _, raw := range []string{"", `[]`} {
+		t.Setenv("HYPERSHELL_CLEANUP_GRANTS", raw)
+		options, err := OptionsFromEnvironment()
+		if err != nil {
+			t.Fatal(err)
+		}
+		if options.CleanupPolicy.Allows(auth.Identity{Issuer: "https://issuer.example", UserID: "worker"}, "Gateway", "cleanup.workload", "cluster-a") {
+			t.Fatal("missing grant allowed cleanup")
+		}
+	}
+	for _, raw := range []string{`null`, `{}`, `[{"subject":"worker"}]`, `[{"issuer":"https://issuer.example","subject":"worker","resource":"Gateway","operation":"cleanup.workload","target":"a","target":"b"}]`} {
+		t.Setenv("HYPERSHELL_CLEANUP_GRANTS", raw)
+		if _, err := OptionsFromEnvironment(); err == nil {
+			t.Fatal("invalid cleanup policy was accepted")
 		}
 	}
 }

@@ -10,7 +10,7 @@ Deletion records the provider as pending in the same row update. Before provider
 work, the controller reads current retained state with its revision and cleanup
 observation. It records success only after the provider confirms absence. The
 private `ObserveDatabaseCleanup` RPC checks a configured controller subject, the
-`provider` owner, and the exact revision. Its transaction commits the observation
+`provider` owner, an exact cleanup grant, and the exact revision. Its transaction commits the observation
 and deletion notice together. A denied or stale request cannot change either.
 
 The notice requests another current-state check. The controller avoids writing
@@ -45,7 +45,8 @@ present until the test observes durable pending state. Removing the finalizer
 allows another absence confirmation. The test also retains its TLS, persisted
 data, credential, restart, foreign-namespace, and offline-deletion checks.
 
-The focused controller and application checks passed with race detection. The
+The initial static cleanup checks passed with race detection. The following
+measurements predate target history and cleanup grants. The
 application cases completed in 29.975 seconds. The real database workflow passed
 in 88.550 seconds, including the late-effect case and deletion replay under both
 tested collations.
@@ -62,10 +63,13 @@ required. The acceptance package completed in 556.217 seconds.
 
 ## Limits
 
-This change records cleanup observations for the database provider. Gateway,
-identity, sandbox, and other cleanup owners still need the common contract.
-Configured control-plane subjects retain their existing broad trust; per-owner
-credentials and authority remain open. There is no cross-process fence, safe
+This contract records cleanup observations for the database provider. Gateway
+identity and workload cleanup also use the common contract. Cleanup writes now
+require exact grants. Other controller operations and external provider
+credentials still need separate permissions. There is no cross-process fence, safe
 history purge, owner retirement protocol, completion history, or production
 cleanup capacity guarantee. Late effects can occur after a recorded success.
 Periodic recovery remains necessary.
+
+Cleanup observation writes also require [explicit grants](cleanup-permissions.md)
+for the verified issuer, subject, resource, operation, and target.

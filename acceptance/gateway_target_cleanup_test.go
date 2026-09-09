@@ -19,12 +19,15 @@ import (
 
 func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	f := database(t)
+	second := ksuid.New().String()
+	unrecorded := ksuid.New().String()
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","other-controller","identity-controller","ungranted"]`)
+	settings = withCleanupGrants(t, settings, cleanupGrant("identity-controller", "Gateway", "identity", ""), cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "Gateway", "workload", unrecorded), cleanupGrant("other-controller", "Gateway", "workload", second))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -37,7 +40,10 @@ func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	call := func(bearer string) context.Context {
 		return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
 	}
-	controller := call(token(t, key, "controller"))
+	controller := call(token(t, key, "controller", "platform:admin"))
+	otherController := call(token(t, key, "other-controller"))
+	identityController := call(token(t, key, "identity-controller"))
+	ungranted := call(token(t, key, "ungranted"))
 	root := address + "/api/hypershell/v1/gateways"
 	body, _ := json.Marshal(map[string]string{"name": "cleanup", "cluster_id": f.cluster, "release_id": f.release, "database_id": f.database})
 	code, data := requestJSON(t, "POST", root, owner, body)
@@ -48,7 +54,6 @@ func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	readEvent(t, consumer, row.ID)
 	awaitQueueEmpty(t, f)
 
-	second := ksuid.New().String()
 	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: second}, Name: "second", Provider: "kubernetes", KubeconfigSecret: "unused"}); err != nil {
 		t.Fatal(err)
 	}
@@ -97,12 +102,20 @@ func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	observe(call(token(t, key, "outsider")), 3, "workload", f.cluster, true, codes.PermissionDenied)
 	observe(controller, 3, "workload", "", true, codes.PermissionDenied)
 	observe(controller, 3, "identity", f.cluster, true, codes.PermissionDenied)
-	observe(controller, 3, "workload", ksuid.New().String(), true, codes.Aborted)
+	observe(controller, 3, "workload", ksuid.New().String(), true, codes.PermissionDenied)
+	observe(controller, 3, "workload", second, true, codes.PermissionDenied)
+	observe(otherController, 3, "workload", f.cluster, true, codes.PermissionDenied)
+	observe(controller, 3, "identity", "", true, codes.PermissionDenied)
+	observe(identityController, 3, "workload", f.cluster, true, codes.PermissionDenied)
+	observe(ungranted, 3, "workload", f.cluster, true, codes.PermissionDenied)
+	read(3, true, false, false, false)
+	observe(controller, 3, "workload", unrecorded, true, codes.Aborted)
+	read(3, true, false, false, false)
 	observe(controller, 3, "workload", f.cluster, true, codes.OK)
 	event()
 	read(4, true, true, false, false)
-	observe(controller, 3, "workload", second, true, codes.Aborted)
-	observe(controller, 4, "identity", "", true, codes.OK)
+	observe(otherController, 3, "workload", second, true, codes.Aborted)
+	observe(identityController, 4, "identity", "", true, codes.OK)
 	event()
 	read(5, true, true, false, true)
 	stop()
@@ -114,17 +127,28 @@ func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_target CHECK(false) NOT VALID"); err != nil {
 		t.Fatal(err)
 	}
-	observe(controller, 5, "workload", second, true, codes.Internal)
+	observe(otherController, 5, "workload", second, true, codes.Internal)
 	read(5, true, true, false, true)
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_target"); err != nil {
 		t.Fatal(err)
 	}
-	observe(controller, 5, "workload", second, true, codes.OK)
+	observe(otherController, 5, "workload", second, true, codes.OK)
 	event()
 	read(6, true, true, true, true)
 	observe(controller, 6, "workload", f.cluster, false, codes.OK)
 	event()
 	read(7, true, false, true, true)
+	stop()
+	connection.Close()
+	settings = withCleanupGrants(t, settings, cleanupGrant("identity-controller", "Gateway", "identity", ""), cleanupGrant("other-controller", "Gateway", "workload", second))
+	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
+	cleanup = control.NewGatewayIdentityServiceClient(connection)
+	observe(controller, 7, "workload", f.cluster, true, codes.PermissionDenied)
+	read(7, true, false, true, true)
+	observe(otherController, 7, "workload", second, false, codes.OK)
+	event()
+	read(8, true, false, false, true)
 	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 404 {
 		t.Fatal("cleanup changed public deletion state", code)
 	}

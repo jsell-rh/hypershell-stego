@@ -83,6 +83,9 @@ func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, ve
 	if !s.isControlPlane(p) || (owner != "identity" && owner != "workload") || (owner == "identity" && target != "") || (owner == "workload" && !validID(target)) {
 		return ErrForbidden
 	}
+	if err := s.AuthorizeCleanup(p, "Gateway", owner, target); err != nil {
+		return err
+	}
 	if !validID(id) {
 		return store.ErrNotFound
 	}

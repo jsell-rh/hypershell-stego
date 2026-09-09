@@ -1,11 +1,11 @@
 Gateway login identity cleanup uses the STEGO cleanup contract. The service declares
-`cleanup_owners: [identity]` on Gateway. The compiler revision is recorded in
+`cleanup_owners: [identity, workload]` on Gateway. The compiler revision is recorded in
 [the pin file](../.stego/compiler-revision).
 
 The private state API reads the retained Gateway through generated storage. It
 returns the cleanup observation and revision from that row. Only configured
 control-plane subjects can read this state or write an observation. The write
-requires the current revision and a deleted Gateway. Its deletion notice commits
+requires an exact cleanup grant, the current revision, and a deleted Gateway. Its deletion notice commits
 in the same transaction. Public reads continue to return 404 after deletion.
 
 The identity controller checks the provider on each pass, including after a
@@ -28,5 +28,9 @@ identity cleanup declaration. Older controllers do not record completion.
 
 This owner covers the Gateway login client. Service-account cleanup has its own
 existing workflow. Workload and sandbox cleanup now use
-[separate cluster targets](gateway-target-cleanup.md). Cross-process fencing, owner-specific
-subject permissions, safe purge, and production recovery bounds also remain open.
+[separate cluster targets](gateway-target-cleanup.md). Cross-process fencing,
+permissions for other controller operations, safe purge, and production recovery
+bounds also remain open.
+
+Cleanup observation writes also require [explicit grants](cleanup-permissions.md)
+for the verified issuer, subject, resource, operation, and target.
