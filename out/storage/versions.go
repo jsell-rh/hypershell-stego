@@ -16,6 +16,41 @@ import (
 var ErrVersionConflict = versioncontract.ErrVersionConflict
 var _ versioncontract.VersionedWriter = (*Store)(nil)
 var _ versioncontract.ObservationWriter = (*Store)(nil)
+var _ versioncontract.RetainedReader = (*Store)(nil)
+
+// GetRetained reads one exact versioned identity, including soft deletion.
+// It does not grant access. The caller must authorize recovery before this read.
+func (s *Store) GetRetained(ctx context.Context, entity, id string) (any, error) {
+	if ctx == nil || s == nil || s.db == nil || id == "" {
+		return nil, errors.New("retained read requires a context, store, and identity")
+	}
+	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
+	switch entity {
+	case "ManagedDatabase":
+		var row ManagedDatabase
+		err := s.db.WithContext(operation).Unscoped().Where("id = ? AND id COLLATE \"C\" = ?", id, id).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, versioncontract.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "Gateway":
+		var row Gateway
+		err := s.db.WithContext(operation).Unscoped().Where("id = ? AND id COLLATE \"C\" = ?", id, id).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, versioncontract.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	default:
+		return nil, errors.New("entity does not support retained resource reads")
+	}
+}
 
 // ResourceVersionMigration is an explicit migration for existing tables.
 // Run it in a transaction before new application code starts. It does not reset

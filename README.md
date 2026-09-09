@@ -201,6 +201,8 @@ and credential readiness checks reject stale observations. The database
 controller now also requires [revision preconditions](acceptance/database-observations.md)
 for its writes. Database generations, field ownership, per-subject group
 authority, durable cleanup completion, and controller metrics remain open.
+Database provider actions now read current retained state. Failed reads and
+missing deletion evidence stop cleanup. Event data alone cannot permit deletion.
 These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified

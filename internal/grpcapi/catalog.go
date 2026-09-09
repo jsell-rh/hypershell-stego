@@ -259,11 +259,20 @@ func (s *databaseServer) GetManagedDatabase(ctx context.Context, r *pb.GetManage
 	if r.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
-	row, err := s.resource.Get(ctx, gateways.PrincipalFromContext(ctx), r.Id)
+	retained, err := rpctransport.RetainedResourceRead(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var row model.ManagedDatabase
+	if retained {
+		row, err = s.resource.GetRetained(ctx, gateways.PrincipalFromContext(ctx), r.Id)
+	} else {
+		row, err = s.resource.Get(ctx, gateways.PrincipalFromContext(ctx), r.Id)
+	}
 	if err != nil {
 		return nil, mapError(err)
 	}
-	if err := rpctransport.SetResourceVersion(ctx, row.ResourceVersion); err != nil {
+	if err := rpctransport.SetResourceState(ctx, row.ResourceVersion, row.DeletedAt.Valid); err != nil {
 		return nil, err
 	}
 	return &pb.GetManagedDatabaseResponse{ManagedDatabase: presentManagedDatabase(row)}, nil

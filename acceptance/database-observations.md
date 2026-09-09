@@ -29,13 +29,14 @@ owner and controller authority, event rollback, current status through REST and
 gRPC, restart, and regeneration. A fresh observation must confirm an unchanged
 status for a new generation. Periodic provider checks must continue after ready.
 
-Database deletion also needs authoritative retained state. The current controller
-passes deletion-event data directly to the provider. Durable cleanup ownership,
-conditional completion, and cross-process fencing remain separate requirements.
+At the baseline, database deletion also passed deletion-event data directly to
+the provider. The retained-read change below addresses that gap. Durable cleanup
+ownership, conditional completion, and cross-process fencing remain separate
+requirements.
 
 ## Revision contract
 
-The pinned compiler is `25ed7ff44868c90eb892150e2ef36b36cf78f663`.
+The pinned compiler is `8d17da296668b2d7111c131d5ce2362ace72a354`.
 `grpc-application` 1.4.0 generates `transport.SetResourceVersion` and
 `client.ObservedResourceVersion`. The database Get method returns its revision
 in response metadata. The controller captures that metadata with the returned
@@ -98,5 +99,56 @@ revision check covers changes to this field without deciding that ownership.
 
 The next step must define the observation fields, apply generation-aware
 presentation and search, and require fresh confirmation even when status text is
-unchanged. Authoritative deletion reads, durable cleanup completion, per-subject
-field authority, cross-process fencing, and production capacity remain open.
+unchanged. Durable cleanup completion, per-subject field authority, cross-process fencing,
+and production capacity remain open.
+
+## Authoritative deletion reads
+
+A regression test on `2e45575` sent a deletion event while the current database
+record was live. It failed: the event alone reached the provider. This test now
+requires a current retained read and rejects that deletion event.
+
+The compiler now generates `storage.RetainedReader.GetRetained` for versioned
+resources. The query reads one exact ID, including deletion state and revision,
+without a list count. The gRPC helpers request `retained-v1` read mode and return
+explicit deletion metadata. This requires `postgres-adapter` 3.7.0 and
+`grpc-application` 1.5.0. Only configured controller subjects can use this
+mode in the database API. Ordinary REST and gRPC reads keep their existing
+visibility. Missing and denied reads do not return deletion evidence.
+
+The database controller now treats all event data as hints. Before each provider
+action, it reads current retained state and checks the returned ID, revision, and
+deletion state. A live record cannot satisfy a deletion event. A deleted record
+causes cleanup even when an older live event triggered the pass. Provider
+selection and cleanup parameters come from the retained read. Each retry reads
+again. Failed reads and old servers with missing metadata stop provider work.
+
+`TestDatabaseRetainedReadAndCleanupAfterRestart` checks REST deletion, privileged
+and denied retained reads over TLS gRPC, strict metadata, ordinary-read denial
+after deletion, revision persistence, and controller recovery after API restart.
+It changes the event fields at the client boundary and verifies that the provider
+receives current retained data through the generated controller runtime. Unit
+tests also cover a false deletion event, failed reads, wrong IDs, and cleanup
+retry. The provider in this regression is a recorder; the real database workflow
+separately checks Kubernetes cleanup.
+
+The focused retained-read, revision, and replay tests passed with race detection
+in 21.980 seconds. The real database workflow passed in 85.642 seconds. It checks
+TLS, persisted data, stable credentials, foreign namespace denial, offline
+cleanup, and replay under both tested collations. The pinned remote compiler
+reproduced all 63 tested code and dependency files.
+
+The complete Gateway workflow passed in 235.120 seconds. It checks database and
+OIDC integration, access rules, service accounts, persisted provider data, Pod and
+database restart, namespace replacement, stable keys, and offline deletion.
+
+The full application suite passed with race detection, PostgreSQL, and Keycloak
+required. Its acceptance package completed in 546.600 seconds. Module verification
+and `go vet ./...` also passed.
+
+This change does not record pending cleanup owners or conditional completion.
+It does not fence another controller process or undo an external action already
+in progress. Periodic recovery remains necessary. The schema prevents ordinary
+ID reuse and reversal of deletion; database restore and administrator changes
+remain outside this contract. Replace all old controllers after the API upgrade
+before claiming that every cleanup action uses current retained evidence.

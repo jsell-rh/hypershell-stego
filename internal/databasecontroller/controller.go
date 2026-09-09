@@ -128,21 +128,19 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db == nil || db.GetMetadata().GetId() != event.GetResourceId() || event.GetResourceId() == "" {
 		return errors.New("database event has no matching resource")
 	}
-	if event.GetType() == pb.EventType_EVENT_TYPE_DELETED {
-		if db.GetProvider() != "deployment" {
-			return nil
-		}
-		return c.provider.Delete(ctx, db)
-	}
 	switch event.GetType() {
-	case pb.EventType_EVENT_TYPE_CREATED, pb.EventType_EVENT_TYPE_UPDATED:
+	case pb.EventType_EVENT_TYPE_CREATED, pb.EventType_EVENT_TYPE_UPDATED, pb.EventType_EVENT_TYPE_DELETED:
 	default:
 		return errors.New("database event type is invalid")
 	}
-	// Live events are hints. Fetch current state to avoid applying stale changes.
+	// All events are hints. Read retained state before any provider action.
+	readContext, err := rpc.WithRetainedResourceRead(ctx)
+	if err != nil {
+		return err
+	}
 	var header metadata.MD
-	response, err := c.api.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: event.ResourceId}, grpc.Header(&header))
-	if status.Code(err) == codes.NotFound {
+	response, err := c.api.GetManagedDatabase(readContext, &pb.GetManagedDatabaseRequest{Id: event.ResourceId}, grpc.Header(&header))
+	if status.Code(err) == codes.NotFound && event.GetType() != pb.EventType_EVENT_TYPE_DELETED {
 		return nil
 	}
 	if err != nil {
@@ -152,12 +150,18 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db.GetMetadata().GetId() != event.ResourceId {
 		return errors.New("database state has a different ID")
 	}
+	version, deleted, err := rpc.ObservedResourceState(header)
+	if err != nil {
+		return err
+	}
+	if event.GetType() == pb.EventType_EVENT_TYPE_DELETED && !deleted {
+		return errors.New("database deletion has no current deletion intent")
+	}
 	if db.GetProvider() != "deployment" {
 		return nil
 	}
-	version, err := rpc.ObservedResourceVersion(header)
-	if err != nil {
-		return err
+	if deleted {
+		return c.provider.Delete(ctx, db)
 	}
 	writeContext, err := rpc.WithResourceVersion(ctx, version)
 	if err != nil {

@@ -84,6 +84,36 @@ func (r *Resource[T, C, P]) Get(ctx context.Context, p gateways.Principal, id st
 	})
 	return row, err
 }
+
+// GetRetained requires controller access and reads current deletion state.
+func (r *Resource[T, C, P]) GetRetained(ctx context.Context, p gateways.Principal, id string) (T, error) {
+	var row T
+	if err := r.authorizeRecovery(p); err != nil {
+		return row, err
+	}
+	if err := r.authorize(p, false); err != nil {
+		return row, err
+	}
+	if !validID(id) {
+		return row, store.ErrNotFound
+	}
+	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		reader, ok := tx.(store.RetainedReader)
+		if !ok {
+			return errors.New("catalog storage does not support retained reads")
+		}
+		value, err := reader.GetRetained(ctx, r.entity, id)
+		if err != nil {
+			return err
+		}
+		row, ok = value.(T)
+		if !ok {
+			return errors.New("unexpected catalog storage result")
+		}
+		return nil
+	})
+	return row, err
+}
 func (r *Resource[T, C, P]) List(ctx context.Context, p gateways.Principal, q Query) (store.ListResult, error) {
 	if err := r.authorize(p, false); err != nil {
 		return store.ListResult{}, err
