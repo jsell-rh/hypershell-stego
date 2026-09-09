@@ -140,5 +140,7 @@ Service-account create, list, get, revoke, and delete now run through the genera
 HTTP process and a TLS provisioner client. Only creation returns a client secret.
 Pending operations recover after restart. Recovery also enforces expiration and
 the creator's current Gateway grant. See [service-account evidence and limits](acceptance/service-accounts.md).
-The current acceptance provider is a gRPC fixture. The actual Keycloak adapter,
-complete list filters, automatic Gateway cleanup, and client ports remain open.
+The [Keycloak provider](acceptance/keycloak.md) now runs through the generated
+TLS transport. CI tests actual token issuance and revocation with a pinned
+Keycloak container. Complete list filters, automatic Gateway cleanup, provider
+failure ordering, production capacity, and client ports remain open.

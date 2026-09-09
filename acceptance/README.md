@@ -151,5 +151,6 @@ latency percentiles, or server memory use. Run
 The [service-account workflow](service-accounts.md) now covers a separate domain
 through the generated REST process, TLS unary RPC client, storage, and recovery
 task. It includes one-time secrets, role limits, pending revoke and delete,
-audit failures, creator-grant changes, expiration, and restart. The provider is
-a protocol fixture; the Keycloak implementation and production limits remain open.
+audit failures, creator-grant changes, expiration, and restart. The
+[Keycloak test](keycloak.md) also proves actual token issuance, role reduction,
+drift repair, and revocation after restart. Production limits remain open.

@@ -59,8 +59,9 @@ recovery after restart. Domain tests check audit rollback, lost provider replies
 access changes during creation, quotas, expiration, canceled creation, abandoned
 reservations, and concurrent Gateway deletion.
 
-The actual Keycloak adapter and its token-verification tests are not ported.
-This fixture does not prove Keycloak client configuration or token issuance.
+The [real Keycloak workflow](keycloak.md) now checks client configuration, signed
+token issuance, role reduction, drift repair, and revocation after restart.
+The protocol fixture remains useful for controlled failures.
 Service-account search, status filters, custom ordering, configurable expiration
 policy, deployment manifests, SDKs, CLI, and web-console workflows remain open.
 

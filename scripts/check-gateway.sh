@@ -12,6 +12,7 @@ if [[ -z ${STEGO_TEST_POSTGRES_DSN:-} ]]; then
   exit 1
 fi
 export STEGO_REQUIRE_POSTGRES=1
+export STEGO_REQUIRE_KEYCLOAK=1
 export GOWORK=off
 go mod verify
 scripts/generate.sh --check

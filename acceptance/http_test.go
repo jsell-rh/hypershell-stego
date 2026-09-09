@@ -79,13 +79,16 @@ func requestJSON(t testing.TB, method, address, bearer string, body []byte) (int
 	return response.StatusCode, data
 }
 func buildApplication(t testing.TB) string {
+	return buildProgram(t, "./out")
+}
+func buildProgram(t testing.TB, pkg string) string {
 	t.Helper()
 	binary := filepath.Join(t.TempDir(), "hypershell")
 	arguments := []string{"build", "-mod=readonly", "-o", binary}
 	if raceEnabled {
 		arguments = append(arguments, "-race")
 	}
-	command := exec.Command("go", append(arguments, "./out")...)
+	command := exec.Command("go", append(arguments, pkg)...)
 	command.Dir = ".."
 	if output, err := command.CombinedOutput(); err != nil {
 		t.Fatalf("build generated application: %v\n%s", err, output)

@@ -1,7 +1,8 @@
 The Gateway workflow is the first application acceptance gate. Run it with
 `scripts/check-gateway.sh`. Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL
 connection that can create test databases. The command fails if this setting
-is absent. It runs the same checks as CI:
+is absent. Docker is also required for the separate service-account workflow
+against Keycloak. It runs the same checks as CI:
 
 1. Verify Go dependencies.
 2. Fetch and build the pinned STEGO compiler.
