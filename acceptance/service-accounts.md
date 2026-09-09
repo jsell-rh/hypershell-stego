@@ -26,8 +26,13 @@ the Keycloak client and retains the account record and audit history. This
 prevents a delayed update from enabling that identity again. A provider failure returns
 HTTP 202. The generated supervisor runs recovery after restart. Recovery also
 checks expiration and creator grants. A lost grant revokes the account. An owner
-to viewer change lowers an admin account to `openshell-user`. A failed downgrade
-remains degraded until recovery succeeds. Restoring a grant does not reactivate
+to viewer change lowers an admin account to `openshell-user`. The lower role
+commits with pending state before the provider call. Failed completion cannot
+restore the old role, including for pending records from the earlier implementation.
+A failed downgrade
+queues terminal revocation before provider cleanup. This prevents invalid identity
+settings from preserving the old admin credential. A temporary provider error
+can require a new credential. Restoring a grant does not reactivate
 an account or raise its role. A terminal action and its audit record commit
 together. Audit records survive soft deletion.
 
@@ -72,6 +77,10 @@ The [real Keycloak workflow](keycloak.md) now checks client configuration, signe
 token issuance, role reduction, drift repair, and revocation after restart.
 It also proves that a delayed enable cannot undo revocation after the database
 connection and its Gateway lock are lost.
+The provider requires a trusted binding between the Gateway ID and its Keycloak
+audience. Tests refuse foreign audiences and check terminal revocation after
+invalid OIDC settings or loss of that binding. Restart and restored owner access
+cannot cancel committed revocation.
 The protocol fixture remains useful for controlled failures.
 Service-account search, status filters, custom ordering, configurable expiration
 policy, deployment manifests, SDKs, CLI, and web-console workflows remain open.

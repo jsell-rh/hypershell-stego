@@ -147,7 +147,7 @@ func (c *Client) ProvisionServiceAccount(ctx context.Context, spec ServiceAccoun
 		return nil, err
 	}
 
-	gatewayUUID, roles, err := c.resolveGatewayRoles(ctx, spec.GatewayClientID, spec.Role)
+	gatewayUUID, roles, err := c.resolveGatewayRoles(ctx, spec.GatewayClientID, spec.GatewayID, spec.Role)
 	if err != nil {
 		return nil, fmt.Errorf("resolve gateway authorization: %w", err)
 	}
@@ -207,7 +207,7 @@ func (c *Client) ReconcileServiceAccount(ctx context.Context, spec ServiceAccoun
 		client.Attributes[gatewayIDAttribute] != spec.GatewayID || client.Attributes[serviceAccountIDAttribute] != spec.ServiceAccountID {
 		return errors.New("keycloak client ownership metadata does not match")
 	}
-	gatewayUUID, roles, err := c.resolveGatewayRoles(ctx, spec.GatewayClientID, spec.Role)
+	gatewayUUID, roles, err := c.resolveGatewayRoles(ctx, spec.GatewayClientID, spec.GatewayID, spec.Role)
 	if err != nil {
 		return err
 	}
@@ -585,13 +585,22 @@ func desiredRoleNames(role string) []string {
 	return []string{RoleUser}
 }
 
-func (c *Client) resolveGatewayRoles(ctx context.Context, gatewayClientID, role string) (string, []kcRole, error) {
+func (c *Client) resolveGatewayRoles(ctx context.Context, gatewayClientID, gatewayID, role string) (string, []kcRole, error) {
 	gatewayUUID, err := c.clientUUID(ctx, gatewayClientID)
 	if err != nil {
 		return "", nil, err
 	}
 	if gatewayUUID == "" {
 		return "", nil, ErrNotFound
+	}
+	// The trusted control plane sets this binding. Caller-supplied OIDC fields
+	// cannot establish ownership of a provider audience.
+	gateway, err := c.getClient(ctx, gatewayUUID)
+	if err != nil {
+		return "", nil, err
+	}
+	if gateway.ClientID != gatewayClientID || gateway.Attributes["hypershell.gateway"] != "true" || gateway.Attributes[gatewayIDAttribute] != gatewayID || gatewayID == "" {
+		return "", nil, errors.New("keycloak Gateway client binding does not match")
 	}
 	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/roles", c.realm, url.PathEscape(gatewayUUID)), nil)
 	if err != nil {

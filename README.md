@@ -152,3 +152,10 @@ Recovery also removes clients created after their initial cleanup. It retains
 deleted account records for repeated cleanup by stable IDs, including after
 Gateway deletion and process restart. Normal API queries exclude these records.
 Large-history cleanup capacity and bounded retention remain open.
+
+The provider now requires a trusted Gateway ID binding on each Keycloak Gateway
+client. A real API test exposed, then verified the fix for, a foreign-audience
+access defect. Failed role reduction now queues terminal revocation, including
+when OIDC settings are invalid or the provider binding is lost. The tests check
+restart and restored owner access. Control-plane creation of these bindings,
+existing-client migration, and production recovery latency remain open.

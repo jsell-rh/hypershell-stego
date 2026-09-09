@@ -485,6 +485,11 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 		if err != nil {
 			return err
 		}
+		if row.Status == "degraded" && row.Role == RoleAdmin {
+			// Earlier versions did not store the lower role with pending state.
+			row.Role = RoleUser
+			return save(ctx, tx, &row)
+		}
 		if row.Status != "ready" {
 			return nil
 		}
@@ -496,6 +501,7 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 			row.Status = "revoking"
 		} else if row.Role == RoleAdmin && !access.Owner {
 			row.Status = "degraded"
+			row.Role = RoleUser
 		} else {
 			pending = false
 			return nil
@@ -508,7 +514,8 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 	if err != nil || !pending {
 		return err
 	}
-	return s.locked(ctx, gatewayID, func(ctx context.Context, tx storage.Transaction, gateway model.Gateway) error {
+	queuedRevocation := false
+	err = s.locked(ctx, gatewayID, func(ctx context.Context, tx storage.Transaction, gateway model.Gateway) error {
 		row, err := account(ctx, tx, gatewayID, id)
 		if errors.Is(err, storage.ErrNotFound) {
 			return nil
@@ -539,14 +546,20 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 					desired = RoleUser
 				}
 				connection, err := oidcConnection(gateway, row.ClientID, false)
-				if err != nil {
-					return err
+				if err == nil {
+					call, cancel := context.WithTimeout(ctx, 5*time.Second)
+					err = s.provider.Reconcile(call, Spec{ClientID: row.ClientID, DisplayName: row.Name, GatewayClientID: connection.Audience, GatewayID: gatewayID, ServiceAccountID: row.ID, CreatorUserID: row.CreatedByUserID, Role: desired, ExpectedIssuer: connection.Issuer, AccessTokenLifetimeSeconds: 300}, row.ClientUuid, row.Subject)
+					cancel()
 				}
-				call, cancel := context.WithTimeout(ctx, 5*time.Second)
-				defer cancel()
-				err = s.provider.Reconcile(call, Spec{ClientID: row.ClientID, DisplayName: row.Name, GatewayClientID: connection.Audience, GatewayID: gatewayID, ServiceAccountID: row.ID, CreatorUserID: row.CreatedByUserID, Role: desired, ExpectedIssuer: connection.Issuer, AccessTokenLifetimeSeconds: 300}, row.ClientUuid, row.Subject)
 				if err != nil {
-					return ErrUnavailable
+					// An invalid identity or failed role reduction must not preserve
+					// the old credential. Commit terminal intent before provider cleanup.
+					row.Status = "revoking"
+					if err := save(ctx, tx, &row); err != nil {
+						return err
+					}
+					queuedRevocation = true
+					return audit(ctx, tx, row, "system", "revoke", "started")
 				}
 				row.Role = desired
 				row.Status = "ready"
@@ -597,6 +610,10 @@ func (s *Service) Recover(ctx context.Context, gatewayID, id string) error {
 		}
 		return nil
 	})
+	if err == nil && queuedRevocation {
+		return s.Recover(ctx, gatewayID, id)
+	}
+	return err
 }
 
 // Diagnostic formatting must not expose credentials.

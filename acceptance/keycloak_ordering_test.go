@@ -106,6 +106,7 @@ func TestRevocationSurvivesDelayedEnableAfterDatabaseLoss(t *testing.T) {
 	defer release()
 	f := database(t)
 	_, gateway := accountService(t, f, newAccountProvider())
+	k.bindGateway(t, "gateway-audience", gateway.ID)
 	oidc := fmt.Sprintf(`{"issuer":%q,"client_id":"gateway-audience","audience":"gateway-audience"}`, delayed.options.ServerURL+"/realms/workflow")
 	if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 		t.Fatal(err)

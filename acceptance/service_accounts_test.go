@@ -357,19 +357,10 @@ func TestServiceAccountRoleCeilingAndExpiry(t *testing.T) {
 	if _, err := f.db.Exec(`UPDATE role_bindings SET role_id=(SELECT id FROM roles WHERE name='gateway:viewer') WHERE gateway_id=$1`, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
-	provider.failChange = true
-	if err := service.Recover(ctx, gateway.ID, id); !errors.Is(err, serviceaccounts.ErrUnavailable) {
-		t.Fatalf("failed downgrade: %v", err)
-	}
-	stored, err := f.storage.Get(ctx, "ServiceAccount", id)
-	if err != nil || stored.(model.ServiceAccount).Status != "degraded" {
-		t.Fatalf("uncertain downgrade was not persisted: %v %v", stored, err)
-	}
-	provider.failChange = false
 	if err := service.Recover(ctx, gateway.ID, id); err != nil {
 		t.Fatal(err)
 	}
-	stored, err = f.storage.Get(ctx, "ServiceAccount", id)
+	stored, err := f.storage.Get(ctx, "ServiceAccount", id)
 	if err != nil || stored.(model.ServiceAccount).Role != serviceaccounts.RoleUser || stored.(model.ServiceAccount).Status != "ready" || provider.roles[id] != serviceaccounts.RoleUser {
 		t.Fatalf("downgrade did not converge: %v %v", stored, err)
 	}

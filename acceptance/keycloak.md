@@ -23,6 +23,21 @@ secret in the provisioner process. The administrator account must have permissio
 to manage clients, users, and their role mappings within the configured realm.
 Do not give this credential to API callers.
 
+Each Gateway client must have these Keycloak attributes:
+
+| Attribute | Required value |
+| --- | --- |
+| `hypershell.gateway` | `true` |
+| `hypershell.gateway-id` | The immutable Gateway ID |
+
+The trusted control plane must set this binding when it creates the client.
+The provider checks the client ID and binding before it reads roles, creates an
+account, or repairs account settings. OIDC fields from an API caller cannot
+establish the binding. Missing or incorrect attributes cause refusal. Existing
+clients need a trusted migration; the provider does not adopt them from caller
+input. The acceptance fixture uses its administrator to set the binding. The
+control-plane port and migration procedure remain open.
+
 New clients start disabled. The provider removes unrelated role mappings, assigns
 the selected Gateway roles, installs restricted audience and role mappers, and
 enables the client. Before returning the secret, it obtains an access token and
@@ -98,6 +113,35 @@ The existing transport deadlines still apply. Deleted account records currently
 remain available for repeated cleanup.
 Large-history capacity and a bounded retention policy remain unverified.
 
+`TestKeycloakGatewayAudienceBinding` reproduced an access defect through the
+running REST API and the generated provisioner runtime. A second Gateway owner
+could not read the first Gateway, but could obtain a verified admin token for
+its audience. The binding check now refuses that request before client creation.
+Provider tests also cover missing attributes, a foreign ID, and a different
+client ID for both creation and repair.
+
+The same workflow exposed a second defect. Invalid OIDC settings prevented role
+reduction after an owner became a viewer. The old admin credential stayed active.
+Recovery now commits `revoking` state and its audit before terminal cleanup when
+role reduction fails. This also covers loss of the provider binding. Restored
+configuration or owner access cannot cancel committed revocation. Real-provider
+tests check this after process restart. A separate database test proves that
+terminal intent survives failed cleanup and a new service instance.
+
+`TestRoleReductionCannotRiseAfterFailedCompletion` exposed another ordering
+defect. The provider accepted the lower role, but the completion audit failed.
+Restored owner access then let recovery raise the credential back to admin.
+Recovery now stores the lower role with the pending state, before the provider
+call. The test also covers pending records from the earlier implementation.
+Both paths keep the lower role after completion failure and a new service instance.
+
+The current design assumptions are a control-plane binding and terminal
+revocation after failed role reduction. The user was asked about both choices.
+A temporary provider error can thus require a new credential. If a deadline or
+database failure prevents the state commit, the pending reduction remains for
+recovery. Provider outages can delay cleanup. Existing access tokens remain
+valid until expiry. Production recovery latency is not yet established.
+
 Set `STEGO_REQUIRE_KEYCLOAK=1` to require this test. Docker must be available.
 `scripts/check-gateway.sh` and CI require it. The container is isolated, uses
 test credentials, and exposes only its TLS port on the loopback interface.
@@ -123,7 +167,9 @@ the reference HTTP transport and unverified token inspection. See Keycloak's
 [TLS guide](https://www.keycloak.org/server/enabletls), and
 [service-account administration guide](https://www.keycloak.org/docs/latest/server_admin/).
 
-The final local race suite passed with PostgreSQL and Keycloak required. The
-acceptance package completed in 172.666 seconds. Pinned regeneration had no
-output changes or drift. These results verify the cleanup paths above; they
-are not production capacity measurements.
+The expanded local race suite passed with PostgreSQL and Keycloak required. The
+acceptance package completed in 210.318 seconds. The later role-completion
+correction passed focused race tests in 11.978 seconds. Pinned regeneration had
+no output changes or drift, and dependency verification passed. CI requires all
+these tests on the final commit. These are correctness checks, not production
+capacity measurements.
