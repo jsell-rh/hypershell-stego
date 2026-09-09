@@ -86,6 +86,16 @@ type ManagedDatabase struct {
 	Status           *string `json:"status,omitempty" gorm:"column:status;size:255"`
 }
 
+// GatewayNetwork represents the GatewayNetwork entity.
+type GatewayNetwork struct {
+	Meta
+	Name         string  `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	Topology     *string `json:"topology,omitempty" gorm:"column:topology;size:64"`
+	TunnelMode   *string `json:"tunnel_mode,omitempty" gorm:"column:tunnel_mode;size:64"`
+	HubGatewayID *string `json:"hub_gateway_id,omitempty" gorm:"column:hub_gateway_id;size:255"`
+	Status       *string `json:"status,omitempty" gorm:"column:status;size:255"`
+}
+
 // Gateway represents the Gateway entity.
 type Gateway struct {
 	Meta

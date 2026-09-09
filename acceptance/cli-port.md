@@ -13,9 +13,9 @@ alone does not establish compatibility with all reference options.
 | Managed cluster | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
 | Managed database | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
 | Gateway release | Create, get, list, delete, placement workflow | Reference output options and interactive confirmation |
-| Gateway network | Reference contracts are present | Application behavior, CLI commands, and workflow tests |
+| Gateway network | REST and gRPC CRUD and watch; CLI create, get, list, delete | Reference output options, interactive confirmation, and apply |
 | Login and logout | Browser and device OIDC, private token files, refresh, provider token revocation | Legacy configuration migration and remaining reference options |
-| Apply | Not supplied | Resource dispatch, input contracts, and tests |
+| Apply | Not supplied | Resource dispatch, strict input contracts, dry-run behavior, failure exit status, and tests |
 | Config | Login writes private configuration | Reference config commands and pager settings |
 | Whoami | Not supplied | Identity display and explicit protected token output |
 | Version and completion | Not supplied | Build identity and shell completion |
@@ -27,6 +27,6 @@ ID needed for grants. It does not replace reference `whoami` behavior.
 STEGO supplies common command execution. Hypershell supplies command paths,
 fields, and domain rules. Provider and API acceptance tests verify actual
 behavior. The [Gateway](generated-cli.md), [service-account](service-account-cli.md),
-[OIDC](oidc-cli.md), [grant](grant-cli.md), and [catalog](catalog-cli.md) workflows are executable evidence.
+[OIDC](oidc-cli.md), [grant](grant-cli.md), [catalog](catalog-cli.md), and [network](gateway-networks.md) workflows are executable evidence.
 The full CLI port remains incomplete. Unsafe reference behavior, such as
 bypassing TLS checks, must not become a default or an accepted insecure path.

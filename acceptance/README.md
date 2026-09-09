@@ -253,3 +253,9 @@ lists the remaining work.
 The [catalog CLI workflow](catalog-cli.md) starts with empty placement catalogs
 and creates records through generated commands. It checks both placement modes,
 access rules, input bounds, event rollback, restart, and protected deletion.
+
+The [Gateway-network workflow](gateway-networks.md) now checks network
+record CRUD, access, CLI commands, watch events, rollback, restart, and database
+upgrade. It preserves the reference metadata behavior. Neither this port nor
+the reference network controller sets up tunnels. The complete Hypershell port
+and production acceptance remain open.

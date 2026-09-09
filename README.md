@@ -252,3 +252,9 @@ for the remaining reference behavior.
 The [catalog CLI workflow](acceptance/catalog-cli.md) creates placement records
 and Gateways under CNPG and default deployment modes. It also tests protected
 deletion and event rollback.
+
+The [Gateway-network workflow](acceptance/gateway-networks.md) now checks network
+record CRUD, access, CLI commands, watch events, rollback, restart, and database
+upgrade. It preserves the reference metadata behavior. Neither this port nor
+the reference network controller sets up tunnels. The complete Hypershell port
+and production acceptance remain open.

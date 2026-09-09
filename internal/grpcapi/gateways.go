@@ -66,6 +66,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	if err != nil {
 		return err
 	}
+	pb.RegisterGatewayNetworkServiceServer(registrar, &networkServer{resource: placement.Networks, source: source})
 	pb.RegisterManagedClusterServiceServer(registrar, &clusterServer{resource: placement.Clusters, source: source})
 	pb.RegisterGatewayReleaseServiceServer(registrar, &releaseServer{resource: placement.Releases, source: source})
 	pb.RegisterManagedDatabaseServiceServer(registrar, &databaseServer{resource: placement.Databases, source: source})

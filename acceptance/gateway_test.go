@@ -146,6 +146,13 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
 		t.Fatal(err)
 	}
+	migration, err = os.ReadFile("../migrations/000008_gateway_networks.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
 	return f
 }
 

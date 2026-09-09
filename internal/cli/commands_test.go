@@ -69,6 +69,7 @@ func TestGrantCreationFieldsFollowDomainContract(t *testing.T) {
 
 func TestCatalogCreationFieldsFollowDomainContract(t *testing.T) {
 	types := map[string]reflect.Type{
+		"/api/hypershell/v1/gateway_networks":  reflect.TypeFor[catalog.NetworkCreate](),
 		"/api/hypershell/v1/managed_clusters":  reflect.TypeFor[catalog.ClusterCreate](),
 		"/api/hypershell/v1/gateway_releases":  reflect.TypeFor[catalog.ReleaseCreate](),
 		"/api/hypershell/v1/managed_databases": reflect.TypeFor[catalog.DatabaseCreate](),

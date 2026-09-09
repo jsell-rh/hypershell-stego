@@ -7,6 +7,13 @@ func catalogCommands() []command.Command {
 		name, alias, path string
 		fields            []command.Field
 	}{
+		{"gatewayNetwork", "gateway-network", "gateway_networks", []command.Field{
+			{Flag: "name", Key: "name", Type: "string"},
+			{Flag: "topology", Key: "topology", Type: "string", Nullable: true},
+			{Flag: "tunnel-mode", Key: "tunnel_mode", Type: "string", Nullable: true},
+			{Flag: "hub-gateway-id", Key: "hub_gateway_id", Type: "string", Nullable: true},
+			{Flag: "status", Key: "status", Type: "string", Nullable: true},
+		}},
 		{"managedCluster", "managed-cluster", "managed_clusters", []command.Field{
 			{Flag: "name", Key: "name", Type: "string"},
 			{Flag: "provider", Key: "provider", Type: "string"},

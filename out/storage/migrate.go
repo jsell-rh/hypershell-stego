@@ -42,6 +42,7 @@ func init() {
 			&ManagedCluster{},
 			&GatewayRelease{},
 			&ManagedDatabase{},
+			&GatewayNetwork{},
 			&Gateway{},
 			&RoleBinding{},
 			&ServiceAccount{},

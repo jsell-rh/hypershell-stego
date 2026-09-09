@@ -83,6 +83,12 @@ func (s *Store) WithLockedResource(ctx context.Context, entity, field, value str
 		default:
 			return errors.New("resource lookup requires a unique string field")
 		}
+	case "GatewayNetwork":
+		switch field {
+		case "id":
+		default:
+			return errors.New("resource lookup requires a unique string field")
+		}
 	case "Gateway":
 		switch field {
 		case "id", "namespace":
@@ -163,6 +169,16 @@ func (s *Store) lockResource(ctx context.Context, entity, field, value string) (
 		return row, nil
 	case "ManagedDatabase":
 		var row ManagedDatabase
+		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, stegostorage.ErrNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return row, nil
+	case "GatewayNetwork":
+		var row GatewayNetwork
 		err := s.db.WithContext(ctx).Clauses(clause.Locking{Strength: "UPDATE"}).Where(clause.Eq{Column: clause.Column{Name: field}, Value: value}).Take(&row).Error
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, stegostorage.ErrNotFound

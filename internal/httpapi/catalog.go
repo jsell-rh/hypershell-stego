@@ -159,7 +159,23 @@ type ManagedDatabase struct {
 func presentManagedDatabase(row model.ManagedDatabase) ManagedDatabase {
 	return ManagedDatabase{Reference: Reference{ID: row.ID, Kind: "ManagedDatabase", Href: "/api/hypershell/v1/managed_databases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Provider: row.Provider, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
 }
+
+type GatewayNetwork struct {
+	Reference
+	Name         string  `json:"name"`
+	Topology     *string `json:"topology,omitempty"`
+	TunnelMode   *string `json:"tunnel_mode,omitempty"`
+	HubGatewayID *string `json:"hub_gateway_id,omitempty"`
+	Status       *string `json:"status,omitempty"`
+}
+
+func presentGatewayNetwork(row model.GatewayNetwork) GatewayNetwork {
+	return GatewayNetwork{Reference: Reference{ID: row.ID, Kind: "GatewayNetwork", Href: "/api/hypershell/v1/gateway_networks/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Topology: row.Topology, TunnelMode: row.TunnelMode, HubGatewayID: row.HubGatewayID, Status: row.Status}
+}
 func registerPlacement(mux *http.ServeMux, auth *requestAuth, service *catalog.Service) error {
+	if err := registerCatalog(mux, auth, service.Networks, "GatewayNetwork", "/api/hypershell/v1/gateway_networks", presentGatewayNetwork); err != nil {
+		return err
+	}
 	if err := registerCatalog(mux, auth, service.Clusters, "ManagedCluster", "/api/hypershell/v1/managed_clusters", presentManagedCluster); err != nil {
 		return err
 	}

@@ -3,7 +3,7 @@ package gateways
 import "slices"
 
 // AuthorizeCatalog applies current verified roles and trusted controller subjects.
-// Gateway ownership does not grant access to platform placement records.
+// Gateway ownership does not grant access to shared platform records.
 func (s *Service) AuthorizeCatalog(p Principal, write bool) error {
 	if err := validatePrincipal(p); err != nil {
 		return err

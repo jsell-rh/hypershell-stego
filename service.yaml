@@ -47,6 +47,13 @@ entities:
       - { name: instance_class, type: string, optional: true, max_length: 255 }
       - { name: connection_secret, type: string, optional: true, max_length: 253 }
       - { name: status, type: string, optional: true, max_length: 255 }
+  - name: GatewayNetwork
+    fields:
+      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: topology, type: string, optional: true, max_length: 64 }
+      - { name: tunnel_mode, type: string, optional: true, max_length: 64 }
+      - { name: hub_gateway_id, type: string, optional: true, max_length: 255 }
+      - { name: status, type: string, optional: true, max_length: 255 }
   - name: Gateway
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
@@ -135,3 +142,5 @@ overrides:
         import_path: hypershell/v1/gateway_releases.proto
       - path: contracts/reference/proto/hypershell/v1/managed_databases.proto
         import_path: hypershell/v1/managed_databases.proto
+      - path: contracts/reference/proto/hypershell/v1/gateway_networks.proto
+        import_path: hypershell/v1/gateway_networks.proto

@@ -1,4 +1,4 @@
-// Package catalog supplies Hypershell placement records and their change events.
+// Package catalog supplies shared Hypershell records and their change events.
 package catalog
 
 import (
@@ -21,6 +21,7 @@ type Query struct {
 	OrderBy    []store.OrderByField
 }
 type Service struct {
+	Networks  *Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]
 	Clusters  *Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]
 	Releases  *Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]
 	Databases *Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]
@@ -42,6 +43,7 @@ func New(repository store.Transactor, policy *gateways.Service) (*Service, error
 		return nil, errors.New("catalog requires storage and access rules")
 	}
 	return &Service{
+		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork},
 		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster},
 		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease},
 		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase},
@@ -191,12 +193,14 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 		if _, err := tx.Get(ctx, r.entity, id); err != nil {
 			return err
 		}
-		refs, err := tx.List(ctx, "Gateway", r.foreignField, id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
-		if err != nil {
-			return err
-		}
-		if refs.Total != 0 {
-			return store.ErrConflict
+		if r.foreignField != "" {
+			refs, err := tx.List(ctx, "Gateway", r.foreignField, id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
+			if err != nil {
+				return err
+			}
+			if refs.Total != 0 {
+				return store.ErrConflict
+			}
 		}
 		if err := tx.Delete(ctx, r.entity, id); err != nil {
 			return err
@@ -229,6 +233,8 @@ func (r *Resource[T, C, P]) Event(ctx context.Context, p gateways.Principal, id 
 		row = rows[0]
 		var gone bool
 		switch v := any(row).(type) {
+		case model.GatewayNetwork:
+			gone = v.DeletedAt.Valid
 		case model.ManagedCluster:
 			gone = v.DeletedAt.Valid
 		case model.GatewayRelease:

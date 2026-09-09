@@ -60,6 +60,7 @@ func NewStore(db *gorm.DB) (*Store, error) {
 		&ManagedCluster{},
 		&GatewayRelease{},
 		&ManagedDatabase{},
+		&GatewayNetwork{},
 		&Gateway{},
 		&RoleBinding{},
 		&ServiceAccount{},
@@ -149,6 +150,22 @@ func (s *Store) Create(ctx context.Context, entity string, value any) error {
 		var v ManagedDatabase
 		if err := json.Unmarshal(data, &v); err != nil {
 			return fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
+		}
+		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
+			if isUniqueConstraintError(err) {
+				return stegostorage.ErrConflict
+			}
+			return err
+		}
+		return nil
+	case "GatewayNetwork":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling GatewayNetwork: %w", err)
+		}
+		var v GatewayNetwork
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling GatewayNetwork: %w", err)
 		}
 		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
 			if isUniqueConstraintError(err) {
@@ -268,6 +285,15 @@ func (s *Store) Get(ctx context.Context, entity string, id string) (any, error) 
 		return v, nil
 	case "ManagedDatabase":
 		var v ManagedDatabase
+		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				return nil, stegostorage.ErrNotFound
+			}
+			return nil, err
+		}
+		return v, nil
+	case "GatewayNetwork":
+		var v GatewayNetwork
 		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, stegostorage.ErrNotFound
@@ -426,6 +452,27 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return stegostorage.ErrNotFound
 		}
 		return nil
+	case "GatewayNetwork":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return fmt.Errorf("marshaling GatewayNetwork: %w", err)
+		}
+		var v GatewayNetwork
+		if err := json.Unmarshal(data, &v); err != nil {
+			return fmt.Errorf("unmarshaling GatewayNetwork: %w", err)
+		}
+		v.ID = id
+		result := s.db.WithContext(ctx).Model(&GatewayNetwork{}).Where("id = ?", id).Select([]string{"name", "topology", "tunnel_mode", "hub_gateway_id", "status"}).Updates(&v)
+		if result.Error != nil {
+			if isUniqueConstraintError(result.Error) {
+				return stegostorage.ErrConflict
+			}
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
 	case "Gateway":
 		data, err := json.Marshal(value)
 		if err != nil {
@@ -557,6 +604,15 @@ func (s *Store) Delete(ctx context.Context, entity string, id string) error {
 		return nil
 	case "ManagedDatabase":
 		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&ManagedDatabase{})
+		if result.Error != nil {
+			return result.Error
+		}
+		if result.RowsAffected == 0 {
+			return stegostorage.ErrNotFound
+		}
+		return nil
+	case "GatewayNetwork":
+		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&GatewayNetwork{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -1023,6 +1079,87 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
+	case "GatewayNetwork":
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
+		query := s.db.WithContext(ctx).Model(&GatewayNetwork{})
+		if opts.IncludeDeleted || opts.OnlyDeleted {
+			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
+		}
+		query, err := s.applyRelated(ctx, query, "GatewayNetwork", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		query, err = s.applyRowFilter(ctx, query, "GatewayNetwork", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		if scopeField != "" && scopeValue != "" {
+			if !validCols[scopeField] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity GatewayNetwork", scopeField)
+			}
+			query = query.Where(scopeField+" = ?", scopeValue)
+		}
+		for field, value := range opts.ImplicitFilters {
+			if !validCols[field] {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity GatewayNetwork", field)
+			}
+			query = query.Where(field+" = ?", value)
+		}
+		if opts.Search != "" {
+			searchResult, err := search.NewSearchEngine().ParseSearch("GatewayNetwork", opts.Search)
+			if err != nil {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
+			}
+			if searchResult != nil {
+				query = query.Where(searchResult.Where, searchResult.Args...)
+			}
+		}
+		for _, ob := range opts.OrderBy {
+			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
+				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
+			}
+			if validCols[ob.Field] {
+				query = query.Order(ob.Field + " " + ob.Direction)
+			}
+		}
+		var total int64
+		if err := query.Count(&total).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		if opts.CountOnly {
+			return stegostorage.ListResult{Items: []GatewayNetwork{}, Total: total}, nil
+		}
+		if len(opts.Fields) > 0 {
+			// Always include id; add requested fields that exist.
+			selectCols := []string{"id"}
+			for _, f := range opts.Fields {
+				if validCols[f] {
+					selectCols = append(selectCols, f)
+				}
+			}
+			query = query.Select(selectCols)
+		}
+		offset := (opts.Page - 1) * opts.Size
+		if offset > 0 {
+			query = query.Offset(offset)
+		}
+		if opts.Size > 0 {
+			query = query.Limit(opts.Size)
+		}
+		var result []GatewayNetwork
+		if err := query.Find(&result).Error; err != nil {
+			if opts.Search != "" && searchInputError(err) {
+				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
+			}
+			return stegostorage.ListResult{}, err
+		}
+		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "Gateway":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
@@ -1393,6 +1530,11 @@ func referenceTarget(entity, field string) string {
 		case "id":
 			return "ManagedDatabase"
 		}
+	case "GatewayNetwork":
+		switch field {
+		case "id":
+			return "GatewayNetwork"
+		}
 	case "Gateway":
 		switch field {
 		case "id":
@@ -1451,6 +1593,8 @@ func filterColumns(entity string) map[string]bool {
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 	case "ManagedDatabase":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+	case "GatewayNetwork":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 	case "RoleBinding":
@@ -1475,6 +1619,8 @@ func textColumns(entity string) map[string]bool {
 		return map[string]bool{"name": true, "image": true, "rollout_strategy": true, "canary_duration": true, "status": true}
 	case "ManagedDatabase":
 		return map[string]bool{"name": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+	case "GatewayNetwork":
+		return map[string]bool{"name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
 		return map[string]bool{"name": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true}
 	case "RoleBinding":
@@ -1511,6 +1657,8 @@ func (s *Store) relatedExpression(ctx context.Context, target string, filter ste
 		related = s.db.WithContext(ctx).Model(&GatewayRelease{}).Select(filter.ForeignField)
 	case "ManagedDatabase":
 		related = s.db.WithContext(ctx).Model(&ManagedDatabase{}).Select(filter.ForeignField)
+	case "GatewayNetwork":
+		related = s.db.WithContext(ctx).Model(&GatewayNetwork{}).Select(filter.ForeignField)
 	case "Gateway":
 		related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
 	case "RoleBinding":
@@ -2006,6 +2154,74 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			return false, err
 		}
 		return created, nil
+	case "GatewayNetwork":
+		data, err := json.Marshal(value)
+		if err != nil {
+			return false, fmt.Errorf("marshaling GatewayNetwork: %w", err)
+		}
+		var v GatewayNetwork
+		if err := json.Unmarshal(data, &v); err != nil {
+			return false, fmt.Errorf("unmarshaling GatewayNetwork: %w", err)
+		}
+		validCols := map[string]bool{"name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
+		for _, k := range upsertKey {
+			if !validCols[k] {
+				return false, fmt.Errorf("invalid upsert key field %q for entity GatewayNetwork", k)
+			}
+		}
+		conflictCols := make([]clause.Column, len(upsertKey))
+		for i, k := range upsertKey {
+			conflictCols[i] = clause.Column{Name: k}
+		}
+		keySet := make(map[string]bool, len(upsertKey))
+		for _, k := range upsertKey {
+			keySet[k] = true
+		}
+		var updateCols []string
+		for _, col := range []string{"name", "topology", "tunnel_mode", "hub_gateway_id", "status"} {
+			if !keySet[col] {
+				updateCols = append(updateCols, col)
+			}
+		}
+		onConflict := clause.OnConflict{
+			Columns: conflictCols,
+		}
+		if len(updateCols) > 0 {
+			onConflict.DoUpdates = clause.AssignmentColumns(updateCols)
+			if concurrency == "optimistic" {
+				return false, fmt.Errorf("optimistic concurrency requires a 'generation' field on entity GatewayNetwork")
+			}
+		} else {
+			onConflict.DoNothing = true
+		}
+		var created bool
+		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+			var valueMap map[string]any
+			if err := json.Unmarshal(data, &valueMap); err != nil {
+				return fmt.Errorf("unmarshaling GatewayNetwork to map: %w", err)
+			}
+			whereClause := make(map[string]any, len(upsertKey))
+			for _, k := range upsertKey {
+				whereClause[k] = valueMap[k]
+			}
+			var existingCount int64
+			if err := tx.Model(&GatewayNetwork{}).Where(whereClause).Count(&existingCount).Error; err != nil {
+				return err
+			}
+			result := tx.Clauses(onConflict).Create(&v)
+			if result.Error != nil {
+				return result.Error
+			}
+			if concurrency == "optimistic" && result.RowsAffected == 0 {
+				return stegostorage.ErrConflict
+			}
+			created = existingCount == 0
+			return nil
+		}, &sql.TxOptions{Isolation: sql.LevelSerializable})
+		if err != nil {
+			return false, err
+		}
+		return created, nil
 	case "Gateway":
 		data, err := json.Marshal(value)
 		if err != nil {
@@ -2328,6 +2544,12 @@ func (s *Store) Exists(ctx context.Context, entity string, id string) (bool, err
 	case "ManagedDatabase":
 		var count int64
 		if err := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Count(&count).Error; err != nil {
+			return false, err
+		}
+		return count > 0, nil
+	case "GatewayNetwork":
+		var count int64
+		if err := s.db.WithContext(ctx).Model(&GatewayNetwork{}).Where("id = ?", id).Count(&count).Error; err != nil {
 			return false, err
 		}
 		return count > 0, nil
