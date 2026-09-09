@@ -47,7 +47,8 @@ and role IDs from the database. It does not insert the tested grants. Grant
 changes use REST or the domain service while the process is stopped.
 
 RoleBinding list and watch APIs, full Users and Roles APIs, global role
-synchronization, and completed browser or device login remain open. Gateway
+synchronization and device login remain open. Browser login now has
+[a separate application check](gateway-user-login.md). Gateway
 watch remains a live stream. Clients must list current resources after they
 connect again. These checks do not establish production capacity or broker
 failover behavior.

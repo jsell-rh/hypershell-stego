@@ -23,18 +23,20 @@ type Provider interface {
 	EnsureGateway(context.Context, string, string) (string, error)
 	DeleteGateway(context.Context, string) error
 	GatewayIDs(context.Context) ([]string, error)
+	ReconcileGatewayUser(context.Context, string, string, string, string) error
 }
 type Controller struct {
-	gateways pb.GatewayServiceClient
-	state    control.GatewayIdentityServiceClient
-	provider Provider
+	gateways  pb.GatewayServiceClient
+	state     control.GatewayIdentityServiceClient
+	provider  Provider
+	userScans map[string]userScan
 }
 
 func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, provider Provider) (*Controller, error) {
 	if gateways == nil || state == nil || provider == nil {
 		return nil, errors.New("Gateway controller dependencies are required")
 	}
-	return &Controller{gateways: gateways, state: state, provider: provider}, nil
+	return &Controller{gateways: gateways, state: state, provider: provider, userScans: make(map[string]userScan)}, nil
 }
 
 // Run uses one worker. A watch starts before the state scan. Queue overflow
@@ -177,15 +179,81 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return errors.New("Gateway state does not match the request")
 	}
 	if state.GetDeleted() {
+		delete(c.userScans, id)
 		return c.provider.DeleteGateway(ctx, id)
 	}
 	oidc, err := c.provider.EnsureGateway(ctx, id, gateway.GetName())
 	if err != nil {
 		return err
 	}
-	if gateway.GetOidc() == oidc {
-		return nil
+	if gateway.GetOidc() != oidc {
+		if _, err = c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc}); err != nil {
+			return err
+		}
 	}
-	_, err = c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc})
-	return err
+	return c.reconcileUsers(ctx, id)
+}
+
+type userScan struct {
+	page   int32
+	offset int
+}
+
+// The cursor retains progress when one pass reaches its time limit.
+// Each provider write still requires a fresh, matching API state.
+func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
+	cursor := c.userScans[id]
+	if cursor.page == 0 {
+		cursor.page = 1
+	}
+	var failures []error
+	for ; cursor.page <= 100; cursor.page++ {
+		result, err := c.state.ListGatewayIdentityUsers(ctx, &control.ListGatewayIdentityUsersRequest{GatewayId: id, Page: cursor.page})
+		if err != nil {
+			return err
+		}
+		if result == nil || len(result.UserIds) > 100 || (result.HasMore && len(result.UserIds) == 0) {
+			return errors.New("invalid Gateway user page")
+		}
+		seen := map[string]bool{}
+		for i, userID := range result.UserIds {
+			if userID == "" {
+				return errors.New("Gateway user page has an empty ID")
+			}
+			duplicate := seen[userID]
+			seen[userID] = true
+			if i < cursor.offset || duplicate {
+				continue
+			}
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			state, err := c.state.GetGatewayIdentityUser(ctx, &control.GetGatewayIdentityUserRequest{GatewayId: id, UserId: userID})
+			if err == nil && (state == nil || state.GatewayId != id || state.UserId != userID || state.Issuer == "" || state.Subject == "") {
+				err = errors.New("Gateway user state does not match the request")
+			}
+			if err == nil {
+				err = c.provider.ReconcileGatewayUser(ctx, id, state.Issuer, state.Subject, state.Role)
+			}
+			cursor.offset = i + 1
+			if ctx.Err() != nil && err != nil {
+				cursor.offset = i
+			}
+			c.userScans[id] = cursor
+			if ctx.Err() != nil {
+				return ctx.Err()
+			}
+			if err != nil {
+				failures = append(failures, err)
+			}
+		}
+		if !result.HasMore {
+			delete(c.userScans, id)
+			return errors.Join(failures...)
+		}
+		cursor.offset = 0
+		c.userScans[id] = userScan{page: cursor.page + 1}
+	}
+	delete(c.userScans, id)
+	return errors.New("Gateway user scan exceeds 10000 grant references")
 }

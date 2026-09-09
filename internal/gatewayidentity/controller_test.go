@@ -100,3 +100,151 @@ func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 		t.Fatal("unchanged identity emitted another update")
 	}
 }
+
+func (f *stateFixture) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
+	return &control.ListGatewayIdentityUsersResponse{}, nil
+}
+func (f *providerFixture) ReconcileGatewayUser(context.Context, string, string, string, string) error {
+	return f.err
+}
+
+type userStateFixture struct {
+	*stateFixture
+	response *control.GetGatewayIdentityUserResponse
+	failure  error
+}
+
+func (f *userStateFixture) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
+	return &control.ListGatewayIdentityUsersResponse{UserIds: []string{"user"}}, nil
+}
+func (f *userStateFixture) GetGatewayIdentityUser(context.Context, *control.GetGatewayIdentityUserRequest, ...grpc.CallOption) (*control.GetGatewayIdentityUserResponse, error) {
+	return f.response, f.failure
+}
+
+type userProviderFixture struct {
+	*providerFixture
+	writes int
+	role   string
+}
+
+func (f *userProviderFixture) ReconcileGatewayUser(_ context.Context, _, _, _, role string) error {
+	f.writes++
+	f.role = role
+	return nil
+}
+
+func TestUserRoleChangesRequireCurrentMatchingState(t *testing.T) {
+	for _, tc := range []struct {
+		name    string
+		state   *control.GetGatewayIdentityUserResponse
+		failure error
+	}{
+		{name: "denied", failure: status.Error(codes.PermissionDenied, "denied")},
+		{name: "missing", failure: status.Error(codes.NotFound, "absent")},
+		{name: "empty"},
+		{name: "other Gateway", state: &control.GetGatewayIdentityUserResponse{GatewayId: "other", UserId: "user"}},
+		{name: "other user", state: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "other"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			state := &userStateFixture{response: tc.state, failure: tc.failure}
+			provider := &userProviderFixture{providerFixture: new(providerFixture)}
+			controller, _ := New(new(apiFixture), state, provider)
+			if err := controller.reconcileUsers(context.Background(), "gateway"); err == nil || provider.writes != 0 {
+				t.Fatal("invalid user state reached the provider", err)
+			}
+		})
+	}
+	state := &userStateFixture{response: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "user", Issuer: "https://issuer.example", Subject: "subject", Role: "gateway:owner"}}
+	provider := &userProviderFixture{providerFixture: new(providerFixture)}
+	controller, _ := New(new(apiFixture), state, provider)
+	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil || provider.role != "gateway:owner" {
+		t.Fatal("owner mapping", err)
+	}
+	state.response.Role = "gateway:viewer"
+	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil || provider.role != "gateway:viewer" {
+		t.Fatal("stale owner mapping", err)
+	}
+	state.response.Role = ""
+	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil || provider.role != "" {
+		t.Fatal("removed grant was ignored", err)
+	}
+}
+
+type progressUserState struct {
+	control.GatewayIdentityServiceClient
+}
+
+func (*progressUserState) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
+	return &control.ListGatewayIdentityUsersResponse{UserIds: []string{"first", "second"}}, nil
+}
+func (*progressUserState) GetGatewayIdentityUser(_ context.Context, request *control.GetGatewayIdentityUserRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityUserResponse, error) {
+	return &control.GetGatewayIdentityUserResponse{GatewayId: request.GatewayId, UserId: request.UserId, Issuer: "https://issuer.example", Subject: request.UserId, Role: "gateway:viewer"}, nil
+}
+
+type progressUserProvider struct {
+	*providerFixture
+	subjects []string
+	cancel   context.CancelFunc
+}
+
+func (f *progressUserProvider) ReconcileGatewayUser(_ context.Context, _, _, subject, _ string) error {
+	f.subjects = append(f.subjects, subject)
+	if f.cancel != nil {
+		f.cancel()
+	}
+	return nil
+}
+
+func TestUserScanResumesAfterItsTimeBudget(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	provider := &progressUserProvider{providerFixture: new(providerFixture), cancel: cancel}
+	controller, _ := New(new(apiFixture), new(progressUserState), provider)
+	if err := controller.reconcileUsers(ctx, "gateway"); !errors.Is(err, context.Canceled) {
+		t.Fatal("first pass did not stop", err)
+	}
+	provider.cancel = nil
+	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
+		t.Fatal(err)
+	}
+	if len(provider.subjects) != 2 || provider.subjects[0] != "first" || provider.subjects[1] != "second" {
+		t.Fatal("later users starved", provider.subjects)
+	}
+	if len(controller.userScans) != 0 {
+		t.Fatal("completed scan retained its cursor")
+	}
+}
+
+type lastUserProvider struct {
+	*providerFixture
+	cancel                  context.CancelFunc
+	firstCalls, secondCalls int
+}
+
+func (f *lastUserProvider) ReconcileGatewayUser(ctx context.Context, _, _, subject, _ string) error {
+	if subject == "first" {
+		f.firstCalls++
+		return nil
+	}
+	f.secondCalls++
+	if f.secondCalls == 1 {
+		f.cancel()
+		return ctx.Err()
+	}
+	return nil
+}
+func TestUserScanRetriesLastUserAfterTimeout(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	provider := &lastUserProvider{providerFixture: new(providerFixture), cancel: cancel}
+	controller, _ := New(new(apiFixture), new(progressUserState), provider)
+	if err := controller.reconcileUsers(ctx, "gateway"); !errors.Is(err, context.Canceled) {
+		t.Fatal("first pass did not report timeout", err)
+	}
+	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
+		t.Fatal(err)
+	}
+	if provider.firstCalls != 1 || provider.secondCalls != 2 {
+		t.Fatalf("last user lost its retry position: first=%d second=%d", provider.firstCalls, provider.secondCalls)
+	}
+}

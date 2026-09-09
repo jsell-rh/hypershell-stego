@@ -49,6 +49,9 @@ func TestGatewayClientCannotAdoptForeignIdentity(t *testing.T) {
 		if err := client.DeleteGateway(context.Background(), id); err == nil {
 			t.Fatal("deleted an untrusted Gateway client")
 		}
+		if err := client.ReconcileGatewayUser(context.Background(), id, server.URL+"/realms/test", "subject", "gateway:owner"); err == nil {
+			t.Fatal("mapped a user to an untrusted Gateway")
+		}
 		if writes.Load() != 0 {
 			t.Fatal("invalid Gateway binding reached provider configuration")
 		}

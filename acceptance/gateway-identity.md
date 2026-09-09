@@ -84,10 +84,15 @@ attributes.
 The client permits browser login with PKCE S256 and device login. It disables
 password, implicit, client-credential, and CIBA grants. It has no default or
 optional client scopes. Its own role scope and claim mappers supply the Gateway
-audience and roles. The reference enables the password grant. The variant follows
+subject, audience, and roles. The reference enables the password grant. The variant follows
 [RFC 9700 section 2.4](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.4).
 
 This workflow proves identity provisioning and service-account token use. It does
-not yet prove browser login, device login completion, user role reconciliation,
+not prove device login completion,
 Kubernetes deployment, Gateway workload health, or the other resource controllers.
 It does not establish full reference compatibility or production readiness.
+
+Browser login and Gateway user-role changes now have
+[a separate application check](gateway-user-login.md). It covers subject identity,
+role union, removal, and restart. It also states the limits of token revocation
+and provider synchronization.

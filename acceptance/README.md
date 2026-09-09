@@ -164,3 +164,8 @@ grants through REST. The test checks access through REST and gRPC, filtered list
 denied requests, event delivery, removal of access, re-grant, and restart.
 A separate concurrent test protects the last owner. See
 [the grant workflow and its remaining scope](gateway-grants.md).
+
+The user login workflow now uses real Keycloak browser forms and PKCE S256.
+Gateway tokens reflect owner and viewer grants, profile changes, removal, and
+restart. The test exposed a missing subject mapper in the managed Gateway client.
+See [the user login evidence and remaining scope](gateway-user-login.md).

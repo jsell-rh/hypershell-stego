@@ -34,7 +34,9 @@ type keycloakFixture struct {
 	http    *web.Client
 }
 
-func startKeycloak(t *testing.T) *keycloakFixture {
+func startKeycloak(t *testing.T) *keycloakFixture { return startKeycloakConfigured(t, nil) }
+
+func startKeycloakConfigured(t *testing.T, configure func(map[string]any)) *keycloakFixture {
 	t.Helper()
 	if os.Getenv("STEGO_REQUIRE_KEYCLOAK") != "1" {
 		t.Skip("set STEGO_REQUIRE_KEYCLOAK=1 for the real Keycloak workflow")
@@ -50,6 +52,9 @@ func startKeycloak(t *testing.T) *keycloakFixture {
 		},
 		"roles": map[string]any{"client": map[string]any{"gateway-audience": []any{map[string]any{"name": "openshell-user"}, map[string]any{"name": "openshell-admin"}}}},
 		"users": []any{map[string]any{"username": "service-account-provisioner", "enabled": true, "serviceAccountClientId": "provisioner", "clientRoles": map[string]any{"realm-management": []string{"manage-clients", "view-clients", "manage-users", "view-users"}}}},
+	}
+	if configure != nil {
+		configure(realm)
 	}
 	data, err := json.Marshal(realm)
 	if err != nil {

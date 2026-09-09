@@ -356,6 +356,7 @@ type managedProtocolMapper struct {
 
 func managedProtocolMappers(gatewayClientID string) []managedProtocolMapper {
 	return []managedProtocolMapper{
+		{name: "gateway-subject", protocol: "openid-connect", protocolMapper: "oidc-sub-mapper", config: map[string]string{"access.token.claim": "true", "introspection.token.claim": "false"}},
 		{
 			name:           "gateway-audience",
 			protocol:       "openid-connect",

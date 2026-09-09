@@ -175,3 +175,8 @@ The identity controller does not deploy workloads or set Gateway health.
 issuer and subject. Username changes preserve grants; username reuse cannot
 transfer them. Existing databases need the explicit identity migration and a
 trusted mapping for legacy users before access can be preserved.
+
+[Gateway user login](acceptance/gateway-user-login.md) now completes a real
+browser login and PKCE exchange. The controller maps current grants by verified
+issuer and subject. Tests cover role union, profile reuse, removal, and restart.
+Already issued tokens retain their claims; online revocation remains open.
