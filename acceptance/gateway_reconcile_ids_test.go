@@ -8,7 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -57,7 +59,8 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
-	stop, _, address := startBoth(t, buildApplication(t), f.dsn, config, settings...)
+	binary := buildApplication(t)
+	stop, _, address := startBoth(t, binary, f.dsn, config, settings...)
 	defer stop()
 	_, connection := grpcClient(t, address, apiTLS)
 	client := control.NewGatewayIdentityServiceClient(connection)
@@ -70,6 +73,13 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 		_, err := client.ListGatewayReconcileIDs(denied, &control.ListGatewayReconcileIDsRequest{})
 		if status.Code(err) != codes.PermissionDenied && status.Code(err) != codes.Unauthenticated {
 			t.Fatal("untrusted caller read recovery IDs", err)
+		}
+		err = runtime.Scan(denied, gatewayrecovery.Source(client), func(string) error {
+			t.Fatal("denied scan emitted work")
+			return nil
+		}, runtime.ScanOptions{PageSize: 100, MaxPages: 10, PageTimeout: time.Second})
+		if status.Code(err) != codes.PermissionDenied && status.Code(err) != codes.Unauthenticated {
+			t.Fatal("generated scan lost the access denial", err)
 		}
 	}
 	controller := call("controller")
@@ -107,5 +117,25 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 	end, err := client.ListGatewayReconcileIDs(controller, &control.ListGatewayReconcileIDsRequest{AfterId: after})
 	if err != nil || len(end.GetIds()) != 0 {
 		t.Fatal("recovery did not reach the end", err)
+	}
+	for attempt := range 2 {
+		var scanned []string
+		if err := runtime.Scan(controller, gatewayrecovery.Source(client), func(id string) error {
+			scanned = append(scanned, id)
+			return nil
+		}, runtime.ScanOptions{PageSize: 100, MaxPages: 10, PageTimeout: time.Second}); err != nil {
+			t.Fatal("generated recovery scan failed", err)
+		}
+		if !slices.Equal(scanned, ids) {
+			t.Fatal("generated scan lost live or deleted IDs", attempt)
+		}
+		if attempt == 0 {
+			stop()
+			var restarted string
+			stop, _, restarted = startBoth(t, binary, f.dsn, config, settings...)
+			defer stop()
+			_, connection := grpcClient(t, restarted, apiTLS)
+			client = control.NewGatewayIdentityServiceClient(connection)
+		}
 	}
 }

@@ -244,11 +244,15 @@ func (f *recoveryFixture) ListGatewayReconcileIDs(ctx context.Context, r *contro
 }
 func TestRecoveryScanRejectsInvalidPages(t *testing.T) {
 	id := ksuid.New().String()
-	for _, page := range [][]string{{"invalid"}, {id, id}, make([]string, 101)} {
+	for _, page := range [][]string{{"invalid"}, {id, "invalid"}, {id, ksuid.Nil.String()}, {id, id}, make([]string, 101)} {
 		state := &recoveryFixture{pages: [][]string{page}}
 		c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
-		if err := c.seed(context.Background(), func(string) error { return nil }); err == nil {
+		emitted := 0
+		if err := c.seed(context.Background(), func(string) error { emitted++; return nil }); err == nil {
 			t.Fatal("invalid page was accepted")
+		}
+		if emitted != 0 {
+			t.Fatal("invalid page emitted work before validation", emitted)
 		}
 	}
 }

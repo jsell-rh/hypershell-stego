@@ -182,6 +182,14 @@ controller over generated gRPC and HTTPS clients. It creates trusted Keycloak
 bindings from Gateway state and recovers after API or controller restart.
 The identity controller does not deploy workloads or set Gateway health.
 
+Gateway identity and workload recovery use STEGO's generated cursor scanner.
+It checks each complete page before dispatch, limits page requests, and applies
+request deadlines. Both controllers scan live and retained deleted Gateway IDs
+through one private API mapping. That mapping checks canonical, nonzero KSUIDs;
+the API requires a configured control-plane subject. Actions still read current
+state and enforce the domain rules. Invalid scan contracts stop the controllers.
+Storage and replay adapters still need generation in STEGO.
+
 [Persistent user identity](acceptance/user-identity.md) now uses the verified
 issuer and subject. Username changes preserve grants; username reuse cannot
 transfer them. Existing databases need the explicit identity migration and a

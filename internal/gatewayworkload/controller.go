@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
@@ -47,7 +48,7 @@ func (c *Controller) Run(ctx context.Context) error {
 		QueueCapacity: QueueCapacity, ResyncInterval: ResyncInterval,
 		ReconcileTimeout: ReconcileTimeout, ReconnectDelay: time.Second,
 		Terminal: func(err error) bool {
-			return status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+			return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 		},
 		Observe: func(event runtime.Event) {
 			switch event.Phase {
@@ -83,33 +84,10 @@ func (c *Controller) watch(ctx context.Context) (func() (string, error), error) 
 	}, nil
 }
 func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error {
-	// Each page is bounded. A scan can exceed the resync interval; it must
-	// finish before another scan starts. A reconnect repeats retained state.
-	after := ""
-	for {
-		operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
-		response, err := c.state.ListGatewayReconcileIDs(operation, &control.ListGatewayReconcileIDsRequest{AfterId: after})
-		stop()
-		if err != nil {
-			return err
-		}
-		if response == nil || len(response.Ids) > 100 {
-			return errors.New("invalid Gateway recovery page")
-		}
-		seen := make(map[string]bool, len(response.Ids))
-		for _, id := range response.Ids {
-			if _, err := Namespace(id); err != nil || id == after || seen[id] {
-				return errors.New("Gateway recovery cursor did not advance")
-			}
-			if err := enqueue(id); err != nil {
-				return err
-			}
-			seen[id] = true
-			after = id
-		}
-		if len(response.Ids) < 100 {
-			break
-		}
+	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state), enqueue, runtime.ScanOptions{
+		PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout,
+	}); err != nil {
+		return err
 	}
 	operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
 	ids, err := c.provider.GatewayIDs(operation)

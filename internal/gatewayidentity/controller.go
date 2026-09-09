@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -45,7 +46,7 @@ func (c *Controller) Run(ctx context.Context) error {
 		QueueCapacity: QueueCapacity, ResyncInterval: ResyncInterval,
 		ReconcileTimeout: ReconcileTimeout, ReconnectDelay: time.Second,
 		Terminal: func(err error) bool {
-			return status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+			return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 		},
 		Observe: func(event runtime.Event) {
 			switch event.Phase {
@@ -81,31 +82,14 @@ func (c *Controller) watch(ctx context.Context) (func() (string, error), error) 
 	}, nil
 }
 func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error {
-	// Small pages keep responses within the generated message limit. The scan
-	// has a fixed resource bound. Capacity beyond this limit requires measurement.
-	for page := int32(1); page <= 10000; page++ {
-		response, err := c.gateways.ListGateways(ctx, &pb.ListGatewaysRequest{Page: page, Size: 1})
-		if err != nil {
-			return err
-		}
-		if len(response.GetItems()) == 0 {
-			break
-		}
-		if len(response.GetItems()) != 1 {
-			return errors.New("invalid Gateway list size")
-		}
-		id := response.Items[0].GetMetadata().GetId()
-		if id == "" {
-			return errors.New("Gateway list returned an empty ID")
-		}
-		if err := enqueue(id); err != nil {
-			return err
-		}
-		if page == 10000 {
-			return errors.New("Gateway scan exceeds its limit")
-		}
+	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state), enqueue, runtime.ScanOptions{
+		PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout,
+	}); err != nil {
+		return err
 	}
-	ids, err := c.provider.GatewayIDs(ctx)
+	operation, stop := context.WithTimeout(ctx, ReconcileTimeout)
+	ids, err := c.provider.GatewayIDs(operation)
+	stop()
 	if err != nil {
 		return err
 	}
