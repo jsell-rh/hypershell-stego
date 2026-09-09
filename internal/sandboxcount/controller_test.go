@@ -104,6 +104,27 @@ func take(t *testing.T, ch <-chan int32) int32 {
 		return 0
 	}
 }
+
+// A recovery scan can repeat the last observation. Require progress to the new
+// count without accepting a different or older value.
+func takeAfter(t *testing.T, ch <-chan int32, previous, want int32) {
+	t.Helper()
+	timer := time.NewTimer(3 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case value := <-ch:
+			if value == want {
+				return
+			}
+			if value != previous {
+				t.Fatalf("count sequence: got %d after %d, want %d", value, previous, want)
+			}
+		case <-timer.C:
+			t.Fatalf("count did not advance from %d to %d", previous, want)
+		}
+	}
+}
 func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
@@ -117,6 +138,7 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 	var mu sync.Mutex
 	stored := int32(7)
 	number := 0
+	failed := false
 	writer := &writerFixture{write: func(r *control.SetObservedSandboxCountRequest) error {
 		if r.Namespace != ns || r.ClusterId != cluster {
 			t.Error("wrong count assignment", r)
@@ -126,7 +148,8 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 		if number == 1 {
 			<-release
 		}
-		if number == 3 {
+		if number > 1 && r.Count == 1 && !failed {
+			failed = true
 			return status.Error(codes.Unavailable, "retry")
 		}
 		mu.Lock()
@@ -166,15 +189,11 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 	if err := apply(kube.Change{Type: "DELETED", Object: record("one", ns, "Running", "c")}); err != nil {
 		t.Fatal(err)
 	}
-	if v := take(t, calls); v != 1 {
-		t.Fatal(v)
-	}
+	takeAfter(t, calls, 2, 1)
 	if err := apply(kube.Change{Type: "DELETED", Object: record("two", ns, "Pending", "d")}); err != nil {
 		t.Fatal(err)
 	}
-	if v := take(t, calls); v != 0 {
-		t.Fatal("retry used stale delta", v)
-	}
+	takeAfter(t, calls, 1, 0)
 	waitZero := time.Now().Add(time.Second)
 	for {
 		mu.Lock()
