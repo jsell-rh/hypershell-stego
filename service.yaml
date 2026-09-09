@@ -129,6 +129,7 @@ overrides:
   http-application:
     factory_package: internal/httpapi
   grpc-application:
+    watch_events: true
     factory_package: internal/grpcapi
     proto_files:
       - path: contracts/reference/proto/hypershell/v1/common.proto

@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: 96eed6ef92875289e1f2ed8ca1047ae2a7c28da4cdf1adfe882140556b432155
+    service_hash: 9d9001978e880d07e173f85b64cd39a8cc2f62af4d890e8f6879df247409ce96
     registry_sha: gateway-workflow
     components:
         cli-application:

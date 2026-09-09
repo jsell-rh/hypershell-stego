@@ -5,7 +5,6 @@ output_namespace: grpcapi
 config:
   watch_events:
     type: bool
-    default: true
   factory_package:
     type: string
   proto_files:
