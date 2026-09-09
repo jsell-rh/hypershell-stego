@@ -620,8 +620,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "User":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&User{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "User", opts.Related)
 		if err != nil {
@@ -698,8 +701,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "Role":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 		query := s.db.WithContext(ctx).Model(&Role{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "Role", opts.Related)
 		if err != nil {
@@ -776,8 +782,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ManagedCluster":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 		query := s.db.WithContext(ctx).Model(&ManagedCluster{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "ManagedCluster", opts.Related)
 		if err != nil {
@@ -854,8 +863,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "GatewayRelease":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&GatewayRelease{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "GatewayRelease", opts.Related)
 		if err != nil {
@@ -932,8 +944,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ManagedDatabase":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&ManagedDatabase{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "ManagedDatabase", opts.Related)
 		if err != nil {
@@ -1010,8 +1025,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "Gateway":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "Gateway", opts.Related)
 		if err != nil {
@@ -1088,8 +1106,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "RoleBinding":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 		query := s.db.WithContext(ctx).Model(&RoleBinding{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "RoleBinding", opts.Related)
 		if err != nil {
@@ -1166,8 +1187,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ServiceAccount":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
 		query := s.db.WithContext(ctx).Model(&ServiceAccount{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "ServiceAccount", opts.Related)
 		if err != nil {
@@ -1244,8 +1268,11 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "ServiceAccountAudit":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
 		query := s.db.WithContext(ctx).Model(&ServiceAccountAudit{})
-		if opts.IncludeDeleted {
+		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
+		}
+		if opts.OnlyDeleted {
+			query = query.Where("deleted_at IS NOT NULL")
 		}
 		query, err := s.applyRelated(ctx, query, "ServiceAccountAudit", opts.Related)
 		if err != nil {

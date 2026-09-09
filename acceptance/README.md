@@ -191,11 +191,17 @@ The [placement catalog workflow](placement-catalog.md) now creates cluster, rele
 and database records through the generated API before Gateway creation. REST,
 gRPC, access checks, atomic events, watches, restart, and migration checks cover
 this path. Catalog writes require a platform admin or configured controller.
-Workload deployment remains open.
+Gateway workload deployment remains open.
 
 The [deployment placement workflow](deployment-placement.md) now makes a separate
 database record for each Gateway by default. The database, Gateway, owner grant,
 and three events commit together. Set `DATABASE_PROVIDER=cnpg` explicitly to use
 the shared CNPG path. REST requires a `database_id` property but accepts an empty
-string. Apply migration 000007 before the new API starts. Workload provisioning
-and cleanup recovery remain separate acceptance gates.
+string. Apply migration 000007 before the new API starts. The database workload and cleanup now have a separate acceptance gate.
+
+The [database workload workflow](database-workflow.md) now provisions PostgreSQL on Kubernetes
+from a Gateway creation event. It checks verified TLS, limited database roles,
+persistent data, stable credentials, foreign namespace denial, and cleanup after
+offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
+are part of this path. The cluster test has its own required CI job. Gateway
+workload deployment and production database operations remain open.

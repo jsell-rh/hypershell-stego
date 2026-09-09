@@ -1,0 +1,269 @@
+package databasecontroller
+
+import (
+	"context"
+	"encoding/json"
+	"encoding/pem"
+	"errors"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	"github.com/segmentio/ksuid"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+)
+
+func testKubernetes(t *testing.T, handler http.HandlerFunc) (*Kubernetes, string) {
+	t.Helper()
+	server := httptest.NewTLSServer(handler)
+	t.Cleanup(server.Close)
+	dir := t.TempDir()
+	ca, file := filepath.Join(dir, "ca"), filepath.Join(dir, "token")
+	if err := os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(file, []byte("first-token"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	client, err := NewKubernetes(KubernetesOptions{ServerURL: server.URL, CAFile: ca, TokenFile: file, ClusterIssuer: "issuer"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(client.Close)
+	return client, file
+}
+func TestCleanupUsesNamespaceIdentityAndRetainsFailures(t *testing.T) {
+	id := ksuid.New().String()
+	ns, _ := gateways.DatabaseNamespace(id)
+	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: "deployment"}
+	phase, deletes := 0, 0
+	k, _ := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/namespaces/"+ns {
+			t.Error("wrong namespace path")
+			w.WriteHeader(500)
+			return
+		}
+		if r.Method == "GET" {
+			if phase == 2 {
+				w.WriteHeader(404)
+				return
+			}
+			owner := id
+			if phase == 3 {
+				owner = "foreign"
+			}
+			_ = json.NewEncoder(w).Encode(object{"metadata": object{"uid": "namespace-uid", "resourceVersion": "17", "labels": labels(owner)}})
+			return
+		}
+		deletes++
+		var options object
+		if json.NewDecoder(r.Body).Decode(&options) != nil || str(options, "preconditions", "uid") != "namespace-uid" || str(options, "preconditions", "resourceVersion") != "17" {
+			t.Error("delete did not preserve namespace identity")
+		}
+		if phase == 0 {
+			w.WriteHeader(409)
+			return
+		}
+		w.WriteHeader(403)
+	})
+	if err := k.Delete(context.Background(), db); err == nil || errors.Is(err, ErrPending) {
+		t.Fatal("namespace conflict was lost", err)
+	}
+	phase = 1
+	if err := k.Delete(context.Background(), db); err == nil {
+		t.Fatal("namespace denial was lost")
+	}
+	phase = 2
+	if err := k.Delete(context.Background(), db); err != nil {
+		t.Fatal("absent namespace cleanup", err)
+	}
+	phase = 3
+	if err := k.Delete(context.Background(), db); err == nil {
+		t.Fatal("foreign namespace cleanup succeeded")
+	}
+	if deletes != 2 {
+		t.Fatal("foreign or absent namespace received DELETE", deletes)
+	}
+	db.Namespace = "kube-system"
+	if err := k.Delete(context.Background(), db); err == nil {
+		t.Fatal("namespace mismatch was accepted")
+	}
+}
+func TestMissingCredentialsCannotReplaceAnExistingVolumePassword(t *testing.T) {
+	requests := 0
+	k, _ := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		if r.Method != "GET" {
+			t.Error("credentials were written for an existing volume")
+			w.WriteHeader(500)
+			return
+		}
+		switch r.URL.Path {
+		case "/api/v1/namespaces/example/secrets/" + CredentialsName:
+			w.WriteHeader(404)
+		case "/api/v1/namespaces/example/persistentvolumeclaims/" + WorkloadName + "-data":
+			_ = json.NewEncoder(w).Encode(object{"metadata": object{"uid": "existing-volume"}})
+		default:
+			t.Error("unexpected credential operation")
+			w.WriteHeader(500)
+		}
+	})
+	if err := k.credentials(context.Background(), "/api/v1/namespaces/example", "id", "example", "ca"); err == nil {
+		t.Fatal("missing volume password was replaced")
+	}
+	if requests != 2 {
+		t.Fatal("unexpected credential requests", requests)
+	}
+}
+func TestKubernetesTokenRotationAndMissingMutationResource(t *testing.T) {
+	expected := "first-token"
+	k, file := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
+		if r.Header.Get("Authorization") != "Bearer "+expected {
+			t.Error("old Kubernetes token was used")
+		}
+		w.WriteHeader(404)
+	})
+	if _, code, err := k.request(context.Background(), "GET", "/api/v1/namespaces/missing", nil); err != nil || code != 404 {
+		t.Fatal(err)
+	}
+	expected = "second-token"
+	if err := os.WriteFile(file, []byte(expected), 0600); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := k.request(context.Background(), "PATCH", "/api/v1/namespaces/missing", object{}); err == nil {
+		t.Fatal("missing mutation resource was accepted")
+	}
+	if err := os.Chmod(file, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if _, _, err := k.request(context.Background(), "GET", "/api/v1/namespaces/missing", nil); err == nil {
+		t.Fatal("public token file was read")
+	}
+}
+
+type headerStream struct {
+	grpc.ClientStream
+	header metadata.MD
+}
+
+func (s *headerStream) Header() (metadata.MD, error) { return s.header, nil }
+func (s *headerStream) Recv() (*pb.WatchManagedDatabasesResponse, error) {
+	return nil, errors.New("unexpected receive")
+}
+func TestDatabaseWatchRequiresOneKnownCapability(t *testing.T) {
+	for _, md := range []metadata.MD{nil, metadata.Pairs(capability, "v2"), metadata.Pairs(capability, "v1", capability, "v1")} {
+		if err := checkHeader(&headerStream{header: md}); err == nil {
+			t.Fatal("unsupported database watch accepted", md)
+		}
+	}
+	if err := checkHeader(&headerStream{header: metadata.Pairs(capability, "v1")}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+type staleAPI struct {
+	pb.ManagedDatabaseServiceClient
+}
+
+func (staleAPI) GetManagedDatabase(context.Context, *pb.GetManagedDatabaseRequest, ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
+	return nil, status.Error(codes.NotFound, "deleted")
+}
+
+type rejectProvider struct{ calls int }
+
+func (p *rejectProvider) Ensure(context.Context, *pb.ManagedDatabase) error { p.calls++; return nil }
+func (p *rejectProvider) Delete(context.Context, *pb.ManagedDatabase) error { p.calls++; return nil }
+func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
+	p := &rejectProvider{}
+	c, _ := New(staleAPI{}, p)
+	event := &pb.WatchManagedDatabasesResponse{ResourceId: "old", Type: pb.EventType_EVENT_TYPE_CREATED, ManagedDatabase: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "old"}, Provider: "deployment"}}
+	if err := c.reconcile(context.Background(), event); err != nil {
+		t.Fatal(err)
+	}
+	if p.calls != 0 {
+		t.Fatal("stale live event changed Kubernetes")
+	}
+	event.ManagedDatabase.Metadata.Id = "different"
+	if err := c.reconcile(context.Background(), event); err == nil {
+		t.Fatal("event with a different ID was accepted")
+	}
+}
+
+type stateAPI struct {
+	pb.ManagedDatabaseServiceClient
+	db          *pb.ManagedDatabase
+	updateError error
+	updates     []string
+}
+
+func (a *stateAPI) GetManagedDatabase(context.Context, *pb.GetManagedDatabaseRequest, ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
+	return &pb.GetManagedDatabaseResponse{ManagedDatabase: a.db}, nil
+}
+func (a *stateAPI) UpdateManagedDatabase(_ context.Context, r *pb.UpdateManagedDatabaseRequest, _ ...grpc.CallOption) (*pb.UpdateManagedDatabaseResponse, error) {
+	a.updates = append(a.updates, r.GetStatus())
+	if a.updateError != nil {
+		return nil, a.updateError
+	}
+	a.db.Status = r.Status
+	return &pb.UpdateManagedDatabaseResponse{ManagedDatabase: a.db}, nil
+}
+
+type pendingProvider struct{}
+
+func (pendingProvider) Ensure(context.Context, *pb.ManagedDatabase) error { return ErrPending }
+func (pendingProvider) Delete(context.Context, *pb.ManagedDatabase) error { return ErrPending }
+func TestReadinessLossAndFailedStatusWritesRemainVisible(t *testing.T) {
+	ready := "ready"
+	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment", Status: &ready}
+	failure := errors.New("status update failed")
+	api := &stateAPI{db: db, updateError: failure}
+	c, _ := New(api, pendingProvider{})
+	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
+	if err := c.reconcile(context.Background(), event); !errors.Is(err, failure) {
+		t.Fatal("status update failure was lost", err)
+	}
+	api.updateError = nil
+	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+		t.Fatal("pending workload was marked ready", err)
+	}
+	if db.GetStatus() != "provisioning" || len(api.updates) != 2 {
+		t.Fatal("readiness loss was not published", api.updates)
+	}
+	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+		t.Fatal(err)
+	}
+	if len(api.updates) != 2 {
+		t.Fatal("unchanged status caused another write")
+	}
+}
+
+func TestUnsupportedDatabaseOptionsCannotProvisionDifferentResources(t *testing.T) {
+	id := ksuid.New().String()
+	ns, _ := gateways.DatabaseNamespace(id)
+	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: "deployment"}
+	k, _ := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
+		t.Error("unsupported placement reached Kubernetes")
+		w.WriteHeader(500)
+	})
+	for _, field := range []**string{&db.Engine, &db.EngineVersion, &db.Region, &db.InstanceClass, &db.ConnectionSecret} {
+		value := "unsupported"
+		*field = &value
+		if err := k.Ensure(context.Background(), db); err == nil {
+			t.Fatal("unsupported options provisioned a database")
+		}
+		if err := validatePlacement(db); err != nil {
+			t.Fatal("mutable options prevented cleanup", err)
+		}
+		*field = nil
+	}
+	if err := validateDatabase(db); err != nil {
+		t.Fatal("default placement", err)
+	}
+}

@@ -83,3 +83,8 @@ acceptance package took 318.581 seconds. Dependency verification and pinned
 generation passed. The compiler revision is
 `35349fea6a2b112ac53a59f7cf649550b12369a3`, which passed hosted STEGO run
 `34311390396`. The new workflow also passed its focused check in 5.125 seconds.
+
+The placement record now drives the [database workload workflow](database-workflow.md).
+That test uses an isolated Kubernetes cluster and verifies persistent data,
+TLS, restricted database privileges, and cleanup after disconnected deletion.
+Gateway workload deployment remains open.

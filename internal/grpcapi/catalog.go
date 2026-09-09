@@ -13,6 +13,7 @@ import (
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -40,7 +41,11 @@ func watchCatalog[T, C, P, R any](resource *catalog.Resource[T, C, P], source ev
 		return watchError(err)
 	}
 	defer sub.Close()
-	if err := stream.SendHeader(nil); err != nil {
+	header := metadata.MD{}
+	if prefix == "manageddatabase" {
+		header.Set("hypershell-managed-database-delete-tombstones", "v1")
+	}
+	if err := stream.SendHeader(header); err != nil {
 		return err
 	}
 	for {
@@ -273,7 +278,44 @@ func (s *databaseServer) ListManagedDatabases(ctx context.Context, r *pb.ListMan
 	return response, nil
 }
 func (s *databaseServer) WatchManagedDatabases(_ *pb.WatchManagedDatabasesRequest, stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse]) error {
+	md, _ := metadata.FromIncomingContext(stream.Context())
+	if values := md.Get("hypershell-managed-database-replay"); len(values) != 0 {
+		if len(values) != 1 || values[0] != "deleted-v1" {
+			return status.Error(codes.InvalidArgument, "invalid database replay mode")
+		}
+		return s.replayDeletedDatabases(stream)
+	}
+
 	return watchCatalog(s.resource, s.source, "manageddatabase", stream, func(row model.ManagedDatabase, kind pb.EventType, id string) *pb.WatchManagedDatabasesResponse {
 		return &pb.WatchManagedDatabasesResponse{Type: kind, ResourceId: id, ManagedDatabase: presentManagedDatabase(row)}
 	})
+}
+
+func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse]) error {
+	ctx := stream.Context()
+	principal := gateways.PrincipalFromContext(ctx)
+	after := ""
+	for {
+		rows, err := s.resource.Deleted(ctx, principal, after)
+		if err != nil {
+			return mapError(err)
+		}
+		if after == "" {
+			if err := stream.SendHeader(metadata.Pairs("hypershell-managed-database-delete-tombstones", "v1")); err != nil {
+				return err
+			}
+		}
+		for _, row := range rows {
+			if row.ID <= after {
+				return status.Error(codes.Internal, "invalid database replay order")
+			}
+			if err := stream.Send(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_DELETED, ResourceId: row.ID, ManagedDatabase: presentManagedDatabase(row)}); err != nil {
+				return err
+			}
+			after = row.ID
+		}
+		if len(rows) < 100 {
+			return nil
+		}
+	}
 }

@@ -31,6 +31,7 @@ type Service struct {
 type Resource[T, C, P any] struct {
 	repository                        store.Transactor
 	authorize                         func(gateways.Principal, bool) error
+	authorizeRecovery                 func(gateways.Principal) error
 	entity, foreignField, eventPrefix string
 	create                            func(string, C) (T, error)
 	patch                             func(*T, P) error
@@ -41,9 +42,9 @@ func New(repository store.Transactor, policy *gateways.Service) (*Service, error
 		return nil, errors.New("catalog requires storage and access rules")
 	}
 	return &Service{
-		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster},
-		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease},
-		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase},
+		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster},
+		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease},
+		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase},
 	}, nil
 }
 func validID(id string) bool {
@@ -465,4 +466,33 @@ func validateDatabase(row model.ManagedDatabase) error {
 		return gateways.ErrInvalid
 	}
 	return nil
+}
+
+// Deleted returns a bounded page of tombstones in ID order. The cursor is a
+// canonical ID. A live watch must start before the first page is requested.
+func (r *Resource[T, C, P]) Deleted(ctx context.Context, p gateways.Principal, after string) ([]T, error) {
+	if err := r.authorizeRecovery(p); err != nil {
+		return nil, err
+	}
+	if after != "" && !validID(after) {
+		return nil, gateways.ErrInvalid
+	}
+	options := store.ListOptions{Page: 1, Size: 100, OnlyDeleted: true, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
+	if after != "" {
+		options.Search = "id > '" + after + "'"
+	}
+	var rows []T
+	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		result, err := tx.List(ctx, r.entity, "", "", options)
+		if err != nil {
+			return err
+		}
+		var ok bool
+		rows, ok = result.Items.([]T)
+		if !ok {
+			return errors.New("unexpected catalog storage result")
+		}
+		return nil
+	})
+	return rows, err
 }

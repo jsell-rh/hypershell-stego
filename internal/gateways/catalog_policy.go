@@ -16,3 +16,14 @@ func (s *Service) AuthorizeCatalog(p Principal, write bool) error {
 	}
 	return ErrForbidden
 }
+
+// AuthorizeRecovery permits only configured controller subjects.
+func (s *Service) AuthorizeRecovery(p Principal) error {
+	if err := validatePrincipal(p); err != nil {
+		return err
+	}
+	if !s.isControlPlane(p) {
+		return ErrForbidden
+	}
+	return nil
+}

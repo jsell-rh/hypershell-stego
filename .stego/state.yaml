@@ -18,7 +18,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.3.0
+            version: 3.4.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -271,7 +271,7 @@ last_applied:
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
-        contracts/storage/storage.go: ff8b9275aa3b5db04f8f90ba2379ff76259bf963802db8f4b0a1cd53c5fa507d
+        contracts/storage/storage.go: ca1e8705040996cda01f9be0563e1ae1c00ef82ff4059c7df8c3cacd3a0ad90e
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
@@ -303,5 +303,5 @@ last_applied:
         storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
         storage/models.go: 843a4b1ddedc74ee661063cf9b64f0d4d3d49a0c82a90d2f8d94f666a03bd19c
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 7719168fe500730892e4779ae2d7ab4892104d65563f158a9dc8fe4f5d7fffd4
+        storage/store.go: 9bcc616755eb42d7c408ba109a963da5387ddfb407eebe05fe6f349f7387dff6
         storage/transaction.go: 258339dc94c597dd6417cdb16005878ad36a683b50227a13cdaee6f28012c087
