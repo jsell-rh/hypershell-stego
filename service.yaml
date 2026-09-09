@@ -100,5 +100,7 @@ overrides:
         import_path: hypershell/v1/gateways.proto
       - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
         import_path: hypershell/provisioner/v1/service_accounts.proto
+      - path: contracts/reference/proto/hypershell/v1/role_bindings.proto
+        import_path: hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto
         import_path: hypershell/controlplane/v1/gateway_identity.proto

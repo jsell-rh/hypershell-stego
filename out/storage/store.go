@@ -627,6 +627,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		query, err = s.applyRowFilter(ctx, query, "User", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
 		if scopeField != "" && scopeValue != "" {
 			if !validCols[scopeField] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity User", scopeField)
@@ -698,6 +702,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			query = query.Unscoped()
 		}
 		query, err := s.applyRelated(ctx, query, "Role", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		query, err = s.applyRowFilter(ctx, query, "Role", opts.Filter)
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
@@ -775,6 +783,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		query, err = s.applyRowFilter(ctx, query, "ManagedCluster", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
 		if scopeField != "" && scopeValue != "" {
 			if !validCols[scopeField] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ManagedCluster", scopeField)
@@ -846,6 +858,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			query = query.Unscoped()
 		}
 		query, err := s.applyRelated(ctx, query, "GatewayRelease", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		query, err = s.applyRowFilter(ctx, query, "GatewayRelease", opts.Filter)
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
@@ -923,6 +939,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		query, err = s.applyRowFilter(ctx, query, "ManagedDatabase", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
 		if scopeField != "" && scopeValue != "" {
 			if !validCols[scopeField] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ManagedDatabase", scopeField)
@@ -994,6 +1014,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			query = query.Unscoped()
 		}
 		query, err := s.applyRelated(ctx, query, "Gateway", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		query, err = s.applyRowFilter(ctx, query, "Gateway", opts.Filter)
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
@@ -1071,6 +1095,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		query, err = s.applyRowFilter(ctx, query, "RoleBinding", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
 		if scopeField != "" && scopeValue != "" {
 			if !validCols[scopeField] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity RoleBinding", scopeField)
@@ -1142,6 +1170,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 			query = query.Unscoped()
 		}
 		query, err := s.applyRelated(ctx, query, "ServiceAccount", opts.Related)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
+		query, err = s.applyRowFilter(ctx, query, "ServiceAccount", opts.Filter)
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
@@ -1219,6 +1251,10 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if err != nil {
 			return stegostorage.ListResult{}, err
 		}
+		query, err = s.applyRowFilter(ctx, query, "ServiceAccountAudit", opts.Filter)
+		if err != nil {
+			return stegostorage.ListResult{}, err
+		}
 		if scopeField != "" && scopeValue != "" {
 			if !validCols[scopeField] {
 				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ServiceAccountAudit", scopeField)
@@ -1293,136 +1329,170 @@ func (s *Store) applyRelated(ctx context.Context, query *gorm.DB, target string,
 		return nil, fmt.Errorf("too many related filters")
 	}
 	for _, filter := range filters {
-		if len(filter.Values) > 16 {
-			return nil, fmt.Errorf("too many related filter fields")
+		expression, err := s.relatedExpression(ctx, target, filter)
+		if err != nil {
+			return nil, err
 		}
-		var related *gorm.DB
-		var columns map[string]bool
-		switch filter.Entity {
-		case "User":
-			switch filter.ForeignField {
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&User{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
-		case "Role":
-			switch filter.ForeignField {
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&Role{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
-		case "ManagedCluster":
-			switch filter.ForeignField {
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&ManagedCluster{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
-		case "GatewayRelease":
-			switch filter.ForeignField {
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&GatewayRelease{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
-		case "ManagedDatabase":
-			switch filter.ForeignField {
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&ManagedDatabase{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
-		case "Gateway":
-			switch filter.ForeignField {
-			case "cluster_id":
-				if target != "ManagedCluster" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "release_id":
-				if target != "GatewayRelease" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "database_id":
-				if target != "ManagedDatabase" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
-		case "RoleBinding":
-			switch filter.ForeignField {
-			case "user_id":
-				if target != "User" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "role_id":
-				if target != "Role" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "gateway_id":
-				if target != "Gateway" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
-		case "ServiceAccount":
-			switch filter.ForeignField {
-			case "gateway_id":
-				if target != "Gateway" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "created_by_user_id":
-				if target != "User" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&ServiceAccount{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
-		case "ServiceAccountAudit":
-			switch filter.ForeignField {
-			case "service_account_id":
-				if target != "ServiceAccount" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "gateway_id":
-				if target != "Gateway" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			case "creator_user_id":
-				if target != "User" {
-					return nil, fmt.Errorf("related filter target does not match its reference")
-				}
-			default:
-				return nil, fmt.Errorf("related filter requires a declared reference")
-			}
-			related = s.db.WithContext(ctx).Model(&ServiceAccountAudit{}).Select(filter.ForeignField)
-			columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
-		default:
-			return nil, fmt.Errorf("unknown related entity")
-		}
-		for field, values := range filter.Values {
-			if !columns[field] || len(values) > 100 {
-				return nil, fmt.Errorf("invalid related filter field or value count")
-			}
-			for _, value := range values {
-				if len(value) > 4096 {
-					return nil, fmt.Errorf("related filter value exceeds size limit")
-				}
-			}
-			related = related.Where(clause.IN{Column: clause.Column{Name: field}, Values: relatedValues(values)})
-		}
-		query = query.Where("id IN (?)", related)
+		query = query.Where(expression)
 	}
 	return query, nil
+}
+
+func referenceTarget(entity, field string) string {
+	switch entity {
+	case "User":
+		switch field {
+		case "id":
+			return "User"
+		}
+	case "Role":
+		switch field {
+		case "id":
+			return "Role"
+		}
+	case "ManagedCluster":
+		switch field {
+		case "id":
+			return "ManagedCluster"
+		}
+	case "GatewayRelease":
+		switch field {
+		case "id":
+			return "GatewayRelease"
+		}
+	case "ManagedDatabase":
+		switch field {
+		case "id":
+			return "ManagedDatabase"
+		}
+	case "Gateway":
+		switch field {
+		case "id":
+			return "Gateway"
+		case "cluster_id":
+			return "ManagedCluster"
+		case "release_id":
+			return "GatewayRelease"
+		case "database_id":
+			return "ManagedDatabase"
+		}
+	case "RoleBinding":
+		switch field {
+		case "id":
+			return "RoleBinding"
+		case "user_id":
+			return "User"
+		case "role_id":
+			return "Role"
+		case "gateway_id":
+			return "Gateway"
+		}
+	case "ServiceAccount":
+		switch field {
+		case "id":
+			return "ServiceAccount"
+		case "gateway_id":
+			return "Gateway"
+		case "created_by_user_id":
+			return "User"
+		}
+	case "ServiceAccountAudit":
+		switch field {
+		case "id":
+			return "ServiceAccountAudit"
+		case "service_account_id":
+			return "ServiceAccount"
+		case "gateway_id":
+			return "Gateway"
+		case "creator_user_id":
+			return "User"
+		}
+	}
+	return ""
+}
+
+func filterColumns(entity string) map[string]bool {
+	switch entity {
+	case "User":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
+	case "Role":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+	case "ManagedCluster":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+	case "GatewayRelease":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+	case "ManagedDatabase":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true}
+	case "Gateway":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+	case "RoleBinding":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
+	case "ServiceAccount":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
+	case "ServiceAccountAudit":
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
+	}
+	return nil
+}
+
+func (s *Store) relatedExpression(ctx context.Context, target string, filter stegostorage.RelatedFilter) (clause.Expression, error) {
+	if len(filter.Values) > 16 {
+		return nil, fmt.Errorf("too many related filter fields")
+	}
+	local := filter.LocalField
+	if local == "" {
+		local = "id"
+	}
+	identity := referenceTarget(target, local)
+	if identity == "" || identity != referenceTarget(filter.Entity, filter.ForeignField) {
+		return nil, fmt.Errorf("related filter requires keys for the same declared entity")
+	}
+	var related *gorm.DB
+	switch filter.Entity {
+	case "User":
+		related = s.db.WithContext(ctx).Model(&User{}).Select(filter.ForeignField)
+	case "Role":
+		related = s.db.WithContext(ctx).Model(&Role{}).Select(filter.ForeignField)
+	case "ManagedCluster":
+		related = s.db.WithContext(ctx).Model(&ManagedCluster{}).Select(filter.ForeignField)
+	case "GatewayRelease":
+		related = s.db.WithContext(ctx).Model(&GatewayRelease{}).Select(filter.ForeignField)
+	case "ManagedDatabase":
+		related = s.db.WithContext(ctx).Model(&ManagedDatabase{}).Select(filter.ForeignField)
+	case "Gateway":
+		related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
+	case "RoleBinding":
+		related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
+	case "ServiceAccount":
+		related = s.db.WithContext(ctx).Model(&ServiceAccount{}).Select(filter.ForeignField)
+	case "ServiceAccountAudit":
+		related = s.db.WithContext(ctx).Model(&ServiceAccountAudit{}).Select(filter.ForeignField)
+	default:
+		return nil, fmt.Errorf("unknown related entity")
+	}
+	columns := filterColumns(filter.Entity)
+	for field, values := range filter.Values {
+		if !columns[field] {
+			return nil, fmt.Errorf("invalid related filter field")
+		}
+		if err := checkFilterValues(values); err != nil {
+			return nil, err
+		}
+		related = related.Where(clause.IN{Column: clause.Column{Name: field}, Values: relatedValues(values)})
+	}
+	return clause.Expr{SQL: "? IN (?)", Vars: []any{clause.Column{Name: local}, related}}, nil
+}
+
+func checkFilterValues(values []string) error {
+	if len(values) > 100 {
+		return fmt.Errorf("too many filter values")
+	}
+	for _, value := range values {
+		if len(value) > 4096 {
+			return fmt.Errorf("filter value exceeds size limit")
+		}
+	}
+	return nil
 }
 
 func relatedValues(values []string) []any {
@@ -1431,6 +1501,86 @@ func relatedValues(values []string) []any {
 		result[i] = value
 	}
 	return result
+}
+
+func (s *Store) applyRowFilter(ctx context.Context, query *gorm.DB, entity string, filter *stegostorage.RowFilter) (*gorm.DB, error) {
+	if filter == nil {
+		return query, nil
+	}
+	nodes, bytes := 0, 0
+	expression, err := s.rowExpression(ctx, entity, *filter, 1, &nodes, &bytes)
+	if err != nil {
+		return nil, err
+	}
+	return query.Where(expression), nil
+}
+
+func (s *Store) rowExpression(ctx context.Context, entity string, filter stegostorage.RowFilter, depth int, nodes, bytes *int) (clause.Expression, error) {
+	*nodes++
+	if depth > 8 || *nodes > 64 {
+		return nil, fmt.Errorf("row filter exceeds structure limit")
+	}
+	modes := 0
+	if filter.Field != "" {
+		modes++
+	}
+	if filter.Related != nil {
+		modes++
+	}
+	if filter.All != nil {
+		modes++
+	}
+	if filter.Any != nil {
+		modes++
+	}
+	if modes != 1 || (filter.Field == "" && filter.Values != nil) {
+		return nil, fmt.Errorf("row filter requires one condition")
+	}
+	values := filter.Values
+	if filter.Related != nil {
+		for _, group := range filter.Related.Values {
+			for _, value := range group {
+				*bytes += len(value)
+			}
+		}
+	}
+	for _, value := range values {
+		*bytes += len(value)
+	}
+	if *bytes > 65536 {
+		return nil, fmt.Errorf("row filter exceeds value size limit")
+	}
+	if filter.Field != "" {
+		if !filterColumns(entity)[filter.Field] {
+			return nil, fmt.Errorf("invalid row filter field")
+		}
+		if err := checkFilterValues(values); err != nil {
+			return nil, err
+		}
+		return clause.IN{Column: clause.Column{Name: filter.Field}, Values: relatedValues(values)}, nil
+	}
+	if filter.Related != nil {
+		return s.relatedExpression(ctx, entity, *filter.Related)
+	}
+	children := filter.All
+	if filter.Any != nil {
+		children = filter.Any
+	}
+	if len(children) == 0 || len(children) > 64 {
+		return nil, fmt.Errorf("invalid row filter group size")
+	}
+	expressions := make([]clause.Expression, 0, len(children))
+	for _, child := range children {
+		expression, err := s.rowExpression(ctx, entity, child, depth+1, nodes, bytes)
+		if err != nil {
+			return nil, err
+		}
+		expressions = append(expressions, expression)
+	}
+	if filter.Any != nil {
+		return clause.Or(expressions...), nil
+	}
+	return clause.And(expressions...), nil
 }
 
 // Upsert inserts or updates an entity using natural-key conflict resolution.
