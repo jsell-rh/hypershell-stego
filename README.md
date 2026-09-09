@@ -134,7 +134,10 @@ resource timestamp through generated storage; unchanged values leave it intact.
 REST and gRPC Gateway reads expose the same count. Relative adjustments do not
 have request deduplication: after a connection failure with an uncertain result,
 a caller must reconcile the observed count instead of assuming a retry is safe.
-The sandbox-count controller workflow still needs to be ported.
+The sandbox-count controller reads a Pod watch and writes absolute counts.
+It restores counts after restart and repairs drift from its local cache. The
+count is advisory and does not prevent Gateway deletion. See the
+[count workflow and limits](acceptance/sandbox-counts.md).
 
 Service-account create, list, get, revoke, and delete now run through the generated
 HTTP process and a TLS provisioner client. Only creation returns a client secret.

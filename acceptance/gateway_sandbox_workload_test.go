@@ -21,7 +21,7 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gateway, service protoreflect.ServiceDescriptor, connection *grpc.ClientConn, owner, denied string, call gatewayCall) func(*grpc.ClientConn, string) {
+func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gateway, service protoreflect.ServiceDescriptor, connection *grpc.ClientConn, owner, denied string, call gatewayCall, checkCount func(int32)) func(*grpc.ClientConn, string) {
 	t.Helper()
 	ns, err := gatewayworkload.SandboxNamespace(gateway.ID)
 	if err != nil {
@@ -70,6 +70,7 @@ func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gatewa
 		time.Sleep(time.Second)
 	}
 	t.Logf("Sandbox became ready in %s", time.Since(start))
+	checkCount(1)
 	sandboxAdmissionChecks(t, k, ns)
 	if state.Sandbox.Metadata.Id == "" {
 		t.Fatal("sandbox has no ID")
@@ -157,6 +158,7 @@ func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gatewa
 	t.Logf("Sandbox execution output: %s", output)
 	return func(current *grpc.ClientConn, bearer string) {
 		t.Helper()
+		checkCount(1)
 		connection = current
 		deadline := time.Now().Add(45 * time.Second)
 		for {
@@ -186,6 +188,7 @@ func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gatewa
 			}
 			time.Sleep(time.Second)
 		}
+		checkCount(0)
 		t.Log("Sandbox execution and stored data survived Gateway and database restart")
 	}
 

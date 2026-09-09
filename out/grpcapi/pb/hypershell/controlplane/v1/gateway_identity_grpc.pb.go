@@ -21,6 +21,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	GatewayIdentityService_SetObservedSandboxCount_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
 	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
 	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
 	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName   = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
@@ -34,6 +35,7 @@ const (
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceClient interface {
+	SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(ctx context.Context, in *ListGatewayReconcileIDsRequest, opts ...grpc.CallOption) (*ListGatewayReconcileIDsResponse, error)
 	ListGatewayIdentityUsers(ctx context.Context, in *ListGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ListGatewayIdentityUsersResponse, error)
 	GetGatewayIdentityUser(ctx context.Context, in *GetGatewayIdentityUserRequest, opts ...grpc.CallOption) (*GetGatewayIdentityUserResponse, error)
@@ -46,6 +48,16 @@ type gatewayIdentityServiceClient struct {
 
 func NewGatewayIdentityServiceClient(cc grpc.ClientConnInterface) GatewayIdentityServiceClient {
 	return &gatewayIdentityServiceClient{cc}
+}
+
+func (c *gatewayIdentityServiceClient) SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SetObservedSandboxCountResponse)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_SetObservedSandboxCount_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *gatewayIdentityServiceClient) ListGatewayReconcileIDs(ctx context.Context, in *ListGatewayReconcileIDsRequest, opts ...grpc.CallOption) (*ListGatewayReconcileIDsResponse, error) {
@@ -95,6 +107,7 @@ func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Conte
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceServer interface {
+	SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(context.Context, *ListGatewayReconcileIDsRequest) (*ListGatewayReconcileIDsResponse, error)
 	ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error)
 	GetGatewayIdentityUser(context.Context, *GetGatewayIdentityUserRequest) (*GetGatewayIdentityUserResponse, error)
@@ -109,6 +122,9 @@ type GatewayIdentityServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGatewayIdentityServiceServer struct{}
 
+func (UnimplementedGatewayIdentityServiceServer) SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SetObservedSandboxCount not implemented")
+}
 func (UnimplementedGatewayIdentityServiceServer) ListGatewayReconcileIDs(context.Context, *ListGatewayReconcileIDsRequest) (*ListGatewayReconcileIDsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGatewayReconcileIDs not implemented")
 }
@@ -141,6 +157,24 @@ func RegisterGatewayIdentityServiceServer(s grpc.ServiceRegistrar, srv GatewayId
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&GatewayIdentityService_ServiceDesc, srv)
+}
+
+func _GatewayIdentityService_SetObservedSandboxCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SetObservedSandboxCountRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).SetObservedSandboxCount(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_SetObservedSandboxCount_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).SetObservedSandboxCount(ctx, req.(*SetObservedSandboxCountRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _GatewayIdentityService_ListGatewayReconcileIDs_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -222,6 +256,10 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hypershell.controlplane.v1.GatewayIdentityService",
 	HandlerType: (*GatewayIdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "SetObservedSandboxCount",
+			Handler:    _GatewayIdentityService_SetObservedSandboxCount_Handler,
+		},
 		{
 			MethodName: "ListGatewayReconcileIDs",
 			Handler:    _GatewayIdentityService_ListGatewayReconcileIDs_Handler,

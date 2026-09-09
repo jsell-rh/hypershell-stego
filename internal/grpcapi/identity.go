@@ -51,3 +51,14 @@ func (s *identityServer) ListGatewayReconcileIDs(ctx context.Context, request *p
 	}
 	return &pb.ListGatewayReconcileIDsResponse{Ids: ids}, nil
 }
+
+func (s *identityServer) SetObservedSandboxCount(ctx context.Context, request *pb.SetObservedSandboxCountRequest) (*pb.SetObservedSandboxCountResponse, error) {
+	count, err := s.service.SetObservedSandboxCount(ctx, gateways.PrincipalFromContext(ctx), request.GetNamespace(), request.GetClusterId(), request.GetCount())
+	if errors.Is(err, gateways.ErrPlacementChanged) {
+		return nil, status.Error(codes.FailedPrecondition, "Gateway cluster assignment changed")
+	}
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.SetObservedSandboxCountResponse{Count: count}, nil
+}

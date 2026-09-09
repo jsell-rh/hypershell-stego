@@ -269,7 +269,7 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: 9ea37d0bf1fe0707ba2cdd50980bfd67cb09478b5574eb49ba6c45a4765d7cb5
+        application/client/client.go: a9d20c9620f2ebe2c5feb138c3c6bcbcde36a73d4c46da7b93fec1fc03e4b910
         application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
@@ -279,8 +279,8 @@ last_applied:
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
         grpcapi/client/client.go: c7cc35ac1783a7756bb6d4db6bb975f62ecc037f68d1ded74c7c0fc50bbcc179
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: ed99841f667732eea20aec95f72ee8eb36698f4c8396c170822fbdfb84675c87
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 044b8cb926cd9fbfa15620c59ecd94e221787feccc3e0c61a48a877164932fbc
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 0ab1a4392bd07c2dd4343801d79d481ddb438197b63f58c1684cb570132810f4
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 084b29fb9232551dd42c3c5ef7fa4864523f0aed2d1dd9b90ffb07cc00713681
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
         grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e
@@ -295,7 +295,8 @@ last_applied:
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
         grpcapi/transport/runtime.go: 4594691d6b46ba2ca23348c8e39bb321c200689e2039de08d4f32ba6fee93492
-        kubernetes/client.go: ace8f3038d7169ba8b782c72adeb4e0cd7f28a1634973c7b6fa302c0badb1737
+        kubernetes/client.go: 246cbe45e5599c89de89a76840c6e2eb7057c89a335c951c93584875ac6ef699
+        kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         main.go: ffc42b76bbbbe3c16cb8741c4da3002b4ef91db19be7129f53a25489f4e9f457
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f

@@ -445,6 +445,111 @@ func (x *ListGatewayReconcileIDsResponse) GetIds() []string {
 	return nil
 }
 
+// The current cluster assignment is checked under the same row lock as the count.
+type SetObservedSandboxCountRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Namespace     string                 `protobuf:"bytes,1,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,2,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
+	Count         int32                  `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetObservedSandboxCountRequest) Reset() {
+	*x = SetObservedSandboxCountRequest{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetObservedSandboxCountRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetObservedSandboxCountRequest) ProtoMessage() {}
+
+func (x *SetObservedSandboxCountRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetObservedSandboxCountRequest.ProtoReflect.Descriptor instead.
+func (*SetObservedSandboxCountRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *SetObservedSandboxCountRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+func (x *SetObservedSandboxCountRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
+	}
+	return ""
+}
+
+func (x *SetObservedSandboxCountRequest) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
+type SetObservedSandboxCountResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Count         int32                  `protobuf:"varint,1,opt,name=count,proto3" json:"count,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SetObservedSandboxCountResponse) Reset() {
+	*x = SetObservedSandboxCountResponse{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SetObservedSandboxCountResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SetObservedSandboxCountResponse) ProtoMessage() {}
+
+func (x *SetObservedSandboxCountResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SetObservedSandboxCountResponse.ProtoReflect.Descriptor instead.
+func (*SetObservedSandboxCountResponse) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *SetObservedSandboxCountResponse) GetCount() int32 {
+	if x != nil {
+		return x.Count
+	}
+	return 0
+}
+
 var File_hypershell_controlplane_v1_gateway_identity_proto protoreflect.FileDescriptor
 
 const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
@@ -476,8 +581,16 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\x1eListGatewayReconcileIDsRequest\x12\x19\n" +
 	"\bafter_id\x18\x01 \x01(\tR\aafterId\"3\n" +
 	"\x1fListGatewayReconcileIDsResponse\x12\x10\n" +
-	"\x03ids\x18\x01 \x03(\tR\x03ids2\xec\x04\n" +
+	"\x03ids\x18\x01 \x03(\tR\x03ids\"s\n" +
+	"\x1eSetObservedSandboxCountRequest\x12\x1c\n" +
+	"\tnamespace\x18\x01 \x01(\tR\tnamespace\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x02 \x01(\tR\tclusterId\x12\x14\n" +
+	"\x05count\x18\x03 \x01(\x05R\x05count\"7\n" +
+	"\x1fSetObservedSandboxCountResponse\x12\x14\n" +
+	"\x05count\x18\x01 \x01(\x05R\x05count2\x81\x06\n" +
 	"\x16GatewayIdentityService\x12\x92\x01\n" +
+	"\x17SetObservedSandboxCount\x12:.hypershell.controlplane.v1.SetObservedSandboxCountRequest\x1a;.hypershell.controlplane.v1.SetObservedSandboxCountResponse\x12\x92\x01\n" +
 	"\x17ListGatewayReconcileIDs\x12:.hypershell.controlplane.v1.ListGatewayReconcileIDsRequest\x1a;.hypershell.controlplane.v1.ListGatewayReconcileIDsResponse\x12\x95\x01\n" +
 	"\x18ListGatewayIdentityUsers\x12;.hypershell.controlplane.v1.ListGatewayIdentityUsersRequest\x1a<.hypershell.controlplane.v1.ListGatewayIdentityUsersResponse\x12\x8f\x01\n" +
 	"\x16GetGatewayIdentityUser\x129.hypershell.controlplane.v1.GetGatewayIdentityUserRequest\x1a:.hypershell.controlplane.v1.GetGatewayIdentityUserResponse\x12\x92\x01\n" +
@@ -495,7 +608,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP() []byte
 	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescData
 }
 
-var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*GetGatewayIdentityStateRequest)(nil),   // 0: hypershell.controlplane.v1.GetGatewayIdentityStateRequest
 	(*GetGatewayIdentityStateResponse)(nil),  // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse
@@ -505,23 +618,27 @@ var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*GetGatewayIdentityUserResponse)(nil),   // 5: hypershell.controlplane.v1.GetGatewayIdentityUserResponse
 	(*ListGatewayReconcileIDsRequest)(nil),   // 6: hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
 	(*ListGatewayReconcileIDsResponse)(nil),  // 7: hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
-	(*v1.Gateway)(nil),                       // 8: hypershell.v1.Gateway
+	(*SetObservedSandboxCountRequest)(nil),   // 8: hypershell.controlplane.v1.SetObservedSandboxCountRequest
+	(*SetObservedSandboxCountResponse)(nil),  // 9: hypershell.controlplane.v1.SetObservedSandboxCountResponse
+	(*v1.Gateway)(nil),                       // 10: hypershell.v1.Gateway
 }
 var file_hypershell_controlplane_v1_gateway_identity_proto_depIdxs = []int32{
-	8, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
-	6, // 1: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
-	2, // 2: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
-	4, // 3: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
-	0, // 4: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
-	7, // 5: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
-	3, // 6: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
-	5, // 7: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	1, // 8: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
-	5, // [5:9] is the sub-list for method output_type
-	1, // [1:5] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	10, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
+	8,  // 1: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:input_type -> hypershell.controlplane.v1.SetObservedSandboxCountRequest
+	6,  // 2: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	2,  // 3: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
+	4,  // 4: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
+	0,  // 5: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
+	9,  // 6: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:output_type -> hypershell.controlplane.v1.SetObservedSandboxCountResponse
+	7,  // 7: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	3,  // 8: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
+	5,  // 9: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
+	1,  // 10: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
+	6,  // [6:11] is the sub-list for method output_type
+	1,  // [1:6] is the sub-list for method input_type
+	1,  // [1:1] is the sub-list for extension type_name
+	1,  // [1:1] is the sub-list for extension extendee
+	0,  // [0:1] is the sub-list for field type_name
 }
 
 func init() { file_hypershell_controlplane_v1_gateway_identity_proto_init() }
@@ -535,7 +652,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc), len(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

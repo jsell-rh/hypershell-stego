@@ -178,6 +178,8 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatal("Gateway creation", code, string(body))
 	}
+	checkCount, recoverCount := startSandboxCountWorkflow(t, k, address, rpcAddress, apiTLS, controllerToken, alice, f.cluster, gateway)
+	checkCount(0)
 	dbNamespace, err := gateways.DatabaseNamespace(gateway.DatabaseID)
 	if err != nil {
 		t.Fatal(err)
@@ -302,7 +304,8 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	}
 	var finishSandbox func(*grpc.ClientConn, string)
 	if os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") != "" {
-		finishSandbox = gatewaySandboxWorkflow(t, k, gateway, service, connection, ownerToken, bobToken, call)
+		finishSandbox = gatewaySandboxWorkflow(t, k, gateway, service, connection, ownerToken, bobToken, call, checkCount)
+		recoverCount()
 	}
 	checkViewerAfterRestart := startGatewayViewerWorkflow(t, identityProvider, address+"/api/hypershell/v1", gateway, gatewayClient, alice, ownerToken, bobSubject, before, call)
 	stopWorkload()

@@ -11,7 +11,10 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	identitypb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	model "github.com/jsell-rh/hypershell-stego/out/storage"
+	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -29,6 +32,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)
+	observed := identitypb.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	call := func(token string) context.Context {
@@ -71,6 +75,9 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 		}
 	}
 	for _, bearer := range bearers {
+		if _, err := observed.SetObservedSandboxCount(call(bearer), &identitypb.SetObservedSandboxCountRequest{Namespace: namespace, ClusterId: f.cluster, Count: 1}); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("observed count access", err)
+		}
 		if _, err := client.AdjustActiveSandboxCount(call(bearer), &pb.AdjustActiveSandboxCountRequest{Namespace: namespace, Delta: 1}); status.Code(err) != codes.PermissionDenied {
 			t.Fatalf("count access: %v", err)
 		}
@@ -124,6 +131,63 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if !before.Gateway.Metadata.UpdatedAt.AsTime().Equal(after.Gateway.Metadata.UpdatedAt.AsTime()) || count(t, f.db, "stego_outbox.messages") != 0 {
 		t.Fatal("equal count changed state")
 	}
+	// A previous cluster cannot write after the Gateway moves. This check and
+	// the count change use the same row lock.
+	foreign := ksuid.New().String()
+	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: foreign}, Name: "other-count-cluster", Provider: "kubernetes", KubeconfigSecret: "unused"}); err != nil {
+		t.Fatal(err)
+	}
+	setObserved := func(cluster string, count int32) error {
+		_, err := observed.SetObservedSandboxCount(control, &identitypb.SetObservedSandboxCountRequest{Namespace: namespace, ClusterId: cluster, Count: count})
+		return err
+	}
+	if err := setObserved(foreign, 8); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("foreign cluster wrote count", err)
+	}
+	if err := setObserved("invalid", 1); status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
+	}
+	if err := setObserved(f.cluster, -1); status.Code(err) != codes.InvalidArgument {
+		t.Fatal(err)
+	}
+	if _, err := observed.SetObservedSandboxCount(ctx, &identitypb.SetObservedSandboxCountRequest{Namespace: namespace, ClusterId: f.cluster, Count: 1}); status.Code(err) != codes.Unauthenticated {
+		t.Fatal(err)
+	}
+	if err := setObserved(f.cluster, 0); err != nil {
+		t.Fatal(err)
+	}
+	if count(t, f.db, "stego_outbox.messages") != 0 {
+		t.Fatal("denied or equal observed count emitted an event")
+	}
+	if err := setObserved(f.cluster, 3); err != nil {
+		t.Fatal(err)
+	}
+	updateEvent()
+	awaitQueueEmpty(t, f)
+	readCount(3)
+	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &foreign}); err != nil {
+		t.Fatal(err)
+	}
+	updateEvent()
+	awaitQueueEmpty(t, f)
+	if err := setObserved(f.cluster, 8); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("former cluster wrote count", err)
+	}
+	readCount(3)
+	if count(t, f.db, "stego_outbox.messages") != 0 {
+		t.Fatal("former cluster emitted an event")
+	}
+	if err := setObserved(foreign, 0); err != nil {
+		t.Fatal(err)
+	}
+	updateEvent()
+	awaitQueueEmpty(t, f)
+	readCount(0)
+	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &f.cluster}); err != nil {
+		t.Fatal(err)
+	}
+	updateEvent()
+	awaitQueueEmpty(t, f)
 	const workers = 32
 	start := make(chan struct{})
 	values := make(chan int32, workers)
@@ -201,6 +265,9 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	if _, err := client.SetActiveSandboxCount(control, &pb.SetActiveSandboxCountRequest{Namespace: namespace, Count: 5}); status.Code(err) != codes.Internal || strings.Contains(err.Error(), "reject_count") {
 		t.Fatalf("set event failure: %v", err)
+	}
+	if err := setObserved(f.cluster, 5); status.Code(err) != codes.Internal || strings.Contains(err.Error(), "reject_count") {
+		t.Fatal("observed count event failure", err)
 	}
 	readCount(0)
 	if count(t, f.db, "stego_outbox.messages") != 0 {

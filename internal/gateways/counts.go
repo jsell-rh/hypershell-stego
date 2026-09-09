@@ -14,15 +14,15 @@ import (
 var ErrCountRange = errors.New("sandbox count exceeds its range")
 
 func (s *Service) AdjustActiveSandboxCount(ctx context.Context, p Principal, namespace string, delta int32) (int32, error) {
-	return s.changeCount(ctx, p, namespace, delta, true)
+	return s.changeCount(ctx, p, namespace, delta, true, "")
 }
 func (s *Service) SetActiveSandboxCount(ctx context.Context, p Principal, namespace string, count int32) (int32, error) {
-	return s.changeCount(ctx, p, namespace, count, false)
+	return s.changeCount(ctx, p, namespace, count, false, "")
 }
 
 // A count change depends only on the locked Gateway row and the verified
 // control-plane identity. Other resource grants do not permit this operation.
-func (s *Service) changeCount(ctx context.Context, p Principal, namespace string, input int32, relative bool) (int32, error) {
+func (s *Service) changeCount(ctx context.Context, p Principal, namespace string, input int32, relative bool, cluster string) (int32, error) {
 	if err := validatePrincipal(p); err != nil {
 		return 0, err
 	}
@@ -39,6 +39,9 @@ func (s *Service) changeCount(ctx context.Context, p Principal, namespace string
 		row, ok := value.(model.Gateway)
 		if !ok {
 			return errors.New("unexpected Gateway storage result")
+		}
+		if cluster != "" && row.ClusterID != cluster {
+			return ErrPlacementChanged
 		}
 		next := int64(input)
 		if relative && row.ActiveSandboxCount != nil {
@@ -69,4 +72,13 @@ func (s *Service) changeCount(ctx context.Context, p Principal, namespace string
 		return 0, err
 	}
 	return result, nil
+}
+
+var ErrPlacementChanged = errors.New("Gateway cluster assignment changed")
+
+func (s *Service) SetObservedSandboxCount(ctx context.Context, p Principal, namespace, cluster string, count int32) (int32, error) {
+	if !validID(cluster) || count < 0 {
+		return 0, ErrInvalid
+	}
+	return s.changeCount(ctx, p, namespace, count, false, cluster)
 }
