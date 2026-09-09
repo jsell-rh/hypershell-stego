@@ -190,6 +190,14 @@ the API requires a configured control-plane subject. Actions still read current
 state and enforce the domain rules. Invalid scan contracts stop the controllers.
 Storage and replay adapters still need generation in STEGO.
 
+The [reconciliation contract review](https://github.com/jsell-rh/stego/blob/main/specs/reconciliation-contract-review.md)
+records remaining gaps against Hypershell PR 200. Conditional status writes,
+desired generations, durable cleanup completion, status ownership, and controller
+metrics are not complete. A local probe confirmed that an older controller
+observation can publish Healthy after desired state changes. Transaction conflict
+checks inside one request do not close that interval. This is the next correctness
+priority, before recovery-query optimization.
+
 [Persistent user identity](acceptance/user-identity.md) now uses the verified
 issuer and subject. Username changes preserve grants; username reuse cannot
 transfer them. Existing databases need the explicit identity migration and a
