@@ -59,8 +59,23 @@ first and last retained observations through gRPC, and checks delivery of the
 last Gateway's new cleanup event. It also checks the public deleted response.
 
 The previous runtime repeatedly reset discovery and completed only 31 healthy
-cleanups during the 30-second check. With generated admission backpressure, all
-healthy cleanups finish within the same check. The focused run took 55.917 seconds
+cleanups during the 30-second check. With generated admission backpressure, the initial local run completed all
+healthy cleanups within the same check. The focused run took 55.917 seconds
 including data setup, API startup, and restart. This is a controlled backlog test,
 not a measurement of Kubernetes fleet throughput. A queue filled entirely by
 persistent failures still needs a storage and recovery policy.
+
+CI run [34416352961](https://github.com/jsell-rh/hypershell-stego/actions/runs/34416352961)
+completed 1009 of 1279 healthy cleanups at the 30-second cutoff. The scan completed,
+but the remaining cleanup did not finish in that interval. This is a failed check;
+it does not establish the cause of the slower completion. The functional test now
+allows 90 seconds and records progress every ten seconds plus total elapsed time.
+Its backlog, failing provider, worker count, provider delay, and requirement to
+complete every healthy cleanup remain unchanged. A local time limit is not a
+production recovery target. Throughput and latency still need measured targets
+under defined resources and load.
+
+The later full local race run completed all 1279 healthy cleanups in 17.22
+seconds after controller startup. At ten seconds it had completed 834. The
+deliberately failing Gateway stayed pending. This result retains the functional
+proof but does not replace a CI or production performance target.

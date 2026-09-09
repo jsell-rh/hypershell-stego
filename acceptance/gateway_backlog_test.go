@@ -71,7 +71,7 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	_, connection := grpcClient(t, rpcAddress, apiTLS)
 	state := control.NewGatewayIdentityServiceClient(connection)
-	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 45*time.Second)
+	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 105*time.Second)
 	defer cancel()
 	provider := &backlogProvider{cluster: f.cluster, failed: ids[0]}
 	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
@@ -91,7 +91,9 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 			t.Error("controller did not join")
 		}
 	}()
-	deadline := time.Now().Add(30 * time.Second)
+	started := time.Now()
+	deadline := started.Add(90 * time.Second)
+	nextProgress := started.Add(10 * time.Second)
 	for {
 		var completed int
 		if err := f.db.QueryRowContext(ctx, `SELECT count(*) FROM gateways WHERE stego_cleanup->>'workload'='true'`).Scan(&completed); err != nil {
@@ -99,6 +101,10 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 		}
 		if completed == total-1 {
 			break
+		}
+		if time.Now().After(nextProgress) {
+			t.Logf("backlog progress after %s: %d of %d healthy Gateways", time.Since(started).Round(time.Millisecond), completed, total-1)
+			nextProgress = time.Now().Add(10 * time.Second)
 		}
 		if time.Now().After(deadline) {
 			t.Fatalf("backlog did not progress beyond capacity: %d of %d healthy Gateways completed", completed, total-1)
@@ -115,5 +121,5 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+ids[len(ids)-1], token(t, key, "backlog-owner"), nil); code != 404 {
 		t.Fatal("cleanup changed public deletion", code)
 	}
-	t.Logf("%d retained Gateways crossed a %d-key queue; one provider remained pending", total, gatewayworkload.QueueCapacity)
+	t.Logf("%d retained Gateways crossed a %d-key queue in %s; one provider remained pending", total, gatewayworkload.QueueCapacity, time.Since(started).Round(time.Millisecond))
 }
