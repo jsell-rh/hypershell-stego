@@ -55,3 +55,24 @@ workflow uses the reference default and commits a new database with the Gateway,
 owner grant, and three events. The earlier shared-database workflows explicitly
 select `DATABASE_PROVIDER=cnpg`. The real Keycloak browser workflow uses deployment
 placement. Workload provisioning remains outside this gate.
+
+The five-part Gateway API gate passed again on 2026-09-09 at variant commit
+`cbfce8e025145900ea00bdf47ecaeef8f707116b`, with compiler revision
+`e6b4d6ceb198c89c9ad4eaedb486a1b2e81e7037`. The command was
+`scripts/check-gateway.sh`, with the test PostgreSQL connection configured.
+It required PostgreSQL and Keycloak, enabled race detection, verified modules,
+and checked pinned regeneration against the committed output. Regeneration had
+no changes or drift. All packages passed; the acceptance package took 321.869
+seconds. The environment used Go 1.26.8 and PostgreSQL 18.6.
+
+This result covers all five rows in the evidence table. The generated process
+serves REST and gRPC and delivers the committed events. Hypershell supplies its
+placement and access rules. Separate database workload tests also passed with
+the generated Kubernetes client; see [their results](database-workflow.md).
+Actual OpenShell Gateway startup and use remain open. The Kafka protocol fixture
+does not establish production broker behavior or capacity.
+
+Hosted [variant checks](https://github.com/jsell-rh/hypershell-stego/actions/runs/34314163495)
+passed both the full acceptance job and the database workflow job on this code.
+The [pinned compiler checks](https://github.com/jsell-rh/stego/actions/runs/34314041752)
+also passed.
