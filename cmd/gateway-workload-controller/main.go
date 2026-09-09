@@ -22,7 +22,7 @@ func main() {
 func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
+	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{SandboxRuntimeClass: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"), ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
 	if err != nil {
 		return err
 	}

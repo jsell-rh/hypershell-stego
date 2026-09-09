@@ -2,8 +2,8 @@
 set -euo pipefail
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$project"
-if [[ $# != 1 || (${1:-} != database && ${1:-} != gateway) || $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
-  echo 'Run scripts/check-workload.sh database or gateway on Linux amd64.' >&2
+if [[ $# != 1 || (${1:-} != database && ${1:-} != gateway && ${1:-} != sandbox) || $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
+  echo 'Run scripts/check-workload.sh database, gateway, or sandbox on Linux amd64.' >&2
   exit 2
 fi
 : "${STEGO_TEST_POSTGRES_DSN:?Set a PostgreSQL connection that can create test databases.}"
@@ -11,6 +11,10 @@ workflow=$1
 scratch=$(mktemp -d)
 cluster="stego-db-$(date +%s)-$$"
 cleanup() {
+  if [[ ${STEGO_TEST_KEEP_CLUSTER:-0} == 1 ]]; then
+    echo "Retained test cluster: $cluster; files: $scratch" >&2
+    return
+  fi
   if [[ -x $scratch/kind ]]; then
     "$scratch/kind" delete cluster --name "$cluster" >/dev/null 2>&1 || true
   fi
@@ -38,13 +42,32 @@ sed -i \
   -e 's#quay.io/jetstack/cert-manager-webhook:v1.21.1#quay.io/jetstack/cert-manager-webhook@sha256:d8b3961b51c8c7320633f8208dc46bf88aa13804d0f7cbe48a096b2c523cee42#g' \
   "$scratch/cert-manager.yaml"
 export STEGO_TEST_KUBECONFIG="$scratch/kubeconfig"
-kind create cluster --name "$cluster" --kubeconfig "$STEGO_TEST_KUBECONFIG" \
+cluster_args=()
+if [[ $workflow == sandbox ]]; then
+  scripts/prepare-kata-test.sh "$scratch"
+  cluster_args=(--config "$scratch/cluster.json")
+fi
+kind create cluster "${cluster_args[@]}" --name "$cluster" --kubeconfig "$STEGO_TEST_KUBECONFIG" \
   --image kindest/node:v1.35.8@sha256:07b2536e30b803ed61d1677a79df6115f798ce64c80f9e22f6ed45afd09323c0 --wait 120s
+if [[ $workflow == sandbox ]]; then
+  # QEMU uses shared memory for guest RAM. Docker's default 64 MiB is too small.
+  docker exec "$cluster-control-plane" mount -o remount,size=8G /dev/shm
+  kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" apply -f - <<'RUNTIME'
+apiVersion: node.k8s.io/v1
+kind: RuntimeClass
+metadata:
+  name: stego-kata
+handler: kata
+RUNTIME
+  export STEGO_TEST_SANDBOX_RUNTIME_CLASS=stego-kata
+else
+  unset STEGO_TEST_SANDBOX_RUNTIME_CLASS
+fi
 kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" apply -f "$scratch/cert-manager.yaml"
 kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n cert-manager rollout status deployment/cert-manager-webhook --timeout=120s
 kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n cert-manager rollout status deployment/cert-manager --timeout=120s
 export STEGO_REQUIRE_POSTGRES=1 STEGO_REQUIRE_KUBERNETES=1 GOWORK=off
-if [[ $workflow == gateway ]]; then
+if [[ $workflow == gateway || $workflow == sandbox ]]; then
   fetch https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.5.4/sandbox.yaml "$scratch/sandbox.yaml"
   (cd "$scratch" && echo '51e3610f235b58abd465280682d366d3d0fed8972489bf6a800d707988d24c3e  sandbox.yaml' | sha256sum --check)
   sed -i 's#registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.5.4#registry.k8s.io/agent-sandbox/agent-sandbox-controller@sha256:be477ba317d84a13a38d7605e925e7b4aa82de5b313a4274358920310a931b7f#g' "$scratch/sandbox.yaml"

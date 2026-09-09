@@ -8,7 +8,11 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
-func configuration(ns string, o Options) string {
+func configuration(ns, sandboxNS string, o Options) string {
+	topology := "combined"
+	if o.SandboxRuntimeClass != "" {
+		topology = "sidecar"
+	}
 	return fmt.Sprintf(`[openshell]
 version = 1
 [openshell.gateway]
@@ -40,13 +44,14 @@ ttl_secs = 3600
 grpc_endpoint = "https://openshell-gateway.%s.svc.cluster.local:8080"
 service_account_name = "openshell-gateway-sandbox"
 supervisor_sideload_method = "image-volume"
+default_runtime_class_name = %q
 sa_token_ttl_secs = 3600
 app_armor_profile = "Unconfined"
-topology = "combined"
+topology = %q
 [openshell.drivers.kubernetes.sidecar]
 proxy_uid = 1337
-process_binary_aware_network_policy = false
-`, ns, o.SandboxImage, o.SupervisorImage, ns, ns)
+process_binary_aware_network_policy = true
+`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, ns, o.SandboxRuntimeClass, topology)
 }
 
 type resource struct {
@@ -54,15 +59,14 @@ type resource struct {
 	object object
 }
 
-func resources(gw *pb.Gateway, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string) []resource {
+func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string) []resource {
 	id, ns := gw.Metadata.Id, gw.Namespace
 	core := "/api/v1/namespaces/" + ns
 	rbac := "/apis/rbac.authorization.k8s.io/v1"
 	result := []resource{}
 	add := func(path string, o object) { result = append(result, resource{path, o}) }
-	for _, name := range []string{Name, Name + "-sandbox"} {
-		add(core+"/serviceaccounts", definition("v1", "ServiceAccount", name, id))
-	}
+	add(core+"/serviceaccounts", definition("v1", "ServiceAccount", Name, id))
+	add("/api/v1/namespaces/"+sandboxNS+"/serviceaccounts", definition("v1", "ServiceAccount", Name+"-sandbox", id))
 	clusterRole := definition("rbac.authorization.k8s.io/v1", "ClusterRole", ns, id)
 	clusterRole["rules"] = []object{{"apiGroups": []string{"authentication.k8s.io"}, "resources": []string{"tokenreviews"}, "verbs": []string{"create"}}, {"apiGroups": []string{""}, "resources": []string{"nodes"}, "verbs": []string{"get", "list", "watch"}}, {"apiGroups": []string{""}, "resources": []string{"namespaces"}, "verbs": []string{"get"}}}
 	add(rbac+"/clusterroles", clusterRole)
@@ -72,11 +76,11 @@ func resources(gw *pb.Gateway, release *pb.GatewayRelease, oidc oidcConfig, conf
 	add(rbac+"/clusterrolebindings", binding)
 	role := definition("rbac.authorization.k8s.io/v1", "Role", Name+"-sandbox", id)
 	role["rules"] = []object{{"apiGroups": []string{"agents.x-k8s.io"}, "resources": []string{"sandboxes", "sandboxes/status"}, "verbs": []string{"get", "list", "watch", "create", "update", "patch", "delete"}}, {"apiGroups": []string{""}, "resources": []string{"events"}, "verbs": []string{"get", "list", "watch"}}, {"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get"}}}
-	add(rbac+"/namespaces/"+ns+"/roles", role)
+	add(rbac+"/namespaces/"+sandboxNS+"/roles", role)
 	binding = definition("rbac.authorization.k8s.io/v1", "RoleBinding", Name+"-sandbox", id)
 	binding["roleRef"] = object{"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": Name + "-sandbox"}
 	binding["subjects"] = []object{{"kind": "ServiceAccount", "name": Name, "namespace": ns}}
-	add(rbac+"/namespaces/"+ns+"/rolebindings", binding)
+	add(rbac+"/namespaces/"+sandboxNS+"/rolebindings", binding)
 	service := definition("v1", "Service", Name, id)
 	service["spec"] = object{"type": "ClusterIP", "selector": object{ownerLabel: id}, "ports": []object{{"name": "grpc", "port": 8080, "targetPort": "grpc"}}}
 	add(core+"/services", service)

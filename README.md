@@ -134,7 +134,7 @@ resource timestamp through generated storage; unchanged values leave it intact.
 REST and gRPC Gateway reads expose the same count. Relative adjustments do not
 have request deduplication: after a connection failure with an uncertain result,
 a caller must reconcile the observed count instead of assuming a retry is safe.
-The workload and sandbox-count controller workflows still need to be ported.
+The sandbox-count controller workflow still needs to be ported.
 
 Service-account create, list, get, revoke, and delete now run through the generated
 HTTP process and a TLS provisioner client. Only creation returns a client secret.
@@ -202,7 +202,7 @@ The [placement catalog workflow](acceptance/placement-catalog.md) now creates cl
 and database records through the generated API before Gateway creation. REST,
 gRPC, access checks, atomic events, watches, restart, and migration checks cover
 this path. Catalog writes require a platform admin or configured controller.
-Gateway workload deployment remains open.
+The Gateway workload gate below verifies deployment.
 
 The [deployment placement workflow](acceptance/deployment-placement.md) now makes a separate
 database record for each Gateway by default. The database, Gateway, owner grant,
@@ -214,5 +214,18 @@ The [database workload workflow](acceptance/database-workflow.md) now provisions
 from a Gateway creation event. It checks verified TLS, limited database roles,
 persistent data, stable credentials, foreign namespace denial, and cleanup after
 offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
-are part of this path. The cluster test has its own required CI job. Gateway
-workload deployment and production database operations remain open.
+are part of this path. The cluster test has its own required CI job. Production
+database operations remain open.
+
+
+The [Gateway workload gate](acceptance/gateway-workload.md) runs the actual
+OpenShell Gateway with PostgreSQL and Keycloak. It checks owner and viewer
+access, provider data, database and Gateway restart, namespace replacement,
+stable keys, and recovery after offline deletion. Run
+`scripts/check-gateway-workload.sh` with the test PostgreSQL connection set.
+
+The experimental [sandbox gate](acceptance/sandbox-workflow.md) adds sandbox
+creation and command execution under Kata. It checks admission denials, client
+key protection, a hard process limit, stored data after Gateway restart, and
+cleanup. Run `scripts/check-sandbox-workload.sh` on Linux amd64 with usable KVM.
+The runtime choice and production isolation requirements remain open.

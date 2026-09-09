@@ -8,6 +8,8 @@ readiness goals remain open.
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway
 image with the provisioned database and identity configuration. It tests owner
 access, provider data, restart, namespace replacement, and deletion recovery.
+The experimental [sandbox gate](sandbox-workflow.md) adds actual command
+execution under Kata, admission denials, and process-limit checks.
 
 Run `scripts/check-gateway.sh` for the complete gate. See
 [the five requirements and their tests](gateway-workflow.md). CI uses the same

@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"net"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -18,6 +19,7 @@ import (
 
 	protocol "github.com/jsell-rh/hypershell-stego/contracts/gateway"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -67,12 +69,14 @@ func gatewayControllerRBAC(t *testing.T, k *kubeFixture) {
 	}
 	rules := role["rules"].([]any)
 	for _, rule := range []map[string]any{
+		{"apiGroups": []string{"admissionregistration.k8s.io"}, "resources": []string{"validatingadmissionpolicies", "validatingadmissionpolicybindings", "mutatingadmissionpolicies", "mutatingadmissionpolicybindings"}, "verbs": []string{"get", "create", "patch", "delete"}},
+		{"apiGroups": []string{"node.k8s.io"}, "resources": []string{"runtimeclasses"}, "verbs": []string{"get"}},
 		{"apiGroups": []string{""}, "resources": []string{"namespaces"}, "verbs": []string{"list"}},
 		{"apiGroups": []string{""}, "resources": []string{"serviceaccounts"}, "verbs": []string{"get", "create", "patch"}},
 		{"apiGroups": []string{"rbac.authorization.k8s.io"}, "resources": []string{"roles", "rolebindings", "clusterroles", "clusterrolebindings"}, "verbs": []string{"get", "list", "create", "patch", "delete"}},
 		{"apiGroups": []string{"authentication.k8s.io"}, "resources": []string{"tokenreviews"}, "verbs": []string{"create"}},
 		{"apiGroups": []string{""}, "resources": []string{"nodes", "events"}, "verbs": []string{"get", "list", "watch"}},
-		{"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get"}},
+		{"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get", "create"}},
 		{"apiGroups": []string{"agents.x-k8s.io"}, "resources": []string{"sandboxes", "sandboxes/status"}, "verbs": []string{"get", "list", "watch", "create", "update", "patch", "delete"}},
 	} {
 		rules = append(rules, rule)
@@ -161,6 +165,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	stopIdentity, _ := startIdentityController(t, identityBinary, identityProvider, rpcAddress, apiTLS.config.CAFile, controllerToken)
 	workloadBinary := buildProgram(t, "./cmd/gateway-workload-controller")
 	workloadSettings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_GATEWAY_CLUSTER_ISSUER=" + k.options.ClusterIssuer, "HYPERSHELL_GATEWAY_OIDC_ISSUER=" + identityProvider.options.ServerURL + "/realms/workflow", "HYPERSHELL_GATEWAY_TRUST_BUNDLE=" + identityProvider.options.CAFile, "HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + sandboxImage, "HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + supervisorImage}
+	workloadSettings = append(workloadSettings, "HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS="+os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS"))
 	stopWorkload, logs := startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
 	input, _ := json.Marshal(gateways.CreateRequest{Name: "actual-gateway", ClusterID: f.cluster, ReleaseID: f.release})
 	root := address + "/api/hypershell/v1/gateways"
@@ -182,6 +187,12 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		stopIdentity()
 		stopDatabase()
 		stopAPI()
+		sandboxNS, _ := gatewayworkload.SandboxNamespace(gateway.ID)
+		k.must(t, "", "delete", "namespace", sandboxNS, "--ignore-not-found=true", "--wait=true")
+		k.must(t, "", "delete", "validatingadmissionpolicy,validatingadmissionpolicybinding", sandboxNS, "--ignore-not-found=true")
+		if os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") != "" {
+			k.must(t, "", "delete", "mutatingadmissionpolicy,mutatingadmissionpolicybinding", sandboxNS, "--ignore-not-found=true")
+		}
 		k.must(t, "", "delete", "namespace", gateway.Namespace, dbNamespace, "--ignore-not-found=true", "--wait=false")
 		k.must(t, "", "delete", "clusterrole,clusterrolebinding", gateway.Namespace, "--ignore-not-found=true")
 	})
@@ -289,6 +300,10 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	var finishSandbox func(*grpc.ClientConn, string)
+	if os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") != "" {
+		finishSandbox = gatewaySandboxWorkflow(t, k, gateway, service, connection, ownerToken, bobToken, call)
+	}
 	checkViewerAfterRestart := startGatewayViewerWorkflow(t, identityProvider, address+"/api/hypershell/v1", gateway, gatewayClient, alice, ownerToken, bobSubject, before, call)
 	stopWorkload()
 	connection.Close()
@@ -320,6 +335,9 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		t.Fatal("namespace or database restart changed stored provider", err)
 	}
 	checkViewerAfterRestart(ownerToken)
+	if finishSandbox != nil {
+		finishSandbox(connection, ownerToken)
+	}
 	stopWorkload()
 	connection.Close()
 	stopForward()
@@ -355,6 +373,14 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 			}
 			time.Sleep(time.Second)
 		}
+	}
+	sandboxNS, _ := gatewayworkload.SandboxNamespace(gateway.ID)
+	absent("namespace", sandboxNS)
+	absent("validatingadmissionpolicybinding", sandboxNS)
+	absent("validatingadmissionpolicy", sandboxNS)
+	if os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") != "" {
+		absent("mutatingadmissionpolicybinding", sandboxNS)
+		absent("mutatingadmissionpolicy", sandboxNS)
 	}
 	absent("namespace", gateway.Namespace)
 	absent("clusterrolebinding", gateway.Namespace)

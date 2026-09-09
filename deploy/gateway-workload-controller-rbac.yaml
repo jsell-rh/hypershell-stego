@@ -10,6 +10,12 @@ kind: ClusterRole
 metadata:
   name: hypershell-gateway-workload-controller
 rules:
+  - apiGroups: [admissionregistration.k8s.io]
+    resources: [validatingadmissionpolicies, validatingadmissionpolicybindings, mutatingadmissionpolicies, mutatingadmissionpolicybindings]
+    verbs: [get, create, patch, delete]
+  - apiGroups: [node.k8s.io]
+    resources: [runtimeclasses]
+    verbs: [get]
   - apiGroups: [""]
     resources: [namespaces]
     verbs: [get, list, create, patch, delete]
@@ -34,7 +40,7 @@ rules:
     verbs: [get, list, watch]
   - apiGroups: [""]
     resources: [pods]
-    verbs: [get]
+    verbs: [get, create]
   - apiGroups: [agents.x-k8s.io]
     resources: [sandboxes, sandboxes/status]
     verbs: [get, list, watch, create, update, patch, delete]

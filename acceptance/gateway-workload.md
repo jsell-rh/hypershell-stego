@@ -190,16 +190,16 @@ removes membership and requires that old token to be denied. Managed Gateway
 user tokens have a five-minute lifetime. Immediate global token revocation
 remains a separate requirement.
 
-Sandbox execution also needs separate work. The reference supervisor requests
-capabilities that the current restricted namespace rejects. Do not weaken that
-policy to treat this provider-management gate as complete sandbox evidence.
-The user was asked whether production sandboxes may require a runtime with
-separate virtual machines, such as Kata Containers, or must also support standard
-container runtimes on dedicated nodes. No answer has arrived. Kata uses a guest
-kernel for the workload; see its [virtualization design](https://github.com/kata-containers/kata-containers/blob/main/docs/design/virtualization.md).
-This is a proposed boundary, not verified OpenShell compatibility. The pinned
-Gateway accepts a requested runtime class. Admission must enforce the selected
-boundary and reject attempts to bypass it.
+The [sandbox execution gate](sandbox-workflow.md) extends this workflow with
+an experimental VM runtime. It uses a separate sandbox namespace, admission
+checks, and the pinned supervisor's strict sidecar mode. The public Gateway
+namespace keeps its restricted Pod policy. Sandbox creation, execution, key
+protection, process limits, and recovery have their own acceptance checks.
+
+Production runtime selection remains open. The user was asked whether production
+sandboxes may require separate virtual machines or must also support standard
+container runtimes on dedicated nodes. The local Kata fixture does not settle
+that choice or prove production isolation.
 
 Sandbox isolation, network policy enforcement, public routes, OpenShift behavior,
 image vulnerability scans, certificate renewal, backup, restore, capacity, and

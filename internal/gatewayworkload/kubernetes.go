@@ -24,6 +24,7 @@ import (
 
 type object = kube.Object
 type Options struct {
+	SandboxRuntimeClass                                    string
 	ClusterID                                              string
 	ServerURL, CAFile, TokenFile, ClusterIssuer            string
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
@@ -38,7 +39,7 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	if _, err := Namespace(o.ClusterID); err != nil {
 		return nil, errors.New("Gateway controller requires a managed cluster ID")
 	}
-	if !dnsLabel.MatchString(o.ClusterIssuer) || !validIssuer(o.Issuer) || !digestImage.MatchString(o.SandboxImage) || !digestImage.MatchString(o.SupervisorImage) {
+	if (o.SandboxRuntimeClass != "" && !dnsLabel.MatchString(o.SandboxRuntimeClass)) || !dnsLabel.MatchString(o.ClusterIssuer) || !validIssuer(o.Issuer) || !digestImage.MatchString(o.SandboxImage) || !digestImage.MatchString(o.SupervisorImage) {
 		return nil, errors.New("Gateway controller configuration is invalid")
 	}
 	f, err := os.Open(o.TrustBundleFile)
@@ -221,12 +222,19 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 	if _, err = leaf.Verify(x509.VerifyOptions{Roots: roots, Intermediates: intermediates, DNSName: host}); err != nil {
 		return errors.New("Gateway TLS certificate is not valid for its Service")
 	}
+	sandboxNS := ns
+	if k.options.SandboxRuntimeClass != "" {
+		sandboxNS, _ = SandboxNamespace(id)
+		if err := k.ensureSandbox(ctx, id, sandboxNS, core, roots); err != nil {
+			return err
+		}
+	}
 	config := definition("v1", "ConfigMap", Name+"-config", id)
-	config["data"] = object{"gateway.toml": configuration(ns, k.options), "trust.pem": k.trust}
+	config["data"] = object{"gateway.toml": configuration(ns, sandboxNS, k.options), "trust.pem": k.trust}
 	if _, err = k.ensure(ctx, core+"/configmaps", config, id); err != nil {
 		return err
 	}
-	for _, entry := range resources(gw, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(crt))) {
+	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(crt))) {
 		if _, err = k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
 		}
@@ -259,6 +267,23 @@ func (k *Kubernetes) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
+	sandboxNS, _ := SandboxNamespace(id)
+	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+sandboxNS, owner(id))
+	if err != nil {
+		return err
+	}
+	if !gone {
+		return ErrPending
+	}
+	for _, path := range []string{admissionAPI + "/validatingadmissionpolicybindings/", admissionAPI + "/validatingadmissionpolicies/", mutationAPI + "/mutatingadmissionpolicybindings/", mutationAPI + "/mutatingadmissionpolicies/"} {
+		gone, err := k.client.DeleteOwned(ctx, path+sandboxNS, owner(id))
+		if err != nil {
+			return err
+		}
+		if !gone {
+			return ErrPending
+		}
+	}
 	// Remove the cluster binding before the namespace. Namespace deletion removes
 	// namespaced resources. The database retains the durable encryption keys.
 	for _, path := range []string{"/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/" + ns, "/apis/rbac.authorization.k8s.io/v1/clusterroles/" + ns, "/api/v1/namespaces/" + ns} {
@@ -281,6 +306,7 @@ func (k *Kubernetes) Owns(ctx context.Context, gw *pb.Gateway) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	sandboxNS, _ := SandboxNamespace(id)
 	dbNS, err := gateways.DatabaseNamespace(gw.GetDatabaseId())
 	if err != nil {
 		return false, err
@@ -290,6 +316,7 @@ func (k *Kubernetes) Owns(ctx context.Context, gw *pb.Gateway) (bool, error) {
 		database bool
 	}{
 		{"/api/v1/namespaces/" + ns, false},
+		{"/api/v1/namespaces/" + sandboxNS, false},
 		{"/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/" + ns, false},
 		{"/apis/rbac.authorization.k8s.io/v1/clusterroles/" + ns, false},
 		{"/api/v1/namespaces/" + dbNS, true},
@@ -351,7 +378,10 @@ func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {
 					ns, dbErr = gateways.DatabaseNamespace(dbID)
 					matches = dbErr == nil && databaseOwner(dbID).Matches(row)
 				}
-				if err != nil || kube.String(row, "metadata", "name") != ns || !matches {
+				sandboxNS, _ := SandboxNamespace(id)
+				name := kube.String(row, "metadata", "name")
+				validName := name == ns || (!scan.database && scan.collection == "/api/v1/namespaces" && name == sandboxNS)
+				if err != nil || !validName || !matches {
 					return nil, errors.New("Gateway resource inventory has invalid ownership")
 				}
 				if !seen[id] {

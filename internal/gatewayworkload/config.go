@@ -33,6 +33,15 @@ func Namespace(id string) (string, error) {
 	return "openshell-" + hex.EncodeToString(parsed.Payload()[:8]), nil
 }
 
+// SandboxNamespace separates sandbox permissions from Gateway credentials.
+func SandboxNamespace(id string) (string, error) {
+	ns, err := Namespace(id)
+	if err != nil {
+		return "", err
+	}
+	return "openshell-sandbox-" + ns[len("openshell-"):], nil
+}
+
 type oidcConfig struct {
 	Issuer     string `json:"issuer"`
 	ClientID   string `json:"client_id"`
