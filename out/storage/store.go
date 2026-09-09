@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	"github.com/jackc/pgx/v5/pgconn"
 	stegostorage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -1462,6 +1463,30 @@ func filterColumns(entity string) map[string]bool {
 	return nil
 }
 
+func textColumns(entity string) map[string]bool {
+	switch entity {
+	case "User":
+		return map[string]bool{"username": true, "issuer": true, "subject": true, "email": true, "name": true}
+	case "Role":
+		return map[string]bool{"name": true, "display_name": true, "description": true}
+	case "ManagedCluster":
+		return map[string]bool{"name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
+	case "GatewayRelease":
+		return map[string]bool{"name": true, "image": true, "rollout_strategy": true, "canary_duration": true, "status": true}
+	case "ManagedDatabase":
+		return map[string]bool{"name": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+	case "Gateway":
+		return map[string]bool{"name": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true}
+	case "RoleBinding":
+		return map[string]bool{}
+	case "ServiceAccount":
+		return map[string]bool{"active_name": true, "name": true, "description": true, "client_id": true, "client_uuid": true, "subject": true, "last_error": true}
+	case "ServiceAccountAudit":
+		return map[string]bool{"actor_user_id": true, "action": true, "outcome": true, "role": true}
+	}
+	return nil
+}
+
 func (s *Store) relatedExpression(ctx context.Context, target string, filter stegostorage.RelatedFilter) (clause.Expression, error) {
 	if len(filter.Values) > 16 {
 		return nil, fmt.Errorf("too many related filter fields")
@@ -1554,6 +1579,9 @@ func (s *Store) rowExpression(ctx context.Context, entity string, filter stegost
 	if filter.Related != nil {
 		modes++
 	}
+	if filter.Text != nil {
+		modes++
+	}
 	if filter.All != nil {
 		modes++
 	}
@@ -1562,6 +1590,27 @@ func (s *Store) rowExpression(ctx context.Context, entity string, filter stegost
 	}
 	if modes != 1 || (filter.Field == "" && filter.Values != nil) {
 		return nil, fmt.Errorf("row filter requires one condition")
+	}
+	if filter.Text != nil {
+		text := filter.Text
+		if len(text.Fields) < 1 || len(text.Fields) > 8 || len(text.Value) < 1 || len(text.Value) > 4096 || !utf8.ValidString(text.Value) || strings.ContainsRune(text.Value, 0) {
+			return nil, fmt.Errorf("invalid text match")
+		}
+		*bytes += len(text.Value)
+		if *bytes > 65536 {
+			return nil, fmt.Errorf("row filter exceeds value size limit")
+		}
+		columns, seen := textColumns(entity), map[string]bool{}
+		pattern := "%" + strings.NewReplacer("!", "!!", "%", "!%", "_", "!_").Replace(text.Value) + "%"
+		expressions := make([]clause.Expression, 0, len(text.Fields))
+		for _, field := range text.Fields {
+			if !columns[field] || seen[field] {
+				return nil, fmt.Errorf("invalid text match field")
+			}
+			seen[field] = true
+			expressions = append(expressions, clause.Expr{SQL: "? ILIKE ? ESCAPE '!'", Vars: []any{clause.Column{Name: field}, pattern}})
+		}
+		return clause.Or(expressions...), nil
 	}
 	values := filter.Values
 	if filter.Related != nil {

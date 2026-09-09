@@ -227,3 +227,8 @@ The [Gateway account cleanup workflow](gateway-account-cleanup.md) now joins
 Gateway deletion with automation-account cleanup. It tests provider failure,
 restart, orphan clients, concurrent creation, atomic audit and event failure,
 and token use against the actual Gateway.
+
+The [account discovery workflow](service-account-discovery.md) adds status,
+literal search, and all reference sort fields through the generated process.
+It preserves access filters in counts and pages and repeats discovery after
+revocation, restart, and deletion. A local probe also runs the reference CLI.

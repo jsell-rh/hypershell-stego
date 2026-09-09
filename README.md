@@ -148,9 +148,10 @@ The [Keycloak provider](acceptance/keycloak.md) now runs through the generated
 TLS transport. CI tests actual token issuance and revocation with a pinned
 Keycloak container. Revocation removes the provider identity and retains its
 account record and audit history. A failure test proves that a delayed enable
-cannot undo revocation after database connection loss. Complete list filters,
-automatic Gateway cleanup, other provider failure cases, production capacity,
-and client ports remain open.
+cannot undo revocation after database connection loss. Account discovery now
+supports status, literal search, and ordering through
+the [discovery workflow](acceptance/service-account-discovery.md). Other provider
+failure cases, production capacity, and client ports remain open.
 
 Recovery also removes clients created after their initial cleanup. It retains
 deleted account records for repeated cleanup by stable IDs, including after

@@ -82,8 +82,9 @@ audience. Tests refuse foreign audiences and check terminal revocation after
 invalid OIDC settings or loss of that binding. Restart and restored owner access
 cannot cancel committed revocation.
 The protocol fixture remains useful for controlled failures.
-Service-account search, status filters, custom ordering, configurable expiration
-policy, deployment manifests, SDKs, CLI, and web-console workflows remain open.
+The [discovery workflow](service-account-discovery.md) covers search, status
+filters, and custom ordering. Configurable expiration policy, deployment
+manifests, SDKs, the STEGO CLI port, and web-console workflows remain open.
 
 Gateway deletion now removes stored and orphan provider clients before it
 commits account tombstones, cleanup audits, the Gateway tombstone, and its event.

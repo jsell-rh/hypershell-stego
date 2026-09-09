@@ -66,7 +66,7 @@ type accountListResponse struct {
 type accountInput struct {
 	GatewayID, ID string
 	Create        serviceaccounts.CreateRequest
-	Page, Size    int
+	List          serviceaccounts.ListOptions
 }
 
 func presentAccount(row model.ServiceAccount) accountItem {
@@ -113,7 +113,7 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 	}
 	mux.Handle("GET "+path+"/{account_id}", get)
 	list, err := endpoint(verifier, func(r *http.Request) (accountInput, error) {
-		input := accountInput{GatewayID: r.PathValue("gateway_id"), Page: 1, Size: 20}
+		input := accountInput{GatewayID: r.PathValue("gateway_id"), List: serviceaccounts.ListOptions{Page: 1, Size: 20}}
 		query, err := url.ParseQuery(r.URL.RawQuery)
 		if err != nil {
 			return input, err
@@ -122,22 +122,36 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 			if len(values) != 1 {
 				return input, transport.ErrRequest
 			}
-			value, err := strconv.Atoi(values[0])
-			if err != nil {
-				return input, transport.ErrRequest
-			}
+			value := values[0]
 			switch key {
-			case "page":
-				input.Page = value
-			case "size":
-				input.Size = value
+			case "page", "size":
+				if value == "" {
+					continue
+				}
+				number, err := strconv.Atoi(value)
+				if err != nil {
+					return input, transport.ErrRequest
+				}
+				if key == "page" {
+					input.List.Page = number
+				} else {
+					input.List.Size = number
+				}
+			case "status":
+				input.List.Status = value
+			case "search":
+				input.List.Search = value
+			case "sort":
+				input.List.Sort = value
+			case "order":
+				input.List.Order = value
 			default:
 				return input, transport.ErrRequest
 			}
 		}
 		return input, nil
 	}, func(ctx context.Context, input accountInput) (accountListResponse, error) {
-		result, access, err := service.List(ctx, gateways.PrincipalFromContext(ctx), input.GatewayID, input.Page, input.Size)
+		result, access, err := service.ListQuery(ctx, gateways.PrincipalFromContext(ctx), input.GatewayID, input.List)
 		if err != nil {
 			return accountListResponse{}, err
 		}
@@ -145,7 +159,7 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 		if access.Owner {
 			roles = append(roles, serviceaccounts.RoleAdmin)
 		}
-		response := accountListResponse{Page: input.Page, Size: input.Size, Total: result.Total, Capabilities: accountCapabilities{CanCreate: true, AllowedRoles: roles, CanManageAll: access.Owner, ExpirationPolicy: expirationPolicy{DefaultSeconds: int64(serviceaccounts.DefaultExpiration / time.Second), MinimumSeconds: int64(serviceaccounts.MinimumExpiration / time.Second), MaximumSeconds: int64(serviceaccounts.MaximumExpiration / time.Second)}}, Items: []accountItem{}}
+		response := accountListResponse{Page: input.List.Page, Size: input.List.Size, Total: result.Total, Capabilities: accountCapabilities{CanCreate: true, AllowedRoles: roles, CanManageAll: access.Owner, ExpirationPolicy: expirationPolicy{DefaultSeconds: int64(serviceaccounts.DefaultExpiration / time.Second), MinimumSeconds: int64(serviceaccounts.MinimumExpiration / time.Second), MaximumSeconds: int64(serviceaccounts.MaximumExpiration / time.Second)}}, Items: []accountItem{}}
 		rows, ok := result.Items.([]model.ServiceAccount)
 		if !ok {
 			return accountListResponse{}, errors.New("unexpected account list")

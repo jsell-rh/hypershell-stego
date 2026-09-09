@@ -390,15 +390,20 @@ func (s *Service) Get(ctx context.Context, p gateways.Principal, gatewayID, id s
 	return row, connection, nil
 }
 func (s *Service) List(ctx context.Context, p gateways.Principal, gatewayID string, page, size int) (storage.ListResult, Access, error) {
+	return s.ListQuery(ctx, p, gatewayID, ListOptions{Page: page, Size: size})
+}
+
+func (s *Service) ListQuery(ctx context.Context, p gateways.Principal, gatewayID string, options ListOptions) (storage.ListResult, Access, error) {
 	var result storage.ListResult
 	var access Access
 	if !validID(gatewayID) {
 		return result, access, storage.ErrNotFound
 	}
-	if page < 1 || page > 1000000 || size < 1 || size > 100 {
+	column, direction, err := options.validate()
+	if err != nil {
 		return result, access, gateways.ErrInvalid
 	}
-	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+	err = s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
 		if _, err := tx.Get(ctx, "Gateway", gatewayID); err != nil {
 			return err
 		}
@@ -407,9 +412,15 @@ func (s *Service) List(ctx context.Context, p gateways.Principal, gatewayID stri
 		if err != nil {
 			return err
 		}
-		opts := storage.ListOptions{Page: page, Size: size, OrderBy: []storage.OrderByField{{Field: "created_time", Direction: "desc"}, {Field: "id", Direction: "desc"}}}
+		opts := storage.ListOptions{Page: options.Page, Size: options.Size, OrderBy: []storage.OrderByField{{Field: column, Direction: direction}, {Field: "id", Direction: direction}}, ImplicitFilters: map[string]string{}}
+		if options.Status != "" {
+			opts.ImplicitFilters["status"] = options.Status
+		}
+		if options.Search != "" {
+			opts.Filter = &storage.RowFilter{Text: &storage.TextMatch{Fields: []string{"name", "client_id", "subject"}, Value: options.Search}}
+		}
 		if !access.Owner {
-			opts.ImplicitFilters = map[string]string{"created_by_user_id": access.UserID}
+			opts.ImplicitFilters["created_by_user_id"] = access.UserID
 		}
 		result, err = tx.List(ctx, "ServiceAccount", "gateway_id", gatewayID, opts)
 		return err
