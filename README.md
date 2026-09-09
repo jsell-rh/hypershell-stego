@@ -202,4 +202,11 @@ The [placement catalog workflow](acceptance/placement-catalog.md) now creates cl
 and database records through the generated API before Gateway creation. REST,
 gRPC, access checks, atomic events, watches, restart, and migration checks cover
 this path. Catalog writes require a platform admin or configured controller.
-Workload deployment and per-Gateway deployment databases remain open.
+Workload deployment remains open.
+
+The [deployment placement workflow](acceptance/deployment-placement.md) now makes a separate
+database record for each Gateway by default. The database, Gateway, owner grant,
+and three events commit together. Set `DATABASE_PROVIDER=cnpg` explicitly to use
+the shared CNPG path. REST requires a `database_id` property but accepts an empty
+string. Apply migration 000007 before the new API starts. Workload provisioning
+and cleanup recovery remain separate acceptance gates.

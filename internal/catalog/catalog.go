@@ -3,15 +3,13 @@ package catalog
 
 import (
 	"context"
-	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"slices"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/resourceevents"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -58,11 +56,7 @@ func textField(s string, required bool, max int) bool {
 
 // DatabaseNamespace derives the immutable namespace from a canonical KSUID.
 func DatabaseNamespace(id string) (string, error) {
-	if !validID(id) {
-		return "", gateways.ErrInvalid
-	}
-	key, _ := ksuid.Parse(id)
-	return "openshell-db-" + hex.EncodeToString(key.Payload()[:8]), nil
+	return gateways.DatabaseNamespace(id)
 }
 func (r *Resource[T, C, P]) Get(ctx context.Context, p gateways.Principal, id string) (T, error) {
 	var row T
@@ -106,15 +100,7 @@ func (r *Resource[T, C, P]) List(ctx context.Context, p gateways.Principal, q Qu
 	return result, err
 }
 func (r *Resource[T, C, P]) notify(tx store.Transaction, id, operation, suffix string) error {
-	payload, err := json.Marshal(map[string]string{"source": r.entity + "s", "source_id": id, "event_type": operation})
-	if err != nil {
-		return err
-	}
-	key, err := uuid.NewV7()
-	if err != nil {
-		return err
-	}
-	return tx.Notify(store.Notification{ID: key, Destination: "kafka", ResourceKey: id, Kind: r.eventPrefix + "." + suffix, Payload: payload})
+	return resourceevents.Notify(tx, r.entity+"s", id, operation, r.eventPrefix+"."+suffix)
 }
 func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, input C) (T, error) {
 	var zero T
@@ -451,7 +437,7 @@ func patchDatabase(row *model.ManagedDatabase, input DatabasePatch) error {
 	return validateDatabase(*row)
 }
 func validateDatabase(row model.ManagedDatabase) error {
-	if !textField(row.Name, true, 255) {
+	if !textField(row.Name, true, 261) {
 		return gateways.ErrInvalid
 	}
 	if row.Provider != "cnpg" && row.Provider != "deployment" {

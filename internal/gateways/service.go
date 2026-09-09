@@ -33,7 +33,7 @@ type CreateRequest struct {
 	Name             string   `json:"name"`
 	ClusterID        string   `json:"cluster_id"`
 	ReleaseID        string   `json:"release_id"`
-	DatabaseID       string   `json:"database_id"`
+	DatabaseID       string   `json:"database_id" stego:"required"`
 	ExternalDNS      *string  `json:"external_dns,omitempty"`
 	TLSMode          *string  `json:"tls_mode,omitempty"`
 	ServiceType      *string  `json:"service_type,omitempty"`
@@ -55,6 +55,7 @@ type Repository interface {
 type Service struct {
 	repository           Repository
 	controlPlaneSubjects map[string]bool
+	databaseProvider     string
 }
 
 func New(repository Repository, options ...Options) (*Service, error) {
@@ -63,6 +64,14 @@ func New(repository Repository, options ...Options) (*Service, error) {
 	}
 	if len(options) > 1 {
 		return nil, errors.New("one Gateway options value is required")
+	}
+	selected := Options{}
+	if len(options) == 1 {
+		selected = options[0]
+	}
+	provider, err := resolveDatabaseProvider(selected.DatabaseProvider)
+	if err != nil {
+		return nil, err
 	}
 	subjects := map[string]bool{}
 	if len(options) == 1 {
@@ -73,10 +82,10 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{repository: repository, controlPlaneSubjects: subjects}, nil
+	return &Service{repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider}, nil
 }
 
-// Create commits the resource, owner grant, and notification as one change.
+// Create commits the Gateway, owner grant, placement, and events as one change.
 func (s *Service) Create(ctx context.Context, principal Principal, request CreateRequest) (model.Gateway, error) {
 	var gateway model.Gateway
 	if err := validatePrincipal(principal); err != nil {
@@ -93,18 +102,6 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		if err != nil {
 			return err
 		}
-		// CNPG placement requires exactly one live managed database.
-		databases, err := tx.List(ctx, "ManagedDatabase", "", "", store.ListOptions{Page: 1, Size: 2})
-		if err != nil {
-			return err
-		}
-		rows, ok := databases.Items.([]model.ManagedDatabase)
-		if !ok {
-			return errors.New("unexpected database storage result")
-		}
-		if databases.Total != 1 || len(rows) != 1 || rows[0].Provider != "cnpg" {
-			return fmt.Errorf("%w: CNPG placement requires one managed database with provider cnpg", ErrInvalid)
-		}
 		for entity, id := range map[string]string{"ManagedCluster": request.ClusterID, "GatewayRelease": request.ReleaseID} {
 			if _, err := tx.Get(ctx, entity, id); err != nil {
 				if errors.Is(err, store.ErrNotFound) {
@@ -112,6 +109,10 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 				}
 				return err
 			}
+		}
+		databaseID, err := s.placeDatabase(ctx, tx, request.Name)
+		if err != nil {
+			return err
 		}
 		id, err := ksuid.NewRandom()
 		if err != nil {
@@ -123,7 +124,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		}
 		gateway = model.Gateway{
 			Meta: model.Meta{ID: id.String()}, Name: request.Name,
-			ClusterID: request.ClusterID, ReleaseID: request.ReleaseID, DatabaseID: rows[0].ID,
+			ClusterID: request.ClusterID, ReleaseID: request.ReleaseID, DatabaseID: databaseID,
 			Namespace:   "openshell-" + hex.EncodeToString(id.Payload()[:8]),
 			ExternalDns: request.ExternalDNS, TlsMode: request.TLSMode, ServiceType: request.ServiceType,
 			Status: request.Status, Phase: request.Phase, Image: request.Image, SupervisorImage: request.SupervisorImage,
@@ -151,6 +152,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		if err != nil {
 			return err
 		}
+		var ok bool
 		gateway, ok = stored.(model.Gateway)
 		if !ok {
 			return errors.New("unexpected Gateway storage result")

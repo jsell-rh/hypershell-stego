@@ -284,7 +284,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	stop()
 	// An offline catalog update queues its event for the next generated process.
-	policy, err := gateways.New(f.storage)
+	policy, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -75,7 +75,7 @@ type GatewayRelease struct {
 // ManagedDatabase represents the ManagedDatabase entity.
 type ManagedDatabase struct {
 	Meta
-	Name             string  `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	Name             string  `json:"name" gorm:"column:name;not null;size:261;check:length(name) >= 1"`
 	Provider         string  `json:"provider" gorm:"column:provider;not null"`
 	Namespace        string  `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:29;check:length(namespace) >= 1"`
 	Region           *string `json:"region,omitempty" gorm:"column:region;size:255"`

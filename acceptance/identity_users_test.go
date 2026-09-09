@@ -10,7 +10,7 @@ import (
 func TestIdentityUserStateUsesCurrentGrantsAndRetainsRemovalTargets(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
-	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -204,6 +204,7 @@ func ReplyEndpoint[Request, Response any](authenticate Authenticate, decode func
 // JSONBody accepts one object with exact field names. Unknown fields,
 // duplicate members, invalid Unicode, and trailing values fail decoding.
 // Request types must be plain structs with explicit JSON tags.
+// The stego:"required" tag requires a present, non-null member. Zero values remain valid.
 func JSONBody[T any](r *http.Request) (T, error) {
 	var result T
 	if r.Body == nil {
@@ -265,6 +266,7 @@ func checkShape(data json.RawMessage, typ reflect.Type, depth int) error {
 	switch typ.Kind() {
 	case reflect.Struct:
 		fields := make(map[string]reflect.Type, typ.NumField())
+		required := make([]string, 0)
 		for i := 0; i < typ.NumField(); i++ {
 			field := typ.Field(i)
 			name := strings.Split(field.Tag.Get("json"), ",")[0]
@@ -272,10 +274,23 @@ func checkShape(data json.RawMessage, typ reflect.Type, depth int) error {
 				return errors.New("JSON request fields require unique explicit tags")
 			}
 			fields[name] = field.Type
+			switch field.Tag.Get("stego") {
+			case "":
+			case "required":
+				required = append(required, name)
+			default:
+				return errors.New("JSON request field has an invalid stego tag")
+			}
 		}
 		var members map[string]json.RawMessage
 		if json.Unmarshal(data, &members) != nil {
 			return ErrRequest
+		}
+		for _, name := range required {
+			value, present := members[name]
+			if !present || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+				return ErrRequest
+			}
 		}
 		for name, value := range members {
 			field, ok := fields[name]

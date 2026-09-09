@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 
 	placement "github.com/jsell-rh/hypershell-stego/internal/catalog"
@@ -114,11 +113,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		return nil, err
 	}
 	create, err := endpoint(verifier, func(r *http.Request) (gateways.CreateRequest, error) {
-		request, err := transport.JSONBody[gateways.CreateRequest](r)
-		if err == nil && strings.TrimSpace(request.DatabaseID) == "" {
-			err = gateways.ErrInvalid
-		}
-		return request, err
+		return transport.JSONBody[gateways.CreateRequest](r)
 	}, func(ctx context.Context, request gateways.CreateRequest) (Gateway, error) {
 		row, err := service.Create(ctx, gateways.PrincipalFromContext(ctx), request)
 		if err != nil {

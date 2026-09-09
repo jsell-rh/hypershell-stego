@@ -35,7 +35,7 @@ func BenchmarkGatewayIdentityUserState(b *testing.B) {
 	if _, err := f.db.Exec("ANALYZE users; ANALYZE role_bindings"); err != nil {
 		b.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		b.Fatal(err)
 	}

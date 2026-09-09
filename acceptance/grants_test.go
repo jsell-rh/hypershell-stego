@@ -79,7 +79,7 @@ func TestConcurrentGrantRemovalPreservesLastOwner(t *testing.T) {
 	if err := f.db.QueryRow("SELECT id FROM role_bindings WHERE gateway_id=$1 AND id<>$2", gateway.ID, second.ID).Scan(&first); err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -49,3 +49,9 @@ The gate also includes [Gateway grant changes](gateway-grants.md). These tests
 use application grant methods instead of direct grant inserts for the new
 workflow. They cover a missing storage rule found during re-grant: deleted rows
 must retain history without reserving a live grant key.
+
+The gate now includes [deployment placement](deployment-placement.md). Its new
+workflow uses the reference default and commits a new database with the Gateway,
+owner grant, and three events. The earlier shared-database workflows explicitly
+select `DATABASE_PROVIDER=cnpg`. The real Keycloak browser workflow uses deployment
+placement. Workload provisioning remains outside this gate.

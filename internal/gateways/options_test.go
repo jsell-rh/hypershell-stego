@@ -6,6 +6,7 @@ import (
 )
 
 func TestControlPlaneConfigurationFailsClosed(t *testing.T) {
+	t.Setenv("DATABASE_PROVIDER", "")
 	for _, raw := range []string{"", `[]`, `["subject-a","subject-b"]`} {
 		t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", raw)
 		options, err := OptionsFromEnvironment()
@@ -28,5 +29,26 @@ func TestControlPlaneConfigurationFailsClosed(t *testing.T) {
 	}
 	if err := validateSubjects(make([]string, 33)); err == nil {
 		t.Fatal("too many subjects accepted")
+	}
+}
+
+func TestDatabaseProviderConfiguration(t *testing.T) {
+	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", "")
+	for _, value := range []string{"", ProviderDeployment, ProviderCNPG} {
+		t.Setenv("DATABASE_PROVIDER", value)
+		options, err := OptionsFromEnvironment()
+		want := value
+		if want == "" {
+			want = ProviderDeployment
+		}
+		if err != nil || options.DatabaseProvider != want {
+			t.Fatal("database provider", value, options, err)
+		}
+	}
+	for _, value := range []string{"postgres", "CNPG", " deployment", "cnpg ", "deployment,cnpg"} {
+		t.Setenv("DATABASE_PROVIDER", value)
+		if _, err := OptionsFromEnvironment(); err == nil {
+			t.Fatal("invalid provider accepted", value)
+		}
 	}
 }

@@ -64,10 +64,11 @@ Secret fields contain references. The API does not accept namespace selection or
 read secret contents. Patches leave omitted or null optional fields unchanged,
 as in the reference pointer patch behavior.
 
-Gateway creation still uses the CNPG placement path. It requires exactly one live
-managed database with provider `cnpg`. A client database ID is a compatibility
-placeholder and cannot choose placement. Per-Gateway deployment databases remain
-open. Catalog storage does not prove cluster access, image availability, image
+This catalog workflow explicitly uses the CNPG placement path. It requires exactly
+one live managed database with provider `cnpg`. A client database ID is a
+compatibility placeholder and cannot choose placement. The default deployment
+path now has a [separate workflow](deployment-placement.md). Catalog storage does
+not prove cluster access, image availability, image
 integrity, database provisioning, rollout behavior, or workload deployment. These
 checks belong to the next control-plane workflow. Sparse field selection and REST
 pages above 100 also remain open. The current secret references and image fields

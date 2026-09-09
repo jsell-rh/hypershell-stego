@@ -14,7 +14,7 @@ import (
 
 func controllerService(t *testing.T, f *fixture) (*gateways.Service, gateways.Principal) {
 	t.Helper()
-	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		t.Fatal(err)
 	}

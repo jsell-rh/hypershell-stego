@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/google/uuid"
+	"github.com/jsell-rh/hypershell-stego/internal/resourceevents"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
@@ -208,17 +208,5 @@ func applyPatch(row *model.Gateway, p PatchRequest, consoleAddress *string) erro
 
 // Events carry an identifier. Configuration and credentials stay in storage.
 func notifyGateway(tx store.Transaction, id, eventType, kind string) error {
-	payload, err := json.Marshal(struct {
-		Source    string `json:"source"`
-		SourceID  string `json:"source_id"`
-		EventType string `json:"event_type"`
-	}{"Gateways", id, eventType})
-	if err != nil {
-		return err
-	}
-	messageID, err := uuid.NewRandom()
-	if err != nil {
-		return err
-	}
-	return tx.Notify(store.Notification{ID: messageID, Destination: "kafka", ResourceKey: id, Kind: kind, Payload: payload})
+	return resourceevents.Notify(tx, "Gateways", id, eventType, kind)
 }

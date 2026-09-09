@@ -8,12 +8,34 @@ import (
 	"unicode/utf8"
 )
 
-// Options supplies subjects from the issuer configured in the token verifier.
-// Only trusted application configuration can set this list.
-type Options struct{ ControlPlaneSubjects []string }
+// Options supplies trusted placement settings and controller subjects.
+// Subjects belong to the issuer configured in the token verifier.
+type Options struct {
+	ControlPlaneSubjects []string
+	DatabaseProvider     string
+}
+
+const ProviderDeployment = "deployment"
+const ProviderCNPG = "cnpg"
+
+func resolveDatabaseProvider(raw string) (string, error) {
+	switch raw {
+	case "", ProviderDeployment:
+		return ProviderDeployment, nil
+	case ProviderCNPG:
+		return ProviderCNPG, nil
+	default:
+		return "", errors.New("DATABASE_PROVIDER must be deployment or cnpg")
+	}
+}
 
 func OptionsFromEnvironment() (Options, error) {
 	var options Options
+	var err error
+	options.DatabaseProvider, err = resolveDatabaseProvider(os.Getenv("DATABASE_PROVIDER"))
+	if err != nil {
+		return Options{}, err
+	}
 	raw := os.Getenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS")
 	if raw == "" {
 		return options, nil

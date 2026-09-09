@@ -226,7 +226,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	tlsIdentity := identity(t, "localhost")
 	dir := filepath.Dir(tlsIdentity.config.CAFile)
 	allowed, _ := json.Marshal([]string{controllerID})
-	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
+	settings = append(settings, "DATABASE_PROVIDER=", "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary, controllerBinary := buildApplication(t), buildProgram(t, "./cmd/gateway-identity-controller")
 	stopAPI, address, grpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
@@ -238,10 +238,23 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	}
 	code, body := requestJSON(t, "POST", root+"/gateways", alice, body)
 	var gateway struct {
-		ID string `json:"id"`
+		ID         string `json:"id"`
+		DatabaseID string `json:"database_id"`
 	}
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatalf("create Gateway with provider token: %d %s", code, body)
+	}
+	if gateway.DatabaseID == "" || gateway.DatabaseID == f.database {
+		t.Fatal("real login did not use dedicated placement")
+	}
+	code, placementBody := requestJSON(t, "GET", root+"/managed_databases/"+gateway.DatabaseID, alice, nil)
+	var placement struct {
+		Provider  string `json:"provider"`
+		Namespace string `json:"namespace"`
+	}
+	expectedNamespace, err := gateways.DatabaseNamespace(gateway.DatabaseID)
+	if err != nil || code != 200 || json.Unmarshal(placementBody, &placement) != nil || placement.Provider != gateways.ProviderDeployment || placement.Namespace != expectedNamespace {
+		t.Fatal("real login database placement", code, string(placementBody), err)
 	}
 	recipient := currentUser(t, root, bob)
 	stopController, logs := startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)

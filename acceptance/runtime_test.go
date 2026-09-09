@@ -57,7 +57,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(repository)
+	service, err := gateways.New(repository, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,24 +93,30 @@ func startBoth(t testing.TB, binary, dsn string, config Config, settings ...stri
 	stop, httpAddress, grpcAddress, _ := startBothManaged(t, binary, dsn, config, settings...)
 	return stop, httpAddress, grpcAddress
 }
-func startBothManaged(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string, func() string) {
+func applicationEnvironment(t testing.TB, dsn string, config Config, settings ...string) []string {
 	t.Helper()
-	ctx, cancel := context.WithCancel(context.Background())
-	command := exec.CommandContext(ctx, binary)
-	command.Env = append(os.Environ(),
-		"DATABASE_URL="+dsn, "PORT=0",
+	environment := append(os.Environ(),
+		"DATABASE_URL="+dsn, "PORT=0", "DATABASE_PROVIDER=cnpg",
 		"STEGO_KAFKA_BROKERS="+strings.Join(config.Brokers, ","), "STEGO_KAFKA_TOPIC="+config.Topic,
 		"STEGO_KAFKA_AUTHENTICATION="+config.Authentication, "STEGO_KAFKA_CA_FILE="+config.CAFile,
 		"STEGO_KAFKA_CLIENT_CERTIFICATE_FILE="+config.ClientCertificateFile, "STEGO_KAFKA_CLIENT_KEY_FILE="+config.ClientKeyFile,
 	)
 	_, authSettings := issuer(t)
-	command.Env = append(command.Env, authSettings...)
+	environment = append(environment, authSettings...)
 	tlsIdentity := identity(t, "localhost")
-	command.Env = append(command.Env, "STEGO_GRPC_ADDR=127.0.0.1:0", "STEGO_GRPC_TLS_CERT="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server-key.pem"))
-	command.Env = append(command.Env, settings...)
+	environment = append(environment, "STEGO_GRPC_ADDR=127.0.0.1:0", "STEGO_GRPC_TLS_CERT="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(filepath.Dir(tlsIdentity.config.CAFile), "server-key.pem"))
+	environment = append(environment, settings...)
 	if raceEnabled {
-		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
+		environment = append(environment, "GORACE=halt_on_error=1 exitcode=66")
 	}
+	return environment
+}
+
+func startBothManaged(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string, func() string) {
+	t.Helper()
+	ctx, cancel := context.WithCancel(context.Background())
+	command := exec.CommandContext(ctx, binary)
+	command.Env = applicationEnvironment(t, dsn, config, settings...)
 	output := runtimeOutput{ready: make(chan string, 1), grpcReady: make(chan string, 1)}
 	command.Stdout = &output
 	command.Stderr = &output

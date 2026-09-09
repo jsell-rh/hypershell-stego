@@ -102,7 +102,7 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := gateways.New(s)
+	svc, err := gateways.New(s, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,6 +133,13 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 		t.Fatal(err)
 	}
 	migration, err = os.ReadFile("../migrations/000006_placement_catalog.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
+	migration, err = os.ReadFile("../migrations/000007_deployment_database_names.sql")
 	if err != nil {
 		t.Fatal(err)
 	}

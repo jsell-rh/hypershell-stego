@@ -95,3 +95,7 @@ The real provider test now includes [global role synchronization](global-roles.m
 A fresh API token after creator-role removal deletes the global record and denies
 new Gateway creation. Existing Gateway ownership remains valid. Re-grant creates
 a new global record with the same user ID.
+
+The browser workflow now uses default deployment placement. It checks that the
+created Gateway has a separate deployment database with the expected namespace.
+The same workflow still checks login, sharing, role removal, and restart.

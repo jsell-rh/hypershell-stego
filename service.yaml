@@ -38,7 +38,7 @@ entities:
       - { name: status, type: string, optional: true, max_length: 255 }
   - name: ManagedDatabase
     fields:
-      - { name: name, type: string, min_length: 1, max_length: 255 }
+      - { name: name, type: string, min_length: 1, max_length: 261 }
       - { name: provider, type: enum, values: [cnpg, deployment] }
       - { name: namespace, type: string, min_length: 1, max_length: 29, unique: true }
       - { name: region, type: string, optional: true, max_length: 255 }

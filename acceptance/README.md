@@ -43,7 +43,7 @@ size metadata follow the reference gRPC adapter. REST and gRPC requests can
 retrieve each other's created resources. REST search and ordering tests include
 `OR` expressions, literal injection attempts, invalid fields and value types, and
 count-only requests. Related-resource search, sparse fields, REST page sizes above 100,
-deployment database placement, user administration, remaining role query options, and all
+user administration, remaining role query options, and other
 other Hypershell workflows remain open.
 
 One local benchmark used PostgreSQL 18.6, Go 1.26.8, and an Intel Core Ultra 9
@@ -191,4 +191,11 @@ The [placement catalog workflow](placement-catalog.md) now creates cluster, rele
 and database records through the generated API before Gateway creation. REST,
 gRPC, access checks, atomic events, watches, restart, and migration checks cover
 this path. Catalog writes require a platform admin or configured controller.
-Workload deployment and per-Gateway deployment databases remain open.
+Workload deployment remains open.
+
+The [deployment placement workflow](deployment-placement.md) now makes a separate
+database record for each Gateway by default. The database, Gateway, owner grant,
+and three events commit together. Set `DATABASE_PROVIDER=cnpg` explicitly to use
+the shared CNPG path. REST requires a `database_id` property but accepts an empty
+string. Apply migration 000007 before the new API starts. Workload provisioning
+and cleanup recovery remain separate acceptance gates.

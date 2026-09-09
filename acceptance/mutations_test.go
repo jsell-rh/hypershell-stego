@@ -161,7 +161,7 @@ func TestConcurrentChangeCannotBeOverwrittenByGatewayPatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	read, release := make(chan struct{}), make(chan struct{})
-	service, err := gateways.New(pausedRepository{Repository: f.storage, read: read, release: release})
+	service, err := gateways.New(pausedRepository{Repository: f.storage, read: read, release: release}, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller-subject"}})
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller-subject"}})
 	if err != nil {
 		t.Fatal(err)
 	}

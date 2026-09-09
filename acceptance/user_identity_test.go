@@ -178,7 +178,7 @@ func TestIdentityMigrationDoesNotAdoptLegacyGrants(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f.service, err = gateways.New(migrated)
+	f.service, err = gateways.New(migrated, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
 	if err != nil {
 		t.Fatal(err)
 	}
