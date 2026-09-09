@@ -69,11 +69,13 @@ func (x *GetGatewayIdentityStateRequest) GetId() string {
 }
 
 type GetGatewayIdentityStateResponse struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Gateway       *v1.Gateway            `protobuf:"bytes,1,opt,name=gateway,proto3" json:"gateway,omitempty"`
-	Deleted       bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Gateway *v1.Gateway            `protobuf:"bytes,1,opt,name=gateway,proto3" json:"gateway,omitempty"`
+	Deleted bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
+	// Use this revision for status writes after external work.
+	ResourceVersion int64 `protobuf:"varint,3,opt,name=resource_version,json=resourceVersion,proto3" json:"resource_version,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *GetGatewayIdentityStateResponse) Reset() {
@@ -118,6 +120,13 @@ func (x *GetGatewayIdentityStateResponse) GetDeleted() bool {
 		return x.Deleted
 	}
 	return false
+}
+
+func (x *GetGatewayIdentityStateResponse) GetResourceVersion() int64 {
+	if x != nil {
+		return x.ResourceVersion
+	}
+	return 0
 }
 
 // Pages contain retained grant references, including deleted grants.
@@ -556,10 +565,11 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\n" +
 	"1hypershell/controlplane/v1/gateway_identity.proto\x12\x1ahypershell.controlplane.v1\x1a\x1chypershell/v1/gateways.proto\"0\n" +
 	"\x1eGetGatewayIdentityStateRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"m\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\x98\x01\n" +
 	"\x1fGetGatewayIdentityStateResponse\x120\n" +
 	"\agateway\x18\x01 \x01(\v2\x16.hypershell.v1.GatewayR\agateway\x12\x18\n" +
-	"\adeleted\x18\x02 \x01(\bR\adeleted\"T\n" +
+	"\adeleted\x18\x02 \x01(\bR\adeleted\x12)\n" +
+	"\x10resource_version\x18\x03 \x01(\x03R\x0fresourceVersion\"T\n" +
 	"\x1fListGatewayIdentityUsersRequest\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +

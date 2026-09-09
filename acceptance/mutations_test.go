@@ -212,15 +212,15 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	}
 	console := pointer("https://console.example.test")
 	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), {Issuer: "https://issuer.example", Subject: "ordinary", Username: "controller-subject", Roles: []string{"control-plane"}}} {
-		if _, err := service.UpdateControlPlane(ctx, p, row.ID, gateways.PatchRequest{}, console); !errors.Is(err, gateways.ErrForbidden) {
+		if _, err := service.UpdateControlPlane(ctx, p, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
 			t.Fatalf("control-plane identity accepted: %v", err)
 		}
 	}
 	controller := gateways.Principal{Issuer: "https://issuer.example", Subject: "controller-subject", Username: "controller"}
-	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console); !errors.Is(err, gateways.ErrForbidden) {
+	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
 		t.Fatalf("missing allowlist accepted: %v", err)
 	}
-	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{Phase: pointer("Ready")}, console)
+	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{Phase: pointer("Ready")}, console, row.ResourceVersion)
 	if err != nil || got.ConsoleAddress == nil || *got.ConsoleAddress != *console || got.Phase == nil || *got.Phase != "Ready" {
 		t.Fatalf("controller update: %+v %v", got, err)
 	}

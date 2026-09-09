@@ -111,6 +111,9 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if gw.GetMetadata().GetId() != id {
 		return errors.New("Gateway state does not match its request")
 	}
+	if state.GetResourceVersion() < 1 {
+		return errors.New("Gateway state has no resource version")
+	}
 	if state.GetDeleted() {
 		if !c.provider.Handles(gw) {
 			owned, err := c.provider.Owns(ctx, gw)
@@ -169,7 +172,11 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		phase, desired = "Degraded", "WorkloadUnavailable"
 	}
 	if gw.GetStatus() != desired || gw.GetPhase() != phase {
-		_, writeErr := c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
+		writeContext, versionErr := rpc.WithResourceVersion(ctx, state.ResourceVersion)
+		if versionErr != nil {
+			return errors.Join(err, versionErr)
+		}
+		_, writeErr := c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
 		if writeErr != nil {
 			return errors.Join(err, writeErr)
 		}

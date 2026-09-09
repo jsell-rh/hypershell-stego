@@ -52,12 +52,13 @@ func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
 		err     error
 		deleted bool
 	}{
+		{name: "missing revision", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}},
 		{name: "denied", err: status.Error(codes.PermissionDenied, "denied")},
 		{name: "not found", err: status.Error(codes.NotFound, "absent")},
 		{name: "unavailable", err: status.Error(codes.Unavailable, "unavailable")},
-		{name: "empty state", state: &control.GetGatewayIdentityStateResponse{}},
-		{name: "other resource", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
-		{name: "explicit deletion", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
+		{name: "empty state", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1}},
+		{name: "other resource", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
+		{name: "explicit deletion", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			provider := new(providerFixture)
@@ -80,7 +81,7 @@ func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
 func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: errors.New("provider unavailable")}
 	api := new(apiFixture)
-	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
 	controller, _ := New(api, state, provider)
 	if err := controller.reconcile(context.Background(), "gateway"); err == nil || api.updates != 0 {
 		t.Fatal("failed provider operation published identity")

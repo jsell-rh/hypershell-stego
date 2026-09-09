@@ -340,6 +340,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	code, reason := http.StatusInternalServerError, "An internal error occurred"
 	errorID := 9
 	switch {
+	case errors.Is(err, gateways.ErrObservationRequired):
+		code, reason = http.StatusPreconditionRequired, "Controller write requires an observed resource version"
 	case errors.Is(err, gateways.ErrLastOwner):
 		code, reason, errorID = http.StatusConflict, "The last Gateway owner cannot be removed", 6
 	case errors.Is(err, gateways.ErrGatewayCleanupUnavailable):

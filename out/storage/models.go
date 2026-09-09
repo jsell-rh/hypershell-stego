@@ -99,6 +99,7 @@ type GatewayNetwork struct {
 // Gateway represents the Gateway entity.
 type Gateway struct {
 	Meta
+	ResourceVersion    int64            `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
 	Name               string           `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
 	ClusterID          string           `json:"cluster_id" gorm:"column:cluster_id;not null"`
 	ClusterIDRef       *ManagedCluster  `json:"-" gorm:"foreignKey:ClusterID"`

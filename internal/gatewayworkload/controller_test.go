@@ -91,11 +91,12 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 		err     error
 		deleted bool
 	}{
+		{name: "missing revision", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}},
 		{name: "denied", err: status.Error(codes.PermissionDenied, "denied")},
 		{name: "absent", err: status.Error(codes.NotFound, "absent")},
-		{name: "empty", state: &control.GetGatewayIdentityStateResponse{}},
-		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
-		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
+		{name: "empty", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1}},
+		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
+		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := new(providerFixture)
@@ -123,7 +124,7 @@ func TestDatabaseDeletionCanRetryAfterGatewayRemoval(t *testing.T) {
 	gw, db, release := records(t)
 	provider := new(providerFixture)
 	database := &databaseFixture{row: db, deleteErr: status.Error(codes.Unavailable, "retry")}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -146,7 +147,7 @@ func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
 		provider := &providerFixture{unassigned: true}
 		database := &databaseFixture{row: db}
 		api := new(apiFixture)
-		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
+		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -164,7 +165,7 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: ErrPending}
 	api := new(apiFixture)
 	database := &databaseFixture{row: db}
-	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: gw}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -213,7 +214,7 @@ func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
 	gw, db, release := records(t)
 	provider := &providerFixture{unassigned: true, owned: true}
 	database := &databaseFixture{row: db}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -302,7 +303,7 @@ type slowRecovery struct {
 
 func (s *slowRecovery) GetGatewayIdentityState(_ context.Context, r *control.GetGatewayIdentityStateRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
 	s.observed <- r.Id
-	return &control.GetGatewayIdentityStateResponse{Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
+	return &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
 }
 func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	id := ksuid.New().String()

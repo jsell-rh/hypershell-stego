@@ -49,4 +49,5 @@ func init() {
 			&ServiceAccountAudit{},
 		)
 	})
+	Register("002_resource_versions", func(db *gorm.DB) error { return db.Transaction(migrateResourceVersions) })
 }

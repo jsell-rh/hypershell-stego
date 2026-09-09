@@ -41,7 +41,7 @@ var schemaInitialization sync.Mutex
 
 // NewStore prepares all model metadata before concurrent queries can start.
 // Construct the store before other code uses these models on the connection.
-// Preparation does not read or change database tables.
+// Preparation does not change database tables. Versioned models require a schema check.
 func NewStore(db *gorm.DB) (*Store, error) {
 	if db == nil {
 		return nil, errors.New("storage requires an initialized GORM database")
@@ -70,6 +70,9 @@ func NewStore(db *gorm.DB) (*Store, error) {
 		if err := statement.Parse(model); err != nil {
 			return nil, fmt.Errorf("prepare storage schema: %w", err)
 		}
+	}
+	if err := verifyResourceVersions(db); err != nil {
+		return nil, err
 	}
 	return &Store{db: db}, nil
 }

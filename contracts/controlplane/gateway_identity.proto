@@ -15,6 +15,8 @@ message GetGatewayIdentityStateRequest { string id = 1; }
 message GetGatewayIdentityStateResponse {
  hypershell.v1.Gateway gateway = 1;
  bool deleted = 2;
+ // Use this revision for status writes after external work.
+ int64 resource_version = 3;
 }
 
 // Pages contain retained grant references, including deleted grants.

@@ -12,6 +12,8 @@ import (
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
@@ -184,7 +186,15 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		t.Fatalf("unauthenticated gRPC delete: %v", err)
 	}
 	// Only the configured subject can set the console address.
-	updated, err = client.UpdateGateway(call(controller), &pb.UpdateGatewayRequest{Id: original.ID, ConsoleAddress: pointer("https://console.example.test")})
+	observed, err := control.NewGatewayIdentityServiceClient(connection).GetGatewayIdentityState(call(controller), &control.GetGatewayIdentityStateRequest{Id: original.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	conditional, err := rpc.WithResourceVersion(call(controller), observed.ResourceVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated, err = client.UpdateGateway(conditional, &pb.UpdateGatewayRequest{Id: original.ID, ConsoleAddress: pointer("https://console.example.test")})
 	if err != nil || updated.Gateway.GetConsoleAddress() != "https://console.example.test" {
 		t.Fatalf("controller update: %v %v", updated, err)
 	}

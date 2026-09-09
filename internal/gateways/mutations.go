@@ -36,21 +36,29 @@ type PatchRequest struct {
 }
 
 func (s *Service) Update(ctx context.Context, p Principal, id string, patch PatchRequest) (model.Gateway, error) {
-	return s.update(ctx, p, id, patch, nil)
+	if s.isControlPlane(p) {
+		return model.Gateway{}, ErrObservationRequired
+	}
+	return s.update(ctx, p, id, patch, nil, 0)
 }
 
-// UpdateControlPlane can set the console address. Public REST has no such field.
-func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string) (model.Gateway, error) {
+var ErrObservationRequired = errors.New("controller write requires an observed resource version")
+
+// UpdateControlPlane requires the revision read before external work.
+func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string, version int64) (model.Gateway, error) {
 	if err := validatePrincipal(p); err != nil {
 		return model.Gateway{}, err
 	}
 	if !s.isControlPlane(p) {
 		return model.Gateway{}, ErrForbidden
 	}
-	return s.update(ctx, p, id, patch, consoleAddress)
+	if version < 1 {
+		return model.Gateway{}, ErrObservationRequired
+	}
+	return s.update(ctx, p, id, patch, consoleAddress, version)
 }
 
-func (s *Service) update(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string) (model.Gateway, error) {
+func (s *Service) update(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string, version int64) (model.Gateway, error) {
 	var row model.Gateway
 	if err := validatePrincipal(p); err != nil {
 		return row, err
@@ -76,7 +84,16 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 				}
 			}
 		}
-		if err := tx.Replace(ctx, "Gateway", id, current); err != nil {
+		if version > 0 {
+			writer, ok := tx.(store.VersionedWriter)
+			if !ok {
+				return errors.New("Gateway storage does not support conditional writes")
+			}
+			err = writer.ReplaceIfVersion(ctx, "Gateway", id, version, current)
+		} else {
+			err = tx.Replace(ctx, "Gateway", id, current)
+		}
+		if err != nil {
 			return err
 		}
 		stored, err := tx.Get(ctx, "Gateway", id)

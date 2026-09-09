@@ -115,9 +115,12 @@ func (s *server) UpdateGateway(ctx context.Context, request *pb.UpdateGatewayReq
 		OIDC: request.Oidc, Route: request.Route, CredentialDriver: request.CredentialDriver,
 	}
 	var row model.Gateway
-	var err error
-	if request.ConsoleAddress != nil {
-		row, err = s.service.UpdateControlPlane(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch, request.ConsoleAddress)
+	version, conditional, err := transport.ResourceVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if request.ConsoleAddress != nil || conditional {
+		row, err = s.service.UpdateControlPlane(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch, request.ConsoleAddress, version)
 	} else {
 		row, err = s.service.Update(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch)
 	}
@@ -198,6 +201,10 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 }
 func mapError(err error) error {
 	switch {
+	case errors.Is(err, gateways.ErrObservationRequired):
+		return status.Error(codes.FailedPrecondition, "controller write requires an observed resource version")
+	case errors.Is(err, storage.ErrVersionConflict):
+		return status.Error(codes.Aborted, "resource changed; read current state and repeat external work")
 	case errors.Is(err, gateways.ErrGrantCapacity):
 		return status.Error(codes.ResourceExhausted, "grant response exceeds its resource limit")
 	case errors.Is(err, gateways.ErrGatewayCleanupUnavailable):

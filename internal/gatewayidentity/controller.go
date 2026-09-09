@@ -10,6 +10,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
@@ -109,6 +110,9 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if gateway.GetMetadata().GetId() != id {
 		return errors.New("Gateway state does not match the request")
 	}
+	if state.GetResourceVersion() < 1 {
+		return errors.New("Gateway state has no resource version")
+	}
 	if state.GetDeleted() {
 		delete(c.userScans, id)
 		return c.provider.DeleteGateway(ctx, id)
@@ -118,7 +122,11 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return err
 	}
 	if gateway.GetOidc() != oidc {
-		if _, err = c.gateways.UpdateGateway(ctx, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc}); err != nil {
+		writeContext, versionErr := rpc.WithResourceVersion(ctx, state.ResourceVersion)
+		if versionErr != nil {
+			return versionErr
+		}
+		if _, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc}); err != nil {
 			return err
 		}
 	}

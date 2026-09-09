@@ -191,12 +191,13 @@ state and enforce the domain rules. Invalid scan contracts stop the controllers.
 Storage and replay adapters still need generation in STEGO.
 
 The [reconciliation contract review](https://github.com/jsell-rh/stego/blob/main/specs/reconciliation-contract-review.md)
-records remaining gaps against Hypershell PR 200. Conditional status writes,
-desired generations, durable cleanup completion, status ownership, and controller
-metrics are not complete. A local probe confirmed that an older controller
-observation can publish Healthy after desired state changes. Transaction conflict
-checks inside one request do not close that interval. This is the next correctness
-priority, before recovery-query optimization.
+records remaining gaps against Hypershell PR 200. Gateway workload and identity
+controllers now use generated resource revisions for conditional status writes.
+The [revision acceptance test](acceptance/gateway-revisions.md) rejects an older
+observation after a REST desired-state change and checks event rollback and
+restart. Desired generations, field ownership, database status revisions,
+durable cleanup completion, and controller metrics remain open. These correctness
+requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified
 issuer and subject. Username changes preserve grants; username reuse cannot
