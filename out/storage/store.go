@@ -1859,6 +1859,21 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		}
 		validCols := map[string]bool{"user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 		for _, k := range upsertKey {
+			if k == "user_id" {
+				return false, fmt.Errorf("upsert cannot use a live-row unique key")
+			}
+		}
+		for _, k := range upsertKey {
+			if k == "role_id" {
+				return false, fmt.Errorf("upsert cannot use a live-row unique key")
+			}
+		}
+		for _, k := range upsertKey {
+			if k == "gateway_id" {
+				return false, fmt.Errorf("upsert cannot use a live-row unique key")
+			}
+		}
+		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity RoleBinding", k)
 			}

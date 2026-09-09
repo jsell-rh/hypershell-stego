@@ -1,0 +1,76 @@
+package httpapi
+
+import (
+	"context"
+	"io"
+	"net/http"
+
+	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/application/transport"
+	"github.com/jsell-rh/hypershell-stego/out/auth"
+	model "github.com/jsell-rh/hypershell-stego/out/storage"
+)
+
+const grantPath = "/api/hypershell/v1/role_bindings"
+
+type grantItem struct {
+	Reference
+	RoleID    string `json:"role_id"`
+	UserID    string `json:"user_id"`
+	GatewayID string `json:"gateway_id"`
+	Scope     string `json:"scope"`
+}
+
+func presentGrant(row model.RoleBinding) grantItem {
+	return grantItem{Reference: Reference{ID: row.ID, Kind: "RoleBinding", Href: grantPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, RoleID: row.RoleID, UserID: row.UserID, GatewayID: row.GatewayID, Scope: row.Scope}
+}
+
+func registerGrants(mux *http.ServeMux, verifier *auth.Verifier, service *gateways.Service) error {
+	create, err := transport.Endpoint(verifier.Authenticate, func(r *http.Request) (gateways.GrantRequest, error) {
+		if r.URL.RawQuery != "" {
+			return gateways.GrantRequest{}, transport.ErrRequest
+		}
+		return transport.JSONBody[gateways.GrantRequest](r)
+	}, func(ctx context.Context, input gateways.GrantRequest) (grantItem, error) {
+		row, err := service.CreateGrant(ctx, gateways.PrincipalFromContext(ctx), input)
+		if err != nil {
+			return grantItem{}, err
+		}
+		return presentGrant(row), nil
+	}, http.StatusCreated, writeError)
+	if err != nil {
+		return err
+	}
+	target := func(r *http.Request) (string, error) {
+		if r.URL.RawQuery != "" {
+			return "", transport.ErrRequest
+		}
+		if r.Body != nil {
+			body, err := io.ReadAll(io.LimitReader(r.Body, 1))
+			if err != nil || len(body) > 0 {
+				return "", transport.ErrRequest
+			}
+		}
+		return r.PathValue("id"), nil
+	}
+	get, err := transport.Endpoint(verifier.Authenticate, target, func(ctx context.Context, id string) (grantItem, error) {
+		row, err := service.GetGrant(ctx, gateways.PrincipalFromContext(ctx), id)
+		if err != nil {
+			return grantItem{}, err
+		}
+		return presentGrant(row), nil
+	}, http.StatusOK, writeError)
+	if err != nil {
+		return err
+	}
+	remove, err := transport.Endpoint(verifier.Authenticate, target, func(ctx context.Context, id string) (transport.NoContent, error) {
+		return transport.NoContent{}, service.DeleteGrant(ctx, gateways.PrincipalFromContext(ctx), id)
+	}, http.StatusNoContent, writeError)
+	if err != nil {
+		return err
+	}
+	mux.Handle("POST "+grantPath, create)
+	mux.Handle("GET "+grantPath+"/{id}", get)
+	mux.Handle("DELETE "+grantPath+"/{id}", remove)
+	return nil
+}

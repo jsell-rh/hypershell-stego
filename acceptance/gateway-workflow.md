@@ -44,3 +44,8 @@ had no changes or drift. The acceptance package completed in 63.671 seconds;
 all other packages passed or had no tests. The command also rejected a missing
 database setting. The descriptor check passed without the race detector, which
 also checked the alternate test build configuration.
+
+The gate also includes [Gateway grant changes](gateway-grants.md). These tests
+use application grant methods instead of direct grant inserts for the new
+workflow. They cover a missing storage rule found during re-grant: deleted rows
+must retain history without reserving a live grant key.

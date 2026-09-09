@@ -158,3 +158,9 @@ drift repair, and revocation after restart. Production limits remain open.
 The [Gateway identity workflow](gateway-identity.md) tests the generated stream
 client with a real controller and Keycloak. It covers initial state, live events,
 trusted provider bindings, token use, API restart, and offline deletion recovery.
+
+Gateway grant changes now have an application workflow. Owners create and remove
+grants through REST. The test checks access through REST and gRPC, filtered lists,
+denied requests, event delivery, removal of access, re-grant, and restart.
+A separate concurrent test protects the last owner. See
+[the grant workflow and its remaining scope](gateway-grants.md).

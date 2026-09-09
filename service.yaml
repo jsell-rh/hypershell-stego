@@ -47,9 +47,9 @@ entities:
       - { name: active_sandbox_count, type: int32, optional: true }
   - name: RoleBinding
     fields:
-      - { name: user_id, type: ref, to: User, unique_composite: [user_id, role_id, gateway_id] }
-      - { name: role_id, type: ref, to: Role, unique_composite: [user_id, role_id, gateway_id] }
-      - { name: gateway_id, type: ref, to: Gateway, unique_composite: [user_id, role_id, gateway_id] }
+      - { name: user_id, type: ref, to: User, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
+      - { name: role_id, type: ref, to: Role, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
+      - { name: gateway_id, type: ref, to: Gateway, unique_composite: [gateway_id, role_id, user_id], unique_when_live: true }
       - { name: scope, type: enum, values: [gateway] }
 
   - name: ServiceAccount

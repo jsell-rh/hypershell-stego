@@ -1,5 +1,5 @@
 last_applied:
-    service_hash: 3d724a6afee990ff6372e49b66a763d1b4365cf813bd2d4e69fe30bf672da9b0
+    service_hash: 61692954b2e7772fb426c2131d5b257da1ba49a738e03a976d2271b3aceb8eb4
     registry_sha: gateway-workflow
     components:
         grpc-application:
@@ -101,13 +101,13 @@ last_applied:
         RoleBinding:
             - name: user_id
               type: ref
-              hash: a16f217e7c3f4ac7b2d0a3bd61040ee5b995b1bc840d876e538d52d936780b19
+              hash: d794f1b3ea81bbd8800844cf9f5710b08a7915863ecd11db185835c1bce9cfed
             - name: role_id
               type: ref
-              hash: 7bb0f6a85f2fb3eec7ac175ba7300f867557c5e7242351bf4df43d521bac2d8a
+              hash: 8f384edb2d1aab84f7b5db8dcba129091ed9a0fe14543c275154961295b711da
             - name: gateway_id
               type: ref
-              hash: 4bd3decd41f94dc9971b88d314f9c508878c11bed65bbf8ae141200ef85189ab
+              hash: ccc48062c7a8852de7328b6b4568e8cd75ab2011e80b0d846da7abc6d7b35543
             - name: scope
               type: enum
               hash: ff12b7d84505998e5d1935ab8fdc0c8d8953596594c21fe41677ffb455a74f51
@@ -227,7 +227,7 @@ last_applied:
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 432cb139a95e295d5dcbaae3ddc3dca6a86e624cf5d1ce930cde294f3c06ae7e
-        storage/models.go: 18b231bcf72337a0c9bd66b3e60ac6ccd4c1c0bfb0998ad95338e0032ec62130
+        storage/models.go: 891e7c3e9172410bdba38507da1b4e79f13d06be66b584e332b728b9c62fba92
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 7153ec660303b751edcd0c968f7a3c6ea0c6fe4cfc1ec6439a4c8cc1fb75ec45
+        storage/store.go: 7ee60f3d9e3006e8d6725b896199a81df3f7e36e9f9d037a9bd6ffdb57adaa25
         storage/transaction.go: 3285b3f6948b627a1d9f22c5787e3d2b5136ca7653a609589ddf1f1d76f1bbe4

@@ -210,6 +210,9 @@ func New(repository gateways.Repository, verifier *auth.Verifier, database *sql.
 	if err := registerAccounts(mux, verifier, accounts); err != nil {
 		return nil, err
 	}
+	if err := registerGrants(mux, verifier, service); err != nil {
+		return nil, err
+	}
 	complete = true
 	return &managedApplication{Handler: mux, accounts: accounts, close: closeProvider}, nil
 }
@@ -310,6 +313,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	code, reason := http.StatusInternalServerError, "An internal error occurred"
 	errorID := 9
 	switch {
+	case errors.Is(err, gateways.ErrLastOwner):
+		code, reason, errorID = http.StatusConflict, "The last Gateway owner cannot be removed", 6
 	case errors.Is(err, gateways.ErrServiceAccountsExist):
 		code, reason, errorID = http.StatusConflict, "service accounts require cleanup before Gateway deletion", 6
 	case errors.Is(err, transport.ErrUnauthenticated), errors.Is(err, gateways.ErrIdentity):
