@@ -20,6 +20,7 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 	if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
+	observeGatewayFixture(t, f, gateway.ID)
 	key, auth := issuer(t)
 	providerSettings, stopProvider := startRealProvisioner(t, k, key, auth)
 	_, config := broker(t, identity(t, "localhost"))

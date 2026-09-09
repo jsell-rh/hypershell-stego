@@ -56,7 +56,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		awaitQueueEmpty(t, f)
 	}
 	event("Create", "gateway.created")
-	code, data = requestJSON(t, "PATCH", path+"/"+original.ID, owner, []byte(`{"name":"rest-patch","database_id":"not-placement","external_dns":"","tls_mode":"passthrough","service_type":"ClusterIP","status":"Ready","phase":"Ready","image":"gateway:v2","supervisor_image":"supervisor:v2","server_dns_names":["new.example.test"],"route_address":"gateway.example.test","oidc":"{}","route":"{}","credential_driver":"driver-a"}`))
+	code, data = requestJSON(t, "PATCH", path+"/"+original.ID, owner, []byte(`{"name":"rest-patch","database_id":"not-placement","external_dns":"","tls_mode":"passthrough","service_type":"ClusterIP","image":"gateway:v2","supervisor_image":"supervisor:v2","server_dns_names":["new.example.test"],"route_address":"gateway.example.test","oidc":"{}","route":"{}","credential_driver":"driver-a"}`))
 	var patched httpapi.Gateway
 	if code != 200 || json.Unmarshal(data, &patched) != nil {
 		t.Fatalf("REST patch: %d %s", code, data)
@@ -232,7 +232,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	connection.Close()
 	stop()
 	// The update and delete events are durable while the runtime is stopped.
-	if _, err := f.service.Update(ctx, principal("alice"), original.ID, gateways.PatchRequest{Phase: pointer("Stopping")}); err != nil {
+	if _, err := f.service.Update(ctx, principal("alice"), original.ID, gateways.PatchRequest{Name: pointer("stopping")}); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.service.Delete(ctx, principal("alice"), original.ID); err != nil {

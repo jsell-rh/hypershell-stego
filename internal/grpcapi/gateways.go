@@ -183,6 +183,7 @@ func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysReque
 	return response, nil
 }
 func present(row model.Gateway) (*pb.Gateway, error) {
+	row = row.CurrentObservations()
 	var names []string
 	if len(row.ServerDnsNames) > 0 {
 		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {
@@ -201,6 +202,8 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 }
 func mapError(err error) error {
 	switch {
+	case errors.Is(err, gateways.ErrObservationOwned):
+		return status.Error(codes.PermissionDenied, "phase and status are controller-owned fields")
 	case errors.Is(err, gateways.ErrObservationRequired):
 		return status.Error(codes.FailedPrecondition, "controller write requires an observed resource version")
 	case errors.Is(err, storage.ErrVersionConflict):

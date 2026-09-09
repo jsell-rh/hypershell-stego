@@ -486,7 +486,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling Gateway: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&Gateway{}).Where("id = ?", id).Select([]string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "status", "phase", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&Gateway{}).Where("id = ?", id).Select([]string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -1166,6 +1166,7 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 	case "Gateway":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
+		query = query.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"name\", \"cluster_id\", \"release_id\", \"database_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1222,6 +1223,8 @@ func (s *Store) List(ctx context.Context, entity string, scopeField string, scop
 		if len(opts.Fields) > 0 {
 			// Always include id; add requested fields that exist.
 			selectCols := []string{"id"}
+			selectCols = append(selectCols, "stego_revision")
+			selectCols = append(selectCols, "stego_generation", "stego_observations")
 			for _, f := range opts.Fields {
 				if validCols[f] {
 					selectCols = append(selectCols, f)
@@ -1664,6 +1667,7 @@ func (s *Store) relatedExpression(ctx context.Context, target string, filter ste
 		related = s.db.WithContext(ctx).Model(&GatewayNetwork{}).Select(filter.ForeignField)
 	case "Gateway":
 		related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
+		related = related.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"name\", \"cluster_id\", \"release_id\", \"database_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
 	case "RoleBinding":
 		related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
 	case "ServiceAccount":
@@ -2234,7 +2238,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling Gateway: %w", err)
 		}
-		validCols := map[string]bool{"name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+		validCols := map[string]bool{"name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity Gateway", k)
@@ -2249,7 +2253,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "status", "phase", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"} {
+		for _, col := range []string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}

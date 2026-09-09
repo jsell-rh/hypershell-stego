@@ -47,6 +47,7 @@ func TestKeycloakGatewayAudienceBinding(t *testing.T) {
 	if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
+	observeGatewayFixture(t, f, gateway.ID)
 	key, settings := issuer(t)
 	providerSettings, _ := startRealProvisioner(t, k, key, settings)
 	settings = append(settings, providerSettings...)
@@ -63,7 +64,7 @@ func TestKeycloakGatewayAudienceBinding(t *testing.T) {
 	}
 	t.Run("foreign audience", func(t *testing.T) {
 		request := f.request("other-gateway")
-		request.Phase, request.Status, request.OIDC = pointer("Running"), pointer("Healthy"), &oidc
+		request.OIDC = &oidc
 		body, err := json.Marshal(request)
 		if err != nil {
 			t.Fatal(err)
@@ -75,6 +76,7 @@ func TestKeycloakGatewayAudienceBinding(t *testing.T) {
 		if code != 201 || json.Unmarshal(body, &otherGateway) != nil || otherGateway.ID == "" {
 			t.Fatalf("create second Gateway: %d", code)
 		}
+		observeGatewayFixture(t, f, otherGateway.ID)
 		if code, _ := requestJSON(t, "GET", root+"/"+gateway.ID, other, nil); code != 404 {
 			t.Fatalf("second owner can read first Gateway: %d", code)
 		}
@@ -163,6 +165,7 @@ func TestKeycloakGatewayAudienceBinding(t *testing.T) {
 			if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 				t.Fatal(err)
 			}
+			observeGatewayFixture(t, f, gateway.ID)
 			if _, err := f.db.Exec("UPDATE role_bindings SET role_id=(SELECT id FROM roles WHERE name='gateway:owner') WHERE gateway_id=$1", gateway.ID); err != nil {
 				t.Fatal(err)
 			}

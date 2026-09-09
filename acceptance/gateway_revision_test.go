@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/url"
 	"path/filepath"
 	"testing"
 	"time"
@@ -111,7 +112,7 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	// Restart must preserve both the current revision and the old-token rejection.
 	stop()
 	connection.Close()
-	_, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	stop, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	client, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	stateClient = control.NewGatewayIdentityServiceClient(connection)
 	if row := observe(); row.ResourceVersion != current.ResourceVersion {
@@ -132,4 +133,87 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	if code != 200 || json.Unmarshal(data, &gateway) != nil || gateway.Status == nil || *gateway.Status != "Healthy" {
 		t.Fatalf("REST status: %d %s", code, data)
 	}
+	// A desired change must stop exposing the old Healthy observation immediately.
+	if final.ResourceGeneration != current.ResourceGeneration || final.ObservedGeneration != final.ResourceGeneration {
+		t.Fatal("observation did not record its desired generation")
+	}
+	path = httpAddress + "/api/hypershell/v1/gateways"
+	code, data = requestJSON(t, "PATCH", path+"/"+gateway.ID, owner, []byte(`{"name":"new generation"}`))
+	if code != 200 || json.Unmarshal(data, &gateway) != nil || gateway.Status == nil || *gateway.Status != "ObservationPending" {
+		t.Fatalf("REST exposed old status: %d %s", code, data)
+	}
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	awaitQueueEmpty(t, f)
+	pending := observe()
+	if pending.ResourceGeneration != final.ResourceGeneration+1 || pending.ObservedGeneration != final.ObservedGeneration || pending.Gateway.GetStatus() != "ObservationPending" {
+		t.Fatal("desired change kept its old observation current", pending)
+	}
+	got, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: gateway.ID})
+	if err != nil || got.Gateway.GetStatus() != "ObservationPending" {
+		t.Fatalf("gRPC exposed old status: %v %v", got, err)
+	}
+	list, err := client.ListGateways(call(owner), &pb.ListGatewaysRequest{})
+	if err != nil || len(list.Items) != 1 || list.Items[0].GetStatus() != "ObservationPending" {
+		t.Fatalf("gRPC list exposed old status: %v %v", list, err)
+	}
+	for _, filter := range []struct {
+		expression string
+		want       int
+	}{{"status = 'Healthy'", 0}, {"status = 'ObservationPending'", 1}} {
+		code, data = requestJSON(t, "GET", path+"?search="+url.QueryEscape(filter.expression), owner, nil)
+		var page struct {
+			Items []httpapi.Gateway `json:"items"`
+		}
+		if code != 200 || json.Unmarshal(data, &page) != nil || len(page.Items) != filter.want {
+			t.Fatalf("status filter used stale data: %s: %d %s", filter.expression, code, data)
+		}
+	}
+	for _, body := range []string{`{"status":"Healthy"}`, `{"phase":"Running"}`, `{"status":"Healthy","phase":"Running"}`} {
+		code, data = requestJSON(t, "PATCH", path+"/"+gateway.ID, owner, []byte(body))
+		if code != 403 {
+			t.Fatalf("owner set an observation: %d %s", code, data)
+		}
+	}
+	reject(call(owner), codes.PermissionDenied)
+	creator := token(t, key, "alice", "gateway:creator")
+	code, data = requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"forged","cluster_id":%q,"release_id":%q,"database_id":"ignored","status":"Healthy"}`, f.cluster, f.release)))
+	if code != 403 {
+		t.Fatalf("creator supplied status: %d %s", code, data)
+	}
+	if _, err := client.CreateGateway(call(creator), &pb.CreateGatewayRequest{Name: "forged", ClusterId: f.cluster, ReleaseId: f.release, Phase: pointer("Running")}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("gRPC creator supplied phase", err)
+	}
+	if _, err := client.UpdateGateway(versioned(controller, pending.ResourceVersion), &pb.UpdateGatewayRequest{Id: gateway.ID, Name: pointer("mixed"), Phase: pointer("Running"), Status: pointer("Healthy")}); status.Code(err) != codes.InvalidArgument {
+		t.Fatal("combined intent and observation accepted", err)
+	}
+	// Accepted token claims can change the global role projection before a
+	// request is denied. Those role events are separate from Gateway writes.
+	var queued int
+	if err := f.db.QueryRow(`SELECT count(*) FROM stego_outbox.messages WHERE kind IN ('gateway.created','gateway.updated','gateway.deleted')`).Scan(&queued); err != nil {
+		t.Fatal(err)
+	}
+	if queued != 0 || count(t, f.db, "gateways") != 1 || observe().ResourceVersion != pending.ResourceVersion {
+		t.Fatal("denied observation changed a Gateway or queued its event")
+	}
+
+	stop()
+	connection.Close()
+	_, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	client, connection = grpcClient(t, grpcAddress, tlsIdentity)
+	stateClient = control.NewGatewayIdentityServiceClient(connection)
+	afterRestart := observe()
+	if afterRestart.ResourceGeneration != pending.ResourceGeneration || afterRestart.Gateway.GetStatus() != "ObservationPending" {
+		t.Fatal("restart restored stale success")
+	}
+	reject(versioned(controller, final.ResourceVersion), codes.Aborted)
+	if _, err := client.UpdateGateway(versioned(controller, afterRestart.ResourceVersion), update); err != nil {
+		t.Fatal(err)
+	}
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	awaitQueueEmpty(t, f)
+	confirmed := observe()
+	if confirmed.Gateway.GetStatus() != "Healthy" || confirmed.ObservedGeneration != confirmed.ResourceGeneration {
+		t.Fatal("fresh confirmation did not advance the observation")
+	}
+
 }

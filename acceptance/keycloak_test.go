@@ -214,6 +214,7 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 	if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
+	observeGatewayFixture(t, f, gateway.ID)
 	key, settings := issuer(t)
 	providerSettings, stopProvider := startRealProvisioner(t, k, key, settings)
 	settings = append(settings, providerSettings...)

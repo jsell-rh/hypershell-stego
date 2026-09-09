@@ -189,6 +189,7 @@ func account(ctx context.Context, tx storage.Storage, gatewayID, id string) (mod
 	return row, nil
 }
 func oidcConnection(row model.Gateway, clientID string, ready bool) (Connection, error) {
+	row = row.CurrentObservations()
 	if ready && (row.Phase == nil || !strings.EqualFold(*row.Phase, "Running") || row.Status == nil || !strings.EqualFold(*row.Status, "Healthy")) {
 		return Connection{}, ErrNotReady
 	}

@@ -195,8 +195,11 @@ records remaining gaps against Hypershell PR 200. Gateway workload and identity
 controllers now use generated resource revisions for conditional status writes.
 The [revision acceptance test](acceptance/gateway-revisions.md) rejects an older
 observation after a REST desired-state change and checks event rollback and
-restart. Desired generations, field ownership, database status revisions,
-durable cleanup completion, and controller metrics remain open. These correctness
+restart. Gateway now uses generated desired generations and a workload
+observation group. Phase and status are controller-owned. Reads, status search,
+and credential readiness checks reject stale observations. Database status
+revisions, per-subject group authority, durable cleanup completion, and controller
+metrics remain open. These correctness
 requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified

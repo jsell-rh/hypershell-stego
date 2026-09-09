@@ -199,9 +199,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if code != 200 || json.Unmarshal(body, &health) != nil || health.Status == "Healthy" || health.Phase == "Running" {
 		t.Fatal("identity controller claimed workload health")
 	}
-	if code, _ := requestJSON(t, "PATCH", root+"/"+created.ID, owner, []byte(`{"phase":"Running","status":"Healthy"}`)); code != 200 {
-		t.Fatalf("set fixture workload state: %d", code)
-	}
+	observeGatewayFixture(t, f, created.ID)
 	accountPath := root + "/" + created.ID + "/service_accounts"
 	code, body = requestJSON(t, "POST", accountPath, owner, []byte(`{"name":"controller-credential","role":"openshell-admin"}`))
 	var account struct {

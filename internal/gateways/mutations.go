@@ -36,13 +36,20 @@ type PatchRequest struct {
 }
 
 func (s *Service) Update(ctx context.Context, p Principal, id string, patch PatchRequest) (model.Gateway, error) {
+	if err := validatePrincipal(p); err != nil {
+		return model.Gateway{}, err
+	}
 	if s.isControlPlane(p) {
 		return model.Gateway{}, ErrObservationRequired
+	}
+	if patch.Phase != nil || patch.Status != nil {
+		return model.Gateway{}, ErrObservationOwned
 	}
 	return s.update(ctx, p, id, patch, nil, 0)
 }
 
 var ErrObservationRequired = errors.New("controller write requires an observed resource version")
+var ErrObservationOwned = errors.New("phase and status are controller-owned fields")
 
 // UpdateControlPlane requires the revision read before external work.
 func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string, version int64) (model.Gateway, error) {
@@ -54,6 +61,14 @@ func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string
 	}
 	if version < 1 {
 		return model.Gateway{}, ErrObservationRequired
+	}
+	if patch.Phase != nil || patch.Status != nil {
+		rest := patch
+		rest.Phase, rest.Status = nil, nil
+		data, err := json.Marshal(rest)
+		if err != nil || string(data) != "{}" || consoleAddress != nil || patch.Phase == nil || patch.Status == nil {
+			return model.Gateway{}, ErrInvalid
+		}
 	}
 	return s.update(ctx, p, id, patch, consoleAddress, version)
 }
@@ -84,7 +99,13 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 				}
 			}
 		}
-		if version > 0 {
+		if patch.Phase != nil || patch.Status != nil {
+			writer, ok := tx.(store.ObservationWriter)
+			if !ok {
+				return errors.New("Gateway storage does not support observations")
+			}
+			err = writer.ObserveIfVersion(ctx, "Gateway", id, version, "workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status})
+		} else if version > 0 {
 			writer, ok := tx.(store.VersionedWriter)
 			if !ok {
 				return errors.New("Gateway storage does not support conditional writes")

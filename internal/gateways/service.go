@@ -95,6 +95,9 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 	if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "gateway:creator") {
 		return gateway, ErrForbidden
 	}
+	if request.Phase != nil || request.Status != nil {
+		return gateway, ErrObservationOwned
+	}
 	if err := validateCreate(request); err != nil {
 		return gateway, err
 	}

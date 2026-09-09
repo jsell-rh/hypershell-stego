@@ -95,8 +95,8 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 		{name: "denied", err: status.Error(codes.PermissionDenied, "denied")},
 		{name: "absent", err: status.Error(codes.NotFound, "absent")},
 		{name: "empty", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1}},
-		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
-		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
+		{name: "mismatch", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "other"}}, Deleted: true}},
+		{name: "deleted", state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}, Deleted: true}, deleted: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := new(providerFixture)
@@ -124,7 +124,7 @@ func TestDatabaseDeletionCanRetryAfterGatewayRemoval(t *testing.T) {
 	gw, db, release := records(t)
 	provider := new(providerFixture)
 	database := &databaseFixture{row: db, deleteErr: status.Error(codes.Unavailable, "retry")}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -147,7 +147,7 @@ func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
 		provider := &providerFixture{unassigned: true}
 		database := &databaseFixture{row: db}
 		api := new(apiFixture)
-		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
+		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -165,7 +165,7 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: ErrPending}
 	api := new(apiFixture)
 	database := &databaseFixture{row: db}
-	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -214,7 +214,7 @@ func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
 	gw, db, release := records(t)
 	provider := &providerFixture{unassigned: true, owned: true}
 	database := &databaseFixture{row: db}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -303,7 +303,7 @@ type slowRecovery struct {
 
 func (s *slowRecovery) GetGatewayIdentityState(_ context.Context, r *control.GetGatewayIdentityStateRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
 	s.observed <- r.Id
-	return &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
+	return &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Deleted: true, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: r.Id}}}, nil
 }
 func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	id := ksuid.New().String()
@@ -328,5 +328,25 @@ func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	case <-done:
 	case <-time.After(time.Second):
 		t.Fatal("scan did not stop")
+	}
+}
+
+func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
+	gw, db, release := records(t)
+	healthy, running := "Healthy", "Running"
+	gw.Status, gw.Phase = &healthy, &running
+	state := &control.GetGatewayIdentityStateResponse{Gateway: gw, ResourceVersion: 9, ResourceGeneration: 2, ObservedGeneration: 1}
+	api := new(apiFixture)
+	provider := new(providerFixture)
+	c, err := New(api, &stateFixture{state: state}, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 1 {
+		t.Fatal("unchanged status skipped a new generation", err)
+	}
+	state.ObservedGeneration = 2
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 2 {
+		t.Fatal("current generation bypassed drift repair or repeated status", err)
 	}
 }

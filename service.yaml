@@ -56,6 +56,9 @@ entities:
       - { name: status, type: string, optional: true, max_length: 255 }
   - name: Gateway
     versioned: true
+    generation_fields: [name, cluster_id, release_id, database_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, route_address, oidc, route, credential_driver]
+    observations:
+      workload: [phase, status]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
       - { name: cluster_id, type: ref, to: ManagedCluster }
@@ -65,8 +68,8 @@ entities:
       - { name: external_dns, type: string, optional: true }
       - { name: tls_mode, type: string, optional: true }
       - { name: service_type, type: string, optional: true }
-      - { name: status, type: string, optional: true }
-      - { name: phase, type: string, optional: true }
+      - { name: status, type: string, optional: true, unobserved: ObservationPending }
+      - { name: phase, type: string, optional: true, unobserved: Provisioning }
       - { name: image, type: string, optional: true }
       - { name: supervisor_image, type: string, optional: true }
       - { name: server_dns_names, type: jsonb, optional: true }

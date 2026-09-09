@@ -241,6 +241,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 }
 
 func present(row model.Gateway, creator string) (Gateway, error) {
+	row = row.CurrentObservations()
 	var names []string
 	if len(row.ServerDnsNames) > 0 {
 		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {
@@ -340,6 +341,8 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 	code, reason := http.StatusInternalServerError, "An internal error occurred"
 	errorID := 9
 	switch {
+	case errors.Is(err, gateways.ErrObservationOwned):
+		code, reason, errorID = http.StatusForbidden, "Phase and status are controller-owned fields", 4
 	case errors.Is(err, gateways.ErrObservationRequired):
 		code, reason = http.StatusPreconditionRequired, "Controller write requires an observed resource version"
 	case errors.Is(err, gateways.ErrLastOwner):

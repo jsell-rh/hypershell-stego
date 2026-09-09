@@ -99,29 +99,31 @@ type GatewayNetwork struct {
 // Gateway represents the Gateway entity.
 type Gateway struct {
 	Meta
-	ResourceVersion    int64            `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
-	Name               string           `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
-	ClusterID          string           `json:"cluster_id" gorm:"column:cluster_id;not null"`
-	ClusterIDRef       *ManagedCluster  `json:"-" gorm:"foreignKey:ClusterID"`
-	ReleaseID          string           `json:"release_id" gorm:"column:release_id;not null"`
-	ReleaseIDRef       *GatewayRelease  `json:"-" gorm:"foreignKey:ReleaseID"`
-	DatabaseID         string           `json:"database_id" gorm:"column:database_id;not null"`
-	DatabaseIDRef      *ManagedDatabase `json:"-" gorm:"foreignKey:DatabaseID"`
-	Namespace          string           `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:26"`
-	ExternalDns        *string          `json:"external_dns,omitempty" gorm:"column:external_dns"`
-	TlsMode            *string          `json:"tls_mode,omitempty" gorm:"column:tls_mode"`
-	ServiceType        *string          `json:"service_type,omitempty" gorm:"column:service_type"`
-	Status             *string          `json:"status,omitempty" gorm:"column:status"`
-	Phase              *string          `json:"phase,omitempty" gorm:"column:phase"`
-	Image              *string          `json:"image,omitempty" gorm:"column:image"`
-	SupervisorImage    *string          `json:"supervisor_image,omitempty" gorm:"column:supervisor_image"`
-	ServerDnsNames     datatypes.JSON   `json:"server_dns_names,omitempty" gorm:"column:server_dns_names;type:jsonb"`
-	RouteAddress       *string          `json:"route_address,omitempty" gorm:"column:route_address"`
-	ConsoleAddress     *string          `json:"console_address,omitempty" gorm:"column:console_address"`
-	Oidc               *string          `json:"oidc,omitempty" gorm:"column:oidc"`
-	Route              *string          `json:"route,omitempty" gorm:"column:route"`
-	CredentialDriver   *string          `json:"credential_driver,omitempty" gorm:"column:credential_driver"`
-	ActiveSandboxCount *int32           `json:"active_sandbox_count,omitempty" gorm:"column:active_sandbox_count"`
+	ResourceVersion     int64            `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
+	ResourceGeneration  int64            `json:"-" gorm:"column:stego_generation;type:bigint;not null;default:1;->"`
+	ObservedGenerations datatypes.JSON   `json:"-" gorm:"column:stego_observations;type:jsonb;not null;default:'{}';->"`
+	Name                string           `json:"name" gorm:"column:name;not null;size:255;check:length(name) >= 1"`
+	ClusterID           string           `json:"cluster_id" gorm:"column:cluster_id;not null"`
+	ClusterIDRef        *ManagedCluster  `json:"-" gorm:"foreignKey:ClusterID"`
+	ReleaseID           string           `json:"release_id" gorm:"column:release_id;not null"`
+	ReleaseIDRef        *GatewayRelease  `json:"-" gorm:"foreignKey:ReleaseID"`
+	DatabaseID          string           `json:"database_id" gorm:"column:database_id;not null"`
+	DatabaseIDRef       *ManagedDatabase `json:"-" gorm:"foreignKey:DatabaseID"`
+	Namespace           string           `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:26"`
+	ExternalDns         *string          `json:"external_dns,omitempty" gorm:"column:external_dns"`
+	TlsMode             *string          `json:"tls_mode,omitempty" gorm:"column:tls_mode"`
+	ServiceType         *string          `json:"service_type,omitempty" gorm:"column:service_type"`
+	Status              *string          `json:"status,omitempty" gorm:"column:status;->"`
+	Phase               *string          `json:"phase,omitempty" gorm:"column:phase;->"`
+	Image               *string          `json:"image,omitempty" gorm:"column:image"`
+	SupervisorImage     *string          `json:"supervisor_image,omitempty" gorm:"column:supervisor_image"`
+	ServerDnsNames      datatypes.JSON   `json:"server_dns_names,omitempty" gorm:"column:server_dns_names;type:jsonb"`
+	RouteAddress        *string          `json:"route_address,omitempty" gorm:"column:route_address"`
+	ConsoleAddress      *string          `json:"console_address,omitempty" gorm:"column:console_address"`
+	Oidc                *string          `json:"oidc,omitempty" gorm:"column:oidc"`
+	Route               *string          `json:"route,omitempty" gorm:"column:route"`
+	CredentialDriver    *string          `json:"credential_driver,omitempty" gorm:"column:credential_driver"`
+	ActiveSandboxCount  *int32           `json:"active_sandbox_count,omitempty" gorm:"column:active_sandbox_count"`
 }
 
 // RoleBinding represents the RoleBinding entity.

@@ -73,9 +73,11 @@ type GetGatewayIdentityStateResponse struct {
 	Gateway *v1.Gateway            `protobuf:"bytes,1,opt,name=gateway,proto3" json:"gateway,omitempty"`
 	Deleted bool                   `protobuf:"varint,2,opt,name=deleted,proto3" json:"deleted,omitempty"`
 	// Use this revision for status writes after external work.
-	ResourceVersion int64 `protobuf:"varint,3,opt,name=resource_version,json=resourceVersion,proto3" json:"resource_version,omitempty"`
-	unknownFields   protoimpl.UnknownFields
-	sizeCache       protoimpl.SizeCache
+	ResourceVersion    int64 `protobuf:"varint,3,opt,name=resource_version,json=resourceVersion,proto3" json:"resource_version,omitempty"`
+	ResourceGeneration int64 `protobuf:"varint,4,opt,name=resource_generation,json=resourceGeneration,proto3" json:"resource_generation,omitempty"`
+	ObservedGeneration int64 `protobuf:"varint,5,opt,name=observed_generation,json=observedGeneration,proto3" json:"observed_generation,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *GetGatewayIdentityStateResponse) Reset() {
@@ -125,6 +127,20 @@ func (x *GetGatewayIdentityStateResponse) GetDeleted() bool {
 func (x *GetGatewayIdentityStateResponse) GetResourceVersion() int64 {
 	if x != nil {
 		return x.ResourceVersion
+	}
+	return 0
+}
+
+func (x *GetGatewayIdentityStateResponse) GetResourceGeneration() int64 {
+	if x != nil {
+		return x.ResourceGeneration
+	}
+	return 0
+}
+
+func (x *GetGatewayIdentityStateResponse) GetObservedGeneration() int64 {
+	if x != nil {
+		return x.ObservedGeneration
 	}
 	return 0
 }
@@ -565,11 +581,13 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\n" +
 	"1hypershell/controlplane/v1/gateway_identity.proto\x12\x1ahypershell.controlplane.v1\x1a\x1chypershell/v1/gateways.proto\"0\n" +
 	"\x1eGetGatewayIdentityStateRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"\x98\x01\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xfa\x01\n" +
 	"\x1fGetGatewayIdentityStateResponse\x120\n" +
 	"\agateway\x18\x01 \x01(\v2\x16.hypershell.v1.GatewayR\agateway\x12\x18\n" +
 	"\adeleted\x18\x02 \x01(\bR\adeleted\x12)\n" +
-	"\x10resource_version\x18\x03 \x01(\x03R\x0fresourceVersion\"T\n" +
+	"\x10resource_version\x18\x03 \x01(\x03R\x0fresourceVersion\x12/\n" +
+	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration\x12/\n" +
+	"\x13observed_generation\x18\x05 \x01(\x03R\x12observedGeneration\"T\n" +
 	"\x1fListGatewayIdentityUsersRequest\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +

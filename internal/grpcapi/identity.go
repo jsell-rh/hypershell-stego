@@ -23,7 +23,7 @@ func (s *identityServer) GetGatewayIdentityState(ctx context.Context, request *p
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetGatewayIdentityStateResponse{Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion}, nil
+	return &pb.GetGatewayIdentityStateResponse{Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
 }
 
 func (s *identityServer) ListGatewayIdentityUsers(ctx context.Context, request *pb.ListGatewayIdentityUsersRequest) (*pb.ListGatewayIdentityUsersResponse, error) {

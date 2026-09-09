@@ -87,8 +87,6 @@ func (p *accountProvider) Delete(_ context.Context, gatewayID, id, clientUUID st
 func accountService(t testing.TB, f *fixture, p *accountProvider) (*serviceaccounts.Service, model.Gateway) {
 	t.Helper()
 	request := f.request("accounts")
-	request.Phase = pointer("Running")
-	request.Status = pointer("Healthy")
 	request.OIDC = pointer(`{"issuer":"https://issuer.example/realms/gateway","client_id":"gateway-audience","audience":"gateway-audience"}`)
 	row, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), request)
 	if err != nil {
@@ -98,7 +96,7 @@ func accountService(t testing.TB, f *fixture, p *accountProvider) (*serviceaccou
 	if err != nil {
 		t.Fatal(err)
 	}
-	return service, row
+	return service, observeGatewayFixture(t, f, row.ID)
 }
 func accountInput(name string) serviceaccounts.CreateRequest {
 	return serviceaccounts.CreateRequest{Name: name}
@@ -552,6 +550,7 @@ func TestServiceAccountRejectsUnsafeConnectionMetadata(t *testing.T) {
 		if _, err := f.service.Update(ctx, principal("alice"), gateway.ID, gateways.PatchRequest{OIDC: &value, RouteAddress: &test.endpoint}); err != nil {
 			t.Fatal(err)
 		}
+		observeGatewayFixture(t, f, gateway.ID)
 		if _, err := service.Create(ctx, principal("alice"), gateway.ID, accountInput("unsafe")); !errors.Is(err, serviceaccounts.ErrNotReady) {
 			t.Fatalf("unsafe connection metadata accepted: %v", err)
 		}
@@ -603,4 +602,24 @@ func (p *accountProvider) DeleteGateway(_ context.Context, gatewayID string) err
 		}
 	}
 	return nil
+}
+
+// observeGatewayFixture supplies a fresh result from the fixture workload provider.
+func observeGatewayFixture(t testing.TB, f *fixture, id string) model.Gateway {
+	t.Helper()
+	controller := principal("fixture-workload-controller")
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: "cnpg", ControlPlaneSubjects: []string{controller.Subject}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	row, err := service.IdentityState(ctx, controller, id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, err = service.UpdateControlPlane(ctx, controller, id, gateways.PatchRequest{Phase: pointer("Running"), Status: pointer("Healthy")}, nil, row.ResourceVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return row
 }

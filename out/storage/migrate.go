@@ -26,12 +26,17 @@ func Register(name string, fn MigrationFunc) {
 
 // Migrate runs all registered migrations in order.
 func Migrate(db *gorm.DB) error {
-	for _, m := range migrations {
-		if err := m.Func(db); err != nil {
-			return fmt.Errorf("migration %s: %w", m.Name, err)
-		}
+	if db == nil || db.Config == nil || db.Statement == nil {
+		return fmt.Errorf("migration requires an initialized database")
 	}
-	return nil
+	return db.Transaction(func(db *gorm.DB) error {
+		for _, m := range migrations {
+			if err := m.Func(db); err != nil {
+				return fmt.Errorf("migration %s: %w", m.Name, err)
+			}
+		}
+		return nil
+	})
 }
 
 func init() {

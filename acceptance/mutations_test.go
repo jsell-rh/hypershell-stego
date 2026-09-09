@@ -220,8 +220,8 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
 		t.Fatalf("missing allowlist accepted: %v", err)
 	}
-	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{Phase: pointer("Ready")}, console, row.ResourceVersion)
-	if err != nil || got.ConsoleAddress == nil || *got.ConsoleAddress != *console || got.Phase == nil || *got.Phase != "Ready" {
+	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion)
+	if err != nil || got.ConsoleAddress == nil || *got.ConsoleAddress != *console {
 		t.Fatalf("controller update: %+v %v", got, err)
 	}
 }

@@ -40,6 +40,7 @@ func TestGatewayDeletionRemovesServiceAccounts(t *testing.T) {
 			root := "/api/hypershell/v1/gateways/" + gateway.ID
 			owner := token(t, key, "alice")
 			readEvent(t, consumer, gateway.ID)
+			readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
 			awaitQueueEmpty(t, f)
 			for _, name := range []string{"first", "second", "third"} {
 				body, _ := json.Marshal(map[string]string{"name": name})

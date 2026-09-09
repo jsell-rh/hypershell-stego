@@ -36,8 +36,6 @@ func TestGatewayGrantsFollowSubjectInsteadOfUsername(t *testing.T) {
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	root := address + "/api/hypershell/v1/gateways"
 	request := f.request("subject-owned")
-	request.Phase = pointer("Running")
-	request.Status = pointer("Healthy")
 	request.OIDC = pointer(`{"issuer":"https://issuer.example/realms/gateway","client_id":"gateway-audience","audience":"gateway-audience"}`)
 	body, err := json.Marshal(request)
 	if err != nil {
@@ -50,6 +48,7 @@ func TestGatewayGrantsFollowSubjectInsteadOfUsername(t *testing.T) {
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatalf("create Gateway: %d", code)
 	}
+	observeGatewayFixture(t, f, gateway.ID)
 	claimIssuer := "https://issuer.example"
 	sign := func(subject, username string) string {
 		t.Helper()

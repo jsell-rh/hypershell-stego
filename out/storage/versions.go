@@ -15,15 +15,16 @@ import (
 
 var ErrVersionConflict = versioncontract.ErrVersionConflict
 var _ versioncontract.VersionedWriter = (*Store)(nil)
+var _ versioncontract.ObservationWriter = (*Store)(nil)
 
 // ResourceVersionMigration is an explicit migration for existing tables.
 // Run it in a transaction before new application code starts. It does not reset
 // existing revisions. Removing versioned from a declaration does not remove the
 // trigger or permit old clients to bypass revision changes.
-const ResourceVersionMigration = "ALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_revision bigint NOT NULL DEFAULT 1;\nCREATE OR REPLACE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n RETURN NEW;\nEND;\n$stego$;\nDROP TRIGGER IF EXISTS stego_resource_revision ON \"gateways\";\nCREATE TRIGGER stego_resource_revision BEFORE INSERT OR UPDATE OR DELETE ON \"gateways\" FOR EACH ROW EXECUTE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"();\n"
+const ResourceVersionMigration = "ALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_revision bigint NOT NULL DEFAULT 1;\nALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_generation bigint NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS stego_observations jsonb NOT NULL DEFAULT '{}';\nDO $upgrade$ BEGIN\n IF EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid WHERE t.tgrelid=E'gateways'::regclass AND t.tgname='stego_resource_revision' AND p.prosrc IS DISTINCT FROM E'\nBEGIN\n IF TG_OP = ''DELETE'' THEN\n  RAISE EXCEPTION ''versioned resource history cannot be removed'' USING ERRCODE = ''23514'';\n END IF;\n IF TG_OP = ''INSERT'' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION ''resource identity is immutable'' USING ERRCODE = ''23514'';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION ''resource deletion cannot be reversed'' USING ERRCODE = ''23514'';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n IF TG_OP = ''INSERT'' THEN\n  NEW.stego_generation := 1; NEW.stego_observations := ''{}''::jsonb;\n ELSE\n  NEW.stego_generation := OLD.stego_generation;\n  IF to_jsonb(NEW.\"name\") IS DISTINCT FROM to_jsonb(OLD.\"name\") OR to_jsonb(NEW.\"cluster_id\") IS DISTINCT FROM to_jsonb(OLD.\"cluster_id\") OR to_jsonb(NEW.\"release_id\") IS DISTINCT FROM to_jsonb(OLD.\"release_id\") OR to_jsonb(NEW.\"database_id\") IS DISTINCT FROM to_jsonb(OLD.\"database_id\") OR to_jsonb(NEW.\"namespace\") IS DISTINCT FROM to_jsonb(OLD.\"namespace\") OR to_jsonb(NEW.\"external_dns\") IS DISTINCT FROM to_jsonb(OLD.\"external_dns\") OR to_jsonb(NEW.\"tls_mode\") IS DISTINCT FROM to_jsonb(OLD.\"tls_mode\") OR to_jsonb(NEW.\"service_type\") IS DISTINCT FROM to_jsonb(OLD.\"service_type\") OR to_jsonb(NEW.\"image\") IS DISTINCT FROM to_jsonb(OLD.\"image\") OR to_jsonb(NEW.\"supervisor_image\") IS DISTINCT FROM to_jsonb(OLD.\"supervisor_image\") OR to_jsonb(NEW.\"server_dns_names\") IS DISTINCT FROM to_jsonb(OLD.\"server_dns_names\") OR to_jsonb(NEW.\"route_address\") IS DISTINCT FROM to_jsonb(OLD.\"route_address\") OR to_jsonb(NEW.\"oidc\") IS DISTINCT FROM to_jsonb(OLD.\"oidc\") OR to_jsonb(NEW.\"route\") IS DISTINCT FROM to_jsonb(OLD.\"route\") OR to_jsonb(NEW.\"credential_driver\") IS DISTINCT FROM to_jsonb(OLD.\"credential_driver\") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   NEW.stego_generation := OLD.stego_generation + 1;\n   NEW.stego_observations := OLD.stego_observations;\n  END IF;\n END IF;\n -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981\n RETURN NEW;\nEND;\n') THEN\n  ALTER TABLE \"gateways\" DISABLE TRIGGER stego_resource_revision;\n  UPDATE \"gateways\" SET stego_generation=stego_generation+1, stego_revision=stego_revision+1, stego_observations='{}'::jsonb;\n END IF;\n END; $upgrade$;\nCREATE OR REPLACE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_generation := 1; NEW.stego_observations := '{}'::jsonb;\n ELSE\n  NEW.stego_generation := OLD.stego_generation;\n  IF to_jsonb(NEW.\"name\") IS DISTINCT FROM to_jsonb(OLD.\"name\") OR to_jsonb(NEW.\"cluster_id\") IS DISTINCT FROM to_jsonb(OLD.\"cluster_id\") OR to_jsonb(NEW.\"release_id\") IS DISTINCT FROM to_jsonb(OLD.\"release_id\") OR to_jsonb(NEW.\"database_id\") IS DISTINCT FROM to_jsonb(OLD.\"database_id\") OR to_jsonb(NEW.\"namespace\") IS DISTINCT FROM to_jsonb(OLD.\"namespace\") OR to_jsonb(NEW.\"external_dns\") IS DISTINCT FROM to_jsonb(OLD.\"external_dns\") OR to_jsonb(NEW.\"tls_mode\") IS DISTINCT FROM to_jsonb(OLD.\"tls_mode\") OR to_jsonb(NEW.\"service_type\") IS DISTINCT FROM to_jsonb(OLD.\"service_type\") OR to_jsonb(NEW.\"image\") IS DISTINCT FROM to_jsonb(OLD.\"image\") OR to_jsonb(NEW.\"supervisor_image\") IS DISTINCT FROM to_jsonb(OLD.\"supervisor_image\") OR to_jsonb(NEW.\"server_dns_names\") IS DISTINCT FROM to_jsonb(OLD.\"server_dns_names\") OR to_jsonb(NEW.\"route_address\") IS DISTINCT FROM to_jsonb(OLD.\"route_address\") OR to_jsonb(NEW.\"oidc\") IS DISTINCT FROM to_jsonb(OLD.\"oidc\") OR to_jsonb(NEW.\"route\") IS DISTINCT FROM to_jsonb(OLD.\"route\") OR to_jsonb(NEW.\"credential_driver\") IS DISTINCT FROM to_jsonb(OLD.\"credential_driver\") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   NEW.stego_generation := OLD.stego_generation + 1;\n   NEW.stego_observations := OLD.stego_observations;\n  END IF;\n END IF;\n -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981\n RETURN NEW;\nEND;\n$stego$;\nDROP TRIGGER IF EXISTS stego_resource_revision ON \"gateways\";\nCREATE TRIGGER stego_resource_revision BEFORE INSERT OR UPDATE OR DELETE ON \"gateways\" FOR EACH ROW EXECUTE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"();\n"
 
 func migrateResourceVersions(db *gorm.DB) error {
-	for _, statement := range []string{"ALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_revision bigint NOT NULL DEFAULT 1;\n", "CREATE OR REPLACE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n RETURN NEW;\nEND;\n$stego$;\n", "DROP TRIGGER IF EXISTS stego_resource_revision ON \"gateways\";\n", "CREATE TRIGGER stego_resource_revision BEFORE INSERT OR UPDATE OR DELETE ON \"gateways\" FOR EACH ROW EXECUTE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"();\n"} {
+	for _, statement := range []string{"ALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_revision bigint NOT NULL DEFAULT 1;\n", "ALTER TABLE \"gateways\" ADD COLUMN IF NOT EXISTS stego_generation bigint NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS stego_observations jsonb NOT NULL DEFAULT '{}';\n", "DO $upgrade$ BEGIN\n IF EXISTS (SELECT 1 FROM pg_catalog.pg_trigger t JOIN pg_catalog.pg_proc p ON p.oid=t.tgfoid WHERE t.tgrelid=E'gateways'::regclass AND t.tgname='stego_resource_revision' AND p.prosrc IS DISTINCT FROM E'\nBEGIN\n IF TG_OP = ''DELETE'' THEN\n  RAISE EXCEPTION ''versioned resource history cannot be removed'' USING ERRCODE = ''23514'';\n END IF;\n IF TG_OP = ''INSERT'' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION ''resource identity is immutable'' USING ERRCODE = ''23514'';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION ''resource deletion cannot be reversed'' USING ERRCODE = ''23514'';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n IF TG_OP = ''INSERT'' THEN\n  NEW.stego_generation := 1; NEW.stego_observations := ''{}''::jsonb;\n ELSE\n  NEW.stego_generation := OLD.stego_generation;\n  IF to_jsonb(NEW.\"name\") IS DISTINCT FROM to_jsonb(OLD.\"name\") OR to_jsonb(NEW.\"cluster_id\") IS DISTINCT FROM to_jsonb(OLD.\"cluster_id\") OR to_jsonb(NEW.\"release_id\") IS DISTINCT FROM to_jsonb(OLD.\"release_id\") OR to_jsonb(NEW.\"database_id\") IS DISTINCT FROM to_jsonb(OLD.\"database_id\") OR to_jsonb(NEW.\"namespace\") IS DISTINCT FROM to_jsonb(OLD.\"namespace\") OR to_jsonb(NEW.\"external_dns\") IS DISTINCT FROM to_jsonb(OLD.\"external_dns\") OR to_jsonb(NEW.\"tls_mode\") IS DISTINCT FROM to_jsonb(OLD.\"tls_mode\") OR to_jsonb(NEW.\"service_type\") IS DISTINCT FROM to_jsonb(OLD.\"service_type\") OR to_jsonb(NEW.\"image\") IS DISTINCT FROM to_jsonb(OLD.\"image\") OR to_jsonb(NEW.\"supervisor_image\") IS DISTINCT FROM to_jsonb(OLD.\"supervisor_image\") OR to_jsonb(NEW.\"server_dns_names\") IS DISTINCT FROM to_jsonb(OLD.\"server_dns_names\") OR to_jsonb(NEW.\"route_address\") IS DISTINCT FROM to_jsonb(OLD.\"route_address\") OR to_jsonb(NEW.\"oidc\") IS DISTINCT FROM to_jsonb(OLD.\"oidc\") OR to_jsonb(NEW.\"route\") IS DISTINCT FROM to_jsonb(OLD.\"route\") OR to_jsonb(NEW.\"credential_driver\") IS DISTINCT FROM to_jsonb(OLD.\"credential_driver\") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   NEW.stego_generation := OLD.stego_generation + 1;\n   NEW.stego_observations := OLD.stego_observations;\n  END IF;\n END IF;\n -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981\n RETURN NEW;\nEND;\n') THEN\n  ALTER TABLE \"gateways\" DISABLE TRIGGER stego_resource_revision;\n  UPDATE \"gateways\" SET stego_generation=stego_generation+1, stego_revision=stego_revision+1, stego_observations='{}'::jsonb;\n END IF;\n END; $upgrade$;\n", "CREATE OR REPLACE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"() RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $stego$\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_generation := 1; NEW.stego_observations := '{}'::jsonb;\n ELSE\n  NEW.stego_generation := OLD.stego_generation;\n  IF to_jsonb(NEW.\"name\") IS DISTINCT FROM to_jsonb(OLD.\"name\") OR to_jsonb(NEW.\"cluster_id\") IS DISTINCT FROM to_jsonb(OLD.\"cluster_id\") OR to_jsonb(NEW.\"release_id\") IS DISTINCT FROM to_jsonb(OLD.\"release_id\") OR to_jsonb(NEW.\"database_id\") IS DISTINCT FROM to_jsonb(OLD.\"database_id\") OR to_jsonb(NEW.\"namespace\") IS DISTINCT FROM to_jsonb(OLD.\"namespace\") OR to_jsonb(NEW.\"external_dns\") IS DISTINCT FROM to_jsonb(OLD.\"external_dns\") OR to_jsonb(NEW.\"tls_mode\") IS DISTINCT FROM to_jsonb(OLD.\"tls_mode\") OR to_jsonb(NEW.\"service_type\") IS DISTINCT FROM to_jsonb(OLD.\"service_type\") OR to_jsonb(NEW.\"image\") IS DISTINCT FROM to_jsonb(OLD.\"image\") OR to_jsonb(NEW.\"supervisor_image\") IS DISTINCT FROM to_jsonb(OLD.\"supervisor_image\") OR to_jsonb(NEW.\"server_dns_names\") IS DISTINCT FROM to_jsonb(OLD.\"server_dns_names\") OR to_jsonb(NEW.\"route_address\") IS DISTINCT FROM to_jsonb(OLD.\"route_address\") OR to_jsonb(NEW.\"oidc\") IS DISTINCT FROM to_jsonb(OLD.\"oidc\") OR to_jsonb(NEW.\"route\") IS DISTINCT FROM to_jsonb(OLD.\"route\") OR to_jsonb(NEW.\"credential_driver\") IS DISTINCT FROM to_jsonb(OLD.\"credential_driver\") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   NEW.stego_generation := OLD.stego_generation + 1;\n   NEW.stego_observations := OLD.stego_observations;\n  END IF;\n END IF;\n -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981\n RETURN NEW;\nEND;\n$stego$;\n", "DROP TRIGGER IF EXISTS stego_resource_revision ON \"gateways\";\n", "CREATE TRIGGER stego_resource_revision BEFORE INSERT OR UPDATE OR DELETE ON \"gateways\" FOR EACH ROW EXECUTE FUNCTION \"stego_revision_a74e503354fdd464eff1440f\"();\n"} {
 		if err := db.Exec(statement).Error; err != nil {
 			return err
 		}
@@ -41,8 +42,11 @@ func verifyResourceVersions(db *gorm.DB) error {
 	}
 	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
 	defer cancel()
-	for _, definition := range []struct{ Table, Function string }{
-		{"gateways", "stego_revision_a74e503354fdd464eff1440f"},
+	for _, definition := range []struct {
+		Table, Function, Body string
+		Generation            bool
+	}{
+		{"gateways", "stego_revision_a74e503354fdd464eff1440f", "\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_generation := 1; NEW.stego_observations := '{}'::jsonb;\n ELSE\n  NEW.stego_generation := OLD.stego_generation;\n  IF to_jsonb(NEW.\"name\") IS DISTINCT FROM to_jsonb(OLD.\"name\") OR to_jsonb(NEW.\"cluster_id\") IS DISTINCT FROM to_jsonb(OLD.\"cluster_id\") OR to_jsonb(NEW.\"release_id\") IS DISTINCT FROM to_jsonb(OLD.\"release_id\") OR to_jsonb(NEW.\"database_id\") IS DISTINCT FROM to_jsonb(OLD.\"database_id\") OR to_jsonb(NEW.\"namespace\") IS DISTINCT FROM to_jsonb(OLD.\"namespace\") OR to_jsonb(NEW.\"external_dns\") IS DISTINCT FROM to_jsonb(OLD.\"external_dns\") OR to_jsonb(NEW.\"tls_mode\") IS DISTINCT FROM to_jsonb(OLD.\"tls_mode\") OR to_jsonb(NEW.\"service_type\") IS DISTINCT FROM to_jsonb(OLD.\"service_type\") OR to_jsonb(NEW.\"image\") IS DISTINCT FROM to_jsonb(OLD.\"image\") OR to_jsonb(NEW.\"supervisor_image\") IS DISTINCT FROM to_jsonb(OLD.\"supervisor_image\") OR to_jsonb(NEW.\"server_dns_names\") IS DISTINCT FROM to_jsonb(OLD.\"server_dns_names\") OR to_jsonb(NEW.\"route_address\") IS DISTINCT FROM to_jsonb(OLD.\"route_address\") OR to_jsonb(NEW.\"oidc\") IS DISTINCT FROM to_jsonb(OLD.\"oidc\") OR to_jsonb(NEW.\"route\") IS DISTINCT FROM to_jsonb(OLD.\"route\") OR to_jsonb(NEW.\"credential_driver\") IS DISTINCT FROM to_jsonb(OLD.\"credential_driver\") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   NEW.stego_generation := OLD.stego_generation + 1;\n   NEW.stego_observations := OLD.stego_observations;\n  END IF;\n END IF;\n -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981\n RETURN NEW;\nEND;\n", true},
 	} {
 		var count int64
 		err := db.WithContext(ctx).Raw(`SELECT count(*) FROM pg_catalog.pg_trigger t
@@ -54,12 +58,21 @@ func verifyResourceVersions(db *gorm.DB) error {
  AND NOT t.tgisinternal AND t.tgattr=''::pg_catalog.int2vector
  AND p.proname=? AND p.prosrc=? AND NOT p.prosecdef AND l.lanname='plpgsql'
  AND p.proconfig=ARRAY['search_path=pg_catalog']::text[]
- AND a.atttypid='pg_catalog.int8'::pg_catalog.regtype AND a.attnotnull AND NOT a.attisdropped`, definition.Table, definition.Function, "\nBEGIN\n IF TG_OP = 'DELETE' THEN\n  RAISE EXCEPTION 'versioned resource history cannot be removed' USING ERRCODE = '23514';\n END IF;\n IF TG_OP = 'INSERT' THEN\n  NEW.stego_revision := 1;\n ELSE\n  IF NEW.id COLLATE \"C\" IS DISTINCT FROM OLD.id COLLATE \"C\" THEN\n   RAISE EXCEPTION 'resource identity is immutable' USING ERRCODE = '23514';\n  END IF;\n  IF OLD.deleted_at IS NOT NULL AND NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN\n   RAISE EXCEPTION 'resource deletion cannot be reversed' USING ERRCODE = '23514';\n  END IF;\n  NEW.stego_revision := OLD.stego_revision + 1;\n END IF;\n RETURN NEW;\nEND;\n").Scan(&count).Error
+ AND a.atttypid='pg_catalog.int8'::pg_catalog.regtype AND a.attnotnull AND NOT a.attisdropped`, definition.Table, definition.Function, definition.Body).Scan(&count).Error
 		if err != nil {
 			return fmt.Errorf("verify resource revision schema: %w", err)
 		}
 		if count != 1 {
 			return fmt.Errorf("resource revision migration is required for %s", definition.Table)
+		}
+		if definition.Generation {
+			err := db.WithContext(ctx).Raw(`SELECT count(*) FROM pg_catalog.pg_attribute WHERE attrelid=pg_catalog.to_regclass(?) AND attnotnull AND NOT attisdropped AND ((attname='stego_generation' AND atttypid='pg_catalog.int8'::pg_catalog.regtype) OR (attname='stego_observations' AND atttypid='pg_catalog.jsonb'::pg_catalog.regtype))`, definition.Table).Scan(&count).Error
+			if err != nil {
+				return fmt.Errorf("verify generation schema: %w", err)
+			}
+			if count != 2 {
+				return fmt.Errorf("resource generation migration is required for %s", definition.Table)
+			}
 		}
 	}
 	return nil
@@ -90,7 +103,7 @@ func (s *Store) ReplaceIfVersion(ctx context.Context, entity, id string, version
 			return err
 		}
 		row.ID = id
-		result := s.db.WithContext(operation).Model(&Gateway{}).Where("id = ? AND id COLLATE \"C\" = ? AND stego_revision = ?", id, id, version).Select([]string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "status", "phase", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&row)
+		result := s.db.WithContext(operation).Model(&Gateway{}).Where("id = ? AND id COLLATE \"C\" = ? AND stego_revision = ?", id, id, version).Select([]string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&row)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return versioncontract.ErrConflict
@@ -105,4 +118,108 @@ func (s *Store) ReplaceIfVersion(ctx context.Context, entity, id string, version
 	default:
 		return errors.New("conditional write requires a versioned entity")
 	}
+}
+
+// ObserveIfVersion writes a complete observation group and records its current
+// desired generation. It does not grant access to that group. Authorize the
+// caller and insert events in the same transaction. Repeat external work after
+// a conflict; never give an old observation a newer revision.
+func (s *Store) ObserveIfVersion(ctx context.Context, entity, id string, version int64, group string, values map[string]any) error {
+	if ctx == nil || s == nil || s.db == nil || id == "" || version < 1 {
+		return errors.New("observation requires a context, store, identity, and positive revision")
+	}
+
+	var statement string
+	var fields []string
+	var decode func([]byte) ([]any, error)
+	switch entity {
+	case "Gateway":
+		switch group {
+		case "workload":
+			statement = "UPDATE \"gateways\" SET \"phase\" = ?, \"status\" = ?, stego_observations=jsonb_set(stego_observations, ARRAY[?]::text[], to_jsonb(stego_generation)), updated_time=now() WHERE id=? AND id COLLATE \"C\"=? AND stego_revision=? AND deleted_at IS NULL"
+			fields = []string{"phase", "status"}
+			decode = func(data []byte) ([]any, error) {
+				var row Gateway
+				if err := json.Unmarshal(data, &row); err != nil {
+					return nil, err
+				}
+				return []any{row.Phase, row.Status}, nil
+			}
+		default:
+			return errors.New("unknown observation group")
+		}
+	default:
+		return errors.New("entity has no observation groups")
+	}
+	if len(values) != len(fields) {
+		return errors.New("observation must contain exactly its declared fields")
+	}
+	for _, field := range fields {
+		if _, ok := values[field]; !ok {
+			return errors.New("observation must contain exactly its declared fields")
+		}
+	}
+	data, err := json.Marshal(values)
+	if err != nil {
+		return err
+	}
+	if len(data) > 1<<20 {
+		return errors.New("observation exceeds its byte limit")
+	}
+	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
+	args, err := decode(data)
+	if err != nil {
+		return err
+	}
+	args = append(args, group, id, id, version)
+	result := s.db.WithContext(operation).Exec(statement, args...)
+	if result.Error != nil {
+		if isUniqueConstraintError(result.Error) {
+			return versioncontract.ErrConflict
+		}
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		return ErrVersionConflict
+	}
+	return nil
+
+}
+
+// ObservedGeneration returns zero for an absent, invalid, or unknown group.
+func (row Gateway) ObservedGeneration(group string) int64 {
+	switch group {
+	case "workload":
+	default:
+		return 0
+	}
+	var observed map[string]json.RawMessage
+	if json.Unmarshal(row.ObservedGenerations, &observed) != nil {
+		return 0
+	}
+	var value int64
+	if json.Unmarshal(observed[group], &value) != nil {
+		return 0
+	}
+	if value < 1 || value > row.ResourceGeneration {
+		return 0
+	}
+	return value
+}
+
+// CurrentObservations replaces unconfirmed group fields with their declared
+// unobserved value or nil. Stored observations remain available for diagnosis.
+func (row Gateway) CurrentObservations() Gateway {
+	if row.ResourceGeneration < 1 || row.ObservedGeneration("workload") != row.ResourceGeneration {
+		{
+			value := "Provisioning"
+			row.Phase = &value
+		}
+		{
+			value := "ObservationPending"
+			row.Status = &value
+		}
+	}
+	return row
 }

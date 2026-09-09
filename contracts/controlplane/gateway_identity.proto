@@ -17,6 +17,8 @@ message GetGatewayIdentityStateResponse {
  bool deleted = 2;
  // Use this revision for status writes after external work.
  int64 resource_version = 3;
+ int64 resource_generation = 4;
+ int64 observed_generation = 5;
 }
 
 // Pages contain retained grant references, including deleted grants.

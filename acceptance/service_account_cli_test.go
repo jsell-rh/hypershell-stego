@@ -33,6 +33,7 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	if _, err := f.db.Exec("UPDATE gateways SET oidc=$1 WHERE id=$2", oidc, gateway.ID); err != nil {
 		t.Fatal(err)
 	}
+	observeGatewayFixture(t, f, gateway.ID)
 	key, issuerSettings := issuer(t)
 	providerSettings, stopProvider := startRealProvisioner(t, k, key, issuerSettings)
 	defer func() { stopProvider() }()
