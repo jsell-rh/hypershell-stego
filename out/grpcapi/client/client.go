@@ -190,3 +190,16 @@ func readFile(path string, maximum int64, private bool) ([]byte, error) {
 }
 
 var _ grpc.ClientConnInterface = (*Client)(nil)
+
+// FailureSummary exposes only a bounded protocol code. It omits the remote
+// message and details, which can contain private application data.
+func FailureSummary(err error) string {
+	if err == nil {
+		return ""
+	}
+	code := status.Code(err)
+	if code < codes.OK || code > codes.Unauthenticated {
+		code = codes.Unknown
+	}
+	return "RPC code = " + code.String()
+}

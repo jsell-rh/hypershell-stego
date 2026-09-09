@@ -9,6 +9,7 @@ import (
 
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -47,7 +48,7 @@ func (c *Controller) Run(ctx context.Context) error {
 				slog.Warn("database controller will reconnect")
 			}
 			if event.Phase == "reconcile_failed" && !errors.Is(event.Err, ErrPending) {
-				slog.Warn("database needs another pass")
+				slog.Warn("database needs another pass", "failure", kube.FailureSummary(event.Err))
 			}
 		},
 	})

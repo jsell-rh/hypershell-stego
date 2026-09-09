@@ -8,6 +8,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
@@ -57,7 +58,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			case "reconnect":
 				slog.Warn("Gateway workload watch will reconnect")
 			case "reconcile_failed":
-				slog.Warn("Gateway workload needs another pass")
+				slog.Warn("Gateway workload needs another pass", "failure", rpc.FailureSummary(event.Err))
 			}
 		},
 	})
