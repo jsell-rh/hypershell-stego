@@ -129,7 +129,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	identityProvider := startKeycloakAt(t, kindBridgeIP(t), func(realm map[string]any) { realm["accessTokenLifespan"] = 900 })
 	settings, _ := identityProvider.apiLoginSetup(t)
 	aliceID := identityProvider.human(t, "alice")
-	identityProvider.human(t, "bob")
+	bobSubject := identityProvider.human(t, "bob")
 	controllerID := identityProvider.human(t, "controller")
 	response := identityProvider.adminRequest(t, "GET", "/clients?clientId=hypershell", nil)
 	var clients []struct{ ID string }
@@ -289,6 +289,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	checkViewerAfterRestart := startGatewayViewerWorkflow(t, identityProvider, address+"/api/hypershell/v1", gateway, gatewayClient, alice, ownerToken, bobSubject, before, call)
 	stopWorkload()
 	connection.Close()
 	stopForward()
@@ -318,6 +319,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	if err != nil || !proto.Equal(before, after) {
 		t.Fatal("namespace or database restart changed stored provider", err)
 	}
+	checkViewerAfterRestart(ownerToken)
 	stopWorkload()
 	connection.Close()
 	stopForward()

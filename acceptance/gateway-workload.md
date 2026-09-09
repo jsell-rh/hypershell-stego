@@ -122,15 +122,15 @@ The isolated test uses a private Keycloak CA and a private Docker bridge address
 The same issuer URL is reachable from the host and Gateway Pod. No TLS verification
 is disabled.
 
-The actual-image regression after the retained-ID recovery change passed in
-167.88 seconds. The combined recovery and workload package took 224.754 seconds
-with the race detector. This run included former-cluster cleanup and a forced
-database deletion failure. The separate recovery check with an empty event queue
-passed in 45.50 seconds; its package took 46.553 seconds. These are workflow durations, not
-production latency measurements.
+The actual-image workflow with viewer access passed in 165.74 seconds. Deletion
+before workload startup, with an empty event queue before API restart, passed
+in 55.43 seconds. The combined package took 222.204 seconds with the race detector.
+These are workflow durations, not production latency measurements. Vet and
+pinned regeneration also passed for the viewer test changes.
 
-The complete variant race suite passed with PostgreSQL and Keycloak required;
-its acceptance package took 334.339 seconds. The preceding database workflow
+The complete variant race suite at `e705e23` passed with PostgreSQL and Keycloak
+required; its acceptance package took 334.339 seconds. Hosted run `34317681420`
+also passed all three jobs on that commit. The preceding database workflow
 and deletion replay regression package passed in 74.076 seconds. Focused race
 tests and vet passed for the recovery changes. The Go vulnerability
 scan found no known vulnerabilities. Pinned generation completed without drift;
@@ -161,14 +161,46 @@ Capacity under sustained watch overflow and very large retained histories still
 needs measurement. The generated list adapter also counts matching rows; the
 current recovery caller does not use that count.
 
-The pinned image requires workspace membership in addition to its standard user
-role. The user was asked whether a Hypershell viewer grant should also create
-default-workspace membership. That decision remains open. This gate proves owner
-access and ungranted-user denial; it does not claim complete viewer access.
+The reference keeps a Hypershell viewer grant and OpenShell workspace membership
+separate. Preserve this behavior. The source is reference Hypershell commit
+`14256be29bcfe4fff38bcaf4a41511cb394ea8e1`, including `tests/e2e/e2e-openshell.sh`
+and the workspace membership instructions in `skills/deploy/ibm-cluster/SKILL.md`.
+Automatic default-workspace membership would be a product change.
+
+The actual Gateway test now grants viewer access through Hypershell REST with
+the recipient's `/users/me` ID. Real browser login obtains the Gateway token.
+The Gateway must see the original provider subject and only its standard user
+role. A role without workspace membership must not permit provider access.
+The owner then grants default-workspace membership through Gateway gRPC.
+
+The viewer can read the stored provider with redacted credential values and no
+credential handles. The Hypershell list follows grant creation and removal.
+Its workspace list contains `default`
+and excludes the owner's separate workspace. It cannot read that workspace,
+write providers, create workspaces, add administrators, or read Gateway admin
+information. It can read the Hypershell Gateway, but cannot change it or create
+a new Gateway. The access checks repeat after namespace and database restart.
+
+For this viewer, workspace removal denies the same current token immediately. It does not remove
+the separate Hypershell grant. Hypershell grant removal denies API access
+immediately and removes roles from new Gateway tokens after reconciliation.
+The pinned Gateway continues to accept an already issued role-bearing token
+until expiry if workspace membership remains. The test shows this limit, then
+removes membership and requires that old token to be denied. Managed Gateway
+user tokens have a five-minute lifetime. Immediate global token revocation
+remains a separate requirement.
 
 Sandbox execution also needs separate work. The reference supervisor requests
 capabilities that the current restricted namespace rejects. Do not weaken that
 policy to treat this provider-management gate as complete sandbox evidence.
+The user was asked whether production sandboxes may require a runtime with
+separate virtual machines, such as Kata Containers, or must also support standard
+container runtimes on dedicated nodes. No answer has arrived. Kata uses a guest
+kernel for the workload; see its [virtualization design](https://github.com/kata-containers/kata-containers/blob/main/docs/design/virtualization.md).
+This is a proposed boundary, not verified OpenShell compatibility. The pinned
+Gateway accepts a requested runtime class. Admission must enforce the selected
+boundary and reject attempts to bypass it.
+
 Sandbox isolation, network policy enforcement, public routes, OpenShift behavior,
 image vulnerability scans, certificate renewal, backup, restore, capacity, and
 complete CLI and console behavior remain open. The Go vulnerability scan does

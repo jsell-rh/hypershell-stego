@@ -208,8 +208,14 @@ from a Gateway creation event. It checks verified TLS, limited database roles,
 persistent data, stable credentials, foreign namespace denial, and cleanup after
 offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
 are part of this path. The cluster test has its own required CI job. Gateway
-workload deployment and production database operations remain open.
+workload deployment has a separate [actual-image gate](gateway-workload.md).
+Production database operations remain open.
 
 The Gateway workload gate also checks deletion before the workload controller
 first starts, followed by API restart and automatic database cleanup. The
 private recovery API has separate paging and access tests in the full suite.
+
+The actual Gateway gate now tests a viewer granted through Hypershell REST.
+It preserves separate OpenShell workspace membership, filters workspace lists,
+checks credential redaction and denied writes, repeats access after restart,
+and checks both grant removal and workspace membership removal.
