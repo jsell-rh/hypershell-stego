@@ -75,5 +75,9 @@ The full local variant race suite passed with PostgreSQL and Keycloak required;
 its acceptance package took 456.425 seconds. After the route fix and final pin,
 the focused CLI workflow and request-field check passed again. Regeneration and
 static checks passed. The pinned compiler is
-`1810c7c91a5a29c41c7ad25fad97e1a9a4a06795`. The hosted run repeats the full
+`6a7b973739116fea81fe827c5ca75d3274f1a3ec`. The hosted run repeats the full
 application, database, Gateway, and sandbox checks against the final commit.
+
+The final compiler adds a common minimum Go version check. Regeneration with
+this pin produced no application changes. The live CLI workflow passed again
+in 5.06 seconds. The request-field check also passed.
