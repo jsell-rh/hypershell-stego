@@ -282,3 +282,7 @@ earlier assertion failure. The larger budget covers the growing suite,
 including retained-lease recovery and backlog checks. Individual request and
 workflow deadlines remain in their tests. All packages still run with race
 detection; no test is omitted to reduce elapsed time.
+
+The [CNPG database workflow](cnpg-database.md) tests shared Cluster creation,
+encrypted SQL, restart, repair, and cleanup through the generated runtime.
+Gateway execution on CNPG remains open.

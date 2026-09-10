@@ -35,16 +35,25 @@ type Provider interface {
 	Delete(context.Context, *pb.ManagedDatabase) error
 }
 type Controller struct {
-	api      pb.ManagedDatabaseServiceClient
-	cleanup  control.DatabaseCleanupServiceClient
-	provider Provider
+	api          pb.ManagedDatabaseServiceClient
+	cleanup      control.DatabaseCleanupServiceClient
+	provider     Provider
+	providerName string
 }
 
 func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, provider Provider) (*Controller, error) {
+	return NewForProvider(api, cleanup, "deployment", provider)
+}
+
+// NewForProvider binds this controller to one database provider.
+func NewForProvider(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, name string, provider Provider) (*Controller, error) {
+	if name != "deployment" && name != "cnpg" {
+		return nil, errors.New("database provider is not supported")
+	}
 	if api == nil || cleanup == nil || provider == nil {
 		return nil, errors.New("database controller dependencies are required")
 	}
-	return &Controller{api: api, cleanup: cleanup, provider: provider}, nil
+	return &Controller{api: api, cleanup: cleanup, provider: provider, providerName: name}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
 	return c.RunWithMetrics(ctx, nil)
@@ -56,7 +65,7 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
 			Metrics:  metrics,
-			Cleanup:  cleanupmetrics.Database(c.cleanup, "deployment"),
+			Cleanup:  cleanupmetrics.Database(c.cleanup, c.providerName),
 			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
@@ -186,7 +195,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if !declared {
 		return errors.New("database has no declared provider cleanup owner")
 	}
-	if db.GetProvider() != "deployment" {
+	if db.GetProvider() != c.providerName {
 		return nil
 	}
 	return runtime.RunObservation(ctx, func(operation context.Context) error {
@@ -218,10 +227,14 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			_, err := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String(desired)})
 			return err
 		}
-		if db.GetStatus() == "ready" && db.GetConnectionSecret() == CredentialsName {
+		patch := &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready")}
+		if c.providerName == "deployment" {
+			patch.ConnectionSecret = proto.String(CredentialsName)
+		}
+		if db.GetStatus() == "ready" && (patch.ConnectionSecret == nil || db.GetConnectionSecret() == *patch.ConnectionSecret) {
 			return nil
 		}
-		_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
+		_, err = c.api.UpdateManagedDatabase(writeContext, patch)
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: reconcileTimeout, CommitTimeout: observationCommitTimeout})
 }

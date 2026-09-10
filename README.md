@@ -384,3 +384,8 @@ outcomes, retries, and duration without resource IDs or private error labels.
 resources and the oldest deletion time for an authorized owner and target.
 The generated sampler runs independently of recovery scans and reports failed
 reads as unavailable. Summary responses and metrics contain no resource IDs.
+
+The [CNPG database workflow](acceptance/cnpg-database.md) uses the generated
+controller runtime for the shared managed-database provider. It has a separate
+real Kubernetes acceptance gate. Gateway SQL roles and databases on this shared
+Cluster remain separate work.

@@ -1,0 +1,36 @@
+# Use a projected, short-lived token for the CNPG database controller.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cnpg-database-controller
+  namespace: hypershell-control-plane
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: hypershell-cnpg-database-controller
+rules:
+  - apiGroups: [""]
+    resources: [namespaces]
+    verbs: [get, create, patch, delete]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get]
+  - apiGroups: [postgresql.cnpg.io]
+    resources: [clusters]
+    verbs: [get, create, patch, delete]
+  - nonResourceURLs: [/apis/postgresql.cnpg.io/v1]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: hypershell-cnpg-database-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: hypershell-cnpg-database-controller
+subjects:
+  - kind: ServiceAccount
+    name: cnpg-database-controller
+    namespace: hypershell-control-plane

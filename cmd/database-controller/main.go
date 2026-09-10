@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"log"
 	"os"
 	"os/signal"
@@ -23,7 +24,24 @@ func main() {
 func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
-	provider, err := databasecontroller.NewKubernetes(databasecontroller.KubernetesOptions{ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")})
+	name := os.Getenv("DATABASE_PROVIDER")
+	if name == "" {
+		name = "deployment"
+	}
+	options := databasecontroller.KubernetesOptions{ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")}
+	var provider interface {
+		databasecontroller.Provider
+		Close()
+	}
+	var err error
+	switch name {
+	case "deployment":
+		provider, err = databasecontroller.NewKubernetes(options)
+	case "cnpg":
+		provider, err = databasecontroller.NewCNPG(options)
+	default:
+		return errors.New("database provider is not supported")
+	}
 	if err != nil {
 		return err
 	}
@@ -33,7 +51,7 @@ func run() error {
 		return err
 	}
 	defer connection.Close()
-	controller, err := databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), provider)
+	controller, err := databasecontroller.NewForProvider(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), name, provider)
 	if err != nil {
 		return err
 	}

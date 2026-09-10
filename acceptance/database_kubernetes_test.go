@@ -71,6 +71,8 @@ func kubernetesFixture(t *testing.T) *kubeFixture {
 	k.apply(t, map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": meta(name)}, map[string]any{"apiVersion": "v1", "kind": "ServiceAccount", "metadata": map[string]any{"name": name, "namespace": name}},
 		map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRole", "metadata": meta(name), "rules": []any{
 			map[string]any{"apiGroups": []string{""}, "resources": []string{"namespaces", "secrets", "configmaps", "persistentvolumeclaims", "services"}, "verbs": []string{"get", "create", "patch", "delete"}},
+			map[string]any{"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get"}},
+			map[string]any{"apiGroups": []string{"postgresql.cnpg.io"}, "resources": []string{"clusters"}, "verbs": []string{"get", "create", "patch", "delete"}},
 			map[string]any{"apiGroups": []string{"apps"}, "resources": []string{"deployments"}, "verbs": []string{"get", "create", "patch"}},
 			map[string]any{"apiGroups": []string{"cert-manager.io"}, "resources": []string{"certificates"}, "verbs": []string{"get", "create", "patch"}},
 		}}, map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRoleBinding", "metadata": meta(name), "roleRef": map[string]any{"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": name}, "subjects": []any{map[string]any{"kind": "ServiceAccount", "name": name, "namespace": name}}},
@@ -109,7 +111,7 @@ func startDatabaseController(t *testing.T, binary string, k *kubeFixture, addres
 		t.Fatal(err)
 	}
 	cmd := exec.Command(binary)
-	cmd.Env = append(os.Environ(), "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+file,
+	cmd.Env = append(os.Environ(), "DATABASE_PROVIDER=deployment", "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+file,
 		"HYPERSHELL_KUBERNETES_URL="+k.options.ServerURL, "HYPERSHELL_KUBERNETES_CA_FILE="+k.options.CAFile, "HYPERSHELL_KUBERNETES_TOKEN_FILE="+k.options.TokenFile, "HYPERSHELL_DATABASE_CLUSTER_ISSUER="+k.options.ClusterIssuer)
 	cmd.Env = append(cmd.Env, settings...)
 	if raceEnabled {

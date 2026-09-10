@@ -153,7 +153,8 @@ cleanup does not hold other databases behind it.
 See [Kubernetes API concurrency rules](https://kubernetes.io/docs/reference/using-api/api-concepts/).
 
 This result covers deployment databases on one configured Kubernetes cluster.
-It does not implement CNPG provisioning, backups, restore, database upgrades,
+The separate [CNPG workflow](cnpg-database.md) covers a shared operator-managed
+Cluster. This deployment test does not cover backups, restore, database upgrades,
 OpenShift UID allocation, Gateway workload deployment, network policy enforcement,
 or multiple controller coordination. Migration from namespaces owned by the
 reference controller also remains open. It does not establish a production
