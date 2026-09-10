@@ -1,4 +1,4 @@
-The compiler pin is `021b2d1986adddeaace234feeae9feda5f72d8d1`.
+The compiler pin is `9b956f98b1c5a45071db4e4fdd5851ebd53befa8`.
 STEGO now checks resolved component inputs before it renders any component.
 The application defines its registry composition, factory paths, and protobuf
 contracts. The common check and input snapshots belong to STEGO.
@@ -43,7 +43,7 @@ generation preserved all 90 output, state, and dependency hashes. The full
 application and Kubernetes suites were not repeated locally for this metadata
 update; remote CI runs those gates after the commit.
 
-The current pin adds shared Go package-name and import-path checks. Twelve
+The previous pin added shared Go package-name and import-path checks. Twelve
 library generators check derived package names; the CLI keeps valid package
 container paths such as `cli-tools`. Protobuf checks its actual resolved Go
 mapping. Controller and protobuf build tests preserve valid nested and
@@ -66,3 +66,22 @@ For the package-name update, contract tests passed under race detection in
 the current clean compiler pin against the executable and saved state. Vet
 passed. Repeated pinned generation preserved all 90 hashes. The full application
 and Kubernetes suites were not repeated locally for this compiler metadata update.
+
+The current pin also checks build-target syntax and conflicting derived slot
+names before rendering. Project settings and assembly use the same target
+check. Compiler regressions require all generators to remain unused on these
+failures. Command regressions preserve existing files. These common checks
+belong to STEGO; this application needs no local check or runtime change.
+The compiler race suite passed with PostgreSQL required, and vet passed.
+Dependency minimum and generated wiring checks remain open in the C1 audit.
+
+For this assembly input update, contract tests passed under race detection in
+1.613 seconds. The offline CLI version test passed in 1.637 seconds. Vet passed.
+Regeneration changed only saved compiler state and the CLI compiler build
+record among 90 output, state, and dependency files. Repeated generation
+preserved all 90 hashes. The full application and Kubernetes gates were not
+repeated locally for this compiler metadata update; remote CI runs those gates.
+
+The earlier grant-condition run 34520447297 has passed all six remote jobs.
+This result covers its application, database, Gateway, CNPG, and sandbox checks.
+It does not certify the remaining reconciliation or production readiness gaps.
