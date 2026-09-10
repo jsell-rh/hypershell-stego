@@ -322,3 +322,8 @@ Five workflows check failure, event delivery, API restart, and recovery.
 [Database recovery](acceptance/database-recovery.md) now uses one generated
 cursor stream for live and retained deleted IDs. Public list shapes remain
 unchanged. The controller checks the replay scope before it accepts any IDs.
+
+The compiler now protects [generated Go symbol bindings](https://github.com/jsell-rh/stego/blob/main/specs/symbol-bindings.md),
+including import names, constructor names, and fill aliases. The pin upgrade
+preserved all 74 generated and dependency file hashes. Contract race tests and
+the application build passed with the new pin.
