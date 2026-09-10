@@ -87,7 +87,7 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 	key, settings := issuer(t)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), "OTEL_EXPORTER_OTLP_ENDPOINT=https://"+listener.Addr().String(), "OTEL_EXPORTER_OTLP_CERTIFICATE="+cert.config.CAFile, "OTEL_SERVICE_NAME=hypershell-api-server", "OTEL_TRACES_SAMPLER_ARG=1")
 	binary := buildApplication(t)
-	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, brokerConfig, settings...)
+	stop, httpAddress, grpcAddress, _, processLogs := startBothWithLogs(t, binary, f.dsn, brokerConfig, settings...)
 	defer func() { stop() }()
 	client, connection := grpcClient(t, grpcAddress, cert)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -100,6 +100,7 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 	private := []string{owner, creator, "private-signal-user", "private-signal-state", "private-signal-gateway"}
 	spans := map[string]*tracepb.Span{}
 	records := map[string]*logpb.LogRecord{}
+	serviceEvents := map[string]int{}
 	observedMetrics := map[string]*metricpb.Metric{}
 	checkPrivate := func(message proto.Message) {
 		t.Helper()
@@ -134,6 +135,13 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 				check(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeLogs {
 					for _, record := range scope.LogRecords {
+						if scope.Scope.Name == "stego/service" {
+							if len(record.Attributes) != 0 || len(record.TraceId) != 0 || len(record.SpanId) != 0 {
+								t.Fatal("runtime event exposed request fields")
+							}
+							serviceEvents[record.EventName]++
+							continue
+						}
 						records[hex.EncodeToString(record.TraceId)] = record
 					}
 				}
@@ -226,10 +234,11 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 	awaitCorrelation(watchID)
 	connection.Close()
 	stop()
+	checkRuntimeLogs(t, processLogs(), "hypershell-api-server", private...)
 	timer = time.NewTimer(5 * time.Second)
 	for {
 		metric := observedMetrics["rpc.server.active_requests"]
-		if metric != nil && len(metric.GetSum().DataPoints) == 1 && metric.GetSum().DataPoints[0].GetAsInt() == 0 {
+		if metric != nil && len(metric.GetSum().DataPoints) == 1 && metric.GetSum().DataPoints[0].GetAsInt() == 0 && serviceEvents["telemetry.runtime.started"] == 1 && serviceEvents["telemetry.runtime.stopped"] == 1 {
 			break
 		}
 		receive(timer.C)
@@ -249,7 +258,7 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 		}
 	}
 	observedMetrics = map[string]*metricpb.Metric{}
-	stop, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, brokerConfig, settings...)
+	stop, httpAddress, grpcAddress, _, processLogs = startBothWithLogs(t, binary, f.dsn, brokerConfig, settings...)
 	client, connection = grpcClient(t, grpcAddress, cert)
 	defer connection.Close()
 	const restartID = "66666666666666666666666666666666"
@@ -270,7 +279,7 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 				}
 			}
 		}
-		if found {
+		if found && serviceEvents["telemetry.runtime.started"] == 2 {
 			break
 		}
 		receive(timer.C)
@@ -283,4 +292,5 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 	if time.Since(started) > 8*time.Second {
 		t.Fatal("collector failure blocked shutdown")
 	}
+	checkRuntimeLogs(t, processLogs(), "hypershell-api-server", private...)
 }

@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"errors"
 	"io"
-	"log/slog"
 	"math"
 	"net/http"
 	"net/url"
@@ -42,24 +41,44 @@ const ShutdownTimeout = 3 * time.Second
 const defaultService = "hypershell"
 
 // Runtime owns its tracer provider and export connection. It does not change
-// global OpenTelemetry providers. Missing collector configuration disables it.
+// global OpenTelemetry providers. Missing collector configuration disables export.
+// Local service logging remains enabled.
 type Runtime struct {
-	signals    requestSignals
-	grpcTracer trace.Tracer
-	provider   *sdktrace.TracerProvider
-	tracer     trace.Tracer
-	connection *grpc.ClientConn
-	once       sync.Once
-	closed     atomic.Bool
-	failures   atomic.Uint64
+	service                    serviceLogs
+	signals                    requestSignals
+	grpcTracer                 trace.Tracer
+	provider                   *sdktrace.TracerProvider
+	tracer                     trace.Tracer
+	connection                 *grpc.ClientConn
+	once                       sync.Once
+	closed                     atomic.Bool
+	failures, shutdownFailures atomic.Uint64
 }
 
 // NewTracingRuntime gives compiler assembly a distinct dependency name.
-func NewTracingRuntime() (*Runtime, error) { return NewRuntime() }
-func NewRuntime() (*Runtime, error) {
+func NewTracingRuntime() (*Runtime, error) {
+	runtime, err := NewRuntime()
+	if err != nil {
+		return nil, err
+	}
+	runtime.service.lifecycle = true
+	runtime.LogServiceEvent(context.Background(), RuntimeStarted)
+	return runtime, nil
+}
+func NewRuntime() (*Runtime, error) { return newRuntime(os.Stderr) }
+func newRuntime(localOutput io.Writer) (*Runtime, error) {
+	service := os.Getenv("OTEL_SERVICE_NAME")
+	if service == "" {
+		service = defaultService
+	}
+	if len(service) == 0 || len(service) > 128 || strings.Trim(service, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-") != "" {
+		return nil, errors.New("invalid telemetry service name")
+	}
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		return &Runtime{}, nil
+		runtime := &Runtime{}
+		runtime.initServiceLogs(service, localOutput)
+		return runtime, nil
 	}
 	allowed := map[string]bool{"OTEL_EXPORTER_OTLP_ENDPOINT": true, "OTEL_EXPORTER_OTLP_PROTOCOL": true, "OTEL_EXPORTER_OTLP_CERTIFICATE": true, "OTEL_SERVICE_NAME": true, "OTEL_TRACES_SAMPLER_ARG": true, "OTEL_METRICS_EXPORTER": true, "OTEL_LOGS_EXPORTER": true, "OTEL_METRIC_EXPORT_INTERVAL": true}
 	for _, entry := range os.Environ() {
@@ -78,13 +97,6 @@ func NewRuntime() (*Runtime, error) {
 	protocol := os.Getenv("OTEL_EXPORTER_OTLP_PROTOCOL")
 	if protocol != "" && protocol != "grpc" {
 		return nil, errors.New("trace exporter requires the grpc protocol")
-	}
-	service := os.Getenv("OTEL_SERVICE_NAME")
-	if service == "" {
-		service = defaultService
-	}
-	if len(service) == 0 || len(service) > 128 || strings.Trim(service, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-") != "" {
-		return nil, errors.New("invalid trace service name")
 	}
 	ratio := 0.1
 	if value := os.Getenv("OTEL_TRACES_SAMPLER_ARG"); value != "" {
@@ -118,6 +130,7 @@ func NewRuntime() (*Runtime, error) {
 		runtime.Close()
 		return nil, err
 	}
+	runtime.initServiceLogs(service, localOutput)
 	return runtime, nil
 }
 func traceRoots(name string) (*x509.CertPool, error) {
@@ -168,7 +181,12 @@ func (e *safeExporter) ExportSpans(ctx context.Context, spans []sdktrace.ReadOnl
 func (r *Runtime) ExportFailures() uint64 { return r.failures.Load() }
 func (r *Runtime) Close() {
 	r.once.Do(func() {
+		r.service.mu.Lock()
 		r.closed.Store(true)
+		if r.service.lifecycle {
+			r.emitServiceEvent(context.Background(), RuntimeStopped)
+		}
+		r.service.mu.Unlock()
 		ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 		defer cancel()
 		var group sync.WaitGroup
@@ -177,7 +195,7 @@ func (r *Runtime) Close() {
 			go func() {
 				defer group.Done()
 				if err := shutdown(ctx); err != nil {
-					slog.Warn("telemetry shutdown did not complete")
+					r.shutdownFailures.Add(1)
 				}
 			}()
 		}
@@ -191,11 +209,25 @@ func (r *Runtime) Close() {
 			closeProvider(r.signals.logs.Shutdown)
 		}
 		group.Wait()
+		if r.service.local != nil {
+			if r.shutdownFailures.Load() > 0 {
+				r.service.local.enqueue(localRecord{Time: time.Now(), Severity: "WARN", Service: r.service.service, Event: "telemetry.shutdown.incomplete", Message: "Telemetry shutdown did not complete"})
+			}
+			close(r.service.local.queue)
+			select {
+			case <-r.service.local.done:
+			case <-ctx.Done():
+				r.shutdownFailures.Add(1)
+			}
+		}
 		if r.connection != nil {
 			_ = r.connection.Close()
 		}
 	})
 }
+
+// ShutdownFailures counts provider shutdown errors and local output timeouts.
+func (r *Runtime) ShutdownFailures() uint64 { return r.shutdownFailures.Load() }
 
 // Handler preserves the next handler when tracing is disabled. Enabled tracing
 // exports method, registered route pattern, and status. It does not record

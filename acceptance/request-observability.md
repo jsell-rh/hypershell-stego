@@ -1,4 +1,6 @@
-The compiler pin is `f89bf13e7a65c1a6224a31704cec858c8d254ddf`.
+This request-signal gate first used compiler
+`f89bf13e7a65c1a6224a31704cec858c8d254ddf`. The later
+[service logging gate](service-logging.md) records the current pin and checks.
 
 Hypershell uses the shared STEGO request observability runtime for HTTP and gRPC.
 Component `otel-tracing` 1.2.0 adds OpenTelemetry request logs and metrics to the

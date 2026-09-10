@@ -13,6 +13,8 @@ The [HTTP tracing workflow](http-tracing.md) checks generated spans, private-dat
 exclusion, trace continuation, API restart, and progress after collector loss.
 The later [request observability workflow](request-observability.md) checks
 correlated OTLP logs, metrics, and traces through the same generated runtime.
+The [service logging workflow](service-logging.md) checks generated local and
+exported runtime events, including startup without a collector.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway

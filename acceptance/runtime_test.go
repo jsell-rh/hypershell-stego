@@ -155,6 +155,10 @@ func applicationEnvironment(t testing.TB, dsn string, config Config, settings ..
 }
 
 func startBothManaged(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string, func() string) {
+	stop, httpAddress, grpcAddress, waitFailure, _ := startBothWithLogs(t, binary, dsn, config, settings...)
+	return stop, httpAddress, grpcAddress, waitFailure
+}
+func startBothWithLogs(t testing.TB, binary, dsn string, config Config, settings ...string) (func(), string, string, func() string, func() string) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
@@ -221,7 +225,7 @@ func startBothManaged(t testing.TB, binary, dsn string, config Config, settings 
 			return ""
 		}
 	}
-	return stop, httpAddress, grpcAddress, waitFailure
+	return stop, httpAddress, grpcAddress, waitFailure, output.String
 }
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	return readGatewayEvent(t, consumer, id, "Create", "gateway.created")
