@@ -1,10 +1,12 @@
 syntax = "proto3";
 package hypershell.controlplane.v1;
 import "hypershell/v1/gateways.proto";
+import "hypershell/controlplane/v1/database_cleanup.proto";
 
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc GetGatewayCleanupSummary(GetGatewayCleanupSummaryRequest) returns (CleanupSummary);
  rpc ObserveGatewayCleanup(ObserveGatewayCleanupRequest) returns (ObserveGatewayCleanupResponse);
  rpc SetObservedSandboxCount(SetObservedSandboxCountRequest) returns (SetObservedSandboxCountResponse);
  rpc ListGatewayReconcileIDs(ListGatewayReconcileIDsRequest) returns (ListGatewayReconcileIDsResponse);
@@ -69,3 +71,5 @@ message ScanGatewayIdentityUsersResponse {
  repeated GatewayIdentityUserReference references = 3;
  bool has_more = 4;
 }
+
+message GetGatewayCleanupSummaryRequest { string owner = 1; string target = 2; }

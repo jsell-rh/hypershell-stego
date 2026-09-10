@@ -1,9 +1,11 @@
 syntax = "proto3";
 package hypershell.controlplane.v1;
+import "google/protobuf/timestamp.proto";
 
 // Cleanup observations require a configured controller and an exact revision.
 // The retained read supplies the revision before provider work.
 service DatabaseCleanupService {
+ rpc GetDatabaseCleanupSummary(GetDatabaseCleanupSummaryRequest) returns (CleanupSummary);
  rpc ObserveDatabaseCleanup(ObserveDatabaseCleanupRequest) returns (ObserveDatabaseCleanupResponse);
 }
 message ObserveDatabaseCleanupRequest {
@@ -12,3 +14,14 @@ message ObserveDatabaseCleanupRequest {
  bool complete = 3;
 }
 message ObserveDatabaseCleanupResponse {}
+
+// The response identifies the authorized scope and contains no resource IDs.
+message GetDatabaseCleanupSummaryRequest { string owner = 1; string provider = 2; }
+message CleanupSummary {
+ string owner = 1;
+ string target = 2;
+ string provider = 3;
+ int64 pending = 4;
+ google.protobuf.Timestamp oldest_pending = 5;
+ google.protobuf.Timestamp observed_at = 6;
+}

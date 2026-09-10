@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -55,12 +56,16 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
 			Metrics:  metrics,
+			Cleanup:  cleanupmetrics.Database(c.cleanup, "deployment"),
 			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
 				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 			},
 			Observe: func(event runtime.Event) {
+				if event.Phase == "metrics_failed" {
+					slog.Warn("cleanup summary is unavailable")
+				}
 				if event.Phase == "reconnect" {
 					slog.Warn("database controller will reconnect")
 				}

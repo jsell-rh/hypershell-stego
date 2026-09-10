@@ -11,6 +11,7 @@ package v1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -119,17 +120,166 @@ func (*ObserveDatabaseCleanupResponse) Descriptor() ([]byte, []int) {
 	return file_hypershell_controlplane_v1_database_cleanup_proto_rawDescGZIP(), []int{1}
 }
 
+// The response identifies the authorized scope and contains no resource IDs.
+type GetDatabaseCleanupSummaryRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Owner         string                 `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Provider      string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDatabaseCleanupSummaryRequest) Reset() {
+	*x = GetDatabaseCleanupSummaryRequest{}
+	mi := &file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDatabaseCleanupSummaryRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDatabaseCleanupSummaryRequest) ProtoMessage() {}
+
+func (x *GetDatabaseCleanupSummaryRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDatabaseCleanupSummaryRequest.ProtoReflect.Descriptor instead.
+func (*GetDatabaseCleanupSummaryRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_database_cleanup_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GetDatabaseCleanupSummaryRequest) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+func (x *GetDatabaseCleanupSummaryRequest) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+type CleanupSummary struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Owner         string                 `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
+	Target        string                 `protobuf:"bytes,2,opt,name=target,proto3" json:"target,omitempty"`
+	Provider      string                 `protobuf:"bytes,3,opt,name=provider,proto3" json:"provider,omitempty"`
+	Pending       int64                  `protobuf:"varint,4,opt,name=pending,proto3" json:"pending,omitempty"`
+	OldestPending *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=oldest_pending,json=oldestPending,proto3" json:"oldest_pending,omitempty"`
+	ObservedAt    *timestamppb.Timestamp `protobuf:"bytes,6,opt,name=observed_at,json=observedAt,proto3" json:"observed_at,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *CleanupSummary) Reset() {
+	*x = CleanupSummary{}
+	mi := &file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *CleanupSummary) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*CleanupSummary) ProtoMessage() {}
+
+func (x *CleanupSummary) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use CleanupSummary.ProtoReflect.Descriptor instead.
+func (*CleanupSummary) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_database_cleanup_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *CleanupSummary) GetOwner() string {
+	if x != nil {
+		return x.Owner
+	}
+	return ""
+}
+
+func (x *CleanupSummary) GetTarget() string {
+	if x != nil {
+		return x.Target
+	}
+	return ""
+}
+
+func (x *CleanupSummary) GetProvider() string {
+	if x != nil {
+		return x.Provider
+	}
+	return ""
+}
+
+func (x *CleanupSummary) GetPending() int64 {
+	if x != nil {
+		return x.Pending
+	}
+	return 0
+}
+
+func (x *CleanupSummary) GetOldestPending() *timestamppb.Timestamp {
+	if x != nil {
+		return x.OldestPending
+	}
+	return nil
+}
+
+func (x *CleanupSummary) GetObservedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.ObservedAt
+	}
+	return nil
+}
+
 var File_hypershell_controlplane_v1_database_cleanup_proto protoreflect.FileDescriptor
 
 const file_hypershell_controlplane_v1_database_cleanup_proto_rawDesc = "" +
 	"\n" +
-	"1hypershell/controlplane/v1/database_cleanup.proto\x12\x1ahypershell.controlplane.v1\"a\n" +
+	"1hypershell/controlplane/v1/database_cleanup.proto\x12\x1ahypershell.controlplane.v1\x1a\x1fgoogle/protobuf/timestamp.proto\"a\n" +
 	"\x1dObserveDatabaseCleanupRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05owner\x18\x02 \x01(\tR\x05owner\x12\x1a\n" +
 	"\bcomplete\x18\x03 \x01(\bR\bcomplete\" \n" +
-	"\x1eObserveDatabaseCleanupResponse2\xaa\x01\n" +
-	"\x16DatabaseCleanupService\x12\x8f\x01\n" +
+	"\x1eObserveDatabaseCleanupResponse\"T\n" +
+	" GetDatabaseCleanupSummaryRequest\x12\x14\n" +
+	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x1a\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\"\xf4\x01\n" +
+	"\x0eCleanupSummary\x12\x14\n" +
+	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x16\n" +
+	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1a\n" +
+	"\bprovider\x18\x03 \x01(\tR\bprovider\x12\x18\n" +
+	"\apending\x18\x04 \x01(\x03R\apending\x12A\n" +
+	"\x0eoldest_pending\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\roldestPending\x12;\n" +
+	"\vobserved_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
+	"observedAt2\xb2\x02\n" +
+	"\x16DatabaseCleanupService\x12\x85\x01\n" +
+	"\x19GetDatabaseCleanupSummary\x12<.hypershell.controlplane.v1.GetDatabaseCleanupSummaryRequest\x1a*.hypershell.controlplane.v1.CleanupSummary\x12\x8f\x01\n" +
 	"\x16ObserveDatabaseCleanup\x129.hypershell.controlplane.v1.ObserveDatabaseCleanupRequest\x1a:.hypershell.controlplane.v1.ObserveDatabaseCleanupResponseBPZNgithub.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1b\x06proto3"
 
 var (
@@ -144,19 +294,26 @@ func file_hypershell_controlplane_v1_database_cleanup_proto_rawDescGZIP() []byte
 	return file_hypershell_controlplane_v1_database_cleanup_proto_rawDescData
 }
 
-var file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes = make([]protoimpl.MessageInfo, 2)
+var file_hypershell_controlplane_v1_database_cleanup_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_hypershell_controlplane_v1_database_cleanup_proto_goTypes = []any{
-	(*ObserveDatabaseCleanupRequest)(nil),  // 0: hypershell.controlplane.v1.ObserveDatabaseCleanupRequest
-	(*ObserveDatabaseCleanupResponse)(nil), // 1: hypershell.controlplane.v1.ObserveDatabaseCleanupResponse
+	(*ObserveDatabaseCleanupRequest)(nil),    // 0: hypershell.controlplane.v1.ObserveDatabaseCleanupRequest
+	(*ObserveDatabaseCleanupResponse)(nil),   // 1: hypershell.controlplane.v1.ObserveDatabaseCleanupResponse
+	(*GetDatabaseCleanupSummaryRequest)(nil), // 2: hypershell.controlplane.v1.GetDatabaseCleanupSummaryRequest
+	(*CleanupSummary)(nil),                   // 3: hypershell.controlplane.v1.CleanupSummary
+	(*timestamppb.Timestamp)(nil),            // 4: google.protobuf.Timestamp
 }
 var file_hypershell_controlplane_v1_database_cleanup_proto_depIdxs = []int32{
-	0, // 0: hypershell.controlplane.v1.DatabaseCleanupService.ObserveDatabaseCleanup:input_type -> hypershell.controlplane.v1.ObserveDatabaseCleanupRequest
-	1, // 1: hypershell.controlplane.v1.DatabaseCleanupService.ObserveDatabaseCleanup:output_type -> hypershell.controlplane.v1.ObserveDatabaseCleanupResponse
-	1, // [1:2] is the sub-list for method output_type
-	0, // [0:1] is the sub-list for method input_type
-	0, // [0:0] is the sub-list for extension type_name
-	0, // [0:0] is the sub-list for extension extendee
-	0, // [0:0] is the sub-list for field type_name
+	4, // 0: hypershell.controlplane.v1.CleanupSummary.oldest_pending:type_name -> google.protobuf.Timestamp
+	4, // 1: hypershell.controlplane.v1.CleanupSummary.observed_at:type_name -> google.protobuf.Timestamp
+	2, // 2: hypershell.controlplane.v1.DatabaseCleanupService.GetDatabaseCleanupSummary:input_type -> hypershell.controlplane.v1.GetDatabaseCleanupSummaryRequest
+	0, // 3: hypershell.controlplane.v1.DatabaseCleanupService.ObserveDatabaseCleanup:input_type -> hypershell.controlplane.v1.ObserveDatabaseCleanupRequest
+	3, // 4: hypershell.controlplane.v1.DatabaseCleanupService.GetDatabaseCleanupSummary:output_type -> hypershell.controlplane.v1.CleanupSummary
+	1, // 5: hypershell.controlplane.v1.DatabaseCleanupService.ObserveDatabaseCleanup:output_type -> hypershell.controlplane.v1.ObserveDatabaseCleanupResponse
+	4, // [4:6] is the sub-list for method output_type
+	2, // [2:4] is the sub-list for method input_type
+	2, // [2:2] is the sub-list for extension type_name
+	2, // [2:2] is the sub-list for extension extendee
+	0, // [0:2] is the sub-list for field type_name
 }
 
 func init() { file_hypershell_controlplane_v1_database_cleanup_proto_init() }
@@ -170,7 +327,7 @@ func file_hypershell_controlplane_v1_database_cleanup_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypershell_controlplane_v1_database_cleanup_proto_rawDesc), len(file_hypershell_controlplane_v1_database_cleanup_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   2,
+			NumMessages:   4,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

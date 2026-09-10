@@ -29,7 +29,10 @@ type KeyedSource[K ~string] struct {
 
 type KeyedOptions struct {
 	// Metrics is optional and must belong to one active controller.
-	Metrics  *Metrics
+	Metrics *Metrics
+	// Cleanup is optional. With Metrics enabled, it runs independently of scans
+	// after each ResyncInterval, with Timeout applied to each read.
+	Cleanup  func(context.Context) (CleanupSample, error)
 	Capacity int
 	// Workers bounds concurrent actions for distinct keys. Zero selects one.
 	Workers        int
@@ -312,6 +315,7 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 		return err
 	}
 	defer options.Metrics.detach()
+	options.Metrics.enableCleanup(options.Cleanup != nil)
 	ctx, cancel := context.WithCancel(parent)
 	var workers sync.WaitGroup
 	defer func() { cancel(); workers.Wait() }()
@@ -327,8 +331,38 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 	if count == 0 {
 		count = 1
 	}
-	failures := make(chan error, count+2)
+	failures := make(chan error, count+3)
 	fail := func(err error) { failures <- err; cancel() }
+	if options.Metrics != nil && options.Cleanup != nil {
+		workers.Go(func() {
+			for ctx.Err() == nil {
+				operation, stop := context.WithTimeout(ctx, options.Timeout)
+				sample, err := options.Cleanup(operation)
+				if err == nil {
+					err = operation.Err()
+				}
+				stop()
+				if ctx.Err() != nil {
+					return
+				}
+				err = options.Metrics.recordCleanup(sample, err)
+				if err != nil && (errors.Is(err, ErrMetricsContract) || options.Terminal(err)) {
+					fail(err)
+					return
+				}
+				if err != nil {
+					notice("metrics_failed", err)
+				}
+				timer := time.NewTimer(options.ResyncInterval)
+				select {
+				case <-ctx.Done():
+					timer.Stop()
+					return
+				case <-timer.C:
+				}
+			}
+		})
+	}
 	workers.Go(func() {
 		err := source.Observe(ctx, &KeySink[K]{queue: q})
 		if err == nil {

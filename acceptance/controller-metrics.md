@@ -62,3 +62,8 @@ This local check uses real PostgreSQL, generated REST and gRPC servers, and a
 Kafka protocol fixture. The provider is controlled by the test so that retry and
 blocked work are deterministic. It does not establish a full application suite
 pass or repeat the real Kubernetes workload gates for this change.
+
+Controller 1.10.0 adds [cleanup summaries](cleanup-summaries.md) through a separate
+sampler. Pending counts and the oldest deletion timestamp cover retained work
+outside the current queue. Availability and sample-time metrics identify failed
+or old reads. These metrics do not replace durable resource conditions.

@@ -379,3 +379,8 @@ provide optional [controller metrics](acceptance/controller-metrics.md). Set
 `HYPERSHELL_METRICS_ADDR` to a literal loopback address and available port. STEGO
 supplies the collector and listener. The endpoint reports queue use, action
 outcomes, retries, and duration without resource IDs or private error labels.
+
+[Cleanup summaries](acceptance/cleanup-summaries.md) report pending deleted
+resources and the oldest deletion time for an authorized owner and target.
+The generated sampler runs independently of recovery scans and reports failed
+reads as unavailable. Summary responses and metrics contain no resource IDs.

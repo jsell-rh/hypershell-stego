@@ -21,7 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DatabaseCleanupService_ObserveDatabaseCleanup_FullMethodName = "/hypershell.controlplane.v1.DatabaseCleanupService/ObserveDatabaseCleanup"
+	DatabaseCleanupService_GetDatabaseCleanupSummary_FullMethodName = "/hypershell.controlplane.v1.DatabaseCleanupService/GetDatabaseCleanupSummary"
+	DatabaseCleanupService_ObserveDatabaseCleanup_FullMethodName    = "/hypershell.controlplane.v1.DatabaseCleanupService/ObserveDatabaseCleanup"
 )
 
 // DatabaseCleanupServiceClient is the client API for DatabaseCleanupService service.
@@ -31,6 +32,7 @@ const (
 // Cleanup observations require a configured controller and an exact revision.
 // The retained read supplies the revision before provider work.
 type DatabaseCleanupServiceClient interface {
+	GetDatabaseCleanupSummary(ctx context.Context, in *GetDatabaseCleanupSummaryRequest, opts ...grpc.CallOption) (*CleanupSummary, error)
 	ObserveDatabaseCleanup(ctx context.Context, in *ObserveDatabaseCleanupRequest, opts ...grpc.CallOption) (*ObserveDatabaseCleanupResponse, error)
 }
 
@@ -40,6 +42,16 @@ type databaseCleanupServiceClient struct {
 
 func NewDatabaseCleanupServiceClient(cc grpc.ClientConnInterface) DatabaseCleanupServiceClient {
 	return &databaseCleanupServiceClient{cc}
+}
+
+func (c *databaseCleanupServiceClient) GetDatabaseCleanupSummary(ctx context.Context, in *GetDatabaseCleanupSummaryRequest, opts ...grpc.CallOption) (*CleanupSummary, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CleanupSummary)
+	err := c.cc.Invoke(ctx, DatabaseCleanupService_GetDatabaseCleanupSummary_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *databaseCleanupServiceClient) ObserveDatabaseCleanup(ctx context.Context, in *ObserveDatabaseCleanupRequest, opts ...grpc.CallOption) (*ObserveDatabaseCleanupResponse, error) {
@@ -59,6 +71,7 @@ func (c *databaseCleanupServiceClient) ObserveDatabaseCleanup(ctx context.Contex
 // Cleanup observations require a configured controller and an exact revision.
 // The retained read supplies the revision before provider work.
 type DatabaseCleanupServiceServer interface {
+	GetDatabaseCleanupSummary(context.Context, *GetDatabaseCleanupSummaryRequest) (*CleanupSummary, error)
 	ObserveDatabaseCleanup(context.Context, *ObserveDatabaseCleanupRequest) (*ObserveDatabaseCleanupResponse, error)
 	mustEmbedUnimplementedDatabaseCleanupServiceServer()
 }
@@ -70,6 +83,9 @@ type DatabaseCleanupServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedDatabaseCleanupServiceServer struct{}
 
+func (UnimplementedDatabaseCleanupServiceServer) GetDatabaseCleanupSummary(context.Context, *GetDatabaseCleanupSummaryRequest) (*CleanupSummary, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetDatabaseCleanupSummary not implemented")
+}
 func (UnimplementedDatabaseCleanupServiceServer) ObserveDatabaseCleanup(context.Context, *ObserveDatabaseCleanupRequest) (*ObserveDatabaseCleanupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ObserveDatabaseCleanup not implemented")
 }
@@ -93,6 +109,24 @@ func RegisterDatabaseCleanupServiceServer(s grpc.ServiceRegistrar, srv DatabaseC
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&DatabaseCleanupService_ServiceDesc, srv)
+}
+
+func _DatabaseCleanupService_GetDatabaseCleanupSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDatabaseCleanupSummaryRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(DatabaseCleanupServiceServer).GetDatabaseCleanupSummary(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: DatabaseCleanupService_GetDatabaseCleanupSummary_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(DatabaseCleanupServiceServer).GetDatabaseCleanupSummary(ctx, req.(*GetDatabaseCleanupSummaryRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _DatabaseCleanupService_ObserveDatabaseCleanup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -120,6 +154,10 @@ var DatabaseCleanupService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hypershell.controlplane.v1.DatabaseCleanupService",
 	HandlerType: (*DatabaseCleanupServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "GetDatabaseCleanupSummary",
+			Handler:    _DatabaseCleanupService_GetDatabaseCleanupSummary_Handler,
+		},
 		{
 			MethodName: "ObserveDatabaseCleanup",
 			Handler:    _DatabaseCleanupService_ObserveDatabaseCleanup_Handler,

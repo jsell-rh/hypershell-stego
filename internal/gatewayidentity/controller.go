@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
@@ -58,12 +59,16 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
 			Metrics:  metrics,
+			Cleanup:  cleanupmetrics.Gateway(c.state, "identity", ""),
 			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
 			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
 				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 			},
 			Observe: func(event runtime.Event) {
+				if event.Phase == "metrics_failed" {
+					slog.Warn("cleanup summary is unavailable")
+				}
 				switch event.Phase {
 				case "watch_started":
 					slog.Info("Gateway identity watch started")

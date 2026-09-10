@@ -24,7 +24,9 @@ import (
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 type blockedCleanupProvider struct {
@@ -151,6 +153,20 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		}
 		event(row.ID, "Delete", "deleted")
 	}
+	if cleanupOwner == "provider" {
+		code, data := requestJSON(t, "POST", root, owner, []byte(`{"name":"separate-provider","provider":"cnpg"}`))
+		var row struct {
+			ID string `json:"id"`
+		}
+		if code != 201 || json.Unmarshal(data, &row) != nil {
+			t.Fatal("create other provider", code, string(data))
+		}
+		event(row.ID, "Create", "created")
+		if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
+			t.Fatal("delete other provider", code)
+		}
+		event(row.ID, "Delete", "deleted")
+	}
 	sort.Strings(ids)
 	awaitQueueEmpty(t, f)
 	stop()
@@ -160,11 +176,38 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	state := control.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 30*time.Second)
 	defer cancel()
+	summaryRead := func(callContext context.Context) (*control.CleanupSummary, error) {
+		if cleanupOwner == "provider" {
+			return control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(callContext, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "deployment"})
+		}
+		return state.GetGatewayCleanupSummary(callContext, &control.GetGatewayCleanupSummaryRequest{Owner: cleanupOwner, Target: target})
+	}
+	initialSummary, err := summaryRead(ctx)
+	if err != nil || initialSummary.GetPending() != 2 || initialSummary.GetOldestPending() == nil || initialSummary.GetObservedAt() == nil {
+		t.Fatal("retained cleanup summary after restart", initialSummary, err)
+	}
+	deniedContext := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+owner))
+	if _, err := summaryRead(deniedContext); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("ordinary caller read cleanup summary", err)
+	}
+	if cleanupOwner == "provider" {
+		other, err := control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(ctx, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "cnpg"})
+		if err != nil || other.GetPending() != 1 {
+			t.Fatal("provider summary lost its scope", other, err)
+		}
+	} else {
+		otherOwner, otherTarget := "workload", f.cluster
+		if cleanupOwner == "workload" {
+			otherOwner, otherTarget = "identity", ""
+		}
+		if _, err := state.GetGatewayCleanupSummary(ctx, &control.GetGatewayCleanupSummaryRequest{Owner: otherOwner, Target: otherTarget}); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("summary bypassed owner grant", err)
+		}
+	}
 	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{}), transient: true}
 	var controller interface {
 		RunWithMetrics(context.Context, *runtime.Metrics) error
 	}
-	var err error
 	if cleanupOwner == "provider" {
 		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), &blockedDatabaseCleanupProvider{provider})
 	} else if cleanupOwner == "identity" {
@@ -251,7 +294,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	metricsDeadline := time.Now().Add(time.Second)
 	for {
 		snapshot := metrics.Snapshot()
-		if snapshot.Running && snapshot.Queue.Active >= 1 && snapshot.Failed >= 1 && snapshot.Retries >= 1 && snapshot.Succeeded >= 1 {
+		if snapshot.Running && snapshot.Queue.Active >= 1 && snapshot.Failed >= 1 && snapshot.Retries >= 1 && snapshot.Succeeded >= 1 && snapshot.CleanupEnabled && snapshot.CleanupAvailable && snapshot.CleanupPending >= 1 && !snapshot.CleanupOldest.IsZero() {
 			break
 		}
 		if time.Now().After(metricsDeadline) {
@@ -269,7 +312,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if readErr != nil || response.StatusCode != 200 {
 		t.Fatal("controller metrics response", readErr, response.StatusCode)
 	}
-	for _, metric := range []string{"stego_controller_running", "stego_controller_active_keys", "stego_controller_retries_total", `stego_controller_actions_total{outcome="failure"}`, `stego_controller_actions_total{outcome="success"}`} {
+	for _, metric := range []string{"stego_controller_running", "stego_controller_active_keys", "stego_controller_retries_total", "stego_controller_cleanup_enabled", "stego_controller_cleanup_available", "stego_controller_cleanup_pending_resources", `stego_controller_actions_total{outcome="failure"}`, `stego_controller_actions_total{outcome="success"}`} {
 		found := false
 		for _, line := range strings.Split(string(data), "\n") {
 			if raw, ok := strings.CutPrefix(line, metric+" "); ok {
@@ -289,9 +332,17 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 			t.Fatal("metrics exposed application data")
 		}
 	}
+	pendingSummary, err := summaryRead(ctx)
+	if err != nil || pendingSummary.GetPending() != 1 || pendingSummary.GetOldestPending() == nil {
+		t.Fatal("completed cleanup stayed pending in summary", pendingSummary, err)
+	}
 	close(provider.release)
 	awaitComplete(ids[0])
 	event(ids[0], "Delete", "deleted")
+	finishedSummary, err := summaryRead(ctx)
+	if err != nil || finishedSummary.GetPending() != 0 || finishedSummary.GetOldestPending() != nil {
+		t.Fatal("finished cleanup summary", finishedSummary, err)
+	}
 	if provider.overlap.Load() {
 		t.Fatal("one resource had concurrent provider actions")
 	}
