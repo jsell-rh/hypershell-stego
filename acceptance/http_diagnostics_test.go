@@ -26,6 +26,19 @@ import (
 // The overlay adds a fault only to this test build. Generated files stay intact.
 func buildApplicationWithHTTPFault(t *testing.T) string {
 	t.Helper()
+	return buildApplicationWithMainOverlay(t, func(source string) string {
+		anchor := "mux := http.NewServeMux()"
+		if strings.Count(source, anchor) != 1 {
+			t.Fatal("generated HTTP setup changed")
+		}
+		return strings.Replace(source, anchor, anchor+`
+ mux.HandleFunc("GET /_test/panic", func(w http.ResponseWriter, r *http.Request) { panic(r.Header.Get("X-Test-Fault")) })
+ `, 1)
+	})
+}
+
+func buildApplicationWithMainOverlay(t *testing.T, transform func(string) string) string {
+	t.Helper()
 	original, err := filepath.Abs("../out/main.go")
 	if err != nil {
 		t.Fatal(err)
@@ -34,13 +47,7 @@ func buildApplicationWithHTTPFault(t *testing.T) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	anchor := "mux := http.NewServeMux()"
-	if strings.Count(string(source), anchor) != 1 {
-		t.Fatal("generated HTTP setup changed")
-	}
-	source = []byte(strings.Replace(string(source), anchor, anchor+`
- mux.HandleFunc("GET /_test/panic", func(w http.ResponseWriter, r *http.Request) { panic(r.Header.Get("X-Test-Fault")) })
- `, 1))
+	source = []byte(transform(string(source)))
 	directory := t.TempDir()
 	replacement := filepath.Join(directory, "main.go")
 	if err := os.WriteFile(replacement, source, 0600); err != nil {

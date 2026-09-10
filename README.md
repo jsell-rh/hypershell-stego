@@ -420,3 +420,8 @@ failure and recovery test verifies rollback, safe output, and event delivery.
 [HTTP diagnostics](acceptance/http-diagnostics.md) use fixed local and OTLP
 events. A test-only panic route verifies safe logs, request signals, and continued
 Gateway access without adding a fault route to the generated application.
+
+[Task abort handling](acceptance/task-abort-handling.md) preserves peer cleanup
+and safe failure output when a registered callback panics or exits without
+return. The Gateway test verifies retained data through REST and gRPC after
+process restart.
