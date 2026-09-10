@@ -45,6 +45,7 @@ const defaultService = "hypershell"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	client                     clientSignals
 	instance                   string
 	resource                   *resource.Resource
 	controllerOnce             sync.Once
@@ -137,6 +138,10 @@ func newRuntime(localOutput io.Writer) (*Runtime, error) {
 	runtime.tracer = runtime.provider.Tracer("stego/http")
 	runtime.grpcTracer = runtime.provider.Tracer("stego/grpc")
 	if err := runtime.initSignals(interval); err != nil {
+		runtime.Close()
+		return nil, err
+	}
+	if err := runtime.initClientSignals(); err != nil {
 		runtime.Close()
 		return nil, err
 	}
@@ -244,14 +249,16 @@ func (r *Runtime) ShutdownFailures() uint64 { return r.shutdownFailures.Load() }
 // request URLs, headers, or bodies.
 func (r *Runtime) Handler(next http.Handler) http.Handler {
 	if r.provider == nil {
-		return next
+		return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
+			next.ServeHTTP(w, request.WithContext(r.Context(request.Context())))
+		})
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, request *http.Request) {
 		if r.closed.Load() {
 			next.ServeHTTP(w, request)
 			return
 		}
-		ctx := request.Context()
+		ctx := r.Context(request.Context())
 		values := request.Header.Values("traceparent")
 		if len(values) == 1 && len(values[0]) == 55 {
 			ctx = (propagation.TraceContext{}).Extract(ctx, propagation.MapCarrier{"traceparent": values[0]})
@@ -352,7 +359,11 @@ func recordRoute(span trace.Span, method, pattern string) {
 // calls finish once, with its final status, after authentication and execution.
 // A stream span ends when the transport ends the stream, including expiry.
 func (r *Runtime) TraceRPC(ctx context.Context, fullMethod string) (context.Context, func(error)) {
-	if r.provider == nil || r.closed.Load() {
+	if r.closed.Load() {
+		return ctx, func(error) {}
+	}
+	ctx = r.Context(ctx)
+	if r.provider == nil {
 		return ctx, func(error) {}
 	}
 	md, _ := metadata.FromIncomingContext(ctx)

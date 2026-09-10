@@ -430,3 +430,7 @@ process restart.
 page and action logs, metrics, and spans for service-account recovery. The
 application test verifies failed revocation and recovery after restart through
 the generated runtime and a TLS OTLP collector.
+
+[Outbound RPC signals](acceptance/rpc-client-observability.md) connect generated
+client calls to the active request or recovery trace. Account recovery verifies
+client logs, duration metrics, and child spans across failure and restart.

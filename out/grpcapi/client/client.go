@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -158,7 +159,10 @@ func New(options Options) (*Client, error) {
 	return &Client{connection: connection, permits: make(chan struct{}, MaxConcurrentCalls), streams: make(chan struct{}, MaxConcurrentStreams)}, nil
 }
 func (c *Client) Close() { _ = c.connection.Close() }
-func (c *Client) Invoke(ctx context.Context, method string, request, response any, options ...grpc.CallOption) error {
+func (c *Client) Invoke(ctx context.Context, method string, request, response any, options ...grpc.CallOption) (result error) {
+	ctx, finish := tracing.TraceClientRPC(ctx, clientMethod(method))
+	result = errClientAborted
+	defer func() { finish(result) }()
 	select {
 	case c.permits <- struct{}{}:
 	default:
@@ -175,14 +179,26 @@ func (c *Client) Invoke(ctx context.Context, method string, request, response an
 // NewStream supports one request and a stream of responses. The caller must
 // call Header or RecvMsg to complete the handshake within CallTimeout.
 // The application must reconnect and read current state after a watch ends.
-func (c *Client) NewStream(parent context.Context, desc *grpc.StreamDesc, method string, options ...grpc.CallOption) (grpc.ClientStream, error) {
+func (c *Client) NewStream(parent context.Context, desc *grpc.StreamDesc, method string, options ...grpc.CallOption) (result grpc.ClientStream, resultError error) {
+	parent, finish := tracing.TraceClientRPC(parent, clientMethod(method))
+	resultError = errClientAborted
+	handedOff := false
+	defer func() {
+		if !handedOff {
+			finish(resultError)
+		}
+	}()
 	if desc == nil || desc.ClientStreams || !desc.ServerStreams {
-		return nil, status.Error(codes.Unimplemented, "RPC client requires a server response stream")
+		err := status.Error(codes.Unimplemented, "RPC client requires a server response stream")
+		finish(err)
+		return nil, err
 	}
 	select {
 	case c.streams <- struct{}{}:
 	default:
-		return nil, status.Error(codes.ResourceExhausted, "RPC stream capacity exceeded")
+		err := status.Error(codes.ResourceExhausted, "RPC stream capacity exceeded")
+		finish(err)
+		return nil, err
 	}
 	lifetime, stopLifetime := context.WithTimeout(parent, StreamTimeout)
 	ctx, cancel := context.WithCancelCause(lifetime)
@@ -190,13 +206,22 @@ func (c *Client) NewStream(parent context.Context, desc *grpc.StreamDesc, method
 	var once sync.Once
 	release := func() { once.Do(func() { handshake.Stop(); cancel(context.Canceled); stopLifetime(); <-c.streams }) }
 	stopRelease := context.AfterFunc(ctx, release)
-	options = append(options, grpc.MaxCallSendMsgSize(MaxRequestBytes), grpc.MaxCallRecvMsgSize(MaxResponseBytes), grpc.MaxRetryRPCBufferSize(0), grpc.WaitForReady(false), grpc.OnFinish(func(error) { release(); stopRelease() }))
+	options = append(options, grpc.MaxCallSendMsgSize(MaxRequestBytes), grpc.MaxCallRecvMsgSize(MaxResponseBytes), grpc.MaxRetryRPCBufferSize(0), grpc.WaitForReady(false), grpc.OnFinish(func(err error) {
+		if context.Cause(ctx) == context.DeadlineExceeded {
+			err = context.DeadlineExceeded
+		}
+		finish(err)
+		release()
+		stopRelease()
+	}))
 	stream, err := c.connection.NewStream(ctx, desc, method, options...)
 	if err != nil {
 		release()
 		stopRelease()
+		finish(err)
 		return nil, err
 	}
+	handedOff = true
 	return &boundedStream{ClientStream: stream, ctx: ctx, handshake: handshake}, nil
 }
 
@@ -295,4 +320,126 @@ func FailureSummary(err error) string {
 		code = codes.Unknown
 	}
 	return "RPC code = " + code.String()
+}
+
+var errClientAborted = status.Error(codes.Internal, "RPC callback did not return")
+
+// Only methods from the compiled contract can become telemetry attributes.
+func clientMethod(method string) string {
+	switch method {
+	case "/hypershell.controlplane.v1.DatabaseCleanupService/GetDatabaseCleanupSummary":
+		return method[1:]
+	case "/hypershell.controlplane.v1.DatabaseCleanupService/ObserveDatabaseCleanup":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCheckpoint":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCycle":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayIdentity":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCycle":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Delete":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/DeleteGateway":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/DeleteManaged":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Disable":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/ListManaged":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Provision":
+		return method[1:]
+	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Reconcile":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/CreateGatewayNetwork":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/DeleteGatewayNetwork":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/GetGatewayNetwork":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/ListGatewayNetworks":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/UpdateGatewayNetwork":
+		return method[1:]
+	case "/hypershell.v1.GatewayNetworkService/WatchGatewayNetworks":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/CreateGatewayRelease":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/DeleteGatewayRelease":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/GetGatewayRelease":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/ListGatewayReleases":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/UpdateGatewayRelease":
+		return method[1:]
+	case "/hypershell.v1.GatewayReleaseService/WatchGatewayReleases":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/AdjustActiveSandboxCount":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/CreateGateway":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/DeleteGateway":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/GetGateway":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/ListGateways":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/SetActiveSandboxCount":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/UpdateGateway":
+		return method[1:]
+	case "/hypershell.v1.GatewayService/WatchGateways":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/CreateManagedCluster":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/DeleteManagedCluster":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/GetManagedCluster":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/ListManagedClusters":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/UpdateManagedCluster":
+		return method[1:]
+	case "/hypershell.v1.ManagedClusterService/WatchManagedClusters":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/CreateManagedDatabase":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/DeleteManagedDatabase":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/GetManagedDatabase":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/ListManagedDatabases":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/UpdateManagedDatabase":
+		return method[1:]
+	case "/hypershell.v1.ManagedDatabaseService/WatchManagedDatabases":
+		return method[1:]
+	case "/hypershell.v1.RoleBindingService/ListRoleBindings":
+		return method[1:]
+	case "/hypershell.v1.RoleBindingService/WatchRoleBindings":
+		return method[1:]
+	default:
+		return "_OTHER"
+	}
 }

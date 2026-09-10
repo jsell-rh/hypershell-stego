@@ -138,6 +138,14 @@ func checkSweepTelemetry(t *testing.T, c *httpDiagnosticCollector, local, outcom
 		return signalAttribute(attrs, "operation").GetStringValue() == "reconcile" && signalAttribute(attrs, "outcome").GetStringValue() == outcome && signalAttribute(attrs, "retry").GetBoolValue() == retry
 	}
 	spans := map[string]*tracepb.Span{}
+	clientSpans := map[string]*tracepb.Span{}
+	clientRecords := map[string]*logpb.LogRecord{}
+	clientInstances := map[string]string{}
+	clientMeasured := false
+	clientStatus := "OK"
+	if retry {
+		clientStatus = "UNAVAILABLE"
+	}
 	records := map[string]*logpb.LogRecord{}
 	measured := false
 	scanned := false
@@ -146,6 +154,13 @@ func checkSweepTelemetry(t *testing.T, c *httpDiagnosticCollector, local, outcom
 		checkPrivate(batch)
 		for _, resource := range batch.ResourceSpans {
 			for _, scope := range resource.ScopeSpans {
+				if scope.Scope.Name == "stego/grpc-client" {
+					for _, span := range scope.Spans {
+						id := hex.EncodeToString(span.SpanId)
+						clientSpans[id] = span
+						clientInstances[id] = telemetryInstance(t, resource.Resource.Attributes, "hypershell-account-recovery")
+					}
+				}
 				if scope.Scope.Name != "stego/controller" {
 					continue
 				}
@@ -168,6 +183,13 @@ func checkSweepTelemetry(t *testing.T, c *httpDiagnosticCollector, local, outcom
 		checkPrivate(batch)
 		for _, resource := range batch.ResourceLogs {
 			for _, scope := range resource.ScopeLogs {
+				if scope.Scope.Name == "stego/grpc-client" && telemetryInstance(t, resource.Resource.Attributes, "hypershell-account-recovery") == instance {
+					for _, record := range scope.LogRecords {
+						if record.EventName == "rpc.client.call.completed" {
+							clientRecords[hex.EncodeToString(record.SpanId)] = record
+						}
+					}
+				}
 				if scope.Scope.Name != "stego/controller" {
 					continue
 				}
@@ -187,6 +209,17 @@ func checkSweepTelemetry(t *testing.T, c *httpDiagnosticCollector, local, outcom
 		checkPrivate(batch)
 		for _, resource := range batch.ResourceMetrics {
 			for _, scope := range resource.ScopeMetrics {
+				if scope.Scope.Name == "stego/grpc-client" && telemetryInstance(t, resource.Resource.Attributes, "hypershell-account-recovery") == instance {
+					for _, metric := range scope.Metrics {
+						if metric.Name == "rpc.client.call.duration" {
+							for _, point := range metric.GetHistogram().DataPoints {
+								if point.Count > 0 && signalAttribute(point.Attributes, "rpc.response.status_code").GetStringValue() == clientStatus {
+									clientMeasured = true
+								}
+							}
+						}
+					}
+				}
 				if scope.Scope.Name != "stego/controller" {
 					continue
 				}
@@ -210,6 +243,20 @@ func checkSweepTelemetry(t *testing.T, c *httpDiagnosticCollector, local, outcom
 		if span := spans[id]; span != nil && bytes.Equal(span.TraceId, record.TraceId) {
 			correlated = true
 		}
+	}
+	outbound := false
+	for id, span := range clientSpans {
+		parent := spans[hex.EncodeToString(span.ParentSpanId)]
+		record := clientRecords[id]
+		if parent != nil && record != nil && clientInstances[id] == instance && bytes.Equal(parent.TraceId, span.TraceId) && bytes.Equal(span.TraceId, record.TraceId) && signalAttribute(span.Attributes, "rpc.response.status_code").GetStringValue() == clientStatus && signalAttribute(record.Attributes, "rpc.response.status_code").GetStringValue() == clientStatus {
+			outbound = true
+		}
+	}
+	if !clientMeasured {
+		t.Fatal("recovery has no RPC client duration metric", clientStatus)
+	}
+	if !outbound {
+		t.Fatal("recovery has no child RPC client span", outcome)
 	}
 	if !scanned || !measured || !correlated {
 		t.Fatal("incomplete account recovery signals", outcome, scanned, measured, correlated)

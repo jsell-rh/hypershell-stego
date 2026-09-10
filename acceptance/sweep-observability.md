@@ -48,3 +48,6 @@ supplies real identity-provider evidence. Standalone scans and cycles, the older
 controller loop, database and outbound signals, process resource metrics, and
 complete process lifecycle export remain open. The full enterprise goal remains
 active.
+
+The later [RPC client checks](rpc-client-observability.md) extend this workflow
+with correlated outbound calls, status metrics, and shared runtime identity.

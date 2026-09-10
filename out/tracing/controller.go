@@ -127,6 +127,7 @@ func (c *ControllerTelemetry) Begin(ctx context.Context, operation string) (cont
 	if c.runtime.closed.Load() {
 		return ctx, func(error, bool) {}
 	}
+	ctx = c.runtime.Context(ctx)
 	start := time.Now()
 	var span trace.Span
 	if c.tracer != nil {
