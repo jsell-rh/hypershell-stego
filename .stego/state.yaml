@@ -68,46 +68,46 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910193310-0b959fb4ffe7
+        module_version: v0.0.0-20260910194058-021b2d1986ad
         vcs: git
-        revision: 0b959fb4ffe7842942d2946f82d2e83d093c969b
+        revision: 021b2d1986adddeaace234feeae9feda5f72d8d1
         source_state: clean
     service_hash: 06cf23f61c13bef37c2729d11d7118bb0e735bf3ce47b3a17b805ec789978e57
     registry_sha: gateway-workflow
-    registry_content_sha256: f9ce2ea519a2f4322896106dd37f6124763b2a562f4024c17a90c8e3e76e2d89
+    registry_content_sha256: 27779a259edf0a5db6dbaa98efc59e690273e71636b4dc9f35ab267a0db8f7e2
     components:
         cli-application:
-            version: 1.4.1
+            version: 1.4.2
             sha: gateway-workflow
         controller:
-            version: 1.12.1
+            version: 1.12.2
             sha: gateway-workflow
         grpc-application:
-            version: 1.7.1
+            version: 1.7.2
             sha: gateway-workflow
         http-application:
-            version: 1.4.1
+            version: 1.4.2
             sha: gateway-workflow
         jwt-auth:
-            version: 2.2.1
+            version: 2.2.2
             sha: gateway-workflow
         kafka-producer:
-            version: 1.0.1
+            version: 1.0.2
             sha: gateway-workflow
         kubernetes-client:
-            version: 1.3.1
+            version: 1.3.2
             sha: gateway-workflow
         outbox:
-            version: 1.0.1
+            version: 1.0.2
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.13.1
+            version: 3.13.2
             sha: gateway-workflow
         postgres-client:
-            version: 1.0.1
+            version: 1.0.2
             sha: gateway-workflow
         tsl-search:
-            version: 1.0.1
+            version: 1.0.2
             sha: gateway-workflow
     entities:
         Gateway:
@@ -387,7 +387,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: b1f220df49bf5b10ad0f3100c50c26d8a1f0084f6ba8a79bcde11722a9138599
+        cli/command/version.go: b507b19b05279651f9be3506989ab1c7a8b31f8b68b4100df94b305cd3665905
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
