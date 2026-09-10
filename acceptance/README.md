@@ -9,6 +9,10 @@ The later [health probe workflow](health-probes.md) checks generated liveness,
 SQL readiness, database delay and recovery, protected Gateway reads, and API
 restart. Complete dependency readiness and deployment probes remain open.
 
+The [HTTP tracing workflow](http-tracing.md) checks generated spans, private-data
+exclusion, trace continuation, API restart, and progress after collector loss.
+The wider observability requirements remain open.
+
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway
 image with the provisioned database and identity configuration. It tests owner
 access, provider data, restart, namespace replacement, and deletion recovery.

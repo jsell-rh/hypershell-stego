@@ -11,6 +11,7 @@ components:
   - grpc-application
   - controller
   - health-check
+  - otel-tracing
   - postgres-client
   - kubernetes-client
   - tsl-search

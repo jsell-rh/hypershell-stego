@@ -39,3 +39,9 @@ setup, module checks, regeneration, and tests. Request, provider, and individual
 workflow deadlines are unchanged. Verbose test output records each test's
 progress and duration. A future timeout can then be assessed from individual
 test results. The full remote suite must still pass at the new revision.
+
+Run 34525332413 for `7dfc96a3c1d189a48ca40b4243d1d81279eade29` also reached
+the old 18-minute package limit. `TestServiceAccountCreationFailuresAndRevokedAccess`
+had been active for two seconds. The failure log reported no earlier assertion
+failure. This run still used the old limit. The later health run for `d162879`
+uses the 25-minute package budget and must produce its own complete result.

@@ -21,6 +21,7 @@ import (
 	health "github.com/jsell-rh/hypershell-stego/out/health"
 	outbox "github.com/jsell-rh/hypershell-stego/out/outbox"
 	storage "github.com/jsell-rh/hypershell-stego/out/storage"
+	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	postgres "gorm.io/driver/postgres"
 	gorm "gorm.io/gorm"
 )
@@ -67,6 +68,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	runtime2, err := tracing.NewRuntime()
+	if err != nil {
+		return err
+	}
+	defer runtime2.Close()
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
@@ -93,7 +99,7 @@ func run() error {
 	topMux := http.NewServeMux()
 	topMux.HandleFunc("GET /livez", databaseMonitor.Live)
 	topMux.HandleFunc("GET /readyz", databaseMonitor.Ready)
-	topMux.Handle("/", mux)
+	topMux.Handle("/", runtime2.Handler(runtime2.Route(mux)))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
