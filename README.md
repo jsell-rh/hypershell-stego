@@ -22,7 +22,9 @@ streams, restart, and collector loss. Shared [service logging](acceptance/servic
 adds local JSON and OTLP runtime lifecycle events, including operation without
 a collector. [Controller telemetry](acceptance/controller-observability.md) now
 covers shared keyed actions, scans, watch sessions, retries, and queue state.
-Complete process logging remains open.
+[Instance identity](acceptance/telemetry-instance-identity.md) keeps request
+counts separate across API replicas and runtime replacements. Complete process
+logging remains open.
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes

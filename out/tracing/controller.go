@@ -210,7 +210,7 @@ func (c *ControllerTelemetry) emit(ctx context.Context, now time.Time, event, me
 	if severity == otellog.SeverityError {
 		text = "ERROR"
 	}
-	local := localRecord{Time: now, Service: r.service.service, Severity: text, Event: event, Message: message, Operation: operation, Outcome: outcome, Retry: retry, DurationSeconds: duration}
+	local := localRecord{Time: now, Service: r.service.service, Instance: r.instance, Severity: text, Event: event, Message: message, Operation: operation, Outcome: outcome, Retry: retry, DurationSeconds: duration}
 	sc := trace.SpanContextFromContext(ctx)
 	if sc.IsValid() {
 		local.TraceID = sc.TraceID().String()

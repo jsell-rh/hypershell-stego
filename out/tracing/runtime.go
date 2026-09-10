@@ -4,6 +4,7 @@ package tracing
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -44,6 +45,8 @@ const defaultService = "hypershell"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	instance                   string
+	resource                   *resource.Resource
 	controllerOnce             sync.Once
 	controller                 *ControllerTelemetry
 	controllerError            error
@@ -77,9 +80,13 @@ func newRuntime(localOutput io.Writer) (*Runtime, error) {
 	if len(service) == 0 || len(service) > 128 || strings.Trim(service, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-") != "" {
 		return nil, errors.New("invalid telemetry service name")
 	}
+	instance, err := newInstanceID(rand.Reader)
+	if err != nil {
+		return nil, err
+	}
+	runtime := &Runtime{instance: instance, resource: serviceResource(service, instance)}
 	endpoint := os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT")
 	if endpoint == "" {
-		runtime := &Runtime{}
 		runtime.initServiceLogs(service, localOutput)
 		return runtime, nil
 	}
@@ -125,11 +132,11 @@ func newRuntime(localOutput io.Writer) (*Runtime, error) {
 		connection.Close()
 		return nil, errors.New("cannot create trace exporter")
 	}
-	runtime := &Runtime{connection: connection}
-	runtime.provider = sdktrace.NewTracerProvider(sdktrace.WithResource(resource.NewSchemaless(attribute.String("service.name", service))), sdktrace.WithSampler(sdktrace.TraceIDRatioBased(ratio)), sdktrace.WithRawSpanLimits(sdktrace.SpanLimits{AttributeValueLengthLimit: 256, AttributeCountLimit: 8}), sdktrace.WithBatcher(&safeExporter{SpanExporter: exporter, runtime: runtime}, sdktrace.WithMaxQueueSize(QueueSize), sdktrace.WithMaxExportBatchSize(BatchSize), sdktrace.WithBatchTimeout(200*time.Millisecond), sdktrace.WithExportTimeout(ExportTimeout)))
+	runtime.connection = connection
+	runtime.provider = sdktrace.NewTracerProvider(sdktrace.WithResource(runtime.resource), sdktrace.WithSampler(sdktrace.TraceIDRatioBased(ratio)), sdktrace.WithRawSpanLimits(sdktrace.SpanLimits{AttributeValueLengthLimit: 256, AttributeCountLimit: 8}), sdktrace.WithBatcher(&safeExporter{SpanExporter: exporter, runtime: runtime}, sdktrace.WithMaxQueueSize(QueueSize), sdktrace.WithMaxExportBatchSize(BatchSize), sdktrace.WithBatchTimeout(200*time.Millisecond), sdktrace.WithExportTimeout(ExportTimeout)))
 	runtime.tracer = runtime.provider.Tracer("stego/http")
 	runtime.grpcTracer = runtime.provider.Tracer("stego/grpc")
-	if err := runtime.initSignals(service, interval); err != nil {
+	if err := runtime.initSignals(interval); err != nil {
 		runtime.Close()
 		return nil, err
 	}
@@ -214,7 +221,7 @@ func (r *Runtime) Close() {
 		group.Wait()
 		if r.service.local != nil {
 			if r.shutdownFailures.Load() > 0 {
-				r.service.local.enqueue(localRecord{Time: time.Now(), Severity: "WARN", Service: r.service.service, Event: "telemetry.shutdown.incomplete", Message: "Telemetry shutdown did not complete"})
+				r.service.local.enqueue(localRecord{Time: time.Now(), Severity: "WARN", Service: r.service.service, Instance: r.instance, Event: "telemetry.shutdown.incomplete", Message: "Telemetry shutdown did not complete"})
 			}
 			close(r.service.local.queue)
 			select {

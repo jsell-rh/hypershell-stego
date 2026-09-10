@@ -98,9 +98,7 @@ func TestGatewayHTTPTracingAcrossRestartAndCollectorFailure(t *testing.T) {
 				}
 				for _, resource := range request.ResourceSpans {
 					attributes := resource.GetResource().GetAttributes()
-					if len(attributes) != 1 || attributes[0].Key != "service.name" || attributes[0].Value.GetStringValue() != "hypershell-api-server" {
-						t.Fatal("trace lost its declared service identity")
-					}
+					telemetryInstance(t, attributes, "hypershell-api-server")
 					for _, scope := range resource.ScopeSpans {
 						for _, span := range scope.Spans {
 							if hex.EncodeToString(span.TraceId) == traceID {

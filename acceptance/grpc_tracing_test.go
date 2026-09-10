@@ -73,9 +73,7 @@ func TestGatewayGRPCTracingAcrossWatchRestartAndCollectorFailure(t *testing.T) {
 				}
 				for _, resource := range request.ResourceSpans {
 					attrs := resource.GetResource().GetAttributes()
-					if len(attrs) != 1 || attrs[0].Key != "service.name" || attrs[0].Value.GetStringValue() != "hypershell-api-server" {
-						t.Fatal("trace lost service identity")
-					}
+					telemetryInstance(t, attrs, "hypershell-api-server")
 					for _, scope := range resource.ScopeSpans {
 						for _, span := range scope.Spans {
 							if scope.Scope.Name != "stego/grpc" {

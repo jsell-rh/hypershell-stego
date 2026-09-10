@@ -8,9 +8,10 @@ import (
 	"time"
 )
 
-func checkRuntimeLogs(t *testing.T, output, service string, private ...string) {
+func checkRuntimeLogs(t *testing.T, output, service string, private ...string) string {
 	t.Helper()
 	counts := map[string]int{}
+	instance := ""
 	for _, line := range strings.Split(output, "\n") {
 		if !strings.HasPrefix(line, "{") {
 			continue
@@ -30,9 +31,14 @@ func checkRuntimeLogs(t *testing.T, output, service string, private ...string) {
 		if event == "telemetry.shutdown.incomplete" {
 			severity = "WARN"
 		}
-		if len(record) != 5 || record["service.name"] != service || record["severity"] != severity {
+		if len(record) != 6 || record["service.name"] != service || record["severity"] != severity {
 			t.Fatal("invalid process event fields")
 		}
+		id, ok := record["service.instance.id"].(string)
+		if !ok || !telemetryInstancePattern.MatchString(id) || (instance != "" && instance != id) {
+			t.Fatal("local runtime identity is missing or changed")
+		}
+		instance = id
 		timestamp, ok := record["timestamp"].(string)
 		if !ok {
 			t.Fatal("missing process event time")
@@ -50,6 +56,7 @@ func checkRuntimeLogs(t *testing.T, output, service string, private ...string) {
 	if counts["telemetry.runtime.started"] != 1 || counts["telemetry.runtime.stopped"] != 1 {
 		t.Fatal("missing or duplicate runtime lifecycle logs", counts)
 	}
+	return instance
 }
 
 func TestGatewayServiceLogsWithoutCollector(t *testing.T) {

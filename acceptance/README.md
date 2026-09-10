@@ -18,6 +18,9 @@ exported runtime events, including startup without a collector.
 The [controller observability workflow](controller-observability.md) verifies
 common reconciliation logs, metrics, and spans across provider failure and
 recovery, API restart, and collector loss.
+The [instance identity workflow](telemetry-instance-identity.md) checks two
+simultaneous API processes and a replacement, with separate cumulative counts
+and matching log, span, and metric exemplar ownership.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway

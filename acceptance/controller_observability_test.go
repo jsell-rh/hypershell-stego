@@ -17,6 +17,7 @@ import (
 	logcollector "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metriccollector "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracecollector "go.opentelemetry.io/proto/otlp/collector/trace/v1"
+	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
 	logpb "go.opentelemetry.io/proto/otlp/logs/v1"
 	metricpb "go.opentelemetry.io/proto/otlp/metrics/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
@@ -94,6 +95,15 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 	records := map[string]*logpb.LogRecord{}
 	measured := map[string]*metricpb.Metric{}
 	events := map[string]int{}
+	controllerInstance := ""
+	checkInstance := func(attrs []*commonpb.KeyValue) {
+		t.Helper()
+		id := telemetryInstance(t, attrs, "gateway-identity")
+		if controllerInstance != "" && controllerInstance != id {
+			t.Fatal("API restart changed controller instance identity")
+		}
+		controllerInstance = id
+	}
 	private := []string{controllerToken, owner, "private-provider-gateway", "private provider credential=do-not-publish"}
 	receive := func(deadline <-chan time.Time) {
 		t.Helper()
@@ -110,9 +120,7 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 		case batch := <-traces.received:
 			check(batch)
 			for _, resource := range batch.ResourceSpans {
-				if signalAttribute(resource.Resource.Attributes, "service.name").GetStringValue() != "gateway-identity" {
-					t.Fatal("wrong controller service")
-				}
+				checkInstance(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeSpans {
 					for _, span := range scope.Spans {
 						spans[hex.EncodeToString(span.SpanId)] = span
@@ -122,6 +130,7 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 		case batch := <-logs.received:
 			check(batch)
 			for _, resource := range batch.ResourceLogs {
+				checkInstance(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeLogs {
 					for _, record := range scope.LogRecords {
 						events[record.EventName]++
@@ -134,6 +143,7 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 		case batch := <-metrics.received:
 			check(batch)
 			for _, resource := range batch.ResourceMetrics {
+				checkInstance(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeMetrics {
 					for _, metric := range scope.Metrics {
 						measured[metric.Name] = metric

@@ -18,7 +18,6 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
-	"go.opentelemetry.io/otel/sdk/resource"
 	grpccodes "google.golang.org/grpc/codes"
 )
 
@@ -51,8 +50,8 @@ func signalSettings() (time.Duration, error) {
 	}
 	return interval, nil
 }
-func (r *Runtime) initSignals(service string, interval time.Duration) error {
-	res := resource.NewSchemaless(attribute.String("service.name", service))
+func (r *Runtime) initSignals(interval time.Duration) error {
+	res := r.resource
 	if os.Getenv("OTEL_METRICS_EXPORTER") != "none" {
 		exporter, err := otlpmetricgrpc.New(context.Background(), otlpmetricgrpc.WithGRPCConn(r.connection), otlpmetricgrpc.WithHeaders(map[string]string{}), otlpmetricgrpc.WithTimeout(ExportTimeout), otlpmetricgrpc.WithRetry(otlpmetricgrpc.RetryConfig{Enabled: false}), otlpmetricgrpc.WithMaxRequestSize(1<<20), otlpmetricgrpc.WithTemporalitySelector(func(sdkmetric.InstrumentKind) metricdata.Temporality { return metricdata.CumulativeTemporality }))
 		if err != nil {

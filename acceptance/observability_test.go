@@ -114,9 +114,7 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 	receive := func(deadline <-chan time.Time) {
 		t.Helper()
 		check := func(attrs []*commonpb.KeyValue) {
-			if len(attrs) != 1 || signalAttribute(attrs, "service.name").GetStringValue() != "hypershell-api-server" {
-				t.Fatal("telemetry lost service identity")
-			}
+			telemetryInstance(t, attrs, "hypershell-api-server")
 		}
 		select {
 		case request := <-traces.received:

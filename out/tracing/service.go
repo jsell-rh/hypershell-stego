@@ -55,6 +55,7 @@ type localRecord struct {
 	Time            time.Time `json:"timestamp"`
 	Severity        string    `json:"severity"`
 	Service         string    `json:"service.name"`
+	Instance        string    `json:"service.instance.id"`
 	Event           string    `json:"event.name"`
 	Message         string    `json:"message"`
 	TraceID         string    `json:"trace_id,omitempty"`
@@ -117,7 +118,7 @@ func (r *Runtime) emitServiceEvent(ctx context.Context, event ServiceEvent) bool
 		return false
 	}
 	now := time.Now()
-	local := localRecord{Time: now, Severity: severity, Service: r.service.service, Event: name, Message: message}
+	local := localRecord{Time: now, Severity: severity, Service: r.service.service, Instance: r.instance, Event: name, Message: message}
 	sc := trace.SpanContextFromContext(ctx)
 	if sc.IsValid() {
 		local.TraceID = sc.TraceID().String()

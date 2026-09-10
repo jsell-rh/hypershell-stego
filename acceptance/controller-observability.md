@@ -1,4 +1,6 @@
-The compiler pin is `86b436c27bd31817733dd0356d3aea5ca10c8a77`.
+The controller telemetry gate first used compiler
+`86b436c27bd31817733dd0356d3aea5ca10c8a77`. The later
+[instance identity gate](telemetry-instance-identity.md) records the current pin.
 Controller 1.13.0 and telemetry 1.4.0 now supply common logs, metrics, and spans
 for keyed reconciliation. Hypershell's identity, workload, and database
 controllers no longer translate common runtime events into log messages.
@@ -47,8 +49,8 @@ use. Export setup belongs to the shared runtime and deployment settings.
 
 The [compiler contract](https://github.com/jsell-rh/stego/blob/86b436c27bd31817733dd0356d3aea5ca10c8a77/specs/controller-observability.md)
 defines operations, fields, limits, provider ownership, and aggregate queue
-metrics. Overlapping controllers in one process share providers. Separate
-replicas still need unique telemetry instance identity. Non-keyed sweeps,
+metrics. Overlapping controllers in one process share providers. The later
+instance identity change supplies distinct resources for replicas. Non-keyed sweeps,
 domain event declarations, database and outbound spans, and complete process
 logging remain open. Full Kubernetes and VM provider gates were not repeated
 locally for this change.

@@ -68,9 +68,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910213423-86b436c27bd3
+        module_version: v0.0.0-20260910214223-777d59184dd6
         vcs: git
-        revision: 86b436c27bd31817733dd0356d3aea5ca10c8a77
+        revision: 777d59184dd658ceb77b03d262caceaf0b4ae5c4
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 17020aaf0b12882f7efb3755c0adf2ec1e7f0e66a0d9a48c58216636111b3476
+        cli/command/version.go: 5428ba1f991eb0e203d379a4c7b4359b53f5a90728a9e97d20c76b739acac937
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -462,7 +462,8 @@ last_applied:
         storage/store.go: b38b52f76422df615b2ee3899064cee2e94fc94a7aeafd74eea7bd1525bc7d76
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 3b7b93f59d812fa6a6cd20c59d467594e27470ab649076d5cef129e9f11610cf
-        tracing/controller.go: 963b8101869283dac35da1c1b3bbf647cc5926d204de4a7f1c9a2a6a6b8254f8
-        tracing/runtime.go: d567cf1aa49b3f1c7ead4024121ce54d78bdf3ce32381090bd8c631eb6ffb873
-        tracing/service.go: fea0a15df822c39d9237ba31fef0c804438200d689539cba71699b561a076741
-        tracing/signals.go: 9a331caf59964aa5d43e6d99c49ad95933bb184626cb7045c631b69f5dda5c7e
+        tracing/controller.go: 5d41a620a37b2907ca6bc7e890c0fde45deea63c8f34ebf966083c4bd5489e62
+        tracing/identity.go: 2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6
+        tracing/runtime.go: 4f1dbbd8de48a97a9cbcd41b02775a51c7d3a4503e7e36a46ebda4ce0b81d2a1
+        tracing/service.go: 33c021770ad7b063062e3e0f7e9a9a8af2bcf7ae7377ab801c1fbd7f77a25158
+        tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
