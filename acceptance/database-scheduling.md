@@ -11,8 +11,12 @@ The watch opens before the recovery scan. A failed watch cancels and joins the
 session before reconnect. Every connection starts another recovery scan. Each
 action has a 20-second limit. Scans repeat after ten seconds, and reconnect waits
 one second. Live list calls also have a 20-second limit. The finite deletion
-replay has its own context, which is cancelled when the scan ends or replay
-finishes. It does not yet have a separate per-message idle deadline.
+replay uses STEGO's generated `ScanStream`. Setup, including the capability
+header, and each receive call have separate 20-second limits. The scanner
+accepts at most 1,000,000 records, then requires EOF. It cancels the stream on
+every exit and waits for the active callback to return. The receive timer does
+not run while queue admission waits for capacity. There is no total scan time
+limit.
 
 Watch and replay records require a known event type and matching resource IDs.
 The declared tombstone capability is required. Invalid records, missing
@@ -51,12 +55,44 @@ and repair of late resources. Module verification, `go vet`, and pinned
 generation checks also passed.
 
 STEGO owns scheduling, retries, worker limits, watch reconnect, and cancellation.
+It also owns finite-stream deadlines, item limits, and closure.
 Hypershell supplies protocol validation, replay/list adapters, provider rules,
 and field updates. No payload cache, scheduler, or retry map was added to the
 application.
 
 Use one active database controller per ownership scope. Cross-process fencing,
 durable retry storage, complete queue saturation handling, count-free cursor
-storage, and replay idle limits remain open. A queue filled with persistent
+storage remain open. A queue filled with persistent
 failures can still prevent new keys from entering. Database generations, field
 permissions, and provider identity history also remain separate work.
+
+`TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart` creates and deletes a
+database through REST, drains its events, and restarts the API. A test adapter
+opens a real TLS gRPC replay and confirms its header, then holds the first
+receive call until cancellation. The next replay must read retained state,
+complete provider cleanup, commit its observation, and deliver the new event.
+Deleted state must not reach provisioning. Controller shutdown must join its
+workers. The prior implementation failed the 25-second cancellation check;
+the failed test took 29.32 seconds, including setup.
+
+With generated `ScanStream`, the focused check passed in 25.96 seconds,
+including setup. The first blocked receive was cancelled, and a later replay
+completed cleanup and delivered the observation event. The compiler pin is
+`9cf5a48d2b7bbf7d32b576a23d87a18b6390977b`, with controller component 1.6.0.
+
+The real database Kubernetes gate passed on 2026-09-10. Provisioning, TLS
+access, data and password persistence, foreign namespace denial, offline
+deletion, and late-effect cleanup took 73.98 seconds. Deletion replay with C
+and ICU collations took 11.59 seconds. The acceptance package took 86.616
+seconds. Five stable reconciliations took 72.671 ms and did not change the
+Deployment. These results do not establish production capacity.
+
+The first full-suite and Kubernetes attempts stopped without final results.
+Their process handles and processes were absent when work resumed. They are
+not counted as passes. The Kubernetes figures above come from a new complete
+run with the same source.
+
+The complete PostgreSQL/Keycloak race suite then passed on 2026-09-10. Its
+acceptance package took 656.062 seconds. This run includes the stalled-replay
+check, independent cleanup, access denial, atomic owner grants, event delivery,
+and restart. Module verification and `go vet` also passed.

@@ -6,7 +6,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         controller:
-            version: 1.5.0
+            version: 1.6.0
             sha: gateway-workflow
         grpc-application:
             version: 1.6.0
@@ -311,6 +311,7 @@ last_applied:
         controller/keyed.go: a4eb800cf13a68b8728354e3d855d725572db3131bde3f7facf2733075d734cb
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         controller/scan.go: 7adaa466d40cd1f2283995ff9ac7286151b23d9d817f18af8d7b9b9c558d0745
+        controller/stream.go: 4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff
         controller/sweep.go: 48f6e8446e38a1b21cc182daa5d7753fbcbf67f6aa3cea43509dc960d0eb335b
         controller/watch_keyed.go: fb3616d5a2717eabc06c6e5cb5d7a53d1a3a0416ea3aa34ebd55f7e2b787e768
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6

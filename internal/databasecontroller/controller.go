@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"time"
 
@@ -98,26 +97,19 @@ func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) e
 
 // Deleted rows use the retained replay contract. Live events remain hints.
 func (c *Controller) seed(ctx context.Context, send func(string) error) error {
-	replayContext, stopReplay := context.WithCancel(ctx)
-	defer stopReplay()
-	md, _ := metadata.FromOutgoingContext(replayContext)
-	md = md.Copy()
-	md.Set(replayMode, "deleted-v1")
-	replay, err := c.api.WatchManagedDatabases(metadata.NewOutgoingContext(replayContext, md), &pb.WatchManagedDatabasesRequest{})
-	if err != nil {
-		return err
-	}
-	if err := checkHeader(replay); err != nil {
-		return err
-	}
-	for {
-		event, err := replay.Recv()
-		if err == io.EOF {
-			break
-		}
+	err := runtime.ScanStream(ctx, func(streamContext context.Context) (func() (*pb.WatchManagedDatabasesResponse, error), error) {
+		md, _ := metadata.FromOutgoingContext(streamContext)
+		md = md.Copy()
+		md.Set(replayMode, "deleted-v1")
+		replay, err := c.api.WatchManagedDatabases(metadata.NewOutgoingContext(streamContext, md), &pb.WatchManagedDatabasesRequest{})
 		if err != nil {
-			return err
+			return nil, err
 		}
+		if err := checkHeader(replay); err != nil {
+			return nil, err
+		}
+		return replay.Recv, nil
+	}, func(event *pb.WatchManagedDatabasesResponse) error {
 		if event.GetType() != pb.EventType_EVENT_TYPE_DELETED {
 			return fmt.Errorf("%w: database replay returned a live row", runtime.ErrScanContract)
 		}
@@ -125,11 +117,11 @@ func (c *Controller) seed(ctx context.Context, send func(string) error) error {
 		if err != nil {
 			return err
 		}
-		if err := send(key); err != nil {
-			return err
-		}
+		return send(key)
+	}, runtime.StreamScanOptions{MaxItems: 1000000, OpenTimeout: reconcileTimeout, ReceiveTimeout: reconcileTimeout})
+	if err != nil {
+		return err
 	}
-	stopReplay()
 	for page := int32(1); page <= 10000; page++ {
 		pageContext, stop := context.WithTimeout(ctx, reconcileTimeout)
 		response, err := c.api.ListManagedDatabases(pageContext, &pb.ListManagedDatabasesRequest{Page: page, Size: 20})
