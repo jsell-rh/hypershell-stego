@@ -9,19 +9,22 @@ Gateway events cause a fresh privileged state read. Database deletion uses the
 retained replay contract. Moving the runtime does not make a watch event or a
 missing read sufficient authority for deletion.
 
-The three event controllers use one worker, a queue of 1,024 items, a 20-second operation
-limit, and a one-second reconnect delay. Identity scans repeat 30 seconds after
-each scan finishes. Workload and database scans repeat after 10 seconds. The
-runtime lets a slow scan finish, cancels an action when its source fails, and
-joins all workers before reconnect. Database actions now have the same explicit
-time limit as the Gateway actions.
+Gateway identity and workload use the generated keyed watch runtime with four
+workers each. They combine duplicate keys, retain changes during actions, and
+schedule retries per key. Identity scans repeat after 30 seconds; workload scans
+repeat after ten seconds. Each action has a 20-second limit. Their queues hold
+1024 pending, delayed, or active keys. Scans and watch delivery wait for capacity.
 
-These controllers require one active process for each ownership scope. Their
-retained scans recover failed work and missed deletions. There is no distributed
-lease, fencing, or exactly-once write guarantee. Provider actions must tolerate
-repeated execution. Each source must respect cancellation and bound its requests.
-The generated runtime preserves FIFO items; it does not coalesce deletion and
-live records or schedule individual retries.
+The database controller still uses one FIFO worker and a queue of 1024 records.
+Its operation limit is 20 seconds and its scan interval is ten seconds. Its
+migration to keyed scheduling remains open. All three controllers have a
+one-second reconnect delay. The runtime cancels and joins active callbacks
+before it starts a new watch session.
+
+These controllers require one active process for each ownership scope. Retained
+scans recover failed work and missed deletions. There is no distributed lease,
+fencing, or exactly-once write guarantee. Provider actions must tolerate repeated
+execution. Each source must respect cancellation and bound its requests.
 
 The Pod count controller uses the generated keyed queue. It holds at most 10,000
 keys, including active and delayed keys. Its action limit is five seconds. Retry

@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -49,7 +50,26 @@ func (p *blockedCleanupProvider) Delete(ctx context.Context, id string) error {
 	}
 }
 
+type blockedIdentityCleanupProvider struct{ *blockedCleanupProvider }
+
+func (p *blockedIdentityCleanupProvider) EnsureGateway(context.Context, string, string) (string, error) {
+	return "{}", nil
+}
+func (p *blockedIdentityCleanupProvider) DeleteGateway(ctx context.Context, id string) error {
+	return p.Delete(ctx, id)
+}
+func (p *blockedIdentityCleanupProvider) ReconcileGatewayUser(context.Context, string, string, string, string) error {
+	return nil
+}
+
 func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
+	testIndependentGatewayCleanup(t, "workload")
+}
+func TestGatewayIdentityCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
+	testIndependentGatewayCleanup(t, "identity")
+}
+func testIndependentGatewayCleanup(t *testing.T, cleanupOwner string) {
+	t.Helper()
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
@@ -57,7 +77,11 @@ func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
+	target := ""
+	if cleanupOwner == "workload" {
+		target = f.cluster
+	}
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", cleanupOwner, target))
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -88,7 +112,13 @@ func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 30*time.Second)
 	defer cancel()
 	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{})}
-	controller, err := gatewayworkload.New(api, state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+	var controller interface{ Run(context.Context) error }
+	var err error
+	if cleanupOwner == "identity" {
+		controller, err = gatewayidentity.New(api, state, &blockedIdentityCleanupProvider{provider})
+	} else {
+		controller, err = gatewayworkload.New(api, state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+	}
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -125,7 +155,7 @@ func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
 		deadline := time.Now().Add(3 * time.Second)
 		for {
 			current := read(id)
-			if current.GetDeleted() && current.GetCleanupTargets()["workload"].GetTargets()[f.cluster] {
+			if current.GetDeleted() && current.GetCleanup()[cleanupOwner] {
 				return
 			}
 			if time.Now().After(deadline) {
@@ -135,7 +165,7 @@ func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
 		}
 	}
 	awaitComplete(ids[1])
-	if read(ids[0]).GetCleanup()["workload"] {
+	if read(ids[0]).GetCleanup()[cleanupOwner] {
 		t.Fatal("blocked provider recorded completion")
 	}
 	readGatewayEvent(t, consumer, ids[1], "Delete", "gateway.deleted")

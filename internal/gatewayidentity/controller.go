@@ -6,6 +6,7 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"sync"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
@@ -18,9 +19,12 @@ import (
 )
 
 const QueueCapacity = 1024
+const Workers = 4
 const ResyncInterval = 30 * time.Second
 const ReconcileTimeout = 20 * time.Second
 
+// Provider methods must support concurrent calls for different Gateway IDs.
+// STEGO permits one action per ID within a Run call.
 type Provider interface {
 	EnsureGateway(context.Context, string, string) (string, error)
 	DeleteGateway(context.Context, string) error
@@ -28,10 +32,11 @@ type Provider interface {
 	ReconcileGatewayUser(context.Context, string, string, string, string) error
 }
 type Controller struct {
-	gateways  pb.GatewayServiceClient
-	state     control.GatewayIdentityServiceClient
-	provider  Provider
-	userScans map[string]userScan
+	gateways    pb.GatewayServiceClient
+	state       control.GatewayIdentityServiceClient
+	provider    Provider
+	userScans   map[string]userScan
+	userScansMu sync.Mutex
 }
 
 func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, provider Provider) (*Controller, error) {
@@ -43,23 +48,28 @@ func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceC
 
 // Run connects domain state and actions to the generated controller runtime.
 func (c *Controller) Run(ctx context.Context) error {
-	return runtime.Run(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
-		QueueCapacity: QueueCapacity, ResyncInterval: ResyncInterval,
-		ReconcileTimeout: ReconcileTimeout, ReconnectDelay: time.Second,
-		Terminal: func(err error) bool {
-			return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
-		},
-		Observe: func(event runtime.Event) {
-			switch event.Phase {
-			case "watch_started":
-				slog.Info("Gateway identity watch started")
-			case "scan_completed":
-				slog.Info("Gateway identity scan completed")
-			case "reconnect":
-				slog.Warn("Gateway identity watch will reconnect")
-			case "reconcile_failed":
-				slog.Warn("Gateway identity needs another pass")
-			}
+	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
+		ReconnectDelay: time.Second,
+		KeyedOptions: runtime.KeyedOptions{
+			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
+			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
+			Terminal: func(err error) bool {
+				return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+			},
+			Observe: func(event runtime.Event) {
+				switch event.Phase {
+				case "watch_started":
+					slog.Info("Gateway identity watch started")
+				case "scan_completed":
+					slog.Info("Gateway identity scan completed")
+				case "scan_failed":
+					slog.Warn("Gateway identity scan needs another pass", "failure", rpc.FailureSummary(event.Err))
+				case "reconnect":
+					slog.Warn("Gateway identity watch will reconnect")
+				case "reconcile_failed":
+					slog.Warn("Gateway identity needs another pass", "failure", rpc.FailureSummary(event.Err))
+				}
+			},
 		},
 	})
 }
@@ -118,7 +128,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if !declared {
 			return errors.New("Gateway state has no identity cleanup observation")
 		}
-		delete(c.userScans, id)
+		c.setUserScan(id, userScan{})
 		failure := c.provider.DeleteGateway(ctx, id)
 		observed := failure == nil
 		if complete != observed {
@@ -153,10 +163,26 @@ type userScan struct {
 	offset int
 }
 
+// The lock protects cursor data only. It is never held during a remote call.
+func (c *Controller) userScan(id string) userScan {
+	c.userScansMu.Lock()
+	defer c.userScansMu.Unlock()
+	return c.userScans[id]
+}
+func (c *Controller) setUserScan(id string, cursor userScan) {
+	c.userScansMu.Lock()
+	defer c.userScansMu.Unlock()
+	if cursor.page == 0 {
+		delete(c.userScans, id)
+	} else {
+		c.userScans[id] = cursor
+	}
+}
+
 // The cursor retains progress when one pass reaches its time limit.
 // Each provider write still requires a fresh, matching API state.
 func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
-	cursor := c.userScans[id]
+	cursor := c.userScan(id)
 	if cursor.page == 0 {
 		cursor.page = 1
 	}
@@ -193,7 +219,7 @@ func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 			if ctx.Err() != nil && err != nil {
 				cursor.offset = i
 			}
-			c.userScans[id] = cursor
+			c.setUserScan(id, cursor)
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
@@ -202,12 +228,12 @@ func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 			}
 		}
 		if !result.HasMore {
-			delete(c.userScans, id)
+			c.setUserScan(id, userScan{})
 			return errors.Join(failures...)
 		}
 		cursor.offset = 0
-		c.userScans[id] = userScan{page: cursor.page + 1}
+		c.setUserScan(id, userScan{page: cursor.page + 1})
 	}
-	delete(c.userScans, id)
+	c.setUserScan(id, userScan{})
 	return errors.New("Gateway user scan exceeds 10000 grant references")
 }

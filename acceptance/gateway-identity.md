@@ -64,20 +64,32 @@ STEGO supplies TLS, token-file reads, message limits, call limits, deadlines, an
 cancellation. Hypershell supplies the identity contract, reconciliation order,
 provider ownership rules, and OIDC fields.
 
-The controller has one worker and a queue of 1,024 resource IDs. It subscribes
-before it reads current state. It drains the watch during that scan. An overflow
-causes a new watch and scan. Each operation has a 20-second limit. A new scan
-starts 30 seconds after the previous scan finishes. A reconnect has a one-second
-delay and repeats the full scan. Each scan permits at most
-10,000 Gateway rows and 10,000
-provider clients. These limits are bounds, not measured production capacity.
-The initial implementation uses one Gateway per API page to respect the generated
-message limit. Large-scale throughput and scan fairness remain acceptance work.
+The controller uses STEGO's generated `RunKeyedWatch` with four workers and a
+queue of 1024 resource keys. Each Gateway has at most one active action within a
+Run call. Failed keys retry with delays from one to ten seconds. Repeated events
+cannot bypass that delay. Other Gateways can progress while one provider call
+waits. The controller subscribes before recovery scans and provider actions.
+Scans and watch delivery wait for queue capacity and stop on cancellation.
 
-Use one active identity controller. Coordination across multiple controller
-processes remains open work. Failed configuration leaves a new client disabled.
-A later scan retries the operation. A provider failure can delay cleanup. Retained
-deleted Gateway rows are required for cleanup after an offline deletion.
+Each action has a 20-second limit. A new recovery scan starts 30 seconds after
+the previous scan finishes. A failed watch cancels and joins its callbacks before
+reconnect. Reconnect waits one second and starts another scan. Recovery permits
+10000 API pages of 100 IDs. The separate provider inventory permits fewer than
+10000 clients. These bounds are not measured production capacity.
+
+A short lock protects the existing per-Gateway user-scan cursors. It is not held
+during API or provider calls. The cursor preserves progress after an action time
+limit. Each provider write still reads the current user grant first. Completed
+scans and deleted Gateways remove their cursors. These cursors remain in process
+memory; the queue limit does not provide a complete process-memory bound.
+Durable cursor state and inventory limits remain separate work.
+
+Use one active identity controller for each ownership scope. Coordination across
+processes remains open. Failed configuration leaves a new client disabled.
+Retained deleted Gateway rows are required for cleanup after an offline deletion.
+A queue filled by persistent failures can still prevent new keys from entering.
+The durable retry-storage choice remains pending. See the
+[scheduling evidence](gateway-scheduling.md).
 
 ## Reference differences and remaining scope
 
