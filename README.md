@@ -327,3 +327,8 @@ The compiler now protects [generated Go symbol bindings](https://github.com/jsel
 including import names, constructor names, and fill aliases. The pin upgrade
 preserved all 74 generated and dependency file hashes. Contract race tests and
 the application build passed with the new pin.
+
+The compiler also checks [constructor metadata](https://github.com/jsell-rh/stego/blob/main/specs/constructor-metadata.md)
+before it generates startup code. Invalid middleware, dependency, and cleanup
+indexes now cause a compiler error. This pin upgrade preserved all 74 generated
+and dependency file hashes. Contract race tests and the application build passed.
