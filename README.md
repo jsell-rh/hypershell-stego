@@ -340,3 +340,9 @@ and controller-only access remain part of the same transaction.
 The [generated gRPC client preserves absent stream headers](acceptance/grpc-stream-headers.md).
 A real Gateway gate exposed an error-classification defect that the raw-client
 test missed. The fix is in STEGO; the application now tests its generated client.
+
+The compiler now records [registry input content](https://github.com/jsell-rh/stego/blob/main/specs/registry-snapshots.md)
+in applied state and rejects registry changes after planning. This upgrade adds
+the digest to state. All 73 generated and dependency files remain unchanged.
+An independent digest calculation matched the saved value for all 11 local
+registry inputs.

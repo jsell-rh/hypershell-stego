@@ -21,3 +21,10 @@ authentication, deadlines, and service shutdown.
 The `tsl-search` component supplies declared-field search and common metadata
 aliases. It has no custom field resolver in this variant. Search remains separate
 from the domain access filter, which always applies before count and pagination.
+
+STEGO captures the registry inputs and records their SHA-256 content digest in
+`.stego/state.yaml`. The `gateway-workflow` reference remains a local label.
+Registry changes after planning require a new plan. See the compiler's
+[registry input contract](https://github.com/jsell-rh/stego/blob/main/specs/registry-snapshots.md)
+for the digest encoding, input bounds, and state upgrade rules. The digest covers
+registry YAML and protobuf files; it does not identify the complete application.
