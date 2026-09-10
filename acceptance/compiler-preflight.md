@@ -1,4 +1,4 @@
-The compiler pin is `4ca5a064bdee4131aaffbf198d37feec3f1ecabf`.
+The compiler pin is `3d288fa89fa6c57da95f0407a83b14438c1920ba`.
 STEGO now checks resolved component inputs before it renders any component.
 The application defines its registry composition, factory paths, and protobuf
 contracts. The common check and input snapshots belong to STEGO.

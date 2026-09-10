@@ -2,6 +2,7 @@ package acceptance
 
 import (
 	"context"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -26,7 +27,26 @@ func (p *timedIdentityFailure) EnsureGateway(ctx context.Context, id, name strin
 	return p.failedIdentityProvider.EnsureGateway(ctx, id, name)
 }
 
-func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) {
+func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) { testIdentityRetryRestart(t, false) }
+func TestIdentityInventoryRetrySurvivesAPIWatchRestart(t *testing.T) {
+	testIdentityRetryRestart(t, true)
+}
+
+type timedIdentityInventoryFailure struct {
+	*failedIdentityProvider
+	attempts chan time.Time
+}
+
+func (p *timedIdentityInventoryFailure) GatewayIDs(ctx context.Context) ([]string, error) {
+	select {
+	case p.attempts <- time.Now():
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return nil, errors.New("provider inventory unavailable")
+}
+
+func testIdentityRetryRestart(t *testing.T, inventory bool) {
 	f := database(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 	defer cancel()
@@ -46,7 +66,15 @@ func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) {
 	public, connection := grpcClient(t, address, apiTLS)
 	client := control.NewGatewayIdentityServiceClient(connection)
 	auth := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token(t, key, "controller")))
-	provider := &timedIdentityFailure{failedIdentityProvider: &failedIdentityProvider{checkpointProvider: &checkpointProvider{roles: make(map[string][]string)}}, attempts: make(chan time.Time, 16)}
+	attempts := make(chan time.Time, 16)
+	base := &failedIdentityProvider{checkpointProvider: &checkpointProvider{roles: make(map[string][]string)}}
+	base.ready.Store(inventory)
+	var provider gatewayidentity.Provider
+	if inventory {
+		provider = &timedIdentityInventoryFailure{failedIdentityProvider: base, attempts: attempts}
+	} else {
+		provider = &timedIdentityFailure{failedIdentityProvider: base, attempts: attempts}
+	}
 	controller, err := gatewayidentity.New(public, client, provider)
 	if err != nil {
 		t.Fatal(err)
@@ -68,7 +96,7 @@ func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) {
 	var fourth time.Time
 	for i := 0; i < 4; i++ {
 		select {
-		case fourth = <-provider.attempts:
+		case fourth = <-attempts:
 		case <-ctx.Done():
 			t.Fatal("provider retries did not run")
 		}
@@ -84,8 +112,12 @@ func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) {
 	}
 	before := read()
 	condition := before.GetConditions()["identity"].GetConditions()["ClientReady"]
-	if !condition.GetCurrent() || condition.GetStatus() != "Unknown" || condition.GetReason() != "IdentityProviderUnavailable" {
-		t.Fatal("failed provider has no current failure condition", condition)
+	wantedStatus, wantedReason := "Unknown", "IdentityProviderUnavailable"
+	if inventory {
+		wantedStatus, wantedReason = "True", "IdentityClientReady"
+	}
+	if !condition.GetCurrent() || condition.GetStatus() != wantedStatus || condition.GetReason() != wantedReason {
+		t.Fatal("provider has no expected current condition", condition)
 	}
 	stopAPI()
 	// Bind the same gRPC address so the live controller must recover its stream.
@@ -104,16 +136,16 @@ func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) {
 	}
 	after := read()
 	if after.ResourceVersion != before.ResourceVersion || after.GetConditions()["identity"].GetConditions()["ClientReady"].GetLastTransitionTime() != condition.GetLastTransitionTime() {
-		t.Fatal("API restart changed durable failure evidence")
+		t.Fatal("API restart changed durable condition evidence")
 	}
 	var fifth time.Time
 	select {
-	case fifth = <-provider.attempts:
+	case fifth = <-attempts:
 	case <-ctx.Done():
 		t.Fatal("provider retry did not resume")
 	}
 	if delay := fifth.Sub(fourth); delay < 8*time.Second {
 		t.Fatal("API watch restart bypassed the provider retry delay", delay)
 	}
-	t.Log("REST and gRPC recovered after API restart; the live identity controller retained its retry delay and failure condition")
+	t.Log("REST and gRPC recovered after API restart; the live identity controller retained its retry delay and condition")
 }

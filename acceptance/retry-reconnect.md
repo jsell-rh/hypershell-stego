@@ -47,7 +47,29 @@ and the two generated keyed-controller files among 90 output, state, and
 dependency files. Repeated pinned generation preserved all 90 hashes. No
 application scheduler or retry state was added.
 
-A separate isolated runtime probe found that failed inventory scans still lose
-their retry delay on watch reconnect. That scan case remains open. This change
-preserves queued resource-action delays. The compiler records the next scan
-regression in `specs/controller-keyed.md`.
+A later inventory regression found that failed scans still lost their retry
+delay on watch reconnect. With compiler `4ca5a06`, both API discovery and provider
+inventory resumed after about 1.05 seconds instead of four seconds. The actual
+API restart test resumed inventory after 3.02 seconds instead of eight seconds.
+
+Compiler `3d288fa89fa6c57da95f0407a83b14438c1920ba` and controller version 1.12.4
+now retain the scan retry schedule across watch sessions. Interrupted scans
+receive the next capped delay. Successful scans permit immediate discovery on
+reconnect. Resource actions can continue while a failed scan waits. Hypershell
+uses this generated contract without a local scan scheduler.
+
+All internal and contract tests passed under race detection. Static checks
+passed. Twelve selected application tests passed with PostgreSQL and Keycloak
+required in 229.138 seconds. These cover both action and inventory retries
+across API restart, the real Keycloak workflow, backlog progress, provider
+deadlines, independent cleanup after restart, and watch expiry and failure.
+The inventory restart test preserves the client condition; that condition does
+not certify a complete provider inventory. The earlier full 350-test result
+above applies to the preceding compiler update. The full suite and separate
+Kubernetes and VM gates were not repeated locally for this scan update.
+
+Regeneration again changed only saved compiler state, the CLI compiler build
+record, and the two generated keyed-controller files among the 90 tracked
+output, state, and dependency files. Repeated pinned generation preserved all
+90 hashes. Process-restart retry persistence,
+distributed ownership, and provider fencing remain open.

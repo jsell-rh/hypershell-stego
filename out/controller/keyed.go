@@ -121,6 +121,8 @@ type keyQueue[K ~string] struct {
 	admission chan struct{}
 	retrying  int
 	waiting   atomic.Int64
+	// The scan loop owns this schedule. Reconnect touches it only after join.
+	scan scanSchedule
 }
 
 func newKeyQueue[K ~string](capacity int) *keyQueue[K] {
@@ -292,6 +294,51 @@ func (q *keyQueue[K]) finish(key K, failed bool, minimum, maximum time.Duration)
 	q.notify()
 }
 
+// scanSchedule retains failed inventory backoff across watch sessions.
+// A successful scan permits immediate discovery after reconnect.
+type scanSchedule struct {
+	due    time.Time
+	delay  time.Duration
+	active bool
+}
+
+func (s *scanSchedule) wait(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	delay := time.Until(s.due)
+	if delay <= 0 {
+		return nil
+	}
+	timer := time.NewTimer(delay)
+	defer timer.Stop()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-timer.C:
+		return nil
+	}
+}
+func (s *scanSchedule) finish(failed bool, now time.Time, options KeyedOptions) {
+	s.active = false
+	if failed {
+		s.delay = nextDelay(s.delay, options.RetryMin, options.RetryMax)
+		s.due = now.Add(s.delay)
+	} else {
+		s.delay = 0
+		s.due = now.Add(options.ResyncInterval)
+	}
+}
+func (s *scanSchedule) reconnect(now time.Time, minimum, maximum time.Duration) {
+	if s.active {
+		s.active = false
+		s.delay = nextDelay(s.delay, minimum, maximum)
+		s.due = now.Add(s.delay)
+	} else if s.delay == 0 {
+		s.due = time.Time{}
+	}
+}
+
 // restart is called only after all callbacks from the old session have joined.
 // Keep due times for queued failures. An interrupted action has no confirmed
 // outcome, so retain it with the next delay. No key leaves the capacity bound.
@@ -300,6 +347,7 @@ func (q *keyQueue[K]) restart(minimum, maximum time.Duration) {
 	defer q.mu.Unlock()
 	q.ready = false
 	now := time.Now()
+	q.scan.reconnect(now, minimum, maximum)
 	for _, entry := range q.entries {
 		if !entry.active {
 			continue
@@ -397,11 +445,14 @@ func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 		fail(err)
 	})
 	workers.Go(func() {
-		retry := time.Duration(0)
 		for ctx.Err() == nil {
+			if err := q.scan.wait(ctx); err != nil {
+				return
+			}
 			if err := q.waitReady(ctx); err != nil {
 				return
 			}
+			q.scan.active = true
 			err := source.Scan(ctx, func(key K) error { return q.addWait(ctx, key) })
 			if ctx.Err() == nil {
 				options.Metrics.scan(err != nil)
@@ -413,24 +464,11 @@ func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 			if ctx.Err() != nil {
 				return
 			}
-			delay := options.ResyncInterval
-			if err != nil {
-				retry = nextDelay(retry, options.RetryMin, options.RetryMax)
-				delay = retry
-			} else {
-				retry = 0
-			}
+			q.scan.finish(err != nil, time.Now(), options)
 			if err != nil {
 				notice("scan_failed", err)
 			} else {
 				notice("scan_completed", nil)
-			}
-			timer := time.NewTimer(delay)
-			select {
-			case <-ctx.Done():
-				timer.Stop()
-				return
-			case <-timer.C:
 			}
 		}
 	})
