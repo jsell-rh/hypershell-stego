@@ -198,12 +198,13 @@ if PGDATABASE=postgres psql -Atc 'SELECT 1' >/dev/null 2>&1; then echo 'cross-da
 	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/2/verbs","value":["get","create","patch"]}]`)
 	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "DATABASE_PROVIDER=cnpg")
 	until = time.Now().Add(30 * time.Second)
-	for !strings.Contains(logs(), "Kubernetes DELETE failed with status 403") {
+	for !controllerRetryLogged(logs()) {
 		if time.Now().After(until) {
 			t.Fatalf("CNPG cleanup denial was lost\n%s", logs())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	requireDatabaseDeleteDenied(t, func(ctx context.Context) error { return provider.Delete(ctx, row) })
 	summary(1)
 	k.must(t, "", "get", "namespace", namespace)
 	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/2/verbs","value":["get","create","patch","delete"]}]`)

@@ -24,6 +24,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
@@ -450,11 +451,24 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 	absent("clusterrolebinding", gateway.Namespace)
 	absent("clusterrole", gateway.Namespace)
 	deadline := time.Now().Add(30 * time.Second)
-	for !strings.Contains(logs(), "code = Internal") {
+	for !controllerRetryLogged(logs()) {
 		if time.Now().After(deadline) {
 			t.Fatalf("database cleanup failure was not reported: %s", logs())
 		}
 		time.Sleep(100 * time.Millisecond)
+	}
+	_, failedCleanupConnection := grpcClient(t, rpcAddress, apiTLS)
+	failedCleanupContext, cancelFailedCleanup := context.WithTimeout(context.Background(), 5*time.Second)
+	failedCleanupContext = metadata.NewOutgoingContext(failedCleanupContext, metadata.Pairs("authorization", "Bearer "+controllerToken))
+	_, cleanupError := pb.NewManagedDatabaseServiceClient(failedCleanupConnection).DeleteManagedDatabase(failedCleanupContext, &pb.DeleteManagedDatabaseRequest{Id: gateway.DatabaseID})
+	cancelFailedCleanup()
+	failedCleanupConnection.Close()
+	if status.Code(cleanupError) != codes.Internal {
+		t.Fatal("database cleanup did not return Internal", cleanupError)
+	}
+	var retainedDatabase bool
+	if err := f.db.QueryRow("SELECT deleted_at IS NULL FROM managed_databases WHERE id=$1", gateway.DatabaseID).Scan(&retainedDatabase); err != nil || !retainedDatabase {
+		t.Fatal("failed cleanup removed its database", err)
 	}
 	k.must(t, "", "get", "namespace", dbNamespace, "-o", "name")
 	if _, err := f.db.Exec(`ALTER TABLE managed_databases DROP CONSTRAINT acceptance_keep_database`); err != nil {

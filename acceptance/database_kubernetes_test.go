@@ -4,7 +4,9 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -18,6 +20,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/metadata"
 )
@@ -293,18 +296,19 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/0/verbs","value":["get","create","patch"]}]`)
 	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
 	deadline = time.Now().Add(30 * time.Second)
-	for !strings.Contains(logs(), "Kubernetes DELETE failed with status 403") {
+	for !controllerRetryLogged(logs()) {
 		if time.Now().After(deadline) {
 			t.Fatalf("cleanup failure was not reported\n%s", logs())
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
+	requireDatabaseDeleteDenied(t, func(ctx context.Context) error { return provider.Delete(ctx, readyDatabase) })
 	k.must(t, "", "get", "namespace", namespace)
-	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/0/verbs","value":["get","create","patch","delete"]}]`)
 	var deniedComplete bool
 	if err := f.db.QueryRow("SELECT (stego_cleanup->>'provider')::boolean FROM managed_databases WHERE id=$1", gateway.DatabaseID).Scan(&deniedComplete); err != nil || deniedComplete {
 		t.Fatal("denied cleanup was recorded as complete", err)
 	}
+	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/0/verbs","value":["get","create","patch","delete"]}]`)
 	deadline = time.Now().Add(90 * time.Second)
 	for {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -354,4 +358,31 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	k.must(t, "", "wait", "--for=delete", "namespace/"+namespace, "--timeout=90s")
 	awaitCleanup(true)
 	t.Log(fmt.Sprintf("Gateway %s: TLS database, persisted data, stable password, foreign namespace denial, offline cleanup, and late-effect cleanup passed", gateway.ID))
+}
+
+// Common controller logs contain fixed outcomes, not provider error text.
+func controllerRetryLogged(output string) bool {
+	for _, line := range strings.Split(output, "\n") {
+		var record struct {
+			Event     string `json:"event.name"`
+			Operation string `json:"operation"`
+			Outcome   string `json:"outcome"`
+			Retry     bool   `json:"retry"`
+		}
+		if json.Unmarshal([]byte(line), &record) == nil && record.Event == "controller.work.completed" && record.Operation == "reconcile" && record.Outcome == "failure" && record.Retry {
+			return true
+		}
+	}
+	return false
+}
+
+func requireDatabaseDeleteDenied(t *testing.T, remove func(context.Context) error) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	err := remove(ctx)
+	var failure *kube.APIError
+	if !errors.As(err, &failure) || failure.Method != http.MethodDelete || failure.StatusCode != http.StatusForbidden {
+		t.Fatal("database deletion did not return HTTP 403", err)
+	}
 }

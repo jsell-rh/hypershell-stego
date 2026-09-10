@@ -58,3 +58,31 @@ completed successfully for `b157522f526c0a01b036f7bc0e0cb614ba8db5ea`.
 All six jobs passed, including full acceptance and the five provider workflows.
 This result precedes request logs, service logs, and controller telemetry. Those
 later revisions require their own CI results.
+
+Run [34533977192](https://github.com/jsell-rh/hypershell-stego/actions/runs/34533977192)
+for `d5329dc` exposed old log checks after controller telemetry moved into STEGO.
+The database and CNPG database tests waited for provider error text. The Gateway
+and Sandbox tests waited for gRPC error text during database cleanup. Those four
+provider jobs failed. The CNPG Gateway job passed. The acceptance job was still
+active when this record was written. The failed jobs are not successful evidence.
+
+The tests now read the common structured retry event. Database tests also call
+the provider and require a typed HTTP 403 result. They check that cleanup remains
+pending before they restore delete permission. The Gateway test calls the
+generated gRPC API and requires `Internal` while a database constraint prevents
+deletion. It verifies that the database remains live before removing the fault.
+Provider error text is not required in process logs.
+
+All five provider scripts passed locally on 2026-09-10 under race detection:
+
+| Script argument | Compiler | Acceptance package time |
+| --- | --- | --- |
+| `database` | `777d591` | 99.754 seconds |
+| `cnpg` | `777d591` | 85.124 seconds |
+| `gateway` | `6277272` | 224.241 seconds |
+| `sandbox` | `6277272` | 354.428 seconds |
+| `cnpg-gateway` | `6277272` | 342.162 seconds |
+
+The scripts used real Kubernetes providers. Gateway variants also used the real
+identity service and Gateway. The Sandbox gate executed its workload in the
+virtual machine. These local results do not replace CI for the new commit.
