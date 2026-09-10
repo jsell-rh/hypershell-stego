@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -25,6 +26,9 @@ func databaseOwner(id string) kube.Owner {
 // The database namespace retains the key material when the Gateway namespace
 // is replaced. The marker prevents silent rekeying after a lost Secret.
 func (k *Kubernetes) keys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) (object, error) {
+	if db.GetProvider() == gateways.ProviderCNPG {
+		return k.sharedKeys(ctx, gw, db)
+	}
 	namespace, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace, nil)
 	if err != nil {
 		return nil, err
