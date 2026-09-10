@@ -1,5 +1,5 @@
-Hypershell now uses STEGO's `otel-tracing` component at version 1.0.0. The
-compiler pin is `164c7dc25d4bee5ecb794876f92e762edf6a0c44`. The application
+The first HTTP tracing gate used STEGO's `otel-tracing` component at version
+1.0.0. Its compiler pin was `164c7dc25d4bee5ecb794876f92e762edf6a0c44`. The application
 has no exporter, span queue, response wrapper, or trace-context parser.
 
 Set `OTEL_EXPORTER_OTLP_ENDPOINT` to an HTTPS collector origin to enable
@@ -50,6 +50,7 @@ Repeated pinned generation preserved all 92 output, state, and dependency hashes
 The [compiler contract](https://github.com/jsell-rh/stego/blob/164c7dc25d4bee5ecb794876f92e762edf6a0c44/specs/http-tracing.md)
 records limits and an isolated wrapper measurement. It also records deliberate
 sampling and baggage differences from the upstream observability specification.
-gRPC and database spans, request metrics, controller traces, console trace
+The later [gRPC tracing gate](grpc-tracing.md) adds server calls and watch spans.
+Database spans, request metrics, controller traces, console trace
 continuation, OTLP/HTTP, and collector client authentication remain open. This
 HTTP workflow does not complete the observability or full Hypershell goal.

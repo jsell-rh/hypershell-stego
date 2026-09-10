@@ -68,13 +68,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910204358-164c7dc25d4b
+        module_version: v0.0.0-20260910205156-e68f200ef638
         vcs: git
-        revision: 164c7dc25d4bee5ecb794876f92e762edf6a0c44
+        revision: e68f200ef638069ef18654c728c702a60a8507aa
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
-    registry_content_sha256: 00e3e3b8e29f40dbe8cf4c94ac3202f87cab2bed2673481edd467fb158d9c132
+    registry_content_sha256: b5a2ec72644c276b003a82eb16cdee25de43aa475f4b21755d49cfef7457dc34
     components:
         cli-application:
             version: 1.4.2
@@ -83,7 +83,7 @@ last_applied:
             version: 1.12.4
             sha: gateway-workflow
         grpc-application:
-            version: 1.7.3
+            version: 1.8.0
             sha: gateway-workflow
         health-check:
             version: 1.0.0
@@ -101,7 +101,7 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         otel-tracing:
-            version: 1.0.0
+            version: 1.1.0
             sha: gateway-workflow
         outbox:
             version: 1.0.3
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: b09d294845d5d4a8364c78222dd162e03dc8d22964df41094416ada91193fad4
+        cli/command/version.go: f0e9a9da9e474109a0721f3ee710f22efeaa2bce0c4e64fd6256a1552e47ad45
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -409,7 +409,7 @@ last_applied:
         controller/watch_keyed.go: 8d8e3339c1d1ea1f95a2e1bb05f6934943bb4d9e82d03716d32271b4f3c1f4ee
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
-        grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
+        grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
         grpcapi/client/client.go: 669c809eb5a08774c1726870cf708f9c11a0e97d9fc028dff04246f475ac473f
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: 47fa6ac08cbabdcaa9d502e2ac0890e4a01630ef92ab6d2dad8b7c804151b5ba
@@ -431,12 +431,12 @@ last_applied:
         grpcapi/pb/hypershell/v1/managed_databases_grpc.pb.go: b4390743b458806268c2ac498468fe64a0b0530a336c87a2714348e229fbe4d5
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
-        grpcapi/transport/runtime.go: ed551c15675bd9a738599907eec8532aa2e280248b755bed9d4031890bb71a45
+        grpcapi/transport/runtime.go: 66e1193b5c106fed712bd0dd0363484933e8b59e8a57aa0b57fe64165530e32f
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         kubernetes/client.go: 66b577cb6cf902760a3bca83832926924e75b4465928237c5ab821755fd08e59
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
-        main.go: 77bd9d28e97eea6c3ff7c23d21d5864d51123f465dd49afc369c353cc5dd14b4
+        main.go: 17b22b30942d0d1bb4b6b6f8d583d26430843f4d5850fcb90470f11d87ecb73d
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
@@ -461,4 +461,4 @@ last_applied:
         storage/store.go: b38b52f76422df615b2ee3899064cee2e94fc94a7aeafd74eea7bd1525bc7d76
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 3b7b93f59d812fa6a6cd20c59d467594e27470ab649076d5cef129e9f11610cf
-        tracing/runtime.go: 1fde94c608599e0571bd93146608b54bcdb46eda643cc3096e4705dfda5f86de
+        tracing/runtime.go: 31798d7087d811bc7c86ea8ac6b31971c640fe108457133c25323a831935209e

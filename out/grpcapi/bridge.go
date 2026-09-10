@@ -9,16 +9,17 @@ import (
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
+	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	"google.golang.org/grpc"
 	"time"
 )
 
 type Repository = storage.Repository
 
-func NewGRPCRuntime(repository Repository, verifier *auth.Verifier, source events.Source) (*transport.Runtime, error) {
+func NewGRPCRuntime(repository Repository, verifier *auth.Verifier, source events.Source, tracingRuntime *tracing.Runtime) (*transport.Runtime, error) {
 	return transport.New(verifier.Authenticate, func(registrar grpc.ServiceRegistrar) error {
 		return application.Register(registrar, repository, source)
-	}, transport.Options{IdentityInfo: func(ctx context.Context) (string, time.Time) {
+	}, transport.Options{TraceRPC: tracingRuntime.TraceRPC, IdentityInfo: func(ctx context.Context) (string, time.Time) {
 		identity := auth.IdentityFromContext(ctx)
 		return identity.UserID, identity.ExpiresAt
 	}})

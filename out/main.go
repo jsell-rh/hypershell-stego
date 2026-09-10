@@ -68,11 +68,11 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	runtime2, err := tracing.NewRuntime()
+	tracingRuntime, err := tracing.NewTracingRuntime()
 	if err != nil {
 		return err
 	}
-	defer runtime2.Close()
+	defer tracingRuntime.Close()
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
@@ -82,7 +82,7 @@ func run() error {
 		return err
 	}
 	defer handler.Close()
-	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment, source)
+	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment, source, tracingRuntime)
 	if err != nil {
 		return err
 	}
@@ -99,7 +99,7 @@ func run() error {
 	topMux := http.NewServeMux()
 	topMux.HandleFunc("GET /livez", databaseMonitor.Live)
 	topMux.HandleFunc("GET /readyz", databaseMonitor.Ready)
-	topMux.Handle("/", runtime2.Handler(runtime2.Route(mux)))
+	topMux.Handle("/", tracingRuntime.Handler(tracingRuntime.Route(mux)))
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err

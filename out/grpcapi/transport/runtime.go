@@ -120,6 +120,9 @@ type Authenticate func(context.Context, string) (context.Context, error)
 // IdentityInfo reads only claims that Authenticate has verified.
 type Options struct {
 	IdentityInfo func(context.Context) (string, time.Time)
+	// TraceRPC observes a registered call before authentication. It must preserve
+	// cancellation and return a completion function that does not block.
+	TraceRPC func(context.Context, string) (context.Context, func(error))
 }
 type Runtime struct {
 	server          *grpc.Server
@@ -140,8 +143,10 @@ func New(authenticate Authenticate, register func(grpc.ServiceRegistrar) error, 
 		return nil, errors.New("gRPC requires authentication and registration")
 	}
 	var info func(context.Context) (string, time.Time)
+	var traceRPC func(context.Context, string) (context.Context, func(error))
 	if len(options) == 1 {
 		info = options[0].IdentityInfo
+		traceRPC = options[0].TraceRPC
 	}
 	streamTimeout, err := durationSetting("STEGO_GRPC_STREAM_TIMEOUT", 5*time.Minute, 30*time.Minute)
 	if err != nil {
@@ -193,7 +198,12 @@ func New(authenticate Authenticate, register func(grpc.ServiceRegistrar) error, 
 		grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})),
 		grpc.MaxRecvMsgSize(MaxRequestBytes), grpc.MaxSendMsgSize(MaxResponseBytes), grpc.MaxHeaderListSize(32<<10), grpc.MaxConcurrentStreams(64), grpc.ConnectionTimeout(5*time.Second),
 		grpc.KeepaliveParams(keepalive.ServerParameters{MaxConnectionIdle: 60 * time.Second, Time: 2 * time.Hour, Timeout: 20 * time.Second}),
-		grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, _ *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (result any, err error) {
+		grpc.ChainUnaryInterceptor(func(ctx context.Context, req any, call *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (result any, err error) {
+			if traceRPC != nil {
+				var finish func(error)
+				ctx, finish = traceRPC(ctx, call.FullMethod)
+				defer func() { finish(err) }()
+			}
 			select {
 			case unaryPermits <- struct{}{}:
 			default:
@@ -221,7 +231,12 @@ func New(authenticate Authenticate, register func(grpc.ServiceRegistrar) error, 
 			}
 			return result, err
 		}),
-		grpc.ChainStreamInterceptor(func(srv any, stream grpc.ServerStream, _ *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+		grpc.ChainStreamInterceptor(func(srv any, stream grpc.ServerStream, call *grpc.StreamServerInfo, handler grpc.StreamHandler) (err error) {
+			if traceRPC != nil {
+				ctx, finish := traceRPC(stream.Context(), call.FullMethod)
+				stream = &traceStream{ServerStream: stream, ctx: ctx}
+				defer func() { finish(err) }()
+			}
 			select {
 			case streamPermits <- struct{}{}:
 			default:
@@ -346,6 +361,13 @@ func durationSetting(name string, fallback, maximum time.Duration) (time.Duratio
 	}
 	return value, nil
 }
+
+type traceStream struct {
+	grpc.ServerStream
+	ctx context.Context
+}
+
+func (s *traceStream) Context() context.Context { return s.ctx }
 
 type verifiedStream struct {
 	grpc.ServerStream
