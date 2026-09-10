@@ -22,6 +22,7 @@ const QueueCapacity = 1024
 const Workers = 4
 const ResyncInterval = 30 * time.Second
 const ReconcileTimeout = 20 * time.Second
+const observationCommitTimeout = 2 * time.Second
 
 // Provider methods must support concurrent calls for different Gateway IDs.
 // STEGO permits one action per ID within a Run call.
@@ -54,7 +55,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
 			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
-				return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 			},
 			Observe: func(event runtime.Event) {
 				switch event.Phase {
@@ -129,31 +130,39 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			return errors.New("Gateway state has no identity cleanup observation")
 		}
 		c.setUserScan(id, userScan{})
-		failure := c.provider.DeleteGateway(ctx, id)
-		observed := failure == nil
-		if complete != observed {
-			writeContext, err := rpc.WithResourceVersion(ctx, state.ResourceVersion)
+		return runtime.RunObservation(ctx, func(operation context.Context) error {
+			return c.provider.DeleteGateway(operation, id)
+		}, func(commit context.Context, observation error) error {
+			observed := observation == nil
+			if complete == observed {
+				return nil
+			}
+			writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
 			if err != nil {
 				return err
 			}
-			if _, err := c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "identity", Complete: observed}); err != nil {
-				return err
-			}
-		}
-		return failure
+			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "identity", Complete: observed})
+			return err
+		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 	}
-	oidc, err := c.provider.EnsureGateway(ctx, id, gateway.GetName())
-	if err != nil {
+	var oidc string
+	err = runtime.RunObservation(ctx, func(operation context.Context) error {
+		var err error
+		oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName())
 		return err
-	}
-	if gateway.GetOidc() != oidc {
-		writeContext, versionErr := rpc.WithResourceVersion(ctx, state.ResourceVersion)
-		if versionErr != nil {
-			return versionErr
+	}, func(commit context.Context, observation error) error {
+		if observation != nil || gateway.GetOidc() == oidc {
+			return nil
 		}
-		if _, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc}); err != nil {
+		writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
+		if err != nil {
 			return err
 		}
+		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc})
+		return err
+	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
+	if err != nil {
+		return err
 	}
 	return c.reconcileUsers(ctx, id)
 }

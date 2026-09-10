@@ -20,6 +20,7 @@ const QueueCapacity = 1024
 const Workers = 4
 const ResyncInterval = 10 * time.Second
 const ReconcileTimeout = 20 * time.Second
+const observationCommitTimeout = 2 * time.Second
 
 // Provider methods can run concurrently for different Gateway IDs.
 // The generated runtime serializes actions for each ID within one Run call.
@@ -53,7 +54,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
 			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
-				return errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 			},
 			Observe: func(event runtime.Event) {
 				switch event.Phase {
@@ -132,17 +133,20 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if !recorded {
 			return nil
 		}
-		failure := c.provider.Delete(ctx, id)
-		observed := failure == nil
-		if complete != observed {
-			writeContext, err := rpc.WithResourceVersion(ctx, state.ResourceVersion)
+		failure := runtime.RunObservation(ctx, func(operation context.Context) error {
+			return c.provider.Delete(operation, id)
+		}, func(commit context.Context, failure error) error {
+			observed := failure == nil
+			if complete == observed {
+				return nil
+			}
+			writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
 			if err != nil {
 				return err
 			}
-			if _, err := c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: target, Complete: observed}); err != nil {
-				return err
-			}
-		}
+			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: target, Complete: observed})
+			return err
+		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 		if failure != nil {
 			return failure
 		}
@@ -176,32 +180,34 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if !recorded {
 		return errors.New("current workload target was not recorded before provider work")
 	}
-	database, err := c.databases.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: gw.GetDatabaseId()})
-	var release *pb.GetGatewayReleaseResponse
-	if err == nil {
-		release, err = c.releases.GetGatewayRelease(ctx, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
-	}
-	if err == nil {
-		err = c.provider.Ensure(ctx, gw, database.GetManagedDatabase(), release.GetGatewayRelease())
-	}
-	phase, desired := "Running", "Healthy"
-	if errors.Is(err, ErrPending) {
-		phase, desired = "Provisioning", "WorkloadNotReady"
-		if gw.GetPhase() == "Running" || gw.GetPhase() == "Degraded" {
-			phase = "Degraded"
+	return runtime.RunObservation(ctx, func(operation context.Context) error {
+		database, err := c.databases.GetManagedDatabase(operation, &pb.GetManagedDatabaseRequest{Id: gw.GetDatabaseId()})
+		if err != nil {
+			return err
 		}
-	} else if err != nil {
-		phase, desired = "Degraded", "WorkloadUnavailable"
-	}
-	if gw.GetStatus() != desired || gw.GetPhase() != phase || state.GetObservedGeneration() != state.GetResourceGeneration() {
-		writeContext, versionErr := rpc.WithResourceVersion(ctx, state.ResourceVersion)
-		if versionErr != nil {
-			return errors.Join(err, versionErr)
+		release, err := c.releases.GetGatewayRelease(operation, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
+		if err != nil {
+			return err
 		}
-		_, writeErr := c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
-		if writeErr != nil {
-			return errors.Join(err, writeErr)
+		return c.provider.Ensure(operation, gw, database.GetManagedDatabase(), release.GetGatewayRelease())
+	}, func(commit context.Context, observation error) error {
+		phase, desired := "Running", "Healthy"
+		if errors.Is(observation, ErrPending) {
+			phase, desired = "Provisioning", "WorkloadNotReady"
+			if gw.GetPhase() == "Running" || gw.GetPhase() == "Degraded" {
+				phase = "Degraded"
+			}
+		} else if observation != nil {
+			phase, desired = "Degraded", "WorkloadUnavailable"
 		}
-	}
-	return err
+		if gw.GetStatus() == desired && gw.GetPhase() == phase && state.GetObservedGeneration() == state.GetResourceGeneration() {
+			return nil
+		}
+		writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
+		if err != nil {
+			return err
+		}
+		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
+		return err
+	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 }

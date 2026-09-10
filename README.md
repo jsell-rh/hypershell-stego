@@ -314,3 +314,7 @@ Kustomize rendering, and the complete CLI port remain open.
 Recovery now uses [generated storage cursors](acceptance/storage-cursors.md) for
 Gateway IDs, deleted databases, and service accounts. These queries preserve
 access and state filters without unused counts or application-built ID searches.
+
+Controllers use [generated observation budgets](acceptance/observation-deadlines.md)
+to leave time for a conditional status or cleanup write after a provider timeout.
+Five workflows check failure, event delivery, API restart, and recovery.

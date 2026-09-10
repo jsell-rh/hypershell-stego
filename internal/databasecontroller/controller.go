@@ -25,6 +25,7 @@ const replayMode = "hypershell-managed-database-replay"
 const queueCapacity = 1024
 const workers = 4
 const reconcileTimeout = 20 * time.Second
+const observationCommitTimeout = 2 * time.Second
 const resyncInterval = 10 * time.Second
 
 // Provider calls can run concurrently for different database IDs.
@@ -52,7 +53,7 @@ func (c *Controller) Run(ctx context.Context) error {
 			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
-				return errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 			},
 			Observe: func(event runtime.Event) {
 				if event.Phase == "reconnect" {
@@ -199,37 +200,39 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if db.GetProvider() != "deployment" {
 		return nil
 	}
-	writeContext, err := rpc.WithResourceVersion(ctx, version)
-	if err != nil {
-		return err
-	}
-	if deleted {
-		failure := c.provider.Delete(ctx, db)
-		observed := failure == nil
-		if complete != observed {
+	return runtime.RunObservation(ctx, func(operation context.Context) error {
+		if deleted {
+			return c.provider.Delete(operation, db)
+		}
+		return c.provider.Ensure(operation, db)
+	}, func(commit context.Context, observation error) error {
+		writeContext, err := rpc.WithResourceVersion(commit, version)
+		if err != nil {
+			return err
+		}
+		if deleted {
+			observed := observation == nil
+			if complete == observed {
+				return nil
+			}
 			_, err := c.cleanup.ObserveDatabaseCleanup(writeContext, &control.ObserveDatabaseCleanupRequest{Id: db.GetMetadata().GetId(), Owner: "provider", Complete: observed})
-			if err != nil {
-				return err
+			return err
+		}
+		if observation != nil {
+			desired := "error"
+			if errors.Is(observation, ErrPending) {
+				desired = "provisioning"
 			}
-		}
-		return failure
-	}
-	if err := c.provider.Ensure(ctx, db); err != nil {
-		desired := "error"
-		if errors.Is(err, ErrPending) {
-			desired = "provisioning"
-		}
-		if db.GetStatus() != desired {
-			_, updateError := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String(desired)})
-			if updateError != nil {
-				return updateError
+			if db.GetStatus() == desired {
+				return nil
 			}
+			_, err := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String(desired)})
+			return err
 		}
+		if db.GetStatus() == "ready" && db.GetConnectionSecret() == CredentialsName {
+			return nil
+		}
+		_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
 		return err
-	}
-	if db.GetStatus() == "ready" && db.GetConnectionSecret() == CredentialsName {
-		return nil
-	}
-	_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
-	return err
+	}, runtime.ObservationOptions{WorkTimeout: reconcileTimeout, CommitTimeout: observationCommitTimeout})
 }

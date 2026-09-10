@@ -76,3 +76,8 @@ The [storage cursor workflow](storage-cursors.md) now uses generated count-free
 queries for Gateway ID recovery, database deletion replay, and service-account
 recovery. Hypershell supplies its access and state rules. STEGO owns ID binding,
 database ordering, filters, bounds, and continuation.
+
+The [observation deadline workflows](observation-deadlines.md) use generated
+`RunObservation` to reserve time for conditional writes after provider work.
+Gateway workload, database, and identity controllers share this mechanism.
+Hypershell defines status values, cleanup meaning, and provider operations.
