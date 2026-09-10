@@ -105,8 +105,8 @@ func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 	}
 }
 
-func (f *stateFixture) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
-	return &control.ListGatewayIdentityUsersResponse{}, nil
+func (f *stateFixture) ScanGatewayIdentityUsers(_ context.Context, request *control.ScanGatewayIdentityUsersRequest, _ ...grpc.CallOption) (*control.ScanGatewayIdentityUsersResponse, error) {
+	return fixtureUserPage(request), nil
 }
 func (f *providerFixture) ReconcileGatewayUser(context.Context, string, string, string, string) error {
 	return f.err
@@ -118,8 +118,8 @@ type userStateFixture struct {
 	failure  error
 }
 
-func (f *userStateFixture) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
-	return &control.ListGatewayIdentityUsersResponse{UserIds: []string{"user"}}, nil
+func (f *userStateFixture) ScanGatewayIdentityUsers(_ context.Context, request *control.ScanGatewayIdentityUsersRequest, _ ...grpc.CallOption) (*control.ScanGatewayIdentityUsersResponse, error) {
+	return fixtureUserPage(request, "user"), nil
 }
 func (f *userStateFixture) GetGatewayIdentityUser(context.Context, *control.GetGatewayIdentityUserRequest, ...grpc.CallOption) (*control.GetGatewayIdentityUserResponse, error) {
 	return f.response, f.failure
@@ -178,8 +178,8 @@ type progressUserState struct {
 	control.GatewayIdentityServiceClient
 }
 
-func (*progressUserState) ListGatewayIdentityUsers(context.Context, *control.ListGatewayIdentityUsersRequest, ...grpc.CallOption) (*control.ListGatewayIdentityUsersResponse, error) {
-	return &control.ListGatewayIdentityUsersResponse{UserIds: []string{"first", "second"}}, nil
+func (*progressUserState) ScanGatewayIdentityUsers(_ context.Context, request *control.ScanGatewayIdentityUsersRequest, _ ...grpc.CallOption) (*control.ScanGatewayIdentityUsersResponse, error) {
+	return fixtureUserPage(request, "first", "second"), nil
 }
 func (*progressUserState) GetGatewayIdentityUser(_ context.Context, request *control.GetGatewayIdentityUserRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityUserResponse, error) {
 	return &control.GetGatewayIdentityUserResponse{GatewayId: request.GatewayId, UserId: request.UserId, Issuer: "https://issuer.example", Subject: request.UserId, Role: "gateway:viewer"}, nil
@@ -299,4 +299,17 @@ func TestMissingCleanupDeclarationStopsIdentityDeletion(t *testing.T) {
 	if err := controller.reconcile(context.Background(), "gateway"); err == nil || provider.deletes != 0 {
 		t.Fatal("missing cleanup declaration permitted deletion", err)
 	}
+}
+
+func fixtureUserPage(request *control.ScanGatewayIdentityUsersRequest, ids ...string) *control.ScanGatewayIdentityUsersResponse {
+	result := &control.ScanGatewayIdentityUsersResponse{GatewayId: request.GatewayId, AfterGrantId: request.AfterGrantId}
+	start := request.AfterGrantId == ""
+	for _, id := range ids {
+		if start {
+			result.References = append(result.References, &control.GatewayIdentityUserReference{GrantId: id, UserId: id})
+		} else if id == request.AfterGrantId {
+			start = true
+		}
+	}
+	return result
 }

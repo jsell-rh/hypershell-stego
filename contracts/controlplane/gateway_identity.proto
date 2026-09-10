@@ -8,6 +8,7 @@ service GatewayIdentityService {
  rpc ObserveGatewayCleanup(ObserveGatewayCleanupRequest) returns (ObserveGatewayCleanupResponse);
  rpc SetObservedSandboxCount(SetObservedSandboxCountRequest) returns (SetObservedSandboxCountResponse);
  rpc ListGatewayReconcileIDs(ListGatewayReconcileIDsRequest) returns (ListGatewayReconcileIDsResponse);
+ rpc ScanGatewayIdentityUsers(ScanGatewayIdentityUsersRequest) returns (ScanGatewayIdentityUsersResponse);
  rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);
  rpc GetGatewayIdentityUser(GetGatewayIdentityUserRequest) returns (GetGatewayIdentityUserResponse);
  rpc GetGatewayIdentityState(GetGatewayIdentityStateRequest) returns (GetGatewayIdentityStateResponse);
@@ -51,3 +52,20 @@ message ObserveGatewayCleanupRequest { string id = 1; string owner = 2; bool com
 message ObserveGatewayCleanupResponse {}
 
 message CleanupTargetObservations { map<string, bool> targets = 1; }
+
+// Cursor recovery has no total count or row offset. References include retained
+// deleted grants. Each grant ID can be used to resume a partial page. Read each
+// user's current identity state before provider work. Repeat full scans to catch
+// changes before a saved cursor. This is not a snapshot or acknowledgment.
+message ScanGatewayIdentityUsersRequest {
+ string gateway_id = 1;
+ string after_grant_id = 2;
+ int32 page_size = 3;
+}
+message GatewayIdentityUserReference { string grant_id = 1; string user_id = 2; }
+message ScanGatewayIdentityUsersResponse {
+ string gateway_id = 1;
+ string after_grant_id = 2;
+ repeated GatewayIdentityUserReference references = 3;
+ bool has_more = 4;
+}

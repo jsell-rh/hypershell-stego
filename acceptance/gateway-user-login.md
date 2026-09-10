@@ -23,19 +23,19 @@ issuer, audience, and expiry checks did not change. The mapper uses the provider
 user ID, as defined in the
 [Keycloak subject mapper](https://github.com/keycloak/keycloak/blob/26.7.3/services/src/main/java/org/keycloak/protocol/oidc/mappers/SubMapper.java).
 
-Two private generated gRPC methods support this workflow. One lists retained
+Private generated gRPC methods support this workflow. The cursor method lists retained
 grant references in pages of 100. The other returns the current role and verified
 identity for one user and Gateway. Only configured control-plane subjects can
 call them. Deleted grants remain in the inventory so that restart can remove
 roles for a missed deletion. A missing or denied response never supplies an
 empty role as a substitute for known state.
 
-Each controller pass retains its page position when its time budget expires.
-Later users can then receive service on a later pass. A complete scan starts
-again on the next cycle. The current limit is 10,000 retained grant references
-per Gateway. A larger inventory causes an error. This is a resource limit, not
-a production capacity result. Use one active identity controller. Distributed
-coordination and larger inventories remain open.
+Each controller pass retains its last completed grant ID when its time budget
+expires. Later users can then receive service on a later pass. A complete scan
+starts again on the next cycle. A pass reads at most 100 pages of 100 references;
+larger inventories continue on later passes. See [cursor recovery](identity-cursors.md).
+Use one active identity controller. Distributed coordination, durable progress,
+and memory bounds for incomplete scans remain open.
 
 | Behavior | Evidence |
 | --- | --- |

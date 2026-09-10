@@ -123,3 +123,49 @@ func (s *Service) IdentityUserState(ctx context.Context, p Principal, gatewayID,
 	}
 	return state, nil
 }
+
+// IdentityUserReferences returns one bounded page in database grant-ID order.
+// Deleted grants remain eligible so a later pass can remove provider access.
+type IdentityUserReference struct{ GrantID, UserID string }
+
+func (s *Service) IdentityUserReferences(ctx context.Context, p Principal, id, after string, limit int) ([]IdentityUserReference, bool, error) {
+	if err := s.checkIdentityReader(p, id); err != nil {
+		return nil, false, err
+	}
+	if (after != "" && !validID(after)) || limit < 1 || limit > 100 {
+		return nil, false, ErrInvalid
+	}
+	var references []IdentityUserReference
+	var more bool
+	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		if _, err := tx.Get(ctx, "Gateway", id); err != nil {
+			return err
+		}
+		reader, ok := tx.(store.CursorReader)
+		if !ok {
+			return errors.New("identity storage does not support cursor reads")
+		}
+		result, err := reader.ReadCursor(ctx, "RoleBinding", "gateway_id", id, store.CursorOptions{AfterID: after, Limit: limit, Deletion: store.CursorAll, Fields: []string{"id", "user_id"}})
+		if err != nil {
+			return err
+		}
+		rows, ok := result.Items.([]model.RoleBinding)
+		if !ok || len(rows) > limit || (result.More && len(rows) == 0) {
+			return errors.New("unexpected grant cursor result")
+		}
+		seen := map[string]bool{}
+		for _, row := range rows {
+			if !validID(row.ID) || !validID(row.UserID) || row.ID == after || seen[row.ID] {
+				return errors.New("invalid grant cursor result")
+			}
+			seen[row.ID] = true
+			references = append(references, IdentityUserReference{GrantID: row.ID, UserID: row.UserID})
+		}
+		more = result.More
+		return nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return references, more, nil
+}

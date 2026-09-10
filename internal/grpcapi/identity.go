@@ -92,3 +92,15 @@ func (s *identityServer) ObserveGatewayCleanup(ctx context.Context, request *pb.
 	}
 	return &pb.ObserveGatewayCleanupResponse{}, nil
 }
+
+func (s *identityServer) ScanGatewayIdentityUsers(ctx context.Context, request *pb.ScanGatewayIdentityUsersRequest) (*pb.ScanGatewayIdentityUsersResponse, error) {
+	refs, more, err := s.service.IdentityUserReferences(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetAfterGrantId(), int(request.GetPageSize()))
+	if err != nil {
+		return nil, mapError(err)
+	}
+	response := &pb.ScanGatewayIdentityUsersResponse{GatewayId: request.GetGatewayId(), AfterGrantId: request.GetAfterGrantId(), HasMore: more}
+	for _, ref := range refs {
+		response.References = append(response.References, &pb.GatewayIdentityUserReference{GrantId: ref.GrantID, UserId: ref.UserID})
+	}
+	return response, nil
+}

@@ -24,6 +24,7 @@ const (
 	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName    = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
 	GatewayIdentityService_SetObservedSandboxCount_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
 	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
+	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
 	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
 	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName   = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
 	GatewayIdentityService_GetGatewayIdentityState_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
@@ -39,6 +40,7 @@ type GatewayIdentityServiceClient interface {
 	ObserveGatewayCleanup(ctx context.Context, in *ObserveGatewayCleanupRequest, opts ...grpc.CallOption) (*ObserveGatewayCleanupResponse, error)
 	SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(ctx context.Context, in *ListGatewayReconcileIDsRequest, opts ...grpc.CallOption) (*ListGatewayReconcileIDsResponse, error)
+	ScanGatewayIdentityUsers(ctx context.Context, in *ScanGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ScanGatewayIdentityUsersResponse, error)
 	ListGatewayIdentityUsers(ctx context.Context, in *ListGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ListGatewayIdentityUsersResponse, error)
 	GetGatewayIdentityUser(ctx context.Context, in *GetGatewayIdentityUserRequest, opts ...grpc.CallOption) (*GetGatewayIdentityUserResponse, error)
 	GetGatewayIdentityState(ctx context.Context, in *GetGatewayIdentityStateRequest, opts ...grpc.CallOption) (*GetGatewayIdentityStateResponse, error)
@@ -76,6 +78,16 @@ func (c *gatewayIdentityServiceClient) ListGatewayReconcileIDs(ctx context.Conte
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListGatewayReconcileIDsResponse)
 	err := c.cc.Invoke(ctx, GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) ScanGatewayIdentityUsers(ctx context.Context, in *ScanGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ScanGatewayIdentityUsersResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ScanGatewayIdentityUsersResponse)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +134,7 @@ type GatewayIdentityServiceServer interface {
 	ObserveGatewayCleanup(context.Context, *ObserveGatewayCleanupRequest) (*ObserveGatewayCleanupResponse, error)
 	SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(context.Context, *ListGatewayReconcileIDsRequest) (*ListGatewayReconcileIDsResponse, error)
+	ScanGatewayIdentityUsers(context.Context, *ScanGatewayIdentityUsersRequest) (*ScanGatewayIdentityUsersResponse, error)
 	ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error)
 	GetGatewayIdentityUser(context.Context, *GetGatewayIdentityUserRequest) (*GetGatewayIdentityUserResponse, error)
 	GetGatewayIdentityState(context.Context, *GetGatewayIdentityStateRequest) (*GetGatewayIdentityStateResponse, error)
@@ -143,6 +156,9 @@ func (UnimplementedGatewayIdentityServiceServer) SetObservedSandboxCount(context
 }
 func (UnimplementedGatewayIdentityServiceServer) ListGatewayReconcileIDs(context.Context, *ListGatewayReconcileIDsRequest) (*ListGatewayReconcileIDsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGatewayReconcileIDs not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) ScanGatewayIdentityUsers(context.Context, *ScanGatewayIdentityUsersRequest) (*ScanGatewayIdentityUsersResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ScanGatewayIdentityUsers not implemented")
 }
 func (UnimplementedGatewayIdentityServiceServer) ListGatewayIdentityUsers(context.Context, *ListGatewayIdentityUsersRequest) (*ListGatewayIdentityUsersResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ListGatewayIdentityUsers not implemented")
@@ -229,6 +245,24 @@ func _GatewayIdentityService_ListGatewayReconcileIDs_Handler(srv interface{}, ct
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GatewayIdentityService_ScanGatewayIdentityUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ScanGatewayIdentityUsersRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).ScanGatewayIdentityUsers(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).ScanGatewayIdentityUsers(ctx, req.(*ScanGatewayIdentityUsersRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GatewayIdentityService_ListGatewayIdentityUsers_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListGatewayIdentityUsersRequest)
 	if err := dec(in); err != nil {
@@ -301,6 +335,10 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListGatewayReconcileIDs",
 			Handler:    _GatewayIdentityService_ListGatewayReconcileIDs_Handler,
+		},
+		{
+			MethodName: "ScanGatewayIdentityUsers",
+			Handler:    _GatewayIdentityService_ScanGatewayIdentityUsers_Handler,
 		},
 		{
 			MethodName: "ListGatewayIdentityUsers",

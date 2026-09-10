@@ -363,3 +363,7 @@ and adds verified issuer, subject, and access-token expiry fields.
 The CLI `version` command returns separate application and compiler build records.
 It works without login or API access. See [build records](acceptance/cli-version.md)
 for the tested behavior and limits.
+
+Identity recovery now resumes from retained grant IDs through the common STEGO
+scan runtime. Inventories above 10,000 references continue across bounded passes.
+See [identity cursor recovery](acceptance/identity-cursors.md).
