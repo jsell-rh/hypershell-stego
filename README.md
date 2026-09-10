@@ -336,3 +336,7 @@ and dependency file hashes. Contract race tests and the application build passed
 [Identity reconciliation reads](acceptance/identity-queries.md) now use generated
 bounded queries without unused totals. Current grants, retained user identity,
 and controller-only access remain part of the same transaction.
+
+The [generated gRPC client preserves absent stream headers](acceptance/grpc-stream-headers.md).
+A real Gateway gate exposed an error-classification defect that the raw-client
+test missed. The fix is in STEGO; the application now tests its generated client.

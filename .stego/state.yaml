@@ -9,7 +9,7 @@ last_applied:
             version: 1.7.0
             sha: gateway-workflow
         grpc-application:
-            version: 1.6.0
+            version: 1.6.1
             sha: gateway-workflow
         http-application:
             version: 1.4.0
@@ -319,7 +319,7 @@ last_applied:
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 28bb62c44a881eb03055def84a77817c1a80c04942e7ec9d461a4f2f0629fb14
-        grpcapi/client/client.go: ec946cf68b7068ac3a605ebf33e8e7ba684af35ec7135dfaa672056e8f13f063
+        grpcapi/client/client.go: 669c809eb5a08774c1726870cf708f9c11a0e97d9fc028dff04246f475ac473f
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: e7b79f6acc18b71d850427e01a3886232ce98de6c6137943af3544c9815559be
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup_grpc.pb.go: 62b4aa89e270a7979fa728d6729b425bb65f1e2baffaec1028f342c5c2fc87dc
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 712aadb17c3847191b5f5085bf445af8366d6c2b9f984734d826a0166cdb5eed

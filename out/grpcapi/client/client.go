@@ -215,6 +215,11 @@ func (s *boundedStream) Header() (metadata.MD, error) {
 	if context.Cause(s.ctx) == context.DeadlineExceeded {
 		return nil, status.Error(codes.DeadlineExceeded, "RPC stream deadline exceeded")
 	}
+	// A nil header means the RPC ended before headers. The caller must receive
+	// its terminal status. metadata.MD.Copy turns nil into a non-nil empty map.
+	if s.header == nil {
+		return nil, s.headerErr
+	}
 	return s.header.Copy(), s.headerErr
 }
 func (s *boundedStream) RecvMsg(message any) error {
