@@ -1,4 +1,5 @@
-The compiler pin is `19b9e74c21ff5b03d5f8d763ec6df7cfdfcf2b3b`.
+The constructor preflight adoption used compiler
+`19b9e74c21ff5b03d5f8d763ec6df7cfdfcf2b3b`.
 The later [constructor dependency check](constructor-dependencies.md) rejects
 ambiguous producer names before it returns a generation plan.
 STEGO now checks resolved component inputs before it renders any component.

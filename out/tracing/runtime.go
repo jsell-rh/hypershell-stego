@@ -44,6 +44,8 @@ const defaultService = "hypershell"
 // Runtime owns its tracer provider and export connection. It does not change
 // global OpenTelemetry providers. Missing collector configuration disables it.
 type Runtime struct {
+	signals    requestSignals
+	grpcTracer trace.Tracer
 	provider   *sdktrace.TracerProvider
 	tracer     trace.Tracer
 	connection *grpc.ClientConn
@@ -59,7 +61,7 @@ func NewRuntime() (*Runtime, error) {
 	if endpoint == "" {
 		return &Runtime{}, nil
 	}
-	allowed := map[string]bool{"OTEL_EXPORTER_OTLP_ENDPOINT": true, "OTEL_EXPORTER_OTLP_PROTOCOL": true, "OTEL_EXPORTER_OTLP_CERTIFICATE": true, "OTEL_SERVICE_NAME": true, "OTEL_TRACES_SAMPLER_ARG": true}
+	allowed := map[string]bool{"OTEL_EXPORTER_OTLP_ENDPOINT": true, "OTEL_EXPORTER_OTLP_PROTOCOL": true, "OTEL_EXPORTER_OTLP_CERTIFICATE": true, "OTEL_SERVICE_NAME": true, "OTEL_TRACES_SAMPLER_ARG": true, "OTEL_METRICS_EXPORTER": true, "OTEL_LOGS_EXPORTER": true, "OTEL_METRIC_EXPORT_INTERVAL": true}
 	for _, entry := range os.Environ() {
 		name, value, _ := strings.Cut(entry, "=")
 		if value != "" && strings.HasPrefix(name, "OTEL_") && !allowed[name] {
@@ -91,6 +93,10 @@ func NewRuntime() (*Runtime, error) {
 			return nil, errors.New("invalid trace sampling ratio")
 		}
 	}
+	interval, err := signalSettings()
+	if err != nil {
+		return nil, err
+	}
 	roots, err := traceRoots(os.Getenv("OTEL_EXPORTER_OTLP_CERTIFICATE"))
 	if err != nil {
 		return nil, err
@@ -107,6 +113,11 @@ func NewRuntime() (*Runtime, error) {
 	runtime := &Runtime{connection: connection}
 	runtime.provider = sdktrace.NewTracerProvider(sdktrace.WithResource(resource.NewSchemaless(attribute.String("service.name", service))), sdktrace.WithSampler(sdktrace.TraceIDRatioBased(ratio)), sdktrace.WithRawSpanLimits(sdktrace.SpanLimits{AttributeValueLengthLimit: 256, AttributeCountLimit: 8}), sdktrace.WithBatcher(&safeExporter{SpanExporter: exporter, runtime: runtime}, sdktrace.WithMaxQueueSize(QueueSize), sdktrace.WithMaxExportBatchSize(BatchSize), sdktrace.WithBatchTimeout(200*time.Millisecond), sdktrace.WithExportTimeout(ExportTimeout)))
 	runtime.tracer = runtime.provider.Tracer("stego/http")
+	runtime.grpcTracer = runtime.provider.Tracer("stego/grpc")
+	if err := runtime.initSignals(service, interval); err != nil {
+		runtime.Close()
+		return nil, err
+	}
 	return runtime, nil
 }
 func traceRoots(name string) (*x509.CertPool, error) {
@@ -158,15 +169,31 @@ func (r *Runtime) ExportFailures() uint64 { return r.failures.Load() }
 func (r *Runtime) Close() {
 	r.once.Do(func() {
 		r.closed.Store(true)
-		if r.provider == nil {
-			return
-		}
 		ctx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
 		defer cancel()
-		if err := r.provider.Shutdown(ctx); err != nil {
-			slog.Warn("trace shutdown did not complete")
+		var group sync.WaitGroup
+		closeProvider := func(shutdown func(context.Context) error) {
+			group.Add(1)
+			go func() {
+				defer group.Done()
+				if err := shutdown(ctx); err != nil {
+					slog.Warn("telemetry shutdown did not complete")
+				}
+			}()
 		}
-		_ = r.connection.Close()
+		if r.provider != nil {
+			closeProvider(r.provider.Shutdown)
+		}
+		if r.signals.meter != nil {
+			closeProvider(r.signals.meter.Shutdown)
+		}
+		if r.signals.logs != nil {
+			closeProvider(r.signals.logs.Shutdown)
+		}
+		group.Wait()
+		if r.connection != nil {
+			_ = r.connection.Close()
+		}
 	})
 }
 
@@ -193,22 +220,41 @@ func (r *Runtime) Handler(next http.Handler) http.Handler {
 		default:
 			method = "_OTHER"
 		}
-		ctx, span := r.tracer.Start(ctx, "HTTP "+method, trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("http.request.method", method)))
-		completed := false
+		start := time.Now()
+		ctx, span := r.tracer.Start(ctx, "HTTP "+method, trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("http.request.method", method)), trace.WithTimestamp(start))
+		observed := &httpObservation{}
+		ctx = context.WithValue(ctx, httpObservationKey{}, observed)
+		r.signals.httpStarted(ctx)
+		responseCode := 0
 		defer func() {
-			if !completed {
+			end := time.Now()
+			if responseCode == 0 || responseCode >= 500 {
 				span.SetStatus(codes.Error, "")
 			}
-			span.End()
+			if responseCode == 0 {
+				span.SetAttributes(attribute.String("error.type", "panic"))
+			} else if responseCode >= 500 {
+				span.SetAttributes(attribute.String("error.type", strconv.Itoa(responseCode)))
+			}
+			route := observed.route.Load()
+			pattern := ""
+			if route != nil {
+				pattern = *route
+			}
+			r.signals.httpFinished(ctx, start, end, method, pattern, responseCode)
+			span.End(trace.WithTimestamp(end))
 		}()
 		tracedRequest := request.WithContext(ctx)
 		result := httpsnoop.CaptureMetrics(next, w, tracedRequest)
 		recordRoute(span, method, tracedRequest.Pattern)
+		if pattern := safeRoute(tracedRequest.Pattern); pattern != "" {
+			observed.route.Store(&pattern)
+		}
 		span.SetAttributes(attribute.Int("http.response.status_code", result.Code))
 		if result.Code >= 500 {
 			span.SetStatus(codes.Error, "")
 		}
-		completed = true
+		responseCode = result.Code
 	})
 }
 
@@ -227,19 +273,34 @@ func (r *Runtime) Route(next http.Handler) http.Handler {
 				method = "_OTHER"
 			}
 			recordRoute(trace.SpanFromContext(request.Context()), method, request.Pattern)
+			if observed, ok := request.Context().Value(httpObservationKey{}).(*httpObservation); ok {
+				if pattern := safeRoute(request.Pattern); pattern != "" {
+					observed.route.Store(&pattern)
+				}
+			}
 		}()
 		next.ServeHTTP(w, request)
 	})
 }
-func recordRoute(span trace.Span, method, pattern string) {
+
+type httpObservationKey struct{}
+type httpObservation struct{ route atomic.Pointer[string] }
+
+func safeRoute(pattern string) string {
 	if pattern == "" || pattern == "/" || len(pattern) > 256 {
-		return
+		return ""
 	}
 	_, route, hasMethod := strings.Cut(pattern, " ")
 	if !hasMethod {
 		route = pattern
 	}
 	if strings.HasPrefix(route, "/") && strings.Trim(route, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789/._-{}$") == "" {
+		return route
+	}
+	return ""
+}
+func recordRoute(span trace.Span, method, pattern string) {
+	if route := safeRoute(pattern); route != "" {
 		span.SetName(method + " " + route)
 		span.SetAttributes(attribute.String("http.route", route))
 	}
@@ -262,8 +323,15 @@ func (r *Runtime) TraceRPC(ctx context.Context, fullMethod string) (context.Cont
 	if !strings.HasPrefix(fullMethod, "/") || !found || service == "" || name == "" || len(method) > 256 || strings.Contains(name, "/") || strings.Trim(service, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._") != "" || strings.Trim(name, "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_") != "" {
 		method = "_OTHER"
 	}
-	ctx, span := r.provider.Tracer("stego/grpc").Start(ctx, method, trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("rpc.system.name", "grpc"), attribute.String("rpc.method", method)))
+	tracer := r.grpcTracer
+	if tracer == nil {
+		tracer = r.provider.Tracer("stego/grpc")
+	}
+	start := time.Now()
+	ctx, span := tracer.Start(ctx, method, trace.WithSpanKind(trace.SpanKindServer), trace.WithAttributes(attribute.String("rpc.system.name", "grpc"), attribute.String("rpc.method", method)), trace.WithTimestamp(start))
+	r.signals.rpcStarted(ctx)
 	return ctx, func(err error) {
+		end := time.Now()
 		code := status.Code(err)
 		names := [...]string{"OK", "CANCELLED", "UNKNOWN", "INVALID_ARGUMENT", "DEADLINE_EXCEEDED", "NOT_FOUND", "ALREADY_EXISTS", "PERMISSION_DENIED", "RESOURCE_EXHAUSTED", "FAILED_PRECONDITION", "ABORTED", "OUT_OF_RANGE", "UNIMPLEMENTED", "INTERNAL", "UNAVAILABLE", "DATA_LOSS", "UNAUTHENTICATED"}
 		if int64(code) >= int64(len(names)) {
@@ -276,6 +344,7 @@ func (r *Runtime) TraceRPC(ctx context.Context, fullMethod string) (context.Cont
 			span.SetStatus(codes.Error, "")
 			span.SetAttributes(attribute.String("error.type", value))
 		}
-		span.End()
+		r.signals.rpcFinished(ctx, start, end, method, value, code)
+		span.End(trace.WithTimestamp(end))
 	}
 }

@@ -53,28 +53,28 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: 02748cb979c29651648da83b0f0447f8b8869e3bee80b459c2bc6ef1e7c5c494
+                sha256: b0374b7d1cfd789e776aea01bc95199acdd4e8af8200ce679de332fe2eb28ba3
                 mode: 420
             go.sum:
                 exists: true
-                sha256: b0636d009b82f3da058e7ad66ea1bba9629b4ee467e9875134789853d46394c7
+                sha256: 771835e0bc7c51fda36394cbddc2431d5fd41baa92e86d4e38f1014b8d26c232
                 mode: 420
             service.yaml:
                 exists: true
                 sha256: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
                 mode: 420
-        sha256: 9a90763192dab27b5e5cd21ad29a35e2c3aafdb3435334bbbcb79ce1463a6a42
+        sha256: 690817c3664842fb2a23f8bf16a0ad67b4a707c283be925fdffabd11150a7fa2
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910205805-19b9e74c21ff
+        module_version: v0.0.0-20260910210912-f89bf13e7a65
         vcs: git
-        revision: 19b9e74c21ff5b03d5f8d763ec6df7cfdfcf2b3b
+        revision: f89bf13e7a65c1a6224a31704cec858c8d254ddf
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
-    registry_content_sha256: b5a2ec72644c276b003a82eb16cdee25de43aa475f4b21755d49cfef7457dc34
+    registry_content_sha256: 8f6f857ffbace8970ac0cd2f65490c7149081318c43abb661e2708eca8acf8e1
     components:
         cli-application:
             version: 1.4.2
@@ -101,7 +101,7 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         otel-tracing:
-            version: 1.1.0
+            version: 1.2.0
             sha: gateway-workflow
         outbox:
             version: 1.0.3
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: d0622f0b68c45e86b35064b994a026d554557c62a6e3d8adc1f51f8032b2f26b
+        cli/command/version.go: 2c0052838b25f05608f7d65bf4ce7420c4c133be539d71b87138055b9991b4e2
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -461,4 +461,5 @@ last_applied:
         storage/store.go: b38b52f76422df615b2ee3899064cee2e94fc94a7aeafd74eea7bd1525bc7d76
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 3b7b93f59d812fa6a6cd20c59d467594e27470ab649076d5cef129e9f11610cf
-        tracing/runtime.go: 31798d7087d811bc7c86ea8ac6b31971c640fe108457133c25323a831935209e
+        tracing/runtime.go: 2751ccc5a2939154600ab5d0e48b88f7b7b2ff04c029ecbe48f1fa2304b8e5e6
+        tracing/signals.go: 9a331caf59964aa5d43e6d99c49ad95933bb184626cb7045c631b69f5dda5c7e

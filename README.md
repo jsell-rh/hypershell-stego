@@ -15,8 +15,10 @@ rollback, and restart. Tests read the same resources across both transports.
 REST search, ordering, and [list field selection](acceptance/field-selection.md)
 are implemented. Related-resource search and other application workflows remain
 open. See [the checks](acceptance/README.md).
-Shared [gRPC tracing](acceptance/grpc-tracing.md) now covers Gateway calls and
-watch lifetime, including denied reads, restart, and collector loss.
+Shared [gRPC tracing](acceptance/grpc-tracing.md) covers Gateway calls and watch
+lifetime. The [request observability gate](acceptance/request-observability.md)
+now verifies correlated logs, metrics, and traces, including denied reads, active
+streams, restart, and collector loss.
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes

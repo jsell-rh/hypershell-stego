@@ -11,6 +11,8 @@ restart. Complete dependency readiness and deployment probes remain open.
 
 The [HTTP tracing workflow](http-tracing.md) checks generated spans, private-data
 exclusion, trace continuation, API restart, and progress after collector loss.
+The later [request observability workflow](request-observability.md) checks
+correlated OTLP logs, metrics, and traces through the same generated runtime.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway

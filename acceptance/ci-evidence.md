@@ -45,3 +45,10 @@ the old 18-minute package limit. `TestServiceAccountCreationFailuresAndRevokedAc
 had been active for two seconds. The failure log reported no earlier assertion
 failure. This run still used the old limit. The later health run for `d162879`
 uses the 25-minute package budget and must produce its own complete result.
+
+The [health revision run 34527122554](https://github.com/jsell-rh/hypershell-stego/actions/runs/34527122554)
+completed successfully for `d162879d1ef73d5121c9b23e7931f63a5ff17b77`.
+All six jobs passed, including the complete acceptance suite with the new
+25-minute package limit and the five provider jobs. This supplies a complete
+result for that revision. It does not replace CI for the later tracing or
+request-observability changes.
