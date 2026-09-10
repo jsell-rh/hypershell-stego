@@ -96,7 +96,9 @@ passed. This duration includes setup and is not a capacity claim. The compiler
 race suite and compiler CI passed. Pinned regeneration and application static
 checks passed. CI runs the full application and workload gates.
 
-Role and role-binding apply mappings remain open. Kustomize rendering is also
+The role-binding apply mapping remains open. The reference role API registers
+only reads, although its CLI has a role apply stub. Role mutation requires a new
+API and access policy. Kustomize rendering is also
 open; `-k` fails before any request. The port does not claim Kubernetes field
 ownership, pruning, an atomic server upsert, or a complete CLI port. The
 [CLI port table](cli-port.md) records the remaining work.
