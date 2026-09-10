@@ -29,7 +29,7 @@ command. The generated application processes also use the race detector.
 Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL connection with permission to create
 test databases. Set `STEGO_REQUIRE_POSTGRES=1` to require these checks. Each test
 creates and removes its own database. It does not migrate or delete the supplied
-database. Run `go test -race -mod=readonly -timeout=18m ./...`.
+database. Run `go test -v -race -mod=readonly -timeout=25m ./...`.
 
 The tests apply generated model and outbox migrations during setup. The application
 process does not apply migrations. It fails if the queue is absent. The broker

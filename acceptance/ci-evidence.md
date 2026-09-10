@@ -11,7 +11,7 @@ This preserves complete results for started push runs without accumulating an
 unbounded queue. It does not guarantee a run for each intermediate commit.
 See GitHub's [concurrency contract](https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#concurrency).
 
-All four jobs and their existing time limits remain in force. The acceptance
+At that revision, all four jobs and their time limits remained in force. The acceptance
 job requires PostgreSQL and Keycloak, verifies modules and pinned regeneration,
 and runs the complete Go race suite. Separate jobs check real database, Gateway,
 and sandbox workloads. Report each result with its tested revision and scope.
@@ -20,3 +20,22 @@ Cancellation supplies no evidence that an unfinished test passed or failed.
 YAML parsing and a structural comparison confirmed that only the cancellation
 expression changed. No application or generated source changed. This workflow
 change does not require a compiler pin update.
+
+On 2026-09-10, run 34523173525 for commit
+`a844cd6de6eaa51da1b7a15f901db875cb108f05` reached the acceptance package's
+18-minute limit. Its five separate provider jobs passed. The package timeout
+occurred during `TestGeneratedServiceAccountCLIWorkflow`, after that test had
+run for 35 seconds. The log reported no assertion failure before the timeout.
+The incomplete suite is a failed CI result.
+
+The same CLI test passed locally at commit
+`132177d82b0145803c59e03502294c77fbee22f8` in 31.02 seconds under race detection,
+with PostgreSQL and Keycloak required. This result does not replace the failed
+full CI run or prove its cause. The previous local full acceptance run took
+869.854 seconds, before the latest inventory restart test was added.
+
+The aggregate package limit is now 25 minutes. The CI job allows 30 minutes for
+setup, module checks, regeneration, and tests. Request, provider, and individual
+workflow deadlines are unchanged. Verbose test output records each test's
+progress and duration. A future timeout can then be assessed from individual
+test results. The full remote suite must still pass at the new revision.
