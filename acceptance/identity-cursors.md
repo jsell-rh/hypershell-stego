@@ -1,8 +1,11 @@
-Identity recovery uses STEGO's `ScanFrom` runtime and PostgreSQL cursor reader.
+Identity recovery uses STEGO's `ScanCheckpointed` runtime, PostgreSQL cursor
+reader, and `CheckpointStore`.
 The controller no longer stores a page number or row offset. It stores the last
 grant ID whose per-user emitter completed. Each pass reads at most 100 pages of
 100 references. A larger inventory continues on a later pass. A complete scan
-removes its saved cursor and starts a new full scan on the next cycle.
+resets its saved cursor and starts a new full scan on the next cycle. The
+checkpoint version remains stored so that an older writer cannot restore old
+progress.
 
 The new private `ScanGatewayIdentityUsers` RPC accepts a Gateway ID, grant cursor,
 and page size. It echoes the Gateway and cursor and returns grant/user pairs
@@ -22,9 +25,9 @@ Each provider update still requires fresh user identity and grant state. Repeate
 references to one user within a page cause one state read and provider call.
 An ordinary per-user failure does not block later users. The first such error is
 returned, and a later full scan retries that user. A failed call that reaches
-the context limit keeps that grant eligible for the next pass. Successful work
-followed by cancellation advances the cursor. Cursor progress does not prove
-provider convergence.
+the context limit keeps that grant eligible for the next pass. The runtime reserves two seconds to save progress after the work deadline.
+Parent cancellation prevents that save and can repeat the unsaved prefix.
+Cursor progress does not prove provider convergence.
 
 The old controller failed `TestUserRecoveryReachesBeyondTenThousandGrants` in
 0.030 seconds. It stopped at the 10,000-reference limit. The new test reaches
@@ -33,8 +36,8 @@ pages, canceled final users, 64 independent scans, duplicate user references,
 and malformed pages before effects.
 
 `TestIdentityReferenceCursorThroughGeneratedRuntime` uses PostgreSQL, TLS gRPC,
-and the generated scan runtime. It interrupts the first page after seven items,
-restarts the API, resumes from the saved cursor, and reads all 10,106 references
+and the generated scan runtime. It saves the first seven items at a page limit,
+restarts the API, loads the saved cursor from PostgreSQL, and reads all 10,106 references
 without loss or repeat. The test includes retained deletion, duplicate user
 references, denied callers, and invalid requests. This is an inventory test;
 it does not perform 10,106 external provider writes.
@@ -61,13 +64,45 @@ and 2487–2489 allocations. The new cursor read after item 9900 took
 mapping. They exclude gRPC, provider calls, and controller scheduling. They do
 not establish a production capacity or recovery target.
 
-Durable progress storage, memory bounds for incomplete Gateway cursors, and
-cross-process fencing remain open. Progress is still process-local. A controller
-process restart starts a full inventory scan. Repeated restarts can therefore
-delay later users. This change removes the fixed inventory limit; it does not
-resolve that durable-progress requirement.
+Durable progress now resides in generated PostgreSQL storage. The controller
+has no cursor map. One fixed scope, `identity-users`, permits one checkpoint row
+per Gateway. The private load and save RPCs require the exact Gateway identity
+configuration grant. Saves lock the live Gateway and reject a cursor outside
+its retained grant source. Deletion prevents later saves. A cursor write does
+not change the public Gateway revision or emit a domain event.
+
+`TestUserScanSurvivesControllerReplacement` failed before this change. A new
+controller repeated the first 10,000 references and could not reach the tail in
+its next pass. It now loads the checkpoint and completes the 10,100-reference
+fixture. `TestIdentityCheckpointSurvivesAPIAndControllerRestart` uses the real
+API, PostgreSQL, controller runtime, and a recording provider. It reaches a work
+timeout, saves progress, replaces the API and controller, and checks a changed
+grant before the next provider action. Saved work is not repeated. The test also
+checks that cursor writes preserve the public revision and stop after deletion.
+
+Apply `out/storage/migrations/000006_scan_checkpoints.sql` before starting the
+new API when migrations run externally. Startup rejects missing or invalid
+checkpoint key columns. Deploy the API before the new identity controller;
+there is no fallback to process-local progress.
+
+Cross-process provider ownership, durable retry scheduling and conditions,
+safe history retirement, and production capacity evidence remain open. A
+checkpoint version check does not prevent concurrent provider calls. Retain
+checkpoint rows while older writers can exist, and do not reuse resource IDs.
 
 After the final per-page duplicate-user check, the real identity-controller
 workflow passed again in 36.270 seconds. Real Gateway login from current grants
 and independent identity cleanup after restart passed in 38.802 seconds.
 The final controller race tests and vet also passed.
+
+The durable-checkpoint update passed 12 selected application tests in 143.866
+seconds with the race detector and required PostgreSQL and Keycloak fixtures.
+These tests cover Gateway/owner/event commit and rollback, REST and gRPC,
+identity provisioning and cleanup, stored-grant login, provider deadline
+recovery, both cursor restart tests, bounded reads, and the clean compiler
+version record. All unit and contract tests and `go vet` also passed.
+
+An earlier broad local run used a six-minute limit and did not complete. It
+also rejected the temporary compiler build before the clean pin was applied.
+The final selected tests use compiler `4bf903c557c9c6a330bc0889ef1ec30bb018b41d`.
+The complete application suite and Kubernetes jobs remain remote CI gates.

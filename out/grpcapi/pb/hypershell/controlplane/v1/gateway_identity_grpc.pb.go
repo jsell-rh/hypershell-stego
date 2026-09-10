@@ -21,14 +21,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GatewayIdentityService_GetGatewayCleanupSummary_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary"
-	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName    = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
-	GatewayIdentityService_SetObservedSandboxCount_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
-	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
-	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
-	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
-	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName   = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
-	GatewayIdentityService_GetGatewayIdentityState_FullMethodName  = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
+	GatewayIdentityService_LoadGatewayIdentityCheckpoint_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCheckpoint"
+	GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint"
+	GatewayIdentityService_GetGatewayCleanupSummary_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary"
+	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
+	GatewayIdentityService_SetObservedSandboxCount_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
+	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
+	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
+	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
+	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName        = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
+	GatewayIdentityService_GetGatewayIdentityState_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
 )
 
 // GatewayIdentityServiceClient is the client API for GatewayIdentityService service.
@@ -38,6 +40,8 @@ const (
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceClient interface {
+	LoadGatewayIdentityCheckpoint(ctx context.Context, in *LoadGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCheckpoint, error)
+	SaveGatewayIdentityCheckpoint(ctx context.Context, in *SaveGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCheckpoint, error)
 	GetGatewayCleanupSummary(ctx context.Context, in *GetGatewayCleanupSummaryRequest, opts ...grpc.CallOption) (*CleanupSummary, error)
 	ObserveGatewayCleanup(ctx context.Context, in *ObserveGatewayCleanupRequest, opts ...grpc.CallOption) (*ObserveGatewayCleanupResponse, error)
 	SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error)
@@ -54,6 +58,26 @@ type gatewayIdentityServiceClient struct {
 
 func NewGatewayIdentityServiceClient(cc grpc.ClientConnInterface) GatewayIdentityServiceClient {
 	return &gatewayIdentityServiceClient{cc}
+}
+
+func (c *gatewayIdentityServiceClient) LoadGatewayIdentityCheckpoint(ctx context.Context, in *LoadGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCheckpoint, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewayIdentityCheckpoint)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_LoadGatewayIdentityCheckpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) SaveGatewayIdentityCheckpoint(ctx context.Context, in *SaveGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCheckpoint, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewayIdentityCheckpoint)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *gatewayIdentityServiceClient) GetGatewayCleanupSummary(ctx context.Context, in *GetGatewayCleanupSummaryRequest, opts ...grpc.CallOption) (*CleanupSummary, error) {
@@ -143,6 +167,8 @@ func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Conte
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceServer interface {
+	LoadGatewayIdentityCheckpoint(context.Context, *LoadGatewayIdentityCheckpointRequest) (*GatewayIdentityCheckpoint, error)
+	SaveGatewayIdentityCheckpoint(context.Context, *SaveGatewayIdentityCheckpointRequest) (*GatewayIdentityCheckpoint, error)
 	GetGatewayCleanupSummary(context.Context, *GetGatewayCleanupSummaryRequest) (*CleanupSummary, error)
 	ObserveGatewayCleanup(context.Context, *ObserveGatewayCleanupRequest) (*ObserveGatewayCleanupResponse, error)
 	SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error)
@@ -161,6 +187,12 @@ type GatewayIdentityServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGatewayIdentityServiceServer struct{}
 
+func (UnimplementedGatewayIdentityServiceServer) LoadGatewayIdentityCheckpoint(context.Context, *LoadGatewayIdentityCheckpointRequest) (*GatewayIdentityCheckpoint, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoadGatewayIdentityCheckpoint not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) SaveGatewayIdentityCheckpoint(context.Context, *SaveGatewayIdentityCheckpointRequest) (*GatewayIdentityCheckpoint, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveGatewayIdentityCheckpoint not implemented")
+}
 func (UnimplementedGatewayIdentityServiceServer) GetGatewayCleanupSummary(context.Context, *GetGatewayCleanupSummaryRequest) (*CleanupSummary, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetGatewayCleanupSummary not implemented")
 }
@@ -205,6 +237,42 @@ func RegisterGatewayIdentityServiceServer(s grpc.ServiceRegistrar, srv GatewayId
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&GatewayIdentityService_ServiceDesc, srv)
+}
+
+func _GatewayIdentityService_LoadGatewayIdentityCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadGatewayIdentityCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayIdentityCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_LoadGatewayIdentityCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayIdentityCheckpoint(ctx, req.(*LoadGatewayIdentityCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_SaveGatewayIdentityCheckpoint_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveGatewayIdentityCheckpointRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).SaveGatewayIdentityCheckpoint(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).SaveGatewayIdentityCheckpoint(ctx, req.(*SaveGatewayIdentityCheckpointRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _GatewayIdentityService_GetGatewayCleanupSummary_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -358,6 +426,14 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hypershell.controlplane.v1.GatewayIdentityService",
 	HandlerType: (*GatewayIdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "LoadGatewayIdentityCheckpoint",
+			Handler:    _GatewayIdentityService_LoadGatewayIdentityCheckpoint_Handler,
+		},
+		{
+			MethodName: "SaveGatewayIdentityCheckpoint",
+			Handler:    _GatewayIdentityService_SaveGatewayIdentityCheckpoint_Handler,
+		},
 		{
 			MethodName: "GetGatewayCleanupSummary",
 			Handler:    _GatewayIdentityService_GetGatewayCleanupSummary_Handler,

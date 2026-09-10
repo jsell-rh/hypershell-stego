@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"sync"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
@@ -34,18 +33,16 @@ type Provider interface {
 	ReconcileGatewayUser(context.Context, string, string, string, string) error
 }
 type Controller struct {
-	gateways    pb.GatewayServiceClient
-	state       control.GatewayIdentityServiceClient
-	provider    Provider
-	userScans   map[string]string
-	userScansMu sync.Mutex
+	gateways pb.GatewayServiceClient
+	state    control.GatewayIdentityServiceClient
+	provider Provider
 }
 
 func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, provider Provider) (*Controller, error) {
 	if gateways == nil || state == nil || provider == nil {
 		return nil, errors.New("Gateway controller dependencies are required")
 	}
-	return &Controller{gateways: gateways, state: state, provider: provider, userScans: make(map[string]string)}, nil
+	return &Controller{gateways: gateways, state: state, provider: provider}, nil
 }
 
 // Run connects domain state and actions to the generated controller runtime.
@@ -140,7 +137,6 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if !declared {
 			return errors.New("Gateway state has no identity cleanup observation")
 		}
-		c.setUserScan(id, "")
 		return runtime.RunObservation(ctx, func(operation context.Context) error {
 			return c.provider.DeleteGateway(operation, id)
 		}, func(commit context.Context, observation error) error {
@@ -178,31 +174,15 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	return c.reconcileUsers(ctx, id)
 }
 
-// The lock protects cursor data only. It is never held during a remote call.
-func (c *Controller) userScan(id string) string {
-	c.userScansMu.Lock()
-	defer c.userScansMu.Unlock()
-	return c.userScans[id]
-}
-func (c *Controller) setUserScan(id, after string) {
-	c.userScansMu.Lock()
-	defer c.userScansMu.Unlock()
-	if after == "" {
-		delete(c.userScans, id)
-	} else {
-		c.userScans[id] = after
-	}
-}
-
 // Common scan progress uses grant IDs. A failed provider operation remains
 // eligible on the next full scan. Cancellation with failure retries that item.
 func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 	var failure error
 	var seen map[string]bool
-	progress, err := runtime.ScanFrom(ctx, c.userScan(id), func(ctx context.Context, after string, limit int) (runtime.CursorPage[string], error) {
+	progress, err := runtime.ScanCheckpointed(ctx, c.userCheckpoint(id), func(ctx context.Context, after string, limit int) (runtime.CursorPage[string], error) {
 		seen = make(map[string]bool)
 		return c.userPage(ctx, id, after, limit)
-	}, func(userID string) error {
+	}, func(ctx context.Context, userID string) error {
 		if seen[userID] {
 			return nil
 		}
@@ -221,12 +201,7 @@ func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 			failure = err
 		}
 		return nil
-	}, runtime.ScanOptions{PageSize: 100, MaxPages: 100, PageTimeout: 5 * time.Second})
-	if progress.Complete {
-		c.setUserScan(id, "")
-	} else {
-		c.setUserScan(id, progress.After)
-	}
+	}, runtime.ScanOptions{PageSize: 100, MaxPages: 100, PageTimeout: 5 * time.Second}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 	if err != nil {
 		return errors.Join(failure, err)
 	}
@@ -256,4 +231,32 @@ func (c *Controller) userPage(ctx context.Context, id, after string, limit int) 
 		page.Items = append(page.Items, runtime.CursorItem[string]{Cursor: ref.GrantId, Value: ref.UserId})
 	}
 	return page, nil
+}
+
+func (c *Controller) userCheckpoint(id string) runtime.CheckpointAccess {
+	return runtime.CheckpointAccess{
+		Load: func(ctx context.Context) (runtime.Checkpoint, error) {
+			value, err := c.state.LoadGatewayIdentityCheckpoint(ctx, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: id})
+			if status.Code(err) == codes.Unimplemented {
+				return runtime.Checkpoint{}, runtime.ErrScanContract
+			}
+			if err != nil {
+				return runtime.Checkpoint{}, err
+			}
+			if value == nil || value.GatewayId != id {
+				return runtime.Checkpoint{}, runtime.ErrScanContract
+			}
+			return runtime.Checkpoint{After: value.AfterGrantId, Version: value.Version}, nil
+		},
+		Save: func(ctx context.Context, version int64, after string) error {
+			value, err := c.state.SaveGatewayIdentityCheckpoint(ctx, &control.SaveGatewayIdentityCheckpointRequest{GatewayId: id, ExpectedVersion: version, AfterGrantId: after})
+			if err != nil {
+				return err
+			}
+			if value == nil || value.GatewayId != id || value.AfterGrantId != after || value.Version != version+1 {
+				return runtime.ErrScanContract
+			}
+			return nil
+		},
+	}
 }

@@ -60,11 +60,11 @@ func TestConcurrentGatewayUserScansKeepSeparateProgress(t *testing.T) {
 	close(start)
 	workers.Wait()
 	for id, subjects := range provider.subjects {
-		if len(subjects) != 2 || subjects[0] != "first" || subjects[1] != "second" {
+		if len(subjects) != 3 || subjects[0] != "first" || subjects[1] != "first" || subjects[2] != "second" {
 			t.Error("Gateway lost its user cursor", id, subjects)
 		}
 	}
-	if len(provider.subjects) != gateways || len(controller.userScans) != 0 {
+	if len(provider.subjects) != gateways || len(controller.state.(*progressUserState).checkpoints) != 0 {
 		t.Fatal("user scans lost a Gateway or retained completed cursors")
 	}
 }

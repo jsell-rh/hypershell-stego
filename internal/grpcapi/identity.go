@@ -104,3 +104,18 @@ func (s *identityServer) ScanGatewayIdentityUsers(ctx context.Context, request *
 	}
 	return response, nil
 }
+
+func (s *identityServer) LoadGatewayIdentityCheckpoint(ctx context.Context, request *pb.LoadGatewayIdentityCheckpointRequest) (*pb.GatewayIdentityCheckpoint, error) {
+	value, err := s.service.IdentityCheckpoint(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GatewayIdentityCheckpoint{GatewayId: request.GetGatewayId(), AfterGrantId: value.After, Version: value.Version}, nil
+}
+func (s *identityServer) SaveGatewayIdentityCheckpoint(ctx context.Context, request *pb.SaveGatewayIdentityCheckpointRequest) (*pb.GatewayIdentityCheckpoint, error) {
+	value, err := s.service.SaveIdentityCheckpoint(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetExpectedVersion(), request.GetAfterGrantId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GatewayIdentityCheckpoint{GatewayId: request.GetGatewayId(), AfterGrantId: value.After, Version: value.Version}, nil
+}

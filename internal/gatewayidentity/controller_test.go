@@ -14,7 +14,7 @@ import (
 )
 
 type stateFixture struct {
-	control.GatewayIdentityServiceClient
+	checkpointFixture
 	state        *control.GetGatewayIdentityStateResponse
 	err          error
 	observations int
@@ -150,7 +150,7 @@ func TestUserRoleChangesRequireCurrentMatchingState(t *testing.T) {
 		{name: "other user", state: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "other"}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			state := &userStateFixture{response: tc.state, failure: tc.failure}
+			state := &userStateFixture{stateFixture: new(stateFixture), response: tc.state, failure: tc.failure}
 			provider := &userProviderFixture{providerFixture: new(providerFixture)}
 			controller, _ := New(new(apiFixture), state, provider)
 			if err := controller.reconcileUsers(context.Background(), "gateway"); err == nil || provider.writes != 0 {
@@ -158,7 +158,7 @@ func TestUserRoleChangesRequireCurrentMatchingState(t *testing.T) {
 			}
 		})
 	}
-	state := &userStateFixture{response: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "user", Issuer: "https://issuer.example", Subject: "subject", Role: "gateway:owner"}}
+	state := &userStateFixture{stateFixture: new(stateFixture), response: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "user", Issuer: "https://issuer.example", Subject: "subject", Role: "gateway:owner"}}
 	provider := &userProviderFixture{providerFixture: new(providerFixture)}
 	controller, _ := New(new(apiFixture), state, provider)
 	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil || provider.role != "gateway:owner" {
@@ -175,7 +175,7 @@ func TestUserRoleChangesRequireCurrentMatchingState(t *testing.T) {
 }
 
 type progressUserState struct {
-	control.GatewayIdentityServiceClient
+	checkpointFixture
 }
 
 func (*progressUserState) ScanGatewayIdentityUsers(_ context.Context, request *control.ScanGatewayIdentityUsersRequest, _ ...grpc.CallOption) (*control.ScanGatewayIdentityUsersResponse, error) {
@@ -199,7 +199,7 @@ func (f *progressUserProvider) ReconcileGatewayUser(_ context.Context, _, _, sub
 	return nil
 }
 
-func TestUserScanResumesAfterItsTimeBudget(t *testing.T) {
+func TestUserScanRepeatsUncommittedWorkAfterParentCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	provider := &progressUserProvider{providerFixture: new(providerFixture), cancel: cancel}
@@ -211,10 +211,10 @@ func TestUserScanResumesAfterItsTimeBudget(t *testing.T) {
 	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
 		t.Fatal(err)
 	}
-	if len(provider.subjects) != 2 || provider.subjects[0] != "first" || provider.subjects[1] != "second" {
+	if len(provider.subjects) != 3 || provider.subjects[0] != "first" || provider.subjects[1] != "first" || provider.subjects[2] != "second" {
 		t.Fatal("later users starved", provider.subjects)
 	}
-	if len(controller.userScans) != 0 {
+	if len(controller.state.(*progressUserState).checkpoints) != 0 {
 		t.Fatal("completed scan retained its cursor")
 	}
 }
@@ -237,7 +237,7 @@ func (f *lastUserProvider) ReconcileGatewayUser(ctx context.Context, _, _, subje
 	}
 	return nil
 }
-func TestUserScanRetriesLastUserAfterTimeout(t *testing.T) {
+func TestUserScanRetriesFailedItemAfterParentCancellation(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	provider := &lastUserProvider{providerFixture: new(providerFixture), cancel: cancel}
@@ -248,7 +248,7 @@ func TestUserScanRetriesLastUserAfterTimeout(t *testing.T) {
 	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
 		t.Fatal(err)
 	}
-	if provider.firstCalls != 1 || provider.secondCalls != 2 {
+	if provider.firstCalls != 2 || provider.secondCalls != 2 {
 		t.Fatalf("last user lost its retry position: first=%d second=%d", provider.firstCalls, provider.secondCalls)
 	}
 }

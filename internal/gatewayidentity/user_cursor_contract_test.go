@@ -58,7 +58,7 @@ func TestUserCursorCombinesRepeatedUsersWithinOnePage(t *testing.T) {
 		if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
 			t.Fatal(err)
 		}
-		if len(provider.subjects) != pass || len(controller.userScans) != 0 {
+		if len(provider.subjects) != pass {
 			t.Fatal("duplicate user work or skipped full scan", provider.subjects)
 		}
 	}

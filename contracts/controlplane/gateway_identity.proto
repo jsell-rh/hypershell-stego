@@ -6,6 +6,8 @@ import "hypershell/controlplane/v1/database_cleanup.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc LoadGatewayIdentityCheckpoint(LoadGatewayIdentityCheckpointRequest) returns (GatewayIdentityCheckpoint);
+ rpc SaveGatewayIdentityCheckpoint(SaveGatewayIdentityCheckpointRequest) returns (GatewayIdentityCheckpoint);
  rpc GetGatewayCleanupSummary(GetGatewayCleanupSummaryRequest) returns (CleanupSummary);
  rpc ObserveGatewayCleanup(ObserveGatewayCleanupRequest) returns (ObserveGatewayCleanupResponse);
  rpc SetObservedSandboxCount(SetObservedSandboxCountRequest) returns (SetObservedSandboxCountResponse);
@@ -73,3 +75,10 @@ message ScanGatewayIdentityUsersResponse {
 }
 
 message GetGatewayCleanupSummaryRequest { string owner = 1; string target = 2; }
+
+// The identity controller stores one grant cursor per Gateway. A version check
+// rejects stale saves. An empty cursor starts another full scan. This progress
+// does not grant access, acknowledge an event, or lock provider actions.
+message LoadGatewayIdentityCheckpointRequest { string gateway_id = 1; }
+message SaveGatewayIdentityCheckpointRequest { string gateway_id = 1; int64 expected_version = 2; string after_grant_id = 3; }
+message GatewayIdentityCheckpoint { string gateway_id = 1; int64 version = 2; string after_grant_id = 3; }

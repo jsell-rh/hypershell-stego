@@ -142,7 +142,8 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 	key, settings := issuer(t)
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
-	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","reader"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "configure.identity", ""))
 	binary := buildApplication(t)
 	stop, _, address := startBoth(t, binary, f.dsn, brokerConfig, settings...)
 	defer func() { stop() }()
@@ -176,20 +177,49 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 		}
 		return page, nil
 	}
-	var actual []string
-	partial, stopPartial := context.WithCancel(ctx)
-	options := runtime.ScanOptions{PageSize: 100, MaxPages: 100, PageTimeout: 5 * time.Second}
-	progress, err := runtime.ScanFrom(partial, "", source, func(id string) error {
-		actual = append(actual, id)
-		if len(actual) == 7 {
-			stopPartial()
+
+	checkpoint := func() runtime.CheckpointAccess {
+		return runtime.CheckpointAccess{
+			Load: func(ctx context.Context) (runtime.Checkpoint, error) {
+				v, err := client.LoadGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
+				if err != nil {
+					return runtime.Checkpoint{}, err
+				}
+				return runtime.Checkpoint{After: v.AfterGrantId, Version: v.Version}, nil
+			},
+			Save: func(ctx context.Context, version int64, after string) error {
+				_, err := client.SaveGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, ExpectedVersion: version, AfterGrantId: after})
+				return err
+			},
 		}
-		return nil
-	}, options)
-	stopPartial()
-	if !errors.Is(err, context.Canceled) || progress.After != expected[6] || progress.Complete {
-		t.Fatal("partial cursor lost", progress, err)
 	}
+	for _, denied := range []context.Context{ctx, auth(ctx, "alice"), auth(ctx, "admin", "platform:admin"), auth(ctx, "reader")} {
+		_, err := client.LoadGatewayIdentityCheckpoint(denied, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
+		if status.Code(err) != codes.PermissionDenied && status.Code(err) != codes.Unauthenticated {
+			t.Fatal("unauthorized checkpoint read", err)
+		}
+		_, err = client.SaveGatewayIdentityCheckpoint(denied, &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, AfterGrantId: expected[0]})
+		if status.Code(err) != codes.PermissionDenied && status.Code(err) != codes.Unauthenticated {
+			t.Fatal("unauthorized checkpoint write", err)
+		}
+	}
+	if _, err := client.SaveGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, AfterGrantId: "invalid"}); status.Code(err) != codes.InvalidArgument {
+		t.Fatal("invalid checkpoint accepted", err)
+	}
+	if _, err := client.SaveGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, AfterGrantId: gateway.ID}); status.Code(err) != codes.InvalidArgument {
+		t.Fatal("cursor outside the grant source was accepted", err)
+	}
+	var actual []string
+	budget := runtime.ObservationOptions{WorkTimeout: 20 * time.Second, CommitTimeout: 2 * time.Second}
+	options := runtime.ScanOptions{PageSize: 100, MaxPages: 100, PageTimeout: 5 * time.Second}
+	progress, err := runtime.ScanCheckpointed(ctx, checkpoint(), source, func(_ context.Context, id string) error { actual = append(actual, id); return nil }, runtime.ScanOptions{PageSize: 7, MaxPages: 1, PageTimeout: 5 * time.Second}, budget)
+	if err != nil || progress.After != expected[6] || progress.Complete {
+		t.Fatal("page budget lost its checkpoint", progress, err)
+	}
+	if _, err := client.SaveGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, ExpectedVersion: 0, AfterGrantId: expected[0]}); status.Code(err) != codes.Aborted {
+		t.Fatal("stale checkpoint accepted", err)
+	}
+
 	if _, err := f.db.Exec("UPDATE role_bindings SET deleted_at=now() WHERE id=$1", expected[200]); err != nil {
 		t.Fatal(err)
 	}
@@ -201,7 +231,7 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 		if passes > 2 {
 			t.Fatal("cursor did not reach the tail")
 		}
-		progress, err = runtime.ScanFrom(ctx, progress.After, source, func(id string) error { actual = append(actual, id); return nil }, options)
+		progress, err = runtime.ScanCheckpointed(ctx, checkpoint(), source, func(_ context.Context, id string) error { actual = append(actual, id); return nil }, options, budget)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -209,7 +239,11 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 	if !slices.Equal(actual, expected) || len(actual) != 10106 {
 		t.Fatal("restart lost or repeated grant references", len(actual))
 	}
-	t.Log("The generated runtime resumed a partial page after API restart and read all 10,106 retained grant references")
+	saved, err := client.LoadGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
+	if err != nil || saved.AfterGrantId != "" || saved.Version != 3 {
+		t.Fatal("completed scan did not retain its checkpoint version", saved, err)
+	}
+	t.Log("The generated runtime loaded durable progress after API restart and read all 10,106 retained grant references")
 }
 
 func BenchmarkIdentityRecoveryInventory(b *testing.B) {

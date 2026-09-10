@@ -37,10 +37,26 @@ func TestUserRecoveryReachesBeyondTenThousandGrants(t *testing.T) {
 	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
 		t.Fatal(err)
 	}
-	if len(controller.userScans) != 0 {
+	if controller.state.(*backlogState).checkpoints["gateway"].After != "" {
 		t.Fatal("complete scan retained progress")
 	}
 	if len(provider.subjects) != 10100 {
 		t.Fatal("later grants were not recovered", len(provider.subjects))
+	}
+}
+
+func TestUserScanSurvivesControllerReplacement(t *testing.T) {
+	state := new(backlogState)
+	provider := &progressUserProvider{providerFixture: new(providerFixture)}
+	first, _ := New(new(apiFixture), state, provider)
+	if err := first.reconcileUsers(context.Background(), "gateway"); err == nil || len(provider.subjects) != 10000 {
+		t.Fatal("first scan did not yield", err, len(provider.subjects))
+	}
+	second, _ := New(new(apiFixture), state, provider)
+	if err := second.reconcileUsers(context.Background(), "gateway"); err != nil {
+		t.Fatal("new controller did not finish the scan", err)
+	}
+	if len(provider.subjects) != 10100 {
+		t.Fatal("controller restart repeated the saved prefix", len(provider.subjects))
 	}
 }

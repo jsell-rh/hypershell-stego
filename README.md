@@ -367,7 +367,8 @@ It works without login or API access. See [build records](acceptance/cli-version
 for the tested behavior and limits.
 
 Identity recovery now resumes from retained grant IDs through the common STEGO
-scan runtime. Inventories above 10,000 references continue across bounded passes.
+scan runtime and PostgreSQL checkpoints. Inventories above 10,000 references
+continue across bounded passes and controller restarts.
 See [identity cursor recovery](acceptance/identity-cursors.md).
 
 Generated state records the declaration, configuration, module files, and declared

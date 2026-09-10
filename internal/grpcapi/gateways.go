@@ -207,7 +207,7 @@ func mapError(err error) error {
 		return status.Error(codes.PermissionDenied, "phase and status are controller-owned fields")
 	case errors.Is(err, gateways.ErrObservationRequired):
 		return status.Error(codes.FailedPrecondition, "controller write requires an observed resource version")
-	case errors.Is(err, storage.ErrVersionConflict):
+	case errors.Is(err, storage.ErrVersionConflict), errors.Is(err, storage.ErrCheckpointConflict):
 		return status.Error(codes.Aborted, "resource changed; read current state and repeat external work")
 	case errors.Is(err, gateways.ErrGrantCapacity):
 		return status.Error(codes.ResourceExhausted, "grant response exceeds its resource limit")
@@ -221,7 +221,7 @@ func mapError(err error) error {
 		return status.Error(codes.PermissionDenied, "request is forbidden")
 	case errors.Is(err, gateways.ErrCountRange):
 		return status.Error(codes.OutOfRange, "sandbox count exceeds its range")
-	case errors.Is(err, gateways.ErrInvalid):
+	case errors.Is(err, gateways.ErrInvalid), errors.Is(err, storage.ErrCheckpoint):
 		return status.Error(codes.InvalidArgument, "request is invalid")
 	case errors.Is(err, storage.ErrNotFound):
 		return status.Error(codes.NotFound, "resource was not found")
