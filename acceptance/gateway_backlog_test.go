@@ -38,7 +38,19 @@ func (p *backlogProvider) Delete(ctx context.Context, id string) error {
 
 func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	f := database(t)
-	// Seed through the domain transaction path, including owner grants and events.
+	_, config := broker(t, identity(t, "localhost"))
+	consumer := kafkaConsumer(t, config)
+	key, settings := issuer(t)
+	apiTLS := identity(t, "localhost")
+	directory := filepath.Dir(apiTLS.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
+	binary := buildApplication(t)
+	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	defer func() { stop() }()
+	// Seed through the domain transaction path while the API delivers events.
+	// Keep the controller stopped until the queue is empty and the API restarts.
+	// The recovery check starts with retained rows after event delivery.
 	total := gatewayworkload.QueueCapacity + 256
 	ids := make([]string, 0, total)
 	owner := principal("backlog-owner", "gateway:creator")
@@ -53,22 +65,16 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 		ids = append(ids, row.ID)
 	}
 	sort.Strings(ids)
-	_, config := broker(t, identity(t, "localhost"))
-	consumer := kafkaConsumer(t, config)
-	key, settings := issuer(t)
-	apiTLS := identity(t, "localhost")
-	directory := filepath.Dir(apiTLS.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
-	binary := buildApplication(t)
-	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
-	defer func() { stop() }()
 	awaitQueueEmptyWithin(t, f, 45*time.Second)
 	readEvent(t, consumer, ids[len(ids)-1])
 	readGatewayEvent(t, consumer, ids[len(ids)-1], "Delete", "gateway.deleted")
 	// Discovery must reconstruct the backlog after the original events are gone.
 	stop()
 	stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	var pending int
+	if err := f.db.QueryRow(`SELECT count(*) FROM gateways WHERE deleted_at IS NOT NULL AND stego_cleanup->>'workload'='false'`).Scan(&pending); err != nil || pending != total {
+		t.Fatalf("recovery did not start with the full retained backlog: %d of %d, %v", pending, total, err)
+	}
 	_, connection := grpcClient(t, rpcAddress, apiTLS)
 	state := control.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 105*time.Second)

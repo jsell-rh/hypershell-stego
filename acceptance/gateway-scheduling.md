@@ -107,3 +107,23 @@ The independent cleanup tests also check [generated controller metrics](controll
 while a provider action waits and another resource completes. The runtime reports
 active work, failure, and retry counts without application identifiers. Metrics
 do not add durable scheduling or cross-process ownership.
+
+CI run [34498958584](https://github.com/jsell-rh/hypershell-stego/actions/runs/34498958584)
+failed before the backlog controller started. The API had to drain all 3840 setup
+events after record creation. At the 45-second setup deadline, 272 messages
+remained. Their grouped maximum attempt count was one, with fresh active leases
+and no recorded failure code. This shows incomplete setup delivery; it does not
+establish a controller recovery failure or a production delivery rate.
+
+The test now starts the API before it creates the records. Event delivery can
+run during setup. The controller remains stopped. The test still requires the
+outbox to drain, checks the last original events, and restarts the API before
+controller startup. A new assertion requires all 1280 deleted records to remain
+pending at that boundary. The 45-second drain check, 90-second recovery check,
+backlog size, failing provider, and completion assertions are unchanged.
+
+The revised race test passed in 41.67 seconds. At ten seconds, 1007 of 1279
+healthy cleanups were complete. All healthy cleanups finished in 19.232 seconds,
+while the controlled failure stayed pending. The acceptance package took
+42.715 seconds, and `go vet ./acceptance` passed. This local result does not
+replace the pending full CI result.
