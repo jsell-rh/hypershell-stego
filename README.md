@@ -387,5 +387,6 @@ reads as unavailable. Summary responses and metrics contain no resource IDs.
 
 The [CNPG database workflow](acceptance/cnpg-database.md) uses the generated
 controller runtime for the shared managed-database provider. It has a separate
-real Kubernetes acceptance gate. Gateway SQL roles and databases on this shared
-Cluster remain separate work.
+real Kubernetes acceptance gate. The [CNPG Gateway workflow](acceptance/cnpg-gateway.md)
+adds separate SQL identities, retained keys, application calls, and SQL-confirmed
+cleanup on that shared Cluster. Its record states the test result and limits.

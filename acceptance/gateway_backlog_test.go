@@ -22,7 +22,8 @@ func (p *backlogProvider) GatewayIDs(context.Context) ([]string, error) { return
 func (p *backlogProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *backlogProvider) Delete(ctx context.Context, id string) error {
+func (p *backlogProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
+	id := gw.GetMetadata().GetId()
 	if id == p.failed {
 		return gatewayworkload.ErrPending
 	}

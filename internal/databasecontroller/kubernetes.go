@@ -118,6 +118,7 @@ func (k *Kubernetes) Ensure(ctx context.Context, db *pb.ManagedDatabase) error {
 	}
 	id, ns := db.Metadata.Id, db.Namespace
 	namespace := definition("v1", "Namespace", ns, id)
+	namespace["metadata"].(object)["labels"].(object)["hypershell.redhat.io/database-provider"] = "deployment"
 	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
 	if _, err := k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
 		return err

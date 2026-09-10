@@ -39,6 +39,29 @@ func sharedDefinition(kind, name, gatewayID, databaseID string) object {
 // Return material only after both records exist. A missing pinned Secret must
 // be restored. It must never cause a new encryption key to be generated.
 func (k *Kubernetes) sharedKeys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) (object, error) {
+	return k.sharedKeysChecked(ctx, gw, db, func() error {
+		name, err := sharedResourceName(gw.GetMetadata().GetId())
+		if err != nil {
+			return err
+		}
+		cluster, err := k.sharedCluster(ctx, db.GetNamespace(), db.GetMetadata().GetId())
+		if err != nil {
+			return err
+		}
+		absent, err := k.sqlGatewayAbsent(ctx, db.GetNamespace(), cluster, sqlName(name))
+		if err != nil {
+			return err
+		}
+		if !absent {
+			return errors.New("Gateway keys are missing for existing SQL state; restore the original keys")
+		}
+		return nil
+	})
+}
+
+// The SQL check runs only before the first key write. Existing pinned keys do
+// not require a SQL connection on each reconciliation pass.
+func (k *Kubernetes) sharedKeysChecked(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase, beforeCreate func() error) (object, error) {
 	name, err := sharedResourceName(gw.GetMetadata().GetId())
 	if err != nil {
 		return nil, err
@@ -86,6 +109,12 @@ func (k *Kubernetes) sharedKeys(ctx context.Context, gw *pb.Gateway, db *pb.Mana
 		}
 		if databaseCode != 404 {
 			return nil, errors.New("Gateway keys are missing for an existing SQL database; restore the original keys")
+		}
+		if beforeCreate == nil {
+			return nil, errors.New("Gateway key creation requires a SQL state check")
+		}
+		if err := beforeCreate(); err != nil {
+			return nil, err
 		}
 		values, err := newKeys()
 		if err != nil {

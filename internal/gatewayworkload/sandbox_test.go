@@ -35,7 +35,7 @@ func TestSandboxDeletionRetainsAdmissionUntilNamespaceIsAbsent(t *testing.T) {
 				}
 				_ = json.NewEncoder(w).Encode(obj)
 			})
-			err := k.Delete(context.Background(), gw.Metadata.Id)
+			err := k.Delete(context.Background(), gw)
 			if err == nil {
 				t.Fatal("cleanup finished while sandbox namespace existed")
 			}

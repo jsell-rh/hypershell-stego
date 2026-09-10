@@ -28,7 +28,7 @@ type deadlineObservationProvider struct {
 func (p *deadlineObservationProvider) Ensure(ctx context.Context, _ *pb.Gateway, _ *pb.ManagedDatabase, _ *pb.GatewayRelease) error {
 	return p.observe(ctx)
 }
-func (p *deadlineObservationProvider) Delete(ctx context.Context, _ string) error {
+func (p *deadlineObservationProvider) Delete(ctx context.Context, _ *pb.Gateway) error {
 	return p.observe(ctx)
 }
 func (p *deadlineObservationProvider) observe(ctx context.Context) error {

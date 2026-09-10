@@ -9,10 +9,11 @@ STEGO's generated runtime, API discovery, Kubernetes ownership checks, and
 conditional cleanup commits. Resource definitions and Gateway access policy
 remain in Hypershell.
 
-Role management needs a decision. The user was asked to choose between inline
-managed roles and `DatabaseRole` resources with a separate SQL drift check.
-The initial recommendation is inline roles, because CNPG periodically compares
-them with SQL state. This choice remains open.
+The working design uses inline managed roles because CNPG can compare and repair
+them when its Cluster reconciles. The user was asked about this choice and can still change
+it. SQL absence evidence is required for cleanup; role status alone is not
+sufficient. The implementation and live test are described in
+[the Gateway workflow record](cnpg-gateway.md).
 
 CNPG 1.30 applies a `DatabaseRole` when its specification or password Secret
 changes. It does not automatically repair direct `ALTER ROLE` changes. Repeated
@@ -20,14 +21,19 @@ GET requests or unchanged resource writes do not add this guarantee. The
 `DatabaseRole` API does provide generation-aware status and deletion finalizers.
 See [CNPG role management](https://cloudnative-pg.io/docs/1.30/declarative_role_management/).
 
+The live gate exposed a timing gap in that contract. A direct SQL privilege
+change remained for 150 seconds while the Cluster still reported the role as
+reconciled. The controller now checks authentication and SQL role attributes
+on each pass. A confirmed mismatch requests a CNPG reload through the generated
+Kubernetes client. A successful check does not write a reload request.
+
 Inline roles have a separate limitation. Their status groups do not identify
 the specification generation. The same `reconciled` group can describe a
 present role or a confirmed absent role. An old success can therefore remain
 visible after the desired role changes to `ensure: absent`. Do not use that
 status alone to commit cleanup completion. A direct, bounded, read-only SQL
-catalog check is one possible source of absence evidence. Such a check does
-not need a superuser password. Connection routing, TLS identity, credentials,
-and limits must have an explicit contract before this path is implemented.
+catalog check supplies absence evidence. It does not need a superuser password.
+The workflow record defines routing, TLS identity, credentials, and limits.
 See the [operator status implementation](https://github.com/cloudnative-pg/cloudnative-pg/blob/v1.30.0/internal/management/controller/roles/reconciler.go).
 
 The shared database profile must deny connections to other databases. PostgreSQL
@@ -51,16 +57,18 @@ Lowercasing a KSUID can merge distinct IDs, so the reference's names produced by
 are not used. Owner labels include the complete Gateway and database IDs.
 The shared namespace keeps its database owner and is not linked to one Gateway.
 Lost or changed source material fails closed. If both source records are absent
-but the Gateway's SQL Database resource exists, new keys are forbidden.
+but the Gateway's SQL Database resource exists, new keys are forbidden. Before
+new keys are created, a SQL query must also confirm absence of the role and
+database. This check covers SQL state left after loss of the Kubernetes records.
 
 Race tests cover two concurrent Gateways in one namespace, concurrent writers
 for the same Gateway, stable keys through
 client restart, interrupted fingerprint creation, lost keys, changed keys,
 foreign ownership, and distinct canonical IDs that differ only by letter case.
-These tests use a TLS Kubernetes API fixture. They do not prove live Kubernetes
-key retention or a working CNPG Gateway. The Gateway provider still rejects
-CNPG execution until SQL provisioning, credentials, cleanup, and the complete
-application gate are implemented.
+These tests isolate the key protocol with a TLS Kubernetes API fixture and
+explicit SQL-check results. They do not prove live SQL behavior. The live
+Gateway gate tests the complete CNPG path, including actual SQL checks, retained
+keys, application calls, and cleanup. Use its recorded result to assess delivery.
 
 Deletion must stop the Gateway workload before it removes its SQL database.
 It must confirm database and role removal before it removes retained credentials

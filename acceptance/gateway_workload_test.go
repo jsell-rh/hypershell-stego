@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"net"
 	"os"
@@ -70,6 +71,7 @@ func gatewayControllerRBAC(t *testing.T, k *kubeFixture) {
 	}
 	rules := role["rules"].([]any)
 	for _, rule := range []map[string]any{
+		{"apiGroups": []string{"postgresql.cnpg.io"}, "resources": []string{"databases"}, "verbs": []string{"get", "create", "patch", "delete"}},
 		{"apiGroups": []string{"admissionregistration.k8s.io"}, "resources": []string{"validatingadmissionpolicies", "validatingadmissionpolicybindings", "mutatingadmissionpolicies", "mutatingadmissionpolicybindings"}, "verbs": []string{"get", "create", "patch", "delete"}},
 		{"apiGroups": []string{"node.k8s.io"}, "resources": []string{"runtimeclasses"}, "verbs": []string{"get"}},
 		{"apiGroups": []string{""}, "resources": []string{"namespaces"}, "verbs": []string{"list"}},
@@ -87,9 +89,12 @@ func gatewayControllerRBAC(t *testing.T, k *kubeFixture) {
 }
 
 func (k *kubeFixture) forwardGateway(t *testing.T, ns string) (string, func()) {
+	return k.forwardService(t, ns, "openshell-gateway", "8080")
+}
+func (k *kubeFixture) forwardService(t *testing.T, ns, service, port string) (string, func()) {
 	t.Helper()
 	ctx, cancel := context.WithCancel(context.Background())
-	cmd := exec.CommandContext(ctx, "kubectl", "--kubeconfig", k.config, "-n", ns, "port-forward", "service/openshell-gateway", "0:8080", "--address=127.0.0.1")
+	cmd := exec.CommandContext(ctx, "kubectl", "--kubeconfig", k.config, "-n", ns, "port-forward", "service/"+service, "0:"+port, "--address=127.0.0.1")
 	output, err := cmd.StdoutPipe()
 	if err != nil {
 		cancel()
@@ -128,7 +133,19 @@ func (k *kubeFixture) forwardGateway(t *testing.T, ns string) (string, func()) {
 	return "", stop
 }
 
-func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
+func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) { testGatewayWorkload(t, false) }
+func TestCNPGGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
+	if os.Getenv("STEGO_REQUIRE_CNPG") != "1" {
+		t.Skip("run scripts/check-workload.sh cnpg-gateway")
+	}
+	testGatewayWorkload(t, true)
+}
+func testGatewayWorkload(t *testing.T, cnpg bool) {
+	provider := "deployment"
+	if cnpg {
+		provider = "cnpg"
+	}
+
 	k := kubernetesFixture(t)
 	gatewayControllerRBAC(t, k)
 	identityProvider := startKeycloakAt(t, kindBridgeIP(t), func(realm map[string]any) { realm["accessTokenLifespan"] = 900 })
@@ -156,9 +173,9 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	apiTLS := identity(t, "localhost")
 	dir := filepath.Dir(apiTLS.config.CAFile)
 	allowed, _ := json.Marshal([]string{controllerID})
-	settings = append(settings, "DATABASE_PROVIDER=deployment", "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
+	settings = append(settings, "DATABASE_PROVIDER="+provider, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "ManagedDatabase", "provider", ""), cleanupGrant(controllerID, "Gateway", "identity", ""), cleanupGrant(controllerID, "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, "deployment"))
+	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, provider))
 	accountKey, accountAuth := issuer(t)
 	accountSettings, stopAccountProvider := startRealProvisioner(t, identityProvider, accountKey, accountAuth)
 	defer stopAccountProvider()
@@ -167,12 +184,19 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	apiBinary := buildApplication(t)
 	stopAPI, address, rpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
 	dbBinary := buildProgram(t, "./cmd/database-controller")
-	stopDatabase, _ := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken)
+	stopDatabase, _ := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "DATABASE_PROVIDER="+provider)
 	identityBinary := buildProgram(t, "./cmd/gateway-identity-controller")
 	stopIdentity, _ := startIdentityController(t, identityBinary, identityProvider, rpcAddress, apiTLS.config.CAFile, controllerToken)
 	workloadBinary := buildProgram(t, "./cmd/gateway-workload-controller")
 	workloadSettings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_GATEWAY_CLUSTER_ISSUER=" + k.options.ClusterIssuer, "HYPERSHELL_GATEWAY_OIDC_ISSUER=" + identityProvider.options.ServerURL + "/realms/workflow", "HYPERSHELL_GATEWAY_TRUST_BUNDLE=" + identityProvider.options.CAFile, "HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + sandboxImage, "HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + supervisorImage}
 	workloadSettings = append(workloadSettings, "HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS="+os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS"))
+	if cnpg {
+		ns, _ := gateways.DatabaseNamespace(f.database)
+		k.must(t, "", "-n", ns, "wait", "cluster/openshell-db", "--for=create", "--timeout=80s")
+		k.must(t, "", "-n", ns, "wait", "cluster/openshell-db", "--for=condition=Ready", "--timeout=80s")
+		route := k.cnpgSQLRoute(t, ns)
+		workloadSettings = append(workloadSettings, "HYPERSHELL_CNPG_DIAL_ADDRESS="+route)
+	}
 	stopWorkload, logs := startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
 	input, _ := json.Marshal(gateways.CreateRequest{Name: "actual-gateway", ClusterID: f.cluster, ReleaseID: f.release})
 	root := address + "/api/hypershell/v1/gateways"
@@ -237,7 +261,12 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	ready()
 	keyData := func(namespace string) []byte {
 		t.Helper()
-		return k.must(t, "", "-n", namespace, "get", "secret/openshell-gateway-keys", "-o", "jsonpath={.data}")
+		name := "openshell-gateway-keys"
+		if cnpg && namespace == dbNamespace {
+			parsed, _ := ksuid.Parse(gateway.ID)
+			name = "gw-" + hex.EncodeToString(parsed.Bytes()) + "-keys"
+		}
+		return k.must(t, "", "-n", namespace, "get", "secret/"+name, "-o", "jsonpath={.data}")
 	}
 	originalKeys := keyData(dbNamespace)
 	if !bytes.Equal(originalKeys, keyData(gateway.Namespace)) {
@@ -252,11 +281,11 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	}
 	var connection *grpc.ClientConn
 	var stopForward func()
-	connect := func() {
+	connect := func(target httpapi.Gateway) {
 		t.Helper()
-		forward, stop := k.forwardGateway(t, gateway.Namespace)
+		forward, stop := k.forwardGateway(t, target.Namespace)
 		stopForward = stop
-		encoded := strings.TrimSpace(string(k.must(t, "", "-n", gateway.Namespace, "get", "secret", "openshell-server-tls", "-o", "jsonpath={.data.ca\\.crt}")))
+		encoded := strings.TrimSpace(string(k.must(t, "", "-n", target.Namespace, "get", "secret", "openshell-server-tls", "-o", "jsonpath={.data.ca\\.crt}")))
 		ca, err := base64.StdEncoding.DecodeString(encoded)
 		if err != nil {
 			t.Fatal(err)
@@ -265,13 +294,13 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		if !roots.AppendCertsFromPEM(ca) {
 			t.Fatal("Gateway CA is invalid")
 		}
-		connection, err = grpc.NewClient("passthrough:///"+forward, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ServerName: "openshell-gateway." + gateway.Namespace + ".svc.cluster.local"})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
+		connection, err = grpc.NewClient("passthrough:///"+forward, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots, ServerName: "openshell-gateway." + target.Namespace + ".svc.cluster.local"})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() { connection.Close() })
 	}
-	connect()
+	connect(gateway)
 	call := func(method, bearer, input string) (*dynamicpb.Message, error) {
 		t.Helper()
 		descriptor := service.Methods().ByName(protoreflect.Name(method))
@@ -322,7 +351,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
 	k.must(t, "", "-n", gateway.Namespace, "rollout", "status", "deployment/openshell-gateway", "--timeout=120s")
 	ready()
-	connect()
+	connect(gateway)
 	after, err := call("GetProvider", ownerToken, `{"name":"stored-provider"}`)
 	if err != nil || !proto.Equal(before, after) {
 		t.Fatal("Gateway restart changed stored provider", err)
@@ -330,8 +359,15 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	stopWorkload()
 	connection.Close()
 	stopForward()
-	k.must(t, "", "-n", dbNamespace, "delete", "pod", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--wait=true")
-	k.must(t, "", "-n", dbNamespace, "rollout", "status", "deployment/openshell-gateway-db", "--timeout=120s")
+	if cnpg {
+		primary := strings.TrimSpace(string(k.must(t, "", "-n", dbNamespace, "get", "cluster", "openshell-db", "-o", "jsonpath={.status.currentPrimary}")))
+		k.must(t, "", "-n", dbNamespace, "delete", "pod", primary, "--grace-period=30", "--wait=true")
+		k.must(t, "", "-n", dbNamespace, "wait", "pod/"+primary, "--for=create", "--timeout=90s")
+		k.must(t, "", "-n", dbNamespace, "wait", "pod/"+primary, "--for=condition=Ready", "--timeout=120s")
+	} else {
+		k.must(t, "", "-n", dbNamespace, "delete", "pod", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--wait=true")
+		k.must(t, "", "-n", dbNamespace, "rollout", "status", "deployment/openshell-gateway-db", "--timeout=120s")
+	}
 	k.must(t, "", "delete", "namespace", gateway.Namespace, "--wait=true", "--timeout=90s")
 	stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
 	ready()
@@ -339,7 +375,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 		t.Fatal("namespace replacement changed Gateway keys")
 	}
 	ownerToken = identityProvider.browserLogin(t, gatewayClient, "alice")
-	connect()
+	connect(gateway)
 	after, err = call("GetProvider", ownerToken, `{"name":"stored-provider"}`)
 	if err != nil || !proto.Equal(before, after) {
 		t.Fatal("namespace or database restart changed stored provider", err)
@@ -347,6 +383,22 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	checkViewerAfterRestart(ownerToken)
 	if finishSandbox != nil {
 		finishSandbox(connection, ownerToken)
+	}
+	if cnpg {
+		finishCNPGGateway(t, k, f, gateway, dbNamespace, root, alice, controllerToken, apiTLS, rpcAddress, identityProvider, call, connect, func() { connection.Close(); stopForward() }, func() { stopWorkload() }, func(extra ...string) {
+			workloadSettings = append(workloadSettings, extra...)
+			stopWorkload, logs = startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
+			// Retained completion can already be true. Require the new process
+			// to scan before a restart check can return and stop it again.
+			deadline := time.Now().Add(15 * time.Second)
+			for !strings.Contains(logs(), "Gateway workload scan completed") {
+				if time.Now().After(deadline) {
+					t.Fatalf("restarted Gateway controller did not scan: %s", logs())
+				}
+				time.Sleep(20 * time.Millisecond)
+			}
+		}, func() string { return logs() })
+		return
 	}
 	checkDeletedAccounts := gatewayAccountWorkflow(t, identityProvider, address, gateway.ID, alice, call)
 	stopWorkload()

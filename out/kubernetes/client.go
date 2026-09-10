@@ -12,6 +12,7 @@ import (
 	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -47,6 +48,20 @@ func readToken(file string) (string, error) {
 	return token, nil
 }
 func (k *Client) Request(ctx context.Context, method, path string, input Object) (Object, int, error) {
+	// Require schema errors to fail writes instead of pruning unknown fields.
+	if method == http.MethodPost || method == http.MethodPut || method == http.MethodPatch {
+		u, err := url.Parse(path)
+		if err != nil {
+			return nil, 0, errors.New("invalid Kubernetes write path")
+		}
+		query, err := url.ParseQuery(u.RawQuery)
+		if err != nil {
+			return nil, 0, errors.New("invalid Kubernetes write query")
+		}
+		query.Set("fieldValidation", "Strict")
+		u.RawQuery = query.Encode()
+		path = u.String()
+	}
 	token, err := readToken(k.tokenFile)
 	if err != nil {
 		return nil, 0, err
@@ -195,6 +210,44 @@ func subset(actual, desired any) bool {
 }
 func identity(object Object) bool {
 	return String(object, "metadata", "uid") != "" && String(object, "metadata", "resourceVersion") != ""
+}
+
+// PatchOwned applies changes computed from a previous read. It never reads a
+// newer version or retries a conflict. The caller must recompute after a new
+// observation. System fields and ownership cannot be changed through this API.
+func (c *Client) PatchOwned(ctx context.Context, path string, observed, changes Object, owner Owner) (Object, error) {
+	old, err := snapshot(observed)
+	if err != nil {
+		return nil, err
+	}
+	patch, err := snapshot(changes)
+	if err != nil {
+		return nil, err
+	}
+	name := String(old, "metadata", "name")
+	if name == "" || strings.ContainsAny(name, "/\\?#% \t\r\n") || name == "." || name == ".." || !strings.HasSuffix(path, "/"+name) || strings.ContainsAny(path, "?#") {
+		return nil, errors.New("invalid Kubernetes observed resource path")
+	}
+	if !owner.Matches(old) || !identity(old) || String(old, "metadata", "deletionTimestamp") != "" {
+		return nil, errors.New("Kubernetes observed resource is not owned and active")
+	}
+	if len(patch) == 0 {
+		return nil, errors.New("Kubernetes changes are empty")
+	}
+	for _, key := range []string{"apiVersion", "kind", "metadata", "status"} {
+		if _, present := patch[key]; present {
+			return nil, errors.New("Kubernetes changes contain a system field")
+		}
+	}
+	patch["metadata"] = Object{"uid": String(old, "metadata", "uid"), "resourceVersion": String(old, "metadata", "resourceVersion")}
+	updated, code, err := c.Request(ctx, http.MethodPatch, path, patch)
+	if err != nil {
+		return nil, err
+	}
+	if code == http.StatusNotFound {
+		return nil, &APIError{Method: http.MethodPatch, StatusCode: code}
+	}
+	return updated, nil
 }
 
 // Ensure creates an absent object or applies a merge patch to an owned object.

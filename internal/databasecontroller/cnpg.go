@@ -87,6 +87,7 @@ func (c *CNPG) Ensure(ctx context.Context, db *pb.ManagedDatabase) error {
 	}
 	id, ns := db.GetMetadata().GetId(), db.GetNamespace()
 	namespace := definition("v1", "Namespace", ns, id)
+	namespace["metadata"].(object)["labels"].(object)["hypershell.redhat.io/database-provider"] = "cnpg"
 	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
 	if _, err := c.client.Ensure(ctx, "/api/v1/namespaces", namespace, owner(id)); err != nil {
 		return err

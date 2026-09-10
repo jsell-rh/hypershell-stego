@@ -2,8 +2,8 @@
 set -euo pipefail
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$project"
-if [[ $# != 1 || (${1:-} != database && ${1:-} != gateway && ${1:-} != sandbox && ${1:-} != cnpg) || $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
-  echo 'Run scripts/check-workload.sh database, gateway, sandbox, or cnpg on Linux amd64.' >&2
+if [[ $# != 1 || (${1:-} != database && ${1:-} != gateway && ${1:-} != sandbox && ${1:-} != cnpg && ${1:-} != cnpg-gateway) || $(uname -s) != Linux || $(uname -m) != x86_64 ]]; then
+  echo 'Run scripts/check-workload.sh database, gateway, sandbox, cnpg, or cnpg-gateway on Linux amd64.' >&2
   exit 2
 fi
 : "${STEGO_TEST_POSTGRES_DSN:?Set a PostgreSQL connection that can create test databases.}"
@@ -67,16 +67,18 @@ kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" apply -f "$scratch/cert-manager.ya
 kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n cert-manager rollout status deployment/cert-manager-webhook --timeout=120s
 kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n cert-manager rollout status deployment/cert-manager --timeout=120s
 export STEGO_REQUIRE_POSTGRES=1 STEGO_REQUIRE_KUBERNETES=1 GOWORK=off
-if [[ $workflow == cnpg ]]; then
+if [[ $workflow == cnpg || $workflow == cnpg-gateway ]]; then
   fetch https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.30.0/cnpg-1.30.0.yaml "$scratch/cnpg.yaml"
   (cd "$scratch" && echo 'f8bede43fe4ee0d478c2355b204a36876b2ae4faac60f2a9452280b293da3b88  cnpg.yaml' | sha256sum --check)
   sed -i 's#ghcr.io/cloudnative-pg/cloudnative-pg:1.30.0#ghcr.io/cloudnative-pg/cloudnative-pg:1.30.0@sha256:a2701eb97cdd2a34b1fdb2cb51987f544b706e40bec72ae7146cd8580efefebb#g' "$scratch/cnpg.yaml"
   kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" apply --server-side -f "$scratch/cnpg.yaml"
   kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n cnpg-system rollout status deployment/cnpg-controller-manager --timeout=120s
   export STEGO_REQUIRE_CNPG=1
+fi
+if [[ $workflow == cnpg ]]; then
   go test -race -count=1 ./internal/databasecontroller
   go test -race -count=1 -v -timeout=10m ./acceptance -run '^TestCNPGDatabaseWorkloadAndOfflineDeletion$'
-elif [[ $workflow == gateway || $workflow == sandbox ]]; then
+elif [[ $workflow == gateway || $workflow == sandbox || $workflow == cnpg-gateway ]]; then
   fetch https://github.com/kubernetes-sigs/agent-sandbox/releases/download/v0.5.4/sandbox.yaml "$scratch/sandbox.yaml"
   (cd "$scratch" && echo '51e3610f235b58abd465280682d366d3d0fed8972489bf6a800d707988d24c3e  sandbox.yaml' | sha256sum --check)
   sed -i 's#registry.k8s.io/agent-sandbox/agent-sandbox-controller:v0.5.4#registry.k8s.io/agent-sandbox/agent-sandbox-controller@sha256:be477ba317d84a13a38d7605e925e7b4aa82de5b313a4274358920310a931b7f#g' "$scratch/sandbox.yaml"
@@ -84,7 +86,11 @@ elif [[ $workflow == gateway || $workflow == sandbox ]]; then
   kubectl --kubeconfig "$STEGO_TEST_KUBECONFIG" -n agent-sandbox-system rollout status deployment/agent-sandbox-controller --timeout=120s
   export STEGO_REQUIRE_KEYCLOAK=1
   go test -race -count=1 ./internal/gatewayworkload
-  go test -race -count=1 -v ./acceptance -run '^TestGateway(WorkloadWithDatabaseAndIdentity|DeletionBeforeWorkloadStartup)$'
+  if [[ $workflow == cnpg-gateway ]]; then
+    go test -race -count=1 -v -timeout=15m ./acceptance -run '^TestCNPGGatewayWorkloadWithDatabaseAndIdentity$'
+  else
+    go test -race -count=1 -v ./acceptance -run '^TestGateway(WorkloadWithDatabaseAndIdentity|DeletionBeforeWorkloadStartup)$'
+  fi
 else
   go test -race -count=1 ./internal/databasecontroller
   go test -race -count=1 -v ./acceptance -run '^TestDatabase(WorkloadAndOfflineDeletion|DeleteReplayThroughGeneratedRuntime|RetainedReplayThroughGeneratedRuntime)$'

@@ -285,4 +285,6 @@ detection; no test is omitted to reduce elapsed time.
 
 The [CNPG database workflow](cnpg-database.md) tests shared Cluster creation,
 encrypted SQL, restart, repair, and cleanup through the generated runtime.
-Gateway execution on CNPG remains open.
+The [CNPG Gateway workflow](cnpg-gateway.md) adds the real Gateway application,
+separate SQL identities and keys, restart, and SQL-confirmed cleanup. Its record
+states the test result and limits.

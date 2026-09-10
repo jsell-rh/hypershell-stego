@@ -46,7 +46,10 @@ func (p *blockedCleanupProvider) GatewayIDs(context.Context) ([]string, error) {
 func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *blockedCleanupProvider) Delete(ctx context.Context, id string) error {
+func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
+	return p.deleteID(ctx, gw.GetMetadata().GetId())
+}
+func (p *blockedCleanupProvider) deleteID(ctx context.Context, id string) error {
 	if id != p.slow {
 		return nil
 	}
@@ -72,7 +75,7 @@ func (p *blockedIdentityCleanupProvider) EnsureGateway(context.Context, string, 
 	return "{}", nil
 }
 func (p *blockedIdentityCleanupProvider) DeleteGateway(ctx context.Context, id string) error {
-	return p.Delete(ctx, id)
+	return p.deleteID(ctx, id)
 }
 func (p *blockedIdentityCleanupProvider) ReconcileGatewayUser(context.Context, string, string, string, string) error {
 	return nil
@@ -84,7 +87,7 @@ func (p *blockedDatabaseCleanupProvider) Ensure(context.Context, *pb.ManagedData
 	return nil
 }
 func (p *blockedDatabaseCleanupProvider) Delete(ctx context.Context, row *pb.ManagedDatabase) error {
-	return p.blockedCleanupProvider.Delete(ctx, row.GetMetadata().GetId())
+	return p.blockedCleanupProvider.deleteID(ctx, row.GetMetadata().GetId())
 }
 
 func TestDatabaseCleanupMakesIndependentProgressAfterRestart(t *testing.T) {

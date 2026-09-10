@@ -16,7 +16,6 @@ import (
 	"net/url"
 	"os"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -25,6 +24,7 @@ import (
 type object = kube.Object
 type Options struct {
 	SandboxRuntimeClass                                    string
+	CNPGDialAddress                                        string
 	ClusterID                                              string
 	ServerURL, CAFile, TokenFile, ClusterIssuer            string
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
@@ -36,6 +36,9 @@ type Kubernetes struct {
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
+	if err := validateCNPGDialAddress(o.CNPGDialAddress); err != nil {
+		return nil, err
+	}
 	if _, err := Namespace(o.ClusterID); err != nil {
 		return nil, errors.New("Gateway controller requires a managed cluster ID")
 	}
@@ -118,38 +121,10 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 	if err != nil {
 		return err
 	}
-	dbSecret, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace+"/secrets/"+databasecontroller.CredentialsName, nil)
+	dbData, err := k.databaseCredentials(ctx, gw, db)
 	if err != nil {
 		return err
 	}
-	if code == 404 {
-		return ErrPending
-	}
-	if !databaseOwner(db.Metadata.Id).Matches(dbSecret) {
-		return errors.New("Gateway database Secret has a different owner")
-	}
-	dbData := object{}
-	for key, want := range map[string]string{"host": databasecontroller.WorkloadName + "." + db.Namespace + ".svc.cluster.local", "user": "openshell", "dbname": "openshell", "port": "5432", "sslmode": "verify-full"} {
-		value, err := data(dbSecret, key)
-		if err != nil || string(value) != want {
-			return errors.New("Gateway database connection does not match its placement")
-		}
-	}
-	password, err := data(dbSecret, "password")
-	if err != nil {
-		return err
-	}
-	if _, err = hex.DecodeString(string(password)); err != nil || len(password) != 64 {
-		return errors.New("Gateway database password is invalid")
-	}
-	ca, err := data(dbSecret, "ca.crt")
-	if err != nil || !x509.NewCertPool().AppendCertsFromPEM(ca) {
-		return errors.New("Gateway database CA is invalid")
-	}
-	address := url.URL{Scheme: "postgresql", User: url.UserPassword("openshell", string(password)), Host: databasecontroller.WorkloadName + "." + db.Namespace + ".svc.cluster.local:5432", Path: "/openshell"}
-	address.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/etc/openshell-db/ca.crt"}}.Encode()
-	dbData["uri"] = base64.StdEncoding.EncodeToString([]byte(address.String()))
-	dbData["ca.crt"] = base64.StdEncoding.EncodeToString(ca)
 	namespace := definition("v1", "Namespace", ns, id)
 	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
 	if _, err = k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
@@ -264,7 +239,8 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 }
 func sha256sum(value []byte) []byte { sum := sha256.Sum256(value); return sum[:] }
 
-func (k *Kubernetes) Delete(ctx context.Context, id string) error {
+func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
+	id := gw.GetMetadata().GetId()
 	ns, err := Namespace(id)
 	if err != nil {
 		return err
@@ -297,7 +273,7 @@ func (k *Kubernetes) Delete(ctx context.Context, id string) error {
 			return ErrPending
 		}
 	}
-	return nil
+	return k.deleteSharedDatabase(ctx, gw)
 }
 
 func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {

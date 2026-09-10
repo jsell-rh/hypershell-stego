@@ -88,7 +88,7 @@ func TestSharedDatabaseKeysRemainSeparateAcrossGatewaysAndRestart(t *testing.T) 
 		group.Add(1)
 		go func() {
 			defer group.Done()
-			value, err := k.keys(context.Background(), gw, db)
+			value, err := checkedFixtureKeys(k, context.Background(), gw, db)
 			if err != nil {
 				t.Error(err)
 				return
@@ -102,7 +102,7 @@ func TestSharedDatabaseKeysRemainSeparateAcrossGatewaysAndRestart(t *testing.T) 
 	}
 	restarted := fixture(t, api.serve(t))
 	for i, gw := range []*pb.Gateway{first, second} {
-		value, err := restarted.keys(context.Background(), gw, db)
+		value, err := checkedFixtureKeys(restarted, context.Background(), gw, db)
 		if err != nil || !reflect.DeepEqual(value, results[i]) {
 			t.Fatal("restart changed shared Gateway keys", err)
 		}
@@ -118,7 +118,7 @@ func TestSharedDatabaseKeysRemainSeparateAcrossGatewaysAndRestart(t *testing.T) 
 func TestSharedDatabaseKeysRecoverIncompletePinWithoutRekeying(t *testing.T) {
 	k, api, gw, db := sharedKeyFixture(t)
 	api.denyMarker = true
-	if _, err := k.keys(context.Background(), gw, db); err == nil {
+	if _, err := checkedFixtureKeys(k, context.Background(), gw, db); err == nil {
 		t.Fatal("uncommitted key identity was returned")
 	}
 	name, _ := sharedResourceName(gw.Metadata.Id)
@@ -128,7 +128,7 @@ func TestSharedDatabaseKeysRecoverIncompletePinWithoutRekeying(t *testing.T) {
 		t.Fatal("source Secret was not created")
 	}
 	api.denyMarker = false
-	value, err := k.keys(context.Background(), gw, db)
+	value, err := checkedFixtureKeys(k, context.Background(), gw, db)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -140,7 +140,7 @@ func TestSharedDatabaseKeysRejectLossReplacementAndForeignOwners(t *testing.T) {
 	for _, mode := range []string{"lost-secret", "replacement", "foreign-secret", "foreign-marker", "foreign-namespace", "missing-identity", "lost-both-with-database"} {
 		t.Run(mode, func(t *testing.T) {
 			k, api, gw, db := sharedKeyFixture(t)
-			if _, err := k.keys(context.Background(), gw, db); err != nil {
+			if _, err := checkedFixtureKeys(k, context.Background(), gw, db); err != nil {
 				t.Fatal(err)
 			}
 			name, _ := sharedResourceName(gw.Metadata.Id)
@@ -169,7 +169,7 @@ func TestSharedDatabaseKeysRejectLossReplacementAndForeignOwners(t *testing.T) {
 				api.objects["/apis/postgresql.cnpg.io/v1/namespaces/"+db.Namespace+"/databases/"+name] = object{"kind": "Database"}
 			}
 			before := api.writes
-			if _, err := k.keys(context.Background(), gw, db); err == nil {
+			if _, err := checkedFixtureKeys(k, context.Background(), gw, db); err == nil {
 				t.Fatal("unsafe shared key material was accepted")
 			}
 			if api.writes != before {
@@ -204,7 +204,7 @@ func TestSharedKeyInitializationConvergesAcrossConcurrentWriters(t *testing.T) {
 		go func() {
 			defer group.Done()
 			for attempt := 0; attempt < 5; attempt++ {
-				value, err := k.keys(context.Background(), gw, db)
+				value, err := checkedFixtureKeys(k, context.Background(), gw, db)
 				if err == nil {
 					results[i] = value
 					return
@@ -226,5 +226,22 @@ func TestSharedKeyInitializationConvergesAcrossConcurrentWriters(t *testing.T) {
 	}
 	if len(api.objects) != 3 {
 		t.Fatal("writers created more than one source and identity")
+	}
+}
+
+// These tests isolate the key protocol. The live CNPG workflow supplies the
+// actual SQL evidence through sharedKeys.
+func checkedFixtureKeys(k *Kubernetes, ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) (object, error) {
+	return k.sharedKeysChecked(ctx, gw, db, func() error { return nil })
+}
+func TestSharedKeysRequireAbsenceEvidenceBeforeTheFirstWrite(t *testing.T) {
+	k, api, gw, db := sharedKeyFixture(t)
+	for _, check := range []func() error{nil, func() error { return errors.New("SQL state is not absent") }} {
+		if _, err := k.sharedKeysChecked(context.Background(), gw, db, check); err == nil {
+			t.Fatal("key creation had no SQL absence evidence")
+		}
+		if api.writes != 0 {
+			t.Fatal("failed SQL check wrote keys")
+		}
 	}
 }

@@ -59,8 +59,8 @@ func validate(gw *pb.Gateway, db *pb.ManagedDatabase, release *pb.GatewayRelease
 		return oidc, errors.New("Gateway placement does not match its records")
 	}
 	dbNS, err := gateways.DatabaseNamespace(gw.GetDatabaseId())
-	if err != nil || db.GetNamespace() != dbNS || db.GetProvider() != gateways.ProviderDeployment {
-		return oidc, errors.New("Gateway requires a matching deployment database")
+	if err != nil || db.GetNamespace() != dbNS || (db.GetProvider() != gateways.ProviderDeployment && db.GetProvider() != gateways.ProviderCNPG) {
+		return oidc, errors.New("Gateway requires a matching supported database")
 	}
 	if !digestImage.MatchString(release.GetImage()) || (gw.GetImage() != "" && gw.GetImage() != release.GetImage()) {
 		return oidc, errors.New("Gateway image must match a release pinned by digest")

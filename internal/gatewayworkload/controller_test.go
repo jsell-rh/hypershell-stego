@@ -106,7 +106,7 @@ func (f *providerFixture) Ensure(context.Context, *pb.Gateway, *pb.ManagedDataba
 	f.creates++
 	return f.err
 }
-func (f *providerFixture) Delete(context.Context, string) error         { f.deletes++; return f.err }
+func (f *providerFixture) Delete(context.Context, *pb.Gateway) error    { f.deletes++; return f.err }
 func (f *providerFixture) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
 
 func TestDeletionRequiresExplicitCurrentState(t *testing.T) {

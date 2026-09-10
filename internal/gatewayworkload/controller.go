@@ -29,7 +29,7 @@ type Provider interface {
 	Handles(*pb.Gateway) bool
 	CleanupTarget() string
 	Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error
-	Delete(context.Context, string) error
+	Delete(context.Context, *pb.Gateway) error
 	GatewayIDs(context.Context) ([]string, error)
 }
 type Controller struct {
@@ -145,7 +145,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			return nil
 		}
 		failure := runtime.RunObservation(ctx, func(operation context.Context) error {
-			return c.provider.Delete(operation, id)
+			return c.provider.Delete(operation, gw)
 		}, func(commit context.Context, failure error) error {
 			observed := failure == nil
 			if complete == observed {
