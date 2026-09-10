@@ -64,3 +64,25 @@ do not replace the full application suite or Kubernetes workflow gates in CI.
 
 Pinned regeneration preserved all 89 generated, state, and dependency file
 hashes. Both STEGO condition commits passed CI.
+
+`TestIdentityConditionDuringProviderTimeoutAndDesiredChange` adds a controlled
+provider call inside the actual controller. It first establishes a ready client,
+then withholds the next provider response until the work deadline. The API
+records current `Unknown/IdentityObservationTimeout`, preserves the existing
+OIDC configuration, and delivers the event through the generated runtime.
+The condition and its transition time survive API restart.
+
+The test also pauses a provider call while REST changes the desired Gateway
+name. It releases the old result, then holds the next call as a barrier before
+reading storage. The old result must change neither configuration nor condition.
+A fresh pass recovers. Parent cancellation during a later call must leave the
+last committed condition unchanged. The workflow passed under race detection
+in 24.807 seconds with PostgreSQL and TLS gRPC. Its provider has controlled
+results; it does not replace the separate real Keycloak checks.
+
+A temporary Go compiler overlay replaced the stale-revision rejection with a
+read of the latest revision. The new test failed at its old-result barrier in
+23.066 seconds: the old configuration had been published as current and ready.
+The overlay did not change source files. This verifies that the test detects an
+incorrect attempt to commit an old result with a newer resource revision.
+Static checks for the acceptance package also passed.
