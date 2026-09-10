@@ -39,5 +39,6 @@ Early failure records are local and have no telemetry instance identity. The
 process has not yet created that runtime. OTLP export for these failures,
 complete process lifecycle logging, typed fault codes, database signals, and
 safe domain event declarations remain open. This change does not cover database
-server logs, panics, or application-owned log calls. Full observability and the
-enterprise goal remain open.
+server logs or application-owned log calls. The later
+[HTTP diagnostic gate](http-diagnostics.md) covers server panic output. Other
+panics, full observability, and the enterprise goal remain open.

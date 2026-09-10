@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"log"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -25,6 +26,7 @@ const (
 	ServiceReady
 	ServiceStopping
 	ServiceFailed
+	HTTPServerDiagnostic
 )
 
 func (event ServiceEvent) description() (string, string, string, otellog.Severity) {
@@ -37,6 +39,8 @@ func (event ServiceEvent) description() (string, string, string, otellog.Severit
 		return "service.ready", "Service is ready", "INFO", otellog.SeverityInfo
 	case ServiceStopping:
 		return "service.stopping", "Service is stopping", "INFO", otellog.SeverityInfo
+	case HTTPServerDiagnostic:
+		return "http.server.diagnostic", "HTTP server reported a diagnostic", "ERROR", otellog.SeverityError
 	case ServiceFailed:
 		return "service.failed", "Service failed", "ERROR", otellog.SeverityError
 	default:
@@ -149,4 +153,15 @@ func (r *Runtime) LocalLogFailures() uint64 {
 		return 0
 	}
 	return r.service.local.failures.Load()
+}
+
+// HTTPErrorLog replaces raw server diagnostics with a fixed service event.
+// The standard logger has no request context. Request signals retain correlation.
+func (r *Runtime) HTTPErrorLog() *log.Logger { return log.New(httpDiagnosticWriter{runtime: r}, "", 0) }
+
+type httpDiagnosticWriter struct{ runtime *Runtime }
+
+func (w httpDiagnosticWriter) Write(data []byte) (int, error) {
+	w.runtime.LogServiceEvent(context.Background(), HTTPServerDiagnostic)
+	return len(data), nil
 }

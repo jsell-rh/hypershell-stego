@@ -416,3 +416,7 @@ cleanup on that shared Cluster. Its record states the test result and limits.
 Generated [process failure records](acceptance/process-failure-privacy.md) report
 the failed step without private database or component error text. A Gateway
 failure and recovery test verifies rollback, safe output, and event delivery.
+
+[HTTP diagnostics](acceptance/http-diagnostics.md) use fixed local and OTLP
+events. A test-only panic route verifies safe logs, request signals, and continued
+Gateway access without adding a fault route to the generated application.
