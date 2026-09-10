@@ -1,10 +1,18 @@
 last_applied:
+    compiler_build:
+        go_version: go1.26.8
+        goos: linux
+        goarch: amd64
+        module_version: v0.0.0-20260910151813-8ae682d5bc3b
+        vcs: git
+        revision: 8ae682d5bc3b7fceecc590db0dfbdf21b28f0385
+        source_state: clean
     service_hash: 1d1137b7b1b7c7f50d31bf287a22b1cb4e49ab5ab561c2b922d704a91cf8a7bf
     registry_sha: gateway-workflow
-    registry_content_sha256: 4909de21f2a4bace1271ebd4b1cebad1da0457f930e272e639a2eaf333afa9c6
+    registry_content_sha256: 597834743d51fc39387c44a7d6866bd405c66d3fb395c72567808214f1dae8fe
     components:
         cli-application:
-            version: 1.2.0
+            version: 1.3.0
             sha: gateway-workflow
         controller:
             version: 1.7.0
@@ -298,6 +306,7 @@ last_applied:
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
+        cli/buildidentity/runtime.go: 5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911
         cli/client/client.go: b539dc426fe44304cd9d2694dbdbb1929e4ee195e1d2f3d73b0f909c6e925e18
         cli/cmd/main.go: 55e38ef059bbc114ade87e8ec1071e105ceb74a226a00679be05028c8204ec8b
         cli/command/apply.go: 74a5611e68029653a31c05e143432d65c34ffe3fcca265917262b0186317354d
@@ -307,8 +316,9 @@ last_applied:
         cli/command/identity.go: d7d23fcc6347897099d25797196c1602d323ea53f19a94713d06198b879422f2
         cli/command/oauth.go: a2aefcb0a3550424f475df17ffc2388c6ed7495e4a72fa60fc431f18448be459
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
-        cli/command/runtime.go: 66d6360b6ea734fd6190aef64615bd778569f20c44c7b36e3fc5be3b3a70fd01
+        cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
+        cli/command/version.go: 05ec5db8b01dab63d9e512c5f47d05a3bb73356b56f14616aa7eae9067830b14
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 1e31b4cc711167622c36468233c300226e5f4b4d2ca23552dbcb47c5097ca786
         controller/keyed.go: a4eb800cf13a68b8728354e3d855d725572db3131bde3f7facf2733075d734cb

@@ -38,6 +38,7 @@ type Command struct {
 	Success                       []int
 }
 type Application struct {
+	VersionCommand                                    bool
 	ConfigEnv, ConfigName, OIDCClientID, IdentityPath string
 	Commands                                          []Command
 	Resources                                         []ApplyResource
@@ -60,7 +61,7 @@ func validate(app Application) error {
 	if app.OIDCClientID != "" && !safeClientID(app.OIDCClientID) {
 		return errors.New("invalid OIDC client ID")
 	}
-	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || (len(app.Commands) == 0 && len(app.Resources) == 0 && app.IdentityPath == "") || len(app.Commands) > 128 {
+	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || (len(app.Commands) == 0 && len(app.Resources) == 0 && app.IdentityPath == "" && !app.VersionCommand) || len(app.Commands) > 128 {
 		return errors.New("invalid CLI definition")
 	}
 	seen := map[string]bool{}
@@ -72,6 +73,9 @@ func validate(app Application) error {
 			if !word.MatchString(name) {
 				return errors.New("invalid CLI command name")
 			}
+		}
+		if app.VersionCommand && c.Name[0] == "version" {
+			return errors.New("reserved CLI version command")
 		}
 		if app.IdentityPath != "" && c.Name[0] == "whoami" {
 			return errors.New("reserved CLI identity command")
@@ -181,6 +185,9 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	}
 	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "help")) {
 		names := []string{"login --url URL --token-file FILE [--ca-file FILE]", "login --url URL --issuer-url URL [--client-id ID] [--no-browser] [--ca-file FILE] [--issuer-ca-file FILE]", "logout"}
+		if app.VersionCommand {
+			names = append(names, "version")
+		}
 		if app.IdentityPath != "" {
 			names = append(names, "whoami [--show-token | --show-token-decoded] [--output-file FILE]")
 		}
@@ -193,6 +200,9 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		sort.Strings(names)
 		_, err := fmt.Fprintln(output, strings.Join(names, "\n"))
 		return err
+	}
+	if args[0] == "version" && app.VersionCommand {
+		return versionReport(args[1:], output)
 	}
 	if args[0] == "whoami" && app.IdentityPath != "" {
 		return whoami(ctx, app, args[1:], output)

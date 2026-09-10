@@ -359,3 +359,7 @@ The generated [identity command](acceptance/cli-identity.md) reports the caller
 accepted by the API. `whoami` supports OIDC refresh and protected token export.
 Default output contains no token. The current-user extension is version 1.1.0
 and adds verified issuer, subject, and access-token expiry fields.
+
+The CLI `version` command returns separate application and compiler build records.
+It works without login or API access. See [build records](acceptance/cli-version.md)
+for the tested behavior and limits.

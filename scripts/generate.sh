@@ -21,7 +21,7 @@ git -C "$scratch/compiler" -c advice.detachedHead=false checkout -q --detach FET
 test "$(git -C "$scratch/compiler" rev-parse HEAD)" = "$revision"
 (
   cd "$scratch/compiler"
-  GOWORK=off go build -mod=readonly -trimpath -o "$scratch/stego" ./cmd/stego
+  GOWORK=off go build -mod=readonly -trimpath -buildvcs=true -o "$scratch/stego" ./cmd/stego
 )
 unset STEGO_REGISTRY STEGO_MODULE STEGO_GO_VERSION
 export GOWORK=off

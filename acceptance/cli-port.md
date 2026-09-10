@@ -18,7 +18,7 @@ alone does not establish compatibility with all reference options.
 | Apply | Five resource kinds; files, directories, stdin; local dry run; exact IDs; partial results and failure status | Role-binding mapping, Kustomize rendering; role writes have no reference API route |
 | Config | Login writes private configuration | Reference config commands and pager settings |
 | Whoami | API-verified identity, protected raw and decoded token output, token refresh | Reference text output format |
-| Version and completion | Not supplied | Build identity and shell completion |
+| Version and completion | Offline JSON with separate application and compiler build records | Shell completion; release artifact verification |
 | Output | Bounded JSON and private output files | Tables, columns, headers, pager, reference output flags |
 
 `get current-user` returns the API user ID needed for grants.
