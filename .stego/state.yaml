@@ -68,9 +68,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910214223-777d59184dd6
+        module_version: v0.0.0-20260910215258-62772729cb20
         vcs: git
-        revision: 777d59184dd658ceb77b03d262caceaf0b4ae5c4
+        revision: 62772729cb205747e21d36bd99c7923b12efe3f3
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 5428ba1f991eb0e203d379a4c7b4359b53f5a90728a9e97d20c76b739acac937
+        cli/command/version.go: 69a0a84d653706034bc2058c7d4cdc2485becefdaae3c9115b1ade8ecd7616f3
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -437,7 +437,7 @@ last_applied:
         kubernetes/client.go: 66b577cb6cf902760a3bca83832926924e75b4465928237c5ab821755fd08e59
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
-        main.go: 17b22b30942d0d1bb4b6b6f8d583d26430843f4d5850fcb90470f11d87ecb73d
+        main.go: 74a77b5bafdc45980bb38271ca00448671fd0eb8bbee96e6637b57ab8c24e59f
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b

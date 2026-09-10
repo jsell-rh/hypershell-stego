@@ -412,3 +412,7 @@ controller runtime for the shared managed-database provider. It has a separate
 real Kubernetes acceptance gate. The [CNPG Gateway workflow](acceptance/cnpg-gateway.md)
 adds separate SQL identities, retained keys, application calls, and SQL-confirmed
 cleanup on that shared Cluster. Its record states the test result and limits.
+
+Generated [process failure records](acceptance/process-failure-privacy.md) report
+the failed step without private database or component error text. A Gateway
+failure and recovery test verifies rollback, safe output, and event delivery.

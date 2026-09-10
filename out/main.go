@@ -4,13 +4,15 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
-	"fmt"
+	"io"
 	"log"
 	"net"
 	"net/http"
 	"os"
 	"os/signal"
+	"sort"
 	"syscall"
 	"time"
 
@@ -24,64 +26,82 @@ import (
 	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	postgres "gorm.io/driver/postgres"
 	gorm "gorm.io/gorm"
+	gormlogger "gorm.io/gorm/logger"
 )
 
 func main() {
 	if err := run(); err != nil {
-		log.Print("service failed: ", err)
+		stegoReportFailure(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func run() error {
+func run() (stegoErr error) {
+	stegoStage := "startup"
+	defer func() {
+		if stegoErr != nil {
+			stegoErr = &stegoServiceFailure{stage: stegoStage, cause: stegoErr, tasks: stegoTaskNames(stegoErr)}
+		}
+	}()
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
+	stegoStage = "database.configure"
 	dsn := os.Getenv("DATABASE_URL")
 	if dsn == "" {
 		return errors.New("DATABASE_URL environment variable is required")
 	}
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
+	stegoStage = "database.open"
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Discard})
 	if err != nil {
 		return err
 	}
+	stegoStage = "database.handle"
 	sqlDB, err := db.DB()
 	if err != nil {
 		return err
 	}
 	defer sqlDB.Close()
 
+	stegoStage = "component[0].constructor[0]"
 	store, err := storage.NewStore(db)
 	if err != nil {
 		return err
 	}
+	stegoStage = "component[2].constructor[0]"
 	runtime, err := events.NewRuntime(ctx, sqlDB)
 	if err != nil {
 		return err
 	}
 	defer runtime.Close()
+	stegoStage = "component[5].constructor[0]"
 	source, err := outbox.NewSource(ctx, sqlDB)
 	if err != nil {
 		return err
 	}
 	defer source.Close()
+	stegoStage = "component[7].constructor[0]"
 	databaseMonitor, err := health.NewDatabaseMonitor(ctx, sqlDB)
 	if err != nil {
 		return err
 	}
+	stegoStage = "component[8].constructor[0]"
 	tracingRuntime, err := tracing.NewTracingRuntime()
 	if err != nil {
 		return err
 	}
 	defer tracingRuntime.Close()
+	stegoStage = "component[12].constructor[0]"
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
 	}
+	stegoStage = "component[4].constructor[0]"
 	handler, err := application.NewHandler(store, verifierFromEnvironment, sqlDB)
 	if err != nil {
 		return err
 	}
 	defer handler.Close()
+	stegoStage = "component[5].constructor[1]"
 	gRPCRuntime, err := grpcapi.NewGRPCRuntime(store, verifierFromEnvironment, source, tracingRuntime)
 	if err != nil {
 		return err
@@ -100,12 +120,14 @@ func run() error {
 	topMux.HandleFunc("GET /livez", databaseMonitor.Live)
 	topMux.HandleFunc("GET /readyz", databaseMonitor.Ready)
 	topMux.Handle("/", tracingRuntime.Handler(tracingRuntime.Route(mux)))
+	stegoStage = "http.listen"
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
 	}
 	log.Printf("starting server on %s", listener.Addr())
 	defer listener.Close()
+	stegoStage = "service.run"
 	return stegoRunTasks(ctx, []stegoTask{
 		{name: "http", run: func(ctx context.Context) error {
 			return stegoServeHTTP(ctx, listener, stegoHTTPServer(topMux), 10*time.Second)
@@ -116,6 +138,46 @@ func run() error {
 		{name: "grpc-application[1]", run: gRPCRuntime.Run},
 		{name: "health-check[0]", run: databaseMonitor.Run},
 	})
+}
+
+type stegoServiceFailure struct {
+	stage string
+	cause error
+	tasks []string
+}
+
+func (e *stegoServiceFailure) Error() string { return "service failed at " + e.stage }
+func (e *stegoServiceFailure) Unwrap() error { return e.cause }
+
+// stegoReportFailure writes one fixed record before process exit. The stage
+// comes from generated code. The cause is never formatted or serialized.
+// A blocked output can retain one worker until the process exits.
+func stegoReportFailure(output io.Writer, err error) {
+	stage := "service.run"
+	var tasks []string
+	if failure, ok := err.(*stegoServiceFailure); ok {
+		stage = failure.stage
+		tasks = failure.tasks
+	}
+	record := struct {
+		Timestamp string   `json:"timestamp"`
+		Severity  string   `json:"severity"`
+		Event     string   `json:"event.name"`
+		Message   string   `json:"message"`
+		Stage     string   `json:"stage"`
+		Tasks     []string `json:"tasks,omitempty"`
+	}{time.Now().UTC().Format(time.RFC3339Nano), "ERROR", "service.failed", "Service failed", stage, tasks}
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		json.NewEncoder(output).Encode(record)
+	}()
+	timer := time.NewTimer(time.Second)
+	defer timer.Stop()
+	select {
+	case <-done:
+	case <-timer.C:
+	}
 }
 
 // stegoHTTPServer sets limits for the generated request-response API.
@@ -160,6 +222,31 @@ func stegoHTTPError(err error) error {
 	return err
 }
 
+type stegoTaskFailure struct {
+	name  string
+	cause error
+}
+
+func (e *stegoTaskFailure) Error() string { return "task " + e.name + " failed" }
+func (e *stegoTaskFailure) Unwrap() error { return e.cause }
+
+// stegoTaskNames reads only the direct task failures made by stegoRunTasks.
+// It does not inspect or format component error causes.
+func stegoTaskNames(err error) []string {
+	joined, ok := err.(interface{ Unwrap() []error })
+	if !ok {
+		return nil
+	}
+	var names []string
+	for _, cause := range joined.Unwrap() {
+		if failure, ok := cause.(*stegoTaskFailure); ok {
+			names = append(names, failure.name)
+		}
+	}
+	sort.Strings(names)
+	return names
+}
+
 // stegoTask runs until cancellation. It must return after cancellation.
 type stegoTask struct {
 	name string
@@ -185,7 +272,7 @@ func stegoRunTasks(parent context.Context, tasks []stegoTask) error {
 				err = nil
 			}
 			if err != nil {
-				err = fmt.Errorf("task %s: %w", task.name, err)
+				err = &stegoTaskFailure{name: task.name, cause: err}
 			}
 			results <- err
 		}(task)

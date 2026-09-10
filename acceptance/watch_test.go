@@ -326,7 +326,7 @@ func TestGatewayWatchSourceFailureStopsGeneratedRuntime(t *testing.T) {
 		t.Fatalf("source failure left watch open: %v", result.event)
 	}
 	output := waitFailure()
-	if !strings.Contains(output, "grpc-application[0]") {
+	if !strings.Contains(output, `"event.name":"service.failed"`) || !strings.Contains(output, `"stage":"service.run"`) || !strings.Contains(output, "grpc-application[0]") {
 		t.Fatalf("source failure not reported by supervisor: %s", output)
 	}
 	for _, address := range []string{address, strings.TrimPrefix(httpAddress, "http://")} {
