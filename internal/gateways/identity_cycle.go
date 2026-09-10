@@ -15,6 +15,7 @@ const identityCycleScope = "identity-users-cycle"
 type IdentityCycle struct {
 	Checkpoint store.ScanCheckpoint
 	Generation int64
+	Revision   int64
 }
 
 func (s *Service) IdentityScanCycle(ctx context.Context, p Principal, id string) (IdentityCycle, error) {
@@ -44,6 +45,7 @@ func (s *Service) IdentityScanCycle(ctx context.Context, p Principal, id string)
 			return err
 		}
 		result.Generation = row.ResourceGeneration
+		result.Revision = row.ResourceVersion
 		// Hide an old result without deleting its stored history or version.
 		if cycle.Source != strconv.FormatInt(result.Generation, 10) {
 			result.Checkpoint.After = ""
@@ -56,10 +58,13 @@ func (s *Service) IdentityScanCycle(ctx context.Context, p Principal, id string)
 // SaveIdentityScanCycle checks the desired generation and checkpoint revision
 // while the live Gateway is locked. Grant writes use the same lock and reset
 // the checkpoint. A scan cannot publish evidence from before a grant change.
-func (s *Service) SaveIdentityScanCycle(ctx context.Context, p Principal, id string, version, generation int64, data string) (IdentityCycle, error) {
+func (s *Service) SaveIdentityScanCycle(ctx context.Context, p Principal, id string, version, generation, revision int64, data string) (IdentityCycle, error) {
 	var result IdentityCycle
 	if err := s.authorizeIdentityController(p, id); err != nil {
 		return result, err
+	}
+	if revision < 1 {
+		return result, ErrObservationRequired
 	}
 	cycle, err := runtime.DecodeCycle(data)
 	if err != nil || data == "" || version < 0 || generation < 1 || cycle.Source != strconv.FormatInt(generation, 10) || (cycle.After != "" && !validID(cycle.After)) {
@@ -70,7 +75,7 @@ func (s *Service) SaveIdentityScanCycle(ctx context.Context, p Principal, id str
 		if !ok || row.ID != id {
 			return errors.New("identity cycle resource does not match")
 		}
-		if row.ResourceGeneration != generation {
+		if row.ResourceGeneration != generation || row.ResourceVersion != revision {
 			return store.ErrVersionConflict
 		}
 		checkpoints, ok := tx.(store.CheckpointStore)
@@ -96,7 +101,39 @@ func (s *Service) SaveIdentityScanCycle(ctx context.Context, p Principal, id str
 		}
 		result.Checkpoint, err = checkpoints.SaveCheckpoint(ctx, "Gateway", id, identityCycleScope, version, data)
 		result.Generation = generation
-		return err
+		result.Revision = row.ResourceVersion
+		if err != nil {
+			return err
+		}
+		if !cycle.Failed && !cycle.Complete {
+			return nil
+		}
+		update := store.ConditionUpdate{Name: "GrantsSynchronized", Status: "True", Reason: "GrantSyncComplete", Message: "Stored Gateway grant references were synchronized"}
+		if cycle.Failed {
+			update.Status = "Unknown"
+			update.Reason = "GrantSyncIncomplete"
+			update.Message = "One or more stored grant updates were not confirmed"
+		}
+		changed, err := writeGrantCondition(ctx, tx, row, update)
+		if err != nil {
+			return err
+		}
+		if !changed {
+			return nil
+		}
+		if err := notifyGateway(tx, id, "Update", "gateway.updated"); err != nil {
+			return err
+		}
+		stored, err := tx.Get(ctx, "Gateway", id)
+		if err != nil {
+			return err
+		}
+		current, ok := stored.(model.Gateway)
+		if !ok || current.ID != id {
+			return errors.New("identity cycle resource does not match")
+		}
+		result.Revision = current.ResourceVersion
+		return nil
 	})
 	return result, err
 }
@@ -112,7 +149,18 @@ func resetIdentityCycle(ctx context.Context, tx store.Transaction, id string) er
 	if err != nil {
 		return err
 	}
-	_, err = checkpoints.SaveCheckpoint(ctx, "Gateway", id, identityCycleScope, previous.Version, "")
+	if _, err = checkpoints.SaveCheckpoint(ctx, "Gateway", id, identityCycleScope, previous.Version, ""); err != nil {
+		return err
+	}
+	value, err := tx.Get(ctx, "Gateway", id)
+	if err != nil {
+		return err
+	}
+	row, ok := value.(model.Gateway)
+	if !ok || row.ID != id {
+		return errors.New("identity cycle resource does not match")
+	}
+	_, err = writeGrantCondition(ctx, tx, row, store.ConditionUpdate{Name: "GrantsSynchronized", Status: "Unknown", Reason: "GrantsChanged", Message: "Gateway grant changes require a new scan"})
 	return err
 }
 
@@ -133,4 +181,25 @@ func validateIdentityCursor(ctx context.Context, tx store.Transaction, id, after
 		return ErrInvalid
 	}
 	return nil
+}
+
+// Partial successful passes preserve the last complete observation. A failed
+// pass removes positive evidence. Each owner retains its separate condition.
+func writeGrantCondition(ctx context.Context, tx store.Transaction, row model.Gateway, update store.ConditionUpdate) (bool, error) {
+	values, err := row.Conditions()
+	if err != nil {
+		return false, err
+	}
+	current := values["identity_users"]["GrantsSynchronized"]
+	if current.Current && current.Status == update.Status && current.Reason == update.Reason && current.Message == update.Message {
+		return false, nil
+	}
+	writer, ok := tx.(store.ConditionWriter)
+	if !ok {
+		return false, errors.New("identity storage requires conditions")
+	}
+	if err := writer.ObserveConditionsIfVersion(ctx, "Gateway", row.ID, row.ResourceVersion, "identity_users", []store.ConditionUpdate{update}); err != nil {
+		return false, err
+	}
+	return true, nil
 }

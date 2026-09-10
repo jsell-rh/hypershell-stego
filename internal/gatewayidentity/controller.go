@@ -159,6 +159,10 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if !declared || group == nil || group.GetConditions()["ClientReady"] == nil || state.ResourceGeneration < 1 {
 		return runtime.ErrObservationContract
 	}
+	grants, declared := state.GetConditions()["identity_users"]
+	if !declared || grants == nil || grants.GetConditions()["GrantsSynchronized"] == nil {
+		return runtime.ErrObservationContract
+	}
 	var oidc string
 	err = runtime.RunObservation(ctx, func(operation context.Context) error {
 		var err error
@@ -207,7 +211,7 @@ func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	if saved == nil || saved.GatewayId != id || saved.ResourceGeneration < 1 {
+	if saved == nil || saved.GatewayId != id || saved.ResourceGeneration < 1 || saved.ResourceVersion < 1 {
 		return runtime.ErrScanContract
 	}
 	access := runtime.CheckpointAccess{
@@ -215,14 +219,14 @@ func (c *Controller) reconcileUsers(ctx context.Context, id string) error {
 			return runtime.Checkpoint{After: saved.Data, Version: saved.Version}, nil
 		},
 		Save: func(ctx context.Context, version int64, data string) error {
-			value, err := c.state.SaveGatewayIdentityCycle(ctx, &control.SaveGatewayIdentityCycleRequest{GatewayId: id, ExpectedVersion: version, ResourceGeneration: saved.ResourceGeneration, Data: data})
+			value, err := c.state.SaveGatewayIdentityCycle(ctx, &control.SaveGatewayIdentityCycleRequest{GatewayId: id, ExpectedVersion: version, ResourceGeneration: saved.ResourceGeneration, ResourceVersion: saved.ResourceVersion, Data: data})
 			if status.Code(err) == codes.Unimplemented {
 				return runtime.ErrScanContract
 			}
 			if err != nil {
 				return err
 			}
-			if value == nil || value.GatewayId != id || value.Version != version+1 || value.Data != data || value.ResourceGeneration != saved.ResourceGeneration {
+			if value == nil || value.GatewayId != id || value.Version != version+1 || value.Data != data || value.ResourceGeneration != saved.ResourceGeneration || value.ResourceVersion < saved.ResourceVersion {
 				return runtime.ErrScanContract
 			}
 			return nil

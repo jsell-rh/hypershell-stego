@@ -26,6 +26,8 @@ import (
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	"google.golang.org/grpc/metadata"
 )
 
 func (k *keycloakFixture) adminRequest(t *testing.T, method, path string, value any) web.Response {
@@ -277,6 +279,36 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 		time.Sleep(20 * time.Millisecond)
 	}
 
+	_, syncConnection := grpcClient(t, grpcAddress, tlsIdentity)
+	syncClient := control.NewGatewayIdentityServiceClient(syncConnection)
+	readSync := func() *control.GetGatewayIdentityStateResponse {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		call := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+controllerToken))
+		state, err := observationRead(call, func(ctx context.Context) (*control.GetGatewayIdentityStateResponse, error) {
+			return syncClient.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state
+	}
+	waitSync := func() {
+		t.Helper()
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			state := readSync()
+			condition := state.GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]
+			if condition.GetStatus() == "True" && condition.GetCurrent() && condition.GetObservedGeneration() == state.ResourceGeneration {
+				return
+			}
+			if time.Now().After(deadline) {
+				t.Fatal("real grant synchronization has no positive condition", condition)
+			}
+			time.Sleep(20 * time.Millisecond)
+		}
+	}
 	verify := func(raw string) auth.Identity {
 		t.Helper()
 		value, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: gatewayClient, RolesClaim: "hypershell.roles"}, raw, jwks)
@@ -295,6 +327,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 				t.Fatal("Gateway login changed subject")
 			}
 			if equalStringSet(identity.Roles, want) {
+				waitSync()
 				return raw
 			}
 			if time.Now().After(deadline) {
@@ -362,11 +395,24 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if code, _ := requestJSON(t, "DELETE", root+"/role_bindings/"+binding.ID, alice, nil); code != 204 {
 		t.Fatal("remove viewer grant", code)
 	}
+	revoked := readSync()
+	revokedCondition := revoked.GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]
+	if revokedCondition.GetStatus() != "Unknown" || revokedCondition.GetReason() != "GrantsChanged" || !revokedCondition.GetCurrent() {
+		t.Fatal("offline revocation kept grant success", revokedCondition)
+	}
+	if value := revoked.GetConditions()["identity"].GetConditions()["ClientReady"]; value.GetStatus() != "True" || !value.GetCurrent() {
+		t.Fatal("grant invalidation changed client condition", value)
+	}
 	// Both processes restart after removal while the controller was offline.
 	stopAPI()
 	stopAPI, address, grpcAddress = startBoth(t, apiBinary, f.dsn, config, settings...)
 	defer stopAPI()
 	root = address + "/api/hypershell/v1"
+	_, syncConnection = grpcClient(t, grpcAddress, tlsIdentity)
+	syncClient = control.NewGatewayIdentityServiceClient(syncConnection)
+	if value := readSync().GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]; value.GetStatus() != "Unknown" || value.GetLastTransitionTime() != revokedCondition.GetLastTransitionTime() {
+		t.Fatal("API restart lost invalidated grant condition", value)
+	}
 	stopController, logs = startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
 	defer stopController()
 	waitRoles("renamed-bob", bobID, nil)

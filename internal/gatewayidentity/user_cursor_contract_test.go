@@ -63,3 +63,16 @@ func TestUserCursorCombinesRepeatedUsersWithinOnePage(t *testing.T) {
 		}
 	}
 }
+
+type missingCycleRevision struct{ progressUserState }
+
+func (*missingCycleRevision) LoadGatewayIdentityCycle(_ context.Context, request *control.LoadGatewayIdentityCheckpointRequest, _ ...grpc.CallOption) (*control.GatewayIdentityCycle, error) {
+	return &control.GatewayIdentityCycle{GatewayId: request.GatewayId, ResourceGeneration: 1}, nil
+}
+func TestCycleWithoutResourceRevisionStopsBeforeProviderWork(t *testing.T) {
+	provider := &progressUserProvider{providerFixture: new(providerFixture)}
+	controller, _ := New(new(apiFixture), new(missingCycleRevision), provider)
+	if err := controller.reconcileUsers(context.Background(), "gateway"); !errors.Is(err, runtime.ErrScanContract) || len(provider.subjects) != 0 {
+		t.Fatal("old cycle contract permitted provider work", err, provider.subjects)
+	}
+}

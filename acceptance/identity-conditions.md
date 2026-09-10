@@ -86,3 +86,6 @@ read of the latest revision. The new test failed at its old-result barrier in
 The overlay did not change source files. This verifies that the test detects an
 incorrect attempt to commit an old result with a newer resource revision.
 Static checks for the acceptance package also passed.
+
+The separate [grant condition](grant-conditions.md) now uses retained scan outcomes
+and atomic grant invalidation. It does not change the scope of `ClientReady`.

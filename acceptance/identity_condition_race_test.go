@@ -134,6 +134,8 @@ func TestIdentityConditionDuringProviderTimeoutAndDesiredChange(t *testing.T) {
 		t.Fatal("initial client is not ready", ready)
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	// The user scan also publishes its separate condition.
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
 	// The generated watch must trigger another pass even when the client is ready.
 	timed := provider.next(t)
 	failed := wait("IdentityObservationTimeout")
@@ -181,6 +183,8 @@ func TestIdentityConditionDuringProviderTimeoutAndDesiredChange(t *testing.T) {
 		t.Fatal("fresh pass did not recover", recovered)
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	recovered = read()
 	// Parent cancellation cannot turn an unfinished provider call into a failure
 	// observation. Stop only after the next provider call has begun.
 	canceled := provider.next(t)

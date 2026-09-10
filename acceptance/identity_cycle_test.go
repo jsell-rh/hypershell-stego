@@ -53,7 +53,15 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		return client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: before.Version, ResourceGeneration: before.ResourceGeneration, Data: data})
+		return client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: before.Version, ResourceGeneration: before.ResourceGeneration, ResourceVersion: before.ResourceVersion, Data: data})
+	}
+	readCondition := func() *control.ResourceCondition {
+		t.Helper()
+		state, err := client.GetGatewayIdentityState(auth, &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state.GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Create", "gateway.created")
 	initial := load()
@@ -63,6 +71,10 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 	failed, err := save(initial, true, false)
 	if err != nil {
 		t.Fatal(err)
+	}
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	if value := readCondition(); value.GetStatus() != "Unknown" || value.GetReason() != "GrantSyncIncomplete" {
+		t.Fatal("failed cycle has no condition", value)
 	}
 	if _, err := save(failed, false, true); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("earlier failure was cleared", err)
@@ -83,12 +95,25 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	if value := readCondition(); value.GetStatus() != "True" || !value.GetCurrent() {
+		t.Fatal("clean cycle has no condition", value)
+	}
+	for _, revision := range []int64{0, -1, ready.ResourceVersion - 1} {
+		expected := codes.Aborted
+		if revision < 1 {
+			expected = codes.FailedPrecondition
+		}
+		if _, err := client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: ready.Version, ResourceGeneration: ready.ResourceGeneration, ResourceVersion: revision, Data: ready.Data}); status.Code(err) != expected {
+			t.Fatal("missing or old resource revision accepted", revision, err)
+		}
+	}
 	for _, subject := range []string{"alice", "observer"} {
 		denied := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token(t, key, subject)))
 		if _, err := client.LoadGatewayIdentityCycle(denied, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID}); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("denied cycle read accepted", subject, err)
 		}
-		if _, err := client.SaveGatewayIdentityCycle(denied, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: ready.Version, ResourceGeneration: ready.ResourceGeneration, Data: ready.Data}); status.Code(err) != codes.PermissionDenied {
+		if _, err := client.SaveGatewayIdentityCycle(denied, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: ready.Version, ResourceGeneration: ready.ResourceGeneration, ResourceVersion: ready.ResourceVersion, Data: ready.Data}); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("denied cycle write accepted", subject, err)
 		}
 	}
@@ -104,10 +129,16 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_cycle_event CHECK(kind <> 'gateway.updated') NOT VALID"); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := save(ready, true, false); err == nil {
+		t.Fatal("condition event failure was ignored")
+	}
+	if unchanged := load(); unchanged.Version != ready.Version || unchanged.ResourceVersion != ready.ResourceVersion || unchanged.Data != ready.Data || readCondition().GetStatus() != "True" {
+		t.Fatal("event failure committed partial cycle or condition", unchanged)
+	}
 	if code, _ := requestJSON(t, "POST", base+"/role_bindings", owner, body); code != 500 {
 		t.Fatal("event failure was ignored", code)
 	}
-	if unchanged := load(); unchanged.Version != ready.Version || unchanged.Data != ready.Data {
+	if unchanged := load(); unchanged.Version != ready.Version || unchanged.Data != ready.Data || unchanged.ResourceVersion != ready.ResourceVersion || readCondition().GetStatus() != "True" {
 		t.Fatal("event failure committed cycle reset", unchanged)
 	}
 	var grants int
@@ -126,6 +157,9 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
 	reset := load()
+	if value := readCondition(); value.GetStatus() != "Unknown" || value.GetReason() != "GrantsChanged" || !value.GetCurrent() {
+		t.Fatal("grant change kept positive condition", value)
+	}
 	if reset.Data != "" || reset.Version != ready.Version+1 || reset.ResourceGeneration != ready.ResourceGeneration {
 		t.Fatal("grant did not invalidate cycle evidence", reset)
 	}
@@ -140,6 +174,12 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 	if deletedGrant.Data != "" || deletedGrant.Version != reset.Version+1 {
 		t.Fatal("deletion did not advance invalidation", deletedGrant)
 	}
+	if deletedGrant.ResourceVersion != reset.ResourceVersion {
+		t.Fatal("unchanged invalidation rewrote the condition")
+	}
+	if _, err := save(reset, false, true); status.Code(err) != codes.Aborted {
+		t.Fatal("checkpoint-only invalidation accepted a stale scan", err)
+	}
 	if code, _ := requestJSON(t, "PATCH", base+"/gateways/"+gateway.ID, owner, []byte(`{"name":"changed-cycle-input"}`)); code != 200 {
 		t.Fatal("desired change failed", code)
 	}
@@ -147,6 +187,9 @@ func TestIdentityCycleInvalidatesWithGrantAndEvent(t *testing.T) {
 		t.Fatal("old desired generation was accepted", err)
 	}
 	current := load()
+	if value := readCondition(); value.GetCurrent() || value.GetStatus() != "Unknown" || value.GetReason() != "ObservationPending" {
+		t.Fatal("old generation kept current grant condition", value)
+	}
 	if current.Data != "" || current.Version != deletedGrant.Version {
 		t.Fatal("old generation exposed cycle evidence", current)
 	}

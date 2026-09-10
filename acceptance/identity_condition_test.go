@@ -153,6 +153,7 @@ func TestIdentityProviderFailureHasDurableCondition(t *testing.T) {
 	stopController = run()
 	ready := wait("IdentityClientReady", true)
 	stopController()
+	ready = read()
 	value := condition(ready)
 	readyTime, err := time.Parse(time.RFC3339Nano, value.LastTransitionTime)
 	if err != nil || value.Status != "True" || value.ObservedGeneration != ready.ResourceGeneration || !readyTime.After(failureTime) || ready.Gateway.GetOidc() != configuration {

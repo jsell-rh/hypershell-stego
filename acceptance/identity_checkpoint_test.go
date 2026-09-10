@@ -109,6 +109,18 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 	stopController := run()
 	waitCheckpoint(1, fmt.Sprintf("%027d", 7))
 	stopController()
+	readGrantCondition := func() *control.ResourceCondition {
+		t.Helper()
+		state, err := client.GetGatewayIdentityState(auth, &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return state.GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]
+	}
+	failedCondition := readGrantCondition()
+	if failedCondition.GetStatus() != "Unknown" || failedCondition.GetReason() != "GrantSyncIncomplete" || !failedCondition.GetCurrent() {
+		t.Fatal("grant failure has no durable condition", failedCondition)
+	}
 	// The next action must read the changed grant after both restarts.
 	if _, err := f.db.Exec("UPDATE role_bindings SET deleted_at=now() WHERE id=$1", fmt.Sprintf("%027d", 8)); err != nil {
 		t.Fatal(err)
@@ -118,6 +130,9 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 	public, connection = grpcClient(t, address, apiTLS)
 	client = control.NewGatewayIdentityServiceClient(connection)
 	waitCheckpoint(1, fmt.Sprintf("%027d", 7))
+	if value := readGrantCondition(); value.GetReason() != "GrantSyncIncomplete" || value.GetLastTransitionTime() != failedCondition.GetLastTransitionTime() {
+		t.Fatal("restart lost grant failure evidence", value)
+	}
 	provider.mu.Lock()
 	provider.pauseAfter = 0
 	provider.mu.Unlock()
@@ -127,30 +142,41 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 		t.Fatal("resumed cycle lost its earlier timeout failure", cycle, err)
 	}
 	stopController()
-	provider.mu.Lock()
-	defer provider.mu.Unlock()
-	if len(provider.roles) != 106 {
-		t.Fatal("controller lost users", len(provider.roles))
+	if value := readGrantCondition(); value.GetStatus() != "Unknown" || value.GetReason() != "GrantSyncIncomplete" {
+		t.Fatal("resumed tail published false grant success", value)
 	}
-	for subject, roles := range provider.roles {
-		if len(roles) != 1 {
-			t.Fatal("saved prefix was repeated", subject, roles)
+	func() {
+		provider.mu.Lock()
+		defer provider.mu.Unlock()
+		if len(provider.roles) != 106 {
+			t.Fatal("controller lost users", len(provider.roles))
 		}
-	}
-	if roles := provider.roles["discovery-8"]; len(roles) != 1 || roles[0] != "" {
-		t.Fatal("new controller used stale access", roles)
+		for subject, roles := range provider.roles {
+			if len(roles) != 1 {
+				t.Fatal("saved prefix was repeated", subject, roles)
+			}
+		}
+		if roles := provider.roles["discovery-8"]; len(roles) != 1 || roles[0] != "" {
+			t.Fatal("new controller used stale access", roles)
+		}
+	}()
+	stopController = run()
+	completed = waitCheckpoint(3, "")
+	stopController()
+	if value := readGrantCondition(); value.GetStatus() != "True" || value.GetReason() != "GrantSyncComplete" || !value.GetCurrent() || value.GetObservedGeneration() != completed.ResourceGeneration || value.GetLastTransitionTime() == failedCondition.GetLastTransitionTime() {
+		t.Fatal("clean full cycle did not publish grant success", value)
 	}
 	if err := f.service.Delete(ctx, principal("alice"), gateway.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: 2, Data: completed.Data, ResourceGeneration: completed.ResourceGeneration}); status.Code(err) != codes.NotFound {
+	if _, err := client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: 3, Data: completed.Data, ResourceGeneration: completed.ResourceGeneration, ResourceVersion: completed.ResourceVersion}); status.Code(err) != codes.NotFound {
 		t.Fatal("deleted Gateway accepted a cursor save", err)
 	}
 	if _, err := client.LoadGatewayIdentityCycle(auth, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID}); status.Code(err) != codes.NotFound {
 		t.Fatal("deleted Gateway allowed another live scan", err)
 	}
 	var retained int64
-	if err := f.db.QueryRow("SELECT version FROM stego_scan_checkpoints WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-users-cycle'", gateway.ID).Scan(&retained); err != nil || retained != 2 {
+	if err := f.db.QueryRow("SELECT version FROM stego_scan_checkpoints WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-users-cycle'", gateway.ID).Scan(&retained); err != nil || retained != 3 {
 		t.Fatal("deletion changed checkpoint history", retained, err)
 	}
 	t.Log("A new controller loaded the durable cursor after API restart and checked current grants before provider work")

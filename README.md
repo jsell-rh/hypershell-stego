@@ -372,6 +372,8 @@ continue across bounded passes and controller restarts.
 See [identity cursor recovery](acceptance/identity-cursors.md).
 The [scan-cycle record](acceptance/identity-cycles.md) also retains earlier action
 failures after restart. Grant changes invalidate that evidence atomically.
+The separate [grant condition](acceptance/grant-conditions.md) reports a complete,
+clean scan and removes positive evidence when a grant changes.
 
 Gateway identity now records a durable `ClientReady` condition through STEGO.
 Configuration, condition, and event changes commit together. The recovery API

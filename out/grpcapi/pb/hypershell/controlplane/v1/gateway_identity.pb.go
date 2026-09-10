@@ -1388,6 +1388,7 @@ type GatewayIdentityCycle struct {
 	Data               string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	Version            int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
 	ResourceGeneration int64                  `protobuf:"varint,4,opt,name=resource_generation,json=resourceGeneration,proto3" json:"resource_generation,omitempty"`
+	ResourceVersion    int64                  `protobuf:"varint,5,opt,name=resource_version,json=resourceVersion,proto3" json:"resource_version,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1450,12 +1451,20 @@ func (x *GatewayIdentityCycle) GetResourceGeneration() int64 {
 	return 0
 }
 
+func (x *GatewayIdentityCycle) GetResourceVersion() int64 {
+	if x != nil {
+		return x.ResourceVersion
+	}
+	return 0
+}
+
 type SaveGatewayIdentityCycleRequest struct {
 	state              protoimpl.MessageState `protogen:"open.v1"`
 	GatewayId          string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
 	Data               string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
 	ExpectedVersion    int64                  `protobuf:"varint,3,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
 	ResourceGeneration int64                  `protobuf:"varint,4,opt,name=resource_generation,json=resourceGeneration,proto3" json:"resource_generation,omitempty"`
+	ResourceVersion    int64                  `protobuf:"varint,5,opt,name=resource_version,json=resourceVersion,proto3" json:"resource_version,omitempty"`
 	unknownFields      protoimpl.UnknownFields
 	sizeCache          protoimpl.SizeCache
 }
@@ -1514,6 +1523,13 @@ func (x *SaveGatewayIdentityCycleRequest) GetExpectedVersion() int64 {
 func (x *SaveGatewayIdentityCycleRequest) GetResourceGeneration() int64 {
 	if x != nil {
 		return x.ResourceGeneration
+	}
+	return 0
+}
+
+func (x *SaveGatewayIdentityCycleRequest) GetResourceVersion() int64 {
+	if x != nil {
+		return x.ResourceVersion
 	}
 	return 0
 }
@@ -1636,19 +1652,21 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\x04oidc\x18\x02 \x01(\tH\x00R\x04oidc\x88\x01\x01\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reasonB\a\n" +
 	"\x05_oidc\" \n" +
-	"\x1eObserveGatewayIdentityResponse\"\x94\x01\n" +
+	"\x1eObserveGatewayIdentityResponse\"\xbf\x01\n" +
 	"\x14GatewayIdentityCycle\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\tR\x04data\x12\x18\n" +
 	"\aversion\x18\x03 \x01(\x03R\aversion\x12/\n" +
-	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration\"\xb0\x01\n" +
+	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration\x12)\n" +
+	"\x10resource_version\x18\x05 \x01(\x03R\x0fresourceVersion\"\xdb\x01\n" +
 	"\x1fSaveGatewayIdentityCycleRequest\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +
 	"\x04data\x18\x02 \x01(\tR\x04data\x12)\n" +
 	"\x10expected_version\x18\x03 \x01(\x03R\x0fexpectedVersion\x12/\n" +
-	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration2\x93\x0f\n" +
+	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration\x12)\n" +
+	"\x10resource_version\x18\x05 \x01(\x03R\x0fresourceVersion2\x93\x0f\n" +
 	"\x16GatewayIdentityService\x12\x8e\x01\n" +
 	"\x18LoadGatewayIdentityCycle\x12@.hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x89\x01\n" +
 	"\x18SaveGatewayIdentityCycle\x12;.hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x8f\x01\n" +

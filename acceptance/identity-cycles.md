@@ -48,11 +48,14 @@ controller/API restart test now requires the earlier work-timeout failure to
 remain in the completed cycle. The first combined run passed in 29.785 seconds
 under race detection.
 
-A scan outcome is not a general grant-readiness condition. Complete evidence
-for user identity changes, provider liveness, maximum observation age, and
-cross-process provider ownership remains required. The `ClientReady` condition
-continues to describe only Gateway identity client configuration. A checkpoint
-version rejects stale state writes; it cannot fence a late provider write.
+The separate [grant condition](grant-conditions.md) now reports complete, clean
+scans of stored grant references. It is not a general readiness or liveness claim.
+Observation-age policy and cross-process provider ownership remain open. The
+`ClientReady` condition continues to describe only Gateway identity client
+configuration. A checkpoint version rejects stale state writes; it cannot fence
+a late provider write. The grant-condition upgrade adds a required resource
+revision to cycle writes and an event when the condition changes. Partial cursor
+updates without a condition change still preserve the public resource revision.
 
 The broader local run passed all 21 selected application tests in 174.065 seconds
 under race detection, with PostgreSQL and Keycloak required. It covered Gateway

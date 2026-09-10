@@ -58,7 +58,7 @@ entities:
       - { name: status, type: string, optional: true, max_length: 255 }
   - name: Gateway
     versioned: true
-    conditions: {identity: [ClientReady]}
+    conditions: {identity: [ClientReady], identity_users: [GrantsSynchronized]}
     cleanup_owners: [identity, workload]
     cleanup_targets: {workload: cluster_id}
     generation_fields: [name, cluster_id, release_id, database_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, route_address, oidc, route, credential_driver]

@@ -100,14 +100,14 @@ func (f *stateFixture) ObserveGatewayIdentity(ctx context.Context, request *cont
 		f.state.Gateway.Oidc = request.Oidc
 		conditionStatus = "True"
 	}
-	f.state.Conditions = map[string]*control.ResourceConditions{"identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: conditionStatus, Reason: request.Reason, ObservedGeneration: f.state.ResourceGeneration, Current: true}}}}
+	f.state.Conditions["identity"] = &control.ResourceConditions{Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: conditionStatus, Reason: request.Reason, ObservedGeneration: f.state.ResourceGeneration, Current: true}}}
 	f.state.ResourceVersion++
 	return &control.ObserveGatewayIdentityResponse{}, nil
 }
 func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: errors.New("provider unavailable")}
 	api := new(apiFixture)
-	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Conditions: map[string]*control.ResourceConditions{"identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: "Unknown", Reason: "ObservationPending"}}}}, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Conditions: map[string]*control.ResourceConditions{"identity_users": {Conditions: map[string]*control.ResourceCondition{"GrantsSynchronized": {Status: "Unknown", Reason: "ObservationPending"}}}, "identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: "Unknown", Reason: "ObservationPending"}}}}, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
 	controller, _ := New(api, state, provider)
 	if err := controller.reconcile(context.Background(), "gateway"); err == nil || state.state.Gateway.Oidc != nil || state.identityObservations != 1 {
 		t.Fatal("failed provider operation published identity", err)
@@ -344,5 +344,35 @@ func TestMissingIdentityConditionContractStopsProviderWork(t *testing.T) {
 	controller, _ := New(new(apiFixture), state, provider)
 	if err := controller.reconcile(context.Background(), "gateway"); err == nil || provider.creates != 0 {
 		t.Fatal("missing condition contract permitted provider work", err)
+	}
+}
+
+func TestMissingGrantConditionContractStopsProviderWork(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		group *control.ResourceConditions
+	}{
+		{name: "missing owner"},
+		{name: "missing condition", group: &control.ResourceConditions{Conditions: map[string]*control.ResourceCondition{}}},
+		{name: "nil condition", group: &control.ResourceConditions{Conditions: map[string]*control.ResourceCondition{"GrantsSynchronized": nil}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			provider := new(providerFixture)
+			state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{
+				ResourceVersion: 1, ResourceGeneration: 1,
+				Gateway:    &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}},
+				Conditions: map[string]*control.ResourceConditions{"identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: "Unknown"}}}},
+			}}
+			if test.group != nil {
+				state.state.Conditions["identity_users"] = test.group
+			}
+			controller, err := New(new(apiFixture), state, provider)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := controller.reconcile(context.Background(), "gateway"); !errors.Is(err, runtime.ErrObservationContract) || provider.creates != 0 || provider.deletes != 0 || state.identityObservations != 0 {
+				t.Fatal("missing grant condition contract permitted provider work", err)
+			}
+		})
 	}
 }

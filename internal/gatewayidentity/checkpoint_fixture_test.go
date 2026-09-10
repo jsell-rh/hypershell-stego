@@ -52,7 +52,7 @@ func (f *checkpointFixture) LoadGatewayIdentityCycle(ctx context.Context, reques
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	value := f.cycles[request.GatewayId]
-	return &control.GatewayIdentityCycle{GatewayId: request.GatewayId, Version: value.Version, Data: value.After, ResourceGeneration: 1}, nil
+	return &control.GatewayIdentityCycle{GatewayId: request.GatewayId, Version: value.Version, Data: value.After, ResourceGeneration: 1, ResourceVersion: 1}, nil
 }
 func (f *checkpointFixture) SaveGatewayIdentityCycle(ctx context.Context, request *control.SaveGatewayIdentityCycleRequest, _ ...grpc.CallOption) (*control.GatewayIdentityCycle, error) {
 	if err := ctx.Err(); err != nil {
@@ -70,5 +70,5 @@ func (f *checkpointFixture) SaveGatewayIdentityCycle(ctx context.Context, reques
 	value.Version++
 	value.After = request.Data
 	f.cycles[request.GatewayId] = value
-	return &control.GatewayIdentityCycle{GatewayId: request.GatewayId, Version: value.Version, Data: value.After, ResourceGeneration: request.ResourceGeneration}, nil
+	return &control.GatewayIdentityCycle{GatewayId: request.GatewayId, Version: value.Version, Data: value.After, ResourceGeneration: request.ResourceGeneration, ResourceVersion: request.ResourceVersion}, nil
 }

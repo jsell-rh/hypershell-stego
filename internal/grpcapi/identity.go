@@ -156,12 +156,12 @@ func (s *identityServer) LoadGatewayIdentityCycle(ctx context.Context, request *
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation}, nil
+	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation, ResourceVersion: value.Revision}, nil
 }
 func (s *identityServer) SaveGatewayIdentityCycle(ctx context.Context, request *pb.SaveGatewayIdentityCycleRequest) (*pb.GatewayIdentityCycle, error) {
-	value, err := s.service.SaveIdentityScanCycle(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetExpectedVersion(), request.GetResourceGeneration(), request.GetData())
+	value, err := s.service.SaveIdentityScanCycle(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetExpectedVersion(), request.GetResourceGeneration(), request.GetResourceVersion(), request.GetData())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation}, nil
+	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation, ResourceVersion: value.Revision}, nil
 }

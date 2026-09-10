@@ -107,5 +107,5 @@ message ObserveGatewayIdentityResponse {}
 
 // Data is a bounded STEGO scan-cycle record. The generation and checkpoint
 // version identify the input observed before work. A stale save must fail.
-message GatewayIdentityCycle { string gateway_id = 1; string data = 2; int64 version = 3; int64 resource_generation = 4; }
-message SaveGatewayIdentityCycleRequest { string gateway_id = 1; string data = 2; int64 expected_version = 3; int64 resource_generation = 4; }
+message GatewayIdentityCycle { string gateway_id = 1; string data = 2; int64 version = 3; int64 resource_generation = 4; int64 resource_version = 5; }
+message SaveGatewayIdentityCycleRequest { string gateway_id = 1; string data = 2; int64 expected_version = 3; int64 resource_generation = 4; int64 resource_version = 5; }

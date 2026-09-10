@@ -72,6 +72,8 @@ func (s *Store) ObserveConditionsIfVersion(ctx context.Context, entity, id strin
 		switch owner {
 		case "identity":
 			names = []string{"ClientReady"}
+		case "identity_users":
+			names = []string{"GrantsSynchronized"}
 		default:
 			return ErrCondition
 		}
@@ -119,7 +121,7 @@ func (row Gateway) Conditions() (map[string]map[string]ResourceCondition, error)
 		return nil, ErrCondition
 	}
 	result := map[string]map[string]ResourceCondition{}
-	owners := map[string][]string{"identity": {"ClientReady"}}
+	owners := map[string][]string{"identity": {"ClientReady"}, "identity_users": {"GrantsSynchronized"}}
 	for owner := range raw {
 		if _, ok := owners[owner]; !ok || raw[owner] == nil {
 			return nil, ErrCondition

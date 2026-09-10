@@ -117,10 +117,14 @@ DO $disable$ BEGIN
  END; $disable$;
 ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_generation bigint NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS stego_observations jsonb NOT NULL DEFAULT '{}';
 ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_conditions jsonb NOT NULL DEFAULT '{}';
-DO $conditions$ DECLARE NEW record; BEGIN FOR NEW IN SELECT stego_conditions,stego_generation FROM "gateways" LOOP  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity']::text[] <> '{}'::jsonb THEN
+DO $conditions$ DECLARE NEW record; BEGIN FOR NEW IN SELECT stego_conditions,stego_generation FROM "gateways" LOOP  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity',E'identity_users']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
  IF NEW.stego_conditions ? E'identity' THEN
  IF jsonb_typeof(NEW.stego_conditions->E'identity') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity') - ARRAY[E'ClientReady']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF NEW.stego_conditions ? E'identity_users' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E'identity_users') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity_users') - ARRAY[E'GrantsSynchronized']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
  END IF;
  IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
@@ -188,10 +192,14 @@ BEGIN
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
  IF TG_OP = ''INSERT'' THEN NEW.stego_conditions := ''{}''::jsonb; END IF;
- IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM ''object'' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E''identity'']::text[] <> ''{}''::jsonb THEN
+ IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM ''object'' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E''identity'',E''identity_users'']::text[] <> ''{}''::jsonb THEN
  RAISE EXCEPTION ''invalid resource conditions'' USING ERRCODE=''23514''; END IF;
  IF NEW.stego_conditions ? E''identity'' THEN
  IF jsonb_typeof(NEW.stego_conditions->E''identity'') IS DISTINCT FROM ''object'' OR (NEW.stego_conditions->E''identity'') - ARRAY[E''ClientReady'']::text[] <> ''{}''::jsonb THEN
+ RAISE EXCEPTION ''invalid condition owner state'' USING ERRCODE=''23514''; END IF;
+ END IF;
+ IF NEW.stego_conditions ? E''identity_users'' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E''identity_users'') IS DISTINCT FROM ''object'' OR (NEW.stego_conditions->E''identity_users'') - ARRAY[E''GrantsSynchronized'']::text[] <> ''{}''::jsonb THEN
  RAISE EXCEPTION ''invalid condition owner state'' USING ERRCODE=''23514''; END IF;
  END IF;
  IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
@@ -311,10 +319,14 @@ BEGIN
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
  IF TG_OP = 'INSERT' THEN NEW.stego_conditions := '{}'::jsonb; END IF;
- IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity']::text[] <> '{}'::jsonb THEN
+ IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity',E'identity_users']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
  IF NEW.stego_conditions ? E'identity' THEN
  IF jsonb_typeof(NEW.stego_conditions->E'identity') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity') - ARRAY[E'ClientReady']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF NEW.stego_conditions ? E'identity_users' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E'identity_users') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity_users') - ARRAY[E'GrantsSynchronized']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
  END IF;
  IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
