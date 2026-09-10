@@ -106,3 +106,17 @@ check but failed process shutdown in 335.611 seconds. The next run failed its
 redundant reload-marker assertion in 380.049 seconds, while a direct check
 confirmed that the original password already authenticated. Neither failed
 package result is reported as a passing gate.
+
+Compiler `315afa13ccffd501c568c53d35e168febd650937` moves PostgreSQL connection policy into the generated
+`postgres-client`. Hypershell retains the role and database queries, Kubernetes
+Secret ownership checks, and repair decisions. STEGO supplies verified TLS,
+explicit connection identity, environment isolation, connection closure, safe
+SQL error metadata, and query, argument, and protocol-message limits. Both live
+role checks and cleanup checks use the same generated operation. The complete
+workflow passed with race detection: 361.11 seconds for the test and 362.168
+seconds for the acceptance package. Provider race tests, contracts, CLI build
+records, and `go vet` also passed. These workflow times include provisioning,
+restarts, and faults; they are not SQL latency benchmarks.
+
+Pinned regeneration preserved all 84 generated and dependency file hashes
+with the shared SQL client.

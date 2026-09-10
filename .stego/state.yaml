@@ -68,13 +68,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910172427-b3886715adfb
+        module_version: v0.0.0-20260910175236-315afa13ccff
         vcs: git
-        revision: b3886715adfb6cdad57c099bd33351fe65ca83d5
+        revision: 315afa13ccffd501c568c53d35e168febd650937
         source_state: clean
     service_hash: 1d1137b7b1b7c7f50d31bf287a22b1cb4e49ab5ab561c2b922d704a91cf8a7bf
     registry_sha: gateway-workflow
-    registry_content_sha256: 6ab7b3b40a742626830fb82f3a73a3a102a3882736567c6daa846082ac335665
+    registry_content_sha256: 3e1d096cdc1e28dcdcfde21b7c3ab544931a7611af72e8def4f0a9aa0fdac5f8
     components:
         cli-application:
             version: 1.4.0
@@ -102,6 +102,9 @@ last_applied:
             sha: gateway-workflow
         postgres-adapter:
             version: 3.11.0
+            sha: gateway-workflow
+        postgres-client:
+            version: 1.0.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -384,7 +387,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: e096ec22fabae996d30cb47671fa090b2bc781375e3e0d821063bb361c0d7feb
+        cli/command/version.go: 8b9d5359e5bb78cc45476e20af96c86c96b0b9a76f1b25095ab24fed9c46ab2c
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 5b1250588ed25f3edada4419f5ca36767036f46666967e7984ce3fb1945e2ebb
         controller/keyed.go: 22296f3ba798e1ce5be782499812b124365872a9d2f405fd4999c71cafacc8df
@@ -429,6 +432,7 @@ last_applied:
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
+        postgres/client.go: 58d82cdcb3c86fa149fe1bbf6015e3e30f776b894084137f22bcb6cd3252f58c
         search/field_map.go: 2b5479a420f12cdc416ade7fbc0a5d8ab133f8d235b7bec7c2b235688c7eb9ae
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/cleanup_summary.go: c147f08f2eb82bbcf81de1c13706f53c8a407ead6ec77e2acb5e04cbb7b70003

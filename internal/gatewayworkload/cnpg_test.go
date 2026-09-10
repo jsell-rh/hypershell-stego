@@ -73,19 +73,6 @@ func TestSharedRoleUpdateRejectsStaleListsAndPreservesOtherGateways(t *testing.T
 	}
 }
 
-func TestCNPGDialAddressRequiresAnExplicitIPAndPort(t *testing.T) {
-	for _, value := range []string{"", "127.0.0.1:5432", "[::1]:5432"} {
-		if err := validateCNPGDialAddress(value); err != nil {
-			t.Fatal(value, err)
-		}
-	}
-	for _, value := range []string{"localhost:5432", "127.0.0.1", "127.0.0.1:0", "127.0.0.1:65536", "https://127.0.0.1:5432"} {
-		if err := validateCNPGDialAddress(value); err == nil {
-			t.Fatal("accepted invalid CNPG route", value)
-		}
-	}
-}
-
 func TestSharedDatabaseCleanupRejectsAChangedProviderLabel(t *testing.T) {
 	gw, db, _ := records(t)
 	requests := 0
@@ -112,26 +99,5 @@ func TestSharedDatabaseCleanupRejectsAChangedProviderLabel(t *testing.T) {
 	}
 	if requests != 2 {
 		t.Fatal("provider conflict did not stop cleanup", requests)
-	}
-}
-
-func TestCNPGCheckConfigIgnoresUnrelatedPostgresDefaults(t *testing.T) {
-	k := fixture(t, func(http.ResponseWriter, *http.Request) { t.Error("configuration performed a Kubernetes request") })
-	for key, value := range map[string]string{"PGSERVICE": "", "PGSERVICEFILE": "/missing-service-file", "PGPASSFILE": "/missing-password-file", "PGHOST": "untrusted.example", "PGPORT": "1", "PGUSER": "other", "PGDATABASE": "other", "PGPASSWORD": "other-password", "PGSSLMODE": "prefer", "PGSSLROOTCERT": "/missing-root", "PGSSLCERT": "/missing-cert", "PGSSLKEY": "/missing-key", "PGTARGETSESSIONATTRS": "standby", "PGCONNECT_TIMEOUT": "1000", "PGOPTIONS": "-c default_transaction_read_only=off", "PGTZ": "UTC", "PGREQUIREAUTH": "none", "PGCHANNELBINDING": "require"} {
-		t.Setenv(key, value)
-	}
-	config, err := cnpgCheckConfig("database", "actual-password", []byte(k.trust), "127.0.0.1:23456")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if config.Host != cnpgHost("database") || config.Port != 5432 || config.User != "openshell" || config.Database != "openshell" || config.Password != "actual-password" || config.TLSConfig == nil || config.TLSConfig.ServerName != cnpgHost("database") || config.TLSConfig.InsecureSkipVerify || len(config.Fallbacks) != 0 {
-		t.Fatal("PostgreSQL defaults changed the check identity or TLS")
-	}
-	if config.RuntimeParams["default_transaction_read_only"] != "on" || config.RuntimeParams["options"] != "" || len(config.RuntimeParams) != 4 {
-		t.Fatal("environment changed SQL session policy")
-	}
-	t.Setenv("PGSERVICE", "unrelated")
-	if _, err := cnpgCheckConfig("database", "actual-password", []byte(k.trust), ""); err == nil {
-		t.Fatal("accepted an implicit service lookup")
 	}
 }

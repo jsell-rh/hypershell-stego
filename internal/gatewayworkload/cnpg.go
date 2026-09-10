@@ -3,45 +3,29 @@ package gatewayworkload
 import (
 	"context"
 	"crypto/rand"
-	"crypto/tls"
-	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"net"
 	"net/http"
 	"net/url"
-	"os"
 	"reflect"
-	"strconv"
 	"strings"
 	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	dbclient "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
 
 const sharedAPI = "/apis/postgresql.cnpg.io/v1/namespaces/"
 const providerLabel = "hypershell.redhat.io/database-provider"
 const maxManagedRoles = 1024
 
-func validateCNPGDialAddress(address string) error {
-	if address == "" {
-		return nil
-	}
-	host, port, err := net.SplitHostPort(address)
-	n, parseErr := strconv.Atoi(port)
-	if err != nil || parseErr != nil || net.ParseIP(host) == nil || n < 1 || n > 65535 {
-		return errors.New("CNPG dial address must be an IP address and port")
-	}
-	return nil
-}
-func sqlName(name string) string { return strings.Replace(name, "gw-", "gw_", 1) }
+func validateCNPGDialAddress(address string) error { return dbclient.ValidateDialAddress(address) }
+func sqlName(name string) string                   { return strings.Replace(name, "gw-", "gw_", 1) }
 func cnpgHost(ns string) string {
 	return databasecontroller.CNPGClusterName + "-rw." + ns + ".svc.cluster.local"
 }
@@ -353,20 +337,10 @@ func (k *Kubernetes) sqlGatewayAbsent(ctx context.Context, ns string, cluster ob
 	if err != nil {
 		return false, err
 	}
-	config, err := cnpgCheckConfig(ns, string(password), ca, k.options.CNPGDialAddress)
-	if err != nil {
-		return false, err
-	}
-	bounded, cancel := context.WithTimeout(ctx, 6*time.Second)
-	defer cancel()
-	connection, err := pgx.ConnectConfig(bounded, config)
-	if err != nil {
-		return false, errors.New("CNPG SQL cleanup check connection failed")
-	}
-	defer func() { _ = connection.Close(bounded) }()
+	options := dbclient.Options{Host: cnpgHost(ns), Port: 5432, User: "openshell", Database: "openshell", Password: string(password), CA: ca, DialAddress: k.options.CNPGDialAddress}
 	var exists bool
-	if err = connection.QueryRow(bounded, "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1) OR EXISTS (SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)", role).Scan(&exists); err != nil {
-		return false, errors.New("CNPG SQL cleanup check failed")
+	if err = dbclient.ReadRow(ctx, options, "SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$1) OR EXISTS (SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)", []any{role}, &exists); err != nil {
+		return false, err
 	}
 	return !exists, nil
 }
@@ -383,70 +357,18 @@ func cnpgInteger(value object, keys ...string) int64 {
 	return v
 }
 
-func cnpgCheckConfig(ns, password string, ca []byte, dialAddress string) (*pgx.ConnConfig, error) {
-	// pgx treats even service='' as a service lookup. Reject the environment
-	// selector before parsing; do not alter the process environment.
-	if os.Getenv("PGSERVICE") != "" {
-		return nil, errors.New("CNPG checks do not accept PGSERVICE")
-	}
-	if err := validateCNPGDialAddress(dialAddress); err != nil {
-		return nil, err
-	}
-	// Explicit parse settings prevent PG environment values from selecting a
-	// service, credential file, plaintext fallback, or a different server.
-	config, err := pgx.ParseConfig("host=localhost port=5432 user=openshell password=unused dbname=openshell passfile='' sslrootcert='' sslcert='' sslkey='' sslpassword='' sslsni=1 sslmode=disable sslnegotiation=postgres target_session_attrs=any connect_timeout=5 channel_binding=prefer require_auth=scram-sha-256 min_protocol_version=3.0 max_protocol_version=3.0 default_query_exec_mode=exec")
-	if err != nil {
-		return nil, errors.New("CNPG check connection configuration is invalid")
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(ca) {
-		return nil, errors.New("CNPG check CA is invalid")
-	}
-	config.Host = cnpgHost(ns)
-	config.Port = 5432
-	config.User = "openshell"
-	config.Database = "openshell"
-	config.Password = password
-	config.TLSConfig = &tls.Config{MinVersion: tls.VersionTLS12, RootCAs: roots, ServerName: cnpgHost(ns)}
-	config.Fallbacks = nil
-	config.RuntimeParams = map[string]string{"search_path": "pg_catalog", "default_transaction_read_only": "on", "statement_timeout": "5000", "lock_timeout": "1000"}
-	if dialAddress != "" {
-		address := dialAddress
-		config.DialFunc = func(ctx context.Context, network, _ string) (net.Conn, error) {
-			return (&net.Dialer{Timeout: 5 * time.Second}).DialContext(ctx, network, address)
-		}
-		config.LookupFunc = func(context.Context, string) ([]string, error) {
-			host, _, _ := net.SplitHostPort(address)
-			return []string{host}, nil
-		}
-	}
-	return config, nil
-}
-
 // A current Kubernetes generation cannot prove current SQL permissions. Use
 // the Gateway role itself, so this also verifies its password and login rights.
 func (k *Kubernetes) cnpgRoleReady(ctx context.Context, ns, role, password string, ca []byte) (bool, error) {
-	config, err := cnpgCheckConfig(ns, password, ca, k.options.CNPGDialAddress)
+	options := dbclient.Options{Host: cnpgHost(ns), Port: 5432, User: role, Database: role, Password: password, CA: ca, DialAddress: k.options.CNPGDialAddress}
+	var roleReady, databaseReady bool
+	err := dbclient.ReadRow(ctx, options, `SELECT r.rolcanlogin AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls OR r.rolinherit) AND r.rolconnlimit=32 AND (r.rolvaliduntil IS NULL OR r.rolvaliduntil='infinity'::timestamptz) AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid), d.datdba=r.oid AND d.datallowconn AND d.datconnlimit=32 FROM pg_catalog.pg_roles r JOIN pg_catalog.pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND r.rolname=$1`, []any{role}, &roleReady, &databaseReady)
 	if err != nil {
-		return false, err
-	}
-	config.User = role
-	config.Database = role
-	bounded, cancel := context.WithTimeout(ctx, 6*time.Second)
-	defer cancel()
-	connection, err := pgx.ConnectConfig(bounded, config)
-	if err != nil {
-		var failure *pgconn.PgError
-		if errors.As(err, &failure) && (failure.Code == "28P01" || failure.Code == "28000") {
+		var failure *dbclient.Error
+		if errors.As(err, &failure) && failure.Stage == "connect" && (failure.SQLState == "28P01" || failure.SQLState == "28000") {
 			return false, nil
 		}
-		return false, errors.New("CNPG Gateway SQL check connection failed")
-	}
-	defer func() { _ = connection.Close(bounded) }()
-	var roleReady, databaseReady bool
-	err = connection.QueryRow(bounded, `SELECT r.rolcanlogin AND NOT (r.rolsuper OR r.rolcreatedb OR r.rolcreaterole OR r.rolreplication OR r.rolbypassrls OR r.rolinherit) AND r.rolconnlimit=32 AND (r.rolvaliduntil IS NULL OR r.rolvaliduntil='infinity'::timestamptz) AND NOT EXISTS (SELECT 1 FROM pg_catalog.pg_auth_members m WHERE m.member=r.oid), d.datdba=r.oid AND d.datallowconn AND d.datconnlimit=32 FROM pg_catalog.pg_roles r JOIN pg_catalog.pg_database d ON d.datname=current_database() WHERE r.rolname=current_user AND r.rolname=$1`, role).Scan(&roleReady, &databaseReady)
-	if err != nil {
-		return false, errors.New("CNPG Gateway SQL state check failed")
+		return false, err
 	}
 	if !databaseReady {
 		return false, errors.New("CNPG Gateway SQL database settings differ from their declaration")
