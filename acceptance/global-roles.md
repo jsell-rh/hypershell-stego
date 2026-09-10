@@ -82,7 +82,7 @@ pinned generation passed.
 
 The broader
 goal remains open, including immediate token revocation, user administration,
-distributed coordination, workload deployment, sparse fields, larger REST pages,
+distributed coordination, remaining workload support, larger REST pages,
 and production capacity.
 
 A local benchmark prepared unchanged claims with 10,000 unrelated users and

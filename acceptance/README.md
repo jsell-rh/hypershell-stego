@@ -48,7 +48,8 @@ The gRPC transport uses the same domain service. Its list defaults and page
 size metadata follow the reference gRPC adapter. REST and gRPC requests can
 retrieve each other's created resources. REST search and ordering tests include
 `OR` expressions, literal injection attempts, invalid fields and value types, and
-count-only requests. Related-resource search, sparse fields, REST page sizes above 100,
+count-only requests. [List field selection](field-selection.md) now has a separate
+workflow. Related-resource search, REST page sizes above 100,
 user administration, remaining role query options, and other
 Hypershell workflows remain open.
 

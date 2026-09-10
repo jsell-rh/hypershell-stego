@@ -41,24 +41,24 @@ func presentRole(row model.Role) (Role, error) {
 	return Role{Reference: Reference{ID: row.ID, Kind: "Role", Href: rolePath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, DisplayName: row.DisplayName, Description: row.Description, Permissions: json.RawMessage(row.Permissions), BuiltIn: row.BuiltIn}, nil
 }
 func registerRoles(mux *http.ServeMux, verifier *requestAuth, service *roles.Service) error {
-	list, err := endpoint(verifier, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, "Role") }, func(ctx context.Context, q pageRequest) (RoleList, error) {
+	list, err := endpoint(verifier, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, "Role") }, func(ctx context.Context, q pageRequest) (any, error) {
 		result, err := service.List(ctx, roles.Query{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
 		if err != nil {
-			return RoleList{}, err
+			return nil, err
 		}
 		rows, ok := result.Items.([]model.Role)
 		if !ok {
-			return RoleList{}, errors.New("unexpected role storage result")
+			return nil, errors.New("unexpected role storage result")
 		}
 		response := RoleList{Kind: "RoleList", Href: rolePath, Page: q.Page, Size: len(rows), Total: result.Total, Items: make([]Role, 0, len(rows))}
 		for _, row := range rows {
 			item, err := presentRole(row)
 			if err != nil {
-				return RoleList{}, err
+				return nil, err
 			}
 			response.Items = append(response.Items, item)
 		}
-		return response, nil
+		return transport.ProjectListIfSelected(response, q.Fields, "items")
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

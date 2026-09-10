@@ -12,9 +12,9 @@ return current authorized data. The runtime also delivers durable events through
 mutual TLS.
 PostgreSQL tests check atomic owner grants, verified identities, denied reads,
 rollback, and restart. Tests read the same resources across both transports.
-REST search and ordering are implemented. Field selection, related-resource
-search, and the other application workflows remain open. See
-[the checks](acceptance/README.md).
+REST search, ordering, and [list field selection](acceptance/field-selection.md)
+are implemented. Related-resource search and other application workflows remain
+open. See [the checks](acceptance/README.md).
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes
@@ -68,7 +68,8 @@ Kafka broker with TLS. gRPC also requires `STEGO_GRPC_TLS_CERT` and
 to `127.0.0.1:9090`. HTTP reads `PORT`, which defaults to 8080. Application
 startup does not apply migrations. The REST list supports `page`, `size`, `search`, and `orderBy`, including a
 zero-size count request, with a maximum page size of 100. Search and ordering use
-declared fields. Sparse fields and related-resource search remain open work.
+declared fields. The `fields` parameter selects public fields in list items.
+Related-resource search remains open work.
 
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.

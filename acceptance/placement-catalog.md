@@ -69,10 +69,12 @@ one live managed database with provider `cnpg`. A client database ID is a
 compatibility placeholder and cannot choose placement. The default deployment
 path now has a [separate workflow](deployment-placement.md). Catalog storage does
 not prove cluster access, image availability, image
-integrity, database provisioning, rollout behavior, or workload deployment. These
-checks belong to the next control-plane workflow. Sparse field selection and REST
-pages above 100 also remain open. The current secret references and image fields
-are bounded metadata; the API does not dereference or execute them.
+integrity, database provisioning, rollout behavior, or workload deployment.
+Separate database and Gateway workload gates check cluster access, provisioning,
+and workload behavior. Image integrity and rollout policy still need evidence.
+[Field selection](field-selection.md) is supported. REST pages above 100 remain
+open. The current secret references and image fields are bounded metadata; the
+API does not dereference or execute them.
 
 Run `scripts/check-gateway.sh` with PostgreSQL and Docker available. It verifies
 dependencies, pinned regeneration, and the full race suite with Keycloak required.

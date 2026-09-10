@@ -196,7 +196,7 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 	}
 	list("?search="+url.QueryEscape("built_in = true"), 4)
 	list("?search="+url.QueryEscape("name = 'missing'"), 0)
-	for _, query := range []string{"?size=101", "?size=-1", "?page=0", "?size=1&size=2", "?search=" + url.QueryEscape("unknown = 'x'"), "?orderBy=unknown", "?fields=id"} {
+	for _, query := range []string{"?size=101", "?size=-1", "?page=0", "?size=1&size=2", "?search=" + url.QueryEscape("unknown = 'x'"), "?orderBy=unknown", "?fields=unknown"} {
 		if code, _ := requestJSON(t, "GET", root+"/roles"+query, bearer, nil); code != 400 {
 			t.Fatal("invalid role query", query, code)
 		}

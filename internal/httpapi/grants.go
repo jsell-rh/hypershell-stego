@@ -36,16 +36,16 @@ func presentGrant(row model.RoleBinding) grantItem {
 func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways.Service) error {
 	list, err := endpoint(verifier, func(r *http.Request) (pageRequest, error) {
 		return parseEntityPage(r, "RoleBinding")
-	}, func(ctx context.Context, q pageRequest) (grantList, error) {
+	}, func(ctx context.Context, q pageRequest) (any, error) {
 		page, err := service.ListGrants(ctx, gateways.PrincipalFromContext(ctx), gateways.GrantQuery{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
 		if err != nil {
-			return grantList{}, err
+			return nil, err
 		}
 		result := grantList{Kind: "RoleBindingList", Href: grantPath, Page: q.Page, Size: len(page.Items), Total: page.Total, Items: make([]grantItem, 0, len(page.Items))}
 		for _, item := range page.Items {
 			result.Items = append(result.Items, presentGrant(item.Grant))
 		}
-		return result, nil
+		return transport.ProjectListIfSelected(result, q.Fields, "items")
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

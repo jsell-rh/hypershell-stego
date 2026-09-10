@@ -89,20 +89,20 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 	if err != nil {
 		return err
 	}
-	list, err := endpoint(auth, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, entity) }, func(ctx context.Context, q pageRequest) (catalogList[R], error) {
+	list, err := endpoint(auth, func(r *http.Request) (pageRequest, error) { return parseEntityPage(r, entity) }, func(ctx context.Context, q pageRequest) (any, error) {
 		result, err := resource.List(ctx, gateways.PrincipalFromContext(ctx), catalog.Query{Page: q.Page, Size: q.Size, Search: q.Search, OrderBy: q.OrderBy})
 		if err != nil {
-			return catalogList[R]{}, err
+			return nil, err
 		}
 		rows, ok := result.Items.([]T)
 		if !ok {
-			return catalogList[R]{}, errors.New("unexpected catalog storage result")
+			return nil, errors.New("unexpected catalog storage result")
 		}
 		response := catalogList[R]{Kind: entity + "List", Href: path, Page: q.Page, Size: len(rows), Total: result.Total, Items: make([]R, 0, len(rows))}
 		for _, row := range rows {
 			response.Items = append(response.Items, present(row))
 		}
-		return response, nil
+		return transport.ProjectListIfSelected(response, q.Fields, "items")
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

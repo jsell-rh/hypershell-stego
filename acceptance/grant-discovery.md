@@ -6,13 +6,14 @@ A caller can read its own grants and the grants on Gateways that it owns.
 Configured control-plane subjects can read all Gateway grants. A platform-admin
 role alone does not grant access to this inventory. This follows the variant's
 existing grant-read rule. The reference server has coarser role checks; the
-variant does not copy that broader disclosure. Global grants are not implemented.
+variant does not copy that broader disclosure. The
+[global role contract](global-roles.md) covers global grant projection.
 
 The database applies access, live-Gateway requirements, search, and ordering
 before it counts or pages rows. REST supports page, size, search, and orderBy.
 Its default and maximum page size are 100. Size zero returns only a count.
-Unknown fields, duplicate query parameters, and invalid values fail. Sparse
-fields and larger REST pages remain open compatibility work.
+Unknown fields, duplicate query parameters, and invalid values fail.
+[Field selection](field-selection.md) is supported. Larger REST pages remain open.
 
 The gRPC list requires a user ID and permits a Gateway ID filter. It returns
 role names and current profile names with the reference wire shape. Profile

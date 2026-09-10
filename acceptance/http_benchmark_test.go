@@ -14,6 +14,14 @@ import (
 )
 
 func BenchmarkRESTFilteredPage(b *testing.B) {
+	benchmarkRESTPage(b, "")
+}
+
+func BenchmarkRESTSelectedPage(b *testing.B) {
+	benchmarkRESTPage(b, "&fields=id,name")
+}
+
+func benchmarkRESTPage(b *testing.B, selection string) {
 	f := gatewayPageBenchmarkFixture(b, true)
 	key, err := rsa.GenerateKey(rand.Reader, 2048)
 	if err != nil {
@@ -31,15 +39,18 @@ func BenchmarkRESTFilteredPage(b *testing.B) {
 	if err != nil {
 		b.Fatal(err)
 	}
+	var responseBytes int64
 	b.ReportAllocs()
 	b.ResetTimer()
 	for range b.N {
-		request := httptest.NewRequest(http.MethodGet, "/api/hypershell/v1/gateways?size=20", nil)
+		request := httptest.NewRequest(http.MethodGet, "/api/hypershell/v1/gateways?size=20"+selection, nil)
 		request.Header.Set("Authorization", "Bearer "+token)
 		response := httptest.NewRecorder()
 		handler.ServeHTTP(response, request)
+		responseBytes += int64(response.Body.Len())
 		if response.Code != 200 {
 			b.Fatalf("REST list: %d %s", response.Code, response.Body.String())
 		}
 	}
+	b.ReportMetric(float64(responseBytes)/float64(b.N), "response-B/op")
 }

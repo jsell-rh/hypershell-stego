@@ -162,7 +162,7 @@ func TestGrantDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("count-only returned rows")
 	}
 	listREST("bob", 1, "?search="+url.QueryEscape("user_id = '"+input.UserID+"' or user_id = '"+ownerGrant.UserID+"'"))
-	for _, query := range []string{"?size=101", "?page=0", "?size=1&size=2", "?orderBy=unknown", "?search=" + url.QueryEscape("unknown = 'x'"), "?fields=id"} {
+	for _, query := range []string{"?size=101", "?page=0", "?size=1&size=2", "?orderBy=unknown", "?search=" + url.QueryEscape("unknown = 'x'"), "?fields=unknown"} {
 		if code, _ := requestJSON(t, "GET", base+"/role_bindings"+query, owner, nil); code != 400 {
 			t.Fatal("invalid list query", query, code)
 		}

@@ -70,12 +70,16 @@ type patchRequest struct {
 }
 
 type pageRequest struct {
+	Fields     *transport.FieldSelection
 	Page, Size int
 	Search     string
 	OrderBy    []contract.OrderByField
 }
 
 func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *sql.DB) (http.Handler, error) {
+	if listFieldError != nil {
+		return nil, listFieldError
+	}
 	options, err := gateways.OptionsFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -144,14 +148,14 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err != nil {
 		return nil, err
 	}
-	list, err := endpoint(verifier, parsePage, func(ctx context.Context, request pageRequest) (GatewayList, error) {
+	list, err := endpoint(verifier, parsePage, func(ctx context.Context, request pageRequest) (any, error) {
 		result, err := service.Search(ctx, gateways.PrincipalFromContext(ctx), request.Page, request.Size, request.Search, request.OrderBy)
 		if err != nil {
-			return GatewayList{}, err
+			return nil, err
 		}
 		rows, ok := result.Items.([]model.Gateway)
 		if !ok {
-			return GatewayList{}, errors.New("unexpected Gateway storage result")
+			return nil, errors.New("unexpected Gateway storage result")
 		}
 		response := GatewayList{Kind: "GatewayList", Href: collectionPath, Page: request.Page, Size: len(rows), Total: result.Total, Items: make([]Gateway, 0, len(rows))}
 		ids := make([]string, len(rows))
@@ -160,16 +164,16 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		}
 		creators, err := creatorNames(ctx, database, ids)
 		if err != nil {
-			return GatewayList{}, err
+			return nil, err
 		}
 		for _, row := range rows {
 			item, err := present(row, creators[row.ID])
 			if err != nil {
-				return GatewayList{}, err
+				return nil, err
 			}
 			response.Items = append(response.Items, item)
 		}
-		return response, nil
+		return transport.ProjectListIfSelected(response, request.Fields, "items")
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return nil, err
@@ -261,12 +265,19 @@ func parseEntityPage(r *http.Request, entity string) (pageRequest, error) {
 	if err != nil {
 		return pageRequest{}, err
 	}
+	projector := listFieldProjectors[entity]
 	request := pageRequest{Page: 1, Size: 100}
 	for name, value := range values {
 		if len(value) != 1 {
 			return pageRequest{}, transport.ErrRequest
 		}
 		switch name {
+		case "fields":
+			selection, err := projector.Parse(value[0])
+			if err != nil {
+				return pageRequest{}, err
+			}
+			request.Fields = &selection
 		case "search":
 			request.Search = value[0]
 		case "orderBy":

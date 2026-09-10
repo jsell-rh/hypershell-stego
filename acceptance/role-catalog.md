@@ -49,7 +49,8 @@ and Keycloak required. The focused role and browser-login race checks passed in
 33.152 seconds. The full local race suite also passed; the acceptance package
 took 295.363 seconds. Dependency verification passed.
 
-Sparse fields and REST page sizes above 100 remain open. The reference has no
+[Field selection](field-selection.md) is supported. REST page sizes above 100
+remain open. The reference has no
 public user-discovery route. The browser workflow now obtains the recipient ID through the
 [self-identity route](current-user.md). A searchable user directory remains a
 separate policy decision. Production capacity has not been measured for the
