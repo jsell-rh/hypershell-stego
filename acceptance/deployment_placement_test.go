@@ -356,10 +356,30 @@ func TestGeneratedRuntimeRejectsUnknownDatabaseProvider(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 12*time.Second)
 	defer cancel()
 	command := exec.CommandContext(ctx, binary)
-	command.Env = applicationEnvironment(t, f.dsn, config, "DATABASE_PROVIDER=unknown")
+	command.Env = applicationEnvironment(t, f.dsn, config, "DATABASE_PROVIDER=private-unknown-provider")
 	output, err := command.CombinedOutput()
-	if err == nil || ctx.Err() != nil || !strings.Contains(string(output), "DATABASE_PROVIDER must be deployment or cnpg") {
-		t.Fatalf("invalid provider did not stop startup: %v %s", err, output)
+	if exit, ok := err.(*exec.ExitError); !ok || exit.ExitCode() != 1 || ctx.Err() != nil {
+		t.Fatal("invalid provider did not stop startup with exit code 1", err)
+	}
+	for _, forbidden := range []string{"private-unknown-provider", "DATABASE_PROVIDER must be", "starting server", "gRPC server started"} {
+		if strings.Contains(string(output), forbidden) {
+			t.Fatal("invalid provider exposed error text or started a listener")
+		}
+	}
+	failures := 0
+	for _, line := range strings.Split(string(output), "\n") {
+		var record map[string]any
+		if json.Unmarshal([]byte(line), &record) != nil || record["event.name"] != "service.failed" {
+			continue
+		}
+		failures++
+		// The generated application.NewHandler call owns provider validation.
+		if len(record) != 5 || record["stage"] != "component[4].constructor[0]" || record["severity"] != "ERROR" || record["message"] != "Service failed" {
+			t.Fatal("provider startup failure lost its safe stage", record)
+		}
+	}
+	if failures != 1 {
+		t.Fatal("provider startup did not report one failure", failures)
 	}
 }
 

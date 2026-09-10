@@ -102,3 +102,18 @@ no Gateway or owner grant, then requires successful creation and reconciliation.
 Thus the retry branch is exercised on every run. Three consecutive race runs
 passed with PostgreSQL required, in 23.220 seconds. This does not change the API's
 transaction policy or add automatic retries to application writes.
+
+Run [34535509044](https://github.com/jsell-rh/hypershell-stego/actions/runs/34535509044)
+for `ce1af8e` has finished. All five provider jobs passed. The full acceptance
+suite finished in 1152.715 seconds with one failed test:
+`TestGeneratedRuntimeRejectsUnknownDatabaseProvider`. The process exited with
+code 1 and reported `component[4].constructor[0]`. The assertion still required
+raw constructor error text, which the process privacy policy now excludes.
+This was an assertion failure, not a package timeout.
+
+The test now requires exit code 1, one safe failure record from the generated
+application constructor, and no HTTP or gRPC listener startup. It rejects the
+private provider setting and raw constructor error message in output. The local
+race check passed with PostgreSQL required. This test change does not relax
+provider validation or change the process logging policy. Later revisions still
+need their own full CI result.
