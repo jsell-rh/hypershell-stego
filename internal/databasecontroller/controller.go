@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"log/slog"
 	"time"
 
@@ -83,42 +82,24 @@ func (c *Controller) watch(ctx context.Context) (func() (string, error), error) 
 	}, nil
 }
 func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) error {
-	if stream == nil {
-		return fmt.Errorf("%w: database watch has no stream", runtime.ErrWatch)
-	}
-	header, err := stream.Header()
-	if err != nil {
-		return err
-	}
-	// gRPC reports an error before headers through Recv, not Header.
-	// Preserve that status so a temporary failure can be retried. The watch
-	// setup context bounds this receive. A clean end still lacks capability.
-	if header == nil {
-		if _, err := stream.Recv(); err != nil && !errors.Is(err, io.EOF) {
-			return err
-		}
-	}
-	values := header.Get(capability)
-	if len(values) != 1 || values[0] != "v1" {
+	err := rpc.RequireStreamHeaders(stream, rpc.StreamHeader{Name: capability, Value: "v1"})
+	if errors.Is(err, rpc.ErrStreamContract) {
 		return fmt.Errorf("%w: database watch does not support delete tombstones", runtime.ErrWatch)
 	}
-	return nil
+	return err
 }
 
-// A replay must confirm both deletion support and the requested scope.
+// Hypershell selects the required capability and replay scope. STEGO checks the
+// stream headers and preserves errors sent before headers.
 func checkReplayHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) error {
 	if err := checkHeader(stream); err != nil {
 		return replayOpenError(err)
 	}
-	header, err := stream.Header()
-	if err != nil {
-		return err
-	}
-	values := header.Get(replayMode)
-	if len(values) != 1 || values[0] != "retained-v1" {
+	err := rpc.RequireStreamHeaders(stream, rpc.StreamHeader{Name: replayMode, Value: "retained-v1"})
+	if errors.Is(err, rpc.ErrStreamContract) {
 		return fmt.Errorf("%w: database replay did not confirm retained rows", runtime.ErrScanContract)
 	}
-	return nil
+	return err
 }
 
 func replayOpenError(err error) error {

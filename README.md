@@ -346,3 +346,7 @@ in applied state and rejects registry changes after planning. This upgrade adds
 the digest to state. All 73 generated and dependency files remain unchanged.
 An independent digest calculation matched the saved value for all 11 local
 registry inputs.
+
+Database watch and replay now use [generated stream startup checks](acceptance/stream-startup.md).
+STEGO owns header validation and early RPC error handling. Hypershell supplies
+the capability names, replay scope, and controller error policy.
