@@ -41,7 +41,7 @@ func accountCommands() []command.Command {
 		{Flag: "description", Key: "description", Type: "string", Nullable: true},
 		{Flag: "credential-type", Key: "credential_type", Type: "string"},
 		{Flag: "role", Key: "role", Type: "string"},
-		{Flag: "expires-at", Key: "expires_at", Type: "string", Nullable: true},
+		{Flag: "expires-at", Key: "expires_at", Type: "string", RelativeFlag: "expires-in", Nullable: true},
 	}
 	query := []command.Field{{Flag: "page", Key: "page", Type: "integer"}, {Flag: "size", Key: "size", Type: "integer"}}
 	for _, name := range []string{"status", "search", "sort", "order"} {

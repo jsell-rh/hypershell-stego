@@ -22,9 +22,11 @@ import (
 
 // Field describes one public request property. Types are string, string-list,
 // integer, and boolean. The CLI never accepts arbitrary headers or destinations.
+// RelativeFlag accepts a positive duration and sends this string field as an
+// absolute UTC RFC 3339 timestamp. It is exclusive with Flag and body files.
 type Field struct {
-	Flag, Key, Type    string
-	Required, Nullable bool
+	Flag, Key, Type, RelativeFlag string
+	Required, Nullable            bool
 }
 type PathParameter struct{ Flag, Key string }
 type Command struct {
@@ -123,6 +125,12 @@ func validate(app Application) error {
 				return errors.New("invalid CLI field")
 			}
 			flags[f.Flag], keys[f.Key] = true, true
+			if f.RelativeFlag != "" {
+				if f.Type != "string" || c.Query || (c.Method != "POST" && c.Method != "PUT" && c.Method != "PATCH") || !word.MatchString(f.RelativeFlag) || reservedFlag(f.RelativeFlag) || flags[f.RelativeFlag] || pathFlags[f.RelativeFlag] {
+					return errors.New("invalid relative timestamp flag")
+				}
+				flags[f.RelativeFlag] = true
+			}
 			switch f.Type {
 			case "string", "string-list", "integer", "boolean":
 			default:
@@ -212,11 +220,17 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	fields := map[string]Field{}
 	for _, f := range c.Fields {
 		fields[f.Flag] = f
+		if f.RelativeFlag != "" {
+			fields[f.RelativeFlag] = f
+		}
 	}
 	if len(arguments) == 1 && arguments[0] == "--help" {
 		var names []string
 		for _, f := range c.Fields {
 			names = append(names, "--"+f.Flag+" ("+f.Type+")")
+			if f.RelativeFlag != "" {
+				names = append(names, "--"+f.RelativeFlag+" DURATION (exclusive with --"+f.Flag+")")
+			}
 		}
 		for _, p := range c.PathParameters {
 			names = append(names, "--"+p.Flag+" ID (required)")
@@ -279,10 +293,20 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		}
 		delete(values, "body")
 	}
+	now := time.Now()
 	for flag, value := range values {
 		field, ok := fields[flag]
 		if !ok {
 			return errArguments
+		}
+		if field.RelativeFlag != "" && flag == field.RelativeFlag {
+			if _, present := values[field.Flag]; present {
+				return errArguments
+			}
+			value, err = relativeTimestamp(value, now)
+			if err != nil {
+				return err
+			}
 		}
 		raw := []byte(value)
 		if field.Type == "string" {
@@ -511,6 +535,42 @@ func validJSON(data []byte) bool {
 	}
 	_, err := decoder.Token()
 	return err == io.EOF
+}
+
+// relativeTimestamp bounds parsing and prevents duration and calendar overflow.
+// A day is exactly 24 hours. The API retains its domain lifetime policy.
+func relativeTimestamp(value string, now time.Time) (string, error) {
+	if len(value) < 1 || len(value) > 64 {
+		return "", errArguments
+	}
+	var duration time.Duration
+	var err error
+	if strings.HasSuffix(value, "d") {
+		digits := strings.TrimSuffix(value, "d")
+		if digits == "" {
+			return "", errArguments
+		}
+		for _, c := range digits {
+			if c < '0' || c > '9' {
+				return "", errArguments
+			}
+		}
+		days, problem := strconv.ParseUint(digits, 10, 64)
+		if problem != nil || days == 0 || days > uint64((1<<63-1)/(24*time.Hour)) {
+			return "", errArguments
+		}
+		duration = time.Duration(days) * 24 * time.Hour
+	} else {
+		duration, err = time.ParseDuration(value)
+	}
+	if err != nil || duration <= 0 {
+		return "", errArguments
+	}
+	result := now.UTC().Add(duration)
+	if result.Year() < 1 || result.Year() > 9999 || !result.After(now) {
+		return "", errArguments
+	}
+	return result.Format(time.RFC3339Nano), nil
 }
 
 // encoding/json replaces unmatched UTF-16 surrogates. Reject these sequences

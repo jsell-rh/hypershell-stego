@@ -42,9 +42,11 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	settings := append(append([]string{}, issuerSettings...), providerSettings...)
 	stopAPI, address := startApplication(t, apiBinary, f.dsn, brokerConfig, settings...)
 	defer func() { stopAPI() }()
+	var apiCalls atomic.Int32
 	var backend atomic.Value
 	backend.Store(address)
 	proxy := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiCalls.Add(1)
 		target, err := url.Parse(backend.Load().(string))
 		if err != nil {
 			t.Error(err)
@@ -96,7 +98,7 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	}
 	success("login", "--url", proxy.URL, "--token-file", tokenFile, "--ca-file", ca)
 	outputFile := filepath.Join(directory, "account.json")
-	args := []string{"create", "service-account", "--gateway-id", gateway.ID, "--name", "cli-account", "--role", "openshell-admin"}
+	args := []string{"create", "service-account", "--gateway-id", gateway.ID, "--name", "cli-account", "--role", "openshell-admin", "--expires-in", "30d"}
 	count := func() int {
 		t.Helper()
 		var count int
@@ -104,6 +106,25 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		return count
+	}
+	for _, flags := range [][]string{{"--expires-in", "0d"}, {"--expires-in", "-1h"}, {"--expires-in", "999999999999d"}, {"--expires-in", "30d", "--expires-at", "2030-01-01T00:00:00Z"}} {
+		before := apiCalls.Load()
+		invalid := []string{"create", "serviceAccount", "--gateway-id", gateway.ID, "--name", "invalid", "--role", "openshell-user", "--output-file", outputFile}
+		if data, _, err := run(append(invalid, flags...)...); err == nil || len(data) != 0 || apiCalls.Load() != before || count() != 0 {
+			t.Fatal("invalid relative expiry reached the API")
+		}
+		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
+			t.Fatal("invalid relative expiry left an output file", err)
+		}
+	}
+	for _, duration := range []string{"30m", "366d"} {
+		invalid := []string{"create", "serviceAccount", "--gateway-id", gateway.ID, "--name", "invalid", "--role", "openshell-user", "--expires-in", duration, "--output-file", outputFile}
+		if data, problem, err := run(invalid...); err == nil || len(data) != 0 || !strings.Contains(problem, "HTTP 400") || count() != 0 {
+			t.Fatal("API expiry policy was not enforced", duration, err, problem)
+		}
+		if _, err := os.Stat(outputFile); !os.IsNotExist(err) {
+			t.Fatal("denied expiry left an output file", err)
+		}
 	}
 	if data, _, err := run(args...); err == nil || len(data) != 0 || count() != 0 {
 		t.Fatal("credential request did not require an output choice")
@@ -117,6 +138,7 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	if err := os.Remove(outputFile); err != nil {
 		t.Fatal(err)
 	}
+	beforeCreate := time.Now()
 	if data := success(append(args, "--output-file", outputFile)...); len(data) != 0 {
 		t.Fatal("credential command wrote stdout")
 	}
@@ -137,6 +159,15 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	var object map[string]any
 	if json.Unmarshal(data, &object) != nil {
 		t.Fatal("invalid credential JSON")
+	}
+	afterCreate := time.Now()
+	rawExpiration, ok := object["expires_at"].(string)
+	if !ok {
+		t.Fatal("credential response has no expiry")
+	}
+	expiration, err := time.Parse(time.RFC3339Nano, rawExpiration)
+	if err != nil || expiration.Before(beforeCreate.Add(30*24*time.Hour)) || expiration.After(afterCreate.Add(30*24*time.Hour)) {
+		t.Fatal("relative expiry differs from the CLI request interval", expiration, err)
 	}
 	created.ID, _ = object["id"].(string)
 	created.ClientID, _ = object["client_id"].(string)
@@ -218,6 +249,10 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	settings = append(append([]string{}, issuerSettings...), providerSettings...)
 	stopAPI, address = startApplication(t, apiBinary, f.dsn, brokerConfig, settings...)
 	backend.Store(address)
+	var afterRestart map[string]any
+	if json.Unmarshal(success("get", "service-account", created.ID, "--gateway-id", gateway.ID), &afterRestart) != nil || afterRestart["expires_at"] != object["expires_at"] {
+		t.Fatal("restart changed the selected expiry")
+	}
 	checkPublic(success("get", "service-account", created.ID, "--gateway-id", gateway.ID))
 	checkPublic(success("revoke", "service-account", created.ID, "--gateway-id", gateway.ID))
 	response, _ = k.issue(t, created.ClientID, created.Credential.Secret)
@@ -236,6 +271,23 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	if data, problem, err := run("get", "service-account", created.ID, "--gateway-id", gateway.ID); err == nil || len(data) != 0 || !strings.Contains(problem, "HTTP 404") {
 		t.Fatal("deleted account remains visible")
 	}
+	hourFile := filepath.Join(directory, "hour-account.json")
+	beforeHours := time.Now()
+	success("create", "serviceAccount", "--gateway-id", gateway.ID, "--name", "hour-account", "--role", "openshell-user", "--expires-in", "2h", "--output-file", hourFile)
+	afterHours := time.Now()
+	hourData, err := os.ReadFile(hourFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var hourAccount struct {
+		ID        string    `json:"id"`
+		ExpiresAt time.Time `json:"expires_at"`
+	}
+	if json.Unmarshal(hourData, &hourAccount) != nil || hourAccount.ID == "" || hourAccount.ExpiresAt.Before(beforeHours.Add(2*time.Hour)) || hourAccount.ExpiresAt.After(afterHours.Add(2*time.Hour)) {
+		t.Fatal("hour duration changed at the API")
+	}
+	success("revoke", "serviceAccount", hourAccount.ID, "--gateway-id", gateway.ID)
+	success("delete", "serviceAccount", hourAccount.ID, "--gateway-id", gateway.ID, "--yes")
 	success("logout")
 	if data, err := os.ReadFile(outputFile); err != nil || !bytes.Contains(data, []byte(created.Credential.Secret)) {
 		t.Fatal("logout removed the caller's credential file")

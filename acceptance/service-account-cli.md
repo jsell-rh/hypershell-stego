@@ -56,9 +56,10 @@ The request-field test compares CLI metadata with the domain create type.
 Generated Record tests in STEGO check output-file failures, path validation,
 request-body separation, and explicit stdout output without Hypershell types.
 
-Relative expiration through `--expires-in`, explicit `--output json` and `-o`
-flags, reference CLI response notes, interactive delete prompts, browser and device login, token refresh, and the remaining
-resource commands are still open. This workflow does not establish production
+Explicit `--output json` and `-o` flags, reference CLI response notes, interactive
+delete prompts, and the remaining resource commands are still open. Browser and
+device login and token refresh are covered by the [OIDC workflow](oidc-cli.md).
+This workflow does not establish production
 capacity or complete the client port. The full enterprise goal remains active.
 
 The full local race suite passed with PostgreSQL and Keycloak required. Its
@@ -67,3 +68,33 @@ then passed in 26.60 seconds, including the reference list aliases and explicit
 cross-Gateway denial. The request-field tests passed. These durations include
 setup and do not measure production capacity. The compiler is pinned to
 `f678fb295b221fe158659ff5ab37d59ff5455760`; its hosted checks passed.
+
+The CLI now accepts `--expires-in 30d` or `--expires-in 2h` on both service-account
+creation aliases. This flag is exclusive with `--expires-at` and `--body`.
+STEGO converts the duration to the existing `expires_at` property. A day means
+24 hours. Compound Go durations, such as `1h30m`, are supported; fractional days
+and mixed day/hour syntax are rejected. Values must be positive and must fit a
+Go duration and RFC 3339 calendar timestamp.
+
+Hypershell declares the flag mapping. The generated command runtime owns parsing,
+conflict checks, UTC conversion, and output reservation. The API retains the
+one-hour minimum and 365-day maximum lifetime. Network delay and local clock
+error can affect requests near a policy boundary; the CLI does not extend the
+requested expiry to bypass the server check. Absolute timestamps and omitted
+expiry fields retain their previous behavior and defaults.
+
+The service-account workflow now checks both day and hour durations against the
+CLI execution interval. Invalid syntax and conflicting flags must make no HTTP
+request and leave no output file. Valid durations of 30 minutes and 366 days must
+reach the API and receive HTTP 400 without an account or credential file. The
+selected expiry survives API and provider restart. Real Keycloak token issuance,
+scope checks, denied elevation, revocation, and deletion remain part of the test.
+The [generated timestamp contract](https://github.com/jsell-rh/stego/blob/main/specs/cli-relative-time.md)
+records the common mechanism and input bounds.
+
+The updated service-account workflow passed in 26.83 seconds with PostgreSQL and
+Keycloak required. All six generated CLI workflows passed in 87.367 seconds:
+catalog, apply, OIDC login, Gateway, grants, and service accounts. CLI and contract
+race tests and `go vet ./...` also passed. These tests cover the changed command
+runtime. The full application and Kubernetes suites were not repeated locally
+for this CLI change; API and provider implementations are unchanged.

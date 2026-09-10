@@ -350,3 +350,7 @@ registry inputs.
 Database watch and replay now use [generated stream startup checks](acceptance/stream-startup.md).
 STEGO owns header validation and early RPC error handling. Hypershell supplies
 the capability names, replay scope, and controller error policy.
+
+Service-account creation accepts [relative expiry](acceptance/service-account-cli.md),
+such as `--expires-in 30d`. STEGO converts the duration to an absolute timestamp.
+Hypershell retains lifetime limits and access rules in the API.

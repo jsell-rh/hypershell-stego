@@ -7,7 +7,7 @@ alone does not establish compatibility with all reference options.
 | Reference area | Delivered behavior | Work still required |
 | --- | --- | --- |
 | Gateway | Create, get, list, delete, apply patch, body files, filtered API pages | Connection instructions, reference output options, interactive deletion |
-| Service account | Create, get, list, revoke, delete, protected credential output | Relative expiry, remaining output and confirmation options |
+| Service account | Create, get, list, revoke, delete, relative expiry, protected credential output | Remaining output and confirmation options |
 | Role binding | Create, get, list, delete, grant access and removal | Reference list output and automatic pagination |
 | Role | Get and list, as registered by the reference API | Reference list output; role mutation would require a new API and access policy |
 | Managed cluster | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
