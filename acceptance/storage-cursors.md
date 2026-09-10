@@ -57,3 +57,7 @@ change later pages. Watches, repeated scans, and current-state checks remain
 necessary. Durable retries, cross-process fencing, identity cursor memory bounds,
 other count-based discovery paths, index coverage, and production capacity remain
 open. There is no general production latency claim.
+
+[Database recovery](database-recovery.md) now uses the same generated cursor for
+both live and deleted rows. The controller no longer uses public list offsets or
+unused totals to find live databases. The old deleted-only replay remains valid.

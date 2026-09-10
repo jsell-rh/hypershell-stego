@@ -142,7 +142,7 @@ not be copied into Gateway workloads. Missing credentials for an existing PVC
 cause an error. The controller does not generate replacement passwords for an
 existing database.
 
-The controller starts and drains a live watch before replay and list scans. It
+The controller starts and drains a live watch before the retained recovery scan. It
 uses the generated keyed runtime with four workers and a 1024-key queue. Each scan repeats after ten seconds. A
 failed deletion stays in the stored replay data. Delete requests include the
 observed namespace UID and resource version. Missing namespaces count as cleaned
@@ -207,3 +207,7 @@ API restart, denied capability confirmation, and empty results took 8.56 seconds
 The acceptance package took 74.819 seconds. Static checks and pinned regeneration
 also passed. The compiler remains at `639b95bb49bc9020b849f5f9ee6180a7b1a1ee09`;
 this change reuses its scanner without a new runtime API.
+
+Database recovery now uses [one retained cursor stream](database-recovery.md)
+for live and deleted IDs. The server retains the deleted-only replay mode for
+existing clients. The database gate checks both modes with C and ICU ordering.

@@ -10,8 +10,8 @@ wait for capacity and stop on cancellation.
 The watch opens before the recovery scan. A failed watch cancels and joins the
 session before reconnect. Every connection starts another recovery scan. Each
 action has a 20-second limit. Scans repeat after ten seconds, and reconnect waits
-one second. Live list calls also have a 20-second limit. The finite deletion
-replay uses STEGO's generated `ScanStream`. Setup, including the capability
+one second. The [finite retained replay](database-recovery.md) includes both
+live and deleted rows through STEGO's generated `ScanStream`. Setup, including the capability
 header, and each receive call have separate 20-second limits. The scanner
 accepts at most 1,000,000 records, then requires EOF. It cancels the stream on
 every exit and waits for the active callback to return. The receive timer does
@@ -20,7 +20,7 @@ limit.
 
 Watch and replay records require a known event type and matching resource IDs.
 The declared tombstone capability is required. Invalid records, missing
-capabilities, and invalid list pages stop the controller. The queue retains only
+capabilities, and invalid replay scopes stop the controller. The queue retains only
 the validated ID. Each action reads the current retained record, resource
 revision, deletion flag, and cleanup owner before provider work.
 
@@ -56,14 +56,14 @@ generation checks also passed.
 
 STEGO owns scheduling, retries, worker limits, watch reconnect, and cancellation.
 It also owns finite-stream deadlines, item limits, and closure.
-Hypershell supplies protocol validation, replay/list adapters, provider rules,
+Hypershell supplies protocol validation, replay adapters, provider rules,
 and field updates. No payload cache, scheduler, or retry map was added to the
 application.
 
 Use one active database controller per ownership scope. Cross-process fencing,
 durable retry storage, complete queue saturation handling, and other discovery
 queries remain open. [Generated storage cursors](storage-cursors.md) now remove
-unused counts from database deletion replay. A queue filled with persistent
+unused counts from database recovery. Live recovery also uses the same cursor. A queue filled with persistent
 failures can still prevent new keys from entering. Database generations,
 remaining field permissions, and provider identity history need further work.
 

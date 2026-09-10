@@ -21,7 +21,7 @@ provider actions use current retained state. The
 after API restart. All three controllers have a one-second reconnect delay.
 The runtime cancels and joins active callbacks before a new watch session.
 
-Database deletion replay uses generated `ScanStream`. Stream setup and each
+Database recovery uses generated `ScanStream` for live and deleted rows. Stream setup and each
 receive call have separate 20-second limits. A stalled replay is cancelled so
 a later scan can retry. Queue admission can wait without a receive timeout.
 Hypershell retains capability checks and record validation. The scanner owns

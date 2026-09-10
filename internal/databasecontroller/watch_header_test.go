@@ -12,6 +12,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
 )
@@ -26,7 +27,7 @@ func (s failedWatchServer) WatchManagedDatabases(*pb.WatchManagedDatabasesReques
 }
 
 func TestDatabaseWatchPreservesErrorBeforeHeaders(t *testing.T) {
-	for _, code := range []codes.Code{codes.Aborted, codes.Unavailable, codes.PermissionDenied, codes.Unauthenticated, codes.OK} {
+	for _, code := range []codes.Code{codes.Aborted, codes.Unavailable, codes.PermissionDenied, codes.Unauthenticated, codes.InvalidArgument, codes.Unimplemented, codes.OK} {
 		t.Run(code.String(), func(t *testing.T) {
 			listener := bufconn.Listen(1 << 20)
 			server := grpc.NewServer()
@@ -53,6 +54,35 @@ func TestDatabaseWatchPreservesErrorBeforeHeaders(t *testing.T) {
 			} else if status.Code(err) != code || errors.Is(err, runtime.ErrWatch) {
 				t.Fatal("stream error became a capability error", code, err)
 			}
+			stream, err = pb.NewManagedDatabaseServiceClient(connection).WatchManagedDatabases(ctx, &pb.WatchManagedDatabasesRequest{})
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = checkReplayHeader(stream)
+			if code == codes.OK {
+				if !errors.Is(err, runtime.ErrWatch) {
+					t.Fatal("replay accepted missing capability", err)
+				}
+			} else {
+				unsupported := code == codes.InvalidArgument || code == codes.Unimplemented
+				if status.Code(err) != code || errors.Is(err, runtime.ErrScanContract) != unsupported {
+					t.Fatal("replay lost error classification", code, err)
+				}
+			}
 		})
+	}
+}
+
+func TestReplayRequiresOneMatchingScope(t *testing.T) {
+	for _, values := range [][]string{nil, {"deleted-v1"}, {"retained-v2"}, {"retained-v1", "retained-v1"}} {
+		header := metadata.Pairs(capability, "v1")
+		header.Set(replayMode, values...)
+		if err := checkReplayHeader(&headerStream{header: header}); !errors.Is(err, runtime.ErrScanContract) {
+			t.Fatal("invalid replay scope accepted", values, err)
+		}
+	}
+	header := metadata.Pairs(capability, "v1", replayMode, "retained-v1")
+	if err := checkReplayHeader(&headerStream{header: header}); err != nil {
+		t.Fatal(err)
 	}
 }

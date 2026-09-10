@@ -318,3 +318,7 @@ access and state filters without unused counts or application-built ID searches.
 Controllers use [generated observation budgets](acceptance/observation-deadlines.md)
 to leave time for a conditional status or cleanup write after a provider timeout.
 Five workflows check failure, event delivery, API restart, and recovery.
+
+[Database recovery](acceptance/database-recovery.md) now uses one generated
+cursor stream for live and retained deleted IDs. Public list shapes remain
+unchanged. The controller checks the replay scope before it accepts any IDs.

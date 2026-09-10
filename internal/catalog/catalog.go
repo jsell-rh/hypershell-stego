@@ -581,13 +581,23 @@ func validateDatabase(row model.ManagedDatabase) error {
 // Deleted returns a bounded page of tombstones in database ID order. The cursor
 // is a canonical ID. A live watch must start before the first page is requested.
 func (r *Resource[T, C, P]) Deleted(ctx context.Context, p gateways.Principal, after string, limit int) ([]T, bool, error) {
+	return r.recoveryPage(ctx, p, after, limit, store.CursorDeleted)
+}
+
+// Retained returns live and deleted rows in database ID order. Recovery access
+// is required. Start the live watch before the first page and repeat scans.
+func (r *Resource[T, C, P]) Retained(ctx context.Context, p gateways.Principal, after string, limit int) ([]T, bool, error) {
+	return r.recoveryPage(ctx, p, after, limit, store.CursorAll)
+}
+
+func (r *Resource[T, C, P]) recoveryPage(ctx context.Context, p gateways.Principal, after string, limit int, deletion store.CursorDeletion) ([]T, bool, error) {
 	if err := r.authorizeRecovery(p); err != nil {
 		return nil, false, err
 	}
 	if after != "" && !validID(after) {
 		return nil, false, gateways.ErrInvalid
 	}
-	options := store.CursorOptions{AfterID: after, Limit: limit, Deletion: store.CursorDeleted}
+	options := store.CursorOptions{AfterID: after, Limit: limit, Deletion: deletion}
 	var rows []T
 	var more bool
 	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {

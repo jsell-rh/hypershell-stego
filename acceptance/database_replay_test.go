@@ -21,11 +21,17 @@ import (
 
 func TestDatabaseDeleteReplayThroughGeneratedRuntime(t *testing.T) {
 	for _, collation := range []string{"C", "und-x-icu"} {
-		t.Run(collation, func(t *testing.T) { testDatabaseDeleteReplay(t, collation) })
+		t.Run(collation, func(t *testing.T) { testDatabaseReplay(t, collation, "deleted-v1") })
 	}
 }
 
-func testDatabaseDeleteReplay(t *testing.T, collation string) {
+func TestDatabaseRetainedReplayThroughGeneratedRuntime(t *testing.T) {
+	for _, collation := range []string{"C", "und-x-icu"} {
+		t.Run(collation, func(t *testing.T) { testDatabaseReplay(t, collation, "retained-v1") })
+	}
+}
+
+func testDatabaseReplay(t *testing.T, collation, mode string) {
 	f := databaseSetup(t, false)
 	// Use fixed SQL so the test does not accept an arbitrary SQL identifier.
 	statement := `ALTER TABLE managed_databases ALTER COLUMN id TYPE text COLLATE "C"`
@@ -45,11 +51,13 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 	}
 	p := gateways.Principal{Subject: "controller", Username: "controller", Issuer: "https://issuer.example"}
 	deleted := map[string]string{}
+	retained := map[string]string{}
 	for i := 0; i < 103; i++ {
 		row, err := catalogs.Databases.Create(context.Background(), p, catalog.DatabaseCreate{Name: fmt.Sprintf("db-%03d", i), Provider: "deployment"})
 		if err != nil {
 			t.Fatal(err)
 		}
+		retained[row.ID] = row.Namespace
 		if i%17 == 0 {
 			continue
 		}
@@ -68,6 +76,7 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 			t.Fatal(err)
 		}
 		deleted[row.ID] = row.Namespace
+		retained[row.ID] = row.Namespace
 	}
 	// These IDs force a different order under the ICU test collation.
 	for _, prefix := range []string{"000000a", "000000B"} {
@@ -84,8 +93,15 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 			t.Fatal(err)
 		}
 		deleted[id] = ns
+		retained[id] = ns
 	}
-	ordered, err := f.db.Query("SELECT id FROM managed_databases WHERE deleted_at IS NOT NULL ORDER BY id")
+	expectedRows := deleted
+	query := "SELECT id FROM managed_databases WHERE deleted_at IS NOT NULL ORDER BY id"
+	if mode == "retained-v1" {
+		expectedRows = retained
+		query = "SELECT id FROM managed_databases ORDER BY id"
+	}
+	ordered, err := f.db.Query(query)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +117,7 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 		t.Fatal(err)
 	}
 	ordered.Close()
-	if len(expected) != len(deleted) || len(expected) <= 100 {
+	if len(expected) != len(expectedRows) || len(expected) <= 100 {
 		t.Fatal("replay fixture does not cross a page")
 	}
 	if collation == "und-x-icu" && slices.IsSorted(expected) {
@@ -128,7 +144,7 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 		return stream
 	}
 	for _, roles := range [][]string{{}, {"gateway:creator"}, {"platform:admin"}} {
-		stream := replay(token(t, key, "ordinary", roles...), "deleted-v1")
+		stream := replay(token(t, key, "ordinary", roles...), mode)
 		_, err := stream.Recv()
 		if status.Code(err) != codes.PermissionDenied {
 			t.Fatal("replay access", roles, err)
@@ -143,9 +159,9 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 		t.Fatal("replay mode", err)
 	}
 	for attempt := range 2 {
-		stream := replay(token(t, key, "controller"), "deleted-v1")
+		stream := replay(token(t, key, "controller"), mode)
 		header, err := stream.Header()
-		if err != nil || len(header.Get("hypershell-managed-database-delete-tombstones")) != 1 || header.Get("hypershell-managed-database-delete-tombstones")[0] != "v1" {
+		if err != nil || !slices.Equal(header.Get("hypershell-managed-database-replay"), []string{mode}) || len(header.Get("hypershell-managed-database-delete-tombstones")) != 1 || header.Get("hypershell-managed-database-delete-tombstones")[0] != "v1" {
 			t.Fatal("replay capability", header, err)
 		}
 		var actual []string
@@ -158,8 +174,12 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 				t.Fatal(err)
 			}
 			id := event.GetResourceId()
-			ns, ok := deleted[id]
-			if !ok || event.GetType() != pb.EventType_EVENT_TYPE_DELETED || event.GetManagedDatabase().GetNamespace() != ns || event.GetManagedDatabase().GetProvider() != "deployment" {
+			ns, ok := expectedRows[id]
+			kind := pb.EventType_EVENT_TYPE_UPDATED
+			if _, removed := deleted[id]; removed {
+				kind = pb.EventType_EVENT_TYPE_DELETED
+			}
+			if !ok || event.GetType() != kind || event.GetManagedDatabase().GetNamespace() != ns || event.GetManagedDatabase().GetProvider() != "deployment" {
 				t.Fatal("invalid replay row", event)
 			}
 			actual = append(actual, id)
@@ -178,14 +198,14 @@ func testDatabaseDeleteReplay(t *testing.T, collation string) {
 	}
 	// A separate database has no deletion history. Retained rows cannot be purged.
 	stop()
-	emptyFixture := database(t)
+	emptyFixture := databaseSetup(t, false)
 	emptyStop, _, emptyAddress := startBoth(t, binary, emptyFixture.dsn, config, settings...)
 	defer emptyStop()
 	_, emptyConnection := grpcClient(t, emptyAddress, tlsIdentity)
 	client = pb.NewManagedDatabaseServiceClient(emptyConnection)
-	empty := replay(token(t, key, "controller"), "deleted-v1")
+	empty := replay(token(t, key, "controller"), mode)
 	header, err := empty.Header()
-	if err != nil || !slices.Equal(header.Get("hypershell-managed-database-delete-tombstones"), []string{"v1"}) {
+	if err != nil || !slices.Equal(header.Get("hypershell-managed-database-replay"), []string{mode}) || !slices.Equal(header.Get("hypershell-managed-database-delete-tombstones"), []string{"v1"}) {
 		t.Fatal("empty replay did not confirm its capability", err)
 	}
 	if _, err := empty.Recv(); err != io.EOF {

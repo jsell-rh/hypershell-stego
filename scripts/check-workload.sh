@@ -78,5 +78,5 @@ if [[ $workflow == gateway || $workflow == sandbox ]]; then
   go test -race -count=1 -v ./acceptance -run '^TestGateway(WorkloadWithDatabaseAndIdentity|DeletionBeforeWorkloadStartup)$'
 else
   go test -race -count=1 ./internal/databasecontroller
-  go test -race -count=1 -v ./acceptance -run '^TestDatabase(WorkloadAndOfflineDeletion|DeleteReplayThroughGeneratedRuntime)$'
+  go test -race -count=1 -v ./acceptance -run '^TestDatabase(WorkloadAndOfflineDeletion|DeleteReplayThroughGeneratedRuntime|RetainedReplayThroughGeneratedRuntime)$'
 fi

@@ -105,23 +105,47 @@ func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) e
 	return nil
 }
 
-// Deleted rows use the retained replay contract. Live events remain hints.
+// A replay must confirm both deletion support and the requested scope.
+func checkReplayHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) error {
+	if err := checkHeader(stream); err != nil {
+		return replayOpenError(err)
+	}
+	header, err := stream.Header()
+	if err != nil {
+		return err
+	}
+	values := header.Get(replayMode)
+	if len(values) != 1 || values[0] != "retained-v1" {
+		return fmt.Errorf("%w: database replay did not confirm retained rows", runtime.ErrScanContract)
+	}
+	return nil
+}
+
+func replayOpenError(err error) error {
+	if status.Code(err) == codes.InvalidArgument || status.Code(err) == codes.Unimplemented {
+		return fmt.Errorf("%w: retained database replay is unavailable: %w", runtime.ErrScanContract, err)
+	}
+	return err
+}
+
+// Recovery reads live and deleted IDs through one finite cursor stream.
+// Every row is a hint; reconciliation must read current state before work.
 func (c *Controller) seed(ctx context.Context, send func(string) error) error {
-	err := runtime.ScanStream(ctx, func(streamContext context.Context) (func() (*pb.WatchManagedDatabasesResponse, error), error) {
+	return runtime.ScanStream(ctx, func(streamContext context.Context) (func() (*pb.WatchManagedDatabasesResponse, error), error) {
 		md, _ := metadata.FromOutgoingContext(streamContext)
 		md = md.Copy()
-		md.Set(replayMode, "deleted-v1")
+		md.Set(replayMode, "retained-v1")
 		replay, err := c.api.WatchManagedDatabases(metadata.NewOutgoingContext(streamContext, md), &pb.WatchManagedDatabasesRequest{})
 		if err != nil {
-			return nil, err
+			return nil, replayOpenError(err)
 		}
-		if err := checkHeader(replay); err != nil {
+		if err := checkReplayHeader(replay); err != nil {
 			return nil, err
 		}
 		return replay.Recv, nil
 	}, func(event *pb.WatchManagedDatabasesResponse) error {
-		if event.GetType() != pb.EventType_EVENT_TYPE_DELETED {
-			return fmt.Errorf("%w: database replay returned a live row", runtime.ErrScanContract)
+		if event.GetType() != pb.EventType_EVENT_TYPE_DELETED && event.GetType() != pb.EventType_EVENT_TYPE_UPDATED {
+			return fmt.Errorf("%w: invalid database replay event type", runtime.ErrScanContract)
 		}
 		key, err := eventKey(event)
 		if err != nil {
@@ -129,33 +153,6 @@ func (c *Controller) seed(ctx context.Context, send func(string) error) error {
 		}
 		return send(key)
 	}, runtime.StreamScanOptions{MaxItems: 1000000, OpenTimeout: reconcileTimeout, ReceiveTimeout: reconcileTimeout})
-	if err != nil {
-		return err
-	}
-	for page := int32(1); page <= 10000; page++ {
-		pageContext, stop := context.WithTimeout(ctx, reconcileTimeout)
-		response, err := c.api.ListManagedDatabases(pageContext, &pb.ListManagedDatabasesRequest{Page: page, Size: 20})
-		stop()
-		if err != nil {
-			return err
-		}
-		if response == nil || len(response.GetItems()) > 20 {
-			return fmt.Errorf("%w: invalid database list page", runtime.ErrScanContract)
-		}
-		for _, db := range response.Items {
-			key, err := eventKey(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_UPDATED, ResourceId: db.GetMetadata().GetId(), ManagedDatabase: db})
-			if err != nil {
-				return err
-			}
-			if err := send(key); err != nil {
-				return err
-			}
-		}
-		if len(response.Items) < 20 {
-			return nil
-		}
-	}
-	return fmt.Errorf("%w: database scan exceeded its page limit", runtime.ErrScanContract)
 }
 func eventKey(event *pb.WatchManagedDatabasesResponse) (string, error) {
 	db := event.GetManagedDatabase()

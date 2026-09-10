@@ -314,10 +314,10 @@ func (s *databaseServer) ListManagedDatabases(ctx context.Context, r *pb.ListMan
 func (s *databaseServer) WatchManagedDatabases(_ *pb.WatchManagedDatabasesRequest, stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse]) error {
 	md, _ := metadata.FromIncomingContext(stream.Context())
 	if values := md.Get("hypershell-managed-database-replay"); len(values) != 0 {
-		if len(values) != 1 || values[0] != "deleted-v1" {
+		if len(values) != 1 || (values[0] != "deleted-v1" && values[0] != "retained-v1") {
 			return status.Error(codes.InvalidArgument, "invalid database replay mode")
 		}
-		return s.replayDeletedDatabases(stream)
+		return s.replayDatabases(stream, values[0] == "retained-v1")
 	}
 
 	return watchCatalog(s.resource, s.source, "manageddatabase", stream, func(row model.ManagedDatabase, kind pb.EventType, id string) *pb.WatchManagedDatabasesResponse {
@@ -325,7 +325,7 @@ func (s *databaseServer) WatchManagedDatabases(_ *pb.WatchManagedDatabasesReques
 	})
 }
 
-func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse]) error {
+func (s *databaseServer) replayDatabases(stream grpc.ServerStreamingServer[pb.WatchManagedDatabasesResponse], retained bool) error {
 	ctx := stream.Context()
 	principal := gateways.PrincipalFromContext(ctx)
 	headerSent := false
@@ -333,7 +333,11 @@ func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServe
 		if headerSent {
 			return nil
 		}
-		if err := stream.SendHeader(metadata.Pairs("hypershell-managed-database-delete-tombstones", "v1")); err != nil {
+		mode := "deleted-v1"
+		if retained {
+			mode = "retained-v1"
+		}
+		if err := stream.SendHeader(metadata.Pairs("hypershell-managed-database-delete-tombstones", "v1", "hypershell-managed-database-replay", mode)); err != nil {
 			return err
 		}
 		headerSent = true
@@ -341,7 +345,11 @@ func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServe
 	}
 	source := func(operation context.Context, after string, limit int) (runtime.CursorPage[model.ManagedDatabase], error) {
 		var page runtime.CursorPage[model.ManagedDatabase]
-		rows, more, err := s.resource.Deleted(operation, principal, after, limit)
+		read := s.resource.Deleted
+		if retained {
+			read = s.resource.Retained
+		}
+		rows, more, err := read(operation, principal, after, limit)
 		if err != nil {
 			return page, mapError(err)
 		}
@@ -355,7 +363,11 @@ func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServe
 		if err := sendHeader(); err != nil {
 			return err
 		}
-		return stream.Send(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_DELETED, ResourceId: row.ID, ManagedDatabase: presentManagedDatabase(row)})
+		kind := pb.EventType_EVENT_TYPE_UPDATED
+		if row.DeletedAt.Valid {
+			kind = pb.EventType_EVENT_TYPE_DELETED
+		}
+		return stream.Send(&pb.WatchManagedDatabasesResponse{Type: kind, ResourceId: row.ID, ManagedDatabase: presentManagedDatabase(row)})
 	}, runtime.ScanOptions{PageSize: 100, MaxPages: 10000, PageTimeout: 20 * time.Second})
 	if errors.Is(err, runtime.ErrScanContract) {
 		return status.Error(codes.Internal, "invalid database replay page")

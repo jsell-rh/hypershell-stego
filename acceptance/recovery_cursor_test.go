@@ -3,6 +3,8 @@ package acceptance
 import (
 	"context"
 	"errors"
+	"fmt"
+	"slices"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -67,7 +69,7 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, name := range []string{"database", "gateway"} {
+	for _, name := range []string{"database", "retained database", "gateway"} {
 		t.Run(name, func(t *testing.T) {
 			queries.counts.Store(0)
 			queries.reads.Store(0)
@@ -75,6 +77,11 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 				rows, more, err := resources.Databases.Deleted(ctx, p, "", 100)
 				if err != nil || len(rows) != 1 || rows[0].ID != db.ID || more {
 					t.Fatal("database recovery page", err)
+				}
+			} else if name == "retained database" {
+				rows, more, err := resources.Databases.Retained(ctx, p, "", 100)
+				if err != nil || len(rows) != 2 || more || !slices.ContainsFunc(rows, func(row model.ManagedDatabase) bool { return row.ID == db.ID && row.DeletedAt.Valid }) || !slices.ContainsFunc(rows, func(row model.ManagedDatabase) bool { return row.ID == f.database && !row.DeletedAt.Valid }) {
+					t.Fatal("retained database recovery page", err)
 				}
 			} else {
 				ids, err := service.ReconcileIDs(ctx, p, "")
@@ -89,6 +96,8 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 			queries.reads.Store(0)
 			if name == "database" {
 				_, _, err = resources.Databases.Deleted(ctx, principal("outsider"), "", 100)
+			} else if name == "retained database" {
+				_, _, err = resources.Databases.Retained(ctx, principal("outsider"), "", 100)
 			} else {
 				_, err = service.ReconcileIDs(ctx, principal("outsider"), "")
 			}
@@ -96,5 +105,69 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 				t.Fatal("unauthorized recovery read", err)
 			}
 		})
+	}
+}
+
+// Removal of an earlier live row must not shift later rows out of recovery.
+func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
+	f := databaseSetup(t, false)
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+	defer cancel()
+	policy, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	resources, err := catalog.New(f.storage, policy)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := principal("controller")
+	for i := range 21 {
+		if _, err := resources.Databases.Create(ctx, p, catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "deployment"}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	query, err := f.db.QueryContext(ctx, "SELECT id FROM managed_databases ORDER BY id")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var expected []string
+	for query.Next() {
+		var id string
+		if err := query.Scan(&id); err != nil {
+			t.Fatal(err)
+		}
+		expected = append(expected, id)
+	}
+	if err := query.Err(); err != nil {
+		t.Fatal(err)
+	}
+	query.Close()
+	var actual []string
+	after := ""
+	for page := 0; page < 5; page++ {
+		rows, more, err := resources.Databases.Retained(ctx, p, after, 5)
+		if err != nil || len(rows) == 0 || len(rows) > 5 {
+			t.Fatal("invalid recovery page", err)
+		}
+		for _, row := range rows {
+			actual = append(actual, row.ID)
+		}
+		after = rows[len(rows)-1].ID
+		if page == 0 {
+			if err := resources.Databases.Delete(ctx, p, rows[0].ID); err != nil {
+				t.Fatal(err)
+			}
+		}
+		if more != (page < 4) {
+			t.Fatal("incorrect recovery continuation", page, more)
+		}
+	}
+	if len(expected) != 21 || !slices.Equal(actual, expected) {
+		t.Fatal("deletion shifted a later ID out of recovery", len(actual))
+	}
+	deleted, err := resources.Databases.GetRetained(ctx, p, expected[0])
+	if err != nil || !deleted.DeletedAt.Valid {
+		t.Fatal("fixture did not delete an earlier row", err)
 	}
 }
