@@ -131,6 +131,14 @@ func RunSweep[T any](ctx context.Context, groups []SweepGroup[T], reconcile func
 			streams[stream.Name] = true
 		}
 	}
+	if ctx.Err() != nil {
+		return nil
+	}
+	ctx, closeTelemetry, err := startControllerTelemetry(ctx)
+	if err != nil {
+		return err
+	}
+	defer closeTelemetry()
 	position := 0
 	for ctx.Err() == nil {
 		err := sweepGroup(ctx, definitions[position], cursors[position], &nextStreams[position], reconcile, options)
@@ -177,21 +185,34 @@ func sweepGroup[T any](parent context.Context, group SweepGroup[T], cursors []sw
 		if cursor.pages >= options.MaxPagesPerCycle {
 			return sweepError("stream exceeded its cycle page limit")
 		}
-		page, err := stream.Page(ctx, cursor.after, options.PageSize)
-		if err != nil {
-			observe(SweepEvent{Group: group.Name, Stream: stream.Name, Err: err})
-			if errors.Is(err, ErrSweepContract) || options.Terminal(err) {
-				return err
+		var page SweepPage[T]
+		var sourceError, validationError error
+		observedError, finish := controllerWork(ctx, "scan", func(operation context.Context) error {
+			page, sourceError = stream.Page(operation, cursor.after, options.PageSize)
+			if sourceError != nil {
+				return sourceError
+			}
+			validationError = validateSweepPage(page, cursor.after, options.PageSize)
+			return validationError
+		})
+		// Telemetry can record a deadline after a successful callback. Keep that
+		// observation separate from the source error and its terminal policy.
+		terminalScan := validationError != nil || (sourceError != nil && (errors.Is(sourceError, ErrSweepContract) || options.Terminal(sourceError)))
+		finish(observedError != nil && !terminalScan && parent.Err() == nil && ctx.Err() != context.Canceled)
+		if sourceError != nil {
+			observe(SweepEvent{Group: group.Name, Stream: stream.Name, Err: sourceError})
+			if terminalScan {
+				return sourceError
 			}
 			continue
 		}
-		if err := validateSweepPage(page, cursor.after, options.PageSize); err != nil {
-			return err
+		if validationError != nil {
+			return validationError
 		}
 		if ctx.Err() != nil {
 			return nil
 		}
-		started, failures := sweepPage(ctx, cancel, page, reconcile, options)
+		started, failures := sweepPage(parent, ctx, cancel, page, reconcile, options)
 		prefix, count, failed := 0, 0, 0
 		var result []error
 		var terminal error
@@ -227,7 +248,7 @@ func sweepGroup[T any](parent context.Context, group SweepGroup[T], cursors []sw
 	}
 	return nil
 }
-func sweepPage[T any](ctx context.Context, cancel context.CancelFunc, page SweepPage[T], reconcile func(context.Context, T) error, options SweepOptions) ([]bool, []error) {
+func sweepPage[T any](parent, ctx context.Context, cancel context.CancelFunc, page SweepPage[T], reconcile func(context.Context, T) error, options SweepOptions) ([]bool, []error) {
 	started := make([]bool, len(page.Items))
 	failures := make([]error, len(page.Items))
 	jobs := make(chan int)
@@ -239,12 +260,12 @@ func sweepPage[T any](ctx context.Context, cancel context.CancelFunc, page Sweep
 					return
 				}
 				started[i] = true
-				err := reconcile(ctx, page.Items[i].Value)
-				if err == nil {
-					err = ctx.Err()
-				}
+				err, finish := controllerWork(ctx, "reconcile", func(operation context.Context) error { return reconcile(operation, page.Items[i].Value) })
 				failures[i] = err
-				if err != nil && (errors.Is(err, ErrSweepContract) || options.Terminal(err)) {
+				terminal := err != nil && (errors.Is(err, ErrSweepContract) || options.Terminal(err))
+				// A pass deadline permits a later pass. Parent cancellation ends the run.
+				finish(err != nil && !terminal && parent.Err() == nil && ctx.Err() != context.Canceled)
+				if terminal {
 					cancel()
 					return
 				}

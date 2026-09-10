@@ -425,3 +425,8 @@ Gateway access without adding a fault route to the generated application.
 and safe failure output when a registered callback panics or exits without
 return. The Gateway test verifies retained data through REST and gRPC after
 process restart.
+
+[Recovery sweep telemetry](acceptance/sweep-observability.md) supplies common
+page and action logs, metrics, and spans for service-account recovery. The
+application test verifies failed revocation and recovery after restart through
+the generated runtime and a TLS OTLP collector.

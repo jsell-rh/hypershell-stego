@@ -68,19 +68,19 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910222253-f7a630b40d39
+        module_version: v0.0.0-20260910222857-facefeb2aace
         vcs: git
-        revision: f7a630b40d396831bb29ebde874bcf68192e405d
+        revision: facefeb2aacec8acf9fa15fef6a8bd8fbd4fc052
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
-    registry_content_sha256: 8f6f857ffbace8970ac0cd2f65490c7149081318c43abb661e2708eca8acf8e1
+    registry_content_sha256: 95efc84ff9c13483cc9a8ba3c8be80f5d6882852ac279d1ab3b7feddd98551a2
     components:
         cli-application:
             version: 1.4.2
             sha: gateway-workflow
         controller:
-            version: 1.12.4
+            version: 1.14.0
             sha: gateway-workflow
         grpc-application:
             version: 1.8.0
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: ad082c39953fcbb560a784a9ab589bc0e52457dd29292926bd1edcabdaab3a94
+        cli/command/version.go: ca970ca54223d5fcab6a9aa06c1dbc9aa4f363623832dad9faaa6dcba4174ad2
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -405,7 +405,7 @@ last_applied:
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         controller/scan.go: c4b325a67497b7290e7c4c0cf934cba230cd0e79bd5ee4a8a444b60408087932
         controller/stream.go: 4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff
-        controller/sweep.go: 48f6e8446e38a1b21cc182daa5d7753fbcbf67f6aa3cea43509dc960d0eb335b
+        controller/sweep.go: a29c158b90022219fd81317249c0cf70607fdd370687a9b25987d074cffd8cce
         controller/telemetry.go: d36b871fc097b5270bb49e383f6c50c653ddadb9b0db5c344b1b68a3aba58e2e
         controller/watch_keyed.go: 47d431a660d9ed8df3f0ae9010e89e30bace634e6d6eb303483b9c74d0e45951
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6

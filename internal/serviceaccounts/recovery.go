@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -40,11 +39,6 @@ func (s *Service) Run(ctx context.Context) error {
 		// Provider and storage outages remain retryable. Invalid source data stops
 		// the worker. Recovery actions still enforce their current access rules.
 		Terminal: func(err error) bool { return errors.Is(err, runtime.ErrSweepContract) },
-		Observe: func(event runtime.SweepEvent) {
-			if event.Err != nil {
-				slog.Warn("service-account recovery needs another pass", "group", event.Group, "stream", event.Stream, "started", event.Started, "failed", event.Failed)
-			}
-		},
 	})
 }
 func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream[recoveryTask] {

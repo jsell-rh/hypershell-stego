@@ -1,7 +1,7 @@
 The controller telemetry gate first used compiler
 `86b436c27bd31817733dd0356d3aea5ca10c8a77`. The later
 [instance identity gate](telemetry-instance-identity.md) records the current pin.
-Controller 1.13.0 and telemetry 1.4.0 now supply common logs, metrics, and spans
+Controller 1.13.0 and telemetry 1.4.0 introduced common logs, metrics, and spans
 for keyed reconciliation. Hypershell's identity, workload, and database
 controllers no longer translate common runtime events into log messages.
 Provider actions and domain rules remain in Hypershell.
