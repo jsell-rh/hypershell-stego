@@ -48,9 +48,15 @@ func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceC
 
 // Run connects domain state and actions to the generated controller runtime.
 func (c *Controller) Run(ctx context.Context) error {
+	return c.RunWithMetrics(ctx, nil)
+}
+
+// RunWithMetrics connects optional generated diagnostics to the controller.
+func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metrics) error {
 	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
+			Metrics:  metrics,
 			Capacity: QueueCapacity, Workers: Workers, ResyncInterval: ResyncInterval,
 			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {

@@ -46,9 +46,15 @@ func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupSer
 	return &Controller{api: api, cleanup: cleanup, provider: provider}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
+	return c.RunWithMetrics(ctx, nil)
+}
+
+// RunWithMetrics connects optional generated diagnostics to the controller.
+func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metrics) error {
 	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
+			Metrics:  metrics,
 			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {

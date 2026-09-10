@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unicode/utf8"
 )
@@ -27,6 +28,8 @@ type KeyedSource[K ~string] struct {
 }
 
 type KeyedOptions struct {
+	// Metrics is optional and must belong to one active controller.
+	Metrics  *Metrics
 	Capacity int
 	// Workers bounds concurrent actions for distinct keys. Zero selects one.
 	Workers        int
@@ -113,10 +116,17 @@ type keyQueue[K ~string] struct {
 	pending   keyHeap[K]
 	changed   chan struct{}
 	admission chan struct{}
+	retrying  int
+	waiting   atomic.Int64
 }
 
 func newKeyQueue[K ~string](capacity int) *keyQueue[K] {
 	return &keyQueue[K]{capacity: capacity, entries: make(map[K]*keyEntry[K]), changed: make(chan struct{}), admission: make(chan struct{}, 1)}
+}
+func (q *keyQueue[K]) metrics() QueueMetrics {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	return QueueMetrics{Capacity: q.capacity, Queued: len(q.pending), Active: len(q.entries) - len(q.pending), Retrying: q.retrying, Waiting: q.waiting.Load(), Ready: q.ready}
 }
 func (q *keyQueue[K]) notify() { close(q.changed); q.changed = make(chan struct{}) }
 func (q *keyQueue[K]) setReady(ready bool) {
@@ -157,6 +167,8 @@ func (q *keyQueue[K]) addWait(ctx context.Context, key K) error {
 	if len(key) == 0 || len(key) > 1024 || !utf8.ValidString(string(key)) {
 		return ErrKey
 	}
+	q.waiting.Add(1)
+	defer q.waiting.Add(-1)
 	// Serialize the generated scan and watch emitters while they wait for a slot.
 	// Waiting emitters retain one key each outside the admitted queue.
 	select {
@@ -211,6 +223,9 @@ func (q *keyQueue[K]) take(ctx context.Context) (K, error) {
 			delay = time.Until(entry.due)
 			if delay <= 0 {
 				heap.Pop(&q.pending)
+				if entry.delay > 0 {
+					q.retrying--
+				}
 				entry.active = true
 				entry.dirty = false
 				q.mu.Unlock()
@@ -256,6 +271,7 @@ func (q *keyQueue[K]) finish(key K, failed bool, minimum, maximum time.Duration)
 	}
 	entry.active = false
 	if failed {
+		q.retrying++
 		entry.delay = nextDelay(entry.delay, minimum, maximum)
 		entry.due = time.Now().Add(entry.delay)
 	} else {
@@ -292,6 +308,10 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 		return nil
 	}
 	q := newKeyQueue[K](options.Capacity)
+	if err := options.Metrics.attach(q.metrics); err != nil {
+		return err
+	}
+	defer options.Metrics.detach()
 	ctx, cancel := context.WithCancel(parent)
 	var workers sync.WaitGroup
 	defer func() { cancel(); workers.Wait() }()
@@ -323,6 +343,9 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 				return
 			}
 			err := source.Scan(ctx, func(key K) error { return q.addWait(ctx, key) })
+			if ctx.Err() == nil {
+				options.Metrics.scan(err != nil)
+			}
 			if err != nil && (options.Terminal(err) || errors.Is(err, ErrOverflow) || errors.Is(err, ErrKey)) {
 				fail(err)
 				return
@@ -362,16 +385,37 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 					return
 				}
 				operation, stop := context.WithTimeout(ctx, options.Timeout)
+				started := time.Now()
 				err = reconcile(operation, key)
 				if err == nil {
 					err = operation.Err()
 				}
 				stop()
-				if err != nil && options.Terminal(err) {
+				terminal := err != nil && options.Terminal(err)
+				outcome := 0
+				if err != nil {
+					outcome = 1
+					if errors.Is(err, context.DeadlineExceeded) {
+						outcome = 2
+					} else if errors.Is(err, context.Canceled) {
+						outcome = 3
+					}
+				}
+				// Cancellation ends this queue; it does not schedule another attempt.
+				retry := false
+				duration := time.Since(started)
+				if !terminal && ctx.Err() == nil {
+					q.finish(key, err != nil, options.RetryMin, options.RetryMax)
+					retry = err != nil
+				}
+				options.Metrics.action(outcome, duration, retry)
+				if terminal {
 					fail(err)
 					return
 				}
-				q.finish(key, err != nil, options.RetryMin, options.RetryMax)
+				if ctx.Err() != nil {
+					return
+				}
 				if err != nil {
 					notice("reconcile_failed", err)
 				}

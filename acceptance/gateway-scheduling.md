@@ -102,3 +102,8 @@ baseline. The focused identity, user-login, and two cleanup checks passed in
 passed in 219.678 seconds, including identity setup, access rules, provider
 persistence, restart, offline deletion, and repair of late resources in a former
 cluster. Module verification, `go vet`, and pinned generation checks passed.
+
+The independent cleanup tests also check [generated controller metrics](controller-metrics.md)
+while a provider action waits and another resource completes. The runtime reports
+active work, failure, and retry counts without application identifiers. Metrics
+do not add durable scheduling or cross-process ownership.

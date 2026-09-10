@@ -97,3 +97,7 @@ The complete PostgreSQL/Keycloak race suite then passed on 2026-09-10. Its
 acceptance package took 656.062 seconds. This run includes the stalled-replay
 check, independent cleanup, access denial, atomic owner grants, event delivery,
 and restart. Module verification and `go vet` also passed.
+
+The same cleanup test now checks [controller metrics](controller-metrics.md)
+through HTTP while one resource waits and another completes. Metrics come from
+STEGO and contain no database IDs or private provider error strings.

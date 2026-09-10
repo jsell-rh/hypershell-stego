@@ -10,6 +10,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -38,5 +39,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return controller.Run(ctx)
+	return runtime.Monitor(ctx, os.Getenv("HYPERSHELL_METRICS_ADDR"), controller.RunWithMetrics)
 }

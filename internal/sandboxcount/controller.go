@@ -43,7 +43,13 @@ func denied(err error) bool {
 	return status.Code(err) == codes.Unauthenticated || status.Code(err) == codes.PermissionDenied
 }
 func (c *Controller) Run(ctx context.Context) error {
+	return c.RunWithMetrics(ctx, nil)
+}
+
+// RunWithMetrics connects optional generated diagnostics to the controller.
+func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metrics) error {
 	return runtime.RunKeyed(ctx, runtime.KeyedSource[string]{Observe: c.observe, Scan: c.refresh}, c.reconcile, runtime.KeyedOptions{
+		Metrics:  metrics,
 		Capacity: kube.MaxObservedObjects, ResyncInterval: c.resync, Timeout: 5 * time.Second,
 		RetryMin: time.Second, RetryMax: 16 * time.Second, Terminal: denied,
 		Observe: func(event runtime.Event) {

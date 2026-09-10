@@ -373,3 +373,9 @@ See [identity cursor recovery](acceptance/identity-cursors.md).
 Generated state records the declaration, configuration, module files, and declared
 protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
 manifest checks and their limits.
+
+The database, Gateway workload, Gateway identity, and sandbox-count controllers
+provide optional [controller metrics](acceptance/controller-metrics.md). Set
+`HYPERSHELL_METRICS_ADDR` to a literal loopback address and available port. STEGO
+supplies the collector and listener. The endpoint reports queue use, action
+outcomes, retries, and duration without resource IDs or private error labels.

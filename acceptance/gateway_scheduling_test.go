@@ -3,8 +3,14 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"path/filepath"
 	"sort"
+	"strconv"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -13,6 +19,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -27,6 +34,8 @@ type blockedCleanupProvider struct {
 	once          sync.Once
 	active        atomic.Int32
 	overlap       atomic.Bool
+	transient     bool
+	attempts      atomic.Int32
 }
 
 func (p *blockedCleanupProvider) Handles(*pb.Gateway) bool                     { return true }
@@ -38,6 +47,9 @@ func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.Manage
 func (p *blockedCleanupProvider) Delete(ctx context.Context, id string) error {
 	if id != p.slow {
 		return nil
+	}
+	if p.transient && p.attempts.Add(1) == 1 {
+		return errors.New("PRIVATE-provider-error")
 	}
 	if p.active.Add(1) != 1 {
 		p.overlap.Store(true)
@@ -148,8 +160,10 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	state := control.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 30*time.Second)
 	defer cancel()
-	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{})}
-	var controller interface{ Run(context.Context) error }
+	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{}), transient: true}
+	var controller interface {
+		RunWithMetrics(context.Context, *runtime.Metrics) error
+	}
 	var err error
 	if cleanupOwner == "provider" {
 		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), &blockedDatabaseCleanupProvider{provider})
@@ -161,14 +175,20 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	metrics := new(runtime.Metrics)
+	metricsServer := httptest.NewServer(metrics)
+	defer metricsServer.Close()
 	done := make(chan error, 1)
-	go func() { done <- controller.Run(ctx) }()
+	go func() { done <- controller.RunWithMetrics(ctx, metrics) }()
 	defer func() {
 		cancel()
 		select {
 		case err := <-done:
 			if err != nil {
 				t.Error("controller shutdown", err)
+			}
+			if state := metrics.Snapshot(); state.Running || state.Queue != (runtime.QueueMetrics{}) {
+				t.Error("controller retained queue metrics after shutdown", state)
 			}
 		case <-time.After(3 * time.Second):
 			t.Error("controller did not join")
@@ -228,6 +248,47 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		t.Fatal("blocked provider recorded completion")
 	}
 	event(ids[1], "Delete", "deleted")
+	metricsDeadline := time.Now().Add(time.Second)
+	for {
+		snapshot := metrics.Snapshot()
+		if snapshot.Running && snapshot.Queue.Active >= 1 && snapshot.Failed >= 1 && snapshot.Retries >= 1 && snapshot.Succeeded >= 1 {
+			break
+		}
+		if time.Now().After(metricsDeadline) {
+			t.Fatal("controller metrics lost blocked work or retry", snapshot)
+		}
+		time.Sleep(time.Millisecond)
+	}
+	metricsClient := http.Client{Timeout: time.Second}
+	response, err := metricsClient.Get(metricsServer.URL + "/metrics")
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, readErr := io.ReadAll(io.LimitReader(response.Body, 16384))
+	response.Body.Close()
+	if readErr != nil || response.StatusCode != 200 {
+		t.Fatal("controller metrics response", readErr, response.StatusCode)
+	}
+	for _, metric := range []string{"stego_controller_running", "stego_controller_active_keys", "stego_controller_retries_total", `stego_controller_actions_total{outcome="failure"}`, `stego_controller_actions_total{outcome="success"}`} {
+		found := false
+		for _, line := range strings.Split(string(data), "\n") {
+			if raw, ok := strings.CutPrefix(line, metric+" "); ok {
+				value, err := strconv.ParseUint(raw, 10, 64)
+				if err != nil || value < 1 {
+					t.Fatal("HTTP metrics did not report completed and blocked work", metric, raw)
+				}
+				found = true
+			}
+		}
+		if !found {
+			t.Fatal("HTTP metric missing", metric)
+		}
+	}
+	for _, private := range []string{ids[0], ids[1], "PRIVATE-provider-error", owner} {
+		if strings.Contains(string(data), private) {
+			t.Fatal("metrics exposed application data")
+		}
+	}
 	close(provider.release)
 	awaitComplete(ids[0])
 	event(ids[0], "Delete", "deleted")

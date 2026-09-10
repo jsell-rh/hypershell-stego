@@ -39,9 +39,10 @@ func RunKeyedWatch[K ~string](ctx context.Context, source Source[K], reconcile f
 		if ctx.Err() != nil {
 			return nil
 		}
-		if errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || options.Terminal(err) {
+		if errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || errors.Is(err, ErrMetricsInUse) || options.Terminal(err) {
 			return err
 		}
+		options.Metrics.reconnect()
 		if options.Observe != nil {
 			options.Observe(Event{Phase: "reconnect", Err: err})
 		}
