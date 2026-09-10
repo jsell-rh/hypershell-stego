@@ -28,6 +28,7 @@ func (s *Store) ReadCleanupSummary(ctx context.Context, entity, owner, target, s
 	if err := ctx.Err(); err != nil {
 		return zero, err
 	}
+
 	var table string
 	var owners, targets, scopes map[string]bool
 	switch entity {
@@ -67,4 +68,5 @@ func (s *Store) ReadCleanupSummary(ctx context.Context, entity, owner, target, s
 		return zero, contract.ErrCleanupSummary
 	}
 	return result, nil
+
 }

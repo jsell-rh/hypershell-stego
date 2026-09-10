@@ -1,4 +1,4 @@
-The compiler pin is `9b956f98b1c5a45071db4e4fdd5851ebd53befa8`.
+The compiler pin is `5a5ebad88f4057417e60d0b35dceecfc1925e959`.
 STEGO now checks resolved component inputs before it renders any component.
 The application defines its registry composition, factory paths, and protobuf
 contracts. The common check and input snapshots belong to STEGO.
@@ -67,7 +67,7 @@ the current clean compiler pin against the executable and saved state. Vet
 passed. Repeated pinned generation preserved all 90 hashes. The full application
 and Kubernetes suites were not repeated locally for this compiler metadata update.
 
-The current pin also checks build-target syntax and conflicting derived slot
+The preceding pin also checks build-target syntax and conflicting derived slot
 names before rendering. Project settings and assembly use the same target
 check. Compiler regressions require all generators to remain unused on these
 failures. Command regressions preserve existing files. These common checks
@@ -85,3 +85,25 @@ repeated locally for this compiler metadata update; remote CI runs those gates.
 The earlier grant-condition run 34520447297 has passed all six remote jobs.
 This result covers its application, database, Gateway, CNPG, and sandbox checks.
 It does not certify the remaining reconciliation or production readiness gaps.
+
+The current compiler adds dependency target requirements for PostgreSQL storage
+and clients, outbox, Kafka, and gRPC. gRPC needs Go 1.26.0 because the compiler
+pins x/sys to v0.48.0. The other four components require Go 1.25.0. Their
+generated runtime tests now fix the module target during dependency resolution,
+then run static and race checks. This exposed unreachable cleanup-reader code
+for services with no cleanup owners; the template now handles that case.
+See [generator Go targets](https://github.com/jsell-rh/stego/blob/main/specs/generator-go-targets.md).
+
+A probe on this application ran validate, plan, and apply with Go 1.25.9. All
+three commands rejected the gRPC requirement and preserved all 90 output, state,
+and dependency hashes. Go 1.26.8 passed validation. Regeneration changed saved
+compiler state, the CLI compiler build record, and two blank lines in the
+cleanup reader. A diff that ignores blank lines found no cleanup-reader change.
+The application keeps its existing Go 1.26.8 target and dependency versions.
+
+For this dependency target update, contract tests passed under race detection
+in 1.702 seconds. The offline CLI version test passed in 1.787 seconds. Vet
+passed. Repeated pinned generation preserved all 90 hashes. The compiler's
+full race suite passed with PostgreSQL required. The full application and
+Kubernetes gates were not repeated locally for the compiler records and blank
+line changes; remote CI runs those gates.
