@@ -4,19 +4,24 @@ import (
 	"context"
 	"io"
 	"net/http"
+	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 )
 
 const currentUserPath = "/api/hypershell/v1/users/me"
 
 type CurrentUser struct {
 	Reference
-	Username string `json:"username"`
-	Email    string `json:"email"`
-	Name     string `json:"name"`
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	Name      string    `json:"name"`
+	Issuer    string    `json:"issuer"`
+	Subject   string    `json:"subject"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 func registerCurrentUser(mux *http.ServeMux, verifier *requestAuth, service *users.Service) error {
@@ -36,7 +41,8 @@ func registerCurrentUser(mux *http.ServeMux, verifier *requestAuth, service *use
 		if err != nil {
 			return CurrentUser{}, err
 		}
-		return CurrentUser{Reference: Reference{ID: user.ID, Kind: "User", Href: currentUserPath, CreatedAt: user.CreatedTime, UpdatedAt: user.UpdatedTime}, Username: user.Username, Email: user.Email, Name: user.Name}, nil
+		identity := auth.IdentityFromContext(ctx)
+		return CurrentUser{Issuer: identity.Issuer, Subject: identity.UserID, ExpiresAt: identity.ExpiresAt.UTC(), Reference: Reference{ID: user.ID, Kind: "User", Href: currentUserPath, CreatedAt: user.CreatedTime, UpdatedAt: user.UpdatedTime}, Username: user.Username, Email: user.Email, Name: user.Name}, nil
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

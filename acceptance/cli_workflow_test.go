@@ -6,6 +6,7 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"encoding/pem"
+	"github.com/golang-jwt/jwt/v5"
 	"net/http"
 	"net/http/httptest"
 	"net/http/httputil"
@@ -35,9 +36,11 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	cliBinary := buildProgram(t, "./out/cli/cmd")
 	stop, address, rpcAddress := startBoth(t, apiBinary, f.dsn, brokerConfig, settings...)
 	defer func() { stop() }()
+	var apiCalls atomic.Int32
 	var backend atomic.Value
 	backend.Store(address)
 	proxy := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		apiCalls.Add(1)
 		target, err := url.Parse(backend.Load().(string))
 		if err != nil {
 			t.Error(err)
@@ -85,6 +88,74 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 		return data
 	}
 	success("login", "--url", proxy.URL, "--token-file", tokenFile, "--ca-file", ca)
+	checkIdentity := func(subject string) {
+		t.Helper()
+		var report struct {
+			Username, Email, Issuer, Subject string
+			APIURL                           string    `json:"api_url"`
+			ExpiresAt                        time.Time `json:"expires_at"`
+		}
+		if json.Unmarshal(success("whoami"), &report) != nil || report.Username != subject || report.Subject != subject || report.Email != subject+"@example.test" || report.Issuer != "https://issuer.example" || report.APIURL != proxy.URL || report.ExpiresAt.Before(time.Now()) {
+			t.Fatal("CLI identity differs from verified claims", report)
+		}
+	}
+	checkIdentity("alice")
+	for _, flag := range []string{"--show-token", "--show-token-decoded"} {
+		before := apiCalls.Load()
+		if output, _, err := run(cfg, "whoami", flag); err == nil || len(output) != 0 || apiCalls.Load() != before {
+			t.Fatal("token output did not require an explicit destination")
+		}
+		path := filepath.Join(filepath.Dir(cfg), strings.TrimPrefix(flag, "--"))
+		if output := success("whoami", flag, "--output-file", path); len(output) != 0 {
+			t.Fatal("token export wrote stdout")
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		info, err := os.Stat(path)
+		if err != nil || info.Mode().Perm() != 0600 {
+			t.Fatal("token export is not private")
+		}
+		if flag == "--show-token" {
+			if string(data) != owner+"\n" {
+				t.Fatal("export changed the verified token")
+			}
+		} else {
+			var claims map[string]any
+			if json.Unmarshal(data, &claims) != nil || claims["sub"] != "alice" || claims["iss"] != "https://issuer.example" {
+				t.Fatal("decoded export changed verified claims")
+			}
+		}
+		before = apiCalls.Load()
+		if _, _, err := run(cfg, "whoami", flag, "--output-file", path); err == nil || apiCalls.Load() != before {
+			t.Fatal("existing token output contacted API")
+		}
+	}
+	expired, err := jwt.NewWithClaims(jwt.SigningMethodRS256, jwt.MapClaims{"iss": "https://issuer.example", "sub": "alice", "aud": "hypershell", "preferred_username": "alice", "iat": time.Now().Add(-2 * time.Hour).Unix(), "exp": time.Now().Add(-time.Hour).Unix()}).SignedString(key)
+	if err != nil {
+		t.Fatal(err)
+	}
+	parts := strings.Split(owner, ".")
+	parts[2] = "AAAA"
+	for _, invalid := range []string{strings.Join(parts, "."), expired} {
+		if err := os.WriteFile(tokenFile, []byte(invalid), 0600); err != nil {
+			t.Fatal(err)
+		}
+		for _, flags := range [][]string{nil, {"--show-token"}, {"--show-token-decoded"}} {
+			path := filepath.Join(filepath.Dir(cfg), "denied-token")
+			args := append([]string{"whoami", "--output-file", path}, flags...)
+			if output, problem, err := run(cfg, args...); err == nil || len(output) != 0 || !strings.Contains(problem, "HTTP 401") || strings.Contains(problem, invalid) {
+				t.Fatal("invalid token produced identity or token output", err, problem)
+			}
+			if _, err := os.Stat(path); !os.IsNotExist(err) {
+				t.Fatal("failed verification left token output")
+			}
+		}
+	}
+	if err := os.WriteFile(tokenFile, []byte(owner), 0600); err != nil {
+		t.Fatal(err)
+	}
 	saved, err := os.ReadFile(cfg)
 	if err != nil || bytes.Contains(saved, []byte(owner)) {
 		t.Fatal("configuration copied the token")
@@ -129,6 +200,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "bob")), 0600); err != nil {
 		t.Fatal(err)
 	}
+	checkIdentity("bob")
 	if output, problem, err := run(cfg, "get", "gateway", gateway.ID); err == nil || len(output) != 0 || !strings.Contains(problem, "HTTP 404") {
 		t.Fatal("CLI denied read was not opaque")
 	}
@@ -165,6 +237,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	stop()
 	stop, address, rpcAddress = startBoth(t, apiBinary, f.dsn, brokerConfig, settings...)
 	backend.Store(address)
+	checkIdentity("alice")
 	success("get", "gateways", gateway.ID)
 	if _, _, err := run(cfg, "delete", "gateway", gateway.ID); err == nil {
 		t.Fatal("CLI deletion did not require confirmation")

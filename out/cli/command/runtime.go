@@ -38,9 +38,9 @@ type Command struct {
 	Success                       []int
 }
 type Application struct {
-	ConfigEnv, ConfigName, OIDCClientID string
-	Commands                            []Command
-	Resources                           []ApplyResource
+	ConfigEnv, ConfigName, OIDCClientID, IdentityPath string
+	Commands                                          []Command
+	Resources                                         []ApplyResource
 }
 
 var word = regexp.MustCompile(`^[a-z][a-zA-Z0-9-]{0,63}$`)
@@ -51,10 +51,16 @@ var identifier = regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9_.:-]{0,255}$`)
 var errArguments = errors.New("invalid command arguments; use --help")
 
 func validate(app Application) error {
+	if app.IdentityPath != "" {
+		probe := Application{ConfigEnv: app.ConfigEnv, ConfigName: app.ConfigName, Commands: []Command{{Name: []string{"identity-check"}, Method: "GET", Path: app.IdentityPath, Success: []int{200}}}}
+		if err := validate(probe); err != nil {
+			return errors.New("invalid CLI identity route")
+		}
+	}
 	if app.OIDCClientID != "" && !safeClientID(app.OIDCClientID) {
 		return errors.New("invalid OIDC client ID")
 	}
-	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || (len(app.Commands) == 0 && len(app.Resources) == 0) || len(app.Commands) > 128 {
+	if !envName.MatchString(app.ConfigEnv) || !word.MatchString(app.ConfigName) || (len(app.Commands) == 0 && len(app.Resources) == 0 && app.IdentityPath == "") || len(app.Commands) > 128 {
 		return errors.New("invalid CLI definition")
 	}
 	seen := map[string]bool{}
@@ -66,6 +72,9 @@ func validate(app Application) error {
 			if !word.MatchString(name) {
 				return errors.New("invalid CLI command name")
 			}
+		}
+		if app.IdentityPath != "" && c.Name[0] == "whoami" {
+			return errors.New("reserved CLI identity command")
 		}
 		if c.Name[0] == "apply" || c.Name[0] == "login" || c.Name[0] == "logout" || c.Name[0] == "help" {
 			return errors.New("reserved CLI command name")
@@ -172,6 +181,9 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	}
 	if len(args) == 0 || (len(args) == 1 && (args[0] == "--help" || args[0] == "help")) {
 		names := []string{"login --url URL --token-file FILE [--ca-file FILE]", "login --url URL --issuer-url URL [--client-id ID] [--no-browser] [--ca-file FILE] [--issuer-ca-file FILE]", "logout"}
+		if app.IdentityPath != "" {
+			names = append(names, "whoami [--show-token | --show-token-decoded] [--output-file FILE]")
+		}
 		if len(app.Resources) > 0 {
 			names = append(names, "apply -f FILE [--dry-run] [-o json]")
 		}
@@ -181,6 +193,9 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 		sort.Strings(names)
 		_, err := fmt.Fprintln(output, strings.Join(names, "\n"))
 		return err
+	}
+	if args[0] == "whoami" && app.IdentityPath != "" {
+		return whoami(ctx, app, args[1:], output)
 	}
 	if args[0] == "apply" {
 		return runApply(ctx, app, args[1:], output)

@@ -354,3 +354,8 @@ the capability names, replay scope, and controller error policy.
 Service-account creation accepts [relative expiry](acceptance/service-account-cli.md),
 such as `--expires-in 30d`. STEGO converts the duration to an absolute timestamp.
 Hypershell retains lifetime limits and access rules in the API.
+
+The generated [identity command](acceptance/cli-identity.md) reports the caller
+accepted by the API. `whoami` supports OIDC refresh and protected token export.
+Default output contains no token. The current-user extension is version 1.1.0
+and adds verified issuer, subject, and access-token expiry fields.

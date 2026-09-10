@@ -19,7 +19,7 @@ func Commands() command.Application {
 		fields = append(fields, command.Field{Flag: flag, Key: name, Type: "string", Nullable: true})
 	}
 	path := "/api/hypershell/v1/gateways"
-	app := command.Application{ConfigEnv: "HYPERSHELL_CONFIG", ConfigName: "hypershell", OIDCClientID: "hypershell-cli", Commands: []command.Command{
+	app := command.Application{ConfigEnv: "HYPERSHELL_CONFIG", ConfigName: "hypershell", OIDCClientID: "hypershell-cli", IdentityPath: "/api/hypershell/v1/users/me", Commands: []command.Command{
 		{Name: []string{"create", "gateway"}, Method: "POST", Path: path, Fields: fields, Success: []int{201}},
 		{Name: []string{"get", "gateway"}, Method: "GET", Path: path + "/{id}", ID: true, Success: []int{200}},
 		{Name: []string{"get", "gateways"}, Method: "GET", Path: path + "/{id}", ID: true, Success: []int{200}},

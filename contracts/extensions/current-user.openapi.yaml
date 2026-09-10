@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Hypershell current user extension
-  version: 1.0.0
+  version: 1.1.0
   description: This route extends the pinned reference API. It returns only the authenticated caller.
 paths:
   /api/hypershell/v1/users/me:
@@ -40,7 +40,7 @@ components:
     CurrentUser:
       type: object
       additionalProperties: false
-      required: [id, kind, href, created_at, updated_at, username, email, name]
+      required: [id, kind, href, created_at, updated_at, username, email, name, issuer, subject, expires_at]
       properties:
         id:
           type: string
@@ -67,3 +67,17 @@ components:
         name:
           type: string
           maxLength: 255
+        issuer:
+          type: string
+          minLength: 1
+          maxLength: 1024
+          description: Issuer from the access token verified for this request.
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 255
+          description: Subject from the verified access token. This is not the application user ID.
+        expires_at:
+          type: string
+          format: date-time
+          description: Access-token expiry for this request. This is not an expiry of the user record.

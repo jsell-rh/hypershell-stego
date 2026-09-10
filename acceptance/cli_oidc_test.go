@@ -367,6 +367,17 @@ func TestGeneratedCLIOIDCWorkflow(t *testing.T) {
 	if before.OAuth.Subject != aliceID {
 		t.Fatal("browser login selected another subject")
 	}
+	checkIdentity := func(config, subject string) {
+		t.Helper()
+		var report struct {
+			Subject, Issuer string
+			ExpiresAt       time.Time `json:"expires_at"`
+		}
+		if json.Unmarshal(success(config, "whoami"), &report) != nil || report.Subject != subject || report.Issuer != k.options.ServerURL+"/realms/workflow" || report.ExpiresAt.IsZero() {
+			t.Fatal("OIDC identity differs from verified API identity")
+		}
+	}
+	checkIdentity(ownerConfig, aliceID)
 	payload, err := json.Marshal(f.request("oidc-cli"))
 	if err != nil {
 		t.Fatal(err)
@@ -393,7 +404,11 @@ func TestGeneratedCLIOIDCWorkflow(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 		defer cancel()
-		cmd := command(ctx, ownerConfig, "get", "gateway", gateway.ID)
+		args := []string{"get", "gateway", gateway.ID}
+		if i == 0 {
+			args = []string{"whoami"}
+		}
+		cmd := command(ctx, ownerConfig, args...)
 		if err := cmd.Start(); err != nil {
 			t.Fatal(err)
 		}
@@ -408,6 +423,7 @@ func TestGeneratedCLIOIDCWorkflow(t *testing.T) {
 	if after.OAuth.AccessToken == before.OAuth.AccessToken || after.OAuth.RefreshToken == before.OAuth.RefreshToken || after.OAuth.Subject != aliceID {
 		t.Fatal("expired session was not refreshed and saved")
 	}
+	checkIdentity(ownerConfig, aliceID)
 	success(ownerConfig, "get", "gateway", gateway.ID)
 	viewerConfig := filepath.Join(directory, "bob.json")
 	login(viewerConfig, "bob", true)
@@ -415,6 +431,7 @@ func TestGeneratedCLIOIDCWorkflow(t *testing.T) {
 	if viewer.OAuth.Subject != bobID {
 		t.Fatal("device login selected another subject")
 	}
+	checkIdentity(viewerConfig, bobID)
 	var list struct {
 		Total int
 		Items []any

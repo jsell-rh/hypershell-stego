@@ -39,7 +39,7 @@ func currentUser(t testing.TB, root, bearer string) httpapi.CurrentUser {
 		t.Fatal("current user", code, string(body))
 	}
 	id, err := ksuid.Parse(user.ID)
-	if err != nil || id == ksuid.Nil || id.String() != user.ID || user.Kind != "User" || user.Href != "/api/hypershell/v1/users/me" || user.CreatedAt.IsZero() || user.UpdatedAt.IsZero() || len(fields) != 8 {
+	if err != nil || id == ksuid.Nil || id.String() != user.ID || user.Kind != "User" || user.Href != "/api/hypershell/v1/users/me" || user.CreatedAt.IsZero() || user.UpdatedAt.IsZero() || len(fields) != 11 || user.Issuer == "" || user.Subject == "" || user.ExpiresAt.IsZero() {
 		t.Fatal("current user shape", user)
 	}
 	return user
@@ -83,7 +83,7 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 	}
 
 	user := currentUser(t, root, bearer)
-	if user.Username != "bob" || user.Email != "bob@example.test" || user.Name != "bob Example" {
+	if user.Username != "bob" || user.Email != "bob@example.test" || user.Name != "bob Example" || user.Issuer != claimIssuer || user.Subject != "recipient" {
 		t.Fatal("profile", user)
 	}
 	again := currentUser(t, root, bearer)

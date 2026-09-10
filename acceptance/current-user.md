@@ -8,6 +8,11 @@ The self-identity route is an extension to the pinned Hypershell reference.
 The reference CLI shows token claims but does not return the stored user ID.
 The extension has an [OpenAPI contract](../contracts/extensions/current-user.openapi.yaml).
 The route returns the stored KSUID, reference fields, username, email, and name.
+Extension version 1.1.0 also returns the verified token's issuer, subject, and
+expiry as `issuer`, `subject`, and `expires_at`. These values describe the token
+used for this request and are not new stored user properties. The subject is
+distinct from the application KSUID. Strict clients must use the updated schema.
+The generated [`whoami` command](cli-identity.md) uses these fields.
 Its `href` points to the same self-identity route. The response has
 `Cache-Control: no-store`.
 

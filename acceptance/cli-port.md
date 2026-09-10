@@ -17,12 +17,13 @@ alone does not establish compatibility with all reference options.
 | Login and logout | Browser and device OIDC, private token files, refresh, provider token revocation | Legacy configuration migration and remaining reference options |
 | Apply | Five resource kinds; files, directories, stdin; local dry run; exact IDs; partial results and failure status | Role-binding mapping, Kustomize rendering; role writes have no reference API route |
 | Config | Login writes private configuration | Reference config commands and pager settings |
-| Whoami | Not supplied | Identity display and explicit protected token output |
+| Whoami | API-verified identity, protected raw and decoded token output, token refresh | Reference text output format |
 | Version and completion | Not supplied | Build identity and shell completion |
 | Output | Bounded JSON and private output files | Tables, columns, headers, pager, reference output flags |
 
-`get current-user` is an additional application helper. It returns the API user
-ID needed for grants. It does not replace reference `whoami` behavior.
+`get current-user` returns the API user ID needed for grants.
+[`whoami`](cli-identity.md) reports the verified issuer identity and token expiry.
+It uses JSON output and requires explicit protected token-output selection.
 
 The reference CLI contains role create/delete commands and a role apply mapping.
 However, its [role route registration](https://github.com/openshift-online/hypershell/blob/14256be29bcfe4fff38bcaf4a41511cb394ea8e1/components/api-server/plugins/roles/plugin.go)
