@@ -1,4 +1,4 @@
-The compiler pin is `5a5ebad88f4057417e60d0b35dceecfc1925e959`.
+The compiler pin is `4ca5a064bdee4131aaffbf198d37feec3f1ecabf`.
 STEGO now checks resolved component inputs before it renders any component.
 The application defines its registry composition, factory paths, and protobuf
 contracts. The common check and input snapshots belong to STEGO.
@@ -107,3 +107,7 @@ passed. Repeated pinned generation preserved all 90 hashes. The compiler's
 full race suite passed with PostgreSQL required. The full application and
 Kubernetes gates were not repeated locally for the compiler records and blank
 line changes; remote CI runs those gates.
+
+The later controller update preserves these compiler checks and adds retry
+state across watch sessions. See [retry recovery](retry-reconnect.md) for its
+application evidence and remaining limits.
