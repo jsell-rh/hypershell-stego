@@ -97,6 +97,11 @@ The `connection_secret` ownership choice is pending: the reference API accepts a
 admin value, while the deployment controller writes the provider result. The
 revision check covers changes to this field without deciding that ownership.
 
+Conditional controller patches now require an exact provider grant and permit
+only status and connection-secret observations. The
+[database write contract](database-write-permissions.md) records the scope and
+the application permission tests. Administrator field ownership remains open.
+
 The next step must define the observation fields, apply generation-aware
 presentation and search, and require fresh confirmation even when status text is
 unchanged. The provider now has [durable cleanup observations](database-cleanup.md).

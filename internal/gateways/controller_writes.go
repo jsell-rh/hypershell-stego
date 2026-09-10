@@ -33,7 +33,15 @@ func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch Pa
 	if err != nil || string(data) != "{}" {
 		return ErrInvalid
 	}
-	if !s.isControlPlane(p) || !s.controllerWritePolicy.Allows(auth.Identity{Issuer: p.Issuer, UserID: p.Subject}, "Gateway", operation, target) {
+	return s.AuthorizeControllerWrite(p, "Gateway", operation, target)
+}
+
+// AuthorizeControllerWrite checks the verified caller against an exact grant.
+func (s *Service) AuthorizeControllerWrite(p Principal, resource, operation, target string) error {
+	if err := validatePrincipal(p); err != nil {
+		return err
+	}
+	if !s.isControlPlane(p) || !s.controllerWritePolicy.Allows(auth.Identity{Issuer: p.Issuer, UserID: p.Subject}, resource, operation, target) {
 		return ErrForbidden
 	}
 	return nil

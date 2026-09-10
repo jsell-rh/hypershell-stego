@@ -245,7 +245,10 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	dbUpdate, err := databases.UpdateManagedDatabase(observedCall, &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")})
+	if _, err := databases.UpdateManagedDatabase(observedCall, &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("controller changed desired database settings", err)
+	}
+	dbUpdate, err := databases.UpdateManagedDatabase(call(admin), &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")})
 	if err != nil || dbUpdate.ManagedDatabase.GetEngineVersion() != "18.1" || dbUpdate.ManagedDatabase.Namespace != wantNamespace {
 		t.Fatal("database update", dbUpdate, err)
 	}

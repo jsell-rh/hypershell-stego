@@ -24,7 +24,7 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "DATABASE_PROVIDER=deployment", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
 	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""), cleanupGrant("controller", "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster), databaseWriteGrant("controller", "deployment"))
 	binary := buildApplication(t)
 	dbBinary := buildProgram(t, "./cmd/database-controller")
 	workloadBinary := buildProgram(t, "./cmd/gateway-workload-controller")

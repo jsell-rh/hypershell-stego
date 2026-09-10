@@ -158,7 +158,7 @@ func TestGatewayWorkloadWithDatabaseAndIdentity(t *testing.T) {
 	allowed, _ := json.Marshal([]string{controllerID})
 	settings = append(settings, "DATABASE_PROVIDER=deployment", "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "ManagedDatabase", "provider", ""), cleanupGrant(controllerID, "Gateway", "identity", ""), cleanupGrant(controllerID, "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, "deployment"))
 	accountKey, accountAuth := issuer(t)
 	accountSettings, stopAccountProvider := startRealProvisioner(t, identityProvider, accountKey, accountAuth)
 	defer stopAccountProvider()

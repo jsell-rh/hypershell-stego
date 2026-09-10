@@ -65,6 +65,7 @@ mapping, environment wiring, and transaction call. No new scheduler or policy
 engine is introduced here.
 
 This change covers conditional Gateway patches only. Other controller paths,
-including creation, deletion, counts, grants, catalog writes, private reads,
-and database observations, still need a complete permission model. Provider
+including creation, deletion, counts, grants, catalog writes, and private reads,
+still need a complete permission model. Conditional database patches now have
+their own [provider grant contract](database-write-permissions.md). Provider
 credentials and cross-process fencing remain separate open work.

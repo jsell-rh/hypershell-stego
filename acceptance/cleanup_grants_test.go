@@ -21,6 +21,10 @@ func writeGrant(subject, operation, target string) auth.Grant {
 	return auth.Grant{Subject: subject, Resource: "Gateway", Operation: operation, Target: target}
 }
 
+func databaseWriteGrant(subject, provider string) auth.Grant {
+	return auth.Grant{Subject: subject, Resource: "ManagedDatabase", Operation: "observe.provider", Target: provider}
+}
+
 func withControllerWriteGrants(t testing.TB, settings []string, grants ...auth.Grant) []string {
 	t.Helper()
 	return withExactGrants(t, "HYPERSHELL_CONTROLLER_WRITE_GRANTS", settings, grants...)

@@ -96,6 +96,14 @@ The controller command is `go run ./cmd/database-controller`. Its settings are:
 | `HYPERSHELL_KUBERNETES_TOKEN_FILE` | Private projected service-account token file |
 | `HYPERSHELL_DATABASE_CLUSTER_ISSUER` | Configured cert-manager ClusterIssuer name |
 
+Before starting the controller, configure its verified issuer and subject on
+every API instance. The subject needs a `ManagedDatabase` / `observe.provider`
+grant with target `deployment` in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. It also
+needs its separate cleanup grant in `HYPERSHELL_CLEANUP_GRANTS`. See the
+[database write contract](database-write-permissions.md). Missing observation
+grants deny status writes, even for a configured controller subject. Restart all
+API instances after a grant change.
+
 Token files must have no group or other access. The generated clients read them
 again for each request. Project Kubernetes tokens with mode `0400` and arrange
 for the controller process to read them. The controller does not create permanent

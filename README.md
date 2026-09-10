@@ -126,6 +126,11 @@ Conditional Gateway patches also require [field-group and target grants](accepta
 in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. A configured subject alone cannot patch
 Gateway fields. Workload status, OIDC settings, and console address each require
 a separate operation grant. Other controller patch fields are denied.
+Conditional database patches require a
+[provider observation grant](acceptance/database-write-permissions.md) in the
+same setting. Only `status` and `connection_secret` are permitted, with the
+stored provider name as the grant target. A controller cannot change desired
+database settings through this path.
 
 Gateway deletion removes related provider clients before it commits the Gateway,
 account metadata, cleanup audits, and deletion event. The Gateway row lock
