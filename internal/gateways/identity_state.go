@@ -39,7 +39,7 @@ func (s *Service) IdentityState(ctx context.Context, p Principal, id string) (mo
 }
 
 // ReconcileIDs supplies bounded recovery pages without resource contents. The
-// cursor must be a canonical KSUID before it enters the generated search parser.
+// cursor must be a canonical KSUID before the generated storage call.
 func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after string) ([]string, error) {
 	if err := validatePrincipal(p); err != nil {
 		return nil, err
@@ -50,13 +50,14 @@ func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after string) (
 	if after != "" && !validID(after) {
 		return nil, ErrInvalid
 	}
-	options := store.ListOptions{Page: 1, Size: 100, IncludeDeleted: true, Fields: []string{"id"}, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
-	if after != "" {
-		options.Search = "id > '" + after + "'"
-	}
+	options := store.CursorOptions{AfterID: after, Limit: 100, Deletion: store.CursorAll, Fields: []string{"id"}}
 	var ids []string
 	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		result, err := tx.List(ctx, "Gateway", "", "", options)
+		reader, ok := tx.(store.CursorReader)
+		if !ok {
+			return errors.New("Gateway storage does not support cursor reads")
+		}
+		result, err := reader.ReadCursor(ctx, "Gateway", "", "", options)
 		if err != nil {
 			return err
 		}

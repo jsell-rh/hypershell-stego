@@ -341,14 +341,14 @@ func (s *databaseServer) replayDeletedDatabases(stream grpc.ServerStreamingServe
 	}
 	source := func(operation context.Context, after string, limit int) (runtime.CursorPage[model.ManagedDatabase], error) {
 		var page runtime.CursorPage[model.ManagedDatabase]
-		rows, err := s.resource.Deleted(operation, principal, after)
+		rows, more, err := s.resource.Deleted(operation, principal, after, limit)
 		if err != nil {
 			return page, mapError(err)
 		}
 		for _, row := range rows {
 			page.Items = append(page.Items, runtime.CursorItem[model.ManagedDatabase]{Cursor: row.ID, Value: row})
 		}
-		page.More = len(rows) == limit
+		page.More = more
 		return page, nil
 	}
 	err := runtime.Scan(ctx, source, func(row model.ManagedDatabase) error {

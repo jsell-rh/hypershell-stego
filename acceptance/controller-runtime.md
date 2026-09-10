@@ -72,3 +72,7 @@ methods and status codes or gRPC codes, without remote messages or response bodi
 The corrected local sandbox workflow passed in 317.874 seconds, including the
 cleanup diagnostic check. The three original failure jobs are not counted as
 passes. New CI checks the corrected compiler pin and Pod count migration.
+The [storage cursor workflow](storage-cursors.md) now uses generated count-free
+queries for Gateway ID recovery, database deletion replay, and service-account
+recovery. Hypershell supplies its access and state rules. STEGO owns ID binding,
+database ordering, filters, bounds, and continuation.

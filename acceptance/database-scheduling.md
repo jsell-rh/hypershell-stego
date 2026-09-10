@@ -61,10 +61,11 @@ and field updates. No payload cache, scheduler, or retry map was added to the
 application.
 
 Use one active database controller per ownership scope. Cross-process fencing,
-durable retry storage, complete queue saturation handling, count-free cursor
-storage remain open. A queue filled with persistent
-failures can still prevent new keys from entering. Database generations, field
-permissions, and provider identity history also remain separate work.
+durable retry storage, complete queue saturation handling, and other discovery
+queries remain open. [Generated storage cursors](storage-cursors.md) now remove
+unused counts from database deletion replay. A queue filled with persistent
+failures can still prevent new keys from entering. Database generations,
+remaining field permissions, and provider identity history need further work.
 
 `TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart` creates and deletes a
 database through REST, drains its events, and restarts the API. A test adapter

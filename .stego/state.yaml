@@ -27,7 +27,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.9.0
+            version: 3.10.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.0
@@ -308,7 +308,7 @@ last_applied:
         cli/command/runtime.go: 89b9242c41d3b9aac378dd13fa6d50fd09c3d22aa4db14ca9c93abd3d04d2dcb
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
-        contracts/storage/storage.go: 4661306d5e1dc31a69a44fc281c4f4a1b526268a1e029bc892b966eef1a3f166
+        contracts/storage/storage.go: 1e31b4cc711167622c36468233c300226e5f4b4d2ca23552dbcb47c5097ca786
         controller/keyed.go: a4eb800cf13a68b8728354e3d855d725572db3131bde3f7facf2733075d734cb
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         controller/scan.go: 7adaa466d40cd1f2283995ff9ac7286151b23d9d817f18af8d7b9b9c558d0745
@@ -348,6 +348,7 @@ last_applied:
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
         search/field_map.go: 2b5479a420f12cdc416ade7fbc0a5d8ab133f8d235b7bec7c2b235688c7eb9ae
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
+        storage/cursor.go: 1431a8ec48d734bcd3a273fee725da162a8215704b0ab803f98c170b19ad05d8
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 7730a4a9097229e704fc8058fc60fcf5ca7482444e618e556d7a95494cb03e23
         storage/migrations/000002_resource_versions.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
@@ -356,6 +357,6 @@ last_applied:
         storage/migrations/000005_cleanup_targets.sql: 4eea1f8d80a9c5e40873d25dbdb35bf24b680521b9ca2e51705406bde0d59017
         storage/models.go: 0c53d7abfe93522b17cbe801a12a0e31565336c075b21136ce3dae12cfd5874d
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 67c5a57261e7fe8c83aa8f19ce67b3d1b7793ea3fd05f446444bc212d37ff5b6
+        storage/store.go: 46c7fa4d2c214bea529f3270ae406030fd71f16f09b337d4bd8d2828a2cb4ec4
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 3364a0942cc6ad9c707211863369dcf5f3f856973228233ab174adcd52daa8e9

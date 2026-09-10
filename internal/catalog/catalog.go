@@ -578,31 +578,33 @@ func validateDatabase(row model.ManagedDatabase) error {
 	return nil
 }
 
-// Deleted returns a bounded page of tombstones in ID order. The cursor is a
-// canonical ID. A live watch must start before the first page is requested.
-func (r *Resource[T, C, P]) Deleted(ctx context.Context, p gateways.Principal, after string) ([]T, error) {
+// Deleted returns a bounded page of tombstones in database ID order. The cursor
+// is a canonical ID. A live watch must start before the first page is requested.
+func (r *Resource[T, C, P]) Deleted(ctx context.Context, p gateways.Principal, after string, limit int) ([]T, bool, error) {
 	if err := r.authorizeRecovery(p); err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	if after != "" && !validID(after) {
-		return nil, gateways.ErrInvalid
+		return nil, false, gateways.ErrInvalid
 	}
-	options := store.ListOptions{Page: 1, Size: 100, OnlyDeleted: true, OrderBy: []store.OrderByField{{Field: "id", Direction: "asc"}}}
-	if after != "" {
-		options.Search = "id > '" + after + "'"
-	}
+	options := store.CursorOptions{AfterID: after, Limit: limit, Deletion: store.CursorDeleted}
 	var rows []T
+	var more bool
 	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		result, err := tx.List(ctx, r.entity, "", "", options)
+		reader, ok := tx.(store.CursorReader)
+		if !ok {
+			return errors.New("catalog storage does not support cursor reads")
+		}
+		result, err := reader.ReadCursor(ctx, r.entity, "", "", options)
 		if err != nil {
 			return err
 		}
-		var ok bool
 		rows, ok = result.Items.([]T)
 		if !ok {
 			return errors.New("unexpected catalog storage result")
 		}
+		more = result.More
 		return nil
 	})
-	return rows, err
+	return rows, more, err
 }

@@ -57,10 +57,6 @@ func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream
 		if after != "" && !validID(after) {
 			return page, fmt.Errorf("%w: invalid account cursor", runtime.ErrSweepContract)
 		}
-		search := ""
-		if after != "" {
-			search = "id > '" + after + "'"
-		}
 		queryState := state
 		if state == "drift" {
 			queryState = "ready"
@@ -72,14 +68,19 @@ func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream
 		if state == "provisioning" {
 			condition = "created_time <= '" + s.now().Add(-ReclaimAfter).UTC().Format(time.RFC3339Nano) + "'"
 		}
-		if condition != "" {
-			if search != "" {
-				search += " and "
-			}
-			search += condition
+		reader, ok := s.repository.(storage.CursorReader)
+		if !ok {
+			return page, fmt.Errorf("%w: account storage does not support cursor reads", runtime.ErrSweepContract)
 		}
-		result, err := s.repository.List(ctx, "ServiceAccount", "status", queryState, storage.ListOptions{Page: 1, Size: limit, Search: search, IncludeDeleted: deleted, OrderBy: []storage.OrderByField{{Field: "id", Direction: "asc"}}})
+		mode := storage.CursorLive
+		if deleted {
+			mode = storage.CursorDeleted
+		}
+		result, err := reader.ReadCursor(ctx, "ServiceAccount", "status", queryState, storage.CursorOptions{AfterID: after, Limit: limit, Search: condition, Deletion: mode})
 		if err != nil {
+			if errors.Is(err, storage.ErrCursor) || errors.Is(err, storage.ErrCursorResult) {
+				return page, fmt.Errorf("%w: invalid account storage page", runtime.ErrSweepContract)
+			}
 			return page, err
 		}
 		rows, ok := result.Items.([]model.ServiceAccount)
@@ -92,13 +93,13 @@ func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream
 			}
 			page.Items = append(page.Items, runtime.SweepItem[recoveryTask]{Cursor: row.ID, Value: recoveryTask{row: row, deleted: deleted}})
 		}
-		page.More = len(rows) == limit
+		page.More = result.More
 		return page, nil
 	}}
 }
 func (s *Service) recoverTask(ctx context.Context, task recoveryTask) error {
 	row := task.row
-	// Historical queries include live roots. Their live stream owns them.
+	// Only the stream for the stored deletion state can act.
 	if row.DeletedAt.Valid != task.deleted {
 		return nil
 	}
