@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"testing"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
@@ -237,8 +238,8 @@ func TestUserScanRepeatsUncommittedWorkAfterParentCancellation(t *testing.T) {
 	if len(provider.subjects) != 3 || provider.subjects[0] != "first" || provider.subjects[1] != "first" || provider.subjects[2] != "second" {
 		t.Fatal("later users starved", provider.subjects)
 	}
-	if len(controller.state.(*progressUserState).checkpoints) != 0 {
-		t.Fatal("completed scan retained its cursor")
+	if state, err := runtime.DecodeCycle(controller.state.(*progressUserState).cycles["gateway"].After); err != nil || !state.Complete || state.Failed {
+		t.Fatal("completed scan lost its outcome", state, err)
 	}
 }
 

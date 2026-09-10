@@ -64,7 +64,7 @@ func TestConcurrentGatewayUserScansKeepSeparateProgress(t *testing.T) {
 			t.Error("Gateway lost its user cursor", id, subjects)
 		}
 	}
-	if len(provider.subjects) != gateways || len(controller.state.(*progressUserState).checkpoints) != 0 {
+	if len(provider.subjects) != gateways || len(controller.state.(*progressUserState).cycles) != gateways {
 		t.Fatal("user scans lost a Gateway or retained completed cursors")
 	}
 }

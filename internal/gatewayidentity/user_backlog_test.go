@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"testing"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"google.golang.org/grpc"
 )
@@ -37,8 +38,8 @@ func TestUserRecoveryReachesBeyondTenThousandGrants(t *testing.T) {
 	if err := controller.reconcileUsers(context.Background(), "gateway"); err != nil {
 		t.Fatal(err)
 	}
-	if controller.state.(*backlogState).checkpoints["gateway"].After != "" {
-		t.Fatal("complete scan retained progress")
+	if state, err := runtime.DecodeCycle(controller.state.(*backlogState).cycles["gateway"].After); err != nil || !state.Complete || state.Failed {
+		t.Fatal("complete scan lost its outcome", state, err)
 	}
 	if len(provider.subjects) != 10100 {
 		t.Fatal("later grants were not recovered", len(provider.subjects))
@@ -58,5 +59,26 @@ func TestUserScanSurvivesControllerReplacement(t *testing.T) {
 	}
 	if len(provider.subjects) != 10100 {
 		t.Fatal("controller restart repeated the saved prefix", len(provider.subjects))
+	}
+}
+
+type firstGrantFailure struct{ *progressUserProvider }
+
+func (p *firstGrantFailure) ReconcileGatewayUser(ctx context.Context, gateway, issuer, subject, role string) error {
+	if subject == "1" {
+		return fmt.Errorf("provider failed for first grant")
+	}
+	return p.progressUserProvider.ReconcileGatewayUser(ctx, gateway, issuer, subject, role)
+}
+func TestCompletedUserScanRetainsEarlierFailureAfterRestart(t *testing.T) {
+	state := new(backlogState)
+	provider := &firstGrantFailure{&progressUserProvider{providerFixture: new(providerFixture)}}
+	first, _ := New(new(apiFixture), state, provider)
+	if err := first.reconcileUsers(context.Background(), "gateway"); err == nil {
+		t.Fatal("first pass lost its failure")
+	}
+	second, _ := New(new(apiFixture), state, provider)
+	if err := second.reconcileUsers(context.Background(), "gateway"); err == nil {
+		t.Fatal("completed scan lost the earlier provider failure")
 	}
 }

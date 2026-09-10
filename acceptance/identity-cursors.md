@@ -1,3 +1,9 @@
+The current controller uses [scan-cycle outcomes](identity-cycles.md). That
+contract retains failure evidence across bounded passes and invalidates it with
+grant changes. The cursor protocol and earlier checkpoint evidence below remain
+relevant. The new controller uses the `identity-users-cycle` scope; the older
+raw-cursor RPCs remain available for existing callers.
+
 Identity recovery uses STEGO's `ScanCheckpointed` runtime, PostgreSQL cursor
 reader, and `CheckpointStore`.
 The controller no longer stores a page number or row offset. It stores the last

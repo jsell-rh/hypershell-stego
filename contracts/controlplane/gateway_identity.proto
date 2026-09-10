@@ -6,6 +6,8 @@ import "hypershell/controlplane/v1/database_cleanup.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc LoadGatewayIdentityCycle(LoadGatewayIdentityCheckpointRequest) returns (GatewayIdentityCycle);
+ rpc SaveGatewayIdentityCycle(SaveGatewayIdentityCycleRequest) returns (GatewayIdentityCycle);
  rpc ObserveGatewayIdentity(ObserveGatewayIdentityRequest) returns (ObserveGatewayIdentityResponse);
  rpc LoadGatewayIdentityCheckpoint(LoadGatewayIdentityCheckpointRequest) returns (GatewayIdentityCheckpoint);
  rpc SaveGatewayIdentityCheckpoint(SaveGatewayIdentityCheckpointRequest) returns (GatewayIdentityCheckpoint);
@@ -102,3 +104,8 @@ message ResourceCondition {
 // read before the operation in the request metadata.
 message ObserveGatewayIdentityRequest { string id = 1; optional string oidc = 2; string reason = 3; }
 message ObserveGatewayIdentityResponse {}
+
+// Data is a bounded STEGO scan-cycle record. The generation and checkpoint
+// version identify the input observed before work. A stale save must fail.
+message GatewayIdentityCycle { string gateway_id = 1; string data = 2; int64 version = 3; int64 resource_generation = 4; }
+message SaveGatewayIdentityCycleRequest { string gateway_id = 1; string data = 2; int64 expected_version = 3; int64 resource_generation = 4; }

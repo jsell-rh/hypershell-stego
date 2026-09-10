@@ -81,7 +81,7 @@ func (s *Service) CreateGrant(ctx context.Context, p Principal, input GrantReque
 		if !ok {
 			return errors.New("unexpected grant storage result")
 		}
-		return notifyGrant(tx, grant, "Create", "rolebinding.created")
+		return notifyGrant(ctx, tx, grant, "Create", "rolebinding.created")
 	})
 	if err != nil {
 		return model.RoleBinding{}, err
@@ -192,15 +192,18 @@ func (s *Service) DeleteGrant(ctx context.Context, p Principal, id string) error
 		if err := tx.Delete(ctx, "RoleBinding", id); err != nil {
 			return err
 		}
-		return notifyGrant(tx, grant, "Delete", "rolebinding.deleted")
+		return notifyGrant(ctx, tx, grant, "Delete", "rolebinding.deleted")
 	})
 }
-func notifyGrant(tx store.Transaction, grant model.RoleBinding, eventType, kind string) error {
+func notifyGrant(ctx context.Context, tx store.Transaction, grant model.RoleBinding, eventType, kind string) error {
 	if err := notifyGrantChange(tx, grant, eventType, kind); err != nil {
 		return err
 	}
 	if grant.GatewayID == nil {
 		return nil
+	}
+	if err := resetIdentityCycle(ctx, tx, *grant.GatewayID); err != nil {
+		return err
 	}
 	return notifyGateway(tx, *grant.GatewayID, "Update", "gateway.updated")
 }

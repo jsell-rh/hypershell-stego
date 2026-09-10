@@ -370,6 +370,8 @@ Identity recovery now resumes from retained grant IDs through the common STEGO
 scan runtime and PostgreSQL checkpoints. Inventories above 10,000 references
 continue across bounded passes and controller restarts.
 See [identity cursor recovery](acceptance/identity-cursors.md).
+The [scan-cycle record](acceptance/identity-cycles.md) also retains earlier action
+failures after restart. Grant changes invalidate that evidence atomically.
 
 Gateway identity now records a durable `ClientReady` condition through STEGO.
 Configuration, condition, and event changes commit together. The recovery API

@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -90,13 +91,14 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 		t.Cleanup(finish)
 		return finish
 	}
-	waitCheckpoint := func(version int64, after string) {
+	waitCheckpoint := func(version int64, after string) *control.GatewayIdentityCycle {
 		t.Helper()
 		deadline := time.Now().Add(30 * time.Second)
 		for {
-			value, err := client.LoadGatewayIdentityCheckpoint(auth, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
-			if err == nil && value.Version == version && value.AfterGrantId == after {
-				return
+			value, err := client.LoadGatewayIdentityCycle(auth, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
+			state, decodeErr := runtime.DecodeCycle(value.GetData())
+			if err == nil && decodeErr == nil && value.Version == version && ((after != "" && state.After == after && !state.Complete) || (after == "" && state.Complete)) {
+				return value
 			}
 			if time.Now().After(deadline) || ctx.Err() != nil {
 				t.Fatal("checkpoint did not reach expected state", value, err)
@@ -120,7 +122,10 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 	provider.pauseAfter = 0
 	provider.mu.Unlock()
 	stopController = run()
-	waitCheckpoint(2, "")
+	completed := waitCheckpoint(2, "")
+	if cycle, err := runtime.DecodeCycle(completed.Data); err != nil || !cycle.Failed {
+		t.Fatal("resumed cycle lost its earlier timeout failure", cycle, err)
+	}
 	stopController()
 	provider.mu.Lock()
 	defer provider.mu.Unlock()
@@ -138,14 +143,14 @@ func TestIdentityCheckpointSurvivesAPIAndControllerRestart(t *testing.T) {
 	if err := f.service.Delete(ctx, principal("alice"), gateway.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := client.SaveGatewayIdentityCheckpoint(auth, &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, ExpectedVersion: 2, AfterGrantId: fmt.Sprintf("%027d", 7)}); status.Code(err) != codes.NotFound {
+	if _, err := client.SaveGatewayIdentityCycle(auth, &control.SaveGatewayIdentityCycleRequest{GatewayId: gateway.ID, ExpectedVersion: 2, Data: completed.Data, ResourceGeneration: completed.ResourceGeneration}); status.Code(err) != codes.NotFound {
 		t.Fatal("deleted Gateway accepted a cursor save", err)
 	}
-	if _, err := client.LoadGatewayIdentityCheckpoint(auth, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID}); status.Code(err) != codes.NotFound {
+	if _, err := client.LoadGatewayIdentityCycle(auth, &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID}); status.Code(err) != codes.NotFound {
 		t.Fatal("deleted Gateway allowed another live scan", err)
 	}
 	var retained int64
-	if err := f.db.QueryRow("SELECT version FROM stego_scan_checkpoints WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-users'", gateway.ID).Scan(&retained); err != nil || retained != 2 {
+	if err := f.db.QueryRow("SELECT version FROM stego_scan_checkpoints WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-users-cycle'", gateway.ID).Scan(&retained); err != nil || retained != 2 {
 		t.Fatal("deletion changed checkpoint history", retained, err)
 	}
 	t.Log("A new controller loaded the durable cursor after API restart and checked current grants before provider work")

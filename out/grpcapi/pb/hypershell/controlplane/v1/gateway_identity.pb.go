@@ -1380,6 +1380,144 @@ func (*ObserveGatewayIdentityResponse) Descriptor() ([]byte, []int) {
 	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{23}
 }
 
+// Data is a bounded STEGO scan-cycle record. The generation and checkpoint
+// version identify the input observed before work. A stale save must fail.
+type GatewayIdentityCycle struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	GatewayId          string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
+	Data               string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	Version            int64                  `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	ResourceGeneration int64                  `protobuf:"varint,4,opt,name=resource_generation,json=resourceGeneration,proto3" json:"resource_generation,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *GatewayIdentityCycle) Reset() {
+	*x = GatewayIdentityCycle{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewayIdentityCycle) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewayIdentityCycle) ProtoMessage() {}
+
+func (x *GatewayIdentityCycle) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewayIdentityCycle.ProtoReflect.Descriptor instead.
+func (*GatewayIdentityCycle) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *GatewayIdentityCycle) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
+func (x *GatewayIdentityCycle) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+func (x *GatewayIdentityCycle) GetVersion() int64 {
+	if x != nil {
+		return x.Version
+	}
+	return 0
+}
+
+func (x *GatewayIdentityCycle) GetResourceGeneration() int64 {
+	if x != nil {
+		return x.ResourceGeneration
+	}
+	return 0
+}
+
+type SaveGatewayIdentityCycleRequest struct {
+	state              protoimpl.MessageState `protogen:"open.v1"`
+	GatewayId          string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
+	Data               string                 `protobuf:"bytes,2,opt,name=data,proto3" json:"data,omitempty"`
+	ExpectedVersion    int64                  `protobuf:"varint,3,opt,name=expected_version,json=expectedVersion,proto3" json:"expected_version,omitempty"`
+	ResourceGeneration int64                  `protobuf:"varint,4,opt,name=resource_generation,json=resourceGeneration,proto3" json:"resource_generation,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
+}
+
+func (x *SaveGatewayIdentityCycleRequest) Reset() {
+	*x = SaveGatewayIdentityCycleRequest{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SaveGatewayIdentityCycleRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SaveGatewayIdentityCycleRequest) ProtoMessage() {}
+
+func (x *SaveGatewayIdentityCycleRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SaveGatewayIdentityCycleRequest.ProtoReflect.Descriptor instead.
+func (*SaveGatewayIdentityCycleRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{25}
+}
+
+func (x *SaveGatewayIdentityCycleRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
+func (x *SaveGatewayIdentityCycleRequest) GetData() string {
+	if x != nil {
+		return x.Data
+	}
+	return ""
+}
+
+func (x *SaveGatewayIdentityCycleRequest) GetExpectedVersion() int64 {
+	if x != nil {
+		return x.ExpectedVersion
+	}
+	return 0
+}
+
+func (x *SaveGatewayIdentityCycleRequest) GetResourceGeneration() int64 {
+	if x != nil {
+		return x.ResourceGeneration
+	}
+	return 0
+}
+
 var File_hypershell_controlplane_v1_gateway_identity_proto protoreflect.FileDescriptor
 
 const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
@@ -1498,8 +1636,22 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\x04oidc\x18\x02 \x01(\tH\x00R\x04oidc\x88\x01\x01\x12\x16\n" +
 	"\x06reason\x18\x03 \x01(\tR\x06reasonB\a\n" +
 	"\x05_oidc\" \n" +
-	"\x1eObserveGatewayIdentityResponse2\xf6\f\n" +
-	"\x16GatewayIdentityService\x12\x8f\x01\n" +
+	"\x1eObserveGatewayIdentityResponse\"\x94\x01\n" +
+	"\x14GatewayIdentityCycle\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\tR\x04data\x12\x18\n" +
+	"\aversion\x18\x03 \x01(\x03R\aversion\x12/\n" +
+	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration\"\xb0\x01\n" +
+	"\x1fSaveGatewayIdentityCycleRequest\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x12\n" +
+	"\x04data\x18\x02 \x01(\tR\x04data\x12)\n" +
+	"\x10expected_version\x18\x03 \x01(\x03R\x0fexpectedVersion\x12/\n" +
+	"\x13resource_generation\x18\x04 \x01(\x03R\x12resourceGeneration2\x93\x0f\n" +
+	"\x16GatewayIdentityService\x12\x8e\x01\n" +
+	"\x18LoadGatewayIdentityCycle\x12@.hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x89\x01\n" +
+	"\x18SaveGatewayIdentityCycle\x12;.hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x8f\x01\n" +
 	"\x16ObserveGatewayIdentity\x129.hypershell.controlplane.v1.ObserveGatewayIdentityRequest\x1a:.hypershell.controlplane.v1.ObserveGatewayIdentityResponse\x12\x98\x01\n" +
 	"\x1dLoadGatewayIdentityCheckpoint\x12@.hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest\x1a5.hypershell.controlplane.v1.GatewayIdentityCheckpoint\x12\x98\x01\n" +
 	"\x1dSaveGatewayIdentityCheckpoint\x12@.hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest\x1a5.hypershell.controlplane.v1.GatewayIdentityCheckpoint\x12\x83\x01\n" +
@@ -1524,7 +1676,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP() []byte
 	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescData
 }
 
-var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 29)
+var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
 var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*GetGatewayIdentityStateRequest)(nil),       // 0: hypershell.controlplane.v1.GetGatewayIdentityStateRequest
 	(*GetGatewayIdentityStateResponse)(nil),      // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse
@@ -1550,49 +1702,55 @@ var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
 	(*ResourceCondition)(nil),                    // 21: hypershell.controlplane.v1.ResourceCondition
 	(*ObserveGatewayIdentityRequest)(nil),        // 22: hypershell.controlplane.v1.ObserveGatewayIdentityRequest
 	(*ObserveGatewayIdentityResponse)(nil),       // 23: hypershell.controlplane.v1.ObserveGatewayIdentityResponse
-	nil,                                          // 24: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
-	nil,                                          // 25: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
-	nil,                                          // 26: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
-	nil,                                          // 27: hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
-	nil,                                          // 28: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
-	(*v1.Gateway)(nil),                           // 29: hypershell.v1.Gateway
-	(*CleanupSummary)(nil),                       // 30: hypershell.controlplane.v1.CleanupSummary
+	(*GatewayIdentityCycle)(nil),                 // 24: hypershell.controlplane.v1.GatewayIdentityCycle
+	(*SaveGatewayIdentityCycleRequest)(nil),      // 25: hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
+	nil,                                          // 26: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
+	nil,                                          // 27: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
+	nil,                                          // 28: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
+	nil,                                          // 29: hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
+	nil,                                          // 30: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
+	(*v1.Gateway)(nil),                           // 31: hypershell.v1.Gateway
+	(*CleanupSummary)(nil),                       // 32: hypershell.controlplane.v1.CleanupSummary
 }
 var file_hypershell_controlplane_v1_gateway_identity_proto_depIdxs = []int32{
-	29, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
-	24, // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
-	25, // 2: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup_targets:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
-	26, // 3: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.conditions:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
-	27, // 4: hypershell.controlplane.v1.CleanupTargetObservations.targets:type_name -> hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
+	31, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
+	26, // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
+	27, // 2: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup_targets:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
+	28, // 3: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.conditions:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
+	29, // 4: hypershell.controlplane.v1.CleanupTargetObservations.targets:type_name -> hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
 	14, // 5: hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse.references:type_name -> hypershell.controlplane.v1.GatewayIdentityUserReference
-	28, // 6: hypershell.controlplane.v1.ResourceConditions.conditions:type_name -> hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
+	30, // 6: hypershell.controlplane.v1.ResourceConditions.conditions:type_name -> hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
 	12, // 7: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry.value:type_name -> hypershell.controlplane.v1.CleanupTargetObservations
 	20, // 8: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceConditions
 	21, // 9: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceCondition
-	22, // 10: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:input_type -> hypershell.controlplane.v1.ObserveGatewayIdentityRequest
-	17, // 11: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
-	18, // 12: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
-	16, // 13: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:input_type -> hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
-	10, // 14: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:input_type -> hypershell.controlplane.v1.ObserveGatewayCleanupRequest
-	8,  // 15: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:input_type -> hypershell.controlplane.v1.SetObservedSandboxCountRequest
-	6,  // 16: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
-	13, // 17: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
-	2,  // 18: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
-	4,  // 19: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
-	0,  // 20: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
-	23, // 21: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:output_type -> hypershell.controlplane.v1.ObserveGatewayIdentityResponse
-	19, // 22: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
-	19, // 23: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
-	30, // 24: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:output_type -> hypershell.controlplane.v1.CleanupSummary
-	11, // 25: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:output_type -> hypershell.controlplane.v1.ObserveGatewayCleanupResponse
-	9,  // 26: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:output_type -> hypershell.controlplane.v1.SetObservedSandboxCountResponse
-	7,  // 27: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
-	15, // 28: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
-	3,  // 29: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
-	5,  // 30: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	1,  // 31: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
-	21, // [21:32] is the sub-list for method output_type
-	10, // [10:21] is the sub-list for method input_type
+	17, // 10: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
+	25, // 11: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
+	22, // 12: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:input_type -> hypershell.controlplane.v1.ObserveGatewayIdentityRequest
+	17, // 13: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
+	18, // 14: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
+	16, // 15: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:input_type -> hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
+	10, // 16: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:input_type -> hypershell.controlplane.v1.ObserveGatewayCleanupRequest
+	8,  // 17: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:input_type -> hypershell.controlplane.v1.SetObservedSandboxCountRequest
+	6,  // 18: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	13, // 19: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
+	2,  // 20: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
+	4,  // 21: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
+	0,  // 22: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
+	24, // 23: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
+	24, // 24: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
+	23, // 25: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:output_type -> hypershell.controlplane.v1.ObserveGatewayIdentityResponse
+	19, // 26: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
+	19, // 27: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
+	32, // 28: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:output_type -> hypershell.controlplane.v1.CleanupSummary
+	11, // 29: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:output_type -> hypershell.controlplane.v1.ObserveGatewayCleanupResponse
+	9,  // 30: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:output_type -> hypershell.controlplane.v1.SetObservedSandboxCountResponse
+	7,  // 31: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	15, // 32: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
+	3,  // 33: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
+	5,  // 34: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
+	1,  // 35: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
+	23, // [23:36] is the sub-list for method output_type
+	10, // [10:23] is the sub-list for method input_type
 	10, // [10:10] is the sub-list for extension type_name
 	10, // [10:10] is the sub-list for extension extendee
 	0,  // [0:10] is the sub-list for field type_name
@@ -1611,7 +1769,7 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc), len(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   29,
+			NumMessages:   31,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

@@ -150,3 +150,18 @@ func (s *identityServer) ObserveGatewayIdentity(ctx context.Context, request *pb
 	}
 	return &pb.ObserveGatewayIdentityResponse{}, nil
 }
+
+func (s *identityServer) LoadGatewayIdentityCycle(ctx context.Context, request *pb.LoadGatewayIdentityCheckpointRequest) (*pb.GatewayIdentityCycle, error) {
+	value, err := s.service.IdentityScanCycle(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation}, nil
+}
+func (s *identityServer) SaveGatewayIdentityCycle(ctx context.Context, request *pb.SaveGatewayIdentityCycleRequest) (*pb.GatewayIdentityCycle, error) {
+	value, err := s.service.SaveIdentityScanCycle(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetExpectedVersion(), request.GetResourceGeneration(), request.GetData())
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GatewayIdentityCycle{GatewayId: request.GetGatewayId(), Data: value.Checkpoint.After, Version: value.Checkpoint.Version, ResourceGeneration: value.Generation}, nil
+}
