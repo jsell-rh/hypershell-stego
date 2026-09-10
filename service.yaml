@@ -123,6 +123,8 @@ collections: {}
 slots: []
 
 overrides:
+  health-check:
+    database: true
   postgres-adapter:
     migrations: external
   jwt-auth:

@@ -1,0 +1,15 @@
+kind: component
+name: health-check
+version: 1.0.0
+output_namespace: health
+
+config:
+  database:
+    type: bool
+
+requires: []
+
+provides:
+  - health-endpoint
+
+slots: []

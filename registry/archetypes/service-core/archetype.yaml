@@ -10,6 +10,7 @@ components:
   - http-application
   - grpc-application
   - controller
+  - health-check
   - postgres-client
   - kubernetes-client
   - tsl-search

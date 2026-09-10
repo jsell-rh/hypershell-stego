@@ -18,6 +18,7 @@ import (
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	events "github.com/jsell-rh/hypershell-stego/out/events"
 	grpcapi "github.com/jsell-rh/hypershell-stego/out/grpcapi"
+	health "github.com/jsell-rh/hypershell-stego/out/health"
 	outbox "github.com/jsell-rh/hypershell-stego/out/outbox"
 	storage "github.com/jsell-rh/hypershell-stego/out/storage"
 	postgres "gorm.io/driver/postgres"
@@ -62,6 +63,10 @@ func run() error {
 		return err
 	}
 	defer source.Close()
+	databaseMonitor, err := health.NewDatabaseMonitor(ctx, sqlDB)
+	if err != nil {
+		return err
+	}
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
@@ -85,6 +90,10 @@ func run() error {
 		port = "8080"
 	}
 	addr := ":" + port
+	topMux := http.NewServeMux()
+	topMux.HandleFunc("GET /livez", databaseMonitor.Live)
+	topMux.HandleFunc("GET /readyz", databaseMonitor.Ready)
+	topMux.Handle("/", mux)
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
@@ -93,12 +102,13 @@ func run() error {
 	defer listener.Close()
 	return stegoRunTasks(ctx, []stegoTask{
 		{name: "http", run: func(ctx context.Context) error {
-			return stegoServeHTTP(ctx, listener, stegoHTTPServer(mux), 10*time.Second)
+			return stegoServeHTTP(ctx, listener, stegoHTTPServer(topMux), 10*time.Second)
 		}},
 		{name: "kafka-producer[0]", run: runtime.Run},
 		{name: "http-application[0]", run: handler.Run},
 		{name: "grpc-application[0]", run: source.Run},
 		{name: "grpc-application[1]", run: gRPCRuntime.Run},
+		{name: "health-check[0]", run: databaseMonitor.Run},
 	})
 }
 
