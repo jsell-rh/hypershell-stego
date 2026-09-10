@@ -44,6 +44,9 @@ const defaultService = "hypershell"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	controllerOnce             sync.Once
+	controller                 *ControllerTelemetry
+	controllerError            error
 	service                    serviceLogs
 	signals                    requestSignals
 	grpcTracer                 trace.Tracer

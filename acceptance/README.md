@@ -15,6 +15,9 @@ The later [request observability workflow](request-observability.md) checks
 correlated OTLP logs, metrics, and traces through the same generated runtime.
 The [service logging workflow](service-logging.md) checks generated local and
 exported runtime events, including startup without a collector.
+The [controller observability workflow](controller-observability.md) verifies
+common reconciliation logs, metrics, and spans across provider failure and
+recovery, API restart, and collector loss.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway

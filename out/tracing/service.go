@@ -52,13 +52,17 @@ type serviceLogs struct {
 	lifecycle bool
 }
 type localRecord struct {
-	Time     time.Time `json:"timestamp"`
-	Severity string    `json:"severity"`
-	Service  string    `json:"service.name"`
-	Event    string    `json:"event.name"`
-	Message  string    `json:"message"`
-	TraceID  string    `json:"trace_id,omitempty"`
-	SpanID   string    `json:"span_id,omitempty"`
+	Time            time.Time `json:"timestamp"`
+	Severity        string    `json:"severity"`
+	Service         string    `json:"service.name"`
+	Event           string    `json:"event.name"`
+	Message         string    `json:"message"`
+	TraceID         string    `json:"trace_id,omitempty"`
+	SpanID          string    `json:"span_id,omitempty"`
+	Operation       string    `json:"operation,omitempty"`
+	Outcome         string    `json:"outcome,omitempty"`
+	Retry           bool      `json:"retry,omitempty"`
+	DurationSeconds *float64  `json:"duration_seconds,omitempty"`
 }
 type localLogs struct {
 	queue             chan localRecord

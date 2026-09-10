@@ -3,7 +3,6 @@ package gatewayworkload
 import (
 	"context"
 	"errors"
-	"log/slog"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
@@ -63,23 +62,6 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 			Timeout: ReconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
 				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
-			},
-			Observe: func(event runtime.Event) {
-				if event.Phase == "metrics_failed" {
-					slog.Warn("cleanup summary is unavailable")
-				}
-				switch event.Phase {
-				case "watch_started":
-					slog.Info("Gateway workload watch started")
-				case "scan_completed":
-					slog.Info("Gateway workload scan completed")
-				case "scan_failed":
-					slog.Warn("Gateway workload scan needs another pass", "failure", rpc.FailureSummary(event.Err))
-				case "reconnect":
-					slog.Warn("Gateway workload watch will reconnect")
-				case "reconcile_failed":
-					slog.Warn("Gateway workload needs another pass", "failure", rpc.FailureSummary(event.Err))
-				}
 			},
 		},
 	})

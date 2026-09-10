@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
@@ -12,7 +11,6 @@ import (
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -70,17 +68,6 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
 				return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
-			},
-			Observe: func(event runtime.Event) {
-				if event.Phase == "metrics_failed" {
-					slog.Warn("cleanup summary is unavailable")
-				}
-				if event.Phase == "reconnect" {
-					slog.Warn("database controller will reconnect")
-				}
-				if (event.Phase == "reconcile_failed" || event.Phase == "scan_failed") && !errors.Is(event.Err, ErrPending) {
-					slog.Warn("database needs another pass", "failure", kube.FailureSummary(event.Err))
-				}
 			},
 		},
 	})

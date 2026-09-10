@@ -62,7 +62,7 @@ func startIdentityController(t *testing.T, binary string, k *keycloakFixture, ad
 	}
 	t.Cleanup(stop)
 	deadline := time.Now().Add(8 * time.Second)
-	for !strings.Contains(output.String(), "Gateway identity watch started") || !strings.Contains(output.String(), "Gateway identity scan completed") {
+	for !strings.Contains(output.String(), `"event.name":"controller.watch.started"`) || !strings.Contains(output.String(), `"operation":"scan","outcome":"success"`) {
 		select {
 		case err := <-done:
 			stopped = true
@@ -245,7 +245,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if oidc := waitOIDC(created.ID); oidc != firstOIDC {
 		t.Fatal("API reconnect did not recover current Gateway state")
 	}
-	if strings.Count(logs(), "Gateway identity watch started") < 2 {
+	if strings.Count(logs(), `"event.name":"controller.watch.started"`) < 2 {
 		t.Fatal("controller did not open a new watch after API restart")
 	}
 	// The identity controller is absent during these changes. Restart must recover from

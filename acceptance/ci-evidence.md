@@ -52,3 +52,9 @@ All six jobs passed, including the complete acceptance suite with the new
 25-minute package limit and the five provider jobs. This supplies a complete
 result for that revision. It does not replace CI for the later tracing or
 request-observability changes.
+
+The [compiler-validation revision run 34529576536](https://github.com/jsell-rh/hypershell-stego/actions/runs/34529576536)
+completed successfully for `b157522f526c0a01b036f7bc0e0cb614ba8db5ea`.
+All six jobs passed, including full acceptance and the five provider workflows.
+This result precedes request logs, service logs, and controller telemetry. Those
+later revisions require their own CI results.

@@ -38,17 +38,36 @@ func RunKeyedWatch[K ~string](ctx context.Context, source Source[K], reconcile f
 	if options.ReconnectDelay < time.Millisecond || options.ReconnectDelay > time.Minute {
 		return errors.New("controller reconnect delay is outside its limits")
 	}
+	if ctx.Err() != nil {
+		return nil
+	}
+	ctx, closeTelemetry, err := startControllerTelemetry(ctx)
+	if err != nil {
+		return err
+	}
+	defer closeTelemetry()
 	q := newKeyQueue[K](options.Capacity)
+	detach, err := attachControllerQueue(ctx, q.metrics)
+	if err != nil {
+		return err
+	}
+	defer detach()
 	for ctx.Err() == nil {
-		err := keyedWatchSession(ctx, source, reconcile, options, q)
+		err, finish := controllerWork(ctx, "watch", func(operation context.Context) error {
+			return keyedWatchSession(operation, source, reconcile, options, q)
+		})
 		if ctx.Err() != nil {
+			finish(false)
 			return nil
 		}
-		if errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || errors.Is(err, ErrMetricsInUse) || errors.Is(err, ErrMetricsContract) || options.Terminal(err) {
+		terminal := err != nil && (errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || errors.Is(err, ErrTelemetryInUse) || errors.Is(err, ErrMetricsInUse) || errors.Is(err, ErrMetricsContract) || options.Terminal(err))
+		finish(ctx.Err() == nil && !terminal)
+		if terminal {
 			return err
 		}
 		q.restart(options.RetryMin, options.RetryMax)
 		options.Metrics.reconnect()
+		controllerNotice(ctx, "reconnect")
 		if options.Observe != nil {
 			options.Observe(Event{Phase: "reconnect", Err: err})
 		}
@@ -78,6 +97,7 @@ func keyedWatchSession[K ~string](parent context.Context, source Source[K], reco
 	if receive == nil {
 		return ErrWatch
 	}
+	controllerNotice(ctx, "watch_started")
 	if options.Observe != nil {
 		options.Observe(Event{Phase: "watch_started"})
 	}

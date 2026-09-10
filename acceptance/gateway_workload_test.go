@@ -391,7 +391,7 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 			// Retained completion can already be true. Require the new process
 			// to scan before a restart check can return and stop it again.
 			deadline := time.Now().Add(15 * time.Second)
-			for !strings.Contains(logs(), "Gateway workload scan completed") {
+			for !strings.Contains(logs(), `"operation":"scan","outcome":"success"`) {
 				if time.Now().After(deadline) {
 					t.Fatalf("restarted Gateway controller did not scan: %s", logs())
 				}

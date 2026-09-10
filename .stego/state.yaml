@@ -68,9 +68,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910211819-47a0e0a86672
+        module_version: v0.0.0-20260910213423-86b436c27bd3
         vcs: git
-        revision: 47a0e0a86672e5c510b15cef4f70ee588ec13c6d
+        revision: 86b436c27bd31817733dd0356d3aea5ca10c8a77
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
@@ -393,12 +393,12 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 118e82263ee91085dd82b1cc1aafd8d1680749965598e0a1172dcd32ecaa32ab
+        cli/command/version.go: 17020aaf0b12882f7efb3755c0adf2ec1e7f0e66a0d9a48c58216636111b3476
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75
-        controller/keyed.go: f181aaef9f6edcb3c90a36caf63e1a78c5a3d6dafcf0f6df6589a34cbf54c6a8
+        controller/keyed.go: 53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b
         controller/metrics.go: cac2c7cac4629e878ae0151e222a992df8142cc0c20b00acfc31a34894cec050
         controller/monitor.go: deacb8cc0ac243d960e3b0e6233ba53971781b8b789854b19d2171bb96694526
         controller/observation.go: f6496e96e7b20dc48f1060bff1e026fa10a2045b2accc02b65ad3bf2fb9f30d2
@@ -406,7 +406,8 @@ last_applied:
         controller/scan.go: c4b325a67497b7290e7c4c0cf934cba230cd0e79bd5ee4a8a444b60408087932
         controller/stream.go: 4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff
         controller/sweep.go: 48f6e8446e38a1b21cc182daa5d7753fbcbf67f6aa3cea43509dc960d0eb335b
-        controller/watch_keyed.go: 8d8e3339c1d1ea1f95a2e1bb05f6934943bb4d9e82d03716d32271b4f3c1f4ee
+        controller/telemetry.go: d36b871fc097b5270bb49e383f6c50c653ddadb9b0db5c344b1b68a3aba58e2e
+        controller/watch_keyed.go: 47d431a660d9ed8df3f0ae9010e89e30bace634e6d6eb303483b9c74d0e45951
         events/publisher.go: 4f778d307a6b3469858619834cfc3d73875666308041a8bd9931cd5ee6ec53e6
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
@@ -461,6 +462,7 @@ last_applied:
         storage/store.go: b38b52f76422df615b2ee3899064cee2e94fc94a7aeafd74eea7bd1525bc7d76
         storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
         storage/versions.go: 3b7b93f59d812fa6a6cd20c59d467594e27470ab649076d5cef129e9f11610cf
-        tracing/runtime.go: f6f3cd4545ef9d2a94d50cfdb2793cf855b6103119e1ee45663c47b530f4970b
-        tracing/service.go: 0f15545dda24b90c6e9d2d215235dad05fee68d5dc998b39f6044788aa97627f
+        tracing/controller.go: 963b8101869283dac35da1c1b3bbf647cc5926d204de4a7f1c9a2a6a6b8254f8
+        tracing/runtime.go: d567cf1aa49b3f1c7ead4024121ce54d78bdf3ce32381090bd8c631eb6ffb873
+        tracing/service.go: fea0a15df822c39d9237ba31fef0c804438200d689539cba71699b561a076741
         tracing/signals.go: 9a331caf59964aa5d43e6d99c49ad95933bb184626cb7045c631b69f5dda5c7e

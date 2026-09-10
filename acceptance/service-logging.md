@@ -1,4 +1,6 @@
-The compiler pin is `47a0e0a86672e5c510b15cef4f70ee588ec13c6d`.
+The service logging gate first used compiler
+`47a0e0a86672e5c510b15cef4f70ee588ec13c6d`. The later
+[controller observability gate](controller-observability.md) records the current pin.
 Component `otel-tracing` 1.3.0 adds fixed service events, local JSON output, and
 OTLP service log export. Hypershell adds no log bridge or exporter. Its generated
 telemetry constructor emits one runtime start event and one stop event.

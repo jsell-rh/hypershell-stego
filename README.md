@@ -20,7 +20,9 @@ lifetime. The [request observability gate](acceptance/request-observability.md)
 now verifies correlated logs, metrics, and traces, including denied reads, active
 streams, restart, and collector loss. Shared [service logging](acceptance/service-logging.md)
 adds local JSON and OTLP runtime lifecycle events, including operation without
-a collector. Complete process logging remains open.
+a collector. [Controller telemetry](acceptance/controller-observability.md) now
+covers shared keyed actions, scans, watch sessions, retries, and queue state.
+Complete process logging remains open.
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes
