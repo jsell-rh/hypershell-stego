@@ -8,6 +8,7 @@ import (
 	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"time"
 )
 
 type identityServer struct {
@@ -36,7 +37,23 @@ func (s *identityServer) GetGatewayIdentityState(ctx context.Context, request *p
 	for owner, values := range targets {
 		observations[owner] = &pb.CleanupTargetObservations{Targets: values}
 	}
-	return &pb.GetGatewayIdentityStateResponse{CleanupTargets: observations, Cleanup: cleanup, Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
+	conditions, err := row.CurrentConditions()
+	if err != nil {
+		return nil, mapError(err)
+	}
+	conditionGroups := make(map[string]*pb.ResourceConditions, len(conditions))
+	for owner, values := range conditions {
+		group := &pb.ResourceConditions{Conditions: make(map[string]*pb.ResourceCondition, len(values))}
+		for name, value := range values {
+			stamp := ""
+			if !value.LastTransitionTime.IsZero() {
+				stamp = value.LastTransitionTime.UTC().Format(time.RFC3339Nano)
+			}
+			group.Conditions[name] = &pb.ResourceCondition{Status: value.Status, Reason: value.Reason, Message: value.Message, ObservedGeneration: value.ObservedGeneration, LastTransitionTime: stamp, Current: value.Current}
+		}
+		conditionGroups[owner] = group
+	}
+	return &pb.GetGatewayIdentityStateResponse{Conditions: conditionGroups, CleanupTargets: observations, Cleanup: cleanup, Gateway: gateway, Deleted: row.DeletedAt.Valid, ResourceVersion: row.ResourceVersion, ResourceGeneration: row.ResourceGeneration, ObservedGeneration: row.ObservedGeneration("workload")}, nil
 }
 
 func (s *identityServer) ListGatewayIdentityUsers(ctx context.Context, request *pb.ListGatewayIdentityUsersRequest) (*pb.ListGatewayIdentityUsersResponse, error) {
@@ -118,4 +135,18 @@ func (s *identityServer) SaveGatewayIdentityCheckpoint(ctx context.Context, requ
 		return nil, mapError(err)
 	}
 	return &pb.GatewayIdentityCheckpoint{GatewayId: request.GetGatewayId(), AfterGrantId: value.After, Version: value.Version}, nil
+}
+
+func (s *identityServer) ObserveGatewayIdentity(ctx context.Context, request *pb.ObserveGatewayIdentityRequest) (*pb.ObserveGatewayIdentityResponse, error) {
+	version, present, err := transport.ResourceVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, mapError(gateways.ErrObservationRequired)
+	}
+	if err := s.service.ObserveIdentity(ctx, gateways.PrincipalFromContext(ctx), request.GetId(), version, request.Oidc, request.GetReason()); err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.ObserveGatewayIdentityResponse{}, nil
 }

@@ -221,7 +221,7 @@ func mapError(err error) error {
 		return status.Error(codes.PermissionDenied, "request is forbidden")
 	case errors.Is(err, gateways.ErrCountRange):
 		return status.Error(codes.OutOfRange, "sandbox count exceeds its range")
-	case errors.Is(err, gateways.ErrInvalid), errors.Is(err, storage.ErrCheckpoint):
+	case errors.Is(err, gateways.ErrInvalid), errors.Is(err, storage.ErrCheckpoint), errors.Is(err, storage.ErrCondition):
 		return status.Error(codes.InvalidArgument, "request is invalid")
 	case errors.Is(err, storage.ErrNotFound):
 		return status.Error(codes.NotFound, "resource was not found")

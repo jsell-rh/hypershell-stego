@@ -6,7 +6,9 @@ import (
 	"context"
 	"errors"
 	"log/slog"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
@@ -152,20 +154,40 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			return err
 		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 	}
+	group, declared := state.GetConditions()["identity"]
+	if !declared || group == nil || group.GetConditions()["ClientReady"] == nil || state.ResourceGeneration < 1 {
+		return runtime.ErrObservationContract
+	}
 	var oidc string
 	err = runtime.RunObservation(ctx, func(operation context.Context) error {
 		var err error
 		oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName())
+		if err == nil && (oidc == "" || len(oidc) > 8192 || !utf8.ValidString(oidc) || strings.ContainsRune(oidc, 0)) {
+			return errors.New("identity provider returned no configuration")
+		}
 		return err
 	}, func(commit context.Context, observation error) error {
-		if observation != nil || gateway.GetOidc() == oidc {
+		reason, conditionStatus := "IdentityClientReady", "True"
+		var configured *string
+		if observation == nil {
+			configured = &oidc
+		} else if errors.Is(observation, context.DeadlineExceeded) {
+			reason, conditionStatus = "IdentityObservationTimeout", "Unknown"
+		} else {
+			reason, conditionStatus = "IdentityProviderUnavailable", "Unknown"
+		}
+		condition := state.GetConditions()["identity"].GetConditions()["ClientReady"]
+		if condition.GetCurrent() && condition.GetObservedGeneration() == state.ResourceGeneration && condition.GetStatus() == conditionStatus && condition.GetReason() == reason && (configured == nil || gateway.GetOidc() == oidc) {
 			return nil
 		}
 		writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
 		if err != nil {
 			return err
 		}
-		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Oidc: &oidc})
+		_, err = c.state.ObserveGatewayIdentity(writeContext, &control.ObserveGatewayIdentityRequest{Id: id, Oidc: configured, Reason: reason})
+		if status.Code(err) == codes.Unimplemented {
+			return runtime.ErrObservationContract
+		}
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 	if err != nil {

@@ -78,15 +78,18 @@ fixture. `TestIdentityCheckpointSurvivesAPIAndControllerRestart` uses the real
 API, PostgreSQL, controller runtime, and a recording provider. It reaches a work
 timeout, saves progress, replaces the API and controller, and checks a changed
 grant before the next provider action. Saved work is not repeated. The test also
-checks that cursor writes preserve the public revision and stop after deletion.
+checks that saves stop after deletion. The direct RPC scan test checks that
+cursor writes preserve the public revision. The controller can also publish an
+identity condition, which changes the resource revision.
 
 Apply `out/storage/migrations/000006_scan_checkpoints.sql` before starting the
 new API when migrations run externally. Startup rejects missing or invalid
 checkpoint key columns. Deploy the API before the new identity controller;
 there is no fallback to process-local progress.
 
-Cross-process provider ownership, durable retry scheduling and conditions,
-safe history retirement, and production capacity evidence remain open. A
+Cross-process provider ownership, durable retry scheduling, safe history
+retirement, and production capacity evidence remain open. Identity client
+conditions are now covered in [identity conditions](identity-conditions.md). A
 checkpoint version check does not prevent concurrent provider calls. Retain
 checkpoint rows while older writers can exist, and do not reuse resource IDs.
 
@@ -106,3 +109,8 @@ An earlier broad local run used a six-minute limit and did not complete. It
 also rejected the temporary compiler build before the clean pin was applied.
 The final selected tests use compiler `4bf903c557c9c6a330bc0889ef1ec30bb018b41d`.
 The complete application suite and Kubernetes jobs remain remote CI gates.
+
+The durable-checkpoint commit `54dc1eebd62440b4de1ef5a50c84e8403113e4d5`
+passed all six remote CI jobs in run
+[34513823967](https://github.com/jsell-rh/hypershell-stego/actions/runs/34513823967).
+These include the full application suite and the five Kubernetes workflow jobs.

@@ -102,6 +102,7 @@ type GatewayNetwork struct {
 type Gateway struct {
 	Meta
 	ResourceVersion     int64            `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
+	ConditionState      datatypes.JSON   `json:"-" gorm:"column:stego_conditions;type:jsonb;not null;default:'{}';->"`
 	CleanupState        datatypes.JSON   `json:"-" gorm:"column:stego_cleanup;type:jsonb;not null;default:'{}';->"`
 	CleanupTargetState  datatypes.JSON   `json:"-" gorm:"column:stego_cleanup_targets;type:jsonb;not null;default:'{}';->"`
 	ResourceGeneration  int64            `json:"-" gorm:"column:stego_generation;type:bigint;not null;default:1;->"`

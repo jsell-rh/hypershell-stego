@@ -9,7 +9,7 @@ import (
 
 const identityScanScope = "identity-users"
 
-func (s *Service) authorizeIdentityCheckpoint(p Principal, id string) error {
+func (s *Service) authorizeIdentityController(p Principal, id string) error {
 	if err := s.checkIdentityReader(p, id); err != nil {
 		return err
 	}
@@ -19,7 +19,7 @@ func (s *Service) authorizeIdentityCheckpoint(p Principal, id string) error {
 // IdentityCheckpoint reads one cursor after the identity controller grant check.
 func (s *Service) IdentityCheckpoint(ctx context.Context, p Principal, id string) (store.ScanCheckpoint, error) {
 	var result store.ScanCheckpoint
-	if err := s.authorizeIdentityCheckpoint(p, id); err != nil {
+	if err := s.authorizeIdentityController(p, id); err != nil {
 		return result, err
 	}
 	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
@@ -46,7 +46,7 @@ func (s *Service) IdentityCheckpoint(ctx context.Context, p Principal, id string
 // resource revision or emit a domain event. A stale save requires a new pass.
 func (s *Service) SaveIdentityCheckpoint(ctx context.Context, p Principal, id string, version int64, after string) (store.ScanCheckpoint, error) {
 	var result store.ScanCheckpoint
-	if err := s.authorizeIdentityCheckpoint(p, id); err != nil {
+	if err := s.authorizeIdentityController(p, id); err != nil {
 		return result, err
 	}
 	if version < 0 || (after != "" && !validID(after)) {

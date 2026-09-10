@@ -3,6 +3,7 @@ package gatewayidentity
 import (
 	"context"
 	"errors"
+	"strconv"
 	"testing"
 
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -15,10 +16,12 @@ import (
 
 type stateFixture struct {
 	checkpointFixture
-	state        *control.GetGatewayIdentityStateResponse
-	err          error
-	observations int
-	conflict     bool
+	state                *control.GetGatewayIdentityStateResponse
+	err                  error
+	observations         int
+	conflict             bool
+	identityObservations int
+	identityError        error
 }
 
 func (f *stateFixture) GetGatewayIdentityState(context.Context, *control.GetGatewayIdentityStateRequest, ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
@@ -81,27 +84,47 @@ func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
 		})
 	}
 }
+func (f *stateFixture) ObserveGatewayIdentity(ctx context.Context, request *control.ObserveGatewayIdentityRequest, _ ...grpc.CallOption) (*control.ObserveGatewayIdentityResponse, error) {
+	f.identityObservations++
+	md, _ := metadata.FromOutgoingContext(ctx)
+	version := md.Get("if-resource-version")
+	if len(version) != 1 || version[0] != strconv.FormatInt(f.state.ResourceVersion, 10) || request.Id != f.state.Gateway.Metadata.Id {
+		return nil, status.Error(codes.InvalidArgument, "invalid observation")
+	}
+	if f.identityError != nil {
+		return nil, f.identityError
+	}
+	conditionStatus := "Unknown"
+	if request.Oidc != nil {
+		f.state.Gateway.Oidc = request.Oidc
+		conditionStatus = "True"
+	}
+	f.state.Conditions = map[string]*control.ResourceConditions{"identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: conditionStatus, Reason: request.Reason, ObservedGeneration: f.state.ResourceGeneration, Current: true}}}}
+	f.state.ResourceVersion++
+	return &control.ObserveGatewayIdentityResponse{}, nil
+}
 func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 	provider := &providerFixture{err: errors.New("provider unavailable")}
 	api := new(apiFixture)
-	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Conditions: map[string]*control.ResourceConditions{"identity": {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: "Unknown", Reason: "ObservationPending"}}}}, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway"}}}
 	controller, _ := New(api, state, provider)
-	if err := controller.reconcile(context.Background(), "gateway"); err == nil || api.updates != 0 {
-		t.Fatal("failed provider operation published identity")
+	if err := controller.reconcile(context.Background(), "gateway"); err == nil || state.state.Gateway.Oidc != nil || state.identityObservations != 1 {
+		t.Fatal("failed provider operation published identity", err)
+	}
+	if condition := state.state.Conditions["identity"].Conditions["ClientReady"]; condition.Status != "Unknown" || condition.Reason != "IdentityProviderUnavailable" {
+		t.Fatal("failure condition was lost", condition)
 	}
 	provider.err = nil
-	api.err = status.Error(codes.Aborted, "transaction conflict")
+	state.identityError = status.Error(codes.Aborted, "transaction conflict")
 	if err := controller.reconcile(context.Background(), "gateway"); status.Code(err) != codes.Aborted {
-		t.Fatal("API conflict was lost")
+		t.Fatal("API conflict was lost", err)
 	}
-	api.err = nil
-	if err := controller.reconcile(context.Background(), "gateway"); err != nil || api.updates != 2 {
-		t.Fatal("next pass did not recover identity publication")
+	state.identityError = nil
+	if err := controller.reconcile(context.Background(), "gateway"); err != nil || state.identityObservations != 3 {
+		t.Fatal("identity publication did not recover", err)
 	}
-	identity := "identity"
-	state.state.Gateway.Oidc = &identity
-	if err := controller.reconcile(context.Background(), "gateway"); err != nil || api.updates != 2 {
-		t.Fatal("unchanged identity emitted another update")
+	if err := controller.reconcile(context.Background(), "gateway"); err != nil || state.identityObservations != 3 || api.updates != 0 {
+		t.Fatal("unchanged identity emitted another update", err)
 	}
 }
 
@@ -312,4 +335,13 @@ func fixtureUserPage(request *control.ScanGatewayIdentityUsersRequest, ids ...st
 		}
 	}
 	return result
+}
+
+func TestMissingIdentityConditionContractStopsProviderWork(t *testing.T) {
+	provider := new(providerFixture)
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}}}}
+	controller, _ := New(new(apiFixture), state, provider)
+	if err := controller.reconcile(context.Background(), "gateway"); err == nil || provider.creates != 0 {
+		t.Fatal("missing condition contract permitted provider work", err)
+	}
 }

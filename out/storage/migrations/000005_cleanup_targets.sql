@@ -5,6 +5,11 @@ DO $disable$ BEGIN
   ALTER TABLE "managed_databases" DISABLE TRIGGER stego_resource_revision;
  END IF;
  END; $disable$;
+DO $conditions$ BEGIN
+ IF EXISTS(SELECT 1 FROM pg_catalog.pg_attribute WHERE attrelid=E'managed_databases'::regclass AND attname='stego_conditions' AND NOT attisdropped) THEN
+  IF EXISTS(SELECT 1 FROM "managed_databases" WHERE stego_conditions <> '{}'::jsonb) THEN RAISE EXCEPTION 'condition owners cannot be removed from retained resources'; END IF;
+ END IF;
+ END; $conditions$;
 ALTER TABLE "managed_databases" ADD COLUMN IF NOT EXISTS stego_cleanup jsonb NOT NULL DEFAULT '{}';
 DO $owners$ BEGIN
  IF EXISTS (SELECT 1 FROM "managed_databases" WHERE jsonb_typeof(stego_cleanup) IS DISTINCT FROM 'object') THEN
@@ -111,6 +116,28 @@ DO $disable$ BEGIN
  END IF;
  END; $disable$;
 ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_generation bigint NOT NULL DEFAULT 1, ADD COLUMN IF NOT EXISTS stego_observations jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_conditions jsonb NOT NULL DEFAULT '{}';
+DO $conditions$ DECLARE NEW record; BEGIN FOR NEW IN SELECT stego_conditions,stego_generation FROM "gateways" LOOP  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
+ IF NEW.stego_conditions ? E'identity' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E'identity') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity') - ARRAY[E'ClientReady']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE jsonb_typeof(c.value) IS DISTINCT FROM 'object'
+ OR NOT (c.value ?& ARRAY['status','reason','message','observed_generation','last_transition_time'])
+ OR c.value - ARRAY['status','reason','message','observed_generation','last_transition_time']::text[] <> '{}'::jsonb
+ OR jsonb_typeof(c.value->'status') IS DISTINCT FROM 'string' OR c.value->>'status' NOT IN ('True','False','Unknown')
+ OR jsonb_typeof(c.value->'reason') IS DISTINCT FROM 'string' OR c.value->>'reason' !~ '^[A-Z][A-Za-z0-9]{0,62}$'
+ OR jsonb_typeof(c.value->'message') IS DISTINCT FROM 'string' OR octet_length(c.value->>'message')>1024 OR c.value->>'message' ~ '[[:cntrl:]]'
+ OR jsonb_typeof(c.value->'observed_generation') IS DISTINCT FROM 'number' OR c.value->>'observed_generation' !~ '^[1-9][0-9]*$'
+ OR jsonb_typeof(c.value->'last_transition_time') IS DISTINCT FROM 'string') THEN
+ RAISE EXCEPTION 'invalid condition value' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE (c.value->>'observed_generation')::bigint>NEW.stego_generation
+ OR NOT isfinite((c.value->>'last_transition_time')::timestamptz)) THEN
+ RAISE EXCEPTION 'invalid condition generation or time' USING ERRCODE='23514'; END IF;
+ END LOOP; END; $conditions$;
 ALTER TABLE "gateways" ADD COLUMN IF NOT EXISTS stego_cleanup jsonb NOT NULL DEFAULT '{}';
 DO $owners$ BEGIN
  IF EXISTS (SELECT 1 FROM "gateways" WHERE jsonb_typeof(stego_cleanup) IS DISTINCT FROM 'object') THEN
@@ -160,6 +187,27 @@ BEGIN
   END IF;
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
+ IF TG_OP = ''INSERT'' THEN NEW.stego_conditions := ''{}''::jsonb; END IF;
+ IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM ''object'' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E''identity'']::text[] <> ''{}''::jsonb THEN
+ RAISE EXCEPTION ''invalid resource conditions'' USING ERRCODE=''23514''; END IF;
+ IF NEW.stego_conditions ? E''identity'' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E''identity'') IS DISTINCT FROM ''object'' OR (NEW.stego_conditions->E''identity'') - ARRAY[E''ClientReady'']::text[] <> ''{}''::jsonb THEN
+ RAISE EXCEPTION ''invalid condition owner state'' USING ERRCODE=''23514''; END IF;
+ END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE jsonb_typeof(c.value) IS DISTINCT FROM ''object''
+ OR NOT (c.value ?& ARRAY[''status'',''reason'',''message'',''observed_generation'',''last_transition_time''])
+ OR c.value - ARRAY[''status'',''reason'',''message'',''observed_generation'',''last_transition_time'']::text[] <> ''{}''::jsonb
+ OR jsonb_typeof(c.value->''status'') IS DISTINCT FROM ''string'' OR c.value->>''status'' NOT IN (''True'',''False'',''Unknown'')
+ OR jsonb_typeof(c.value->''reason'') IS DISTINCT FROM ''string'' OR c.value->>''reason'' !~ ''^[A-Z][A-Za-z0-9]{0,62}$''
+ OR jsonb_typeof(c.value->''message'') IS DISTINCT FROM ''string'' OR octet_length(c.value->>''message'')>1024 OR c.value->>''message'' ~ ''[[:cntrl:]]''
+ OR jsonb_typeof(c.value->''observed_generation'') IS DISTINCT FROM ''number'' OR c.value->>''observed_generation'' !~ ''^[1-9][0-9]*$''
+ OR jsonb_typeof(c.value->''last_transition_time'') IS DISTINCT FROM ''string'') THEN
+ RAISE EXCEPTION ''invalid condition value'' USING ERRCODE=''23514''; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE (c.value->>''observed_generation'')::bigint>NEW.stego_generation
+ OR NOT isfinite((c.value->>''last_transition_time'')::timestamptz)) THEN
+ RAISE EXCEPTION ''invalid condition generation or time'' USING ERRCODE=''23514''; END IF;
 
  IF TG_OP = ''INSERT'' THEN
   NEW.stego_cleanup := E''{"identity":false,"workload":false}''::jsonb;
@@ -262,6 +310,27 @@ BEGIN
   END IF;
  END IF;
  -- generation contract 0505c2098325b3e84580b9c05c524603c66676bb2be3bad1891917ba6eecf981
+ IF TG_OP = 'INSERT' THEN NEW.stego_conditions := '{}'::jsonb; END IF;
+ IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
+ IF NEW.stego_conditions ? E'identity' THEN
+ IF jsonb_typeof(NEW.stego_conditions->E'identity') IS DISTINCT FROM 'object' OR (NEW.stego_conditions->E'identity') - ARRAY[E'ClientReady']::text[] <> '{}'::jsonb THEN
+ RAISE EXCEPTION 'invalid condition owner state' USING ERRCODE='23514'; END IF;
+ END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE jsonb_typeof(c.value) IS DISTINCT FROM 'object'
+ OR NOT (c.value ?& ARRAY['status','reason','message','observed_generation','last_transition_time'])
+ OR c.value - ARRAY['status','reason','message','observed_generation','last_transition_time']::text[] <> '{}'::jsonb
+ OR jsonb_typeof(c.value->'status') IS DISTINCT FROM 'string' OR c.value->>'status' NOT IN ('True','False','Unknown')
+ OR jsonb_typeof(c.value->'reason') IS DISTINCT FROM 'string' OR c.value->>'reason' !~ '^[A-Z][A-Za-z0-9]{0,62}$'
+ OR jsonb_typeof(c.value->'message') IS DISTINCT FROM 'string' OR octet_length(c.value->>'message')>1024 OR c.value->>'message' ~ '[[:cntrl:]]'
+ OR jsonb_typeof(c.value->'observed_generation') IS DISTINCT FROM 'number' OR c.value->>'observed_generation' !~ '^[1-9][0-9]*$'
+ OR jsonb_typeof(c.value->'last_transition_time') IS DISTINCT FROM 'string') THEN
+ RAISE EXCEPTION 'invalid condition value' USING ERRCODE='23514'; END IF;
+ IF EXISTS(SELECT 1 FROM jsonb_each(NEW.stego_conditions) g CROSS JOIN LATERAL jsonb_each(g.value) c
+ WHERE (c.value->>'observed_generation')::bigint>NEW.stego_generation
+ OR NOT isfinite((c.value->>'last_transition_time')::timestamptz)) THEN
+ RAISE EXCEPTION 'invalid condition generation or time' USING ERRCODE='23514'; END IF;
 
  IF TG_OP = 'INSERT' THEN
   NEW.stego_cleanup := E'{"identity":false,"workload":false}'::jsonb;

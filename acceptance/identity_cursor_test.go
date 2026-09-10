@@ -209,6 +209,10 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 	if _, err := client.SaveGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.SaveGatewayIdentityCheckpointRequest{GatewayId: gateway.ID, AfterGrantId: gateway.ID}); status.Code(err) != codes.InvalidArgument {
 		t.Fatal("cursor outside the grant source was accepted", err)
 	}
+	var revision int64
+	if err := f.db.QueryRow("SELECT stego_revision FROM gateways WHERE id=$1", gateway.ID).Scan(&revision); err != nil {
+		t.Fatal(err)
+	}
 	var actual []string
 	budget := runtime.ObservationOptions{WorkTimeout: 20 * time.Second, CommitTimeout: 2 * time.Second}
 	options := runtime.ScanOptions{PageSize: 100, MaxPages: 100, PageTimeout: 5 * time.Second}
@@ -242,6 +246,10 @@ func TestIdentityReferenceCursorThroughGeneratedRuntime(t *testing.T) {
 	saved, err := client.LoadGatewayIdentityCheckpoint(auth(ctx, "controller"), &control.LoadGatewayIdentityCheckpointRequest{GatewayId: gateway.ID})
 	if err != nil || saved.AfterGrantId != "" || saved.Version != 3 {
 		t.Fatal("completed scan did not retain its checkpoint version", saved, err)
+	}
+	var afterRevision int64
+	if err := f.db.QueryRow("SELECT stego_revision FROM gateways WHERE id=$1", gateway.ID).Scan(&afterRevision); err != nil || afterRevision != revision {
+		t.Fatal("checkpoint changed the public resource revision", revision, afterRevision, err)
 	}
 	t.Log("The generated runtime loaded durable progress after API restart and read all 10,106 retained grant references")
 }

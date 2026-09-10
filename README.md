@@ -371,6 +371,11 @@ scan runtime and PostgreSQL checkpoints. Inventories above 10,000 references
 continue across bounded passes and controller restarts.
 See [identity cursor recovery](acceptance/identity-cursors.md).
 
+Gateway identity now records a durable `ClientReady` condition through STEGO.
+Configuration, condition, and event changes commit together. The recovery API
+hides status from an older desired generation. See
+[identity conditions](acceptance/identity-conditions.md) for scope and upgrade rules.
+
 Generated state records the declaration, configuration, module files, and declared
 protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
 manifest checks and their limits.
