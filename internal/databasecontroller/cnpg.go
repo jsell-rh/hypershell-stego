@@ -74,7 +74,7 @@ func cnpgDefinition(id string) object {
 		"storage":    object{"size": "1Gi"},
 		"resources":  object{"requests": object{"cpu": "100m", "memory": "256Mi"}, "limits": object{"cpu": "1", "memory": "512Mi"}},
 		"bootstrap":  object{"initdb": object{"database": "openshell", "owner": "openshell", "dataChecksums": true}},
-		"postgresql": object{"parameters": object{"password_encryption": "scram-sha-256"}, "pg_hba": []string{"hostnossl all all all reject", "hostssl all all all scram-sha-256"}},
+		"postgresql": object{"parameters": object{"password_encryption": "scram-sha-256"}, "pg_hba": []string{"hostnossl all all all reject", "hostssl sameuser all all scram-sha-256", "hostssl all all all reject"}},
 	}
 	return cluster
 }

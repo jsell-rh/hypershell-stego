@@ -17,7 +17,9 @@ See the [CNPG release notes](https://cloudnative-pg.io/docs/1.30/release_notes/v
 
 The initial profile has one instance, 1 GiB storage, CPU and memory limits, and
 PostgreSQL 18.6 with a pinned image digest. It enables data checksums, disables
-remote superuser access, and rejects unencrypted client connections. CNPG owns
+remote superuser access, and rejects unencrypted client connections. Encrypted
+application connections are restricted to a database with the same name as the
+role. An explicit rejection follows that rule. CNPG owns
 its certificates, credentials, Pods, and volumes. The namespace requires the
 restricted Pod security profile. This small profile is an acceptance target;
 it does not provide high availability or a production capacity commitment.
@@ -98,3 +100,12 @@ under race detection; the acceptance package took 84.247 seconds. Five stable
 passes through generated discovery took 48.7 ms. The script verified its pinned
 tools and manifests and removed its test cluster. Provider unit tests and
 `go vet` also passed.
+
+The connection-isolation regression failed against `d01bb29` with the old
+profile: the application role connected to the existing `postgres` database.
+The baseline failed in 121.64 seconds. The revised profile passed the complete
+fresh-cluster workflow in 85.54 seconds under race detection; the package took
+86.591 seconds. The test checks the forbidden connection before and after
+restart, with successful encrypted application queries in both phases. Five
+stable provider passes took 52.1 ms. This is a connection access check; it does
+not certify isolation of all PostgreSQL catalog metadata or production capacity.
