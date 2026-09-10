@@ -107,7 +107,7 @@ and production capacity remain open.
 
 A regression test on `2e45575` sent a deletion event while the current database
 record was live. It failed: the event alone reached the provider. This test now
-requires a current retained read and rejects that deletion event.
+requires a current retained read and rejects deletion without current intent.
 
 The compiler now generates `storage.RetainedReader.GetRetained` for versioned
 resources. The query reads one exact ID, including deletion state and revision,
@@ -119,8 +119,9 @@ visibility. Missing and denied reads do not return deletion evidence.
 
 The database controller now treats all event data as hints. Before each provider
 action, it reads current retained state and checks the returned ID, revision, and
-deletion state. A live record cannot satisfy a deletion event. A deleted record
-causes cleanup even when an older live event triggered the pass. Provider
+deletion state. A live record cannot authorize deletion; it selects normal
+live-state reconciliation even after a delete-type hint. A deleted record causes
+cleanup even when an older live event triggered the pass. Provider
 selection and cleanup parameters come from the retained read. Each retry reads
 again. Failed reads and old servers with missing metadata stop provider work.
 
@@ -153,3 +154,9 @@ in progress. Periodic recovery remains necessary. The schema prevents ordinary
 ID reuse and reversal of deletion; database restore and administrator changes
 remain outside this contract. Replace all old controllers after the API upgrade
 before claiming that every cleanup action uses current retained evidence.
+
+The database controller now queues validated IDs through STEGO's keyed runtime.
+Event types do not select provider actions. This permits repeated hints for one
+resource to share one queue key while preserving current-state authority. Missing
+retained state remains an error for all event types and permits no provider work.
+See the [database scheduling evidence](database-scheduling.md).

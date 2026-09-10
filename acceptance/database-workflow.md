@@ -135,11 +135,13 @@ cause an error. The controller does not generate replacement passwords for an
 existing database.
 
 The controller starts and drains a live watch before replay and list scans. It
-uses one worker and a bounded queue. Each scan repeats after ten seconds. A
+uses the generated keyed runtime with four workers and a 1024-key queue. Each scan repeats after ten seconds. A
 failed deletion stays in the stored replay data. Delete requests include the
 observed namespace UID and resource version. Missing namespaces count as cleaned
 up; conflicts and denied requests remain failures. The controller validates the
 stored namespace against its database ID and checks ownership before mutations.
+The [database scheduling check](database-scheduling.md) proves that a blocked
+cleanup does not hold other databases behind it.
 See [Kubernetes API concurrency rules](https://kubernetes.io/docs/reference/using-api/api-concepts/).
 
 This result covers deployment databases on one configured Kubernetes cluster.

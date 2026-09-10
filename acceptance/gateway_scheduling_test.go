@@ -10,11 +10,13 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
 
@@ -62,13 +64,25 @@ func (p *blockedIdentityCleanupProvider) ReconcileGatewayUser(context.Context, s
 	return nil
 }
 
+type blockedDatabaseCleanupProvider struct{ *blockedCleanupProvider }
+
+func (p *blockedDatabaseCleanupProvider) Ensure(context.Context, *pb.ManagedDatabase) error {
+	return nil
+}
+func (p *blockedDatabaseCleanupProvider) Delete(ctx context.Context, row *pb.ManagedDatabase) error {
+	return p.blockedCleanupProvider.Delete(ctx, row.GetMetadata().GetId())
+}
+
+func TestDatabaseCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
+	testIndependentResourceCleanup(t, "provider")
+}
 func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
-	testIndependentGatewayCleanup(t, "workload")
+	testIndependentResourceCleanup(t, "workload")
 }
 func TestGatewayIdentityCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
-	testIndependentGatewayCleanup(t, "identity")
+	testIndependentResourceCleanup(t, "identity")
 }
-func testIndependentGatewayCleanup(t *testing.T, cleanupOwner string) {
+func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	t.Helper()
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
@@ -77,30 +91,53 @@ func testIndependentGatewayCleanup(t *testing.T, cleanupOwner string) {
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	resource := "Gateway"
+	endpoint := "gateways"
+	if cleanupOwner == "provider" {
+		resource = "ManagedDatabase"
+		endpoint = "managed_databases"
+	}
 	target := ""
 	if cleanupOwner == "workload" {
 		target = f.cluster
 	}
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", cleanupOwner, target))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", resource, cleanupOwner, target))
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	owner := token(t, key, "owner", "gateway:creator")
-	root := address + "/api/hypershell/v1/gateways"
+	if cleanupOwner == "provider" {
+		owner = token(t, key, "owner", "platform:admin")
+	}
+	root := address + "/api/hypershell/v1/" + endpoint
+	event := func(id, action, kind string) {
+		t.Helper()
+		if cleanupOwner == "provider" {
+			readCatalogEvent(t, consumer, id, "ManagedDatabases", action, "manageddatabase."+kind)
+		} else {
+			readGatewayEvent(t, consumer, id, action, "gateway."+kind)
+		}
+	}
 	ids := make([]string, 0, 2)
 	for _, name := range []string{"blocked-cleanup", "independent-cleanup"} {
-		body, _ := json.Marshal(map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release, "database_id": f.database})
+		input := map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release, "database_id": f.database}
+		if cleanupOwner == "provider" {
+			input = map[string]string{"name": name, "provider": "deployment"}
+		}
+		body, _ := json.Marshal(input)
 		code, data := requestJSON(t, "POST", root, owner, body)
-		var row httpapi.Gateway
+		var row struct {
+			ID string `json:"id"`
+		}
 		if code != 201 || json.Unmarshal(data, &row) != nil {
 			t.Fatalf("create: %d %s", code, data)
 		}
 		ids = append(ids, row.ID)
-		readEvent(t, consumer, row.ID)
+		event(row.ID, "Create", "created")
 		if code, data := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
 			t.Fatalf("delete: %d %s", code, data)
 		}
-		readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+		event(row.ID, "Delete", "deleted")
 	}
 	sort.Strings(ids)
 	awaitQueueEmpty(t, f)
@@ -114,7 +151,9 @@ func testIndependentGatewayCleanup(t *testing.T, cleanupOwner string) {
 	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{})}
 	var controller interface{ Run(context.Context) error }
 	var err error
-	if cleanupOwner == "identity" {
+	if cleanupOwner == "provider" {
+		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), &blockedDatabaseCleanupProvider{provider})
+	} else if cleanupOwner == "identity" {
 		controller, err = gatewayidentity.New(api, state, &blockedIdentityCleanupProvider{provider})
 	} else {
 		controller, err = gatewayworkload.New(api, state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
@@ -140,43 +179,63 @@ func testIndependentGatewayCleanup(t *testing.T, cleanupOwner string) {
 	case <-ctx.Done():
 		t.Fatal("retained scan did not start cleanup")
 	}
-	read := func(id string) *control.GetGatewayIdentityStateResponse {
+	read := func(id string) (bool, bool) {
 		t.Helper()
 		request, stop := context.WithTimeout(ctx, time.Second)
 		defer stop()
+		if cleanupOwner == "provider" {
+			request, err := rpc.WithRetainedResourceRead(request)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var header metadata.MD
+			response, err := pb.NewManagedDatabaseServiceClient(connection).GetManagedDatabase(request, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header))
+			if err != nil || response.GetManagedDatabase().GetMetadata().GetId() != id {
+				t.Fatal("retained database read", err)
+			}
+			_, deleted, err := rpc.ObservedResourceState(header)
+			if err != nil {
+				t.Fatal(err)
+			}
+			observations, err := rpc.ObservedCleanupObservations(header)
+			if err != nil {
+				t.Fatal(err)
+			}
+			return deleted, observations[cleanupOwner]
+		}
 		result, err := state.GetGatewayIdentityState(request, &control.GetGatewayIdentityStateRequest{Id: id})
 		if err != nil {
 			t.Fatal(err)
 		}
-		return result
+		return result.GetDeleted(), result.GetCleanup()[cleanupOwner]
 	}
 	awaitComplete := func(id string) {
 		t.Helper()
 		deadline := time.Now().Add(3 * time.Second)
 		for {
-			current := read(id)
-			if current.GetDeleted() && current.GetCleanup()[cleanupOwner] {
+			deleted, complete := read(id)
+			if deleted && complete {
 				return
 			}
 			if time.Now().After(deadline) {
-				t.Fatal("one blocked Gateway prevented independent cleanup", id)
+				t.Fatal("one blocked resource prevented independent cleanup", id)
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
 	}
 	awaitComplete(ids[1])
-	if read(ids[0]).GetCleanup()[cleanupOwner] {
+	if _, complete := read(ids[0]); complete {
 		t.Fatal("blocked provider recorded completion")
 	}
-	readGatewayEvent(t, consumer, ids[1], "Delete", "gateway.deleted")
+	event(ids[1], "Delete", "deleted")
 	close(provider.release)
 	awaitComplete(ids[0])
-	readGatewayEvent(t, consumer, ids[0], "Delete", "gateway.deleted")
+	event(ids[0], "Delete", "deleted")
 	if provider.overlap.Load() {
-		t.Fatal("one Gateway had concurrent provider actions")
+		t.Fatal("one resource had concurrent provider actions")
 	}
 	for _, id := range ids {
-		if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+id, owner, nil); code != 404 {
+		if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/"+endpoint+"/"+id, owner, nil); code != 404 {
 			t.Fatal("cleanup changed public deletion", code)
 		}
 	}

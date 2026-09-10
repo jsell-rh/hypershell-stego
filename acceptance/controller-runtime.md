@@ -9,17 +9,17 @@ Gateway events cause a fresh privileged state read. Database deletion uses the
 retained replay contract. Moving the runtime does not make a watch event or a
 missing read sufficient authority for deletion.
 
-Gateway identity and workload use the generated keyed watch runtime with four
-workers each. They combine duplicate keys, retain changes during actions, and
-schedule retries per key. Identity scans repeat after 30 seconds; workload scans
+Gateway identity, Gateway workload, and database controllers use the generated
+keyed watch runtime with four workers each. They combine duplicate keys, retain changes during actions, and
+schedule retries per key. Identity scans repeat after 30 seconds; workload and database scans
 repeat after ten seconds. Each action has a 20-second limit. Their queues hold
 1024 pending, delayed, or active keys. Scans and watch delivery wait for capacity.
 
-The database controller still uses one FIFO worker and a queue of 1024 records.
-Its operation limit is 20 seconds and its scan interval is ten seconds. Its
-migration to keyed scheduling remains open. All three controllers have a
-one-second reconnect delay. The runtime cancels and joins active callbacks
-before it starts a new watch session.
+The database controller validates event records before it emits their IDs. Its
+provider actions use current retained state. The
+[database scheduling check](database-scheduling.md) proves independent cleanup
+after API restart. All three controllers have a one-second reconnect delay.
+The runtime cancels and joins active callbacks before a new watch session.
 
 These controllers require one active process for each ownership scope. Retained
 scans recover failed work and missed deletions. There is no distributed lease,

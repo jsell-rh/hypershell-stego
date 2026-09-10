@@ -34,7 +34,7 @@ delivery and scans wait for capacity. Each producer holds at most one additional
 waiting key. They stop on cancellation and do not evict failed keys or reset
 retry delays. This limit is not a production capacity result. If persistent
 failures occupy every slot, new keys can remain blocked. Durable retry storage
-and complete saturation handling remain open. The database controller retains its FIFO scheduling path. Cross-process leases, fencing, and production recovery bounds
+and complete saturation handling remain open. The database controller also uses the [keyed runtime](database-scheduling.md). Cross-process leases, fencing, and production recovery bounds
 remain open. Four workers do not permit four controller replicas for one scope.
 
 Local checks on 2026-09-09 passed the scheduling regression and the real Gateway

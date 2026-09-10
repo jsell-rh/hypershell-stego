@@ -185,18 +185,25 @@ type rejectProvider struct{ calls int }
 
 func (p *rejectProvider) Ensure(context.Context, *pb.ManagedDatabase) error { p.calls++; return nil }
 func (p *rejectProvider) Delete(context.Context, *pb.ManagedDatabase) error { p.calls++; return nil }
+func reconcileHint(ctx context.Context, c *Controller, event *pb.WatchManagedDatabasesResponse) error {
+	id, err := eventKey(event)
+	if err != nil {
+		return err
+	}
+	return c.reconcile(ctx, id)
+}
 func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 	p := &rejectProvider{}
 	c, _ := New(staleAPI{}, staleAPI{}, p)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "old", Type: pb.EventType_EVENT_TYPE_CREATED, ManagedDatabase: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "old"}, Provider: "deployment"}}
-	if err := c.reconcile(context.Background(), event); err != nil {
-		t.Fatal(err)
+	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.NotFound {
+		t.Fatal("missing retained state did not remain an error", err)
 	}
 	if p.calls != 0 {
 		t.Fatal("stale live event changed Kubernetes")
 	}
 	event.ManagedDatabase.Metadata.Id = "different"
-	if err := c.reconcile(context.Background(), event); err == nil {
+	if err := reconcileHint(context.Background(), c, event); err == nil {
 		t.Fatal("event with a different ID was accepted")
 	}
 }
@@ -269,17 +276,17 @@ func TestReadinessLossAndFailedStatusWritesRemainVisible(t *testing.T) {
 	api := &stateAPI{db: db, updateError: failure}
 	c, _ := New(api, api, pendingProvider{})
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
-	if err := c.reconcile(context.Background(), event); !errors.Is(err, failure) {
+	if err := reconcileHint(context.Background(), c, event); !errors.Is(err, failure) {
 		t.Fatal("status update failure was lost", err)
 	}
 	api.updateError = nil
-	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+	if err := reconcileHint(context.Background(), c, event); !errors.Is(err, ErrPending) {
 		t.Fatal("pending workload was marked ready", err)
 	}
 	if db.GetStatus() != "provisioning" || len(api.updates) != 2 {
 		t.Fatal("readiness loss was not published", api.updates)
 	}
-	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+	if err := reconcileHint(context.Background(), c, event); !errors.Is(err, ErrPending) {
 		t.Fatal(err)
 	}
 	if len(api.updates) != 2 {
@@ -318,7 +325,7 @@ func TestMissingDatabaseRevisionStopsProviderWork(t *testing.T) {
 		provider := &rejectProvider{}
 		c, _ := New(api, api, provider)
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
-		if err := c.reconcile(context.Background(), event); err == nil {
+		if err := reconcileHint(context.Background(), c, event); err == nil {
 			t.Fatal("missing revision accepted")
 		}
 		if provider.calls != 0 || len(api.updates) != 0 {
@@ -347,13 +354,13 @@ func TestDatabaseConflictRequiresAnotherProviderObservation(t *testing.T) {
 	provider := &changeDuringEnsure{change: func() { api.version++ }}
 	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
-	if err := c.reconcile(context.Background(), event); status.Code(err) != codes.Aborted {
+	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.Aborted {
 		t.Fatal("old observation did not fail", err)
 	}
 	if provider.calls != 1 || len(api.updates) != 0 || api.db.GetStatus() == "ready" {
 		t.Fatal("conflict published or retried the old result")
 	}
-	if err := c.reconcile(context.Background(), event); err != nil {
+	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
 	}
 	if provider.calls != 2 || len(api.updates) != 1 || api.db.GetStatus() != "ready" {
@@ -373,7 +380,7 @@ func TestLiveDatabaseEventUsesCurrentProvider(t *testing.T) {
 		hint := proto.Clone(row).(*pb.ManagedDatabase)
 		hint.Provider = test.hint
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: hint}
-		if err := c.reconcile(context.Background(), event); err != nil {
+		if err := reconcileHint(context.Background(), c, event); err != nil {
 			t.Fatal(err)
 		}
 		if provider.calls != test.calls {
@@ -382,17 +389,18 @@ func TestLiveDatabaseEventUsesCurrentProvider(t *testing.T) {
 	}
 }
 
-func TestDatabaseDeleteRequiresCurrentDeletedState(t *testing.T) {
+func TestDatabaseDeleteHintCannotDeleteCurrentLiveState(t *testing.T) {
 	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
+	expected := proto.Clone(row)
 	api := &stateAPI{db: row}
-	provider := &rejectProvider{}
+	provider := &recordingProvider{}
 	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
-	if err := c.reconcile(context.Background(), event); err == nil {
-		t.Error("deletion accepted without current deleted state")
+	if err := reconcileHint(context.Background(), c, event); err != nil {
+		t.Fatal(err)
 	}
-	if provider.calls != 0 {
-		t.Fatal("deletion event alone reached the provider")
+	if api.reads != 1 || len(provider.deleted) != 0 || len(provider.ensured) != 1 || !proto.Equal(provider.ensured[0], expected) {
+		t.Fatal("delete hint replaced current live intent")
 	}
 }
 
@@ -420,14 +428,14 @@ func TestDatabaseDeleteUsesCurrentRetainedRecord(t *testing.T) {
 		hint.Namespace = "old"
 		hint.Provider = "cnpg"
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: kind, ManagedDatabase: hint}
-		if err := c.reconcile(context.Background(), event); err != nil {
+		if err := reconcileHint(context.Background(), c, event); err != nil {
 			t.Fatal(err)
 		}
 		if api.reads != 1 || len(api.updates) != 0 || len(provider.ensured) != 0 || len(provider.deleted) != 1 || !proto.Equal(provider.deleted[0], current) {
 			t.Fatal("deletion did not use current retained state", kind)
 		}
 		provider.failure = ErrPending
-		if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+		if err := reconcileHint(context.Background(), c, event); !errors.Is(err, ErrPending) {
 			t.Fatal("cleanup failure lost", err)
 		}
 		if api.reads != 2 || len(provider.deleted) != 2 {
@@ -464,7 +472,7 @@ func TestDatabaseDeleteStopsWithoutAuthoritativeEvidence(t *testing.T) {
 			c, _ := New(api, api, provider)
 			hint := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 			event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: hint}
-			if err := c.reconcile(context.Background(), event); err == nil {
+			if err := reconcileHint(context.Background(), c, event); err == nil {
 				t.Fatal("deletion accepted without evidence")
 			}
 			if len(provider.deleted) != 0 || len(provider.ensured) != 0 || len(api.updates) != 0 {
@@ -497,21 +505,21 @@ func TestCompletedDatabaseCleanupStillChecksForLateEffects(t *testing.T) {
 	provider := &recordingProvider{}
 	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
-	if err := c.reconcile(context.Background(), event); err != nil {
+	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
 	}
 	if len(provider.deleted) != 1 || len(api.cleanupCalls) != 0 {
 		t.Fatal("completed cleanup skipped observation or rewrote stable state")
 	}
 	provider.failure = ErrPending
-	if err := c.reconcile(context.Background(), event); !errors.Is(err, ErrPending) {
+	if err := reconcileHint(context.Background(), c, event); !errors.Is(err, ErrPending) {
 		t.Fatal(err)
 	}
 	if api.cleanupComplete || !slices.Equal(api.cleanupCalls, []bool{false}) {
 		t.Fatal("late effects kept cleanup complete")
 	}
 	provider.failure = nil
-	if err := c.reconcile(context.Background(), event); err != nil {
+	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
 	}
 	if !api.cleanupComplete || !slices.Equal(api.cleanupCalls, []bool{false, true}) || len(provider.deleted) != 3 {
@@ -525,7 +533,7 @@ func TestDatabaseCleanupConflictRequiresFreshProviderWork(t *testing.T) {
 	provider := &recordingProvider{}
 	c, _ := New(api, api, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
-	if err := c.reconcile(context.Background(), event); status.Code(err) != codes.Aborted {
+	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.Aborted {
 		t.Fatal(err)
 	}
 	if api.cleanupComplete || len(provider.deleted) != 1 || api.reads != 1 {
@@ -533,7 +541,7 @@ func TestDatabaseCleanupConflictRequiresFreshProviderWork(t *testing.T) {
 	}
 	api.cleanupError = nil
 	api.version++
-	if err := c.reconcile(context.Background(), event); err != nil {
+	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
 	}
 	if !api.cleanupComplete || len(provider.deleted) != 2 || api.reads != 2 {

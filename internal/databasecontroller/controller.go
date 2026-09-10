@@ -3,6 +3,7 @@ package databasecontroller
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"time"
@@ -22,8 +23,12 @@ import (
 const capability = "hypershell-managed-database-delete-tombstones"
 const replayMode = "hypershell-managed-database-replay"
 const queueCapacity = 1024
+const workers = 4
+const reconcileTimeout = 20 * time.Second
 const resyncInterval = 10 * time.Second
 
+// Provider calls can run concurrently for different database IDs.
+// STEGO permits one action per ID within a Run call.
 type Provider interface {
 	Ensure(context.Context, *pb.ManagedDatabase) error
 	Delete(context.Context, *pb.ManagedDatabase) error
@@ -41,23 +46,26 @@ func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupSer
 	return &Controller{api: api, cleanup: cleanup, provider: provider}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
-	return runtime.Run(ctx, runtime.Source[*pb.WatchManagedDatabasesResponse]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.Options{
-		QueueCapacity: queueCapacity, ResyncInterval: resyncInterval,
-		ReconcileTimeout: 20 * time.Second, ReconnectDelay: time.Second,
-		Terminal: func(err error) bool {
-			return status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
-		},
-		Observe: func(event runtime.Event) {
-			if event.Phase == "reconnect" {
-				slog.Warn("database controller will reconnect")
-			}
-			if event.Phase == "reconcile_failed" && !errors.Is(event.Err, ErrPending) {
-				slog.Warn("database needs another pass", "failure", kube.FailureSummary(event.Err))
-			}
+	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
+		ReconnectDelay: time.Second,
+		KeyedOptions: runtime.KeyedOptions{
+			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
+			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
+			Terminal: func(err error) bool {
+				return errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
+			},
+			Observe: func(event runtime.Event) {
+				if event.Phase == "reconnect" {
+					slog.Warn("database controller will reconnect")
+				}
+				if (event.Phase == "reconcile_failed" || event.Phase == "scan_failed") && !errors.Is(event.Err, ErrPending) {
+					slog.Warn("database needs another pass", "failure", kube.FailureSummary(event.Err))
+				}
+			},
 		},
 	})
 }
-func (c *Controller) watch(ctx context.Context) (func() (*pb.WatchManagedDatabasesResponse, error), error) {
+func (c *Controller) watch(ctx context.Context) (func() (string, error), error) {
 	stream, err := c.api.WatchManagedDatabases(ctx, &pb.WatchManagedDatabasesRequest{})
 	if err != nil {
 		return nil, err
@@ -65,26 +73,37 @@ func (c *Controller) watch(ctx context.Context) (func() (*pb.WatchManagedDatabas
 	if err := checkHeader(stream); err != nil {
 		return nil, err
 	}
-	return stream.Recv, nil
+	return func() (string, error) {
+		event, err := stream.Recv()
+		if err != nil {
+			return "", err
+		}
+		return eventKey(event)
+	}, nil
 }
 func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) error {
+	if stream == nil {
+		return fmt.Errorf("%w: database watch has no stream", runtime.ErrWatch)
+	}
 	header, err := stream.Header()
 	if err != nil {
 		return err
 	}
 	values := header.Get(capability)
 	if len(values) != 1 || values[0] != "v1" {
-		return errors.New("database watch does not support delete tombstones")
+		return fmt.Errorf("%w: database watch does not support delete tombstones", runtime.ErrWatch)
 	}
 	return nil
 }
 
 // Deleted rows use the retained replay contract. Live events remain hints.
-func (c *Controller) seed(ctx context.Context, send func(*pb.WatchManagedDatabasesResponse) error) error {
-	md, _ := metadata.FromOutgoingContext(ctx)
+func (c *Controller) seed(ctx context.Context, send func(string) error) error {
+	replayContext, stopReplay := context.WithCancel(ctx)
+	defer stopReplay()
+	md, _ := metadata.FromOutgoingContext(replayContext)
 	md = md.Copy()
 	md.Set(replayMode, "deleted-v1")
-	replay, err := c.api.WatchManagedDatabases(metadata.NewOutgoingContext(ctx, md), &pb.WatchManagedDatabasesRequest{})
+	replay, err := c.api.WatchManagedDatabases(metadata.NewOutgoingContext(replayContext, md), &pb.WatchManagedDatabasesRequest{})
 	if err != nil {
 		return err
 	}
@@ -100,22 +119,33 @@ func (c *Controller) seed(ctx context.Context, send func(*pb.WatchManagedDatabas
 			return err
 		}
 		if event.GetType() != pb.EventType_EVENT_TYPE_DELETED {
-			return errors.New("database replay returned a live row")
+			return fmt.Errorf("%w: database replay returned a live row", runtime.ErrScanContract)
 		}
-		if err := send(event); err != nil {
-			return err
-		}
-	}
-	for page := int32(1); page <= 10000; page++ {
-		response, err := c.api.ListManagedDatabases(ctx, &pb.ListManagedDatabasesRequest{Page: page, Size: 20})
+		key, err := eventKey(event)
 		if err != nil {
 			return err
 		}
-		if len(response.GetItems()) > 20 {
-			return errors.New("database list exceeded its page size")
+		if err := send(key); err != nil {
+			return err
+		}
+	}
+	stopReplay()
+	for page := int32(1); page <= 10000; page++ {
+		pageContext, stop := context.WithTimeout(ctx, reconcileTimeout)
+		response, err := c.api.ListManagedDatabases(pageContext, &pb.ListManagedDatabasesRequest{Page: page, Size: 20})
+		stop()
+		if err != nil {
+			return err
+		}
+		if response == nil || len(response.GetItems()) > 20 {
+			return fmt.Errorf("%w: invalid database list page", runtime.ErrScanContract)
 		}
 		for _, db := range response.Items {
-			if err := send(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_UPDATED, ResourceId: db.GetMetadata().GetId(), ManagedDatabase: db}); err != nil {
+			key, err := eventKey(&pb.WatchManagedDatabasesResponse{Type: pb.EventType_EVENT_TYPE_UPDATED, ResourceId: db.GetMetadata().GetId(), ManagedDatabase: db})
+			if err != nil {
+				return err
+			}
+			if err := send(key); err != nil {
 				return err
 			}
 		}
@@ -123,33 +153,34 @@ func (c *Controller) seed(ctx context.Context, send func(*pb.WatchManagedDatabas
 			return nil
 		}
 	}
-	return errors.New("database scan exceeded its page limit")
+	return fmt.Errorf("%w: database scan exceeded its page limit", runtime.ErrScanContract)
 }
-func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDatabasesResponse) error {
+func eventKey(event *pb.WatchManagedDatabasesResponse) (string, error) {
 	db := event.GetManagedDatabase()
 	if db == nil || db.GetMetadata().GetId() != event.GetResourceId() || event.GetResourceId() == "" {
-		return errors.New("database event has no matching resource")
+		return "", fmt.Errorf("%w: database event has no matching resource", runtime.ErrScanContract)
 	}
 	switch event.GetType() {
 	case pb.EventType_EVENT_TYPE_CREATED, pb.EventType_EVENT_TYPE_UPDATED, pb.EventType_EVENT_TYPE_DELETED:
 	default:
-		return errors.New("database event type is invalid")
+		return "", fmt.Errorf("%w: database event type is invalid", runtime.ErrScanContract)
 	}
+	return event.ResourceId, nil
+}
+
+func (c *Controller) reconcile(ctx context.Context, id string) error {
 	// All events are hints. Read retained state before any provider action.
 	readContext, err := rpc.WithRetainedResourceRead(ctx)
 	if err != nil {
 		return err
 	}
 	var header metadata.MD
-	response, err := c.api.GetManagedDatabase(readContext, &pb.GetManagedDatabaseRequest{Id: event.ResourceId}, grpc.Header(&header))
-	if status.Code(err) == codes.NotFound && event.GetType() != pb.EventType_EVENT_TYPE_DELETED {
-		return nil
-	}
+	response, err := c.api.GetManagedDatabase(readContext, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header))
 	if err != nil {
 		return err
 	}
-	db = response.GetManagedDatabase()
-	if db.GetMetadata().GetId() != event.ResourceId {
+	db := response.GetManagedDatabase()
+	if db.GetMetadata().GetId() != id {
 		return errors.New("database state has a different ID")
 	}
 	version, deleted, err := rpc.ObservedResourceState(header)
@@ -163,9 +194,6 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	complete, declared := cleanup["provider"]
 	if !declared {
 		return errors.New("database has no declared provider cleanup owner")
-	}
-	if event.GetType() == pb.EventType_EVENT_TYPE_DELETED && !deleted {
-		return errors.New("database deletion has no current deletion intent")
 	}
 	if db.GetProvider() != "deployment" {
 		return nil
@@ -191,7 +219,7 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 			desired = "provisioning"
 		}
 		if db.GetStatus() != desired {
-			_, updateError := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String(desired)})
+			_, updateError := c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String(desired)})
 			if updateError != nil {
 				return updateError
 			}
@@ -201,6 +229,6 @@ func (c *Controller) reconcile(ctx context.Context, event *pb.WatchManagedDataba
 	if db.GetStatus() == "ready" && db.GetConnectionSecret() == CredentialsName {
 		return nil
 	}
-	_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: event.ResourceId, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
+	_, err = c.api.UpdateManagedDatabase(writeContext, &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready"), ConnectionSecret: proto.String(CredentialsName)})
 	return err
 }
