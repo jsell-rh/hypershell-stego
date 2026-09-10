@@ -86,3 +86,19 @@ All five provider scripts passed locally on 2026-09-10 under race detection:
 The scripts used real Kubernetes providers. Gateway variants also used the real
 identity service and Gateway. The Sandbox gate executed its workload in the
 virtual machine. These local results do not replace CI for the new commit.
+
+Run 34533977192 has now finished with a failed acceptance result as well. The
+controller telemetry test received HTTP 409 during initial Gateway creation.
+The old assertion recorded no response reason, so that log does not prove which
+conflict caused the response. The test started a controller and a new API user
+at the same time. The API permits serialization conflicts during concurrent
+transactions.
+
+The telemetry test now retries only HTTP 409 with the documented serialization
+reason. It rejects other conflicts. Five attempts bound the retry loop. A test
+trigger raises SQLSTATE `40001` on its first Gateway insert. A sequence preserves
+the attempt count across rollback. The test requires the failed attempt to leave
+no Gateway or owner grant, then requires successful creation and reconciliation.
+Thus the retry branch is exercised on every run. Three consecutive race runs
+passed with PostgreSQL required, in 23.220 seconds. This does not change the API's
+transaction policy or add automatic retries to application writes.

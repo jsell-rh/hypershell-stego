@@ -162,13 +162,53 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 			receive(timer.C)
 		}
 	}
-	body, _ := json.Marshal(f.request("private-provider-gateway"))
-	code, body := requestJSON(t, "POST", httpAddress+"/api/hypershell/v1/gateways", owner, body)
+	// A sequence retains its increment after transaction rollback. Abort the
+	// first insert so the documented serialization retry path is always tested.
+	if _, err := f.db.Exec(`CREATE SEQUENCE telemetry_create_attempt;
+CREATE FUNCTION abort_first_telemetry_create() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN
+ IF nextval('telemetry_create_attempt') = 1 THEN
+  RAISE EXCEPTION 'test serialization abort' USING ERRCODE='40001';
+ END IF;
+ RETURN NEW;
+END $$;
+CREATE TRIGGER abort_first_telemetry_create BEFORE INSERT ON gateways FOR EACH ROW EXECUTE FUNCTION abort_first_telemetry_create()`); err != nil {
+		t.Fatal(err)
+	}
+	requestBody, _ := json.Marshal(f.request("private-provider-gateway"))
+	var code int
+	var body []byte
+	retries := 0
+	for attempt := 0; attempt < 5; attempt++ {
+		code, body = requestJSON(t, "POST", httpAddress+"/api/hypershell/v1/gateways", owner, requestBody)
+		if code != 409 {
+			break
+		}
+		var problem struct {
+			Reason string `json:"reason"`
+		}
+		if json.Unmarshal(body, &problem) != nil || problem.Reason != "The resource changed during the request; retry the operation" {
+			t.Fatal("unexpected Gateway conflict", string(body))
+		}
+		var gateways, grants int
+		if err := f.db.QueryRow("SELECT (SELECT count(*) FROM gateways), (SELECT count(*) FROM role_bindings WHERE scope='gateway')").Scan(&gateways, &grants); err != nil || gateways != 0 || grants != 0 {
+			t.Fatal("serialization abort retained a Gateway or owner grant", err)
+		}
+		retries++
+		time.Sleep(50 * time.Millisecond)
+	}
+	if retries == 0 {
+		t.Fatal("serialization retry was not tested")
+	}
+
 	var created struct {
 		ID string `json:"id"`
 	}
 	if code != 201 || json.Unmarshal(body, &created) != nil || created.ID == "" {
-		t.Fatal("Gateway create failed", code)
+		t.Fatal("Gateway create failed", code, string(body))
+	}
+	if _, err := f.db.Exec(`DROP TRIGGER abort_first_telemetry_create ON gateways; DROP FUNCTION abort_first_telemetry_create(); DROP SEQUENCE telemetry_create_attempt`); err != nil {
+		t.Fatal(err)
 	}
 	private = append(private, created.ID)
 	waitCondition := func(reason string) {
