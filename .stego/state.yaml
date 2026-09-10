@@ -1,11 +1,76 @@
 last_applied:
+    inputs:
+        version: 1
+        options:
+            module_name: github.com/jsell-rh/hypershell-stego
+            go_version: 1.26.8
+            output_dir: out
+            registry_ref: gateway-workflow
+        files:
+            .stego/config.yaml:
+                exists: true
+                sha256: 503141e16fef9afbe4279e7eaf894724150401dcd39745d6e6f1a78322944502
+                mode: 420
+            contracts/controlplane/database_cleanup.proto:
+                exists: true
+                sha256: 749fe0b9ca51dea9aa82e2439c9b5936132afb58df85a0ec606023f82ee13a2c
+                mode: 420
+            contracts/controlplane/gateway_identity.proto:
+                exists: true
+                sha256: 96502a2ae76a99b4f6d4420cc5df537700e72f650cc756402af6596564db3e51
+                mode: 420
+            contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto:
+                exists: true
+                sha256: 3045710da55d46d93687d4e52524e07cb5998a4bdc558168bba975e90cde2c15
+                mode: 420
+            contracts/reference/proto/hypershell/v1/common.proto:
+                exists: true
+                sha256: c53d0bd311a8c066ae4b16ce102b274ecf988579b414365afb26fc38c5a52d07
+                mode: 420
+            contracts/reference/proto/hypershell/v1/gateway_networks.proto:
+                exists: true
+                sha256: 61de59fe632ff9bf02978f03612de333522c34c4a2ff29b3542fe8ec5c046d26
+                mode: 420
+            contracts/reference/proto/hypershell/v1/gateway_releases.proto:
+                exists: true
+                sha256: 02d77553d3b4c02e209edd71fe470065343236f7bf75f33be6ec397331f67a86
+                mode: 420
+            contracts/reference/proto/hypershell/v1/gateways.proto:
+                exists: true
+                sha256: 0e914cb960518a908971f55ee5f60ffa4dc2efcfc3767ecae617f26306344ae5
+                mode: 420
+            contracts/reference/proto/hypershell/v1/managed_clusters.proto:
+                exists: true
+                sha256: d6faf0c02a37a167b1fada90746ace4c95874504fc20344a94ab3b8a30941db4
+                mode: 420
+            contracts/reference/proto/hypershell/v1/managed_databases.proto:
+                exists: true
+                sha256: 111da14b826b09078af23eb241729a23a4d5cb0b9026189f5eba1a00bf5183f8
+                mode: 420
+            contracts/reference/proto/hypershell/v1/role_bindings.proto:
+                exists: true
+                sha256: 8b95aa1707a0fa8b129fa030d72fa3cb4bc56e5c7d5b7744f916fc08be92e843
+                mode: 420
+            go.mod:
+                exists: true
+                sha256: cb7243221af3fb7e920f3acf7f832c52f675216975532c522dece757d50b0617
+                mode: 420
+            go.sum:
+                exists: true
+                sha256: bf57243ccde064e4883b74fd0ec7c3e131ddc7d42ffbf54949e24ffa4b1653e1
+                mode: 420
+            service.yaml:
+                exists: true
+                sha256: 1d1137b7b1b7c7f50d31bf287a22b1cb4e49ab5ab561c2b922d704a91cf8a7bf
+                mode: 420
+        sha256: 75639ce4d1c478b0ab413a70b02fbadc0a07622be60bb1353ebb35ba145f6852
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260910152259-e8afad97deda
+        module_version: v0.0.0-20260910153547-52b991c48d7c
         vcs: git
-        revision: e8afad97deda15136091ab5e203bd96726435ef0
+        revision: 52b991c48d7c02b10a1a1784a99e757e44a9fa4c
         source_state: clean
     service_hash: 1d1137b7b1b7c7f50d31bf287a22b1cb4e49ab5ab561c2b922d704a91cf8a7bf
     registry_sha: gateway-workflow
@@ -318,7 +383,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 954549e5f505831d332f2a4a3ae8f4cbb7a4a765fcd4f2c417dc01a1875c24ff
+        cli/command/version.go: 8c850157838b0602f553e53315458cc0a6d61ba95f24be4d070225009801c06f
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 1e31b4cc711167622c36468233c300226e5f4b4d2ca23552dbcb47c5097ca786
         controller/keyed.go: a4eb800cf13a68b8728354e3d855d725572db3131bde3f7facf2733075d734cb

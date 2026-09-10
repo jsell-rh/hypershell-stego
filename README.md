@@ -367,3 +367,7 @@ for the tested behavior and limits.
 Identity recovery now resumes from retained grant IDs through the common STEGO
 scan runtime. Inventories above 10,000 references continue across bounded passes.
 See [identity cursor recovery](acceptance/identity-cursors.md).
+
+Generated state records the declaration, configuration, module files, and declared
+protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
+manifest checks and their limits.
