@@ -15,6 +15,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/provisioner/v1"
 	"github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
+	"github.com/jsell-rh/hypershell-stego/out/tracing"
 	"google.golang.org/grpc"
 )
 
@@ -27,6 +28,11 @@ func main() {
 func run() error {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	telemetry, err := tracing.NewTracingRuntime()
+	if err != nil {
+		return err
+	}
+	defer telemetry.Close()
 	provider, err := keycloak.NewClient(keycloak.Options{
 		ServerURL: os.Getenv("HYPERSHELL_KEYCLOAK_URL"), Realm: os.Getenv("HYPERSHELL_KEYCLOAK_REALM"), ClientID: os.Getenv("HYPERSHELL_KEYCLOAK_CLIENT_ID"), SecretFile: os.Getenv("HYPERSHELL_KEYCLOAK_SECRET_FILE"), CAFile: os.Getenv("HYPERSHELL_KEYCLOAK_CA_FILE"),
 	})
@@ -50,7 +56,7 @@ func run() error {
 	runtime, err := transport.New(verifier.Authenticate, func(registrar grpc.ServiceRegistrar) error {
 		pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, server)
 		return nil
-	})
+	}, transport.Options{TraceRPC: telemetry.TraceRPC})
 	if err != nil {
 		return err
 	}

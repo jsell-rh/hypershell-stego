@@ -117,3 +117,11 @@ private provider setting and raw constructor error message in output. The local
 race check passed with PostgreSQL required. This test change does not relax
 provider validation or change the process logging policy. Later revisions still
 need their own full CI result.
+
+Run [34537318120](https://github.com/jsell-rh/hypershell-stego/actions/runs/34537318120)
+for `50ae860` finished with all five provider jobs passing. Full acceptance took
+1224.526 seconds and reported one failure in the same old startup-log assertion.
+The process exited with code 1 and the safe constructor-stage record. This
+revision preceded the assertion fix in `8064265`. The run remains a failed CI
+result. Run 34538907855 includes the fix and was active when this record was
+written.

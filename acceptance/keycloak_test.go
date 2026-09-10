@@ -149,6 +149,12 @@ func (k *keycloakFixture) issue(t *testing.T, id, secret string) (web.Response, 
 }
 func startRealProvisioner(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func()) {
 	t.Helper()
+	settings, stop, _ := startRealProvisionerWithLogs(t, k, key, settings)
+	return settings, stop
+}
+
+func startRealProvisionerWithLogs(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func(), func() string) {
+	t.Helper()
 	binary := buildProgram(t, "./cmd/provisioner")
 	identity := identity(t, "localhost")
 	dir := filepath.Dir(identity.config.CAFile)
@@ -202,7 +208,7 @@ func startRealProvisioner(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey,
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "api-provisioner")), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return []string{"HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR=" + address, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE=" + identity.config.CAFile, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE=" + tokenFile}, stop
+	return []string{"HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR=" + address, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE=" + identity.config.CAFile, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE=" + tokenFile}, stop, output.String
 }
 
 func TestServiceAccountsWithRealKeycloak(t *testing.T) {

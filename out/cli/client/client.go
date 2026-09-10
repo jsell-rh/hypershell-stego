@@ -9,6 +9,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
+	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	"io"
 	"net"
 	"net/http"
@@ -129,29 +130,48 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 	if c == nil || c.closed.Load() || ctx == nil {
 		return failure, errors.New("HTTP client is unavailable")
 	}
+	cancel := func() {}
+	defer func() { cancel() }()
+
+	ctx, inject, finish := tracing.TraceClientHTTP(ctx, method)
+	status := 0
+	kind := "aborted"
+	defer func() {
+		// A normal return sets kind. A panic or Goexit keeps the abort class.
+		if kind != "aborted" {
+			if ctx.Err() == context.DeadlineExceeded {
+				kind = "deadline"
+			} else if ctx.Err() == context.Canceled {
+				kind = "canceled"
+			}
+		}
+		finish(status, kind)
+	}()
+	fail := func(class string, err error) (Response, error) { kind = class; return failure, err }
+
 	u, err := url.Parse(relative)
 	if err != nil || !strings.HasPrefix(relative, "/") || strings.HasPrefix(relative, "//") || u.IsAbs() || u.Host != "" || u.User != nil || u.Fragment != "" || !safePath(u.EscapedPath()) {
-		return failure, errors.New("HTTP request requires a canonical relative path")
+		return fail("invalid_request", errors.New("HTTP request requires a canonical relative path"))
 	}
 	switch method {
 	case http.MethodGet, http.MethodPost, http.MethodPut, http.MethodPatch, http.MethodDelete, http.MethodHead:
 	default:
-		return failure, errors.New("unsupported HTTP method")
+		return fail("invalid_request", errors.New("unsupported HTTP method"))
 	}
 	if len(body) > MaxRequestBytes {
-		return failure, errors.New("HTTP request body exceeds limit")
+		return fail("invalid_request", errors.New("HTTP request body exceeds limit"))
 	}
 	headerBytes := 0
 	for name, values := range headers {
 		headerBytes += len(name)
 		switch strings.ToLower(name) {
 		case "host", "connection", "transfer-encoding", "content-length", "trailer", "upgrade", "proxy-authorization", "idempotency-key", "x-idempotency-key":
-			return failure, errors.New("unsupported HTTP request header")
+			return fail("invalid_request", errors.New("unsupported HTTP request header"))
 		}
 		for _, value := range values {
 			headerBytes += len(value)
 			if headerBytes > 32768 || len(value) > 16384 {
-				return failure, errors.New("HTTP request header exceeds limit")
+				return fail("invalid_request", errors.New("HTTP request header exceeds limit"))
 			}
 		}
 	}
@@ -159,7 +179,7 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 	case c.permits <- struct{}{}:
 		defer func() { <-c.permits }()
 	default:
-		return failure, errors.New("HTTP client capacity exceeded")
+		return fail("capacity", errors.New("HTTP client capacity exceeded"))
 	}
 	timeout := c.timeout
 	if timeout == 0 {
@@ -168,26 +188,27 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 	if consume != nil {
 		timeout = StreamTimeout
 	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
+	ctx, cancel = context.WithTimeout(ctx, timeout)
 	stopClose := context.AfterFunc(c.lifetime, cancel)
 	defer stopClose()
 	address := strings.TrimRight(c.base.String(), "/") + relative
 	request, err := http.NewRequestWithContext(ctx, method, address, bytes.NewReader(body))
 	if err != nil {
-		return failure, errors.New("invalid HTTP request")
+		return fail("invalid_request", errors.New("invalid HTTP request"))
 	}
 	request.Header = headers.Clone()
 	request.GetBody = nil
+	request.Header = inject(request.Header)
 	client := *c.http
 	client.Timeout = timeout
 	response, err := client.Do(request)
 	if err != nil {
-		return failure, errors.New("HTTP service request failed")
+		return fail("transport", errors.New("HTTP service request failed"))
 	}
+	status = response.StatusCode
 	defer response.Body.Close()
 	if response.StatusCode >= 300 && response.StatusCode < 400 {
-		return failure, errors.New("HTTP service redirect is forbidden")
+		return fail("redirect", errors.New("HTTP service redirect is forbidden"))
 	}
 	if consume != nil && response.StatusCode == http.StatusOK {
 		limited := &io.LimitedReader{R: response.Body, N: MaxStreamBytes + 1}
@@ -196,39 +217,41 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 		for scanner.Scan() {
 			frame := scanner.Bytes()
 			if len(frame) > MaxResponseBytes || limited.N == 0 {
-				return failure, errors.New("HTTP stream exceeds its limit")
+				return fail("stream", errors.New("HTTP stream exceeds its limit"))
 			}
 			if err := ctx.Err(); err != nil {
-				return failure, err
+				return fail("canceled", err)
 			}
 			if len(bytes.TrimSpace(frame)) == 0 {
 				continue
 			}
 			if err := consume(ctx, frame); err != nil {
-				return failure, err
+				return fail("callback", err)
 			}
 		}
 		if limited.N == 0 {
-			return failure, errors.New("HTTP stream exceeds its limit")
+			return fail("stream", errors.New("HTTP stream exceeds its limit"))
 		}
 		if scanner.Err() != nil {
-			return failure, errors.New("invalid HTTP stream frame")
+			return fail("stream", errors.New("invalid HTTP stream frame"))
 		}
 		if err := ctx.Err(); err != nil {
-			return failure, err
+			return fail("canceled", err)
 		}
+		kind = ""
 		return Response{StatusCode: response.StatusCode, Header: response.Header.Clone()}, nil
 	}
 	data, err := io.ReadAll(io.LimitReader(response.Body, MaxResponseBytes+1))
 	if err != nil || len(data) > MaxResponseBytes {
-		return failure, errors.New("invalid HTTP response body")
+		return fail("response", errors.New("invalid HTTP response body"))
 	}
 	if ctx.Err() != nil {
-		return failure, errors.New("HTTP service request canceled")
+		return fail("canceled", errors.New("HTTP service request canceled"))
 	}
 	if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
-		return failure, errors.New("HTTP service request expired")
+		return fail("deadline", errors.New("HTTP service request expired"))
 	}
+	kind = ""
 	return Response{StatusCode: response.StatusCode, Header: response.Header.Clone(), Body: data}, nil
 }
 

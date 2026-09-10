@@ -25,6 +25,9 @@ covers shared keyed actions, scans, watch sessions, retries, and queue state.
 [Instance identity](acceptance/telemetry-instance-identity.md) keeps request
 counts separate across API replicas and runtime replacements. Complete process
 logging remains open.
+Shared [HTTP client telemetry](acceptance/http-client-observability.md) now
+connects API requests, provider RPC calls, and real Keycloak HTTP calls across
+restart. Logs, metrics, spans, and propagation come from STEGO.
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes

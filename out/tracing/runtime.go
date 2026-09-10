@@ -45,6 +45,7 @@ const defaultService = "hypershell"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	httpClient                 clientSignals
 	client                     clientSignals
 	instance                   string
 	resource                   *resource.Resource
@@ -142,6 +143,10 @@ func newRuntime(localOutput io.Writer) (*Runtime, error) {
 		return nil, err
 	}
 	if err := runtime.initClientSignals(); err != nil {
+		runtime.Close()
+		return nil, err
+	}
+	if err := runtime.initHTTPClientSignals(); err != nil {
 		runtime.Close()
 		return nil, err
 	}
