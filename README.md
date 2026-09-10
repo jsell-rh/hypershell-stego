@@ -47,6 +47,8 @@ compilation alone does not establish compatibility or production readiness.
 
 Run `scripts/generate.sh` to regenerate with the pinned STEGO compiler. Run
 `scripts/generate.sh --check` from a clean checkout to check committed output.
+The [compiler preflight checks](acceptance/compiler-preflight.md) reject invalid
+component inputs before rendering and retain the checked source snapshots.
 
 Run `go test ./...` to verify the source hashes, validate OpenAPI references, and
 compile the protobuf contracts. The checks cover 37 REST operations, 41 gRPC
