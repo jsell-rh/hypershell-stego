@@ -18,10 +18,14 @@ import (
 )
 
 // ApplyResource binds a manifest kind to a collection with the generated REST
-// shape: resource objects have id and name; list objects have items and total.
+// shape: resource objects have id; list objects have items and total.
+// Named resources use metadata.name and PATCH. ImmutableIdentity enables
+// immutable resources whose lookup uses required string fields from spec.
+// Such resources have no PATCH fields; metadata.name is an optional output label.
 // An absent apiVersion is accepted for existing files. A supplied version must match.
 type ApplyResource struct {
 	Kind, APIVersion, Path    string
+	ImmutableIdentity         []string
 	CreateFields, PatchFields []Field
 }
 type applyPlan struct {
@@ -32,7 +36,7 @@ type applyPlan struct {
 }
 type ApplyResult struct {
 	Kind   string `json:"kind"`
-	Name   string `json:"name"`
+	Name   string `json:"name,omitempty"`
 	ID     string `json:"id,omitempty"`
 	Status string `json:"status"`
 }
@@ -66,9 +70,12 @@ func validateApply(resources []ApplyResource) error {
 					return errors.New("apply IDs belong in metadata")
 				}
 			}
-			if !hasName {
+			if !hasName && len(r.ImmutableIdentity) == 0 {
 				return errors.New("apply resources require a name field")
 			}
+		}
+		if err := validateImmutableApply(r); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -131,7 +138,11 @@ func prepareApply(app Application, documents []map[string]json.RawMessage) ([]ap
 				return nil, errApplyInput
 			}
 		}
-		if json.Unmarshal(metadata["name"], &name) != nil || strings.TrimSpace(name) == "" || !fieldValue(Field{Type: "string"}, metadata["name"]) {
+		if raw, ok := metadata["name"]; ok {
+			if json.Unmarshal(raw, &name) != nil || strings.TrimSpace(name) == "" || !fieldValue(Field{Type: "string"}, raw) {
+				return nil, errApplyInput
+			}
+		} else if len(r.ImmutableIdentity) == 0 {
 			return nil, errApplyInput
 		}
 		if raw, ok := metadata["id"]; ok {
@@ -147,7 +158,7 @@ func prepareApply(app Application, documents []map[string]json.RawMessage) ([]ap
 			}
 		}
 		for key, value := range metadata {
-			if key == "id" {
+			if key == "id" || (key == "name" && len(r.ImmutableIdentity) > 0) {
 				continue
 			}
 			if _, ok := body[key]; ok {
@@ -170,6 +181,14 @@ func prepareApply(app Application, documents []map[string]json.RawMessage) ([]ap
 			}
 		}
 		key := r.Path + "\x00name\x00" + name
+		if len(r.ImmutableIdentity) > 0 {
+			values, err := immutableIdentity(r, body)
+			if err != nil {
+				return nil, err
+			}
+			encoded, _ := json.Marshal(values)
+			key = r.Path + "\x00identity\x00" + string(encoded)
+		}
 		if id != "" {
 			key = r.Path + "\x00id\x00" + id
 		}
@@ -305,49 +324,12 @@ func runApply(ctx context.Context, app Application, args []string, output io.Wri
 	targets := map[string]bool{}
 	for i := range plans {
 		p := &plans[i]
-		route := p.resource.Path
-		if p.id != "" {
-			route += "/" + url.PathEscape(p.id)
-		} else {
-			query := url.Values{"page": {"1"}, "size": {"2"}, "search": {"name = '" + strings.ReplaceAll(p.name, "'", "''") + "'"}}
-			route += "?" + query.Encode()
-		}
-		response, err := transport.Do(ctx, "GET", route, headers, nil)
+		row, err := applyLookup(ctx, transport, headers, p)
 		if err != nil {
 			return err
 		}
-		if response.StatusCode != 200 {
-			return fmt.Errorf("apply lookup failed (HTTP %d); no resources were written", response.StatusCode)
-		}
-		lookup, err := object(response.Body)
-		if err != nil {
-			return errors.New("invalid apply lookup response")
-		}
-		if p.id == "" {
-			var total int64
-			var items []json.RawMessage
-			if bytes.Equal(bytes.TrimSpace(lookup["total"]), []byte("null")) || json.Unmarshal(lookup["total"], &total) != nil || total < 0 || json.Unmarshal(lookup["items"], &items) != nil || bytes.Equal(bytes.TrimSpace(lookup["items"]), []byte("null")) {
-				return errors.New("invalid apply list response")
-			}
-			if total > 1 || len(items) > 1 {
-				return errors.New("apply name is ambiguous; select metadata.id")
-			}
-			if total != int64(len(items)) {
-				return errors.New("inconsistent apply list response")
-			}
-			if total == 1 {
-				var row map[string]json.RawMessage
-				if !validJSON(items[0]) || json.Unmarshal(items[0], &row) != nil {
-					return errors.New("invalid apply resource response")
-				}
-				var name string
-				if json.Unmarshal(row["name"], &name) != nil || name != p.name || json.Unmarshal(row["id"], &p.id) != nil || !identifier.MatchString(p.id) {
-					return errors.New("invalid apply resource identity")
-				}
-			}
-		} else {
-			var id string
-			if json.Unmarshal(lookup["id"], &id) != nil || id != p.id {
+		if row != nil {
+			if json.Unmarshal(row["id"], &p.id) != nil {
 				return errors.New("invalid apply resource identity")
 			}
 		}
@@ -355,14 +337,17 @@ func runApply(ctx context.Context, app Application, args []string, output io.Wri
 		p.method = "POST"
 		fields := p.resource.CreateFields
 		if p.id != "" {
-			p.method = "PATCH"
 			p.path += "/" + url.PathEscape(p.id)
-			fields = p.resource.PatchFields
-			key := p.path
-			if targets[key] {
+			if targets[p.path] {
 				return errors.New("multiple apply documents select the same resource")
 			}
-			targets[key] = true
+			targets[p.path] = true
+			p.method = "PATCH"
+			fields = p.resource.PatchFields
+			if len(p.resource.ImmutableIdentity) > 0 {
+				p.method = "UNCHANGED"
+				fields = p.resource.CreateFields
+			}
 		}
 		if err := applyFields(fields, p.body, true); err != nil {
 			return err
@@ -381,10 +366,25 @@ func runApply(ctx context.Context, app Application, args []string, output io.Wri
 			}
 			return err
 		}
+		if p.method == "UNCHANGED" {
+			results[i].Status = "unchanged"
+			continue
+		}
 		response, requestErr := transport.Do(ctx, p.method, p.path, headers, p.payload)
 		outcomeErr := requestErr
 		results[i].Status = "unknown"
 		if requestErr == nil {
+			if p.method == "POST" && len(p.resource.ImmutableIdentity) > 0 && response.StatusCode == 409 {
+				row, lookupErr := applyLookup(ctx, transport, headers, &p)
+				if lookupErr == nil && row != nil {
+					var id string
+					if json.Unmarshal(row["id"], &id) == nil {
+						results[i].ID = id
+						results[i].Status = "unchanged"
+						continue
+					}
+				}
+			}
 			success := response.StatusCode == 200 || (p.method == "POST" && response.StatusCode == 201)
 			if !success {
 				if response.StatusCode >= 400 && response.StatusCode < 500 {
@@ -394,7 +394,13 @@ func runApply(ctx context.Context, app Application, args []string, output io.Wri
 			} else {
 				row, decodeErr := object(response.Body)
 				var id, name string
-				if decodeErr != nil || json.Unmarshal(row["name"], &name) != nil || name != p.name || json.Unmarshal(row["id"], &id) != nil || !identifier.MatchString(id) || (p.id != "" && p.id != id) {
+				valid := decodeErr == nil && json.Unmarshal(row["id"], &id) == nil && identifier.MatchString(id) && (p.id == "" || p.id == id)
+				if len(p.resource.ImmutableIdentity) > 0 {
+					valid = valid && immutableMatches(&p, row) == nil
+				} else {
+					valid = valid && json.Unmarshal(row["name"], &name) == nil && name == p.name
+				}
+				if !valid {
 					outcomeErr = errors.New("invalid apply write response; retrieve the resource before retry")
 				} else {
 					results[i].ID = id

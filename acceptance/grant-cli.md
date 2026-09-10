@@ -1,7 +1,9 @@
 The generated CLI can grant and remove Gateway access. Hypershell declares
 role and role-binding commands in `internal/cli/grants.go`. The existing STEGO
 runtime supplies parsing, validation, private configuration, HTTPS requests,
-and output. This workflow required no compiler or generated source change.
+and output. The first command workflow required no compiler or generated source
+change. The later [immutable apply workflow](cli-immutable-apply.md) uses STEGO
+CLI 1.4.0 and extends the same acceptance test.
 
 A user can retrieve their application user ID with:
 

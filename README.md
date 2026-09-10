@@ -309,8 +309,10 @@ and production acceptance remain open.
 The [generated apply workflow](acceptance/cli-apply.md) now creates and patches
 catalogs and Gateways from resource documents. It checks dry runs without API
 contact, complete preflight, partial failures, access, events, restart, and both
-database modes. The common runtime is supplied by STEGO. Remaining apply kinds,
-Kustomize rendering, and the complete CLI port remain open.
+database modes. [RoleBinding apply](acceptance/cli-immutable-apply.md) also creates
+grants and recognizes an exact existing match without a write. The common
+runtime is supplied by STEGO. Kustomize rendering and the complete CLI port
+remain open.
 Recovery now uses [generated storage cursors](acceptance/storage-cursors.md) for
 Gateway IDs, deleted databases, and service accounts. These queries preserve
 access and state filters without unused counts or application-built ID searches.

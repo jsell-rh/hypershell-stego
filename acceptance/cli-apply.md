@@ -96,7 +96,9 @@ passed. This duration includes setup and is not a capacity claim. The compiler
 race suite and compiler CI passed. Pinned regeneration and application static
 checks passed. CI runs the full application and workload gates.
 
-The role-binding apply mapping remains open. The reference role API registers
+The [role-binding apply mapping](cli-immutable-apply.md) now uses immutable
+identity fields and reports matching records as unchanged. The name and PATCH
+rules above apply to the five named resource kinds. The reference role API registers
 only reads, although its CLI has a role apply stub. Role mutation requires a new
 API and access policy. Kustomize rendering is also
 open; `-k` fails before any request. The port does not claim Kubernetes field

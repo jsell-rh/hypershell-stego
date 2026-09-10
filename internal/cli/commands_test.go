@@ -90,10 +90,17 @@ func TestApplyPatchFieldsFollowDomainContracts(t *testing.T) {
 		"GatewayNetwork":  reflect.TypeFor[catalog.NetworkPatch](),
 	}
 	resources := Commands().Resources
-	if len(resources) != len(types) {
+	if len(resources) != len(types)+1 {
 		t.Fatal("apply resource coverage differs")
 	}
 	for _, resource := range resources {
+		if resource.Kind == "RoleBinding" {
+			checkFields(t, resource.CreateFields, reflect.TypeFor[gateways.GrantRequest]())
+			if len(resource.PatchFields) != 0 || !reflect.DeepEqual(resource.ImmutableIdentity, []string{"gateway_id", "role_id", "user_id", "scope"}) {
+				t.Fatal("binding identity differs from domain API")
+			}
+			continue
+		}
 		checkFields(t, resource.PatchFields, types[resource.Kind])
 		if resource.Kind == "Gateway" {
 			checkFields(t, resource.CreateFields, reflect.TypeFor[gateways.CreateRequest]())

@@ -8,14 +8,14 @@ alone does not establish compatibility with all reference options.
 | --- | --- | --- |
 | Gateway | Create, get, list, delete, apply patch, body files, filtered API pages | Connection instructions, reference output options, interactive deletion |
 | Service account | Create, get, list, revoke, delete, relative expiry, protected credential output | Remaining output and confirmation options |
-| Role binding | Create, get, list, delete, grant access and removal | Reference list output and automatic pagination |
+| Role binding | Create, get, list, delete, immutable apply, grant access and removal | Reference list output and automatic pagination |
 | Role | Get and list, as registered by the reference API | Reference list output; role mutation would require a new API and access policy |
 | Managed cluster | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
 | Managed database | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
 | Gateway release | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
 | Gateway network | REST and gRPC CRUD and watch; CLI create, get, list, delete, apply patch | Reference output options and interactive confirmation |
 | Login and logout | Browser and device OIDC, private token files, refresh, provider token revocation | Legacy configuration migration and remaining reference options |
-| Apply | Five resource kinds; files, directories, stdin; local dry run; exact IDs; partial results and failure status | Role-binding mapping, Kustomize rendering; role writes have no reference API route |
+| Apply | Six resource kinds, including immutable RoleBinding; files, directories, stdin; local dry run; exact IDs; partial results and failure status | Kustomize rendering; role writes have no reference API route |
 | Config | Login writes private configuration | Reference config commands and pager settings |
 | Whoami | API-verified identity, protected raw and decoded token output, token refresh | Reference text output format |
 | Version and completion | Offline JSON with separate application and compiler build records | Shell completion; release artifact verification |

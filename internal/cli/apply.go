@@ -41,5 +41,11 @@ func applyResources(commands []command.Command) []command.ApplyResource {
 			break
 		}
 	}
+	for _, definition := range commands {
+		if definition.Method == "POST" && definition.Path == "/api/hypershell/v1/role_bindings" {
+			resources = append(resources, command.ApplyResource{Kind: "RoleBinding", APIVersion: "hypershell/v1", Path: definition.Path, CreateFields: append([]command.Field(nil), definition.Fields...), ImmutableIdentity: []string{"gateway_id", "role_id", "user_id", "scope"}})
+			break
+		}
+	}
 	return resources
 }
