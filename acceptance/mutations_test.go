@@ -141,6 +141,10 @@ type pausedTransaction struct {
 	read, release chan struct{}
 }
 
+func (tx pausedTransaction) ReadCursor(ctx context.Context, entity, field, value string, options contract.CursorOptions) (contract.CursorResult, error) {
+	return tx.Transaction.(contract.CursorReader).ReadCursor(ctx, entity, field, value, options)
+}
+
 func (tx pausedTransaction) Replace(ctx context.Context, entity, id string, value any) error {
 	if entity == "Gateway" {
 		close(tx.read)

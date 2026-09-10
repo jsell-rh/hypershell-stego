@@ -332,3 +332,7 @@ The compiler also checks [constructor metadata](https://github.com/jsell-rh/steg
 before it generates startup code. Invalid middleware, dependency, and cleanup
 indexes now cause a compiler error. This pin upgrade preserved all 74 generated
 and dependency file hashes. Contract race tests and the application build passed.
+
+[Identity reconciliation reads](acceptance/identity-queries.md) now use generated
+bounded queries without unused totals. Current grants, retained user identity,
+and controller-only access remain part of the same transaction.

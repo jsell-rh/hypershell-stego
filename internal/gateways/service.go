@@ -242,12 +242,16 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 }
 
 func findRole(ctx context.Context, storage store.Storage, name string) (model.Role, error) {
-	result, err := storage.List(ctx, "Role", "name", name, store.ListOptions{Page: 1, Size: 1})
+	reader, ok := storage.(store.CursorReader)
+	if !ok {
+		return model.Role{}, errors.New("role storage does not support bounded reads")
+	}
+	result, err := reader.ReadCursor(ctx, "Role", "name", name, store.CursorOptions{Limit: 1})
 	if err != nil {
 		return model.Role{}, err
 	}
 	rows, ok := result.Items.([]model.Role)
-	if !ok || result.Total != 1 || len(rows) != 1 {
+	if !ok || result.More || len(rows) != 1 || rows[0].Name != name {
 		return model.Role{}, errors.New("required role is absent")
 	}
 	return rows[0], nil

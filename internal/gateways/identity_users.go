@@ -72,18 +72,25 @@ func (s *Service) IdentityUserState(ctx context.Context, p Principal, gatewayID,
 		if _, err := tx.Get(ctx, "Gateway", gatewayID); err != nil {
 			return err
 		}
-		result, err := tx.List(ctx, "User", "id", userID, store.ListOptions{Page: 1, Size: 1, IncludeDeleted: true})
+		reader, ok := tx.(store.CursorReader)
+		if !ok {
+			return errors.New("identity storage does not support bounded reads")
+		}
+		result, err := reader.ReadCursor(ctx, "User", "id", userID, store.CursorOptions{Limit: 1, Deletion: store.CursorAll})
 		if err != nil {
 			return err
 		}
 		rows, ok := result.Items.([]model.User)
-		if !ok {
+		if !ok || result.More || len(rows) > 1 {
 			return errors.New("unexpected user storage result")
 		}
 		if len(rows) != 1 {
 			return store.ErrNotFound
 		}
 		user := rows[0]
+		if user.ID != userID {
+			return errors.New("stored user does not match the request")
+		}
 		if user.Issuer == nil || user.Subject == nil || *user.Issuer == "" || *user.Subject == "" {
 			return ErrUnboundUser
 		}
@@ -96,11 +103,15 @@ func (s *Service) IdentityUserState(ctx context.Context, p Principal, gatewayID,
 			if err != nil {
 				return err
 			}
-			grants, err := tx.List(ctx, "RoleBinding", "gateway_id", gatewayID, store.ListOptions{Page: 1, CountOnly: true, ImplicitFilters: map[string]string{"user_id": userID, "role_id": role.ID, "scope": "gateway"}})
+			grants, err := reader.ReadCursor(ctx, "RoleBinding", "gateway_id", gatewayID, store.CursorOptions{Limit: 1, ImplicitFilters: map[string]string{"user_id": userID, "role_id": role.ID, "scope": "gateway"}})
 			if err != nil {
 				return err
 			}
-			if grants.Total > 0 {
+			rows, ok := grants.Items.([]model.RoleBinding)
+			if !ok || len(rows) > 1 {
+				return errors.New("unexpected grant storage result")
+			}
+			if len(rows) != 0 {
 				state.Role = name
 				return nil
 			}
