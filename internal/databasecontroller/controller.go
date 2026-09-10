@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"time"
 
@@ -87,6 +88,14 @@ func checkHeader(stream pb.ManagedDatabaseService_WatchManagedDatabasesClient) e
 	header, err := stream.Header()
 	if err != nil {
 		return err
+	}
+	// gRPC reports an error before headers through Recv, not Header.
+	// Preserve that status so a temporary failure can be retried. The watch
+	// setup context bounds this receive. A clean end still lacks capability.
+	if header == nil {
+		if _, err := stream.Recv(); err != nil && !errors.Is(err, io.EOF) {
+			return err
+		}
 	}
 	values := header.Get(capability)
 	if len(values) != 1 || values[0] != "v1" {

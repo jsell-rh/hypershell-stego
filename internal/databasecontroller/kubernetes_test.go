@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -159,7 +160,7 @@ type headerStream struct {
 
 func (s *headerStream) Header() (metadata.MD, error) { return s.header, nil }
 func (s *headerStream) Recv() (*pb.WatchManagedDatabasesResponse, error) {
-	return nil, errors.New("unexpected receive")
+	return nil, io.EOF
 }
 func TestDatabaseWatchRequiresOneKnownCapability(t *testing.T) {
 	for _, md := range []metadata.MD{nil, metadata.Pairs(capability, "v2"), metadata.Pairs(capability, "v1", capability, "v1")} {
