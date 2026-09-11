@@ -8,6 +8,7 @@ overrides:
   health-check:
     database: true
   browser-backend:
+    telemetry_service_name: hypershell-web-console
     api_prefix: /api/hypershell/v1
     logout_scope: identity_provider
     roles_claim: resource_access.hypershell.roles

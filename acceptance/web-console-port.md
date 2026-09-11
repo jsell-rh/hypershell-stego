@@ -6,68 +6,55 @@ package under `packages/gateway-management-ui`. Its source revision is
 The port includes Gateway list, creation, detail, and service-account pages.
 It retains domain use cases, view models, probe definitions, and branding.
 
-The generated STEGO TypeScript client supplies HTTP requests, CSRF handling,
-session reads, cancellation, response checks, explicit login navigation, and
-safe public error codes. Application adapters map the contract models to the
-domain ports. Optional API fields are checked before use. OAuth tokens remain
-in the separate generated Go browser backend. Confirmed sign-out ends both
-the console and identity-provider sessions.
+Compiler `e4ca4dc` supplies the common browser client and telemetry runtime.
+The generated client owns HTTP requests, CSRF, session reads, cancellation,
+validation, explicit login, and declared public error codes. The generated
+telemetry package owns providers, batching, limits, export, random trace IDs,
+and lifecycle. Gateway adapters map domain probes to spans, logs, and metric
+attributes. OAuth tokens remain in the separate Go browser backend. Confirmed
+sign-out ends both the console and identity-provider sessions.
 
-The port excludes the old Node backend, password-grant development proxy,
-old SDK transport, and browser automation files. The production build imports
-only the Bash syntax grammar and two required themes. The resulting build has
-54 files and uses about 3 MiB on disk. STEGO captured a build in an 835,373-byte
-archive without a limit change.
+The Go backend relay requires an active session, same Origin, CSRF token, and
+bounded protobuf body. It limits each session's request rate. The shared Go
+runtime validates telemetry and uses its verified TLS collector connection.
+Browser input cannot set the exported service or scope identity. Collector
+addresses and credentials stay on the server.
 
-The bounded jshell checks passed application and test types, import boundaries,
-lint, 7 probe tests, 164 domain UI tests, 67 console tests, and the production
-build. Initial checks found optional-field errors, incorrect migrated test
-matchers, and lint errors. These were corrected. The final complete check is
-`check3` in `/tmp/stego-ui-final-q0sjvu_6`. The enclosing Job retains its initial
-failed result; the later check has a separate successful result. CI now runs
-`scripts/check-web-console.sh` with one test worker and a bounded Node heap.
+The pinned Gateway workflow passed in 12.03 seconds. A TLS OTLP collector
+received the browser root span, the backend and API parent chain, a browser
+log with the same trace ID, and a metric with the expected service identity.
+The workflow also passed atomic Gateway and owner grant creation, access rules,
+filtered lists, denied requests, REST and gRPC, event delivery, restart, renewal,
+and provider sign-out. The input-manifest race check passed in 1.055 seconds.
+All 162 hashes match two generation passes and the checkout: 161 generated,
+state, and Go dependency files plus the Node acceptance lockfile. The installed
+acceptance telemetry package is checked against the generated package bytes.
+The final pinned check is `check3` in `/tmp/stego-browser-relay-1orkdb7y`.
 
-This source port does not replace the served console scaffold yet. These gates
-remain open:
+The UI passed 233 tests: 7 probe tests, 164 domain UI tests, and 62 console tests.
+Generic provider tests moved to STEGO, where ten runtime tests now cover all
+three signals, failure, limits, and lifecycle. The UI also passed application
+and test types, import checks, lint, and its production build. Its domain test
+checks export of Gateway spans, logs, and metrics without the correlation ID
+as an attribute. The inherited React tests still emit `act` warnings.
 
-- Move common browser telemetry setup, limits, export, and lifecycle into STEGO.
-  The copied reference telemetry adapter still contains runtime setup.
-- Add the generated authenticated telemetry relay and prove logs, metrics,
-  traces, propagation, and collector failure behavior.
-- Capture and serve the final UI build through the generated Go backend.
-- Prove the rendered Gateway workflow, browser cookie and script policy,
-  accessibility, restart, and regeneration.
+The first UI check stopped at lint. It found a test stub without an await and
+lifecycle callback types that did not state independence from `this`. The test
+and common declaration were corrected. The final UI check is `check2` in
+`/tmp/stego-browser-otel-ui-codwet_4`; the enclosing Job retains the initial
+failed result. Both generated browser packages match the final pinned files.
+The 54-file build was captured in an 852,377-byte ZIP without a limit change.
+The build contains the generated telemetry runtime.
 
-A build and simulated DOM tests do not prove these browser behaviors. The
-existing real PostgreSQL and Keycloak Gateway protocol test remains a separate
-required gate. Production deployment, rotation, and capacity also remain open.
+The source port does not replace the served scaffold yet. These gates remain:
 
-The UI passed its type checks and production build again with the exact SDK
-files from compiler `440fbbc`. Those files match the pinned generation hashes.
-The pinned Gateway protocol workflow then passed in 24.08 seconds, including
-provider sign-out. All 155 generation hashes match the second pass and the
-checkout. This does not close the browser rendering or telemetry gates above.
+- Check collector failure through the complete browser application.
+- Complete the common browser configuration path for deployment settings.
+- Serve the final captured build through the generated Go backend.
+- Prove the rendered Gateway workflow, cookie and script policy, accessibility,
+  restart, and regeneration in a real browser.
+- Prove production deployment, credential rotation, and measured capacity.
 
-Compiler `1d7ae40` adds trace context to each SDK request. The application adapter
-passes the current Gateway dependency context and abort signal through this
-interface. The generated SDK owns header checks and transport. A reused client
-does not retain the previous request's context.
-
-The bounded jshell UI check passed all 239 tests: 7 probe tests, 164 domain UI
-tests, and 68 console tests. Application and test types, import boundaries,
-lint, and the production build passed. The inherited React tests still emit
-`act` warnings; passing tests do not remove the rendered browser gate. The
-results are in `/tmp/stego-browser-trace-ui-meu7bs4u`.
-
-The fresh pinned Gateway workflow passed in 13.81 seconds with a TLS OTLP
-collector. It checks the parent chain from the supplied browser trace context
-through the Go browser backend, its HTTP client, and the API. Login, atomic
-Gateway and owner grant creation, access rules, REST and gRPC, event delivery,
-restart, renewal, and provider sign-out also passed. The input-manifest race
-test passed. All 155 output, state, and dependency hashes match two generation
-passes and the checkout. The UI used the same generated SDK bytes. These
-results are in `check3` under `/tmp/stego-browser-trace-t39scx2c`.
-
-This proves propagation through the application. It does not prove export of
-the browser's root span. The common browser telemetry runtime, authenticated
-relay, and rendered workflow remain the next required work.
+A build and simulated DOM tests do not prove browser policy or rendering.
+The bounded SDK queues do not guarantee delivery after a page closes.
+The broader Hypershell and STEGO goals remain active.

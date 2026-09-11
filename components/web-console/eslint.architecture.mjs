@@ -5,7 +5,7 @@ const sdkPattern = {
 };
 
 const telemetryPattern = {
-  group: ["@opentelemetry/*"],
+  group: ["@opentelemetry/*", "@stego/browser-telemetry"],
   message:
     "Import telemetry vendors only from an observability adapter or composition root.",
 };
@@ -72,7 +72,7 @@ export const browserTelemetryImportRule = [
     ],
     patterns: [
       {
-        group: ["@opentelemetry/*"],
+        group: ["@opentelemetry/*", "@stego/browser-telemetry"],
         message: "Keep telemetry out of API adapters.",
       },
     ],

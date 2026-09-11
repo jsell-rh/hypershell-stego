@@ -67,3 +67,7 @@ and identity-provider sessions, with a confirmation page. This is now an
 explicit requirement. The existing `identity_provider` setting and Keycloak
 acceptance test implement this choice. Opening the confirmation page must not
 end either session.
+
+The [current console record](web-console-port.md) now includes the common
+browser telemetry runtime, authenticated relay, and three-signal Gateway
+protocol evidence. The rendered browser and production gates remain open.

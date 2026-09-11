@@ -45,6 +45,8 @@ const defaultService = "hypershell-console"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	browserOnce                sync.Once
+	browserPermits             chan struct{}
 	database                   databaseSignals
 	command                    commandSignals
 	httpClient                 clientSignals

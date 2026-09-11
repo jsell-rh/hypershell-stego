@@ -2,39 +2,23 @@ import type {
   GatewayAction,
   GatewayProbe,
 } from "@openshift-online/hypershell-gateway-management-ui";
-import type { ProbeDeliveryFailure } from "@openshift-online/hypershell-domain-probes/fan-out";
-import { SpanStatusCode, type MeterProvider } from "@opentelemetry/api";
-import { ExportResultCode } from "@opentelemetry/core";
-import { OTLPTraceExporter } from "@opentelemetry/exporter-trace-otlp-http";
+import { SpanStatusCode } from "@opentelemetry/api";
 import {
   AlwaysOffSampler,
   AlwaysOnSampler,
   BasicTracerProvider,
-  BatchSpanProcessor,
   InMemorySpanExporter,
   ParentBasedSampler,
   SimpleSpanProcessor,
-  type BufferConfig,
   type ReadableSpan,
   type Sampler,
-  type SpanExporter,
 } from "@opentelemetry/sdk-trace-base";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { RootTraceIdGenerator } from "@stego/browser-telemetry";
 import {
-  RootTraceIdGenerator,
-  backstopExporter,
   createGatewayTraceSink,
   createGatewayTracing,
-  deliveryHealthMeterProvider,
 } from "./gateway-trace-sink";
-
-/** An exporter that accepts a batch but never acknowledges it. */
-const blockingExporter: SpanExporter = {
-  export: () => undefined,
-  forceFlush: () => Promise.resolve(),
-  shutdown: () => Promise.resolve(),
-};
 
 const traceId = "0af7651916cd43dd8448eb211c80319c";
 const correlationId = "correlation-1";
@@ -284,271 +268,51 @@ describe("gateway trace sink", () => {
   });
 });
 
-describe("createGatewayTracing flush on page hide", () => {
-  const config = {
-    serviceName: "hypershell-web-console",
-    tracesEndpoint: "http://localhost/telemetry/v1/traces",
-  };
-
-  function setVisibility(state: "hidden" | "visible"): void {
-    Object.defineProperty(document, "visibilityState", {
-      configurable: true,
-      get: () => state,
-    });
-  }
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-    setVisibility("visible");
-  });
-
-  it("flushes buffered spans on hidden visibilitychange and on pagehide", async () => {
-    const flush = vi
-      .spyOn(BasicTracerProvider.prototype, "forceFlush")
-      .mockResolvedValue();
-    const tracing = createGatewayTracing(config);
-
-    // A visible transition must not flush; only a hide is a last-chance export.
-    setVisibility("visible");
-    document.dispatchEvent(new Event("visibilitychange"));
-    expect(flush).not.toHaveBeenCalled();
-
-    setVisibility("hidden");
-    document.dispatchEvent(new Event("visibilitychange"));
-    expect(flush).toHaveBeenCalledTimes(1);
-
-    window.dispatchEvent(new Event("pagehide"));
-    expect(flush).toHaveBeenCalledTimes(2);
-
-    vi.spyOn(BasicTracerProvider.prototype, "shutdown").mockResolvedValue();
-    await tracing.shutdown();
-  });
-
-  it("stops flushing once shutdown removes the listeners", async () => {
-    const flush = vi
-      .spyOn(BasicTracerProvider.prototype, "forceFlush")
-      .mockResolvedValue();
-    const shutdown = vi
-      .spyOn(BasicTracerProvider.prototype, "shutdown")
-      .mockResolvedValue();
-    const tracing = createGatewayTracing(config);
-
-    await tracing.shutdown();
-    expect(shutdown).toHaveBeenCalledTimes(1);
-    flush.mockClear();
-
-    setVisibility("hidden");
-    document.dispatchEvent(new Event("visibilitychange"));
-    window.dispatchEvent(new Event("pagehide"));
-    expect(flush).not.toHaveBeenCalled();
-  });
-});
-
-describe("createGatewayTracing delivery health", () => {
-  const config = {
-    serviceName: "hypershell-web-console",
-    tracesEndpoint: "http://localhost/telemetry/v1/traces",
-  };
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
-  it("reports a failed span export as an out-of-band delivery failure", async () => {
-    // The collector is unreachable: the exporter yields a FAILED result, which
-    // the batch processor would otherwise swallow into its global error handler.
-    vi.spyOn(OTLPTraceExporter.prototype, "export").mockImplementation(
-      (_spans, resultCallback) => {
-        resultCallback({
-          code: ExportResultCode.FAILED,
-          error: new Error("collector unreachable"),
-        });
-      },
-    );
-    const failures: Readonly<ProbeDeliveryFailure>[] = [];
-    const tracing = createGatewayTracing(config, {
-      reportDeliveryFailure: (failure) => failures.push(failure),
-    });
-
-    tracing.sink.publish(probe("gateway.workflow.started"));
-    tracing.sink.publish(
-      probe("gateway.workflow.completed", { outcome: "succeeded" }),
-    );
-    // The flush rejects on the failed export; the failure is recorded before the
-    // rejection propagates, so settling it here is enough.
-    await tracing.forceFlush().catch(() => undefined);
-
-    expect(failures).toEqual([
-      {
-        errorType: "Error",
-        probeName: "gateway.trace.export",
-        schemaVersion: 0,
-        sinkId: "gateway-trace",
-      },
-    ]);
-
-    vi.spyOn(OTLPTraceExporter.prototype, "shutdown").mockResolvedValue();
-    await tracing.shutdown();
-  });
-
-  it("does not report when the export succeeds", async () => {
-    vi.spyOn(OTLPTraceExporter.prototype, "export").mockImplementation(
-      (_spans, resultCallback) => {
-        resultCallback({ code: ExportResultCode.SUCCESS });
-      },
-    );
-    const failures: Readonly<ProbeDeliveryFailure>[] = [];
-    const tracing = createGatewayTracing(config, {
-      reportDeliveryFailure: (failure) => failures.push(failure),
-    });
-
+it("exports domain spans, logs, and metrics through the generated runtime", async () => {
+  const payloads: { url: string; body: string }[] = [];
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string, options: RequestInit) => {
+      if (url.endsWith("/auth/session"))
+        return Promise.resolve(
+          Response.json({
+            authenticated: true,
+            csrf_token: "c".repeat(43),
+          }),
+        );
+      payloads.push({
+        url,
+        body: new TextDecoder().decode(options.body as Uint8Array),
+      });
+      return Promise.resolve(new Response(null));
+    }),
+  );
+  const failures: unknown[] = [];
+  const tracing = createGatewayTracing(
+    { sampleRatio: 1 },
+    { reportDeliveryFailure: (failure) => failures.push(failure) },
+  );
+  try {
     tracing.sink.publish(probe("gateway.workflow.started"));
     tracing.sink.publish(
       probe("gateway.workflow.completed", { outcome: "succeeded" }),
     );
     await tracing.forceFlush();
-
+    expect(payloads.map((value) => new URL(value.url).pathname).sort()).toEqual(
+      ["/telemetry/v1/logs", "/telemetry/v1/metrics", "/telemetry/v1/traces"],
+    );
+    expect(
+      payloads.find((value) => value.url.endsWith("/logs"))?.body,
+    ).toContain("gateway.workflow.completed");
+    expect(
+      payloads.find((value) => value.url.endsWith("/metrics"))?.body,
+    ).toContain("gateway.probes");
+    expect(payloads.every((value) => !value.body.includes(correlationId))).toBe(
+      true,
+    );
     expect(failures).toEqual([]);
-
-    vi.spyOn(OTLPTraceExporter.prototype, "shutdown").mockResolvedValue();
+  } finally {
     await tracing.shutdown();
-  });
-
-  it("reports every span dropped by an overflowing queue", () => {
-    // A queue that holds one span plus an exporter that never drains it forces
-    // the batch processor to drop every subsequent span. Those drops never
-    // reach the exporter callback, so only the self-observation meter can
-    // surface them.
-    vi.useFakeTimers();
-    try {
-      const failures: Readonly<ProbeDeliveryFailure>[] = [];
-      const processorConfig: BufferConfig & {
-        selfObsMeterProvider?: MeterProvider;
-      } = {
-        maxExportBatchSize: 1,
-        maxQueueSize: 1,
-        scheduledDelayMillis: 1,
-        selfObsMeterProvider: deliveryHealthMeterProvider((failure) =>
-          failures.push(failure),
-        ),
-      };
-      const provider = new BasicTracerProvider({
-        sampler: new AlwaysOnSampler(),
-        spanProcessors: [
-          new BatchSpanProcessor(blockingExporter, processorConfig),
-        ],
-      });
-      const tracer = provider.getTracer("overflow-test");
-
-      // The exporter never drains, so once the in-flight batch and the single
-      // queue slot are taken, every further span overflows and is dropped.
-      for (let index = 0; index < 8; index += 1) {
-        tracer.startSpan(`span-${String(index)}`).end();
-      }
-
-      expect(failures.length).toBeGreaterThanOrEqual(1);
-      expect(
-        failures.every((failure) => failure.errorType === "queue_full"),
-      ).toBe(true);
-      expect(failures).toContainEqual({
-        errorType: "queue_full",
-        probeName: "gateway.trace.export",
-        schemaVersion: 0,
-        sinkId: "gateway-trace",
-      });
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("reports a wedged exporter that never acknowledges a batch", async () => {
-    // The exporter accepts the batch and never calls back. The processor's own
-    // export timeout would reject the flush without accounting the loss; the
-    // backstop converts the stall into a FAILED result the meter records.
-    vi.useFakeTimers();
-    try {
-      const failures: Readonly<ProbeDeliveryFailure>[] = [];
-      const processorConfig: BufferConfig & {
-        selfObsMeterProvider?: MeterProvider;
-      } = {
-        maxExportBatchSize: 1,
-        scheduledDelayMillis: 1,
-        selfObsMeterProvider: deliveryHealthMeterProvider((failure) =>
-          failures.push(failure),
-        ),
-      };
-      const provider = new BasicTracerProvider({
-        sampler: new AlwaysOnSampler(),
-        spanProcessors: [
-          new BatchSpanProcessor(
-            backstopExporter(blockingExporter, 15_000),
-            processorConfig,
-          ),
-        ],
-      });
-      const tracer = provider.getTracer("blocking-test");
-      tracer.startSpan("wedged").end();
-
-      const flushed = provider.forceFlush().catch(() => undefined);
-      await vi.advanceTimersByTimeAsync(15_000);
-      await flushed;
-
-      expect(failures).toEqual([
-        {
-          errorType: "SpanExportTimeout",
-          probeName: "gateway.trace.export",
-          schemaVersion: 0,
-          sinkId: "gateway-trace",
-        },
-      ]);
-    } finally {
-      vi.useRealTimers();
-    }
-  });
-
-  it("reports a synchronous exporter throw as a delivery failure", async () => {
-    // The exporter throws instead of calling back. Without the backstop's throw
-    // guard the loss would bypass settlement and go entirely unaccounted.
-    const throwingExporter: SpanExporter = {
-      export: () => {
-        const error = new Error("exporter blew up");
-        error.name = "SyncExportError";
-        throw error;
-      },
-      forceFlush: () => Promise.resolve(),
-      shutdown: () => Promise.resolve(),
-    };
-    const failures: Readonly<ProbeDeliveryFailure>[] = [];
-    const processorConfig: BufferConfig & {
-      selfObsMeterProvider?: MeterProvider;
-    } = {
-      maxExportBatchSize: 1,
-      scheduledDelayMillis: 1,
-      selfObsMeterProvider: deliveryHealthMeterProvider((failure) =>
-        failures.push(failure),
-      ),
-    };
-    const provider = new BasicTracerProvider({
-      sampler: new AlwaysOnSampler(),
-      spanProcessors: [
-        new BatchSpanProcessor(
-          backstopExporter(throwingExporter, 15_000),
-          processorConfig,
-        ),
-      ],
-    });
-    const tracer = provider.getTracer("throwing-test");
-    tracer.startSpan("thrown").end();
-
-    await provider.forceFlush().catch(() => undefined);
-
-    expect(failures).toEqual([
-      {
-        errorType: "SyncExportError",
-        probeName: "gateway.trace.export",
-        schemaVersion: 0,
-        sinkId: "gateway-trace",
-      },
-    ]);
-  });
+    vi.unstubAllGlobals();
+  }
 });

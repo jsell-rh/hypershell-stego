@@ -1,4 +1,5 @@
 packages:
+  - out/browsertelemetry
   - packages/gateway-management-ui
   - components/web-console
   - components/web-console/domain-probes

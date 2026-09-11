@@ -11,6 +11,7 @@ components:
   - grpc-application
   - go-sdk
   - typescript-sdk
+  - browser-telemetry
   - controller
   - health-check
   - kubernetes-service

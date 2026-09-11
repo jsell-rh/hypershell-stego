@@ -284,6 +284,16 @@ func (b *consoleBrowser) api(t *testing.T, method, path string, body []byte) web
 
 func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, request any) string {
 	t.Helper()
+	for _, name := range []string{"index.js", "index.d.ts", "package.json"} {
+		generated, err := os.ReadFile(filepath.Join("../out/browsertelemetry", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		installed, err := os.ReadFile(filepath.Join("typescript/node_modules/@stego/browser-telemetry", name))
+		if err != nil || !bytes.Equal(generated, installed) {
+			t.Fatal("browser telemetry fixture does not match generated output; run npm ci with --install-links")
+		}
+	}
 	node, err := exec.LookPath("node")
 	if err != nil {
 		t.Fatal("Node.js is required for the generated browser SDK workflow")
@@ -566,7 +576,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 func checkBrowserTraceChain(t *testing.T, collector *httpDiagnosticCollector) {
 	t.Helper()
 	const traceID = "0af7651916cd43dd8448eb211c80319c"
-	const parentID = "b7ad6b7169203331"
+
 	spans := map[string]*tracepb.Span{}
 	timer := time.NewTimer(5 * time.Second)
 	defer timer.Stop()
@@ -594,9 +604,69 @@ func checkBrowserTraceChain(t *testing.T, collector *httpDiagnosticCollector) {
 				continue
 			}
 			browser := spans[hex.EncodeToString(client.ParentSpanId)]
-			if browser != nil && browser.Kind == tracepb.Span_SPAN_KIND_SERVER && browser.Name == "POST /api/hypershell/v1/{resource}" && hex.EncodeToString(browser.ParentSpanId) == parentID {
+			if browser != nil && browser.Kind == tracepb.Span_SPAN_KIND_SERVER && browser.Name == "POST /api/hypershell/v1/{resource}" && spans[hex.EncodeToString(browser.ParentSpanId)] != nil {
+				root := spans[hex.EncodeToString(browser.ParentSpanId)]
+				if root.Name != "gateway.workflow.create" || len(root.ParentSpanId) != 0 {
+					continue
+				}
+				checkBrowserLogAndMetric(t, collector)
 				return
 			}
+		}
+	}
+}
+
+func checkBrowserLogAndMetric(t *testing.T, collector *httpDiagnosticCollector) {
+	t.Helper()
+	logSeen, metricSeen := false, false
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+	for !logSeen || !metricSeen {
+		select {
+		case batch := <-collector.logs.received:
+			for _, resource := range batch.ResourceLogs {
+				identity := false
+				for _, a := range resource.Resource.GetAttributes() {
+					if a.Key == "service.name" && a.Value.GetStringValue() == "hypershell-web-console" {
+						identity = true
+					}
+				}
+				if !identity {
+					continue
+				}
+				for _, scope := range resource.ScopeLogs {
+					for _, record := range scope.LogRecords {
+						if record.Body.GetStringValue() == "gateway.created" && hex.EncodeToString(record.TraceId) == "0af7651916cd43dd8448eb211c80319c" {
+							logSeen = true
+						}
+					}
+				}
+			}
+		case batch := <-collector.metrics.received:
+			for _, resource := range batch.ResourceMetrics {
+				identity := false
+				for _, a := range resource.Resource.GetAttributes() {
+					if a.Key == "service.name" && a.Value.GetStringValue() == "hypershell-web-console" {
+						identity = true
+					}
+				}
+				if !identity {
+					continue
+				}
+				for _, scope := range resource.ScopeMetrics {
+					for _, metric := range scope.Metrics {
+						if metric.Name == "gateway.created" {
+							for _, point := range metric.GetSum().GetDataPoints() {
+								if point.GetAsDouble() == 1 || point.GetAsInt() == 1 {
+									metricSeen = true
+								}
+							}
+						}
+					}
+				}
+			}
+		case <-timer.C:
+			t.Fatal("browser log and metric did not reach the collector")
 		}
 	}
 }

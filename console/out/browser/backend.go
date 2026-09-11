@@ -23,20 +23,22 @@ import (
 //go:embed public
 var assets embed.FS
 
-const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"LogoutScope\":\"identity_provider\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}],\"ScriptHashes\":[]}"
+const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"LogoutScope\":\"identity_provider\",\"TelemetryService\":\"hypershell-web-console\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}],\"ScriptHashes\":[]}"
 const SessionCookie = "__Host-Http-stego_session"
 const LoginCookie = "__Host-Http-stego_login"
 const CSRFHeader = "X-CSRF-Token"
 
 type asset struct{ Source, Path, Hash string }
 type configuration struct {
-	Prefix, RolesClaim, LogoutScope string
-	Routes                          []string
-	Assets                          []asset
-	ScriptHashes                    []string
+	Prefix, RolesClaim, LogoutScope, TelemetryService string
+	Routes                                            []string
+	Assets                                            []asset
+	ScriptHashes                                      []string
 }
 type options struct{ Origin, Upstream, UpstreamCA, Issuer, IssuerCA, ClientID, SecretFile, KeyFile string }
 type Backend struct {
+	telemetryMu                sync.Mutex
+	telemetryLimits            map[string]telemetryBucket
 	store                      *sessionStore
 	provider                   *oauthProvider
 	upstream                   *client.Client
@@ -269,6 +271,11 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		b.logout(w, r)
+		return
+	}
+	if strings.HasPrefix(r.URL.Path, "/telemetry/") {
+		r.Pattern = "/telemetry/v1/{signal}"
+		b.telemetry(w, r)
 		return
 	}
 	if r.URL.Path == b.config.Prefix || strings.HasPrefix(r.URL.Path, b.config.Prefix+"/") {

@@ -166,6 +166,8 @@ overrides:
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19092, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
+  browser-telemetry:
+    service_name: hypershell-web-console
   typescript-sdk:
     error_codes: [service_account_name_exists]
     document: contracts/reference/openapi/openapi.yaml

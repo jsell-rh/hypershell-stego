@@ -42,7 +42,7 @@ jobs:
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '24.18.1'
-      - run: npm ci --prefix acceptance/typescript --ignore-scripts --no-audit --no-fund
+      - run: npm ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
       - run: node acceptance/typescript/node_modules/typescript/lib/tsc.js --strict --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext acceptance/browser_sdk_types.mts
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./...
       - name: Check console dependencies

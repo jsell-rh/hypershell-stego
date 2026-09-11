@@ -49,3 +49,7 @@ match the files used by the protocol test; only the compiler state record
 changed during adoption. Full CI for this revision remains a separate check.
 The cluster Job completed. Its namespace was removed, and the cluster API
 confirmed removal.
+
+The [current console record](web-console-port.md) now includes the common
+browser telemetry runtime, authenticated relay, and three-signal Gateway
+protocol evidence. The rendered browser and production gates remain open.

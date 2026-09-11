@@ -13,7 +13,7 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: 1ad5f3225e92f0b96625158d7a65264df9b4fc791ee57dd8c43bac534d386a7b
+                sha256: f6bc46becd9d5291c9745bfd605a79a8c910c4ddd3a4f131572f98a34bc6c3f2
                 mode: 420
             go.sum:
                 exists: true
@@ -21,55 +21,57 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: cb905bb8d8178a939d024575da1225165994c9ee9b7a70ae03a1468f44e9963f
+                sha256: 3353b79650767d2346f6f91ccf9aaedf6894618f7b0d1b0c03fecdfe7fad884a
                 mode: 420
             ui/index.html:
                 exists: true
                 sha256: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
                 mode: 420
-        sha256: 45a9b58baa1cd9f1e260e7ce35d8cc63e2322195610ee7b05ef9286596863108
+        sha256: 5a1b8383fc37cbcb43bf15fbb5d9c569bcbaabbb54489a92d2d04d54f30ec1df
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911200707-1d7ae409418b
+        module_version: v0.0.0-20260911202924-e4ca4dc1e410
         vcs: git
-        revision: 1d7ae409418bdec14326037a01aadaebf265c414
+        revision: e4ca4dc1e410a3b0f4bd078b6a4af34d20f46071
         source_state: clean
-    service_hash: cb905bb8d8178a939d024575da1225165994c9ee9b7a70ae03a1468f44e9963f
+    service_hash: 3353b79650767d2346f6f91ccf9aaedf6894618f7b0d1b0c03fecdfe7fad884a
     registry_sha: browser-workflow
-    registry_content_sha256: a76bf8354d86c13ac954a2b13a706916e9dcdf8e7fbbd82628c1f18fc7692aa9
+    registry_content_sha256: 62c9a8980c367ae525201dc1fa5bc1c773e4450f1f079938836e6988382da6c5
     components:
         browser-backend:
-            version: 1.2.0
+            version: 1.3.0
             sha: browser-workflow
         health-check:
             version: 1.0.0
             sha: browser-workflow
         otel-tracing:
-            version: 1.10.0
+            version: 1.11.0
             sha: browser-workflow
         postgres-adapter:
             version: 4.0.0
             sha: browser-workflow
     files:
-        browser/backend.go: d302fb2d82e10c6b8cb41e09859268dce3225e221ecb3a2870fc593241b61710
+        browser/backend.go: 1262a937993f3264e2e0f0c037859ed6a7ff8e70a6ecd6df920b337172cb716c
         browser/client/client.go: fa5cc830627d59e6632383dc696dda8266016b503684865bedb408e5a5682389
         browser/handlers.go: 579b1bb50e2f0783fff31ebb13da8f51fac2995fd141d385cb0d0701e6184f58
         browser/oauth.go: f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e
         browser/public/index.html: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/store.go: 457330dc6540e8b3900400605637fe4c3bd58b1369c2ab9b0c2b3fcfe8b799f7
+        browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2
         main.go: b47cbedde3f3a91c31f645be31c7705473b539b99c6ca3c6747bb0497b25997a
+        tracing/browser.go: a027421fd349bed404c964ab7784329d965bb6fe1293f87ef833a93939e89a72
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
         tracing/controller.go: 330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222
         tracing/database.go: c07154500eda0fc54b65419534375c7fca9bb215bffc34f1ddbb92d784ce173b
         tracing/http_client.go: ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683
         tracing/identity.go: 2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6
-        tracing/runtime.go: 8fd4d78f9eaa13424930f19df0b87b36e4249ab0723d5d819acac71a02c28c23
+        tracing/runtime.go: 5246298670c332d3976d18cdf4d7792e745ef8ff71dc4718a550c46d4b88c6ad
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2

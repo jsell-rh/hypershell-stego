@@ -65,3 +65,7 @@ seconds (25.124 seconds for the package). The input-manifest race test passed
 in 1.055 seconds. All 155 generated, state, and dependency hashes match both
 generation passes and the checkout. Results are saved in
 `/tmp/stego-ui-pin-0lefryw_`. Full compiler CI passed for this revision.
+
+The [current console record](web-console-port.md) now includes the common
+browser telemetry runtime, authenticated relay, and three-signal Gateway
+protocol evidence. The rendered browser and production gates remain open.

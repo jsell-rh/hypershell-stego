@@ -7,11 +7,6 @@ import { createGatewayObservability } from "../adapters/observability/gateway-ob
 import { createGatewayTracing } from "../adapters/observability/gateway-trace-sink";
 import { readBrowserRuntimeConfig } from "./browser-runtime-config";
 
-// Same-origin OTLP/HTTP traces path the BFF exposes and forwards to the
-// collector. Keeping it same-origin means the browser never sees a collector
-// address and no cross-origin telemetry endpoint is exposed.
-const browserTracesEndpoint = "/telemetry/v1/traces";
-
 // The operator's sample ratio reaches the browser through the BFF-injected
 // runtime config, so the browser trace root honors the configured rate rather
 // than always recording every trace, and agrees with the BFF sampler.
@@ -30,8 +25,6 @@ let reportDeliveryFailure: (
 const tracing = createGatewayTracing(
   {
     sampleRatio: browserRuntimeConfig.tracing.sampleRatio,
-    serviceName: "hypershell-web-console",
-    tracesEndpoint: browserTracesEndpoint,
   },
   {
     reportDeliveryFailure: (failure) => {
