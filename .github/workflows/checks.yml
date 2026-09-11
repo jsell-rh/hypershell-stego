@@ -195,6 +195,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - run: scripts/test-wait-service-result.sh
       - name: Build the generated service image
         run: docker build --file out/deploy/Containerfile --tag hypershell-stego:check .
       - name: Check the image entry point

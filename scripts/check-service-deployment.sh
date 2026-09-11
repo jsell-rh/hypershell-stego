@@ -74,11 +74,10 @@ sha256sum "$results/application.tar" > "$results/application.sha256"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'mkdir -p /work/application; tar xf - -C /work/application' < "$results/application.tar"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/oc; chmod 755 /work/oc' < "$(command -v oc)"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/registry-ca.crt' < "$results/registry-ca.crt"
-set +e
-"${oc_cmd[@]}" --request-timeout=0 -n "$namespace" exec "$pod" -c test -- env "STEGO_TEST_FS_GROUP=$group" sh -c \
-  'sh /work/application/scripts/run-service-deployment-pod.sh > /work/deployment.log 2>&1; result=$?; echo "$result" > /work/deployment.exit; exit "$result"'
-result=$?
-set -e
+printf '%s\n' "$group" | "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/fs-group'
+"${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/start
+source "$project/scripts/wait-service-result.sh"
+wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
   'cd /work; tar cf - deployment.exit image.json worker-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar 2>/dev/null' > "$results/evidence.tar" || true

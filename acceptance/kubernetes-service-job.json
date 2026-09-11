@@ -442,9 +442,9 @@
                 "image": "docker.io/library/golang@sha256:2d54f6c8c6ea532a321e0b4c69553b2ed3637608d4f4357dbed37939fe2620cc",
                 "workingDir": "/work",
                 "command": [
-                  "/bin/sh",
+                  "/bin/bash",
                   "-c",
-                  "mkdir -p /work/tmp; while [ ! -f /work/collected ]; do sleep 2; done; test -f /work/deployment.exit || exit 1; exit \"$(cat /work/deployment.exit)\""
+                  "set -o pipefail\nmkdir -p /work/tmp\nwhile [ ! -f /work/start ]; do sleep 2; done\nexport STEGO_TEST_FS_GROUP=\"$(cat /work/fs-group)\"\nsh /work/application/scripts/run-service-deployment-pod.sh 2>&1 | tee /work/deployment.log\nresult=$?\nprintf '%s\\n' \"$result\" > /work/deployment.exit.tmp\nmv /work/deployment.exit.tmp /work/deployment.exit\nwhile [ ! -f /work/collected ]; do sleep 2; done\nexit \"$result\""
                 ],
                 "env": [
                   {
