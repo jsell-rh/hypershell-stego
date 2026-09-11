@@ -113,20 +113,20 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: b06ffd07bf2ce5d4a444f40d55c485f10d0f50a76531e15b4f5bf5e13af00731
+                sha256: db26cb350ea947a5ad53a1150e0992f52691f2a4f38e3f8171fb0b156abaf89e
                 mode: 420
-        sha256: d6ce37b48a38e6e694b1b4be973de316c7157e2054cf2d68fc7ae4f99846ebae
+        sha256: 62fc649050fce7bb9f556547f405577597bbd92f4045356b0e1e3578090cab02
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911210027-a1a2ad9c493b
+        module_version: v0.0.0-20260911210944-b3f690864dac
         vcs: git
-        revision: a1a2ad9c493beb12845a4e3464cbd3e907cdf7d1
+        revision: b3f690864dac20dcc766fb5aef6e4167aee8b654
         source_state: clean
-    service_hash: b06ffd07bf2ce5d4a444f40d55c485f10d0f50a76531e15b4f5bf5e13af00731
+    service_hash: db26cb350ea947a5ad53a1150e0992f52691f2a4f38e3f8171fb0b156abaf89e
     registry_sha: gateway-workflow
-    registry_content_sha256: 62c9a8980c367ae525201dc1fa5bc1c773e4450f1f079938836e6988382da6c5
+    registry_content_sha256: 48ae236571914edf02b11357404365516d376e29d4d4482fa24eeea22f02e9bd
     components:
         browser-telemetry:
             version: 1.0.0
@@ -159,7 +159,7 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         kubernetes-service:
-            version: 1.2.0
+            version: 1.3.0
             sha: gateway-workflow
         otel-tracing:
             version: 1.11.0
@@ -460,7 +460,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: f7f0c28cc2e16486872809da2de331031a5362d1c07b04cfad862ca71ddcab18
+        cli/command/version.go: 7d3e294c3b07b13ebf7227f2b0141fef63b958e14c523b6caf1845671a8324de
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -479,7 +479,7 @@ last_applied:
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/render/main.go: 361f1a0a1a0b31b859792328042539084358d169c1cb4f640188750269c7a1d0
-        deploy/render/manifest.json.tmpl: 23624a4fd5f3e5330cb2c0a8198b05663a8054859326ffeb4646a9850d137535
+        deploy/render/manifest.json.tmpl: 74c93972e207a9dab23f5fe778d884fef3c2f643a1959f1219c7667356f702c0
         deploy/render/worker-database.json.tmpl: 79640ac7d705cbbbbaec4b88bf3deb8a3351322a45031ab3c6bd4a5b614f1a51
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
         deploy/render/worker-gateway-workload.json.tmpl: 047b83353795f22babe20509ab7381cd93c597a2ace533de22b5cbddcdbda6ab

@@ -21,30 +21,33 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: fbda31b6780b73171d93d74b979fafa5134f3b683bf79dec0ba7940e94bebcd6
+                sha256: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
                 mode: 420
             ui/build.zip:
                 exists: true
                 sha256: 738d5d6725f36ece23b153a68de9ea751ac93ab57c6237112d0684ba763a0b2d
                 mode: 420
-        sha256: 36ac1afc995f9c9431667a93342da322e14445ff484ea87244e57948ab107df8
+        sha256: 75febd4fee9ba91ca733fe95f19974acd3fec075089d1fd04b9f83fb1210c581
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911210027-a1a2ad9c493b
+        module_version: v0.0.0-20260911210944-b3f690864dac
         vcs: git
-        revision: a1a2ad9c493beb12845a4e3464cbd3e907cdf7d1
+        revision: b3f690864dac20dcc766fb5aef6e4167aee8b654
         source_state: clean
-    service_hash: fbda31b6780b73171d93d74b979fafa5134f3b683bf79dec0ba7940e94bebcd6
+    service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 62c9a8980c367ae525201dc1fa5bc1c773e4450f1f079938836e6988382da6c5
+    registry_content_sha256: 48ae236571914edf02b11357404365516d376e29d4d4482fa24eeea22f02e9bd
     components:
         browser-backend:
             version: 1.3.0
             sha: browser-workflow
         health-check:
             version: 1.0.0
+            sha: browser-workflow
+        kubernetes-service:
+            version: 1.3.0
             sha: browser-workflow
         otel-tracing:
             version: 1.11.0
@@ -114,6 +117,10 @@ last_applied:
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/store.go: 457330dc6540e8b3900400605637fe4c3bd58b1369c2ab9b0c2b3fcfe8b799f7
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
+        deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
+        deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
+        deploy/render/main.go: 361f1a0a1a0b31b859792328042539084358d169c1cb4f640188750269c7a1d0
+        deploy/render/manifest.json.tmpl: 0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2

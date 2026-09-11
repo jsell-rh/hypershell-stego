@@ -3,6 +3,15 @@ name: hypershell-console
 archetype: browser-service
 language: go
 overrides:
+  kubernetes-service:
+    dns_namespace: openshift-dns
+    dns_port: 5353
+    network_peers:
+      - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 8443, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
   postgres-adapter:
     migrations: external
   health-check:

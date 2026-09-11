@@ -6,7 +6,7 @@
       "automountServiceAccountToken": false,
       "kind": "ServiceAccount",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-console",
         "namespace": "{{.Namespace}}"
       }
     },
@@ -14,11 +14,33 @@
       "apiVersion": "networking.k8s.io/v1",
       "kind": "NetworkPolicy",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-console",
         "namespace": "{{.Namespace}}"
       },
       "spec": {
         "egress": [
+          {
+            "ports": [
+              {
+                "port": 8443,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/name": "hypershell"
+                  }
+                }
+              }
+            ]
+          },
           {
             "ports": [
               {
@@ -44,7 +66,7 @@
           {
             "ports": [
               {
-                "port": 19092,
+                "port": 8443,
                 "protocol": "TCP"
               }
             ],
@@ -57,7 +79,7 @@
                 },
                 "podSelector": {
                   "matchLabels": {
-                    "app": "stego-fixture"
+                    "app": "identity-fixture"
                   }
                 }
               }
@@ -118,116 +140,6 @@
                 },
                 "podSelector": {
                   "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-console"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 8443,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-gateway-identity"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-database"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-gateway-workload"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-sandbox-count"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
                     "app": "stego-fixture"
                   }
                 }
@@ -236,28 +148,6 @@
             "ports": [
               {
                 "port": 8443,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app": "stego-fixture"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
                 "protocol": "TCP"
               }
             ]
@@ -265,7 +155,7 @@
         ],
         "podSelector": {
           "matchLabels": {
-            "app.kubernetes.io/name": "hypershell"
+            "app.kubernetes.io/name": "hypershell-console"
           }
         },
         "policyTypes": [
@@ -278,7 +168,7 @@
       "apiVersion": "apps/v1",
       "kind": "Deployment",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-console",
         "namespace": "{{.Namespace}}"
       },
       "spec": {
@@ -287,7 +177,7 @@
         "revisionHistoryLimit": 2,
         "selector": {
           "matchLabels": {
-            "app.kubernetes.io/name": "hypershell"
+            "app.kubernetes.io/name": "hypershell-console"
           }
         },
         "strategy": {
@@ -300,7 +190,7 @@
         "template": {
           "metadata": {
             "labels": {
-              "app.kubernetes.io/name": "hypershell"
+              "app.kubernetes.io/name": "hypershell-console"
             }
           },
           "spec": {
@@ -331,24 +221,12 @@
                   {
                     "name": "STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK",
                     "value": "0"
-                  },
-                  {
-                    "name": "STEGO_GRPC_ADDR",
-                    "value": "0.0.0.0:9090"
-                  },
-                  {
-                    "name": "STEGO_GRPC_TLS_CERT",
-                    "value": "/var/run/stego/tls.crt"
-                  },
-                  {
-                    "name": "STEGO_GRPC_TLS_KEY",
-                    "value": "/var/run/stego/tls.key"
                   }
                 ],
                 "envFrom": [
                   {
                     "secretRef": {
-                      "name": "hypershell-runtime"
+                      "name": "hypershell-console-runtime"
                     }
                   }
                 ],
@@ -369,10 +247,6 @@
                   {
                     "containerPort": 8443,
                     "name": "https"
-                  },
-                  {
-                    "containerPort": 9090,
-                    "name": "grpc"
                   }
                 ],
                 "readinessProbe": {
@@ -436,14 +310,14 @@
                 "type": "RuntimeDefault"
               }
             },
-            "serviceAccountName": "hypershell",
+            "serviceAccountName": "hypershell-console",
             "terminationGracePeriodSeconds": 60,
             "volumes": [
               {
                 "name": "files",
                 "secret": {
                   "defaultMode": 288,
-                  "secretName": "hypershell-files"
+                  "secretName": "hypershell-console-files"
                 }
               },
               {
@@ -461,7 +335,7 @@
       "apiVersion": "v1",
       "kind": "Service",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-console",
         "namespace": "{{.Namespace}}"
       },
       "spec": {
@@ -470,15 +344,10 @@
             "name": "https",
             "port": 8443,
             "targetPort": "https"
-          },
-          {
-            "name": "grpc",
-            "port": 9090,
-            "targetPort": "grpc"
           }
         ],
         "selector": {
-          "app.kubernetes.io/name": "hypershell"
+          "app.kubernetes.io/name": "hypershell-console"
         },
         "type": "ClusterIP"
       }

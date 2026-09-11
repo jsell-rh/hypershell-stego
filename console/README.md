@@ -3,8 +3,8 @@
 This service uses STEGO's common browser session backend. Hypershell supplies
 the API prefix, identity role claim, public routes, and asset inputs. Login,
 session storage, token renewal, logout, and the API proxy are generated.
-The browser page is a scaffold. A complete Gateway user interface is still
-required.
+The backend serves the built React console from `ui/build.zip`. The rendered
+Gateway workflow is checked with Chromium through WebDriver.
 
 Run `scripts/generate.sh` from the repository root to generate both services
 with the same pinned compiler. The console has its own Go module. Build its
@@ -26,7 +26,11 @@ access tokens need the `hypershell` audience. Its identity token audience must
 identify the console client. The console uses `resource_access.hypershell.roles`
 for the browser's role hints. The API still enforces access from stored grants.
 
-The acceptance test uses a separate API process and console process with real
-Keycloak. It checks the browser HTTP protocol with a Go HTTP client. It does
-not claim browser enforcement of cookie attributes or a rendered UI check.
-No Playwright is used.
+The acceptance test uses separate API and console processes with real Keycloak.
+It checks the browser protocol and the rendered Gateway workflow. The checks
+include access rules, telemetry, API and console restart, and confirmed sign-out.
+No Playwright is used. See [the UI test record](../acceptance/web-console-port.md).
+
+The browser archetype also generates a restricted container and Kubernetes
+resources. See [console deployment](../acceptance/console-deployment.md) for
+build context, secrets, trust, network peers, and the remaining deployment gate.
