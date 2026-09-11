@@ -57,6 +57,9 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			ProtoFiles []struct {
 				Path string `yaml:"path"`
 			} `yaml:"proto_files"`
+			Workers []struct {
+				Package string `yaml:"package"`
+			} `yaml:"workers"`
 		} `yaml:"overrides"`
 	}
 	if err := yaml.Unmarshal(read("service.yaml"), &service); err != nil {
@@ -75,6 +78,13 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			t.Fatal("invalid SDK input declaration", name)
 		}
 		expected[name] = true
+	}
+	for _, worker := range service.Overrides["kubernetes-service"].Workers {
+		if worker.Package == "" {
+			t.Fatal("worker has no source package")
+		}
+		// Several worker functions can share one declaration file.
+		expected[worker.Package+"/worker.go"] = true
 	}
 	if len(expected) != len(manifest.Files) {
 		t.Fatal("input inventory differs from declarations", len(expected), len(manifest.Files))
