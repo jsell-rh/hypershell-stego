@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -48,6 +49,11 @@ func (p *kubernetesBrowser) command(input []byte, args ...string) []byte {
 	ctx, cancel := context.WithTimeout(context.Background(), 190*time.Second)
 	defer cancel()
 	cmd := exec.CommandContext(ctx, p.oc, append([]string{"--namespace=" + p.namespace, "--request-timeout=180s"}, args...)...)
+	var inputKind struct{ Kind string }
+	if json.Unmarshal(input, &inputKind) == nil && inputKind.Kind == "Secret" {
+		// Capture transport metadata, but never print the raw Secret response.
+		cmd.Args = append(cmd.Args, "--v=6")
+	}
 	cmd.Stdin = bytes.NewReader(input)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
@@ -71,18 +77,43 @@ func (p *kubernetesBrowser) command(input []byte, args ...string) []byte {
 					p.t.Fatalf("Generated deployment apply failed: %v\n%s", err, output)
 				}
 			}
-			category := "unclassified"
-			for _, reason := range []string{"Conflict", "Forbidden", "Invalid", "NotFound", "TooManyRequests", "ServiceUnavailable", "Timeout", "InternalError", "Unauthorized"} {
-				if bytes.Contains(output, []byte("("+reason+")")) {
-					category = reason
-					break
-				}
-			}
-			p.t.Fatalf("Kubernetes browser fixture write failed: kind=%s name=%s category=%s: %v", document.Kind, document.Metadata.Name, category, err)
+			p.t.Fatalf("Kubernetes browser fixture write failed: kind=%s name=%s category=%s: %v", document.Kind, document.Metadata.Name, kubernetesWriteFailureCategory(output), err)
 		}
 		p.t.Fatalf("Kubernetes browser command failed: %v\n%s", err, output)
 	}
 	return output
+}
+
+func kubernetesWriteFailureCategory(output []byte) string {
+	for _, reason := range []string{"Conflict", "Forbidden", "Invalid", "NotFound", "AlreadyExists", "TooManyRequests", "ServiceUnavailable", "Timeout", "InternalError", "Unauthorized"} {
+		if bytes.Contains(output, []byte("("+reason+")")) {
+			return reason
+		}
+	}
+	text := strings.ToLower(string(output))
+	for _, phrase := range []string{"tls handshake timeout", "i/o timeout", "context deadline exceeded", "client.timeout", "request canceled", "connection refused", "connection reset", "unexpected eof", "permission denied", "failed to download openapi", "unable to retrieve the complete list of server apis", "error validating data", "unable to recognize", "no matches for kind"} {
+		if strings.Contains(text, phrase) {
+			return phrase
+		}
+	}
+	if codes := regexp.MustCompile(`(?:Response Status: |status=")([1-5][0-9]{2})`).FindAllSubmatch(output, -1); len(codes) > 0 {
+		return "HTTP " + string(codes[len(codes)-1][1])
+	}
+	return "unclassified"
+}
+
+func TestKubernetesWriteFailurePrivacy(t *testing.T) {
+	for input, want := range map[string]string{
+		`Secret data: private-fixture-key; Error from server (Forbidden)`: "Forbidden",
+		`private-fixture-key: net/http: TLS handshake timeout`:            "tls handshake timeout",
+		`status="503 Service Unavailable" body=private-fixture-key`:       "HTTP 503",
+		`Response Status: 500 Internal Server Error; private-fixture-key`: "HTTP 500",
+		`private-fixture-key unknown error`:                               "unclassified",
+	} {
+		if got := kubernetesWriteFailureCategory([]byte(input)); got != want {
+			t.Fatal("unsafe or incorrect write failure category")
+		}
+	}
 }
 func (p *kubernetesBrowser) apply(value any) {
 	p.t.Helper()
