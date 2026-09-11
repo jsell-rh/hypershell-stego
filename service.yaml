@@ -123,6 +123,17 @@ collections: {}
 slots: []
 
 overrides:
+  go-sdk:
+    document: contracts/reference/openapi/openapi.yaml
+    references:
+      - contracts/reference/openapi/openapi.gatewayNetworks.yaml
+      - contracts/reference/openapi/openapi.gatewayReleases.yaml
+      - contracts/reference/openapi/openapi.gateways.yaml
+      - contracts/reference/openapi/openapi.managedClusters.yaml
+      - contracts/reference/openapi/openapi.managedDatabases.yaml
+      - contracts/reference/openapi/openapi.roleBindings.yaml
+      - contracts/reference/openapi/openapi.roles.yaml
+      - contracts/reference/openapi/openapi.serviceAccounts.yaml
   health-check:
     database: true
   postgres-adapter:

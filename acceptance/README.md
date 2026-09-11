@@ -311,3 +311,7 @@ encrypted SQL, restart, repair, and cleanup through the generated runtime.
 The [CNPG Gateway workflow](cnpg-gateway.md) adds the real Gateway application,
 separate SQL identities and keys, restart, and SQL-confirmed cleanup. Its record
 states the test result and limits.
+
+The [Go SDK workflow](go-sdk.md) checks typed Gateway operations through the
+generated SDK, including atomic creation, denied and filtered access, rollback,
+events, TLS gRPC agreement, restart, and shared telemetry.

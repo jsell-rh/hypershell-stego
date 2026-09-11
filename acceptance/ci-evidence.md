@@ -165,3 +165,13 @@ Run [34601323734](https://github.com/jsell-rh/hypershell-stego/actions/runs/3460
 for `41adffb8fece0537d0108639a11f96bbc298e34b` passed all six jobs, including
 full acceptance and the five provider workflows. This verifies the CLI network
 test correction. It precedes the database telemetry change.
+
+
+## Database telemetry CI result
+
+[Run 34604410106](https://github.com/jsell-rh/hypershell-stego/actions/runs/34604410106)
+failed for `1b799f8815ffaad6d0d51c2ea4c91f2e532e6df1`. All five provider jobs
+passed. The acceptance job failed in `TestConcurrentCurrentUserRegistration`:
+one caller exhausted the test's retries with PostgreSQL SQLSTATE 40001. This
+concurrency result remains open. It is not a passing full application run.
+The later pool revision is running in CI run 34605719340.

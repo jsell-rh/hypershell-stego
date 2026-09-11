@@ -52,6 +52,8 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 	}
 	var service struct {
 		Overrides map[string]struct {
+			Document   string   `yaml:"document"`
+			References []string `yaml:"references"`
 			ProtoFiles []struct {
 				Path string `yaml:"path"`
 			} `yaml:"proto_files"`
@@ -66,6 +68,13 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			t.Fatal("duplicate input declaration", input.Path)
 		}
 		expected[input.Path] = true
+	}
+	client := service.Overrides["go-sdk"]
+	for _, name := range append([]string{client.Document}, client.References...) {
+		if name == "" || expected[name] {
+			t.Fatal("invalid SDK input declaration", name)
+		}
+		expected[name] = true
 	}
 	if len(expected) != len(manifest.Files) {
 		t.Fatal("input inventory differs from declarations", len(expected), len(manifest.Files))

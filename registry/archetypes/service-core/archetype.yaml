@@ -9,6 +9,7 @@ components:
   - cli-application
   - http-application
   - grpc-application
+  - go-sdk
   - controller
   - health-check
   - otel-tracing
