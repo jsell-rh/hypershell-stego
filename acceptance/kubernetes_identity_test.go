@@ -170,6 +170,14 @@ func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(a
 			}
 		}
 		stop()
+		checkIdentityWorkerRunAborts(t, k, apiHost+":9090", apiIdentity.config.CAFile, bearer, buildProgram(t, "./out/deploy/workers/gateway-identity"), func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			response, err := owner.UpdateGatewayWithResponse(ctx, id, sdk.UpdateGatewayJSONRequestBody{Oidc: &invalid})
+			if err != nil || response.JSON200 == nil {
+				t.Fatal("worker abort reset failed", err)
+			}
+		}, wait, first)
 		t.Log("Generated Gateway identity Deployment passed Keycloak creation, worker Pod replacement, and API Pod replacement")
 	}
 }

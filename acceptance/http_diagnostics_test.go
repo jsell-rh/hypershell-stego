@@ -39,7 +39,12 @@ func buildApplicationWithHTTPFault(t *testing.T) string {
 
 func buildApplicationWithMainOverlay(t *testing.T, transform func(string) string) string {
 	t.Helper()
-	original, err := filepath.Abs("../out/main.go")
+	return buildProgramWithMainOverlay(t, "./out", transform)
+}
+
+func buildProgramWithMainOverlay(t *testing.T, pkg string, transform func(string) string) string {
+	t.Helper()
+	original, err := filepath.Abs(filepath.Join("..", pkg, "main.go"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,10 +68,12 @@ func buildApplicationWithMainOverlay(t *testing.T, transform func(string) string
 	if raceEnabled {
 		args = append(args, "-race")
 	}
-	command := exec.Command("go", append(args, "./out")...)
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	defer cancel()
+	command := exec.CommandContext(ctx, "go", append(args, pkg)...)
 	command.Dir = ".."
 	if output, err := command.CombinedOutput(); err != nil {
-		t.Fatalf("build HTTP fault overlay: %v\n%s", err, output)
+		t.Fatalf("build process fault overlay: %v\n%s", err, output)
 	}
 	return binary
 }

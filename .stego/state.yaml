@@ -108,19 +108,19 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911164909-cb0326dd659e
+        module_version: v0.0.0-20260911170730-bbfacd13a018
         vcs: git
-        revision: cb0326dd659e3904ed17654e09778564b8660fa7
+        revision: bbfacd13a018261b5c9e11041ec55e62fd60cbc3
         source_state: clean
     service_hash: 6d0652a5ba6fc8a27432ffb0cf3c227c812b11fabbaaf8f3528d03374313ba9d
     registry_sha: gateway-workflow
-    registry_content_sha256: 3cab6fc00c8ecb50802fd74a012851ff6bbe749a3f86e213d15e6be37c59f01f
+    registry_content_sha256: f481f57ebb68d43d72a94181aa256728b79cf85cb81399b8bb522737a324721f
     components:
         cli-application:
             version: 1.6.1
             sha: gateway-workflow
         controller:
-            version: 1.15.0
+            version: 1.15.1
             sha: gateway-workflow
         go-sdk:
             version: 2.0.1
@@ -439,14 +439,14 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 9bc429f12c4aa1b33b818b565371f5d1af6790682cfb5be7948ea2651ef56bc2
+        cli/command/version.go: 60a838b4907326e77e439a058b6aefddec7a4c4dc6eb73906297bf681acfb02b
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75
         controller/keyed.go: 53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b
         controller/metrics.go: cac2c7cac4629e878ae0151e222a992df8142cc0c20b00acfc31a34894cec050
-        controller/monitor.go: 151f66845d43563959b540aefa1de42c92ad73fcfb6607f222033a862216e576
+        controller/monitor.go: ded50dc9af9754cf53d7519a118f115b65279d0d91d9f68d37b66062eeb1cf95
         controller/observation.go: f6496e96e7b20dc48f1060bff1e026fa10a2045b2accc02b65ad3bf2fb9f30d2
         controller/process.go: 5df4fc55ba076d0a6e27300c160d1332687b055680e9f89daaa74551e145b7a9
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f

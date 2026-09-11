@@ -413,10 +413,12 @@ Generated state records the declaration, configuration, module files, and declar
 protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
 manifest checks and their limits.
 
-The database, Gateway workload, Gateway identity, and sandbox-count controllers
-provide optional [controller metrics](acceptance/controller-metrics.md). Set
-`HYPERSHELL_METRICS_ADDR` to a literal loopback address and available port. STEGO
-supplies the collector and listener. The endpoint reports queue use, action
+The database, Gateway workload, and sandbox-count controllers provide optional
+[controller metrics](acceptance/controller-metrics.md). Set
+`HYPERSHELL_METRICS_ADDR` to a literal loopback address and available port. The
+generated identity worker uses `STEGO_CONTROLLER_MONITOR_ADDR`, with default
+`127.0.0.1:9081`, for its health probes and metrics. STEGO supplies the collector
+and listener. The endpoint reports queue use, action
 outcomes, retries, and duration without resource IDs or private error labels.
 
 [Cleanup summaries](acceptance/cleanup-summaries.md) report pending deleted
@@ -459,5 +461,8 @@ fluent SDK API is not required. Automatic pagination, TypeScript SDK, and web
 console remain open.
 
 The [generated Kubernetes service check](acceptance/kubernetes-service.md)
-runs the Gateway workflow in a separate API Pod. STEGO supplies its deployment
-resources and HTTPS runtime; the test checks behavior across Pod replacement.
+runs the Gateway workflow in separate API and identity worker Pods. STEGO
+supplies their deployment resources, process behavior, health probes, and
+telemetry. The test checks identity repair after worker and API Pod replacement.
+The [worker abort check](acceptance/worker-run-abort.md) requires safe failure
+output and identity recovery after a Run callback panic or `runtime.Goexit`.

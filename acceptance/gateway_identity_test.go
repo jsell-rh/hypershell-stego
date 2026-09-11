@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"net/http"
 	"net/url"
@@ -25,6 +26,11 @@ import (
 
 func startIdentityController(t *testing.T, binary string, k *keycloakFixture, address, ca, bearer string) (func(), func() string) {
 	t.Helper()
+	return startIdentityControllerWithExit(t, binary, k, address, ca, bearer, 0)
+}
+
+func startIdentityControllerWithExit(t *testing.T, binary string, k *keycloakFixture, address, ca, bearer string, expectedExit int, extra ...string) (func(), func() string) {
+	t.Helper()
 	tokenFile := filepath.Join(t.TempDir(), "controller-token")
 	if err := os.WriteFile(tokenFile, []byte(bearer), 0600); err != nil {
 		t.Fatal(err)
@@ -43,6 +49,7 @@ func startIdentityController(t *testing.T, binary string, k *keycloakFixture, ad
 	if raceEnabled {
 		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
 	}
+	command.Env = append(command.Env, extra...)
 	output := &runtimeOutput{}
 	command.Stdout = output
 	command.Stderr = output
@@ -60,8 +67,17 @@ func startIdentityController(t *testing.T, binary string, k *keycloakFixture, ad
 		_ = command.Process.Signal(syscall.SIGTERM)
 		select {
 		case err := <-done:
+			code := 0
 			if err != nil {
-				t.Errorf("identity controller exit: %v\n%s", err, output.String())
+				var exit *exec.ExitError
+				if errors.As(err, &exit) {
+					code = exit.ExitCode()
+				} else {
+					code = -1
+				}
+			}
+			if code != expectedExit {
+				t.Errorf("identity controller exit code: got %d, want %d", code, expectedExit)
 			}
 		case <-time.After(8 * time.Second):
 			_ = command.Process.Kill()
@@ -341,4 +357,10 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if live := k.gatewayClient(t, created.ID); live == nil || live["name"] != "renamed-identity" {
 		t.Fatal("restart did not retain the live Gateway identity")
 	}
+	stopController()
+	checkIdentityWorkerRunAborts(t, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken, controllerBinary, func() {
+		if code, _ := requestJSON(t, "PATCH", root+"/"+created.ID, owner, []byte(`{"oidc":"invalid"}`)); code != 200 {
+			t.Fatal("identity fault reset failed", code)
+		}
+	}, func() string { return waitOIDC(created.ID) }, firstOIDC)
 }

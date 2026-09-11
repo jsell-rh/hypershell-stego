@@ -189,6 +189,11 @@ The runtime source and generated inputs did not change during the test.
 
 [Compiler CI](https://github.com/jsell-rh/stego/actions/runs/34624175055) passed
 for the pinned compiler, including race tests and the vulnerability check.
-[Full variant CI](https://github.com/jsell-rh/hypershell-stego/actions/runs/34624732979)
+[Full variant CI](https://github.com/jsell-rh/hypershell-stego/actions/workflows/checks.yml?query=branch%3Amain)
 is tracked separately from this cluster result. Distributed worker exclusion,
 production deployment operations, and capacity remain open work.
+
+The later [worker Run abort check](worker-run-abort.md) adds fault processes
+against the same API and Keycloak Pods. These processes use a temporary build
+overlay and race detection. They do not change the generated deployment images
+or their telemetry instance checks.

@@ -13,11 +13,16 @@ import (
 	"time"
 )
 
+// ErrRunAborted reports a Run callback that panicked or exited without return.
+// It never includes or wraps the panic value.
+var ErrRunAborted = errors.New("controller run callback aborted before return")
+
 // Monitor supplies an optional loopback metrics endpoint for a controller.
 // An empty address disables collection. Otherwise, use a literal loopback IP
 // and a port from 1 through 65535. It does not use the default HTTP mux.
 // Both HTTP serving and the controller stop and join before Monitor returns.
-// The controller callback must stop when its context ends.
+// The controller callback must stop when its context ends. A callback abort
+// returns ErrRunAborted after its defers finish. Other goroutines are not covered.
 func Monitor(parent context.Context, address string, run func(context.Context, *Metrics) error) error {
 	if parent == nil || run == nil {
 		return errors.New("controller monitoring requires context and action")
@@ -26,7 +31,9 @@ func Monitor(parent context.Context, address string, run func(context.Context, *
 		return nil
 	}
 	if address == "" {
-		return run(parent, nil)
+		completed := make(chan error, 1)
+		go completeControllerRun(parent, nil, run, completed)
+		return <-completed
 	}
 	if err := monitorAddress(address); err != nil {
 		return err
@@ -56,7 +63,7 @@ func monitorListener(parent context.Context, listener net.Listener, run func(con
 	server := &http.Server{Handler: controllerHealth(ctx, metrics), ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 5 * time.Second, MaxHeaderBytes: 4096}
 	served, completed := make(chan error, 1), make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
-	go func() { completed <- run(ctx, metrics) }()
+	go completeControllerRun(ctx, metrics, run, completed)
 	var serveErr, runErr error
 	var serverDone, actionDone bool
 	select {
@@ -78,4 +85,20 @@ func monitorListener(parent context.Context, listener net.Listener, run func(con
 		serveErr = nil
 	}
 	return errors.Join(runErr, serveErr)
+}
+
+// Always report a result. The return flag also handles legacy panic(nil) and
+// runtime.Goexit. The panic value must not be inspected, formatted, or wrapped.
+func completeControllerRun(ctx context.Context, metrics *Metrics, run func(context.Context, *Metrics) error, completed chan<- error) {
+	returned := false
+	var err error
+	defer func() {
+		if !returned {
+			recover()
+			err = ErrRunAborted
+		}
+		completed <- err
+	}()
+	err = run(ctx, metrics)
+	returned = true
 }

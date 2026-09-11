@@ -120,3 +120,7 @@ and provider synchronization.
 
 [Durable identity cleanup](gateway-identity-cleanup.md) now records confirmed
 client absence through STEGO and checks for late effects after completion.
+
+The [Run callback abort check](worker-run-abort.md) now runs within this workflow.
+It requires safe process failure and identity repair after a callback panic or
+`runtime.Goexit`. The generated monitor owns failure reporting and shutdown.
