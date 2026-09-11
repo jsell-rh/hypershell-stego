@@ -131,18 +131,21 @@ overrides:
       - name: database
         package: internal/databaseapp
         function: Run
+        external_endpoints: [kubernetes]
         network_peers:
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: gateway-workload
         package: internal/gatewayworkloadapp
         function: Run
+        external_endpoints: [kubernetes]
         network_peers:
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: sandbox-count
         package: internal/sandboxcountapp
         function: Run
+        external_endpoints: [kubernetes]
         network_peers:
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}

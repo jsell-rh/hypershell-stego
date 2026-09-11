@@ -66,6 +66,21 @@
           {
             "ports": [
               {
+                "port": 0,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "stego-external:kubernetes"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
                 "port": 5353,
                 "protocol": "UDP"
               },

@@ -34,10 +34,12 @@ and checks their non-root user and entry point.
 
 The compiler also emits restricted worker Deployment templates. These templates
 have no automatic Kubernetes credential or RBAC grant. A site must supply the
-required credentials and permit its exact Kubernetes API endpoint through network
-policy. The current generated peer rules cover the Hypershell API and test
-telemetry collector only. Applying these templates alone does not establish a
-working Kubernetes provider deployment. These process tests do not claim that
+required credentials and bind its exact Kubernetes API endpoint. The later
+compiler pin `77e2133` adds `external_endpoints: [kubernetes]` to these workers.
+The generated renderer requires `--egress kubernetes=IP:PORT`; repeat the flag
+for each required address. STEGO emits each exact IP and TCP port rule. No
+hand-written Kubernetes API egress policy is needed. Applying a manifest alone
+does not establish a working Kubernetes provider deployment. These process tests do not claim that
 deployment, automatic failover, provider fencing, or production capacity is proved.
 
 The focused checks passed on jshell on 2026-09-11. The input-manifest package
@@ -54,3 +56,7 @@ Gateway fixture was added. That test had finished before its source was replaced
 for the second check. Separate logs and exit records retain both results in
 `/tmp/stego-workload-workers-mpcfzwnr`. The full provider workflows require the
 new revision's CI results.
+
+The [external egress check](external-egress.md) tests the generated policy
+against a real Kubernetes API endpoint. It is separate from the controller
+process and provider-workflow tests.

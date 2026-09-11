@@ -1,0 +1,184 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "probe",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "hard": {
+          "requests.cpu": "100m",
+          "requests.memory": "64Mi",
+          "limits.cpu": "500m",
+          "limits.memory": "128Mi",
+          "pods": "1"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "probe",
+        "namespace": "@NAMESPACE@"
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "probe",
+        "namespace": "@NAMESPACE@"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "resourceNames": [
+            "probe"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "probe",
+        "namespace": "@NAMESPACE@"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "probe"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "probe",
+          "namespace": "@NAMESPACE@"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Pod",
+      "metadata": {
+        "name": "probe",
+        "namespace": "@NAMESPACE@",
+        "labels": {
+          "app.kubernetes.io/name": "hypershell-database"
+        }
+      },
+      "spec": {
+        "serviceAccountName": "probe",
+        "automountServiceAccountToken": false,
+        "activeDeadlineSeconds": 300,
+        "restartPolicy": "Never",
+        "securityContext": {
+          "runAsNonRoot": true,
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "containers": [
+          {
+            "name": "probe",
+            "image": "docker.io/library/golang@sha256:2d54f6c8c6ea532a321e0b4c69553b2ed3637608d4f4357dbed37939fe2620cc",
+            "command": [
+              "sh",
+              "-c",
+              "umask 077; sed 's/^/Authorization: Bearer /' /identity/token > /work/header; while :; do sleep 2; done"
+            ],
+            "resources": {
+              "requests": {
+                "cpu": "100m",
+                "memory": "64Mi"
+              },
+              "limits": {
+                "cpu": "500m",
+                "memory": "128Mi"
+              }
+            },
+            "securityContext": {
+              "readOnlyRootFilesystem": true,
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              }
+            },
+            "readinessProbe": {
+              "exec": {
+                "command": [
+                  "test",
+                  "-s",
+                  "/work/header"
+                ]
+              },
+              "periodSeconds": 2,
+              "timeoutSeconds": 1
+            },
+            "volumeMounts": [
+              {
+                "name": "work",
+                "mountPath": "/work"
+              },
+              {
+                "name": "identity",
+                "mountPath": "/identity",
+                "readOnly": true
+              }
+            ]
+          }
+        ],
+        "volumes": [
+          {
+            "name": "work",
+            "emptyDir": {
+              "sizeLimit": "1Mi"
+            }
+          },
+          {
+            "name": "identity",
+            "projected": {
+              "defaultMode": 288,
+              "sources": [
+                {
+                  "serviceAccountToken": {
+                    "path": "token",
+                    "expirationSeconds": 600
+                  }
+                },
+                {
+                  "configMap": {
+                    "name": "kube-root-ca.crt",
+                    "items": [
+                      {
+                        "key": "ca.crt",
+                        "path": "ca.crt"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    }
+  ]
+}
