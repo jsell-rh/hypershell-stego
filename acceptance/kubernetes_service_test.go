@@ -151,8 +151,8 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	for _, entry := range exports {
 		name, value, _ := strings.Cut(entry, "=")
 		if name == "OTEL_METRIC_EXPORT_INTERVAL" {
-			// At most 48 periodic batches fit in the eight-minute test, plus
-			// the two final flushes. The collector holds 64 batches.
+			// Leave room for the eight-minute test, rollout overlap, and
+			// final flushes in the collector's 64-batch buffer.
 			value = "10000"
 		}
 		if name == "OTEL_EXPORTER_OTLP_ENDPOINT" {

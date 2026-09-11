@@ -110,9 +110,9 @@ The failed run and its logs are retained. Its namespace was deleted.
 The second identity run passed real Keycloak creation, controller restart,
 and API Pod replacement. It failed the final telemetry check after the longer
 setup filled the test collector's 64-batch metrics buffer. The test now exports
-metrics every ten seconds. Its eight-minute limit permits at most 48 periodic
-batches and two final flushes. The test still requires metrics from both API
-instances. This changes only the test configuration.
+metrics every ten seconds. The buffer has room for the eight-minute test,
+rollout overlap, and final flushes. The test still requires metrics from both
+API instances. This changes only the test configuration.
 
 The same run showed that Keycloak development mode opened port 8080 despite
 `--http-enabled=false`. The network policy blocked that port. The fixture now
@@ -121,3 +121,8 @@ uses standard server mode and checks that the local port is closed.
 The earlier full [CI run 34619444307](https://github.com/jsell-rh/hypershell-stego/actions/runs/34619444307)
 passed for `52edc0b`. That result covers the prior API deployment change.
 Later identity-test commits require their own results.
+
+CI run 34621260515 rejected stale compiler state after the Kafka test module
+became a direct dependency. Cluster generation reproduced the new state twice.
+The recorded state now includes that module-file hash. Generated service files
+did not change. The failed CI run remains a failure.
