@@ -256,5 +256,5 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	if err := os.WriteFile(secret, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &keycloakFixture{options: keycloak.Options{ServerURL: "https://" + host + ":8443", Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: identity.config.CAFile}, http: client}
+	return &keycloakFixture{options: keycloak.Options{ServerURL: "https://" + host + ":8443", Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(dir, "server.pem")}
 }

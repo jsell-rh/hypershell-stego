@@ -53,7 +53,11 @@ func browserProvider(t *testing.T) *keycloakFixture {
 	if err := os.WriteFile(secret, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &keycloakFixture{options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: ca}, http: client}
+	certificate := os.Getenv("STEGO_TEST_BROWSER_KEYCLOAK_CERT_FILE")
+	if certificate == "" {
+		certificate = ca
+	}
+	return &keycloakFixture{certificate: certificate, options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: ca}, http: client}
 }
 func consoleProgram(t *testing.T) string {
 	t.Helper()
@@ -503,7 +507,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		t.Fatal("creation role was not enforced", response.StatusCode)
 	}
 	expectedStatus := 201
-	rendered := newRenderedBrowser(t, address, filepath.Join(filepath.Dir(consoleIdentity.config.CAFile), "server.pem"), k.options.CAFile)
+	rendered := newRenderedBrowser(t, address, filepath.Join(filepath.Dir(consoleIdentity.config.CAFile), "server.pem"), k.certificate)
 	if rendered != nil {
 		rendered.diagnose = func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
