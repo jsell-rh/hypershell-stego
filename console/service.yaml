@@ -1,0 +1,19 @@
+kind: service
+name: hypershell-console
+archetype: browser-service
+language: go
+overrides:
+  postgres-adapter:
+    migrations: external
+  health-check:
+    database: true
+  browser-backend:
+    api_prefix: /api/hypershell/v1
+    roles_claim: resource_access.hypershell.roles
+    routes:
+      - /
+      - /gateways/new
+      - /gateways/{id}
+    assets:
+      - source: ui/index.html
+        path: /index.html

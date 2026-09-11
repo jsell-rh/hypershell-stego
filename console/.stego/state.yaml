@@ -1,0 +1,75 @@
+last_applied:
+    inputs:
+        version: 1
+        options:
+            module_name: github.com/jsell-rh/hypershell-stego/console
+            go_version: 1.26.8
+            output_dir: out
+            registry_ref: browser-workflow
+        files:
+            .stego/config.yaml:
+                exists: true
+                sha256: a139c91042ae5b59e0e24917e19d1e6f881dd7ef4a7eb29f97829f1c0ea4ad6c
+                mode: 420
+            go.mod:
+                exists: true
+                sha256: 1ad5f3225e92f0b96625158d7a65264df9b4fc791ee57dd8c43bac534d386a7b
+                mode: 420
+            go.sum:
+                exists: true
+                sha256: 2c259b964601d37f4a35f2b309f87e9fc4474b2b2f11fe467ab108eae6ab576f
+                mode: 420
+            service.yaml:
+                exists: true
+                sha256: a8880b6e59e996e770f9693ae699b83416cc324e11adcb7f9da8dfdb5afddee0
+                mode: 420
+            ui/index.html:
+                exists: true
+                sha256: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
+                mode: 420
+        sha256: 3224de18d0a673f2a2e967c5bfd7bb53393f7769628b4f8ec51f12934688739b
+    compiler_build:
+        go_version: go1.26.8
+        goos: linux
+        goarch: amd64
+        module_version: v0.0.0-20260911184200-a6e7656c8442
+        vcs: git
+        revision: a6e7656c844226004b8bcb091e5dc66da52fa1ee
+        source_state: clean
+    service_hash: a8880b6e59e996e770f9693ae699b83416cc324e11adcb7f9da8dfdb5afddee0
+    registry_sha: browser-workflow
+    registry_content_sha256: 433b030b51555383ef30921751cadc50cc9848b25c88a038af4fd75629780469
+    components:
+        browser-backend:
+            version: 1.0.0
+            sha: browser-workflow
+        health-check:
+            version: 1.0.0
+            sha: browser-workflow
+        otel-tracing:
+            version: 1.10.0
+            sha: browser-workflow
+        postgres-adapter:
+            version: 4.0.0
+            sha: browser-workflow
+    files:
+        browser/backend.go: dafdaec78f1a6d4e45e0bcbff982463eafa83008c4d3d578fc611c18c553cff4
+        browser/client/client.go: fa5cc830627d59e6632383dc696dda8266016b503684865bedb408e5a5682389
+        browser/handlers.go: 9a886cb3e3a3caeef314d2cc8df8a5916d4a990eb22ffdf31bdb3af1585ab383
+        browser/oauth.go: e00d09a4400088ebcc1c30bdd881aabb6b869c220ceda751359c1d5089fa80e0
+        browser/public/index.html: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
+        browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
+        browser/store.go: 457330dc6540e8b3900400605637fe4c3bd58b1369c2ab9b0c2b3fcfe8b799f7
+        health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
+        http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
+        http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2
+        main.go: b47cbedde3f3a91c31f645be31c7705473b539b99c6ca3c6747bb0497b25997a
+        tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
+        tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
+        tracing/controller.go: 330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222
+        tracing/database.go: c07154500eda0fc54b65419534375c7fca9bb215bffc34f1ddbb92d784ce173b
+        tracing/http_client.go: ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683
+        tracing/identity.go: 2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6
+        tracing/runtime.go: 8fd4d78f9eaa13424930f19df0b87b36e4249ab0723d5d819acac71a02c28c23
+        tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
+        tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2

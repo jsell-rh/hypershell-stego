@@ -467,3 +467,8 @@ supplies their deployment resources, process behavior, health probes, and
 telemetry. The test checks identity repair after worker and API Pod replacement.
 The [worker abort check](acceptance/worker-run-abort.md) requires safe failure
 output and identity recovery after a Run callback panic or `runtime.Goexit`.
+
+The [browser Gateway protocol check](acceptance/browser-gateway.md) uses a
+separate generated Go console backend. STEGO owns login, sessions, token renewal,
+logout, and the API proxy. Hypershell declares routes, assets, roles, and the API
+prefix. The console page is a scaffold; the complete UI remains open.

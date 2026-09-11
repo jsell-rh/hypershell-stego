@@ -25,13 +25,18 @@ test "$(git -C "$scratch/compiler" rev-parse HEAD)" = "$revision"
 )
 unset STEGO_REGISTRY STEGO_MODULE STEGO_GO_VERSION
 export GOWORK=off
-"$scratch/stego" apply
-"$scratch/stego" deps
-"$scratch/stego" apply
-"$scratch/stego" drift
+for target in "$project" "$project/console"; do
+  (
+    cd "$target"
+    "$scratch/stego" apply
+    "$scratch/stego" deps
+    "$scratch/stego" apply
+    "$scratch/stego" drift
+  )
+done
 if [[ ${1:-} == --check ]]; then
-  git diff --exit-code -- out .stego/state.yaml go.mod go.sum
-  if [[ -n $(git ls-files --others --exclude-standard -- out .stego/state.yaml) ]]; then
+  git diff --exit-code -- out .stego/state.yaml go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum
+  if [[ -n $(git ls-files --others --exclude-standard -- out .stego/state.yaml console/out console/.stego/state.yaml) ]]; then
     echo 'Regeneration produced untracked output.' >&2
     exit 1
   fi

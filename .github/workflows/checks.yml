@@ -40,6 +40,9 @@ jobs:
           go-version: '1.26.8'
           cache: true
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./...
+      - name: Check console dependencies
+        working-directory: console
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./...
       - name: Enable test database TLS
         timeout-minutes: 2
         run: scripts/enable-test-postgres-tls.sh "$POSTGRES_CONTAINER" "$RUNNER_TEMP/postgres-tls"

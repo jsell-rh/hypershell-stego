@@ -2,3 +2,6 @@
 /.stego/dependencies.lock
 /bin/
 *.test
+
+/console/.stego/apply.lock
+/console/.stego/dependencies.lock
