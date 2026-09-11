@@ -67,9 +67,9 @@ The provisioner runs in the bounded test Job. Its RPC listener uses verified
 TLS and a service-token caller allowlist. In the deployed check, the generated
 API reaches it through the fixture Service on port 19094. The fixture network
 policy permits that port only from the test Job and generated API Pod. The
-provisioner process still has a handwritten entry point. Moving that assembly
-into STEGO remains required; the new workflow supplies a behavior check for
-that change.
+initial provisioner process had a handwritten entry point. The
+[RPC process check](rpc-process.md) uses this workflow to check its replacement
+with a generated STEGO entry point.
 
 Run the complete check from a frozen source copy:
 

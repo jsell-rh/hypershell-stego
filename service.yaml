@@ -206,6 +206,8 @@ overrides:
   http-application:
     factory_package: internal/httpapi
   grpc-application:
+    processes:
+      - {name: provisioner, factory_package: internal/serviceaccountprovisioner}
     watch_events: true
     factory_package: internal/grpcapi
     proto_files:

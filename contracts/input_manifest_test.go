@@ -57,6 +57,9 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			ProtoFiles []struct {
 				Path string `yaml:"path"`
 			} `yaml:"proto_files"`
+			Processes []struct {
+				FactoryPackage string `yaml:"factory_package"`
+			} `yaml:"processes"`
 			Workers []struct {
 				Package string `yaml:"package"`
 			} `yaml:"workers"`
@@ -71,6 +74,13 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			t.Fatal("duplicate input declaration", input.Path)
 		}
 		expected[input.Path] = true
+	}
+	for _, process := range service.Overrides["grpc-application"].Processes {
+		if process.FactoryPackage == "" {
+			t.Fatal("RPC process has no factory package")
+		}
+		// Several processes can share one factory declaration.
+		expected[process.FactoryPackage+"/rpc.go"] = true
 	}
 	client := service.Overrides["go-sdk"]
 	for _, name := range append([]string{client.Document}, client.References...) {

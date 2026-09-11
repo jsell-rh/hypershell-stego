@@ -491,3 +491,7 @@ The [rendered service-account check](acceptance/browser-service-accounts.md)
 uses the console and real Keycloak to check one-time credential delivery, token
 claims, reload, revocation, and deletion. It uses a Gateway readiness fixture.
 Full Gateway workload provisioning through the console remains open.
+
+The [RPC process check](acceptance/rpc-process.md) replaces the handwritten
+provisioner entry point with STEGO output. Hypershell keeps the Keycloak provider
+and caller policy. STEGO supplies authentication, telemetry, signals, and cleanup.

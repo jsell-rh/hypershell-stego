@@ -168,7 +168,7 @@ func startRealProvisionerWithLogs(t *testing.T, k *keycloakFixture, key *rsa.Pri
 
 func startRealProvisionerAt(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string, host, listen string) ([]string, func(), func() string) {
 	t.Helper()
-	binary := buildProgram(t, "./cmd/provisioner")
+	binary := buildProgram(t, "./out/grpcapi/processes/provisioner")
 	identity := identity(t, host)
 	dir := filepath.Dir(identity.config.CAFile)
 	ctx, cancel := context.WithCancel(context.Background())

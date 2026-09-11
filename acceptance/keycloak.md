@@ -2,9 +2,10 @@ The service-account workflow now uses a real Keycloak provider. The application
 creates accounts through REST. A separate provisioner process serves the pinned
 internal RPC contract through STEGO's generated TLS runtime. Hypershell owns
 client settings, role mappings, audience mappings, ownership checks, and lifecycle
-operations. STEGO owns HTTPS limits, JWT signature verification, and RPC transport.
+operations. STEGO owns HTTPS limits, JWT signature verification, RPC transport,
+process signals, telemetry, and cleanup. See the [RPC process check](rpc-process.md).
 
-Run `go run ./cmd/provisioner` with these settings:
+Run `go run ./out/grpcapi/processes/provisioner` with these settings:
 
 | Setting | Purpose |
 | --- | --- |

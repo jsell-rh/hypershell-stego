@@ -1,8 +1,15 @@
 kind: component
 name: grpc-application
-version: 1.9.1
+version: 1.10.0
 output_namespace: grpcapi
 config:
+  processes:
+    type: list
+    items:
+      name:
+        type: string
+      factory_package:
+        type: string
   watch_events:
     type: bool
   factory_package:
