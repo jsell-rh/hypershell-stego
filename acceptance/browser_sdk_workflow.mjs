@@ -22,8 +22,9 @@ function browser(cookie) {
   return createBrowserClient();
 }
 const owner = browser(fixture.owner);
+const traceOptions = {traceparent: '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'};
 const other = browser(fixture.other);
-const created = await owner.createGateway({body: fixture.request});
+const created = await owner.createGateway({body: fixture.request}, traceOptions);
 assert.equal(created.status, 201);
 assert.equal(typeof created.body.id, 'string');
 assert.equal(created.body.name, fixture.request.name);

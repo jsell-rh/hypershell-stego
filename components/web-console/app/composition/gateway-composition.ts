@@ -53,6 +53,7 @@ const gatewayControlPlane = createGatewayControlPlaneAdapter(
   () => {
     createApiClient().login();
   },
+  (correlationId) => tracing.traceParentFor(correlationId)?.traceparent,
 );
 
 export const gatewayOperations = createGatewayOperations({

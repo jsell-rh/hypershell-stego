@@ -71,7 +71,7 @@ export interface Schemas {
 "RoleList": (((Schemas["List"]) & (({ "items"?: (Array<Schemas["Role"]>); } & { [key: string]: unknown }))));
 "openapi.gateways_GatewayCreateRequest": ({ "cluster_id": (string); "credential_driver"?: (string); "database_id": (string); "external_dns"?: (string); "image"?: (string); "name": (string); "oidc"?: (string); "phase"?: (string); "release_id": (string); "route"?: (string); "server_dns_names"?: (Array<(string)>); "service_type"?: (string); "status"?: (string); "supervisor_image"?: (string); "tls_mode"?: (string); } & { [key: string]: unknown });
 }
-export interface RequestOptions { signal?: AbortSignal }
+export interface RequestOptions { signal?: AbortSignal; traceparent?: string }
 export interface Result<T> { readonly status: number; readonly body: T; readonly etag: string | null }
 export interface Session { authenticated: boolean; roles: string[]; user?: { [key: string]: string }; expires_at?: number }
 export class SDKError extends Error { constructor(code: string, status?: number, apiCode?: string); readonly code: string; readonly status: number; readonly apiCode: string | undefined }

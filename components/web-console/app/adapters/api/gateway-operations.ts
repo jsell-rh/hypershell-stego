@@ -19,6 +19,7 @@ import {
 import {
   SDKError,
   type Client,
+  type RequestOptions,
   type Schemas,
 } from "../../../../../out/tssdk/index.js";
 type Gateway = Schemas["Gateway"];
@@ -299,7 +300,17 @@ async function mapSDKFailure<T>(
 export function createGatewayControlPlaneAdapter(
   apiFactory: GatewayApiFactory,
   onReauthRequired?: () => void,
+  traceParentFor?: (correlationId: string) => string | undefined,
 ): GatewayControlPlane {
+  const requestOptions = (
+    context: GatewayInvocationContext,
+  ): RequestOptions => {
+    const traceparent = traceParentFor?.(context.correlationId);
+    return {
+      signal: context.signal,
+      ...(traceparent === undefined ? {} : { traceparent }),
+    };
+  };
   const mapFailure = <T>(task: () => Promise<T>) =>
     mapSDKFailure(task, onReauthRequired);
   return {
@@ -318,7 +329,7 @@ export function createGatewayControlPlaneAdapter(
                 role: input.role,
               },
             },
-            { signal: context.signal },
+            requestOptions(context),
           )
           .then((result) => result.body);
         return {
@@ -336,9 +347,7 @@ export function createGatewayControlPlaneAdapter(
         apiClient(apiFactory, context)
           .deleteGatewayServiceAccount(
             { gateway_id: gatewayId, service_account_id: serviceAccountId },
-            {
-              signal: context.signal,
-            },
+            requestOptions(context),
           )
           .then((result) => result.body),
       );
@@ -357,7 +366,7 @@ export function createGatewayControlPlaneAdapter(
                 size: placementPageSize,
               },
             },
-            { signal: context.signal },
+            requestOptions(context),
           )
           .then((result) => result.body);
         requirePage(result);
@@ -379,12 +388,7 @@ export function createGatewayControlPlaneAdapter(
       return mapFailure(async () =>
         toGatewayPlacement(
           await apiClient(apiFactory, context)
-            .getManagedCluster(
-              { id: clusterId },
-              {
-                signal: context.signal,
-              },
-            )
+            .getManagedCluster({ id: clusterId }, requestOptions(context))
             .then((result) => result.body),
         ),
       );
@@ -410,7 +414,7 @@ export function createGatewayControlPlaneAdapter(
                 size: normalizedClusterIds.length,
               },
             },
-            { signal: context.signal },
+            requestOptions(context),
           )
           .then((result) => result.body);
         requirePage(result);
@@ -436,12 +440,7 @@ export function createGatewayControlPlaneAdapter(
       return mapFailure(async () =>
         toGatewayRecord(
           await apiClient(apiFactory, context)
-            .getGateway(
-              { id: gatewayId },
-              {
-                signal: context.signal,
-              },
-            )
+            .getGateway({ id: gatewayId }, requestOptions(context))
             .then((result) => result.body),
         ),
       );
@@ -455,9 +454,7 @@ export function createGatewayControlPlaneAdapter(
         const response = await apiClient(apiFactory, context)
           .getGatewayServiceAccount(
             { gateway_id: gatewayId, service_account_id: serviceAccountId },
-            {
-              signal: context.signal,
-            },
+            requestOptions(context),
           )
           .then((result) => result.body);
         return {
@@ -479,7 +476,7 @@ export function createGatewayControlPlaneAdapter(
                 size: request.size,
               },
             },
-            { signal: context.signal },
+            requestOptions(context),
           )
           .then((result) => result.body);
         requirePage(result);
@@ -520,7 +517,7 @@ export function createGatewayControlPlaneAdapter(
                   : { status: request.status }),
               },
             },
-            { signal: context.signal },
+            requestOptions(context),
           )
           .then((result) => result.body);
         requirePage(result);
@@ -559,7 +556,7 @@ export function createGatewayControlPlaneAdapter(
                   route: JSON.stringify({ enabled: true }),
                 },
               },
-              { signal: context.signal },
+              requestOptions(context),
             )
             .then((result) => result.body),
         ),
@@ -568,12 +565,7 @@ export function createGatewayControlPlaneAdapter(
     async removeGateway(gatewayId, context) {
       await mapFailure(() =>
         apiClient(apiFactory, context)
-          .deleteGateway(
-            { id: gatewayId },
-            {
-              signal: context.signal,
-            },
-          )
+          .deleteGateway({ id: gatewayId }, requestOptions(context))
           .then((result) => result.body),
       );
     },
@@ -583,7 +575,7 @@ export function createGatewayControlPlaneAdapter(
           await apiClient(apiFactory, context)
             .updateGateway(
               { id: gatewayId, body: { name } },
-              { signal: context.signal },
+              requestOptions(context),
             )
             .then((result) => result.body),
         ),
@@ -599,7 +591,7 @@ export function createGatewayControlPlaneAdapter(
           await apiClient(apiFactory, context)
             .revokeGatewayServiceAccount(
               { gateway_id: gatewayId, service_account_id: serviceAccountId },
-              { signal: context.signal },
+              requestOptions(context),
             )
             .then((result) => result.body),
         ),

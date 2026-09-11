@@ -7,6 +7,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"html"
 	"io"
@@ -28,6 +29,7 @@ import (
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
+	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -79,7 +81,7 @@ func consoleAddress(t *testing.T) string {
 	listener.Close()
 	return address
 }
-func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, k *keycloakFixture, id testIdentity, secret, key string) (func(), func() string) {
+func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, k *keycloakFixture, id testIdentity, secret, key string, telemetry ...string) (func(), func() string) {
 	t.Helper()
 	target, _ := url.Parse(address)
 	dir := filepath.Dir(id.config.CAFile)
@@ -89,6 +91,7 @@ func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, 
 		"STEGO_BROWSER_ORIGIN="+address, "STEGO_BROWSER_API_URL="+api, "STEGO_BROWSER_API_CA_FILE="+apiCA,
 		"STEGO_BROWSER_ISSUER="+k.options.ServerURL+"/realms/workflow", "STEGO_BROWSER_ISSUER_CA_FILE="+k.options.CAFile,
 		"STEGO_BROWSER_CLIENT_ID=hypershell-console", "STEGO_BROWSER_CLIENT_SECRET_FILE="+secret, "STEGO_BROWSER_SESSION_KEY_FILE="+key)
+	command.Env = append(command.Env, telemetry...)
 	output := runtimeOutput{ready: make(chan string, 1), grpcReady: make(chan string, 1)}
 	command.Stdout = &output
 	command.Stderr = &output
@@ -325,6 +328,8 @@ func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, req
 func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	k := browserProvider(t)
 	settings, _ := k.apiLoginSetup(t)
+	signals, telemetry := newHTTPDiagnosticCollector(t)
+	settings = append(settings, telemetry...)
 	aliceID := k.human(t, "console-alice")
 	k.human(t, "console-bob")
 	response := k.adminRequest(t, "GET", "/clients?clientId=hypershell", nil)
@@ -370,7 +375,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	binary := consoleProgram(t)
-	stop, logs := startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile)
+	stop, logs := startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
 	alice := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
 	bob := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
 	alice.login(t, k, "console-alice")
@@ -384,6 +389,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	}
 	bob.login(t, k, "console-bob")
 	sdkID := browserSDKWorkflow(t, alice, bob, consoleIdentity.config.CAFile, f.request("browser-sdk-workflow"))
+	checkBrowserTraceChain(t, signals)
 	var sdkGrants int
 	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings b JOIN roles r ON r.id=b.role_id JOIN users u ON u.id=b.user_id WHERE b.gateway_id=$1 AND b.scope='gateway' AND r.name='gateway:owner' AND u.subject=$2", sdkID, aliceID).Scan(&sdkGrants); err != nil || sdkGrants != 1 {
 		t.Fatal("SDK Gateway owner grant missing", err)
@@ -454,7 +460,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	}
 	stop()
 	before := logs()
-	stop, logs = startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile)
+	stop, logs = startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
 	defer stop()
 	alice.session(t)
 	assertAccess()
@@ -555,4 +561,42 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		}
 	}
 	t.Log("Generated console passed real Keycloak login, Gateway creation, grants, REST and gRPC access, event delivery, process restart, renewal, and logout")
+}
+
+func checkBrowserTraceChain(t *testing.T, collector *httpDiagnosticCollector) {
+	t.Helper()
+	const traceID = "0af7651916cd43dd8448eb211c80319c"
+	const parentID = "b7ad6b7169203331"
+	spans := map[string]*tracepb.Span{}
+	timer := time.NewTimer(5 * time.Second)
+	defer timer.Stop()
+	for {
+		select {
+		case batch := <-collector.traces.received:
+			for _, resource := range batch.ResourceSpans {
+				for _, scope := range resource.ScopeSpans {
+					for _, span := range scope.Spans {
+						if hex.EncodeToString(span.TraceId) == traceID {
+							spans[hex.EncodeToString(span.SpanId)] = span
+						}
+					}
+				}
+			}
+		case <-timer.C:
+			t.Fatal("browser, backend client, and API spans did not form one trace")
+		}
+		for _, api := range spans {
+			if api.Kind != tracepb.Span_SPAN_KIND_SERVER || api.Name != "POST /api/hypershell/v1/gateways" {
+				continue
+			}
+			client := spans[hex.EncodeToString(api.ParentSpanId)]
+			if client == nil || client.Kind != tracepb.Span_SPAN_KIND_CLIENT {
+				continue
+			}
+			browser := spans[hex.EncodeToString(client.ParentSpanId)]
+			if browser != nil && browser.Kind == tracepb.Span_SPAN_KIND_SERVER && browser.Name == "POST /api/hypershell/v1/{resource}" && hex.EncodeToString(browser.ParentSpanId) == parentID {
+				return
+			}
+		}
+	}
 }

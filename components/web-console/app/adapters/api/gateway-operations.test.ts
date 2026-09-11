@@ -180,6 +180,31 @@ function serviceAccountList(
 }
 
 describe("gateway API operations adapter", () => {
+  it("passes the current dependency context and cancellation to the SDK", async () => {
+    const parent = "00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01";
+    const readParent = vi.fn(() => parent);
+    const traced = createGatewayControlPlaneAdapter(
+      gatewayApiFactory,
+      undefined,
+      readParent,
+    );
+    const controller = new AbortController();
+    gatewayApi.get.mockResolvedValue({
+      status: 200,
+      etag: null,
+      body: gateway(),
+    });
+    await traced.getGateway("gateway-1", {
+      ...context,
+      signal: controller.signal,
+    });
+    expect(readParent).toHaveBeenCalledWith(context.correlationId);
+    expect(gatewayApi.get).toHaveBeenCalledWith(
+      { id: "gateway-1" },
+      { signal: controller.signal, traceparent: parent },
+    );
+  });
+
   beforeEach(() => {
     vi.clearAllMocks();
   });

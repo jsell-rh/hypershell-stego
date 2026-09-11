@@ -120,13 +120,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911194840-440fbbc5e5b1
+        module_version: v0.0.0-20260911200707-1d7ae409418b
         vcs: git
-        revision: 440fbbc5e5b18557b5046e4501ca909d823a7def
+        revision: 1d7ae409418bdec14326037a01aadaebf265c414
         source_state: clean
     service_hash: dd58bccc96194dc9322a8e9610832c09df3b4d2072095b23a7f514c83e7068f9
     registry_sha: gateway-workflow
-    registry_content_sha256: b18301f93894866cce1c8c099afb4548b21b2fdd1bfe247daa3ccbb3027e3808
+    registry_content_sha256: a76bf8354d86c13ac954a2b13a706916e9dcdf8e7fbbd82628c1f18fc7692aa9
     components:
         cli-application:
             version: 1.6.2
@@ -174,7 +174,7 @@ last_applied:
             version: 1.0.2
             sha: gateway-workflow
         typescript-sdk:
-            version: 1.1.0
+            version: 1.2.0
             sha: gateway-workflow
     entities:
         Gateway:
@@ -454,7 +454,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: d24e08b3685351af89eddc157f7aa347f7bcd740a475e271ecfa069b73472479
+        cli/command/version.go: 1453fbf25a76d9d68a95206bef5a36f2cb898e2eed41a5bd64eec2c4fb64eac8
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -560,6 +560,6 @@ last_applied:
         tracing/runtime.go: 9ffaf66869f8ea7b3d02752ebaec050ff1d45f99aee41e6e7a8dc7b69aaac000
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
-        tssdk/index.d.ts: 34927be64cb3d8c43a726a24cafef52de48549ee43aafed3fd0f4b93907d5b41
-        tssdk/index.js: cb70191564510cede74cfbdd179e5ae566bfb078052be1f407593968d0781139
+        tssdk/index.d.ts: f19948d7bdcee4142993df76cb42f7bf6d36e0aa729bc3e5a9525ae185464019
+        tssdk/index.js: 1f7740de3fa63202cab3cd6001b46ac0e545eb9a599db902b81904c7586e6cec
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

@@ -47,3 +47,27 @@ files from compiler `440fbbc`. Those files match the pinned generation hashes.
 The pinned Gateway protocol workflow then passed in 24.08 seconds, including
 provider sign-out. All 155 generation hashes match the second pass and the
 checkout. This does not close the browser rendering or telemetry gates above.
+
+Compiler `1d7ae40` adds trace context to each SDK request. The application adapter
+passes the current Gateway dependency context and abort signal through this
+interface. The generated SDK owns header checks and transport. A reused client
+does not retain the previous request's context.
+
+The bounded jshell UI check passed all 239 tests: 7 probe tests, 164 domain UI
+tests, and 68 console tests. Application and test types, import boundaries,
+lint, and the production build passed. The inherited React tests still emit
+`act` warnings; passing tests do not remove the rendered browser gate. The
+results are in `/tmp/stego-browser-trace-ui-meu7bs4u`.
+
+The fresh pinned Gateway workflow passed in 13.81 seconds with a TLS OTLP
+collector. It checks the parent chain from the supplied browser trace context
+through the Go browser backend, its HTTP client, and the API. Login, atomic
+Gateway and owner grant creation, access rules, REST and gRPC, event delivery,
+restart, renewal, and provider sign-out also passed. The input-manifest race
+test passed. All 155 output, state, and dependency hashes match two generation
+passes and the checkout. The UI used the same generated SDK bytes. These
+results are in `check3` under `/tmp/stego-browser-trace-t39scx2c`.
+
+This proves propagation through the application. It does not prove export of
+the browser's root span. The common browser telemetry runtime, authenticated
+relay, and rendered workflow remain the next required work.
