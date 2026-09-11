@@ -13,3 +13,4 @@ for package in hypershell-domain-probes hypershell-gateway-management-ui hypersh
   pnpm --filter "@openshift-online/$package" exec vitest run --maxWorkers=1 --no-file-parallelism
 done
 pnpm --filter @openshift-online/hypershell-web-console build
+scripts/check-console-assets.sh

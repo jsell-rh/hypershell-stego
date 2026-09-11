@@ -156,57 +156,97 @@ func (b *Backend) callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, value.ReturnTo, 303)
 }
 func (b *Backend) active(ctx context.Context, id string) (session, error) {
-	value, state, changed, err := b.store.read(ctx, id)
-	if err != nil {
-		return session{}, err
-	}
-	if value.Kind != "active" {
-		return session{}, errSession
-	}
-	if state == "refreshing" {
-		if time.Since(changed) > 30*time.Second {
-			_ = b.store.remove(ctx, id)
-			return session{}, errSession
+	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+	defer cancel()
+	delay := 20 * time.Millisecond
+	wait := func() error {
+		timer := time.NewTimer(delay)
+		defer timer.Stop()
+		select {
+		case <-waitCtx.Done():
+			return errBusy
+		case <-timer.C:
 		}
-		return session{}, errBusy
+		if delay < 100*time.Millisecond {
+			delay *= 2
+			if delay > 100*time.Millisecond {
+				delay = 100 * time.Millisecond
+			}
+		}
+		return nil
 	}
-	if state != "active" {
-		return session{}, errSession
-	}
-	if value.AccessExpires > time.Now().Add(15*time.Second).Unix() {
-		return value, nil
-	}
-	value, err = b.store.claimRefresh(ctx, id)
-	if err != nil {
-		return session{}, err
-	}
-	// A previous caller can finish between read and claim. Do not rotate twice.
-	if value.AccessExpires > time.Now().Add(15*time.Second).Unix() {
-		if err := b.store.finishRefresh(ctx, id, value); err != nil {
+	for {
+		value, state, changed, err := b.store.read(waitCtx, id)
+		if err != nil {
 			return session{}, err
 		}
-		return value, nil
+		if value.Kind != "active" {
+			return session{}, errSession
+		}
+		if state == "refreshing" {
+			if time.Since(changed) > 30*time.Second {
+				b.abandonRefresh(ctx, id, nil)
+				return session{}, errSession
+			}
+			if err := wait(); err != nil {
+				return session{}, err
+			}
+			continue
+		}
+		if state != "active" {
+			return session{}, errSession
+		}
+		if value.AccessExpires > time.Now().Add(15*time.Second).Unix() {
+			return value, nil
+		}
+		value, err = b.store.claimRefresh(waitCtx, id)
+		if errors.Is(err, errBusy) {
+			if err := wait(); err != nil {
+				return session{}, err
+			}
+			continue
+		}
+		if err != nil {
+			return session{}, err
+		}
+		// A previous caller can finish between read and claim. Do not rotate twice.
+		if value.AccessExpires > time.Now().Add(15*time.Second).Unix() {
+			if err := b.store.finishRefresh(ctx, id, value); err != nil {
+				b.abandonRefresh(ctx, id, nil)
+				return session{}, err
+			}
+			return value, nil
+		}
+		if value.Refresh == "" {
+			b.abandonRefresh(ctx, id, nil)
+			return session{}, errSession
+		}
+		token, err := b.provider.tokens(ctx, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {value.Refresh}})
+		if err != nil {
+			b.abandonRefresh(ctx, id, nil)
+			return session{}, errSession
+		}
+		updated, err := b.provider.accept(ctx, token, "", b.config.RolesClaim, &value)
+		if err != nil {
+			b.abandonRefresh(ctx, id, &session{Access: token.Access, Refresh: token.Refresh})
+			return session{}, errSession
+		}
+		if err := b.store.finishRefresh(ctx, id, updated); err != nil {
+			b.abandonRefresh(ctx, id, &updated)
+			return session{}, errSession
+		}
+		return updated, nil
 	}
-	if value.Refresh == "" {
-		_ = b.store.remove(ctx, id)
-		return session{}, errSession
+}
+
+// A cancelled request must not retain a refresh claim or an unpublished token.
+func (b *Backend) abandonRefresh(ctx context.Context, id string, value *session) {
+	cleanup, cancel := context.WithTimeout(context.WithoutCancel(ctx), 5*time.Second)
+	defer cancel()
+	_ = b.store.remove(cleanup, id)
+	if value != nil {
+		_ = b.provider.revoke(cleanup, *value)
 	}
-	token, err := b.provider.tokens(ctx, url.Values{"grant_type": {"refresh_token"}, "refresh_token": {value.Refresh}})
-	if err != nil {
-		_ = b.store.remove(ctx, id)
-		return session{}, errSession
-	}
-	updated, err := b.provider.accept(ctx, token, "", b.config.RolesClaim, &value)
-	if err != nil {
-		_ = b.store.remove(ctx, id)
-		_ = b.provider.revoke(ctx, session{Access: token.Access, Refresh: token.Refresh})
-		return session{}, errSession
-	}
-	if err := b.store.finishRefresh(ctx, id, updated); err != nil {
-		_ = b.provider.revoke(ctx, updated)
-		return session{}, errSession
-	}
-	return updated, nil
 }
 func sessionError(w http.ResponseWriter, err error) {
 	if errors.Is(err, errBusy) || errors.Is(err, errStore) {

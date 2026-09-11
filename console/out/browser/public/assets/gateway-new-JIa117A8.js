@@ -1,0 +1,1 @@
+import{a as e}from"./components-DQsZKrfN.js";import{a as t}from"./src-CgpYGHMC.js";import{t as n}from"./page-meta-DAEWVLyo.js";var r=n(`app.page.gatewayProvision.title`,`app.page.gatewayProvision.description`),i=e(t);export{i as default,r as meta};

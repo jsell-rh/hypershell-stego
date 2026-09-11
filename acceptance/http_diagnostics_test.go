@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -19,7 +20,9 @@ import (
 	metriccollector "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracecollector "go.opentelemetry.io/proto/otlp/collector/trace/v1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -163,9 +166,10 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 }
 
 type httpDiagnosticCollector struct {
-	traces  *workflowTraceCollector
-	logs    *workflowLogCollector
-	metrics *workflowMetricCollector
+	unavailable atomic.Bool
+	traces      *workflowTraceCollector
+	logs        *workflowLogCollector
+	metrics     *workflowMetricCollector
 }
 
 func newHTTPDiagnosticCollector(t *testing.T) (*httpDiagnosticCollector, []string) {
@@ -185,12 +189,17 @@ func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*http
 	if err != nil {
 		t.Fatal(err)
 	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})))
 	signals := &httpDiagnosticCollector{
 		traces:  &workflowTraceCollector{received: make(chan *tracecollector.ExportTraceServiceRequest, 64)},
 		logs:    &workflowLogCollector{received: make(chan *logcollector.ExportLogsServiceRequest, 64)},
 		metrics: &workflowMetricCollector{received: make(chan *metriccollector.ExportMetricsServiceRequest, 64)},
 	}
+	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
+		if signals.unavailable.Load() {
+			return nil, status.Error(codes.Unavailable, "private-collector-fault")
+		}
+		return next(ctx, request)
+	}))
 	tracecollector.RegisterTraceServiceServer(server, signals.traces)
 	logcollector.RegisterLogsServiceServer(server, signals.logs)
 	metriccollector.RegisterMetricsServiceServer(server, signals.metrics)

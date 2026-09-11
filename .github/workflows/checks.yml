@@ -53,9 +53,40 @@ jobs:
         run: scripts/enable-test-postgres-tls.sh "$POSTGRES_CONTAINER" "$RUNNER_TEMP/postgres-tls"
         env:
           POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+      - name: Start the bounded browser fixture
+        timeout-minutes: 3
+        run: |
+          docker run --detach --name "stego-browser-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
+            --cpus=1 --memory=1536m --pids-limit=256 --network=host \
+            --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+            --tmpfs /tmp:rw,nosuid,nodev,size=268435456 \
+            --env XDG_CONFIG_HOME=/tmp/config --env XDG_CACHE_HOME=/tmp/cache \
+            --entrypoint chromedriver \
+            selenium/standalone-chromium@sha256:81c80050126f610675e40eeac529a821dc5a0d38acf26c6d44f792a6e7ea8ac5 \
+            --port=9515 --allowed-ips=127.0.0.1
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:9515/status >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          exit 1
       - run: scripts/check-gateway.sh
         env:
+          STEGO_REQUIRE_BROWSER: '1'
+          STEGO_BROWSER_ARTIFACT_DIR: ${{ runner.temp }}/rendered-browser
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
+      - name: Stop the browser fixture
+        if: always()
+        run: docker rm --force "stego-browser-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" || true
+      - name: Save rendered browser evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: rendered-browser
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/rendered-browser/*.png
+            ${{ runner.temp }}/rendered-browser/*.txt
+            ${{ runner.temp }}/rendered-browser/*.network.json
 
   database-workflow:
     runs-on: ubuntu-latest
@@ -226,6 +257,10 @@ jobs:
       NODE_OPTIONS: --max-old-space-size=1536
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16 # v6
+        with:
+          go-version: '1.26.8'
+          cache: true
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
         with:
           node-version: '24.18.1'

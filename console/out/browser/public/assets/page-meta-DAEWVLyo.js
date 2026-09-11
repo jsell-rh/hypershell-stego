@@ -1,0 +1,1 @@
+import{t as e}from"./catalog-HSSKH2S1.js";function t(t,n,r=`app.productName`){return()=>[{title:`${e[r]} - ${e[t]}`},{name:`description`,content:e[n]}]}export{t};

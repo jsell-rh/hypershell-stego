@@ -1,0 +1,3 @@
+console/out/browser/public/** linguist-generated=true
+console/out/browser/public/index.html whitespace=-blank-at-eol
+console/ui/build.zip binary

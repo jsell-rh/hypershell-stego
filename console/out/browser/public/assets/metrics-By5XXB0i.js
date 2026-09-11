@@ -1,0 +1,1 @@
+import{t as e}from"./jsx-runtime-KJkY8l8U.js";import{a as t}from"./components-DQsZKrfN.js";import{t as n}from"./src-CgpYGHMC.js";import{t as r}from"./page-meta-DAEWVLyo.js";var i=e(),a=r(`app.nav.metrics`,`app.page.metrics.description`),o=t(function(){return(0,i.jsx)(n,{})});export{o as default,a as meta};

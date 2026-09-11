@@ -45,6 +45,7 @@ const defaultService = "hypershell-console"
 // global OpenTelemetry providers. Missing collector configuration disables export.
 // Local service logging remains enabled.
 type Runtime struct {
+	browserSampleRatio         float64
 	browserOnce                sync.Once
 	browserPermits             chan struct{}
 	database                   databaseSignals
@@ -138,6 +139,7 @@ func newRuntime(localOutput io.Writer) (*Runtime, error) {
 		connection.Close()
 		return nil, errors.New("cannot create trace exporter")
 	}
+	runtime.browserSampleRatio = ratio
 	runtime.connection = connection
 	runtime.provider = sdktrace.NewTracerProvider(sdktrace.WithResource(runtime.resource), sdktrace.WithSampler(sdktrace.TraceIDRatioBased(ratio)), sdktrace.WithRawSpanLimits(sdktrace.SpanLimits{AttributeValueLengthLimit: 256, AttributeCountLimit: 8}), sdktrace.WithBatcher(&safeExporter{SpanExporter: exporter, runtime: runtime}, sdktrace.WithMaxQueueSize(QueueSize), sdktrace.WithMaxExportBatchSize(BatchSize), sdktrace.WithBatchTimeout(200*time.Millisecond), sdktrace.WithExportTimeout(ExportTimeout)))
 	runtime.tracer = runtime.provider.Tracer("stego/http")

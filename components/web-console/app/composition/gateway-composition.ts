@@ -5,12 +5,6 @@ import { createApiClient } from "../adapters/api/api.client";
 import { createGatewayControlPlaneAdapter } from "../adapters/api/gateway-operations";
 import { createGatewayObservability } from "../adapters/observability/gateway-observability";
 import { createGatewayTracing } from "../adapters/observability/gateway-trace-sink";
-import { readBrowserRuntimeConfig } from "./browser-runtime-config";
-
-// The operator's sample ratio reaches the browser through the BFF-injected
-// runtime config, so the browser trace root honors the configured rate rather
-// than always recording every trace, and agrees with the BFF sampler.
-const browserRuntimeConfig = readBrowserRuntimeConfig();
 
 // The trace sink is created before the observability publisher because the
 // publisher takes the sink as one of its fan-out targets, yet a failed span
@@ -23,9 +17,7 @@ let reportDeliveryFailure: (
 ) => void = () => undefined;
 
 const tracing = createGatewayTracing(
-  {
-    sampleRatio: browserRuntimeConfig.tracing.sampleRatio,
-  },
+  {},
   {
     reportDeliveryFailure: (failure) => {
       reportDeliveryFailure(failure);

@@ -14,8 +14,8 @@ overrides:
     roles_claim: resource_access.hypershell.roles
     routes:
       - /
+      - /login
+      - /metrics
       - /gateways/new
       - /gateways/{id}
-    assets:
-      - source: ui/index.html
-        path: /index.html
+    asset_bundle: ui/build.zip

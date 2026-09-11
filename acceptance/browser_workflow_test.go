@@ -9,6 +9,7 @@ import (
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
+	"encoding/pem"
 	"html"
 	"io"
 	"net"
@@ -335,6 +336,85 @@ func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, req
 	return result.ID
 }
 
+type renderedBrowser struct {
+	Origin    string   `json:"origin"`
+	Pins      []string `json:"pins"`
+	Session   string   `json:"session"`
+	ID        string   `json:"id"`
+	directory string
+	diagnose  func()
+}
+
+func (b *renderedBrowser) run(t *testing.T, phase string) {
+	t.Helper()
+	input, output := filepath.Join(b.directory, "input.json"), filepath.Join(b.directory, phase+".json")
+	data, err := json.Marshal(b)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err = os.WriteFile(input, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, "node", "browser_rendered_workflow.mjs", input, output, phase)
+	command.Env = append(os.Environ(), "NODE_OPTIONS=--max-old-space-size=256")
+	if logs, err := command.CombinedOutput(); err != nil {
+		if b.diagnose != nil {
+			b.diagnose()
+		}
+		t.Fatalf("rendered browser %s: %v\n%s", phase, err, logs)
+	}
+	if phase == "verify" || phase == "close" {
+		b.Session = ""
+	}
+	if phase == "create" {
+		data, err = os.ReadFile(output)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if json.Unmarshal(data, b) != nil || b.ID == "" || b.Session == "" {
+			t.Fatal("browser did not return Gateway and session IDs")
+		}
+	}
+}
+func newRenderedBrowser(t *testing.T, origin string, certificates ...string) *renderedBrowser {
+	t.Helper()
+	if os.Getenv("STEGO_REQUIRE_BROWSER") != "1" {
+		return nil
+	}
+	dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR")
+	if dir == "" {
+		dir = t.TempDir()
+	}
+	if err := os.MkdirAll(dir, 0700); err != nil {
+		t.Fatal(err)
+	}
+	b := &renderedBrowser{Origin: origin, directory: dir}
+	t.Cleanup(func() {
+		if b.Session != "" {
+			b.run(t, "close")
+		}
+	})
+	for _, name := range certificates {
+		data, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		block, _ := pem.Decode(data)
+		if block == nil {
+			t.Fatal("invalid browser certificate")
+		}
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			t.Fatal(err)
+		}
+		hash := sha256.Sum256(cert.RawSubjectPublicKeyInfo)
+		b.Pins = append(b.Pins, base64.StdEncoding.EncodeToString(hash[:]))
+	}
+	return b
+}
+
 func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	k := browserProvider(t)
 	settings, _ := k.apiLoginSetup(t)
@@ -372,8 +452,10 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	apiIdentity := identity(t, "localhost")
 	dir := filepath.Dir(apiIdentity.config.CAFile)
 	settings = append(settings, "STEGO_HTTP_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_HTTP_TLS_KEY="+filepath.Join(dir, "server-key.pem"), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
-	stopAPI, api, rpc := startBoth(t, buildApplication(t), f.dsn, brokerConfig, settings...)
-	defer stopAPI()
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID="+f.release, "HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID="+f.cluster)
+	apiProgram := buildApplication(t)
+	stopAPI, api, rpc := startBoth(t, apiProgram, f.dsn, brokerConfig, settings...)
+	defer func() { stopAPI() }()
 	api = strings.Replace(api, "http://", "https://", 1)
 	consoleIdentity := identity(t, "127.0.0.2")
 	secretFile := filepath.Join(t.TempDir(), "client-secret")
@@ -420,9 +502,43 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	if response.StatusCode != 403 {
 		t.Fatal("creation role was not enforced", response.StatusCode)
 	}
-	response = alice.api(t, "POST", "/gateways", body)
+	expectedStatus := 201
+	rendered := newRenderedBrowser(t, address, filepath.Join(filepath.Dir(consoleIdentity.config.CAFile), "server.pem"), k.options.CAFile)
+	if rendered != nil {
+		rendered.diagnose = func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+			defer cancel()
+			rows, err := f.db.QueryContext(ctx, "SELECT state,count(*),max(extract(epoch from CURRENT_TIMESTAMP-changed_at)) FROM stego_browser_sessions GROUP BY state")
+			if err != nil {
+				t.Logf("session diagnostic: %v", err)
+			} else {
+				defer rows.Close()
+				for rows.Next() {
+					var state string
+					var count int
+					var age float64
+					if err := rows.Scan(&state, &count, &age); err != nil {
+						t.Log(err)
+					} else {
+						t.Logf("session state=%s count=%d maximum age=%.2f", state, count, age)
+					}
+				}
+			}
+			t.Logf("browser process diagnostics: %s", logs())
+		}
+		rendered.run(t, "create")
+		checkRenderedBrowserSignals(t, signals)
+		rendered.run(t, "reload")
+		response = alice.api(t, "GET", "/gateways/"+rendered.ID, nil)
+		if response.StatusCode != 200 {
+			t.Fatal("rendered Gateway cannot be retrieved")
+		}
+		expectedStatus = 200
+	} else {
+		response = alice.api(t, "POST", "/gateways", body)
+	}
 	var gateway httpapi.Gateway
-	if response.StatusCode != 201 || json.Unmarshal(response.Body, &gateway) != nil {
+	if response.StatusCode != expectedStatus || json.Unmarshal(response.Body, &gateway) != nil {
 		t.Fatal("browser Gateway creation failed", response.StatusCode)
 	}
 	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || gateway.DatabaseID != f.database {
@@ -470,8 +586,20 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	}
 	stop()
 	before := logs()
+	stopAPI()
+	apiTarget, _ := url.Parse(api)
+	restartSettings := append(append([]string{}, settings...), "PORT="+apiTarget.Port(), "STEGO_GRPC_ADDR="+rpc)
+	stopAPI, api, rpc = startBoth(t, apiProgram, f.dsn, brokerConfig, restartSettings...)
+	api = strings.Replace(api, "http://", "https://", 1)
 	stop, logs = startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
 	defer stop()
+	alice.session(t)
+	assertAccess()
+	if rendered != nil {
+		signals.unavailable.Store(true)
+		rendered.run(t, "verify")
+		signals.unavailable.Store(false)
+	}
 	alice.session(t)
 	assertAccess()
 	// A completed renewal changes the stored encrypted session without login.
@@ -564,7 +692,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	// Login must now show the password form. A retained provider session would redirect.
 	alice.login(t, k, "console-alice")
 	for _, log := range []string{before, logs()} {
-		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token"} {
+		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault"} {
 			if strings.Contains(log, private) {
 				t.Fatal("private browser data reached process logs")
 			}
@@ -667,6 +795,81 @@ func checkBrowserLogAndMetric(t *testing.T, collector *httpDiagnosticCollector) 
 			}
 		case <-timer.C:
 			t.Fatal("browser log and metric did not reach the collector")
+		}
+	}
+}
+
+func checkRenderedBrowserSignals(t *testing.T, collector *httpDiagnosticCollector) {
+	t.Helper()
+	spans := map[string]*tracepb.Span{}
+	logTraces := map[string]bool{}
+	metricSeen := false
+	deadline := time.NewTimer(10 * time.Second)
+	defer deadline.Stop()
+	for {
+		select {
+		case batch := <-collector.traces.received:
+			for _, resource := range batch.ResourceSpans {
+				for _, scope := range resource.ScopeSpans {
+					for _, span := range scope.Spans {
+						spans[hex.EncodeToString(span.SpanId)] = span
+					}
+				}
+			}
+		case batch := <-collector.logs.received:
+			for _, resource := range batch.ResourceLogs {
+				if signalAttribute(resource.Resource.GetAttributes(), "service.name").GetStringValue() != "hypershell-web-console" {
+					continue
+				}
+				for _, scope := range resource.ScopeLogs {
+					for _, record := range scope.LogRecords {
+						if record.Body.GetStringValue() == "gateway.workflow.completed" && signalAttribute(record.Attributes, "gateway.action").GetStringValue() == "provision" && signalAttribute(record.Attributes, "gateway.outcome").GetStringValue() == "succeeded" {
+							logTraces[hex.EncodeToString(record.TraceId)] = true
+						}
+					}
+				}
+			}
+		case batch := <-collector.metrics.received:
+			for _, resource := range batch.ResourceMetrics {
+				if signalAttribute(resource.Resource.GetAttributes(), "service.name").GetStringValue() != "hypershell-web-console" {
+					continue
+				}
+				for _, scope := range resource.ScopeMetrics {
+					for _, metric := range scope.Metrics {
+						if metric.Name != "gateway.probes" {
+							continue
+						}
+						for _, point := range metric.GetSum().GetDataPoints() {
+							if signalAttribute(point.Attributes, "gateway.action").GetStringValue() == "provision" && signalAttribute(point.Attributes, "gateway.outcome").GetStringValue() == "succeeded" && (point.GetAsDouble() > 0 || point.GetAsInt() > 0) {
+								metricSeen = true
+							}
+						}
+					}
+				}
+			}
+		case <-deadline.C:
+			t.Fatal("rendered Gateway did not deliver its trace, log, and metric")
+		}
+		for _, api := range spans {
+			if api.Kind != tracepb.Span_SPAN_KIND_SERVER || api.Name != "POST /api/hypershell/v1/gateways" {
+				continue
+			}
+			client := spans[hex.EncodeToString(api.ParentSpanId)]
+			if client == nil || client.Kind != tracepb.Span_SPAN_KIND_CLIENT {
+				continue
+			}
+			backend := spans[hex.EncodeToString(client.ParentSpanId)]
+			if backend == nil || backend.Kind != tracepb.Span_SPAN_KIND_SERVER {
+				continue
+			}
+			dependency := spans[hex.EncodeToString(backend.ParentSpanId)]
+			if dependency == nil || dependency.Name != "gateway.dependency.provision" {
+				continue
+			}
+			root := spans[hex.EncodeToString(dependency.ParentSpanId)]
+			if root != nil && root.Name == "gateway.workflow.provision" && len(root.ParentSpanId) == 0 && bytes.Equal(root.TraceId, api.TraceId) && logTraces[hex.EncodeToString(root.TraceId)] && metricSeen {
+				return
+			}
 		}
 	}
 }

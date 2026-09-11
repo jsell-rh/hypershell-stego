@@ -471,7 +471,7 @@ output and identity recovery after a Run callback panic or `runtime.Goexit`.
 The [browser Gateway protocol check](acceptance/browser-gateway.md) uses a
 separate generated Go console backend. STEGO owns login, sessions, token renewal,
 logout, and the API proxy. Hypershell declares routes, assets, roles, and the API
-prefix. The console page is a scaffold; the complete UI remains open.
+prefix. The backend now serves the captured React console.
 
 The [browser session compatibility check](acceptance/browser-session-compatibility.md)
 checks the sign-in recovery response and sign-out through the generated console
@@ -479,9 +479,10 @@ and Keycloak. A confirmation form protects the reference UI's GET sign-out link.
 
 The [TypeScript browser client check](acceptance/browser-typescript.md) uses the
 STEGO-generated module with the real Gateway workflow. STEGO supplies the
-transport and runtime checks. The React UI migration remains open.
+transport and runtime checks. The rendered Gateway workflow now uses this client.
 
 The [React console source port](acceptance/web-console-port.md) now uses the
-STEGO browser SDK. Its 238 domain and UI tests, type checks, lint, and production
-build pass. The served console remains the scaffold while common browser
-telemetry and rendered browser acceptance are completed.
+STEGO browser SDK and telemetry runtime. Its 229 domain and UI tests, type checks, lint, and production
+build pass. The generated backend now serves the captured build. Three rendered Gateway
+checks passed with common telemetry, collector failure, access checks, and
+API and backend restart. See the linked record for the scope and remaining gates.
