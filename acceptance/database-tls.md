@@ -4,6 +4,9 @@ requires verified TLS by default. Configure `DATABASE_URL` with
 The certificate must match the database host name or IP address. The generated
 event listener retains the pool's validated TLS configuration.
 
+On 2026-09-11, the user approved verified TLS by default with the explicit
+loopback test exception below. The generated behavior matches that decision.
+
 `TestGatewayDatabaseTLSAndListenerAcrossRestart` uses native PostgreSQL TLS with
 a certificate for `localhost`. It creates a Gateway through REST, checks the
 owner grant, and receives the event. It checks `pg_stat_ssl` for the application
