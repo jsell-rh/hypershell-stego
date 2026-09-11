@@ -113,20 +113,20 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: f6ee9093ce9578b78383bfd4fe294f4c826d6fe8950670090c8e77e52d218931
+                sha256: dd58bccc96194dc9322a8e9610832c09df3b4d2072095b23a7f514c83e7068f9
                 mode: 420
-        sha256: 06b34e483c7b5e35154ed7dc580ff50b8402a9b102cebc923ed3e14695be9ab0
+        sha256: 433b8852c42839ac31c184b2611a8157b37df4195043bbb1d3f31431658e3a2c
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911192159-cc3505114582
+        module_version: v0.0.0-20260911194840-440fbbc5e5b1
         vcs: git
-        revision: cc3505114582bc77068374b2b4a192b68c9dca1c
+        revision: 440fbbc5e5b18557b5046e4501ca909d823a7def
         source_state: clean
-    service_hash: f6ee9093ce9578b78383bfd4fe294f4c826d6fe8950670090c8e77e52d218931
+    service_hash: dd58bccc96194dc9322a8e9610832c09df3b4d2072095b23a7f514c83e7068f9
     registry_sha: gateway-workflow
-    registry_content_sha256: c38efb2cf4847bfab782d0e63e9448dc0aec53908093989fff2cfd5d14e1424a
+    registry_content_sha256: b18301f93894866cce1c8c099afb4548b21b2fdd1bfe247daa3ccbb3027e3808
     components:
         cli-application:
             version: 1.6.2
@@ -174,7 +174,7 @@ last_applied:
             version: 1.0.2
             sha: gateway-workflow
         typescript-sdk:
-            version: 1.0.0
+            version: 1.1.0
             sha: gateway-workflow
     entities:
         Gateway:
@@ -454,7 +454,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 6e952feaa81e50c8f062fb26f706175e3580f9cc19c1b891c24722644c618c76
+        cli/command/version.go: d24e08b3685351af89eddc157f7aa347f7bcd740a475e271ecfa069b73472479
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -560,6 +560,6 @@ last_applied:
         tracing/runtime.go: 9ffaf66869f8ea7b3d02752ebaec050ff1d45f99aee41e6e7a8dc7b69aaac000
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
-        tssdk/index.d.ts: 8e6d3d639aba423e8a533fd65cc0d4042bec8bd9cfc5780b59ee30961ee4c03c
-        tssdk/index.js: 6829cdf5905b474bc17d09ff7324875c41e044e6d944547fbcd84ec083aee247
+        tssdk/index.d.ts: 34927be64cb3d8c43a726a24cafef52de48549ee43aafed3fd0f4b93907d5b41
+        tssdk/index.js: cb70191564510cede74cfbdd179e5ae566bfb078052be1f407593968d0781139
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

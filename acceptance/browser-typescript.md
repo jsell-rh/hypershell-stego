@@ -54,3 +54,14 @@ passed for `cc35051`. Added common cancellation and deadline checks passed
 in the cluster in 3.383 seconds. Full CI for this application revision remains
 a separate check. This result does not close the remaining UI or enterprise
 requirements.
+
+Compiler `440fbbc` supplies SDK 1.1 and browser-backend 1.2. The SDK adds explicit
+login navigation and declared public API error codes. Login retains the path
+and query and omits URL fragments to match the backend contract. Hypershell
+declares `service_account_name_exists`; private error bodies remain hidden.
+
+The fresh pinned PostgreSQL and Keycloak Gateway workflow passed in 24.08
+seconds (25.124 seconds for the package). The input-manifest race test passed
+in 1.055 seconds. All 155 generated, state, and dependency hashes match both
+generation passes and the checkout. Results are saved in
+`/tmp/stego-ui-pin-0lefryw_`. Full compiler CI passed for this revision.

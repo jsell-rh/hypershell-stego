@@ -74,8 +74,9 @@ export interface Schemas {
 export interface RequestOptions { signal?: AbortSignal }
 export interface Result<T> { readonly status: number; readonly body: T; readonly etag: string | null }
 export interface Session { authenticated: boolean; roles: string[]; user?: { [key: string]: string }; expires_at?: number }
-export class SDKError extends Error { constructor(code: string, status?: number); readonly code: string; readonly status: number }
+export class SDKError extends Error { constructor(code: string, status?: number, apiCode?: string); readonly code: string; readonly status: number; readonly apiCode: string | undefined }
 export interface Client {
+login(): void;
 session(options?: RequestOptions): Promise<Session>;
 logout(options?: RequestOptions): Promise<void>;
 "createGateway"(input: { body: RequestSchemas["openapi.gateways_GatewayCreateRequest"] }, options?: RequestOptions): Promise<Result<(Schemas["Gateway"])>>;

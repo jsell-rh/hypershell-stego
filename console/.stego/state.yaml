@@ -32,16 +32,16 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911192159-cc3505114582
+        module_version: v0.0.0-20260911194840-440fbbc5e5b1
         vcs: git
-        revision: cc3505114582bc77068374b2b4a192b68c9dca1c
+        revision: 440fbbc5e5b18557b5046e4501ca909d823a7def
         source_state: clean
     service_hash: cb905bb8d8178a939d024575da1225165994c9ee9b7a70ae03a1468f44e9963f
     registry_sha: browser-workflow
-    registry_content_sha256: c38efb2cf4847bfab782d0e63e9448dc0aec53908093989fff2cfd5d14e1424a
+    registry_content_sha256: b18301f93894866cce1c8c099afb4548b21b2fdd1bfe247daa3ccbb3027e3808
     components:
         browser-backend:
-            version: 1.1.0
+            version: 1.2.0
             sha: browser-workflow
         health-check:
             version: 1.0.0
@@ -53,7 +53,7 @@ last_applied:
             version: 4.0.0
             sha: browser-workflow
     files:
-        browser/backend.go: 10cb7944c8975dc7d72b6ffafce632b3284f6c5fce8e7f315431b135098f87cc
+        browser/backend.go: d302fb2d82e10c6b8cb41e09859268dce3225e221ecb3a2870fc593241b61710
         browser/client/client.go: fa5cc830627d59e6632383dc696dda8266016b503684865bedb408e5a5682389
         browser/handlers.go: 579b1bb50e2f0783fff31ebb13da8f51fac2995fd141d385cb0d0701e6184f58
         browser/oauth.go: f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e

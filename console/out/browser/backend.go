@@ -23,7 +23,7 @@ import (
 //go:embed public
 var assets embed.FS
 
-const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"LogoutScope\":\"identity_provider\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}]}"
+const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"LogoutScope\":\"identity_provider\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}],\"ScriptHashes\":[]}"
 const SessionCookie = "__Host-Http-stego_session"
 const LoginCookie = "__Host-Http-stego_login"
 const CSRFHeader = "X-CSRF-Token"
@@ -33,6 +33,7 @@ type configuration struct {
 	Prefix, RolesClaim, LogoutScope string
 	Routes                          []string
 	Assets                          []asset
+	ScriptHashes                    []string
 }
 type options struct{ Origin, Upstream, UpstreamCA, Issuer, IssuerCA, ClientID, SecretFile, KeyFile string }
 type Backend struct {
@@ -291,6 +292,8 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		if a.Path == target {
 			if target != "/index.html" {
 				r.Pattern = "/assets/{asset}"
+			} else if len(b.config.ScriptHashes) > 0 {
+				w.Header().Set("Content-Security-Policy", strings.Replace(w.Header().Get("Content-Security-Policy"), "script-src 'self'", "script-src 'self' "+strings.Join(b.config.ScriptHashes, " "), 1))
 			}
 			body, err := assets.ReadFile("public" + target)
 			if err != nil {
