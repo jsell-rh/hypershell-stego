@@ -113,9 +113,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: c4efecc365e945d58a6b2f159b5e7b694d9ca25d82a038708fa4c11557b7f8f7
+                sha256: 905e3d4eb552f2810c30cf76c36480b9c4a34cdad948b0f1186af72d51fcee75
                 mode: 420
-        sha256: 0fa54230af8c6a820ca645098bbde90d3b4763990de8b5492756d3955f84b74b
+        sha256: 052512bc3e17257e62410d45f1e06638ec40abbda08917c6092ab50d80a4c846
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -124,7 +124,7 @@ last_applied:
         vcs: git
         revision: 0f52bab9021379f877aa355f0b9c8c41d7514e85
         source_state: clean
-    service_hash: c4efecc365e945d58a6b2f159b5e7b694d9ca25d82a038708fa4c11557b7f8f7
+    service_hash: 905e3d4eb552f2810c30cf76c36480b9c4a34cdad948b0f1186af72d51fcee75
     registry_sha: gateway-workflow
     registry_content_sha256: 0597d70bf7aeb3d79e08bf6b3ccbb880349f0029ca0210df04350bae5c331c61
     components:
@@ -479,7 +479,7 @@ last_applied:
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/render/main.go: 361f1a0a1a0b31b859792328042539084358d169c1cb4f640188750269c7a1d0
-        deploy/render/manifest.json.tmpl: d0c1b06d32571376c345d4959b7052d129b3d955b884f5e0789846f4118572a3
+        deploy/render/manifest.json.tmpl: 9d96b0ed29d6e3870348adb00cdcaa6e8553f683d3458adcc6679abd577c8784
         deploy/render/worker-database.json.tmpl: 79640ac7d705cbbbbaec4b88bf3deb8a3351322a45031ab3c6bd4a5b614f1a51
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
         deploy/render/worker-gateway-workload.json.tmpl: 047b83353795f22babe20509ab7381cd93c597a2ace533de22b5cbddcdbda6ab

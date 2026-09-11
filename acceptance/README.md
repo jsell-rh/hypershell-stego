@@ -319,3 +319,9 @@ events, TLS gRPC agreement, restart, and shared telemetry.
 The [generated Kubernetes service check](kubernetes-service.md)
 runs the Gateway workflow in a separate API Pod. STEGO supplies its deployment
 resources and HTTPS runtime; the test checks behavior across Pod replacement.
+
+The [rendered service-account check](browser-service-accounts.md) extends the
+deployed browser workflow with real credential issuance, private one-time
+delivery, reload, revocation, and deletion. Its readiness fixture does not prove
+Gateway workload provisioning. The record identifies the remaining handwritten
+provisioner entry point.

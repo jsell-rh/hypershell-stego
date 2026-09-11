@@ -440,6 +440,26 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		signals, telemetry = newHTTPDiagnosticCollectorAt(t, deployment.host("fixture"), "0.0.0.0:19093")
 	}
 	settings = append(settings, telemetry...)
+	providerLogs := func() string { return "" }
+	if os.Getenv("STEGO_REQUIRE_BROWSER") == "1" {
+		key, providerAuth := issuer(t)
+		host, listen := "localhost", "127.0.0.1:0"
+		if deployment != nil {
+			host, listen = deployment.host("fixture"), "0.0.0.0:19094"
+		}
+		providerTelemetry := append([]string{}, telemetry...)
+		if deployment != nil {
+			for i, entry := range providerTelemetry {
+				if strings.HasPrefix(entry, "OTEL_EXPORTER_OTLP_ENDPOINT=") {
+					providerTelemetry[i] = "OTEL_EXPORTER_OTLP_ENDPOINT=https://" + host + ":19093"
+				}
+			}
+		}
+		providerSettings, stopProvider, logs := startRealProvisionerAt(t, k, key, append(providerAuth, providerTelemetry...), host, listen)
+		defer stopProvider()
+		providerLogs = logs
+		settings = append(settings, providerSettings...)
+	}
 	aliceID := k.human(t, "console-alice")
 	k.human(t, "console-bob")
 	response := k.adminRequest(t, "GET", "/clients?clientId=hypershell", nil)
@@ -723,6 +743,15 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		}
 	}
 	assertAccess()
+	if rendered != nil {
+		checkRenderedServiceAccounts(t, f, k, aliceID, rendered, alice, func() string {
+			all := providerLogs() + before + logs()
+			if deployment != nil {
+				all += string(deployment.command(nil, "logs", "deployment/hypershell", "--tail=10000"))
+			}
+			return all
+		})
+	}
 	response = alice.request(t, "GET", address+"/auth/logout", nil, nil)
 	if response.StatusCode != 200 || !bytes.Contains(response.Body, []byte(`name="csrf_token" value="`+alice.csrf+`"`)) {
 		t.Fatal("logout confirmation failed", response.StatusCode)

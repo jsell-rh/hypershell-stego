@@ -167,6 +167,7 @@ overrides:
       - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19092, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19094, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
   browser-telemetry:
     service_name: hypershell-web-console

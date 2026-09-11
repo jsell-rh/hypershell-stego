@@ -88,6 +88,28 @@
           {
             "ports": [
               {
+                "port": 19094,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "stego-fixture"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
                 "port": 19093,
                 "protocol": "TCP"
               }

@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -162,13 +163,18 @@ func startRealProvisioner(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey,
 
 func startRealProvisionerWithLogs(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func(), func() string) {
 	t.Helper()
+	return startRealProvisionerAt(t, k, key, settings, "localhost", "127.0.0.1:0")
+}
+
+func startRealProvisionerAt(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string, host, listen string) ([]string, func(), func() string) {
+	t.Helper()
 	binary := buildProgram(t, "./cmd/provisioner")
-	identity := identity(t, "localhost")
+	identity := identity(t, host)
 	dir := filepath.Dir(identity.config.CAFile)
 	ctx, cancel := context.WithCancel(context.Background())
 	command := exec.CommandContext(ctx, binary)
 	command.Env = append(os.Environ(), settings...)
-	command.Env = append(command.Env, "STEGO_GRPC_ADDR=127.0.0.1:0", "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"), "HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile, `HYPERSHELL_PROVISIONER_SUBJECTS=["api-provisioner"]`)
+	command.Env = append(command.Env, "STEGO_GRPC_ADDR="+listen, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"), "HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile, `HYPERSHELL_PROVISIONER_SUBJECTS=["api-provisioner"]`)
 	if raceEnabled {
 		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
 	}
@@ -211,6 +217,11 @@ func startRealProvisionerWithLogs(t *testing.T, k *keycloakFixture, key *rsa.Pri
 	case <-time.After(10 * time.Second):
 		t.Fatal("provisioner startup timed out")
 	}
+	_, port, err := net.SplitHostPort(address)
+	if err != nil {
+		t.Fatal("invalid provisioner address")
+	}
+	address = net.JoinHostPort(host, port)
 	tokenFile := filepath.Join(t.TempDir(), "service-token")
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "api-provisioner")), 0600); err != nil {
 		t.Fatal(err)

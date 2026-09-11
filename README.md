@@ -486,3 +486,8 @@ STEGO browser SDK and telemetry runtime. Its 229 domain and UI tests, type check
 build pass. The generated backend now serves the captured build. Three rendered Gateway
 checks passed with common telemetry, collector failure, access checks, and
 API and backend restart. See the linked record for the scope and remaining gates.
+
+The [rendered service-account check](acceptance/browser-service-accounts.md)
+uses the console and real Keycloak to check one-time credential delivery, token
+claims, reload, revocation, and deletion. It uses a Gateway readiness fixture.
+Full Gateway workload provisioning through the console remains open.
