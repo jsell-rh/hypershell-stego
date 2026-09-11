@@ -480,3 +480,8 @@ and Keycloak. A confirmation form protects the reference UI's GET sign-out link.
 The [TypeScript browser client check](acceptance/browser-typescript.md) uses the
 STEGO-generated module with the real Gateway workflow. STEGO supplies the
 transport and runtime checks. The React UI migration remains open.
+
+The [React console source port](acceptance/web-console-port.md) now uses the
+STEGO browser SDK. Its 238 domain and UI tests, type checks, lint, and production
+build pass. The served console remains the scaffold while common browser
+telemetry and rendered browser acceptance are completed.

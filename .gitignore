@@ -7,3 +7,10 @@
 /console/.stego/dependencies.lock
 
 /acceptance/typescript/node_modules/
+
+node_modules/
+/components/web-console/build/
+/components/web-console/.react-router/
+/components/web-console/domain-probes/dist/
+**/*.tsbuildinfo
+**/coverage/

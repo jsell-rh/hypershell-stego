@@ -1,0 +1,10 @@
+.react-router
+build
+coverage
+domain-probes
+node_modules
+playwright-report
+storybook-static
+test-results
+bff/dist
+bff/public
