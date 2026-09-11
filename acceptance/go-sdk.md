@@ -33,10 +33,12 @@ limits, malformed JSON, safe errors, deadlines, and client shutdown. Input check
 cover captured references, duplicate keys, unsupported extensions, recursive
 schemas, imported parameter types, name conflicts, and repeat generation.
 
-The Go API is new. It does not yet supply the old SDK's fluent builders, resource
-groups, or automatic list iterator. It does not include the separate current-user
-contract extension. TypeScript SDK and browser work remain open. This workflow
-is not a production capacity test.
+On 2026-09-11, the user selected the new typed Go API with explicit contexts and
+a bounded HTTPS client. Preserve HTTP contracts and behavior. Compatibility
+with the old fluent builder API is not required. Existing callers must adopt
+the typed API. Resource groups, automatic list iteration, and the separate
+current-user contract extension are not supplied. TypeScript SDK and browser
+work remain open. This workflow is not a production capacity test.
 
 ## Acceptance result
 
