@@ -5,3 +5,5 @@
 
 /console/.stego/apply.lock
 /console/.stego/dependencies.lock
+
+/acceptance/typescript/node_modules/

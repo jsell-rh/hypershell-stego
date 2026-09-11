@@ -57,3 +57,7 @@ application source also matches the checkout. The Job completed. Its source and
 results are in `/tmp/stego-browser-logout-pin-n9t00fim`. Full compiler CI passed
 for `e7febe3`; full application CI remains a separate check.
 Both test namespaces were removed. The cluster API confirmed removal.
+
+The [TypeScript client check](browser-typescript.md) now tests the generated
+CSRF transport with real Gateway requests. Integration with the reference UI
+and browser telemetry remains open.

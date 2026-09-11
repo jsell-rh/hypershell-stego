@@ -10,6 +10,7 @@ components:
   - http-application
   - grpc-application
   - go-sdk
+  - typescript-sdk
   - controller
   - health-check
   - kubernetes-service

@@ -92,18 +92,18 @@ func run() (stegoErr error) {
 		return err
 	}
 	defer source.Close()
-	stegoStage = "component[8].constructor[0]"
+	stegoStage = "component[9].constructor[0]"
 	databaseMonitor, err := health.NewDatabaseMonitor(ctx, sqlDB)
 	if err != nil {
 		return err
 	}
-	stegoStage = "component[10].constructor[0]"
+	stegoStage = "component[11].constructor[0]"
 	tracingRuntime, err := tracing.NewTracingRuntime()
 	if err != nil {
 		return err
 	}
 	defer tracingRuntime.Close()
-	stegoStage = "component[14].constructor[0]"
+	stegoStage = "component[15].constructor[0]"
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err

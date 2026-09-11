@@ -113,20 +113,20 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 72f882716a73b89bec83bdf4a70861d426e57dc6e58c6c2fb930ee88c0a380d9
+                sha256: f6ee9093ce9578b78383bfd4fe294f4c826d6fe8950670090c8e77e52d218931
                 mode: 420
-        sha256: bc3bf042809e90a4ce6ed3aff2d7c64837c92bc5fb6496332a407accd92e7b3b
+        sha256: 06b34e483c7b5e35154ed7dc580ff50b8402a9b102cebc923ed3e14695be9ab0
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911185747-e7febe334295
+        module_version: v0.0.0-20260911192159-cc3505114582
         vcs: git
-        revision: e7febe33429538d0e56ba0d27307f6852d7a7228
+        revision: cc3505114582bc77068374b2b4a192b68c9dca1c
         source_state: clean
-    service_hash: 72f882716a73b89bec83bdf4a70861d426e57dc6e58c6c2fb930ee88c0a380d9
+    service_hash: f6ee9093ce9578b78383bfd4fe294f4c826d6fe8950670090c8e77e52d218931
     registry_sha: gateway-workflow
-    registry_content_sha256: 9183d429a2b131c0e89003cc8006b2f3a7c7ee3b0e093e93fbff5ac1a4eb6c5c
+    registry_content_sha256: c38efb2cf4847bfab782d0e63e9448dc0aec53908093989fff2cfd5d14e1424a
     components:
         cli-application:
             version: 1.6.2
@@ -172,6 +172,9 @@ last_applied:
             sha: gateway-workflow
         tsl-search:
             version: 1.0.2
+            sha: gateway-workflow
+        typescript-sdk:
+            version: 1.0.0
             sha: gateway-workflow
     entities:
         Gateway:
@@ -451,7 +454,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: f7f35562e2facf5ec09fa510f7feaa2a9b8f0eb2b05bd19aea38cfd320fcb044
+        cli/command/version.go: 6e952feaa81e50c8f062fb26f706175e3580f9cc19c1b891c24722644c618c76
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -518,7 +521,7 @@ last_applied:
         kubernetes/client.go: 66b577cb6cf902760a3bca83832926924e75b4465928237c5ab821755fd08e59
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
-        main.go: fc2b3e9edd45fed2b3a3808211c146874522bef4f0a4a889c0431a146d14e9bd
+        main.go: 8e029a85d239b74daa457de84a23c14cd157ac78acf7943354390f810cfc2081
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
@@ -557,3 +560,6 @@ last_applied:
         tracing/runtime.go: 9ffaf66869f8ea7b3d02752ebaec050ff1d45f99aee41e6e7a8dc7b69aaac000
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
+        tssdk/index.d.ts: 8e6d3d639aba423e8a533fd65cc0d4042bec8bd9cfc5780b59ee30961ee4c03c
+        tssdk/index.js: 6829cdf5905b474bc17d09ff7324875c41e044e6d944547fbcd84ec083aee247
+        tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

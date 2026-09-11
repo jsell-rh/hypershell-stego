@@ -458,8 +458,8 @@ client logs, duration metrics, and child spans across failure and restart.
 The [generated Go SDK](acceptance/go-sdk.md) uses the captured OpenAPI contract.
 STEGO supplies its typed methods, HTTPS transport, and telemetry. Use the new
 typed API and preserve HTTP contracts and behavior. Compatibility with the old
-fluent SDK API is not required. Automatic pagination, TypeScript SDK, and web
-console remain open.
+fluent SDK API is not required. Automatic pagination and the complete web console remain open. The generated
+TypeScript client has a separate protocol check below.
 
 The [generated Kubernetes service check](acceptance/kubernetes-service.md)
 runs the Gateway workflow in separate API and identity worker Pods. STEGO
@@ -476,3 +476,7 @@ prefix. The console page is a scaffold; the complete UI remains open.
 The [browser session compatibility check](acceptance/browser-session-compatibility.md)
 checks the sign-in recovery response and sign-out through the generated console
 and Keycloak. A confirmation form protects the reference UI's GET sign-out link.
+
+The [TypeScript browser client check](acceptance/browser-typescript.md) uses the
+STEGO-generated module with the real Gateway workflow. STEGO supplies the
+transport and runtime checks. The React UI migration remains open.

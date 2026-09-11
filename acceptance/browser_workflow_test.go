@@ -279,6 +279,49 @@ func (b *consoleBrowser) api(t *testing.T, method, path string, body []byte) web
 	return b.request(t, method, b.origin+"/api/hypershell/v1"+path, body, headers)
 }
 
+func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, request any) string {
+	t.Helper()
+	node, err := exec.LookPath("node")
+	if err != nil {
+		t.Fatal("Node.js is required for the generated browser SDK workflow")
+	}
+	origin, _ := url.Parse(alice.origin)
+	cookieHeader := func(b *consoleBrowser) string {
+		var pairs []string
+		for _, cookie := range b.client.Jar.Cookies(origin) {
+			pairs = append(pairs, cookie.Name+"="+cookie.Value)
+		}
+		return strings.Join(pairs, "; ")
+	}
+	data, err := json.Marshal(map[string]any{"origin": alice.origin, "owner": cookieHeader(alice), "other": cookieHeader(bob), "request": request})
+	if err != nil {
+		t.Fatal(err)
+	}
+	dir := t.TempDir()
+	input, output := filepath.Join(dir, "input.json"), filepath.Join(dir, "output.json")
+	if err := os.WriteFile(input, data, 0600); err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+	defer cancel()
+	command := exec.CommandContext(ctx, node, "browser_sdk_workflow.mjs", input, output)
+	command.Env = append(os.Environ(), "NODE_EXTRA_CA_CERTS="+ca, "NODE_OPTIONS=--max-old-space-size=256")
+	if logs, err := command.CombinedOutput(); err != nil {
+		t.Fatalf("generated browser SDK workflow: %v\n%s", err, logs)
+	}
+	data, err = os.ReadFile(output)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var result struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(data, &result) != nil || result.ID == "" {
+		t.Fatal("SDK did not return a Gateway ID")
+	}
+	return result.ID
+}
+
 func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	k := browserProvider(t)
 	settings, _ := k.apiLoginSetup(t)
@@ -340,6 +383,15 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		}
 	}
 	bob.login(t, k, "console-bob")
+	sdkID := browserSDKWorkflow(t, alice, bob, consoleIdentity.config.CAFile, f.request("browser-sdk-workflow"))
+	var sdkGrants int
+	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings b JOIN roles r ON r.id=b.role_id JOIN users u ON u.id=b.user_id WHERE b.gateway_id=$1 AND b.scope='gateway' AND r.name='gateway:owner' AND u.subject=$2", sdkID, aliceID).Scan(&sdkGrants); err != nil || sdkGrants != 1 {
+		t.Fatal("SDK Gateway owner grant missing", err)
+	}
+	if readEvent(t, consumer, sdkID) == "" {
+		t.Fatal("SDK Gateway creation lost its event")
+	}
+	awaitQueueEmpty(t, f)
 	body, err := json.Marshal(f.request("browser-workflow"))
 	if err != nil {
 		t.Fatal(err)
