@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io"
@@ -96,13 +97,13 @@ func run() (stegoErr error) {
 	if err != nil {
 		return err
 	}
-	stegoStage = "component[9].constructor[0]"
+	stegoStage = "component[10].constructor[0]"
 	tracingRuntime, err := tracing.NewTracingRuntime()
 	if err != nil {
 		return err
 	}
 	defer tracingRuntime.Close()
-	stegoStage = "component[13].constructor[0]"
+	stegoStage = "component[14].constructor[0]"
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err
@@ -132,10 +133,18 @@ func run() (stegoErr error) {
 	topMux.HandleFunc("GET /livez", databaseMonitor.Live)
 	topMux.HandleFunc("GET /readyz", databaseMonitor.Ready)
 	topMux.Handle("/", tracingRuntime.Handler(tracingRuntime.Route(mux)))
+	stegoStage = "http.configure"
+	httpTLS, err := stegoHTTPTransport()
+	if err != nil {
+		return err
+	}
 	stegoStage = "http.listen"
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		return err
+	}
+	if httpTLS != nil {
+		listener = tls.NewListener(listener, httpTLS)
 	}
 	log.Printf("starting server on %s", listener.Addr())
 	defer listener.Close()
@@ -364,6 +373,52 @@ func stegoCloseHTTPDiagnostics(server *http.Server) {
 	if diagnostics, ok := server.ErrorLog.Writer().(*stegoHTTPDiagnostics); ok {
 		diagnostics.close()
 	}
+}
+
+func stegoHTTPTransport() (*tls.Config, error) {
+	invalid := errors.New("invalid HTTP TLS configuration")
+	required, present := os.LookupEnv("STEGO_HTTP_REQUIRE_TLS")
+	if present && required != "0" && required != "1" {
+		return nil, invalid
+	}
+	certificate, key := os.Getenv("STEGO_HTTP_TLS_CERT"), os.Getenv("STEGO_HTTP_TLS_KEY")
+	if certificate == "" && key == "" && required != "1" {
+		return nil, nil
+	}
+	certPEM, err := stegoHTTPReadTLSFile(certificate, false)
+	if err != nil {
+		return nil, invalid
+	}
+	keyPEM, err := stegoHTTPReadTLSFile(key, true)
+	if err != nil {
+		return nil, invalid
+	}
+	pair, err := tls.X509KeyPair(certPEM, keyPEM)
+	if err != nil {
+		return nil, invalid
+	}
+	return &tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}}, nil
+}
+
+func stegoHTTPReadTLSFile(name string, private bool) ([]byte, error) {
+	invalid := errors.New("invalid HTTP TLS file")
+	if len(name) > 4096 || !filepath.IsAbs(name) {
+		return nil, invalid
+	}
+	file, err := stegoHTTPOpenTLSFile(name)
+	if err != nil {
+		return nil, invalid
+	}
+	defer file.Close()
+	info, err := file.Stat()
+	if err != nil || !info.Mode().IsRegular() || info.Size() > 65536 || private && info.Mode().Perm()&0137 != 0 {
+		return nil, invalid
+	}
+	data, err := io.ReadAll(io.LimitReader(file, 65537))
+	if err != nil || len(data) > 65536 {
+		return nil, invalid
+	}
+	return data, nil
 }
 
 type stegoTaskFailure struct {

@@ -315,3 +315,7 @@ states the test result and limits.
 The [Go SDK workflow](go-sdk.md) checks typed Gateway operations through the
 generated SDK, including atomic creation, denied and filtered access, rollback,
 events, TLS gRPC agreement, restart, and shared telemetry.
+
+The [generated Kubernetes service check](kubernetes-service.md)
+runs the Gateway workflow in a separate API Pod. STEGO supplies its deployment
+resources and HTTPS runtime; the test checks behavior across Pod replacement.

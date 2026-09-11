@@ -12,6 +12,7 @@ components:
   - go-sdk
   - controller
   - health-check
+  - kubernetes-service
   - otel-tracing
   - postgres-client
   - kubernetes-client
@@ -26,6 +27,7 @@ conventions:
   request_validation: openapi-schema
   cors: disabled
 bindings:
+  health-endpoint: health-check
   application-http: http-application
   durable-outbox: outbox
   storage-adapter: postgres-adapter

@@ -189,3 +189,15 @@ jobs:
       - run: scripts/check-sandbox-workload.sh
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
+
+  service-image:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - name: Build the generated service image
+        run: docker build --file out/deploy/Containerfile --tag hypershell-stego:check .
+      - name: Check the image entry point
+        run: |
+          test "$(docker image inspect --format '{{.Config.User}}' hypershell-stego:check)" = '65532:65532'
+          test "$(docker image inspect --format '{{json .Config.Entrypoint}}' hypershell-stego:check)" = '["/service"]'

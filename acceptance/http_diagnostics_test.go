@@ -163,13 +163,18 @@ type httpDiagnosticCollector struct {
 
 func newHTTPDiagnosticCollector(t *testing.T) (*httpDiagnosticCollector, []string) {
 	t.Helper()
-	cert := identity(t, "localhost")
+	return newHTTPDiagnosticCollectorAt(t, "localhost", "127.0.0.1:0")
+}
+
+func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*httpDiagnosticCollector, []string) {
+	t.Helper()
+	cert := identity(t, hostname)
 	directory := filepath.Dir(cert.config.CAFile)
 	pair, err := tls.LoadX509KeyPair(filepath.Join(directory, "server.pem"), filepath.Join(directory, "server-key.pem"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	listener, err := net.Listen("tcp", address)
 	if err != nil {
 		t.Fatal(err)
 	}

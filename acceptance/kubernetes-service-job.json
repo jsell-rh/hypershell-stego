@@ -1,0 +1,565 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "@NAMESPACE@"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "test-budget",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "hard": {
+          "pods": "5",
+          "requests.cpu": "2",
+          "limits.cpu": "4",
+          "requests.memory": "3Gi",
+          "limits.memory": "6Gi",
+          "requests.ephemeral-storage": "5Gi",
+          "limits.ephemeral-storage": "18Gi"
+        }
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "deny-ingress",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "podSelector": {},
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": []
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Secret",
+      "metadata": {
+        "name": "cli-test-postgres",
+        "namespace": "@NAMESPACE@",
+        "annotations": {
+          "stego.test/credentials": "Ephemeral test values removed after namespace deletion."
+        }
+      },
+      "type": "Opaque"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Secret",
+      "metadata": {
+        "name": "database-tls",
+        "namespace": "@NAMESPACE@"
+      },
+      "type": "Opaque"
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ConfigMap",
+      "metadata": {
+        "name": "database-ca",
+        "namespace": "@NAMESPACE@"
+      },
+      "data": {}
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "service-check",
+        "namespace": "@NAMESPACE@"
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "image-push",
+        "namespace": "@NAMESPACE@"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "system:image-builder"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "service-check",
+          "namespace": "@NAMESPACE@"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "service-check",
+        "namespace": "@NAMESPACE@"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "secrets",
+            "services",
+            "serviceaccounts",
+            "pods",
+            "pods/log"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "update",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "update",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "update",
+            "delete"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "service-check",
+        "namespace": "@NAMESPACE@"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "service-check"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "service-check",
+          "namespace": "@NAMESPACE@"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "name": "fixture",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "selector": {
+          "app": "stego-fixture"
+        },
+        "ports": [
+          {
+            "name": "postgres",
+            "port": 5432
+          },
+          {
+            "name": "kafka",
+            "port": 19092
+          },
+          {
+            "name": "telemetry",
+            "port": 19093
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "fixture-ingress",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "podSelector": {
+          "matchLabels": {
+            "app": "stego-fixture"
+          }
+        },
+        "policyTypes": [
+          "Ingress"
+        ],
+        "ingress": [
+          {
+            "from": [
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/name": "hypershell"
+                  }
+                }
+              },
+              {
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "stego-fixture"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 5432,
+                "protocol": "TCP"
+              },
+              {
+                "port": 19092,
+                "protocol": "TCP"
+              },
+              {
+                "port": 19093,
+                "protocol": "TCP"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "batch/v1",
+      "kind": "Job",
+      "metadata": {
+        "name": "service-check",
+        "namespace": "@NAMESPACE@"
+      },
+      "spec": {
+        "backoffLimit": 0,
+        "activeDeadlineSeconds": 1800,
+        "ttlSecondsAfterFinished": 86400,
+        "template": {
+          "metadata": {
+            "labels": {
+              "app": "stego-fixture"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": true,
+            "restartPolicy": "Never",
+            "securityContext": {
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "initContainers": [
+              {
+                "name": "postgres",
+                "image": "docker.io/library/postgres@sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7",
+                "restartPolicy": "Always",
+                "args": [
+                  "postgres",
+                  "-c",
+                  "listen_addresses=*",
+                  "-c",
+                  "shared_buffers=64MB",
+                  "-c",
+                  "max_connections=40",
+                  "-c",
+                  "ssl=on",
+                  "-c",
+                  "ssl_cert_file=/var/lib/postgresql/tls/server.crt",
+                  "-c",
+                  "ssl_key_file=/var/lib/postgresql/tls/server.key"
+                ],
+                "env": [
+                  {
+                    "name": "POSTGRES_PASSWORD",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "cli-test-postgres",
+                        "key": "password"
+                      }
+                    }
+                  },
+                  {
+                    "name": "PGDATA",
+                    "value": "/var/lib/postgresql/18/docker"
+                  },
+                  {
+                    "name": "POSTGRES_INITDB_ARGS",
+                    "value": "--auth-host=scram-sha-256 --auth-local=trust"
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi",
+                    "ephemeral-storage": "1Gi"
+                  },
+                  "limits": {
+                    "cpu": "500m",
+                    "memory": "512Mi",
+                    "ephemeral-storage": "2Gi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "postgres",
+                    "mountPath": "/var/lib/postgresql"
+                  },
+                  {
+                    "name": "pgrun",
+                    "mountPath": "/var/run/postgresql"
+                  },
+                  {
+                    "name": "pgtmp",
+                    "mountPath": "/tmp"
+                  },
+                  {
+                    "name": "server-tls",
+                    "mountPath": "/tls",
+                    "readOnly": true
+                  }
+                ],
+                "startupProbe": {
+                  "exec": {
+                    "command": [
+                      "pg_isready",
+                      "-U",
+                      "postgres"
+                    ]
+                  },
+                  "periodSeconds": 2,
+                  "failureThreshold": 60
+                },
+                "command": [
+                  "/bin/sh",
+                  "-c",
+                  "set -eu; umask 077; mkdir -p /var/lib/postgresql/tls; cp /tls/server.key /var/lib/postgresql/tls/server.key; cp /tls/server.crt /var/lib/postgresql/tls/server.crt; chmod 600 /var/lib/postgresql/tls/server.key; exec docker-entrypoint.sh \"$@\"",
+                  "postgres-tls"
+                ]
+              }
+            ],
+            "containers": [
+              {
+                "name": "test",
+                "image": "docker.io/library/golang@sha256:2d54f6c8c6ea532a321e0b4c69553b2ed3637608d4f4357dbed37939fe2620cc",
+                "workingDir": "/work",
+                "command": [
+                  "/bin/sh",
+                  "-c",
+                  "mkdir -p /work/tmp; while [ ! -f /work/collected ]; do sleep 2; done; test -f /work/deployment.exit || exit 1; exit \"$(cat /work/deployment.exit)\""
+                ],
+                "env": [
+                  {
+                    "name": "GOMAXPROCS",
+                    "value": "1"
+                  },
+                  {
+                    "name": "GOFLAGS",
+                    "value": "-p=1"
+                  },
+                  {
+                    "name": "GOMEMLIMIT",
+                    "value": "2GiB"
+                  },
+                  {
+                    "name": "GOPATH",
+                    "value": "/work/gopath"
+                  },
+                  {
+                    "name": "GOCACHE",
+                    "value": "/work/cache"
+                  },
+                  {
+                    "name": "TMPDIR",
+                    "value": "/work/tmp"
+                  },
+                  {
+                    "name": "GOTOOLCHAIN",
+                    "value": "local"
+                  },
+                  {
+                    "name": "STEGO_REQUIRE_POSTGRES",
+                    "value": "1"
+                  },
+                  {
+                    "name": "GIT_CONFIG_GLOBAL",
+                    "value": "/dev/null"
+                  },
+                  {
+                    "name": "STEGO_TEST_POSTGRES_DSN",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "name": "cli-test-postgres",
+                        "key": "dsn"
+                      }
+                    }
+                  },
+                  {
+                    "name": "STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK",
+                    "value": "1"
+                  },
+                  {
+                    "name": "STEGO_TEST_POSTGRES_CA_FILE",
+                    "value": "/tls/server.crt"
+                  },
+                  {
+                    "name": "STEGO_TEST_PROJECTED_DATABASE_URL_FILE",
+                    "value": "/database-secret/url"
+                  },
+                  {
+                    "name": "STEGO_TEST_KUBERNETES_SERVICE",
+                    "value": "1"
+                  },
+                  {
+                    "name": "STEGO_TEST_NAMESPACE",
+                    "value": "@NAMESPACE@"
+                  }
+                ],
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "readOnlyRootFilesystem": true,
+                  "runAsNonRoot": true,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  }
+                },
+                "resources": {
+                  "requests": {
+                    "cpu": "500m",
+                    "memory": "1Gi",
+                    "ephemeral-storage": "2Gi"
+                  },
+                  "limits": {
+                    "cpu": "1",
+                    "memory": "3Gi",
+                    "ephemeral-storage": "8Gi"
+                  }
+                },
+                "volumeMounts": [
+                  {
+                    "name": "work",
+                    "mountPath": "/work"
+                  },
+                  {
+                    "name": "client-ca",
+                    "mountPath": "/tls",
+                    "readOnly": true
+                  },
+                  {
+                    "name": "database-config",
+                    "mountPath": "/database-secret",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "volumes": [
+              {
+                "name": "work",
+                "emptyDir": {
+                  "sizeLimit": "6Gi"
+                }
+              },
+              {
+                "name": "postgres",
+                "emptyDir": {
+                  "sizeLimit": "1Gi"
+                }
+              },
+              {
+                "name": "pgrun",
+                "emptyDir": {}
+              },
+              {
+                "name": "pgtmp",
+                "emptyDir": {}
+              },
+              {
+                "name": "server-tls",
+                "secret": {
+                  "secretName": "database-tls"
+                }
+              },
+              {
+                "name": "client-ca",
+                "configMap": {
+                  "name": "database-ca"
+                }
+              },
+              {
+                "name": "database-config",
+                "secret": {
+                  "secretName": "cli-test-postgres",
+                  "defaultMode": 288,
+                  "items": [
+                    {
+                      "key": "url",
+                      "path": "url"
+                    }
+                  ]
+                }
+              }
+            ],
+            "serviceAccountName": "service-check",
+            "nodeSelector": {
+              "kubernetes.io/os": "linux",
+              "kubernetes.io/arch": "amd64"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

@@ -318,8 +318,8 @@ func readConfigFile(name string, private bool) ([]byte, error) {
 	if err != nil {
 		return nil, errors.New("cannot read Kafka configuration file")
 	}
-	if !info.Mode().IsRegular() || private && info.Mode().Perm()&0077 != 0 {
-		return nil, errors.New("Kafka secret files must be regular and accessible only to their owner")
+	if !info.Mode().IsRegular() || private && info.Mode().Perm()&0137 != 0 {
+		return nil, errors.New("Kafka secret files must be regular and prohibit execute, group-write, and other access")
 	}
 	file, err := os.Open(name)
 	if err != nil {
@@ -327,7 +327,7 @@ func readConfigFile(name string, private bool) ([]byte, error) {
 	}
 	defer file.Close()
 	actual, err := file.Stat()
-	if err != nil || !os.SameFile(info, actual) || !actual.Mode().IsRegular() || private && actual.Mode().Perm()&0077 != 0 {
+	if err != nil || !os.SameFile(info, actual) || !actual.Mode().IsRegular() || private && actual.Mode().Perm()&0137 != 0 {
 		return nil, errors.New("Kafka configuration file changed while opening")
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maxFileBytes+1))

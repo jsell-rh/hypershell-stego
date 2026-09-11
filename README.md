@@ -457,3 +457,7 @@ STEGO supplies its typed methods, HTTPS transport, and telemetry. Use the new
 typed API and preserve HTTP contracts and behavior. Compatibility with the old
 fluent SDK API is not required. Automatic pagination, TypeScript SDK, and web
 console remain open.
+
+The [generated Kubernetes service check](acceptance/kubernetes-service.md)
+runs the Gateway workflow in a separate API Pod. STEGO supplies its deployment
+resources and HTTPS runtime; the test checks behavior across Pod replacement.
