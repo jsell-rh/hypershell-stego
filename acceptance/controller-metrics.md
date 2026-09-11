@@ -1,22 +1,21 @@
 The database, Gateway workload, Gateway identity, and sandbox-count controllers
-now use STEGO's optional keyed-controller metrics. The compiler pin is
-`b24ac6e7877978988d3df075b4661e6970401c5c`, with controller component 1.9.0.
-Hypershell supplies the address and collector connection. STEGO supplies metric
-storage, queue measurements, output, listener checks, and process shutdown.
+use STEGO-generated worker commands and keyed-controller metrics. Hypershell
+supplies provider setup and domain rules. STEGO supplies process signals, probes,
+metric storage, output, listener checks, safe process errors, and shutdown.
 
-Set `HYPERSHELL_METRICS_ADDR` when starting a controller to enable the endpoint:
+Set `STEGO_CONTROLLER_MONITOR_ADDR` to select the endpoint:
 
 ```sh
-HYPERSHELL_METRICS_ADDR=127.0.0.1:9090 ./database-controller
+STEGO_CONTROLLER_MONITOR_ADDR=127.0.0.1:9090 ./database-worker
 curl --fail http://127.0.0.1:9090/metrics
 ```
 
-Keep the controller's normal API and provider settings. Each controller process
-needs an available port in its network namespace. An absent or empty metrics
-address starts no listener and allocates no collector. The address must use a
-literal loopback IP and a port from 1 through 65535. Public addresses, wildcard
-addresses, hostnames, and interface zones are rejected. A port already in use
-prevents the controller from starting.
+The default address is `127.0.0.1:9081`. Keep the normal API and provider settings.
+Each controller process needs an available port in its network namespace.
+The address must use a literal loopback IP and a port from 1 through 65535.
+Public addresses, wildcard addresses, hostnames, and interface zones are rejected.
+A port already in use prevents the controller from starting. The generated worker
+commands use this setting instead of the old `HYPERSHELL_METRICS_ADDR` setting.
 
 The endpoint returns Prometheus text with the `stego_controller_` prefix. It
 reports queue capacity, queued work, work held by workers, queued retries,

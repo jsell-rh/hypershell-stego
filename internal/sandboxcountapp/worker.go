@@ -1,11 +1,9 @@
-package main
+// Package sandboxcountapp connects domain providers to the generated worker.
+package sandboxcountapp
 
 import (
 	"context"
-	"log"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
@@ -16,15 +14,8 @@ import (
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
 
-func main() {
-	if err := run(); err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-}
-func run() error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+// Run supplies provider setup and the domain controller to STEGO.
+func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	source, err := kube.New(kube.Options{ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE")})
 	if err != nil {
 		return err
@@ -46,5 +37,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return runtime.Monitor(ctx, os.Getenv("HYPERSHELL_METRICS_ADDR"), controller.RunWithMetrics)
+	return controller.RunWithMetrics(ctx, metrics)
 }

@@ -1,6 +1,6 @@
 # Sandbox count workflow
 
-The count controller runs as `cmd/sandbox-count-controller`. It uses STEGO's
+The count controller runs as `out/deploy/workers/sandbox-count`. It uses STEGO's
 HTTP stream client, Kubernetes list and watch client, gRPC client, transaction,
 row lock, storage, event runtime, and keyed controller scheduler. Hypershell owns the sandbox classification
 and cluster assignment rules. STEGO has no sandbox or Gateway types.

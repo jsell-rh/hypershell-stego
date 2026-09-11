@@ -1,6 +1,6 @@
 The CNPG provider creates the shared `openshell-db` Cluster in the namespace
 derived from the ManagedDatabase ID. Set `DATABASE_PROVIDER=cnpg` on both the API
-and `cmd/database-controller`. The deployment provider remains the default. An
+and `out/deploy/workers/database`. The deployment provider remains the default. An
 unknown controller provider stops startup.
 
 The provider uses STEGO's generated queue, watch and recovery scan, request

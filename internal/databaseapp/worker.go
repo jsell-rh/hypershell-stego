@@ -1,12 +1,10 @@
-package main
+// Package databaseapp connects domain providers to the generated worker.
+package databaseapp
 
 import (
 	"context"
 	"errors"
-	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -15,15 +13,8 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
-func main() {
-	if err := run(); err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-}
-func run() error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+// Run supplies provider setup and the domain controller to STEGO.
+func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	name := os.Getenv("DATABASE_PROVIDER")
 	if name == "" {
 		name = "deployment"
@@ -55,5 +46,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return runtime.Monitor(ctx, os.Getenv("HYPERSHELL_METRICS_ADDR"), controller.RunWithMetrics)
+	return controller.RunWithMetrics(ctx, metrics)
 }

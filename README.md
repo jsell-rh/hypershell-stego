@@ -413,13 +413,14 @@ Generated state records the declaration, configuration, module files, and declar
 protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
 manifest checks and their limits.
 
-The database, Gateway workload, and sandbox-count controllers provide optional
-[controller metrics](acceptance/controller-metrics.md). Set
-`HYPERSHELL_METRICS_ADDR` to a literal loopback address and available port. The
-generated identity worker uses `STEGO_CONTROLLER_MONITOR_ADDR`, with default
-`127.0.0.1:9081`, for its health probes and metrics. STEGO supplies the collector
-and listener. The endpoint reports queue use, action
-outcomes, retries, and duration without resource IDs or private error labels.
+The database, Gateway workload, Gateway identity, and sandbox-count controllers
+use STEGO-generated worker commands. Their main functions, signals, health
+probes, safe process errors, and [controller metrics](acceptance/controller-metrics.md)
+come from STEGO. Domain provider setup remains under `internal/`.
+Set `STEGO_CONTROLLER_MONITOR_ADDR` to an available literal loopback address.
+The default is `127.0.0.1:9081`. Each process in the same network namespace needs
+its own port. The endpoint reports queue use, action outcomes, retries, and
+duration without resource IDs or private error labels.
 
 [Cleanup summaries](acceptance/cleanup-summaries.md) report pending deleted
 resources and the oldest deletion time for an authorized owner and target.

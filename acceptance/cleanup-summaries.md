@@ -28,7 +28,7 @@ controller samples its identity owner. The sandbox-count controller has no
 cleanup source. A summary for another provider can be read by an authorized
 operator, but this change does not add another provider implementation.
 
-When `HYPERSHELL_METRICS_ADDR` enables collection, the generated runtime samples
+With the generated worker monitor enabled, the runtime samples
 cleanup separately from recovery scans. It uses each controller's resync interval
 and request timeout. A blocked scan cannot stop sampling. With metrics disabled,
 no summary request is sent. Use the existing loopback metrics endpoint described

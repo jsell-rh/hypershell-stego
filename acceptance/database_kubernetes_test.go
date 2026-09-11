@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"os"
 	"os/exec"
@@ -109,12 +110,20 @@ func kubernetesFixture(t *testing.T) *kubeFixture {
 }
 func startDatabaseController(t *testing.T, binary string, k *kubeFixture, address, ca, bearer string, settings ...string) (func(), func() string) {
 	t.Helper()
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	monitor := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
 	file := filepath.Join(t.TempDir(), "token")
 	if err := os.WriteFile(file, []byte(bearer), 0600); err != nil {
 		t.Fatal(err)
 	}
 	cmd := exec.Command(binary)
-	cmd.Env = append(os.Environ(), "DATABASE_PROVIDER=deployment", "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+file,
+	cmd.Env = append(os.Environ(), "STEGO_CONTROLLER_MONITOR_ADDR="+monitor, "DATABASE_PROVIDER=deployment", "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+file,
 		"HYPERSHELL_KUBERNETES_URL="+k.options.ServerURL, "HYPERSHELL_KUBERNETES_CA_FILE="+k.options.CAFile, "HYPERSHELL_KUBERNETES_TOKEN_FILE="+k.options.TokenFile, "HYPERSHELL_DATABASE_CLUSTER_ISSUER="+k.options.ClusterIssuer)
 	cmd.Env = append(cmd.Env, settings...)
 	if raceEnabled {
@@ -147,6 +156,29 @@ func startDatabaseController(t *testing.T, binary string, k *kubeFixture, addres
 		}
 	}
 	t.Cleanup(stop)
+	for _, mode := range []string{"live", "ready"} {
+		deadline := time.Now().Add(15 * time.Second)
+		for {
+			select {
+			case err := <-done:
+				stopped = true
+				t.Fatalf("generated worker stopped before its %s probe: %v\n%s", mode, err, output.String())
+			default:
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+			probe := exec.CommandContext(ctx, binary, "--stego-probe="+mode)
+			probe.Env = cmd.Env
+			err := probe.Run()
+			cancel()
+			if err == nil {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("generated worker %s probe did not pass\n%s", mode, output.String())
+			}
+			time.Sleep(100 * time.Millisecond)
+		}
+	}
 	return stop, output.String
 }
 func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
@@ -160,7 +192,7 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
 	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "deployment"))
 	binary := buildApplication(t)
-	controllerBinary := buildProgram(t, "./cmd/database-controller")
+	controllerBinary := buildProgram(t, "./out/deploy/workers/database")
 	stopAPI, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stopAPI() }()
 	controllerToken := token(t, key, "controller")

@@ -84,7 +84,7 @@ The complete cluster setup script passed a separate run. The workload took
 75.443 seconds. The later SQL readiness workflow passed in 60.02 seconds, with a 61.073-second
 acceptance package run. Controller failure tests and `go vet` also passed.
 
-The controller command is `go run ./cmd/database-controller`. Its settings are:
+The controller command is `go run ./out/deploy/workers/database`. Its settings are:
 
 | Variable | Required value |
 | --- | --- |

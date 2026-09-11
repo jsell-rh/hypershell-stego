@@ -52,6 +52,10 @@ authentication, RPC transport, and Kubernetes resource client. Hypershell suppli
 placement, resource definitions, identity policy, readiness, and cleanup policy.
 No rh-trex-ai generator or runtime is used by this workflow.
 
+The database, identity, workload, and count process entry points are generated
+by STEGO. See [generated workload workers](generated-workload-workers.md) for
+their source boundary, monitor setting, checks, and deployment limits.
+
 The Gateway controller accepts one configured managed-cluster ID. It does not
 provision Gateways assigned to other clusters. Deleted Gateways can still require
 cleanup of resources owned in the former cluster. Its Kubernetes connection must

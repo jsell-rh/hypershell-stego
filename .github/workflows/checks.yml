@@ -202,9 +202,10 @@ jobs:
         run: |
           test "$(docker image inspect --format '{{.Config.User}}' hypershell-stego:check)" = '65532:65532'
           test "$(docker image inspect --format '{{json .Config.Entrypoint}}' hypershell-stego:check)" = '["/service"]'
-      - name: Build the generated identity worker image
-        run: docker build --file out/deploy/workers/gateway-identity/Containerfile --tag hypershell-identity:check .
-      - name: Check the worker image entry point
+      - name: Build and check the generated worker images
         run: |
-          test "$(docker image inspect --format '{{.Config.User}}' hypershell-identity:check)" = '65532:65532'
-          test "$(docker image inspect --format '{{json .Config.Entrypoint}}' hypershell-identity:check)" = '["/worker"]'
+          for worker in database gateway-identity gateway-workload sandbox-count; do
+            docker build --file "out/deploy/workers/$worker/Containerfile" --tag "hypershell-$worker:check" .
+            test "$(docker image inspect --format '{{.Config.User}}' "hypershell-$worker:check")" = '65532:65532'
+            test "$(docker image inspect --format '{{json .Config.Entrypoint}}' "hypershell-$worker:check")" = '["/worker"]'
+          done

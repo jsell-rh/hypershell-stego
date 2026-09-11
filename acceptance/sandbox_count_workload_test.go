@@ -30,7 +30,7 @@ func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAdd
 	if output, err := k.command(context.Background(), "", "auth", "can-i", "create", "pods", "--as=system:serviceaccount:"+ns+":"+name); err == nil || string(output) != "no\n" {
 		t.Fatal("count account can change Pods", string(output), err)
 	}
-	binary := buildProgram(t, "./cmd/sandbox-count-controller")
+	binary := buildProgram(t, "./out/deploy/workers/sandbox-count")
 	settings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + cluster, "HYPERSHELL_SANDBOX_COUNT_RESYNC=1s"}
 	stop, logs := startDatabaseController(t, binary, &copy, rpcAddress, tlsIdentity.config.CAFile, controller, settings...)
 	t.Cleanup(func() { stop() })

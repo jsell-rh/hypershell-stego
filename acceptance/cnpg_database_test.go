@@ -32,7 +32,7 @@ func TestCNPGDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
 	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "cnpg"))
 	binary := buildApplication(t)
-	controllerBinary := buildProgram(t, "./cmd/database-controller")
+	controllerBinary := buildProgram(t, "./out/deploy/workers/database")
 	stopAPI, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stopAPI() }()
 	admin := token(t, key, "admin", "platform:admin")

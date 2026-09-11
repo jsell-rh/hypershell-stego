@@ -95,15 +95,27 @@ last_applied:
                 exists: true
                 sha256: 48b39c7119c0bb0b91837e1890214af98635ee3c67e4f96ffd518df00fc03535
                 mode: 420
+            internal/databaseapp/worker.go:
+                exists: true
+                sha256: 5e2ca15c32067b72e25497d96934fd6bdbc36f9e9eb3c671b5b83090b3aaab68
+                mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
                 sha256: 1e9eba83e181d6dc1a5c19d1717ceaed8f89ce03b16a54ab5ea12242b87ee3fe
                 mode: 420
+            internal/gatewayworkloadapp/worker.go:
+                exists: true
+                sha256: 84942bc8bca4db4b7008e0881ad334e6ce4a05f2d5375f0f49d38d4552ebef75
+                mode: 420
+            internal/sandboxcountapp/worker.go:
+                exists: true
+                sha256: cb09676be7e5d6178796a182ff3190c153a2d4922fd253d504b838d8fd01aa5e
+                mode: 420
             service.yaml:
                 exists: true
-                sha256: 6d0652a5ba6fc8a27432ffb0cf3c227c812b11fabbaaf8f3528d03374313ba9d
+                sha256: 523fe69ba2da00dca99b2f608b9601654e22a26a9d3399ad9f8c8fc29ffe063c
                 mode: 420
-        sha256: f7056e9fee9db5c1eda4a81b0e0a0ad9cab0aaf66e81039e843a5b3b0436d6a5
+        sha256: 7a901084a052687565e537926589ef1bc249dde02504b0841e9c8e7b5093b189
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -112,7 +124,7 @@ last_applied:
         vcs: git
         revision: bbfacd13a018261b5c9e11041ec55e62fd60cbc3
         source_state: clean
-    service_hash: 6d0652a5ba6fc8a27432ffb0cf3c227c812b11fabbaaf8f3528d03374313ba9d
+    service_hash: 523fe69ba2da00dca99b2f608b9601654e22a26a9d3399ad9f8c8fc29ffe063c
     registry_sha: gateway-workflow
     registry_content_sha256: f481f57ebb68d43d72a94181aa256728b79cf85cb81399b8bb522737a324721f
     components:
@@ -458,11 +470,23 @@ last_applied:
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/render/main.go: 10d5bb6af0a6adf3d7d1bbad64724aa0e6e31f07699dd6ce88d8f918d6088a08
-        deploy/render/manifest.json.tmpl: b8eecb67bdc5fc10a86c631cf78e6ac0cc49d176d82537f0864c104fc1626c44
+        deploy/render/manifest.json.tmpl: 23624a4fd5f3e5330cb2c0a8198b05663a8054859326ffeb4646a9850d137535
+        deploy/render/worker-database.json.tmpl: a8ad0f009fe34c6f8c36da807c033b5716095fd830f8e76067d2937168f60177
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
+        deploy/render/worker-gateway-workload.json.tmpl: f813e8a5441c8b1c2244612425883ce17b8110a4a3cd97b6f1d3622849320818
+        deploy/render/worker-sandbox-count.json.tmpl: 9da175c15adb7ec46140850d016ce785b7ce77797a3a1d0b3d02dfcddf3848d8
+        deploy/workers/database/Containerfile: 0e56e74e778b72026a41e69fa56b8ca6545fa844be3023cf7832cefc4264070a
+        deploy/workers/database/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
+        deploy/workers/database/main.go: 2a68109336345615d5cc14c23456fe804ceff5e5da47540b29ab506b0a646612
         deploy/workers/gateway-identity/Containerfile: 5f7395f954d74b6f2596b369c38a026e8c3c34213f7cadc9e51b20c09d1d2da9
         deploy/workers/gateway-identity/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/workers/gateway-identity/main.go: c805af057be7fd418e6566e283981579b6c237f88b9936e1c50729fc71456151
+        deploy/workers/gateway-workload/Containerfile: 16b5cdee1f5f026f0a3e3c40280afc805c90673d76e7a40ce33640445e395771
+        deploy/workers/gateway-workload/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
+        deploy/workers/gateway-workload/main.go: ba62049494568e348f348f69fd69ed67e13621d72160200b6aee031aae0bf92b
+        deploy/workers/sandbox-count/Containerfile: bb7d2d867c7ec732c2468b22e2c0a4b9c2d4e77dd73627cdd949623eed1b76b7
+        deploy/workers/sandbox-count/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
+        deploy/workers/sandbox-count/main.go: 7e25daab1f25d18801c24f1c4fc7a458f08f7e65632632e78238a08ccc012535
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369

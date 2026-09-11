@@ -128,6 +128,24 @@ overrides:
     dns_namespace: openshift-dns
     dns_port: 5353
     workers:
+      - name: database
+        package: internal/databaseapp
+        function: Run
+        network_peers:
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
+      - name: gateway-workload
+        package: internal/gatewayworkloadapp
+        function: Run
+        network_peers:
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
+      - name: sandbox-count
+        package: internal/sandboxcountapp
+        function: Run
+        network_peers:
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: gateway-identity
         package: internal/gatewayidentityapp
         function: Run
@@ -137,6 +155,9 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     network_peers:
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-identity, port: 9090, protocol: TCP}
+      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-database, port: 9090, protocol: TCP}
+      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-workload, port: 9090, protocol: TCP}
+      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-sandbox-count, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 9090, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}

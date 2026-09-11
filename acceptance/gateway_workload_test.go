@@ -184,11 +184,11 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary := buildApplication(t)
 	stopAPI, address, rpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
-	dbBinary := buildProgram(t, "./cmd/database-controller")
+	dbBinary := buildProgram(t, "./out/deploy/workers/database")
 	stopDatabase, _ := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "DATABASE_PROVIDER="+provider)
 	identityBinary := buildProgram(t, "./out/deploy/workers/gateway-identity")
 	stopIdentity, _ := startIdentityController(t, identityBinary, identityProvider, rpcAddress, apiTLS.config.CAFile, controllerToken)
-	workloadBinary := buildProgram(t, "./cmd/gateway-workload-controller")
+	workloadBinary := buildProgram(t, "./out/deploy/workers/gateway-workload")
 	workloadSettings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_GATEWAY_CLUSTER_ISSUER=" + k.options.ClusterIssuer, "HYPERSHELL_GATEWAY_OIDC_ISSUER=" + identityProvider.options.ServerURL + "/realms/workflow", "HYPERSHELL_GATEWAY_TRUST_BUNDLE=" + identityProvider.options.CAFile, "HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + sandboxImage, "HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + supervisorImage}
 	workloadSettings = append(workloadSettings, "HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS="+os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS"))
 	if cnpg {

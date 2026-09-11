@@ -1,11 +1,9 @@
-package main
+// Package gatewayworkloadapp connects domain providers to the generated worker.
+package gatewayworkloadapp
 
 import (
 	"context"
-	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -14,15 +12,8 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
-func main() {
-	if err := run(); err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-}
-func run() error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+// Run supplies provider setup and the domain controller to STEGO.
+func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{CNPGDialAddress: os.Getenv("HYPERSHELL_CNPG_DIAL_ADDRESS"), SandboxRuntimeClass: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"), ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
 	if err != nil {
 		return err
@@ -37,5 +28,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return runtime.Monitor(ctx, os.Getenv("HYPERSHELL_METRICS_ADDR"), controller.RunWithMetrics)
+	return controller.RunWithMetrics(ctx, metrics)
 }
