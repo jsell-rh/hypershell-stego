@@ -136,3 +136,27 @@ for `473b65c057561ae282930dfaef29642bea126b42` also passed all six jobs.
 It includes the shared HTTP client telemetry and real Keycloak restart test.
 These results precede CLI runtime telemetry. That change requires its own
 full CI result.
+
+Run [34556079041](https://github.com/jsell-rh/hypershell-stego/actions/runs/34556079041)
+for `8d810f1b1d0ef647c847455f08ee771cc7ad6cde` finished with all five provider
+jobs passing. Full acceptance took 1199.434 seconds and failed only
+`TestGatewayNetworkWorkflowThroughGeneratedRuntime`, at its CLI create check.
+The network helper combined stdout and stderr before JSON decoding. Generated
+CLI telemetry now writes completion records to stderr. The helper must read
+command JSON from stdout and check diagnostic records separately.
+
+The corrected helper also checks both streams for the caller token and requires
+one command completion record on stderr. Other generated CLI helpers already
+separate the streams. The remaining reference CLI helper tests a separate,
+optional executable. The failed full CI result remains part of the evidence;
+the corrected revision requires a new full run.
+
+The unchanged network test reproduced the same failure in the `jshell` cluster.
+With the corrected helper, three consecutive race runs passed in 26.459 seconds.
+Each run covered network CRUD, access, events, rollback, CLI calls, watch,
+restart, and schema upgrade. The generated CLI telemetry, version, and Gateway
+workflow tests also passed. Job `network-cli` used Go 1.26.8, PostgreSQL 18.6,
+one test CPU, a 3 GiB test memory limit, and a 30-minute deadline. Its source
+archive SHA-256 was
+`1d52189b924fe1137a07d8b3ad5fbbf131f3ea1b14fdc5bca0ef3c01f389d35d`.
+These focused results do not replace the required full CI result.

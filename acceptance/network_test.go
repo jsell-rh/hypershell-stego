@@ -1,6 +1,7 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/json"
@@ -258,12 +259,17 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 		defer done()
 		command := exec.CommandContext(callCtx, cli, args...)
 		command.Env = append(os.Environ(), "HYPERSHELL_CONFIG="+configPath, "GORACE=atexit_sleep_ms=0")
-		output, err := command.CombinedOutput()
-		if strings.Contains(string(output), admin) {
+		var diagnostics bytes.Buffer
+		command.Stderr = &diagnostics
+		output, err := command.Output()
+		if strings.Contains(string(output), admin) || strings.Contains(diagnostics.String(), admin) {
 			t.Fatal("CLI exposed its token")
 		}
 		if err != nil {
 			t.Fatalf("network CLI: %v %s", err, output)
+		}
+		if strings.Count(diagnostics.String(), `"event.name":"cli.command.completed"`) != 1 {
+			t.Fatal("network CLI has no common completion record")
 		}
 		return output
 	}
