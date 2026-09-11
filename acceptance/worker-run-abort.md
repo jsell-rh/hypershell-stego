@@ -45,3 +45,24 @@ the wrapper was active. The shell skipped evidence collection and removed the
 namespace while the Job awaited collection. This run does not establish Job
 completion or the retained post-test hashes. Its partial record is in
 `/tmp/stego-service-results.IxJ1D1qg`. The next check uses a frozen source copy.
+
+The frozen-source run passed on jshell on 2026-09-11 with compiler
+`bbfacd13a018261b5c9e11041ec55e62fd60cbc3`. Application commit `1a5ae98` records
+the runtime adoption and fault checks. The test took 114.76 seconds; the
+race-enabled package took 115.801 seconds. Both abort modes passed, followed
+by repair from the healthy worker. The full Gateway deployment, access, event,
+restart, and telemetry checks also passed.
+
+The Job reached `Complete` with exit code 0. All 117 generated, state, and
+dependency hashes matched across both generation passes, the post-test check,
+and the checkout. The generated archive also matched the checkout. The saved
+Pod log matched the independently collected log. All 495 files in the frozen
+source copy still matched its initial archive. Namespace deletion and removal
+of private fixture files were verified. The full record is retained in
+`/tmp/stego-service-results.b23OdptE`.
+
+The source snapshot predates the input-inventory test correction in `6c8113a`.
+That correction changes no runtime or generated input. Its focused contract
+test passed locally. [Full variant CI for that correction](https://github.com/jsell-rh/hypershell-stego/actions/runs/34628862977)
+is a separate check. The [compiler CI](https://github.com/jsell-rh/stego/actions/runs/34625915955)
+passed, including race tests and the vulnerability check.

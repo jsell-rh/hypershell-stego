@@ -197,3 +197,19 @@ The later [worker Run abort check](worker-run-abort.md) adds fault processes
 against the same API and Keycloak Pods. These processes use a temporary build
 overlay and race detection. They do not change the generated deployment images
 or their telemetry instance checks.
+
+The full worker abort extension passed from a frozen source copy on 2026-09-11
+with compiler `bbfacd13a018261b5c9e11041ec55e62fd60cbc3`. The test took 114.76
+seconds; its race-enabled package took 115.801 seconds. Both callback abort
+modes, healthy recovery, and all existing Gateway and telemetry checks passed.
+All 117 output, state, and dependency hashes matched before and after the test
+and in the checkout. The Job reached `Complete` with exit code 0. Namespace
+deletion and removal of private fixture files were verified.
+
+The service image digest was
+`sha256:475d2a4e6636b11c6cf67dedc5590c13638eddbf34d0fd4b0b3c12dba1265333`.
+The worker image digest was
+`sha256:9a6d7fbb901383536ded47700df17d91d043f431c48040c03c6b469e8fec2aa4`.
+Both images had the required non-root user and entry point. The evidence is in
+`/tmp/stego-service-results.b23OdptE`. The [abort check record](worker-run-abort.md)
+also records the earlier failed and incomplete runs and the exact test scope.
