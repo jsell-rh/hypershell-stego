@@ -68,13 +68,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911132111-5c0dd1fec8ab
+        module_version: v0.0.0-20260911133501-6663ed4fd717
         vcs: git
-        revision: 5c0dd1fec8abdddfda7cdb7e15830a492c23560d
+        revision: 6663ed4fd717cb6c2aa78c05b2e4463d0cfbf4da
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
-    registry_content_sha256: ba98324ad02a88c288182e23491b1e8e0c4a5befdc8dc543040682d08d750102
+    registry_content_sha256: 25e752fceeefad2f09f41ff17a0720990d2abb3e80e7a8371fb37dc08c864e97
     components:
         cli-application:
             version: 1.6.0
@@ -107,7 +107,7 @@ last_applied:
             version: 1.0.3
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.14.1
+            version: 3.15.0
             sha: gateway-workflow
         postgres-client:
             version: 1.0.3
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 78dcfe932cff26286b1e42fb5ffc9a326081f8d22516e611da08c97ab57b744f
+        cli/command/version.go: 7297bb7e70650bc6e5d484d58d83a90f9075f203552b22fe7012c7c4e27291f2
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -449,7 +449,7 @@ last_applied:
         storage/cleanup_summary.go: 56e097d230c2dbb958009f27b44b5ad4cbf82d097d1af0699409227aca91c635
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
         storage/cursor.go: 1431a8ec48d734bcd3a273fee725da162a8215704b0ab803f98c170b19ad05d8
-        storage/database.go: df8d8b33177979dfdde16813475a3e15e7da67ca14bfedeb78d186ffb5058db1
+        storage/database.go: 66f8ef611f5406641c3fd3720c663f8ad94c30bc934bf910f8a621c0a0a4d05f
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 7730a4a9097229e704fc8058fc60fcf5ca7482444e618e556d7a95494cb03e23
         storage/migrations/000002_resource_versions.sql: 5554c5c06f91cebfa347600eb229cb3d70419579c411e6622ecaa6557ffb6de0

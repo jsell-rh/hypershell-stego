@@ -31,6 +31,8 @@ restart. Logs, metrics, spans, and propagation come from STEGO.
 Shared [database telemetry](acceptance/database-observability.md) continues API
 traces into generated PostgreSQL storage. Its Gateway test checks atomic writes,
 rollback, filtered access, event delivery, and REST/gRPC reads after restart.
+The [pool-pressure gate](acceptance/database-pool-bounds.md) checks bounded
+connections, request cancellation while waiting, and recovery after restart.
 
 The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes

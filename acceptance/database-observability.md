@@ -34,7 +34,7 @@ signals. Database fields and correlation have a separate acceptance contract.
 These failed attempts remain separate from results for the final compiler pin.
 
 Startup migrations, contexts without a runtime, the separate event-listener
-connection, external PostgreSQL clients, pool wait time, pool limits and
+connection, external PostgreSQL clients, pool wait time and
 statistics, complete process logging, and production capacity remain open.
 The broker is a protocol fixture; this test is not a production Kafka test.
 
@@ -69,3 +69,6 @@ transport trace-test corrections. The correction archive SHA-256 was
 The command returned exit code 0. All 208 local application Go source files
 matched those test snapshots before commit. Full application CI and provider
 workflow results remain separate from these focused cluster checks.
+
+The [pool-pressure gate](database-pool-bounds.md) adds deployment connection
+bounds. Pool metrics and startup deadlines still require separate work.

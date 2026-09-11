@@ -24,6 +24,8 @@ and matching log, span, and metric exemplar ownership.
 The [database observability workflow](database-observability.md) checks shared
 PostgreSQL signals across atomic Gateway creation, rollback, denied access,
 filtered lists, event delivery, and REST/gRPC reads after restart.
+The [pool-pressure gate](database-pool-bounds.md) checks connection bounds,
+request deadlines while waiting, and Gateway recovery with a small pool.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway

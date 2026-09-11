@@ -10,16 +10,88 @@ import (
 	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	telemetry "github.com/jsell-rh/hypershell-stego/out/tracing"
+	"os"
+	"strconv"
+	"time"
 )
 
 // OpenDatabase creates a pool. Its caller owns Close. Runtime identity comes
 // from each operation's context; the pool does not own a telemetry provider.
 func OpenDatabase(dsn string) (*sql.DB, error) {
+	settings, err := readDatabasePoolSettings()
+	if err != nil {
+		return nil, err
+	}
 	config, err := databaseConfiguration(dsn)
 	if err != nil {
 		return nil, err
 	}
-	return stdlib.OpenDB(*config), nil
+	pool := stdlib.OpenDB(*config)
+	pool.SetMaxOpenConns(settings.open)
+	pool.SetMaxIdleConns(settings.idle)
+	pool.SetConnMaxLifetime(settings.lifetime)
+	pool.SetConnMaxIdleTime(settings.idleTime)
+	return pool, nil
+}
+
+type databasePoolSettings struct {
+	open, idle         int
+	lifetime, idleTime time.Duration
+}
+
+func readDatabasePoolSettings() (databasePoolSettings, error) {
+	var settings databasePoolSettings
+	var err error
+	settings.open, err = databasePoolInteger("STEGO_DATABASE_MAX_OPEN_CONNECTIONS", 16, 1, 1024)
+	if err != nil {
+		return settings, err
+	}
+	settings.idle, err = databasePoolInteger("STEGO_DATABASE_MAX_IDLE_CONNECTIONS", min(4, settings.open), 0, settings.open)
+	if err != nil {
+		return settings, err
+	}
+	settings.lifetime, err = databasePoolDuration("STEGO_DATABASE_CONNECTION_MAX_LIFETIME", 30*time.Minute)
+	if err != nil {
+		return settings, err
+	}
+	settings.idleTime, err = databasePoolDuration("STEGO_DATABASE_CONNECTION_MAX_IDLE_TIME", 5*time.Minute)
+	return settings, err
+}
+
+func databasePoolInteger(name string, fallback, minimum, maximum int) (int, error) {
+	value, present := os.LookupEnv(name)
+	if !present {
+		return fallback, nil
+	}
+	if value == "" || len(value) > 4 {
+		return 0, errors.New("invalid database pool setting: " + name)
+	}
+	valid := true
+	for _, r := range value {
+		if r < '0' || r > '9' {
+			valid = false
+		}
+	}
+	number, err := strconv.Atoi(value)
+	if !valid || err != nil || number < minimum || number > maximum {
+		return 0, errors.New("invalid database pool setting: " + name)
+	}
+	return number, nil
+}
+
+func databasePoolDuration(name string, fallback time.Duration) (time.Duration, error) {
+	value, present := os.LookupEnv(name)
+	if !present {
+		return fallback, nil
+	}
+	if len(value) > 32 {
+		return 0, errors.New("invalid database pool setting: " + name)
+	}
+	duration, err := time.ParseDuration(value)
+	if err != nil || duration < time.Second || duration > 24*time.Hour {
+		return 0, errors.New("invalid database pool setting: " + name)
+	}
+	return duration, nil
 }
 
 func databaseConfiguration(dsn string) (*pgx.ConnConfig, error) {
