@@ -74,6 +74,25 @@ jobs:
           STEGO_REQUIRE_BROWSER: '1'
           STEGO_BROWSER_ARTIFACT_DIR: ${{ runner.temp }}/rendered-browser
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
+      - name: Save browser resource counters
+        if: always()
+        timeout-minutes: 1
+        run: |
+          mkdir -p "$RUNNER_TEMP/rendered-browser"
+          browser_container="stego-browser-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          {
+            timeout 10s docker inspect --format '{"status":{{json .State.Status}},"oom_killed":{{json .State.OOMKilled}},"exit_code":{{.State.ExitCode}},"memory_limit":{{.HostConfig.Memory}},"pids_limit":{{.HostConfig.PidsLimit}}}' "$browser_container" || true
+            timeout 10s docker stats --no-stream --format '{{json .}}' "$browser_container" || true
+            timeout 10s docker exec "$browser_container" sh -c '
+              for file in memory.events memory.peak memory.max pids.events pids.current pids.max; do
+                if [ -r "/sys/fs/cgroup/$file" ]; then
+                  printf "%s\n" "$file"
+                  cat "/sys/fs/cgroup/$file"
+                fi
+              done
+              df -k /tmp /dev/shm
+            ' || true
+          } > "$RUNNER_TEMP/rendered-browser/browser-resources.txt" 2>&1
       - name: Stop the browser fixture
         if: always()
         run: docker rm --force "stego-browser-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" || true
