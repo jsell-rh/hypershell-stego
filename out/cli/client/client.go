@@ -207,7 +207,10 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 	}
 	status = response.StatusCode
 	defer response.Body.Close()
-	if response.StatusCode >= 300 && response.StatusCode < 400 {
+	if response.StatusCode == http.StatusNotModified && method != http.MethodGet && method != http.MethodHead {
+		return fail("response", errors.New("unexpected HTTP cache response"))
+	}
+	if response.StatusCode >= 300 && response.StatusCode < 400 && response.StatusCode != http.StatusNotModified {
 		return fail("redirect", errors.New("HTTP service redirect is forbidden"))
 	}
 	if consume != nil && response.StatusCode == http.StatusOK {

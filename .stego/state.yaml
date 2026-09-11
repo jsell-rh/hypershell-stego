@@ -120,22 +120,22 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911175523-77e2133b0deb
+        module_version: v0.0.0-20260911181736-79c006cf1d4b
         vcs: git
-        revision: 77e2133b0deb96fcc8ec1954c3f7cd888acf7894
+        revision: 79c006cf1d4be2308b7087f5b6eedba570c269cf
         source_state: clean
     service_hash: 72f882716a73b89bec83bdf4a70861d426e57dc6e58c6c2fb930ee88c0a380d9
     registry_sha: gateway-workflow
-    registry_content_sha256: 34e7c136104363d8472a51b37a19faec0cbd76c2f6dd64cb43f2f427dbccf069
+    registry_content_sha256: 860aafd0230e2902a426a0b9250b43b848bce7f73f2ed48d769e387198c8afc9
     components:
         cli-application:
-            version: 1.6.1
+            version: 1.6.2
             sha: gateway-workflow
         controller:
             version: 1.15.1
             sha: gateway-workflow
         go-sdk:
-            version: 2.0.1
+            version: 2.0.2
             sha: gateway-workflow
         grpc-application:
             version: 1.9.1
@@ -144,7 +144,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         http-application:
-            version: 1.5.1
+            version: 1.5.2
             sha: gateway-workflow
         jwt-auth:
             version: 2.2.2
@@ -432,14 +432,14 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: ab343b97a11e2de77f2d8462c564789624cd87f6bcc870ef33ff8aea3dc567d5
+        application/client/client.go: 22aa42cfe8b5a4b48fd0fb9b71eb89568608fd0ab1566acf2cba03a6eaa9043d
         application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
         auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
         auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
         cli/buildidentity/runtime.go: 5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911
-        cli/client/client.go: ab343b97a11e2de77f2d8462c564789624cd87f6bcc870ef33ff8aea3dc567d5
+        cli/client/client.go: 22aa42cfe8b5a4b48fd0fb9b71eb89568608fd0ab1566acf2cba03a6eaa9043d
         cli/cmd/main.go: 28174ab7e7443ef442cc2c708d10c901ea19e2e68afb8f60ac42270e862eb424
         cli/command/apply.go: bcd632e752e05e53ffc517dee9d1479485dc0cce2cd60e1f4effd7d0770d6007
         cli/command/apply_immutable.go: a1954d710b1821ae3d1a2375f4d0a9dd143cb33257bfe21d147b7056aa6c05dc
@@ -451,7 +451,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: c7b6ea7994d05cf79af567cb97bddcadb88ddc9a1100c4575d3b99f55ef4e40c
+        cli/command/version.go: a65e5744f955b9f3b9b4c947d8388f3b2a6ba1d9bdb6d9ee9eed10f46d482f60
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -526,7 +526,7 @@ last_applied:
         postgres/client.go: 58d82cdcb3c86fa149fe1bbf6015e3e30f776b894084137f22bcb6cd3252f58c
         sdk/api.go: 334380e9fb009b73420eec3720c50150e79d2979ba03f6f80888c17b96ffff20
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
-        sdk/internal/transport/client.go: e34b2fe0dc7ed42aa3736f02f64d8431cf37c1e4761e181def4d3c065792a888
+        sdk/internal/transport/client.go: ad0565aabdf80d50a4ecb44979f06e85cef660551b438853d031c73b98167429
         sdk/internal/wire/api.go: ba5c1e531a3f2431e2b79a177f011bc313c43c5d1c356226d37cd1fdb28f7b01
         search/field_map.go: 2b5479a420f12cdc416ade7fbc0a5d8ab133f8d235b7bec7c2b235688c7eb9ae
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
