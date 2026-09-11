@@ -57,8 +57,9 @@ fixture uses mutual TLS. The OTLP collector uses verified TLS. Projected Secret
 files supply the database URL, key pairs, and public trust roots.
 
 The Keycloak fixture uses the pinned image and test realm from the existing
-Docker checks. It uses development mode with TLS 1.3, an explicit hostname,
-and no HTTP listener. Its network policy permits fixture requests on port 8443
+Docker checks. It uses standard server mode with a local test database, local cache, TLS 1.3,
+an explicit hostname, and no HTTP listener. The test checks port 8080 inside
+the Pod, so network policy cannot conceal an open plaintext listener. Its network policy permits fixture requests on port 8443
 and denies outbound connections. It has no service-account token. Its writable
 container filesystem and test realm are not production configuration. Keycloak
 requires a separate production image and durable database; see the
@@ -105,3 +106,18 @@ The first identity extension failed when it supplied a Pod deadline inside a
 Deployment. Kubernetes forbids that field in a ReplicaSet template. The fixture
 now uses a single Pod with `restartPolicy: Never` and a ten-minute deadline.
 The failed run and its logs are retained. Its namespace was deleted.
+
+The second identity run passed real Keycloak creation, controller restart,
+and API Pod replacement. It failed the final telemetry check after the longer
+setup filled the test collector's 64-batch metrics buffer. The test now exports
+metrics every ten seconds. Its eight-minute limit permits at most 48 periodic
+batches and two final flushes. The test still requires metrics from both API
+instances. This changes only the test configuration.
+
+The same run showed that Keycloak development mode opened port 8080 despite
+`--http-enabled=false`. The network policy blocked that port. The fixture now
+uses standard server mode and checks that the local port is closed.
+
+The earlier full [CI run 34619444307](https://github.com/jsell-rh/hypershell-stego/actions/runs/34619444307)
+passed for `52edc0b`. That result covers the prior API deployment change.
+Later identity-test commits require their own results.

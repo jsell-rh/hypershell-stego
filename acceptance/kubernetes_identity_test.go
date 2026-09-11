@@ -126,7 +126,7 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 		"automountServiceAccountToken": false, "terminationGracePeriodSeconds": 20, "activeDeadlineSeconds": 600,
 		"securityContext": object{"runAsNonRoot": true, "seccompProfile": object{"type": "RuntimeDefault"}},
 		"containers": []any{object{"name": "keycloak", "image": keycloakImage,
-			"args":            []string{"start-dev", "--http-enabled=false", "--hostname=https://" + host + ":8443", "--https-certificate-file=/certs/tls.crt", "--https-certificate-key-file=/certs/tls.key", "--https-protocols=TLSv1.3", "--import-realm"},
+			"args":            []string{"start", "--db=dev-file", "--cache=local", "--http-enabled=false", "--hostname=https://" + host + ":8443", "--https-certificate-file=/certs/tls.crt", "--https-certificate-key-file=/certs/tls.key", "--https-protocols=TLSv1.3", "--import-realm"},
 			"securityContext": object{"allowPrivilegeEscalation": false, "capabilities": object{"drop": []string{"ALL"}}},
 			"resources":       object{"requests": object{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "128Mi"}, "limits": object{"cpu": "1", "memory": "1Gi", "ephemeral-storage": "1Gi"}},
 			"readinessProbe":  object{"httpGet": object{"path": "/realms/workflow/.well-known/openid-configuration", "port": 8443, "scheme": "HTTPS"}, "timeoutSeconds": 2, "periodSeconds": 2, "failureThreshold": 90},
@@ -146,6 +146,9 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	if err != nil || response.StatusCode != 200 {
 		t.Fatal("Keycloak fixture failed verified TLS", err)
 	}
+	// Check the listener inside the Pod. A network policy must not conceal an
+	// unexpected plaintext listener from this assertion.
+	command(nil, "exec", "pod/"+name, "--", "/bin/bash", "-c", "if (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null; then exit 1; fi")
 	secret := filepath.Join(t.TempDir(), "admin-secret")
 	if err := os.WriteFile(secret, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)

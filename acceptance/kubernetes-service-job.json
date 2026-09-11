@@ -162,6 +162,20 @@
             "update",
             "delete"
           ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods/exec"
+          ],
+          "resourceNames": [
+            "identity-fixture"
+          ],
+          "verbs": [
+            "create"
+          ]
         }
       ]
     },
