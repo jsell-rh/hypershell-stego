@@ -212,3 +212,19 @@ These focused results do not replace full CI for this revision.
 The SDK revision `6af8b82` was still running in
 [run 34608467385](https://github.com/jsell-rh/hypershell-stego/actions/runs/34608467385)
 when this record was written.
+
+## Nullable SDK fields
+
+Compiler `c06b9510971c68af64eaa2744b506a13e5bb0955` passed
+[full CI run 34610251961](https://github.com/jsell-rh/stego/actions/runs/34610251961).
+The unchanged Hypershell SDK first failed an explicit-null description test.
+SDK component version 2 corrects this in the common generator. The pinned
+application passed four race tests in jshell, including account creation,
+retrieval, denied access, restart, revocation, deletion, and the existing Gateway
+SDK workflow. Two fresh pinned compiler builds produced the same 106 output,
+state, and dependency hashes. Details and limits are in the
+[SDK evidence](go-sdk.md#nullable-fields-and-service-accounts).
+
+When this record was written, application run 34608467385 was still active and
+registration run 34609556157 was pending. Neither is recorded as a pass.
+The new application revision also requires its own full CI result.

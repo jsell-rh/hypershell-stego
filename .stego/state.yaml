@@ -89,7 +89,7 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: 59352e6e037f0a74e4d7abe9fe21cfd44d7bbc51c33c3f37b26f8411913e4d3a
+                sha256: 42be58edd4735f2629b8cc5b37ad0bda064bd0fd837d00b12a29998ef0343eed
                 mode: 420
             go.sum:
                 exists: true
@@ -99,18 +99,18 @@ last_applied:
                 exists: true
                 sha256: 3f2798a67550e6e865e9c0745b612085303cc2aec84c2ea9786193cadffb77e1
                 mode: 420
-        sha256: 6f4ba9a50c4e1979912c5d19f80f19d14516fbf68d0d593de3954232928cbc7b
+        sha256: 0101115dadad905577fceeec3c15e5750ed61eee97a83616c16e3e348aa02030
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911140407-b6fc0ae17ce7
+        module_version: v0.0.0-20260911142733-c06b9510971c
         vcs: git
-        revision: b6fc0ae17ce726a0ade732af1eee7477d94002db
+        revision: c06b9510971c68af64eaa2744b506a13e5bb0955
         source_state: clean
     service_hash: 3f2798a67550e6e865e9c0745b612085303cc2aec84c2ea9786193cadffb77e1
     registry_sha: gateway-workflow
-    registry_content_sha256: 64a489259cf75038293d3c1e3e8172acfcc2ad4534633a9b0ff7492c0adfe396
+    registry_content_sha256: 621d95d6c25d31562c1506661eae1bd82c16284560ab8ab58c66824de33d7405
     components:
         cli-application:
             version: 1.6.0
@@ -119,7 +119,7 @@ last_applied:
             version: 1.14.0
             sha: gateway-workflow
         go-sdk:
-            version: 1.0.0
+            version: 2.0.0
             sha: gateway-workflow
         grpc-application:
             version: 1.9.0
@@ -432,7 +432,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: ead7efc3c7d85d13095fb07dc0a4d99d48ff5d186f2afb8c99fba0c835be79f3
+        cli/command/version.go: 3360725d0d6070285d698e5ea2aee995f8d0148668d5ec580930f4a9745923ba
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -485,7 +485,7 @@ last_applied:
         sdk/api.go: 334380e9fb009b73420eec3720c50150e79d2979ba03f6f80888c17b96ffff20
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 800403c6e0cdfc6ef168e3a54e7f861f934a0f8d77ac19584d13b9c7aaa15e51
-        sdk/internal/wire/api.go: a0c5a30016d6d468dfd82214263de0405fa52fc1f38a70a3f95db1168550fb9f
+        sdk/internal/wire/api.go: ba5c1e531a3f2431e2b79a177f011bc313c43c5d1c356226d37cd1fdb28f7b01
         search/field_map.go: 2b5479a420f12cdc416ade7fbc0a5d8ab133f8d235b7bec7c2b235688c7eb9ae
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: dc308df35390c5b13e4751691060b0c9d2033988a25c35df9e96fc386a0ae323

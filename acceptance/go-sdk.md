@@ -59,3 +59,51 @@ files were copied to the local checkout. The captured application source was
 `50757ed08dfd42b3174a4ef37d4290ca1f26d4b00890c69d7a7384a6960340bf`.
 Full CI is a separate result. The earlier current-user concurrency failure is
 recorded in [CI evidence](ci-evidence.md) and remains open.
+
+## Nullable fields and service accounts
+
+SDK component version 2 preserves omitted fields, explicit null, and values.
+The version 1 SDK lost explicit null in an optional account description.
+`TestGeneratedSDKPreservesNullableAccountFields` reproduced that error against
+the unchanged generated SDK before the compiler correction. The test also
+checks empty and nonempty strings.
+
+Nullable fields now use `nullable.Nullable[T]`. For example, use
+`input.Description.SetNull()` to send an explicit null,
+`input.Description.Set("")` to send an empty string, and
+`input.Description.SetUnspecified()` to omit the property. Use `IsSpecified`,
+`IsNull`, and `Get` to inspect response fields. This changes the Go source API
+for nullable properties. The reference OpenAPI files are unchanged. STEGO
+generates the types and supplies the dependency. The variant has no custom
+nullable-field serializer.
+
+`TestGeneratedSDKServiceAccountWorkflow` uses the generated client, a TLS API
+endpoint, PostgreSQL, and the existing authenticated gRPC provisioner fixture.
+It checks the JSON request received at the API boundary for all four description
+cases. The API returns the stored account ID, its Gateway ID, and a creation
+credential. Later get and list responses contain no client secret. Null error
+and revocation fields retain their state. Stored descriptions survive a process
+restart. An unrelated user receives a typed 404. Revocation returns a timestamp,
+and deletion succeeds. The provider is a protocol fixture; this check does not
+replace the separate real Keycloak workflow.
+
+The corrected compiler is `c06b9510971c68af64eaa2744b506a13e5bb0955`.
+Its [full CI run](https://github.com/jsell-rh/stego/actions/runs/34610251961)
+passed. In jshell, two fresh builds of that commit produced identical hashes
+for all 106 generated, state, and dependency files. The hashes also matched
+after the tests and after the files were copied to the local checkout.
+
+The four selected race tests passed against the pinned output in 19.826 seconds.
+The new SDK account workflow took 5.38 seconds; the SDK Gateway workflow took
+6.15 seconds; the existing service-account runtime workflow took 7.24 seconds.
+Contract tests passed in 1.558 seconds on the preceding candidate output.
+Acceptance and SDK static checks, module verification, and the application
+vulnerability scan passed. The scan reported no vulnerabilities.
+
+Job `nullable` used namespace `stego-nullable-20260911`, Go 1.26.8, and
+PostgreSQL 18.6. The test container had one CPU and a 3 GiB memory limit. The
+database had half a CPU and a 512 MiB memory limit. The job deadline was
+30 minutes. The final pinned application archive SHA-256 was
+`13bb5a4fcf2f37f30a17f383c378cf389b031303a57c4b9849036aca16cd34ba`.
+Final local edits changed evidence documents only. No local build or performance
+test was used. Full application CI for this revision is a separate result.

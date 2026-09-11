@@ -16,6 +16,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/oapi-codegen/nullable"
 	"github.com/oapi-codegen/runtime"
 )
 
@@ -572,7 +573,7 @@ type OpenShellGatewayServiceAccountConnectionGrantType string
 // OpenShellGatewayServiceAccountCreateRequest defines model for OpenShellGatewayServiceAccountCreateRequest.
 type OpenShellGatewayServiceAccountCreateRequest struct {
 	CredentialType *OpenShellGatewayServiceAccountCreateRequestCredentialType `json:"credential_type,omitempty"`
-	Description    *string                                                    `json:"description,omitempty"`
+	Description    nullable.Nullable[string]                                  `json:"description,omitempty"`
 	ExpiresAt      *time.Time                                                 `json:"expires_at,omitempty"`
 	Name           string                                                     `json:"name"`
 	Role           *OpenShellGatewayServiceAccountRole                        `json:"role,omitempty"`
@@ -588,13 +589,13 @@ type OpenShellGatewayServiceAccountCreateResponse struct {
 	CreatedByUserId string                                                     `json:"created_by_user_id"`
 	Credential      OpenShellGatewayServiceAccountCredential                   `json:"credential"`
 	CredentialType  OpenShellGatewayServiceAccountCreateResponseCredentialType `json:"credential_type"`
-	Description     *string                                                    `json:"description,omitempty"`
+	Description     nullable.Nullable[string]                                  `json:"description,omitempty"`
 	ExpiresAt       time.Time                                                  `json:"expires_at"`
 	GatewayId       string                                                     `json:"gateway_id"`
 	Id              string                                                     `json:"id"`
-	LastError       *string                                                    `json:"last_error,omitempty"`
+	LastError       nullable.Nullable[string]                                  `json:"last_error,omitempty"`
 	Name            string                                                     `json:"name"`
-	RevokedAt       *time.Time                                                 `json:"revoked_at,omitempty"`
+	RevokedAt       nullable.Nullable[time.Time]                               `json:"revoked_at,omitempty"`
 	Role            OpenShellGatewayServiceAccountRole                         `json:"role"`
 	Status          OpenShellGatewayServiceAccountStatus                       `json:"status"`
 	Subject         string                                                     `json:"subject"`
@@ -634,13 +635,13 @@ type OpenShellGatewayServiceAccountGetResponse struct {
 	CreatedAt       time.Time                                               `json:"created_at"`
 	CreatedByUserId string                                                  `json:"created_by_user_id"`
 	CredentialType  OpenShellGatewayServiceAccountGetResponseCredentialType `json:"credential_type"`
-	Description     *string                                                 `json:"description,omitempty"`
+	Description     nullable.Nullable[string]                               `json:"description,omitempty"`
 	ExpiresAt       time.Time                                               `json:"expires_at"`
 	GatewayId       string                                                  `json:"gateway_id"`
 	Id              string                                                  `json:"id"`
-	LastError       *string                                                 `json:"last_error,omitempty"`
+	LastError       nullable.Nullable[string]                               `json:"last_error,omitempty"`
 	Name            string                                                  `json:"name"`
-	RevokedAt       *time.Time                                              `json:"revoked_at,omitempty"`
+	RevokedAt       nullable.Nullable[time.Time]                            `json:"revoked_at,omitempty"`
 	Role            OpenShellGatewayServiceAccountRole                      `json:"role"`
 	Status          OpenShellGatewayServiceAccountStatus                    `json:"status"`
 	Subject         string                                                  `json:"subject"`
@@ -665,13 +666,13 @@ type OpenShellGatewayServiceAccountListItem struct {
 	CreatedAt       time.Time                                            `json:"created_at"`
 	CreatedByUserId string                                               `json:"created_by_user_id"`
 	CredentialType  OpenShellGatewayServiceAccountListItemCredentialType `json:"credential_type"`
-	Description     *string                                              `json:"description,omitempty"`
+	Description     nullable.Nullable[string]                            `json:"description,omitempty"`
 	ExpiresAt       time.Time                                            `json:"expires_at"`
 	GatewayId       string                                               `json:"gateway_id"`
 	Id              string                                               `json:"id"`
-	LastError       *string                                              `json:"last_error,omitempty"`
+	LastError       nullable.Nullable[string]                            `json:"last_error,omitempty"`
 	Name            string                                               `json:"name"`
-	RevokedAt       *time.Time                                           `json:"revoked_at,omitempty"`
+	RevokedAt       nullable.Nullable[time.Time]                         `json:"revoked_at,omitempty"`
 	Role            OpenShellGatewayServiceAccountRole                   `json:"role"`
 	Status          OpenShellGatewayServiceAccountStatus                 `json:"status"`
 	Subject         string                                               `json:"subject"`
