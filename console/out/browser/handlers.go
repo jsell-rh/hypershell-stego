@@ -9,7 +9,9 @@ import (
 	"encoding/base64"
 	"errors"
 	client "github.com/jsell-rh/hypershell-stego/console/out/browser/client"
+	"html/template"
 	"io"
+	"mime"
 	"net/http"
 	"net/url"
 	"strings"
@@ -213,7 +215,11 @@ func sessionError(w http.ResponseWriter, err error) {
 		return
 	}
 	clearCookie(w, SessionCookie)
-	failure(w, 401)
+	reauthenticate(w)
+}
+func reauthenticate(w http.ResponseWriter) {
+	w.Header().Set("WWW-Authenticate", `Bearer error="invalid_token"`)
+	response(w, 401, map[string]any{"error": "reauth_required", "login_url": "/auth/login", "statusCode": 401})
 }
 func (b *Backend) session(w http.ResponseWriter, r *http.Request) {
 	value, err := b.active(r.Context(), cookieID(r, SessionCookie))
@@ -231,9 +237,66 @@ func (b *Backend) session(w http.ResponseWriter, r *http.Request) {
 func (b *Backend) csrf(r *http.Request, value session) bool {
 	return b.sameOrigin(r) && len(r.Header.Values(CSRFHeader)) == 1 && value.CSRF != "" && subtle.ConstantTimeCompare([]byte(r.Header.Get(CSRFHeader)), []byte(value.CSRF)) == 1
 }
+
+var logoutPage = template.Must(template.New("logout").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Sign out</title></head><body><main><h1>Sign out</h1>{{if .CSRF}}<p>Confirm sign-out.{{if .Provider}} This also starts sign-out at the identity provider.{{end}}</p><form method="post" action="/auth/logout"><input type="hidden" name="csrf_token" value="{{.CSRF}}"><button type="submit">Sign out</button></form><p><a href="/">Cancel</a></p>{{else}}<p>This console session has ended.</p><p><a href="/">Return to the console</a></p>{{end}}</main></body></html>`))
+
+func (b *Backend) confirmLogout(w http.ResponseWriter, r *http.Request) {
+	value, state, _, err := b.store.read(r.Context(), cookieID(r, SessionCookie))
+	if errors.Is(err, errStore) {
+		sessionError(w, err)
+		return
+	}
+	csrf := ""
+	if err == nil && value.Kind == "active" && (state == "active" || state == "refreshing") {
+		csrf = value.CSRF
+	}
+	if b.logoutOrigin != "" {
+		w.Header().Set("Content-Security-Policy", strings.Replace(w.Header().Get("Content-Security-Policy"), "form-action 'self'", "form-action 'self' "+b.logoutOrigin, 1))
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = logoutPage.Execute(w, struct {
+		CSRF     string
+		Provider bool
+	}{csrf, b.logoutTarget != ""})
+}
+func logoutForm(r *http.Request) (string, bool, error) {
+	data, err := io.ReadAll(io.LimitReader(r.Body, 4097))
+	if err != nil || len(data) > 4096 {
+		return "", false, errSession
+	}
+	if len(r.Header.Values("Content-Type")) > 1 {
+		return "", false, errSession
+	}
+	media := ""
+	if raw := r.Header.Get("Content-Type"); raw != "" {
+		media, _, err = mime.ParseMediaType(raw)
+		if err != nil {
+			return "", false, errSession
+		}
+	}
+	if media == "" || media == "application/json" {
+		if len(data) != 0 {
+			return "", false, errSession
+		}
+		return "", false, nil
+	}
+	if media != "application/x-www-form-urlencoded" || len(r.Header.Values(CSRFHeader)) != 0 {
+		return "", false, errSession
+	}
+	values, err := url.ParseQuery(string(data))
+	if err != nil || len(values) != 1 || len(values["csrf_token"]) != 1 {
+		return "", false, errSession
+	}
+	return values.Get("csrf_token"), true, nil
+}
 func (b *Backend) logout(w http.ResponseWriter, r *http.Request) {
 	if !b.sameOrigin(r) {
 		failure(w, 403)
+		return
+	}
+	formCSRF, form, formErr := logoutForm(r)
+	if formErr != nil {
+		failure(w, 400)
 		return
 	}
 	id := cookieID(r, SessionCookie)
@@ -244,10 +307,18 @@ func (b *Backend) logout(w http.ResponseWriter, r *http.Request) {
 	}
 	if err != nil {
 		clearCookie(w, SessionCookie)
-		w.WriteHeader(204)
+		if form {
+			http.Redirect(w, r, "/auth/logout", 303)
+		} else {
+			w.WriteHeader(204)
+		}
 		return
 	}
-	if value.Kind != "active" || (state != "active" && state != "refreshing") || !b.csrf(r, value) {
+	csrfOK := b.csrf(r, value)
+	if form {
+		csrfOK = value.CSRF != "" && subtle.ConstantTimeCompare([]byte(formCSRF), []byte(value.CSRF)) == 1
+	}
+	if value.Kind != "active" || (state != "active" && state != "refreshing") || !csrfOK {
 		failure(w, 403)
 		return
 	}
@@ -260,7 +331,16 @@ func (b *Backend) logout(w http.ResponseWriter, r *http.Request) {
 		failure(w, 502)
 		return
 	}
-	w.WriteHeader(204)
+	if form {
+		target := "/auth/logout"
+		if b.logoutTarget != "" {
+			target = b.logoutTarget
+			w.Header().Set("Content-Security-Policy", strings.Replace(w.Header().Get("Content-Security-Policy"), "form-action 'self'", "form-action 'self' "+b.logoutOrigin, 1))
+		}
+		http.Redirect(w, r, target, 303)
+	} else {
+		w.WriteHeader(204)
+	}
 }
 func (b *Backend) proxy(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -330,6 +410,8 @@ func (b *Backend) proxy(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		clearCookie(w, SessionCookie)
+		reauthenticate(w)
+		return
 	}
 	for _, name := range []string{"Content-Type", "ETag", "Retry-After"} {
 		if value := upstream.Header.Get(name); value != "" {

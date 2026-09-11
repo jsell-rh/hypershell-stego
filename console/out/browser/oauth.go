@@ -23,6 +23,7 @@ import (
 )
 
 type oauthMetadata struct {
+	EndSession    string   `json:"end_session_endpoint"`
 	Authorization string   `json:"authorization_endpoint"`
 	Token         string   `json:"token_endpoint"`
 	Keys          string   `json:"jwks_uri"`
@@ -148,6 +149,19 @@ func discover(ctx context.Context, o options) (*oauthProvider, error) {
 		return nil, errors.New("OIDC requires S256 PKCE")
 	}
 	return p, nil
+}
+func (p *oauthProvider) logoutTarget(origin *url.URL) (string, string, error) {
+	target, err := httpsURL(p.metadata.EndSession)
+	if err != nil || target.RawQuery != "" || target.ForceQuery || cookieHost(target) == cookieHost(origin) {
+		return "", "", errors.New("provider logout requires a separate HTTPS endpoint without query parameters")
+	}
+	for _, r := range target.Host {
+		if !((r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || strings.ContainsRune(".-:[]", r)) {
+			return "", "", errors.New("invalid provider logout host")
+		}
+	}
+	target.RawQuery = url.Values{"client_id": {p.options.ClientID}, "post_logout_redirect_uri": {origin.String() + "/auth/logout"}}.Encode()
+	return target.String(), target.Scheme + "://" + target.Host, nil
 }
 func (p *oauthProvider) close() { p.transport.close() }
 func plainText(value string, limit int) bool {

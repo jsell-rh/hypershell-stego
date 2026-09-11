@@ -9,6 +9,7 @@ overrides:
     database: true
   browser-backend:
     api_prefix: /api/hypershell/v1
+    logout_scope: identity_provider
     roles_claim: resource_access.hypershell.roles
     routes:
       - /

@@ -472,3 +472,7 @@ The [browser Gateway protocol check](acceptance/browser-gateway.md) uses a
 separate generated Go console backend. STEGO owns login, sessions, token renewal,
 logout, and the API proxy. Hypershell declares routes, assets, roles, and the API
 prefix. The console page is a scaffold; the complete UI remains open.
+
+The [browser session compatibility check](acceptance/browser-session-compatibility.md)
+checks the sign-in recovery response and sign-out through the generated console
+and Keycloak. A confirmation form protects the reference UI's GET sign-out link.

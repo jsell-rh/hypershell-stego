@@ -21,27 +21,27 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: a8880b6e59e996e770f9693ae699b83416cc324e11adcb7f9da8dfdb5afddee0
+                sha256: cb905bb8d8178a939d024575da1225165994c9ee9b7a70ae03a1468f44e9963f
                 mode: 420
             ui/index.html:
                 exists: true
                 sha256: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
                 mode: 420
-        sha256: 3224de18d0a673f2a2e967c5bfd7bb53393f7769628b4f8ec51f12934688739b
+        sha256: 45a9b58baa1cd9f1e260e7ce35d8cc63e2322195610ee7b05ef9286596863108
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911184200-a6e7656c8442
+        module_version: v0.0.0-20260911185747-e7febe334295
         vcs: git
-        revision: a6e7656c844226004b8bcb091e5dc66da52fa1ee
+        revision: e7febe33429538d0e56ba0d27307f6852d7a7228
         source_state: clean
-    service_hash: a8880b6e59e996e770f9693ae699b83416cc324e11adcb7f9da8dfdb5afddee0
+    service_hash: cb905bb8d8178a939d024575da1225165994c9ee9b7a70ae03a1468f44e9963f
     registry_sha: browser-workflow
-    registry_content_sha256: 433b030b51555383ef30921751cadc50cc9848b25c88a038af4fd75629780469
+    registry_content_sha256: 9183d429a2b131c0e89003cc8006b2f3a7c7ee3b0e093e93fbff5ac1a4eb6c5c
     components:
         browser-backend:
-            version: 1.0.0
+            version: 1.1.0
             sha: browser-workflow
         health-check:
             version: 1.0.0
@@ -53,10 +53,10 @@ last_applied:
             version: 4.0.0
             sha: browser-workflow
     files:
-        browser/backend.go: dafdaec78f1a6d4e45e0bcbff982463eafa83008c4d3d578fc611c18c553cff4
+        browser/backend.go: 10cb7944c8975dc7d72b6ffafce632b3284f6c5fce8e7f315431b135098f87cc
         browser/client/client.go: fa5cc830627d59e6632383dc696dda8266016b503684865bedb408e5a5682389
-        browser/handlers.go: 9a886cb3e3a3caeef314d2cc8df8a5916d4a990eb22ffdf31bdb3af1585ab383
-        browser/oauth.go: e00d09a4400088ebcc1c30bdd881aabb6b869c220ceda751359c1d5089fa80e0
+        browser/handlers.go: 579b1bb50e2f0783fff31ebb13da8f51fac2995fd141d385cb0d0701e6184f58
+        browser/oauth.go: f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e
         browser/public/index.html: 0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/store.go: 457330dc6540e8b3900400605637fe4c3bd58b1369c2ab9b0c2b3fcfe8b799f7

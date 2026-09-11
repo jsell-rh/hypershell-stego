@@ -132,11 +132,25 @@ func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, 
 	defer client.Close()
 	for _, path := range []string{"/livez", "/readyz"} {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		response, err := client.Do(ctx, "GET", path, nil, nil)
-		cancel()
-		if err != nil || response.StatusCode != 200 {
-			t.Fatalf("console probe %s: %d %v", path, response.StatusCode, err)
+		for {
+			response, err := client.Do(ctx, "GET", path, nil, nil)
+			if err != nil || (response.StatusCode != 200 && (path != "/readyz" || response.StatusCode != 503)) {
+				cancel()
+				t.Fatalf("console probe %s: %d %v", path, response.StatusCode, err)
+			}
+			if response.StatusCode == 200 {
+				break
+			}
+			timer := time.NewTimer(100 * time.Millisecond)
+			select {
+			case <-ctx.Done():
+				timer.Stop()
+				cancel()
+				t.Fatal("console did not become ready")
+			case <-timer.C:
+			}
 		}
+		cancel()
 	}
 	return stop, output.String
 }
@@ -286,7 +300,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	address := consoleAddress(t)
 	audience := map[string]any{"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"}}
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
-	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20"}, "protocolMappers": []any{audience, roles}})
+	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
 	f := database(t)
 	schema, err := os.ReadFile("../console/out/browser/schema.sql")
 	if err != nil {
@@ -425,13 +439,62 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		}
 	}
 	assertAccess()
-	response = alice.request(t, "POST", address+"/auth/logout", nil, http.Header{"Origin": {address}, "X-CSRF-Token": {alice.csrf}})
-	if response.StatusCode != 204 {
-		t.Fatal("browser logout failed", response.StatusCode)
+	response = alice.request(t, "GET", address+"/auth/logout", nil, nil)
+	if response.StatusCode != 200 || !bytes.Contains(response.Body, []byte(`name="csrf_token" value="`+alice.csrf+`"`)) {
+		t.Fatal("logout confirmation failed", response.StatusCode)
+	}
+	assertAccess()
+	response = alice.request(t, "POST", address+"/auth/logout", []byte(url.Values{"csrf_token": {alice.csrf}}.Encode()), http.Header{"Origin": {address}, "Content-Type": {"application/x-www-form-urlencoded"}})
+	providerLogout := response.Header.Get("Location")
+	target, parseErr := url.Parse(providerLogout)
+	providerURL, _ := url.Parse(k.options.ServerURL)
+	if response.StatusCode != 303 || parseErr != nil || target.Scheme != providerURL.Scheme || target.Host != providerURL.Host || target.Query().Get("client_id") != "hypershell-console" || target.Query().Get("post_logout_redirect_uri") != address+"/auth/logout" || target.Query().Get("id_token_hint") != "" {
+		t.Fatal("invalid provider logout redirect", response.StatusCode)
 	}
 	if response = alice.api(t, "GET", "/gateways/"+gateway.ID, nil); response.StatusCode != 401 {
 		t.Fatal("logout retained API access", response.StatusCode)
 	}
+	var reauth struct {
+		Error  string `json:"error"`
+		Login  string `json:"login_url"`
+		Status int    `json:"statusCode"`
+	}
+	if json.Unmarshal(response.Body, &reauth) != nil || reauth.Error != "reauth_required" || reauth.Login != "/auth/login" || reauth.Status != 401 {
+		t.Fatal("browser reauthentication contract changed")
+	}
+	// Use the identity provider's confirmation form. No OAuth token enters HTML.
+	response = alice.request(t, "GET", providerLogout, nil, nil)
+	if response.StatusCode == 200 {
+		forms := regexp.MustCompile(`(?s)<form\b[^>]*>.*?</form>`).FindAllString(string(response.Body), -1)
+		action := ""
+		values := url.Values{}
+		for _, form := range forms {
+			if !strings.Contains(form, `id="kc-logout-confirm"`) {
+				continue
+			}
+			match := regexp.MustCompile(`action="([^"]+)"`).FindStringSubmatch(form)
+			if len(match) == 2 {
+				action = html.UnescapeString(match[1])
+			}
+			for _, input := range regexp.MustCompile(`<input\b[^>]*>`).FindAllString(form, -1) {
+				name := regexp.MustCompile(`name="([^"]+)"`).FindStringSubmatch(input)
+				value := regexp.MustCompile(`value="([^"]*)"`).FindStringSubmatch(input)
+				if len(name) == 2 && len(value) == 2 {
+					values.Set(html.UnescapeString(name[1]), html.UnescapeString(value[1]))
+				}
+			}
+		}
+		target, parseErr = url.Parse(action)
+		if parseErr != nil || target.Scheme != providerURL.Scheme || target.Host != providerURL.Host || target.User != nil {
+			t.Fatal("untrusted provider logout form")
+		}
+		response = alice.request(t, "POST", target.String(), []byte(values.Encode()), http.Header{"Content-Type": {"application/x-www-form-urlencoded"}})
+	}
+	if response.StatusCode != 302 || response.Header.Get("Location") != address+"/auth/logout" {
+		t.Fatal("provider logout did not return to console", response.StatusCode)
+	}
+	// Login must now show the password form. A retained provider session would redirect.
+	alice.login(t, k, "console-alice")
 	for _, log := range []string{before, logs()} {
 		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token"} {
 			if strings.Contains(log, private) {

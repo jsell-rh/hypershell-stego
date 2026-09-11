@@ -23,27 +23,28 @@ import (
 //go:embed public
 var assets embed.FS
 
-const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}]}"
+const generatedConfiguration = "{\"Prefix\":\"/api/hypershell/v1\",\"RolesClaim\":\"resource_access.hypershell.roles\",\"LogoutScope\":\"identity_provider\",\"Routes\":[\"/\",\"/gateways/new\",\"/gateways/{id}\"],\"Assets\":[{\"Source\":\"ui/index.html\",\"Path\":\"/index.html\",\"Hash\":\"0e0760838bc9afed75067cfe9c3c8db4f4214c0f9501095f9e124aab1b8d47f6\"}]}"
 const SessionCookie = "__Host-Http-stego_session"
 const LoginCookie = "__Host-Http-stego_login"
 const CSRFHeader = "X-CSRF-Token"
 
 type asset struct{ Source, Path, Hash string }
 type configuration struct {
-	Prefix, RolesClaim string
-	Routes             []string
-	Assets             []asset
+	Prefix, RolesClaim, LogoutScope string
+	Routes                          []string
+	Assets                          []asset
 }
 type options struct{ Origin, Upstream, UpstreamCA, Issuer, IssuerCA, ClientID, SecretFile, KeyFile string }
 type Backend struct {
-	store    *sessionStore
-	provider *oauthProvider
-	upstream *client.Client
-	origin   *url.URL
-	config   configuration
-	routes   []*regexp.Regexp
-	close    sync.Once
-	permits  chan struct{}
+	store                      *sessionStore
+	provider                   *oauthProvider
+	upstream                   *client.Client
+	origin                     *url.URL
+	config                     configuration
+	logoutTarget, logoutOrigin string
+	routes                     []*regexp.Regexp
+	close                      sync.Once
+	permits                    chan struct{}
 }
 
 // NewBrowserBackend uses compiler-owned database, HTTP, and telemetry resources.
@@ -100,6 +101,13 @@ func newBackend(ctx context.Context, db *sql.DB, o options) (*Backend, error) {
 	if json.Unmarshal([]byte(generatedConfiguration), &b.config) != nil {
 		b.Close()
 		return nil, errors.New("invalid generated browser configuration")
+	}
+	if b.config.LogoutScope == "identity_provider" {
+		b.logoutTarget, b.logoutOrigin, err = provider.logoutTarget(origin)
+		if err != nil {
+			b.Close()
+			return nil, err
+		}
 	}
 	for _, route := range b.config.Routes {
 		pattern := regexp.QuoteMeta(route)
@@ -207,7 +215,7 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	if site := r.Header.Get("Sec-Fetch-Site"); site == "cross-site" || site == "same-site" {
 		publicNavigation := (r.Method == "GET" || r.Method == "HEAD") && !strings.HasPrefix(r.URL.Path, "/auth/") && r.URL.Path != b.config.Prefix && !strings.HasPrefix(r.URL.Path, b.config.Prefix+"/")
-		if r.URL.Path != "/auth/callback" && !publicNavigation {
+		if r.URL.Path != "/auth/callback" && !(r.Method == "GET" && r.URL.Path == "/auth/logout") && !publicNavigation {
 			failure(w, 403)
 			return
 		}
@@ -246,8 +254,16 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	case "/auth/logout":
 		r.Pattern = "/auth/logout"
+		if r.URL.RawQuery != "" {
+			failure(w, 400)
+			return
+		}
+		if r.Method == "GET" {
+			b.confirmLogout(w, r)
+			return
+		}
 		if r.Method != "POST" {
-			w.Header().Set("Allow", "POST")
+			w.Header().Set("Allow", "GET, POST")
 			failure(w, 405)
 			return
 		}
