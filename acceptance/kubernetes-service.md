@@ -21,6 +21,9 @@ The test checks these behaviors:
   controller. Check that its initial scan repairs the state.
 - Replace the API Pod while the controller runs. Read the retained Gateway,
   check identity repair after reconnect, and deliver an update event.
+- Stop the controller, drain its outbox records, and record the Kafka end
+  offset. Require the final image update event to be at or after that offset.
+  An earlier identity update cannot satisfy the event check.
 - Receive correlated request logs and traces, plus request metrics, from both
   runtime instances. Check that private request and credential data is absent.
 

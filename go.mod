@@ -27,7 +27,6 @@ require (
 	github.com/jinzhu/now v1.1.5 // indirect
 	github.com/klauspost/compress v1.18.7 // indirect
 	github.com/pierrec/lz4/v4 v4.1.26 // indirect
-	github.com/twmb/franz-go/pkg/kmsg v1.13.1 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.46.0 // indirect
 	golang.org/x/oauth2 v0.36.0 // indirect
@@ -52,6 +51,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	github.com/twmb/franz-go v1.21.6
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20260908033342-6b0b6509f117
+	github.com/twmb/franz-go/pkg/kmsg v1.13.1
 	github.com/yaacov/tree-search-language/v5 v5.2.12
 	go.opentelemetry.io/otel v1.46.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.22.0

@@ -230,13 +230,16 @@ func startBothWithLogs(t testing.TB, binary, dsn string, config Config, settings
 func readEvent(t *testing.T, consumer *kgo.Client, id string) string {
 	return readGatewayEvent(t, consumer, id, "Create", "gateway.created")
 }
-func readGatewayEvent(t *testing.T, consumer *kgo.Client, id, eventType, kind string) string {
+func readGatewayEvent(t *testing.T, consumer *kgo.Client, id, eventType, kind string, minimumOffset ...int64) string {
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	for ctx.Err() == nil {
 		fetches := consumer.PollRecords(ctx, 1)
 		for _, record := range fetches.Records() {
+			if len(minimumOffset) != 0 && record.Offset < minimumOffset[0] {
+				continue
+			}
 			if string(record.Key) != id {
 				continue
 			}

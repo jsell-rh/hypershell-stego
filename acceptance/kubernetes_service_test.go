@@ -21,6 +21,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/out/sdk"
 	"github.com/segmentio/ksuid"
 	"github.com/twmb/franz-go/pkg/kfake"
+	"github.com/twmb/franz-go/pkg/kmsg"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -291,12 +292,29 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	}
 	checkRead()
 	reconcile()
+	// All prior writers have stopped. Capture the broker offset after their
+	// outbox records drain, so an old identity event cannot satisfy this check.
+	awaitQueueEmpty(t, f)
+	offsetRequest := kmsg.NewPtrListOffsetsRequest()
+	partition := kmsg.NewListOffsetsRequestTopicPartition()
+	partition.Partition, partition.Timestamp = 0, -1
+	offsetRequest.Topics = []kmsg.ListOffsetsRequestTopic{{Topic: config.Topic, Partitions: []kmsg.ListOffsetsRequestTopicPartition{partition}}}
+	offsetContext, stopOffset := context.WithTimeout(requestContext, 10*time.Second)
+	offsets, err := offsetRequest.RequestWith(offsetContext, consumer)
+	stopOffset()
+	if err != nil || offsets == nil || len(offsets.Topics) != 1 || offsets.Topics[0].Topic != config.Topic || len(offsets.Topics[0].Partitions) != 1 {
+		t.Fatal("cannot read the event boundary", err)
+	}
+	boundary := offsets.Topics[0].Partitions[0]
+	if boundary.ErrorCode != 0 || boundary.Partition != 0 || boundary.Offset < 1 {
+		t.Fatal("invalid event boundary")
+	}
 	imageUpdate := "example.test/gateway:v2"
 	updated, err := owner.UpdateGatewayWithResponse(requestContext, id, sdk.UpdateGatewayJSONRequestBody{Image: &imageUpdate})
 	if err != nil || updated.JSON200 == nil {
 		t.Fatal("deployed update after restart failed", err)
 	}
-	readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
+	readGatewayEvent(t, consumer, id, "Update", "gateway.updated", boundary.Offset)
 	command(nil, "logs", "deployment/hypershell", "--tail=200")
 	command(nil, "delete", "deployment/hypershell", "--wait=true", "--timeout=60s")
 	command(nil, "wait", "--for=delete", "pods", "-l", "app.kubernetes.io/name=hypershell", "--timeout=60s")
