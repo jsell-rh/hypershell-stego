@@ -26,7 +26,7 @@ func TestGeneratedStartupFailurePrivacy(t *testing.T) {
 		{"missing", "", "database.configure"},
 		{"URL port", "postgres://private-user:private-password@localhost:bad/private-database", "database.open"},
 		{"keyword quote", "host=localhost password='private-password", "database.open"},
-		{"connection", "postgres://private-user:private-password@" + address + "/private-database?sslmode=disable&connect_timeout=1", "database.open"},
+		{"connection", "postgres://private-user:private-password@" + address + "/private-database?sslmode=disable&connect_timeout=1", "database.ping"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)

@@ -228,3 +228,25 @@ state, and dependency hashes. Details and limits are in the
 When this record was written, application run 34608467385 was still active and
 registration run 34609556157 was pending. Neither is recorded as a pass.
 The new application revision also requires its own full CI result.
+
+## SDK full CI result
+
+[Run 34608467385](https://github.com/jsell-rh/hypershell-stego/actions/runs/34608467385)
+for `6af8b82c7d4c7bd1663d3d179850e0845104f884` passed all six jobs.
+Registration run 34609556157 was canceled while pending when a later main
+revision replaced it. It supplies no full test result. Nullable-field run
+34610641928 for `98db0df` is now active and includes the registration test change.
+
+## Database startup deadlines
+
+Compiler `eed6578` passed
+[full CI run 34611767365](https://github.com/jsell-rh/stego/actions/runs/34611767365).
+The preceding compiler reproduced an unbounded startup against a stalled
+database after Gateway creation and event delivery. With the correction,
+eight selected application race tests passed in jshell, including connection
+and query stalls, process cancellation, restart, access, health, database
+telemetry, and the SDK Gateway workflow. All 106 generated, state, and dependency
+hashes matched across two fresh pinned builds and after testing. See the
+[database startup evidence](database-startup.md) for the source hashes, setup
+correction, resource limits, and remaining requirements. Full CI for the new
+application revision is still required.

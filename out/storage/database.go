@@ -6,6 +6,7 @@ package storage
 import (
 	"context"
 	"database/sql"
+	"database/sql/driver"
 	"errors"
 	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -26,12 +27,29 @@ func OpenDatabase(dsn string) (*sql.DB, error) {
 	if err != nil {
 		return nil, err
 	}
-	pool := stdlib.OpenDB(*config)
+	pool := sql.OpenDB(databaseConnector{Connector: stdlib.GetConnector(*config)})
 	pool.SetMaxOpenConns(settings.open)
 	pool.SetMaxIdleConns(settings.idle)
 	pool.SetConnMaxLifetime(settings.lifetime)
 	pool.SetConnMaxIdleTime(settings.idleTime)
 	return pool, nil
+}
+
+// Apply one deadline to all connection attempts, including host fallbacks.
+// Canceling this context after success does not limit the session lifetime.
+type databaseConnector struct{ driver.Connector }
+
+func (c databaseConnector) Connect(parent context.Context) (driver.Conn, error) {
+	ctx, cancel := context.WithTimeout(parent, 5*time.Second)
+	defer cancel()
+	conn, err := c.Connector.Connect(ctx)
+	if ctx.Err() != nil {
+		if conn != nil {
+			conn.Close()
+		}
+		return nil, ctx.Err()
+	}
+	return conn, err
 }
 
 type databasePoolSettings struct {

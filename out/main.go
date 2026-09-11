@@ -58,11 +58,20 @@ func run() (stegoErr error) {
 		return err
 	}
 	defer sqlDB.Close()
-	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{Logger: gormlogger.Discard})
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{Logger: gormlogger.Discard, DisableAutomaticPing: true})
 	if err != nil {
 		return err
 	}
 	stegoStage = "database.handle"
+	stegoStage = "database.ping"
+	{
+		ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err := sqlDB.PingContext(ctx)
+		cancel()
+		if err != nil {
+			return err
+		}
+	}
 	stegoStage = "component[0].constructor[0]"
 	store, err := storage.NewStore(db)
 	if err != nil {
