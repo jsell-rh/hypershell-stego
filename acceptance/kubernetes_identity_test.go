@@ -209,7 +209,7 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	})
 	apply(object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": object{
 		"podSelector": object{"matchLabels": labels}, "policyTypes": []string{"Ingress", "Egress"}, "egress": []any{},
-		"ingress": []any{object{"from": []any{object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-identity"}}}}, "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
+		"ingress": []any{object{"from": []any{object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-identity"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-console"}}}}, "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
 	}})
 	apply(object{"apiVersion": "v1", "kind": "Secret", "metadata": meta, "data": map[string][]byte{"tls.crt": read("server.pem"), "tls.key": read("server-key.pem"), "workflow-realm.json": realm}})
 	apply(object{"apiVersion": "v1", "kind": "Service", "metadata": meta, "spec": object{"selector": labels, "ports": []any{object{"port": 8443}}}})

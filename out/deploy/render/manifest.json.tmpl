@@ -22,6 +22,28 @@
           {
             "ports": [
               {
+                "port": 8443,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "identity-fixture"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
                 "port": 5432,
                 "protocol": "TCP"
               }

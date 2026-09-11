@@ -31,11 +31,29 @@ umask 077
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
-python3 - "$namespace" "$results" <<'PY'
+python3 - "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" <<'PY'
 import base64,json,secrets,sys
 from pathlib import Path
 ns,root=sys.argv[1],Path(sys.argv[2])
 job=json.loads(Path('acceptance/kubernetes-service-job.json').read_text().replace('@NAMESPACE@',ns))
+if sys.argv[3] not in ('0','1'): raise SystemExit('STEGO_TEST_BROWSER_DEPLOYMENT must be 0 or 1')
+if sys.argv[3]=='1':
+    security={'runAsNonRoot':True,'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}}
+    for item in job['items']:
+        if item['kind']=='ResourceQuota': item['spec']['hard']['limits.memory']='8Gi'
+        if item['kind']=='Role' and item['metadata']['name']=='service-check':
+            for rule in item['rules']:
+                if 'deployments/scale' in rule['resources']: rule['resourceNames']=['hypershell','hypershell-console']
+        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
+            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-console'}}}],'ports':[{'port':5432,'protocol':'TCP'},{'port':19093,'protocol':'TCP'}]})
+        if item['kind']=='Job':
+            spec=item['spec']['template']['spec']
+            spec['initContainers'].insert(0,{'name':'node-tools','image':'docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393','command':['sh','-c','mkdir -p /work/bin /work/node; cp /usr/local/bin/node /work/bin/node; cp -R /usr/local/lib/node_modules/npm /work/node/npm'],'securityContext':security,'resources':{'requests':{'cpu':'100m','memory':'128Mi'},'limits':{'cpu':'500m','memory':'256Mi'}},'volumeMounts':[{'name':'work','mountPath':'/work'}]})
+            spec['initContainers'].append({'name':'chromium','restartPolicy':'Always','image':'docker.io/selenium/standalone-chromium@sha256:81c80050126f610675e40eeac529a821dc5a0d38acf26c6d44f792a6e7ea8ac5','command':['sh','-c','mkdir -p /tmp/config /tmp/cache; exec chromedriver --port=9515 --allowed-ips=127.0.0.1'],'env':[{'name':'XDG_CONFIG_HOME','value':'/tmp/config'},{'name':'XDG_CACHE_HOME','value':'/tmp/cache'}],'securityContext':security,'resources':{'requests':{'cpu':'100m','memory':'256Mi'},'limits':{'cpu':'1','memory':'1536Mi'}},'startupProbe':{'tcpSocket':{'port':9515},'periodSeconds':2,'failureThreshold':30},'volumeMounts':[{'name':'chrometmp','mountPath':'/tmp'}]})
+            spec['volumes'].append({'name':'chrometmp','emptyDir':{'sizeLimit':'256Mi'}})
+            test=spec['containers'][0]
+            test['command'][-1]=test['command'][-1].replace('run-service-deployment-pod.sh','run-browser-deployment-pod.sh')
+            test['env'] += [{'name':'STEGO_TEST_KUBERNETES_BROWSER','value':'1'},{'name':'STEGO_REQUIRE_BROWSER','value':'1'},{'name':'PATH','value':'/work/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}]
 password=secrets.token_hex(24)
 encode=lambda value:base64.b64encode(value.encode()).decode()
 for item in job['items']:
@@ -69,7 +87,7 @@ group=${group%%/*}
 [[ $group =~ ^[1-9][0-9]*$ ]]
 "${oc_cmd[@]}" -n "$namespace" get configmap openshift-service-ca.crt -o jsonpath='{.data.service-ca\.crt}' > "$results/registry-ca.crt"
 test -s "$results/registry-ca.crt"
-tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd
+tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd console
 sha256sum "$results/application.tar" > "$results/application.sha256"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'mkdir -p /work/application; tar xf - -C /work/application' < "$results/application.tar"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/oc; chmod 755 /work/oc' < "$(command -v oc)"
@@ -80,7 +98,7 @@ source "$project/scripts/wait-service-result.sh"
 wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; tar cf - deployment.exit image.json worker-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar 2>/dev/null' > "$results/evidence.tar" || true
+  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s

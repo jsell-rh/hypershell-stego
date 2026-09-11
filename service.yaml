@@ -164,6 +164,7 @@ overrides:
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-sandbox-count, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 9090, protocol: TCP}
+      - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19092, protocol: TCP}
       - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}

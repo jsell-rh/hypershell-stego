@@ -76,10 +76,9 @@ a supported rotation procedure. Production credential rotation remains an open
 gate. A changed Secret alone does not prove runtime reload.
 
 The image CI job builds the generated console Containerfile and checks its user
-and entry point. Generation and build results are recorded below. A live check
-of the console Deployment, projected credentials, public ingress, and Pod
-replacement remains required. The prior rendered test used separate processes
-inside a bounded test Pod; it does not prove these deployment properties.
+and entry point. Generation, build, and live deployment results are recorded
+below. Public ingress and credential rotation remain required. The earlier
+rendered test used separate processes inside one bounded test Pod.
 
 Compiler `b3f690864dac20dcc766fb5aef6e4167aee8b654` passed the bounded jshell
 check on 2026-09-11. The console builds with its embedded UI, including a static
@@ -93,4 +92,107 @@ check. Full compiler CI passed. The new application image CI is a separate check
 The Job reached `Complete`. Its logs, result markers, hashes, and rendered
 resources were saved under `/tmp/stego-console-deploy-2hxbs5ot` on the test
 workstation. Namespace deletion was requested after collection. The live
-console deployment and credential rotation gates remain open.
+console deployment and credential rotation gates remained open at that stage.
+
+The live deployment check uses the same Gateway assertions as the process test:
+
+```sh
+STEGO_TEST_CONTEXT=default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell \
+STEGO_TEST_BROWSER_DEPLOYMENT=1 scripts/check-service-deployment.sh
+```
+
+Run this command from a frozen checkout when source changes must continue.
+The wrapper uses the named context and a new namespace. The Job builds the
+pinned compiler and static API and console images, then publishes them to the
+test namespace's registry. It checks both image configurations before use.
+The published image references use digests. No local Go build or browser runs.
+
+The API and console use their generated Deployments, Services, ServiceAccounts,
+NetworkPolicies, TLS listeners, and projected file Secrets. PostgreSQL, the TLS
+Kafka protocol fixture, the TLS collector, Chromium, and real Keycloak are test
+dependencies. The API and console have separate databases and runtime roles.
+The console role can access only the browser session table. Schema setup uses
+the fixture owner before rollout. Runtime roles do not get schema ownership.
+
+The test uses the cluster's Service host names as HTTPS origins. It checks the
+live Pod's image, ServiceAccount, token mount setting, root filesystem setting,
+and restart count. After creation, it replaces both Pods and requires new Pod
+UIDs. The existing browser session must still work. The test retains the
+rendered UI, owner-grant, filtered-list, denied-request, event, REST, gRPC,
+collector-failure, renewal, and confirmed sign-out checks.
+
+The wrapper saves results before namespace deletion. Its image publisher has
+namespace-scoped registry credentials, which it removes after publication.
+Generated application Pods do not receive those credentials. This test does not
+prove public ingress or credential rotation. Those remain separate gates.
+
+The first live check stopped before the application tests because npm tried to
+create `/.npm` on a read-only root filesystem. Its result was 254. The wrapper
+saved the failed Job and logs in `/tmp/stego-service-results.TtAcpYo1`, then
+removed the namespace. The npm cache now uses the bounded work volume.
+
+The second check built and published both images. The generated API passed its
+live Pod restrictions, verified HTTPS readiness, and database TLS checks. Both
+runtime roles passed the schema restriction check. The console role also passed
+the domain-table privilege check. The run then failed because the console
+renderer was invoked from the API module. Go rejected the nested module path.
+The failure occurred before console startup, at 87.14 seconds. Its result and
+Job records are in `/tmp/stego-service-results.MB5lnCMj`. The namespace was
+removed. The test now runs each renderer from its own module directory.
+
+The corrected build produced the same image digests as the second check:
+
+- API: `sha256:d495bb6718007929dbdcd35c4db1a40f490477ed5bc6b33a6df2dc360e61d30e`.
+- Console: `sha256:431728a557fe8da736674a09df1c3c9b3536888ae0df983e4b282cb977ec0a90`.
+
+The third check passed startup and database TLS checks for both generated Pods.
+The SDK created a Gateway, but its telemetry flush failed. The fixture had
+passed the collector's local listen address to the separate Pods. The corrected
+fixture uses the collector Service address and retains certificate verification.
+This was an address error in the test setup. No runtime transport limit or TLS
+check was relaxed. The failed run took 91.32 seconds. Its records are in
+`/tmp/stego-service-results.lxieTQ4I`; the namespace was removed.
+
+The fourth check passed SDK Gateway creation, access checks, event delivery,
+and correlated browser telemetry. Chromium then rejected Keycloak's test
+certificate with `ERR_CERT_AUTHORITY_INVALID`. The fixture supplied the CA's
+key pin rather than the server certificate's key pin. The Go clients still
+passed normal certificate verification. The run failed before rendered login
+at 115.22 seconds. Its screenshot and records are in
+`/tmp/stego-service-results.KTC0AqJe`; the namespace was removed.
+
+The same browser login step failed in application CI run `34648296167`; the
+other seven jobs passed. Commit `727fe70` supplies the server certificate pin
+for both Docker and Kubernetes fixtures. It does not disable certificate checks
+for other servers. External test providers can set
+`STEGO_TEST_BROWSER_KEYCLOAK_CERT_FILE` to the server certificate path. When it
+is absent, the fixture uses the supplied CA file for compatibility with the
+existing self-signed server fixture.
+
+
+The final check passed with compiler
+`b3f690864dac20dcc766fb5aef6e4167aee8b654` on 2026-09-11. The application test took
+125.63 seconds; its race-enabled package took 126.693 seconds. The contract and
+input-manifest package passed in 1.062 seconds. The browser created and retrieved
+a Gateway through the generated API and console Deployments. Its owner grant
+and event were present. Owner access and denied requests passed through REST
+and gRPC before and after replacement of both Pods. The existing browser
+session remained valid.
+
+Browser traces, logs, and metrics reached the TLS collector through the
+registered console session. The trace included the backend and API parent
+chain. The UI remained usable when the collector returned an error. All three
+browser export routes returned the bounded failure response. Selected private
+values were absent from process logs. Token renewal and confirmed console and
+identity-provider sign-out also passed.
+
+All 218 output, state, and Go dependency hashes match both generation passes,
+the post-test check, and the local checkout. Both image digests match the prior
+builds above. The Job reached `Complete`. Logs, hashes, image metadata, and the
+rendered screenshot are saved in `/tmp/stego-service-results.hhsn9azV`.
+
+This proves the rendered Gateway creation workflow through the generated
+Deployments on jshell. It does not prove public ingress, certificate or session
+key rotation, full console coverage, accessibility, capacity, or a Gateway
+workload that has finished provisioning. Those gates remain open. CI for the
+certificate-pin fix and the final application revision is tracked separately.

@@ -30,6 +30,7 @@ import (
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
+	"github.com/twmb/franz-go/pkg/kfake"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -420,9 +421,24 @@ func newRenderedBrowser(t *testing.T, origin string, certificates ...string) *re
 }
 
 func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
-	k := browserProvider(t)
+	runBrowserGatewayWorkflow(t, nil)
+}
+
+func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
+	var k *keycloakFixture
+	if deployment == nil {
+		k = browserProvider(t)
+	} else {
+		k = startKubernetesKeycloak(t, deployment.namespace, deployment.apply, deployment.command)
+	}
 	settings, _ := k.apiLoginSetup(t)
-	signals, telemetry := newHTTPDiagnosticCollector(t)
+	var signals *httpDiagnosticCollector
+	var telemetry []string
+	if deployment == nil {
+		signals, telemetry = newHTTPDiagnosticCollector(t)
+	} else {
+		signals, telemetry = newHTTPDiagnosticCollectorAt(t, deployment.host("fixture"), "0.0.0.0:19093")
+	}
 	settings = append(settings, telemetry...)
 	aliceID := k.human(t, "console-alice")
 	k.human(t, "console-bob")
@@ -439,29 +455,59 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		t.Fatal("creator role missing")
 	}
 	k.adminRequest(t, "POST", "/users/"+aliceID+"/role-mappings/clients/"+clients[0].ID, []any{role})
-	address := consoleAddress(t)
+	address := ""
+	if deployment == nil {
+		address = consoleAddress(t)
+	} else {
+		address = "https://" + deployment.host("hypershell-console") + ":8443"
+	}
 	audience := map[string]any{"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"}}
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
 	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
 	f := database(t)
+	sessions := databaseSetup(t, false)
 	schema, err := os.ReadFile("../console/out/browser/schema.sql")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.db.Exec(string(schema)); err != nil {
+	if _, err := sessions.db.Exec(string(schema)); err != nil {
 		t.Fatal(err)
 	}
-	_, brokerConfig := broker(t, identity(t, "localhost"))
+	apiHost := "localhost"
+	var brokerConfig Config
+	if deployment == nil {
+		_, brokerConfig = broker(t, identity(t, "localhost"))
+	} else {
+		apiHost = deployment.host("hypershell")
+		host := deployment.host("fixture")
+		_, brokerConfig = broker(t, identity(t, host), kfake.ListenFn(func(network, address string) (net.Listener, error) {
+			ln, err := net.Listen("tcp", "0.0.0.0:19092")
+			if err != nil {
+				return nil, err
+			}
+			return advertisedListener{ln, serviceAddress(host + ":19092")}, nil
+		}))
+	}
 	consumer := kafkaConsumer(t, brokerConfig)
-	apiIdentity := identity(t, "localhost")
+	apiIdentity := identity(t, apiHost)
 	dir := filepath.Dir(apiIdentity.config.CAFile)
 	settings = append(settings, "STEGO_HTTP_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_HTTP_TLS_KEY="+filepath.Join(dir, "server-key.pem"), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID="+f.release, "HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID="+f.cluster)
-	apiProgram := buildApplication(t)
-	stopAPI, api, rpc := startBoth(t, apiProgram, f.dsn, brokerConfig, settings...)
+	apiProgram := ""
+	if deployment == nil {
+		apiProgram = buildApplication(t)
+	}
+	startAPI := func(settings ...string) (func(), string, string) {
+		if deployment == nil {
+			return startBoth(t, apiProgram, f.dsn, brokerConfig, settings...)
+		}
+		return deployment.startAPI(f, brokerConfig, apiIdentity, settings)
+	}
+	stopAPI, api, rpc := startAPI(settings...)
 	defer func() { stopAPI() }()
 	api = strings.Replace(api, "http://", "https://", 1)
-	consoleIdentity := identity(t, "127.0.0.2")
+	consoleURL, _ := url.Parse(address)
+	consoleIdentity := identity(t, consoleURL.Hostname())
 	secretFile := filepath.Join(t.TempDir(), "client-secret")
 	keyFile := filepath.Join(t.TempDir(), "session-key")
 	if err := os.WriteFile(secretFile, []byte("acceptance-only-console-secret"), 0600); err != nil {
@@ -470,8 +516,17 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 	if err := os.WriteFile(keyFile, []byte(base64.StdEncoding.EncodeToString(makeRandom(t, 32))), 0600); err != nil {
 		t.Fatal(err)
 	}
-	binary := consoleProgram(t)
-	stop, logs := startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
+	binary := ""
+	if deployment == nil {
+		binary = consoleProgram(t)
+	}
+	startBrowser := func() (func(), func() string) {
+		if deployment == nil {
+			return startConsole(t, binary, address, sessions.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
+		}
+		return deployment.startConsole(sessions, address, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry)
+	}
+	stop, logs := startBrowser()
 	alice := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
 	bob := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
 	alice.login(t, k, "console-alice")
@@ -512,7 +567,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		rendered.diagnose = func() {
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 			defer cancel()
-			rows, err := f.db.QueryContext(ctx, "SELECT state,count(*),max(extract(epoch from CURRENT_TIMESTAMP-changed_at)) FROM stego_browser_sessions GROUP BY state")
+			rows, err := sessions.db.QueryContext(ctx, "SELECT state,count(*),max(extract(epoch from CURRENT_TIMESTAMP-changed_at)) FROM stego_browser_sessions GROUP BY state")
 			if err != nil {
 				t.Logf("session diagnostic: %v", err)
 			} else {
@@ -575,28 +630,33 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		}
 	}
 	assertAccess()
-	aliceToken, bobToken := k.browserLogin(t, "hypershell", "console-alice"), k.browserLogin(t, "hypershell", "console-bob")
-	client, _ := grpcClient(t, rpc, apiIdentity)
-	rpcContext, cancelRPC := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancelRPC()
-	call := func(token string) context.Context {
-		return metadata.NewOutgoingContext(rpcContext, metadata.Pairs("authorization", "Bearer "+token))
+	assertGRPC := func() {
+		t.Helper()
+		aliceToken, bobToken := k.browserLogin(t, "hypershell", "console-alice"), k.browserLogin(t, "hypershell", "console-bob")
+		client, _ := grpcClient(t, rpc, apiIdentity)
+		rpcContext, cancelRPC := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancelRPC()
+		call := func(token string) context.Context {
+			return metadata.NewOutgoingContext(rpcContext, metadata.Pairs("authorization", "Bearer "+token))
+		}
+		if got, err := client.GetGateway(call(aliceToken), &pb.GetGatewayRequest{Id: gateway.ID}); err != nil || got.GetGateway().GetMetadata().GetId() != gateway.ID {
+			t.Fatal("gRPC cannot read browser-created Gateway", err)
+		}
+		if _, err := client.GetGateway(call(bobToken), &pb.GetGatewayRequest{Id: gateway.ID}); status.Code(err) != codes.NotFound {
+			t.Fatal("gRPC access differs", err)
+		}
 	}
-	if got, err := client.GetGateway(call(aliceToken), &pb.GetGatewayRequest{Id: gateway.ID}); err != nil || got.GetGateway().GetMetadata().GetId() != gateway.ID {
-		t.Fatal("gRPC cannot read browser-created Gateway", err)
-	}
-	if _, err := client.GetGateway(call(bobToken), &pb.GetGatewayRequest{Id: gateway.ID}); status.Code(err) != codes.NotFound {
-		t.Fatal("gRPC access differs", err)
-	}
+	assertGRPC()
 	stop()
 	before := logs()
 	stopAPI()
 	apiTarget, _ := url.Parse(api)
 	restartSettings := append(append([]string{}, settings...), "PORT="+apiTarget.Port(), "STEGO_GRPC_ADDR="+rpc)
-	stopAPI, api, rpc = startBoth(t, apiProgram, f.dsn, brokerConfig, restartSettings...)
+	stopAPI, api, rpc = startAPI(restartSettings...)
 	api = strings.Replace(api, "http://", "https://", 1)
-	stop, logs = startConsole(t, binary, address, f.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
+	stop, logs = startBrowser()
 	defer stop()
+	assertGRPC()
 	alice.session(t)
 	assertAccess()
 	if rendered != nil {
@@ -620,7 +680,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		t.Fatal("invalid session ID")
 	}
 	idHash := sha256.Sum256(rawID)
-	if err := f.db.QueryRow("SELECT payload FROM stego_browser_sessions WHERE id_hash=$1", idHash[:]).Scan(&beforeRefresh); err != nil {
+	if err := sessions.db.QueryRow("SELECT payload FROM stego_browser_sessions WHERE id_hash=$1", idHash[:]).Scan(&beforeRefresh); err != nil {
 		t.Fatal(err)
 	}
 	deadline := time.Now().Add(25 * time.Second)
@@ -628,7 +688,7 @@ func TestGeneratedBrowserGatewayWorkflow(t *testing.T) {
 		time.Sleep(time.Second)
 		alice.session(t)
 		var after []byte
-		if err := f.db.QueryRow("SELECT payload FROM stego_browser_sessions WHERE id_hash=$1 AND state='active'", idHash[:]).Scan(&after); err != nil {
+		if err := sessions.db.QueryRow("SELECT payload FROM stego_browser_sessions WHERE id_hash=$1 AND state='active'", idHash[:]).Scan(&after); err != nil {
 			t.Fatal(err)
 		}
 		if !bytes.Equal(beforeRefresh, after) {
