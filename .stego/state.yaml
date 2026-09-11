@@ -104,9 +104,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911145948-084bd768b319
+        module_version: v0.0.0-20260911151857-97343088ab72
         vcs: git
-        revision: 084bd768b319d053f2fa4420cb758a4b48524ced
+        revision: 97343088ab72743bbc8fd8a6695e379d16c6e183
         source_state: clean
     service_hash: 3f2798a67550e6e865e9c0745b612085303cc2aec84c2ea9786193cadffb77e1
     registry_sha: gateway-workflow
@@ -432,7 +432,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 8991660e0b4ef560ef4648c65deefc641552362a071b30af4a0721ae8cd33f79
+        cli/command/version.go: 74afb76d389d84f943252569d8b0acfdb0f08bee38b2519bbde1a6dc096a7728
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -476,7 +476,7 @@ last_applied:
         kubernetes/client.go: 66b577cb6cf902760a3bca83832926924e75b4465928237c5ab821755fd08e59
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
-        main.go: ddae3a5f0828012d0617af624ccf5e1b68be862d74e6fb81df4f87ff23631ff7
+        main.go: 195f976003e4b0d6a29d3dfb53addc7e3ab1e457a698374595bc9dd7bde86773
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b

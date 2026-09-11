@@ -84,7 +84,7 @@ exercise the Gateway domain service and generated event process. Run
 requires PostgreSQL, the race detector, and a regeneration check.
 
 The generated entry point is `go run ./out`. It requires the database schema,
-the `DATABASE_URL` setting, a verified JWT issuer configuration, and a reachable
+the `DATABASE_URL` or `DATABASE_URL_FILE` setting, a verified JWT issuer configuration, and a reachable
 Kafka broker with TLS. The service database requires `sslmode=verify-full` and
 a trusted server certificate. Set `sslrootcert` for a private certificate
 authority. See [database TLS](acceptance/database-tls.md) for the test exception
@@ -95,6 +95,10 @@ startup does not apply migrations. The REST list supports `page`, `size`, `searc
 zero-size count request, with a maximum page size of 100. Search and ordering use
 declared fields. The `fields` parameter selects public fields in list items.
 Related-resource search remains open work.
+
+The [database secret source gate](acceptance/database-secret-source.md) checks
+mounted credentials, safe source failures, and password changes across restart.
+The file source uses the same generated TLS pool and event listener.
 
 The gRPC list defaults to page 1 and size 20. Sizes from 1 to 500 are valid;
 other sizes select the default. Its metadata size is the requested page size.
