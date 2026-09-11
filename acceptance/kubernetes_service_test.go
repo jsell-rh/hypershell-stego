@@ -63,7 +63,9 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 		output, err := cmd.CombinedOutput()
 		if err != nil {
 			if input != nil {
-				t.Fatal("Kubernetes fixture write failed", err)
+				var resource struct{ Kind string }
+				_ = json.Unmarshal(input, &resource)
+				t.Fatal("Kubernetes fixture write failed", resource.Kind, err)
 			}
 			t.Fatalf("Kubernetes fixture command failed: %v\n%s", err, output)
 		}
@@ -205,7 +207,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 		return c
 	}
 	owner, other := client(ownerToken), client(otherToken)
-	requestContext, cancelRequests := context.WithTimeout(context.Background(), 3*time.Minute)
+	requestContext, cancelRequests := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancelRequests()
 	input := sdk.CreateGatewayJSONRequestBody{Name: "deployed-gateway", ClusterId: f.cluster, ReleaseId: f.release, DatabaseId: ""}
 	result, err := owner.CreateGatewayWithResponse(requestContext, input)

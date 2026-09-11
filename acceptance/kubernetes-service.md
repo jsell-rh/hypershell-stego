@@ -97,3 +97,8 @@ test took 11.57 seconds; its race-enabled package took 12.621 seconds. The fresh
 compiler build produced the same 112 file hashes and the same image digest as
 the first successful run. The Job reached `Complete`, and namespace deletion
 was verified. The generated Containerfile build has its own CI job.
+
+The first identity extension failed when it supplied a Pod deadline inside a
+Deployment. Kubernetes forbids that field in a ReplicaSet template. The fixture
+now uses a single Pod with `restartPolicy: Never` and a ten-minute deadline.
+The failed run and its logs are retained. Its namespace was deleted.
