@@ -33,6 +33,8 @@ The first [generated CLI workflow](acceptance/generated-cli.md) now builds from
 `out/cli/cmd`. It loads a private token file and creates, reads, lists, and deletes
 Gateways over verified HTTPS. It shares STEGO's HTTP client with the service
 components. [OIDC login](acceptance/oidc-cli.md) also uses the generated runtime.
+Shared [CLI telemetry](acceptance/cli-observability.md) supplies command logs,
+metrics, and traces. Generated HTTP calls continue the command trace into the API.
 The complete client port remains open.
 
 The reference REST and gRPC contracts are under `contracts/reference/`. `contracts/upstream.json`

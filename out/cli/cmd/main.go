@@ -7,15 +7,40 @@ import (
 	"fmt"
 	app "github.com/jsell-rh/hypershell-stego/internal/cli"
 	command "github.com/jsell-rh/hypershell-stego/out/cli/command"
+	tracing "github.com/jsell-rh/hypershell-stego/out/tracing"
 	"os"
 	"os/signal"
+	"syscall"
 )
 
 func main() {
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt)
-	defer stop()
-	if err := command.Run(ctx, app.Commands(), os.Args[1:], os.Stdout); err != nil {
+	if err := run(); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
+}
+func run() error {
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
+
+	telemetry, err := tracing.NewRuntime()
+	if err != nil {
+		return err
+	}
+	defer telemetry.Close()
+	ctx, finish := telemetry.TraceCommand(ctx)
+	outcome := "aborted"
+	defer func() { finish(outcome) }()
+	result := command.Run(ctx, app.Commands(), os.Args[1:], os.Stdout)
+	outcome = "success"
+	if result != nil {
+		outcome = "failure"
+	}
+	if ctx.Err() == context.DeadlineExceeded {
+		outcome = "deadline"
+	} else if ctx.Err() == context.Canceled {
+		outcome = "canceled"
+	}
+	return result
+
 }

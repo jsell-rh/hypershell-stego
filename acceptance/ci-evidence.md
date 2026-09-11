@@ -125,3 +125,14 @@ The process exited with code 1 and the safe constructor-stage record. This
 revision preceded the assertion fix in `8064265`. The run remains a failed CI
 result. Run 34538907855 includes the fix and was active when this record was
 written.
+
+Run [34538907855](https://github.com/jsell-rh/hypershell-stego/actions/runs/34538907855)
+for `fdc63e50f28b71cae19e8eccd454b849c88840f2` has now passed all six jobs.
+This includes full acceptance with the corrected startup-log assertion and
+the five provider workflows.
+
+Run [34539830468](https://github.com/jsell-rh/hypershell-stego/actions/runs/34539830468)
+for `473b65c057561ae282930dfaef29642bea126b42` also passed all six jobs.
+It includes the shared HTTP client telemetry and real Keycloak restart test.
+These results precede CLI runtime telemetry. That change requires its own
+full CI result.

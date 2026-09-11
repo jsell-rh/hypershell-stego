@@ -18,9 +18,14 @@ func TestGeneratedCLIVersion(t *testing.T) {
 	command := exec.Command(binary, "version")
 	command.Dir = t.TempDir()
 	command.Env = append(os.Environ(), "HYPERSHELL_CONFIG="+filepath.Join(t.TempDir(), "absent.json"), "GORACE=atexit_sleep_ms=0")
-	output, err := command.CombinedOutput()
+	var diagnostics bytes.Buffer
+	command.Stderr = &diagnostics
+	output, err := command.Output()
 	if err != nil {
 		t.Fatalf("offline version: %v %s", err, output)
+	}
+	if strings.Count(diagnostics.String(), `"event.name":"cli.command.completed"`) != 1 {
+		t.Fatal("offline version has no common completion record")
 	}
 	var report struct {
 		Application map[string]string `json:"application"`
