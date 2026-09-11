@@ -133,3 +133,23 @@ waits at most 30 seconds for a successful verified HTTPS request. It does not
 bypass certificate verification. The local listener check requires an open
 HTTPS port before it tests that the HTTP port is closed. Its exec permission
 is limited to the named Keycloak fixture Pod.
+
+The complete identity extension passed on jshell on 2026-09-11 with application
+commit `6fe35d41fc58dfd38dfcc0204785ce270cdee06b` and compiler `ae4f1a2`.
+The application test took 100.05 seconds; the race-enabled package took 101.094
+seconds. It passed identity creation, controller restart, API Pod replacement,
+the final event offset check, and both API instances' telemetry checks. The
+Keycloak Service needed two verified HTTPS requests before it was ready.
+The local port check confirmed that HTTPS was open and HTTP was closed.
+
+Both generation passes and the post-test check preserved all 112 output,
+state, and dependency hashes. Those hashes also match the local checkout.
+The service image retained digest
+`sha256:7623241fcd22fcdcf19425a628372ee0bea36c9efc46b651f1f31acd295945d3`.
+The Job reached `Complete`. All four namespaces from the identity extension
+were deleted. Private fixture files were removed from the local results.
+The successful run is in `/tmp/stego-service-results.0pgacZSe`.
+
+No compiler or domain runtime change was needed for this extension. Generated
+controller images, health probes, and deployment resources remain open work.
+The full CI run for the new test revision is separate from this cluster result.
