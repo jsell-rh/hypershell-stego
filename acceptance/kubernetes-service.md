@@ -161,3 +161,34 @@ The successful run is in `/tmp/stego-service-results.0pgacZSe`.
 No compiler or domain runtime change was needed for that identity extension.
 The generated worker image, probes, and Deployment were added after that run.
 They require a separate cluster result.
+
+The generated worker extension passed on jshell on 2026-09-11 with compiler
+`cb0326dd659e3904ed17654e09778564b8660fa7`. Application commit
+`56759c46649e2239929409329bc69718250c5ea5` records the worker source and fixtures.
+The test took 108.26 seconds; its race-enabled package took 109.305 seconds.
+It passed identity creation, worker Pod replacement, API Pod replacement,
+access filtering, atomic owner grants, event rollback, and event delivery.
+Both API instances and both worker instances supplied correlated logs and
+traces, plus metrics. The checks found none of the selected private values.
+
+All 117 generated, state, and dependency hashes matched across both generation
+passes, the post-test check, and the local checkout. The service image digest was
+`sha256:3b81f1f499683f7609aa2a7cd6bb2c3c60e4941ff61653be053ff152026606dc`.
+The worker image digest was
+`sha256:ae1d7ee318e21c2af2ceceba11d2f02cca99715cf357e6c7d42b48b4c5f432b1`.
+Both images had the required non-root user and entry point. The Job reached
+`Complete`. Namespace deletion and removal of private fixture files were verified.
+The evidence is in `/tmp/stego-service-results.fzc29X8u`.
+
+Review found that the fixture needed scale-subresource access. Before application
+tests started, the fixture Role received `get`, `patch`, and `update` access to
+`deployments/scale` for `hypershell-gateway-identity` only. The committed fixture
+contains that rule. The retained initial archive has the earlier fixture Role;
+`worker-scale-role.json` and `fixture-amendment.txt` record the applied change.
+The runtime source and generated inputs did not change during the test.
+
+[Compiler CI](https://github.com/jsell-rh/stego/actions/runs/34624175055) passed
+for the pinned compiler, including race tests and the vulnerability check.
+[Full variant CI](https://github.com/jsell-rh/hypershell-stego/actions/runs/34624732979)
+is tracked separately from this cluster result. Distributed worker exclusion,
+production deployment operations, and capacity remain open work.
