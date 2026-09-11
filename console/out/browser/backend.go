@@ -7,7 +7,6 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"embed"
-	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -81,12 +80,15 @@ func newBackend(ctx context.Context, db *sql.DB, o options) (*Backend, error) {
 	if err != nil {
 		return nil, errSession
 	}
-	key, err := base64.StdEncoding.DecodeString(strings.TrimSpace(string(raw)))
-	if err != nil || len(key) != 32 {
-		return nil, errors.New("browser session key must contain 32 base64-encoded bytes")
+	keys, err := sessionKeys(raw)
+	clear(raw)
+	if err != nil {
+		return nil, err
 	}
-	store, err := newStore(ctx, db, key)
-	clear(key)
+	store, err := newStore(ctx, db, keys...)
+	for _, key := range keys {
+		clear(key)
+	}
 	if err != nil {
 		return nil, err
 	}

@@ -107,6 +107,33 @@ pinned compiler and static API and console images, then publishes them to the
 test namespace's registry. It checks both image configurations before use.
 The published image references use digests. No local Go build or browser runs.
 
+The session-key rotation test starts with the existing single-key file. After
+Gateway creation, it replaces the console with `[old, new]`, then with
+`[new, old]`. The browser session and Gateway access must remain valid through
+both replacements. The rendered page must still work when the collector is
+unavailable. Token renewal and confirmed console and provider sign-out must
+pass after the write-key switch. The test checks that neither key reaches the
+process logs. STEGO owns the key parser and encryption behavior; this repository
+only supplies test keys and checks the application behavior.
+
+The first rotation run failed during a Kubernetes write at API replacement,
+before the first key change. The application test failed at 108.82 seconds.
+The test hid the command output because it can contain Secret data. The exact
+API error was not retained, so its cause is unknown. Commit `421d0e8` adds safe
+resource and error-category diagnostics. It does not claim to fix the write
+failure. The failed Job, logs, browser records, and exit code 1 are saved in
+`/tmp/stego-service-results.az65cHXS`. The Job reached `Failed`; its namespace
+was removed and removal was verified.
+
+The second rotation run passed API and console replacement with `[old, new]`.
+It failed at 153.47 seconds because the added browser step called the
+collector-failure check while the collector was healthy. The screenshot showed
+the existing session and Gateway page. This was a test error. That step now
+uses the normal page reload; the later step still checks collector failure
+after the write-key switch. The failed results are saved in
+`/tmp/stego-service-results.o5XfUiWo`. Both builds produced the same image
+digests. No runtime source changed between these attempts.
+
 The API and console use their generated Deployments, Services, ServiceAccounts,
 NetworkPolicies, TLS listeners, and projected file Secrets. PostgreSQL, the TLS
 Kafka protocol fixture, the TLS collector, Chromium, and real Keycloak are test
@@ -123,8 +150,10 @@ collector-failure, renewal, and confirmed sign-out checks.
 
 The wrapper saves results before namespace deletion. Its image publisher has
 namespace-scoped registry credentials, which it removes after publication.
-Generated application Pods do not receive those credentials. This test does not
-prove public ingress or credential rotation. Those remain separate gates.
+Generated application Pods do not receive those credentials. The initial test
+did not prove public ingress or credential rotation. The session-key extension
+is described above. Public ingress and other credential rotation still need
+separate gates.
 
 The first live check stopped before the application tests because npm tried to
 create `/.npm` on a read-only root filesystem. Its result was 254. The wrapper
@@ -196,3 +225,42 @@ Deployments on jshell. It does not prove public ingress, certificate or session
 key rotation, full console coverage, accessibility, capacity, or a Gateway
 workload that has finished provisioning. Those gates remain open. CI for the
 certificate-pin fix and the final application revision is tracked separately.
+
+The third rotation check passed with compiler
+`0f52bab9021379f877aa355f0b9c8c41d7514e85` on 2026-09-11. The application test took
+137.02 seconds; its race-enabled package took 138.061 seconds. The contract and
+input-manifest checks passed in 1.056 seconds. The API Pod was replaced once.
+The console Pod was replaced for each key stage. Existing browser sessions
+and Gateway access survived both changes. Renewal, collector failure, and
+confirmed console and provider sign-out passed after the write-key switch.
+
+All 219 output, state, and Go dependency hashes match both generation passes,
+the post-test check, the saved generated archive, and the checkout. All three
+builds produced these same images:
+
+- API: `sha256:d495bb6718007929dbdcd35c4db1a40f490477ed5bc6b33a6df2dc360e61d30e`.
+- Console: `sha256:796b85e59db27b8c2c6dfa79207c161d1d23ae607063ceed41e9657cb68edb1b`.
+
+The results and screenshot are saved in `/tmp/stego-service-results.JGbXb0gP`.
+The tested workflow, fixture, polling script, compiler pin, and component
+metadata match the frozen source. Compiler CI passed for `0f52bab`. Application
+CI for the earlier browser certificate fix also passed. Full CI for this new
+application revision is a separate check.
+
+The common STEGO tests cover mixed writers and removal of a retained key.
+This application test covers Pod replacement and session continuity through the
+two key stages. It does not wait one hour to remove the old key from a live
+Deployment, or prove uninterrupted service during replacement. Public ingress,
+TLS certificate rotation, a measured key-use budget, and the complete Gateway
+provisioning workflow remain open. The first Kubernetes write failure remains
+unclassified; it did not recur in the next two runs.
+
+The first two runs also exposed hung read-only `oc exec` observation streams.
+Commit `6ed5a37` adds a 45-second process limit to completion polling, because
+`oc --request-timeout` did not bound those streams. The third run used that
+script. No running source script was edited, and no cluster test was restarted
+because a polling connection failed.
+
+The final Job reached `Complete`. All three application test namespaces and
+the common runtime test namespace were removed. The cluster API confirmed
+removal. No test workload from these checks remains in the cluster.

@@ -513,8 +513,20 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if err := os.WriteFile(secretFile, []byte("acceptance-only-console-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(keyFile, []byte(base64.StdEncoding.EncodeToString(makeRandom(t, 32))), 0600); err != nil {
+	oldSessionKey := base64.StdEncoding.EncodeToString(makeRandom(t, 32))
+	nextSessionKey := base64.StdEncoding.EncodeToString(makeRandom(t, 32))
+	if err := os.WriteFile(keyFile, []byte(oldSessionKey), 0600); err != nil {
 		t.Fatal(err)
+	}
+	writeSessionKeys := func(keys ...string) {
+		t.Helper()
+		data, err := json.Marshal(map[string]any{"version": 1, "keys": keys})
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(keyFile, data, 0600); err != nil {
+			t.Fatal(err)
+		}
 	}
 	binary := ""
 	if deployment == nil {
@@ -654,9 +666,21 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	restartSettings := append(append([]string{}, settings...), "PORT="+apiTarget.Port(), "STEGO_GRPC_ADDR="+rpc)
 	stopAPI, api, rpc = startAPI(restartSettings...)
 	api = strings.Replace(api, "http://", "https://", 1)
+	// First add the next read key. Keep the old write key during this rollout.
+	writeSessionKeys(oldSessionKey, nextSessionKey)
 	stop, logs = startBrowser()
-	defer stop()
+	defer func() { stop() }()
 	assertGRPC()
+	alice.session(t)
+	assertAccess()
+	if rendered != nil {
+		rendered.run(t, "reload")
+	}
+	stop()
+	before += logs()
+	// All instances can now read the next key. Switch the write key.
+	writeSessionKeys(nextSessionKey, oldSessionKey)
+	stop, logs = startBrowser()
 	alice.session(t)
 	assertAccess()
 	if rendered != nil {
@@ -756,13 +780,13 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	// Login must now show the password form. A retained provider session would redirect.
 	alice.login(t, k, "console-alice")
 	for _, log := range []string{before, logs()} {
-		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault"} {
+		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault", oldSessionKey, nextSessionKey} {
 			if strings.Contains(log, private) {
 				t.Fatal("private browser data reached process logs")
 			}
 		}
 	}
-	t.Log("Generated console passed real Keycloak login, Gateway creation, grants, REST and gRPC access, event delivery, process restart, renewal, and logout")
+	t.Log("Generated console passed real Keycloak login, Gateway creation, grants, REST and gRPC access, event delivery, process restart, session key rotation, renewal, and logout")
 }
 
 func checkBrowserTraceChain(t *testing.T, collector *httpDiagnosticCollector) {

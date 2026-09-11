@@ -30,21 +30,35 @@ type session struct {
 	Roles                                      []string
 }
 type sessionStore struct {
-	db   *sql.DB
-	aead cipher.AEAD
+	db      *sql.DB
+	aead    cipher.AEAD
+	readers []cipher.AEAD
 }
 
-func newStore(ctx context.Context, db *sql.DB, key []byte) (*sessionStore, error) {
-	if db == nil || len(key) != 32 {
-		return nil, errors.New("browser sessions require a database and a 256-bit key")
+func newStore(ctx context.Context, db *sql.DB, keys ...[]byte) (*sessionStore, error) {
+	if db == nil || len(keys) < 1 || len(keys) > maxSessionKeys {
+		return nil, errSessionKeys
 	}
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, errSession
-	}
-	aead, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, errSession
+	readers := make([]cipher.AEAD, 0, len(keys))
+	seen := map[[32]byte]bool{}
+	for _, key := range keys {
+		if len(key) != 32 {
+			return nil, errSessionKeys
+		}
+		identity := [32]byte(key)
+		if seen[identity] {
+			return nil, errSessionKeys
+		}
+		seen[identity] = true
+		block, err := aes.NewCipher(key)
+		if err != nil {
+			return nil, errSessionKeys
+		}
+		aead, err := cipher.NewGCM(block)
+		if err != nil {
+			return nil, errSessionKeys
+		}
+		readers = append(readers, aead)
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
@@ -55,7 +69,7 @@ func newStore(ctx context.Context, db *sql.DB, key []byte) (*sessionStore, error
 	if err := rows.Close(); err != nil {
 		return nil, errSession
 	}
-	return &sessionStore{db: db, aead: aead}, nil
+	return &sessionStore{db: db, aead: readers[0], readers: readers}, nil
 }
 func randomValue() (string, error) {
 	b := make([]byte, 32)
@@ -94,11 +108,19 @@ func (s *sessionStore) open(id string, payload []byte) (session, error) {
 	if err != nil || len(payload) < size+s.aead.Overhead() || len(payload) > 65536 {
 		return value, errSession
 	}
-	plain, err := s.aead.Open(nil, payload[:size], payload[size:], hash)
-	if err != nil || json.Unmarshal(plain, &value) != nil || value.Expires <= time.Now().Unix() {
-		return session{}, errSession
+	for _, reader := range s.readers {
+		plain, err := reader.Open(nil, payload[:size], payload[size:], hash)
+		if err != nil {
+			continue
+		}
+		err = json.Unmarshal(plain, &value)
+		clear(plain)
+		if err != nil || value.Expires <= time.Now().Unix() {
+			return session{}, errSession
+		}
+		return value, nil
 	}
-	return value, nil
+	return session{}, errSession
 }
 func (s *sessionStore) create(ctx context.Context, id string, value session) error {
 	hash, err := sessionHash(id)
