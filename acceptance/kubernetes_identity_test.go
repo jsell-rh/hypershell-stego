@@ -140,15 +140,26 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 		t.Fatal(err)
 	}
 	t.Cleanup(client.Close)
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	// Pod readiness can precede the Service endpoint update. Require a
+	// successful verified request through the Service before using it.
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	response, err := client.Do(ctx, http.MethodGet, "/realms/workflow/.well-known/openid-configuration", nil, nil)
-	if err != nil || response.StatusCode != 200 {
-		t.Fatal("Keycloak fixture failed verified TLS", err)
+	for attempts := 1; ; attempts++ {
+		response, err := client.Do(ctx, http.MethodGet, "/realms/workflow/.well-known/openid-configuration", nil, nil)
+		if err == nil && response.StatusCode == 200 {
+			t.Logf("Keycloak Service passed verified TLS after %d requests", attempts)
+			break
+		}
+		select {
+		case <-ctx.Done():
+			t.Fatal("Keycloak fixture failed verified TLS", err)
+		case <-time.After(100 * time.Millisecond):
+		}
 	}
-	// Check the listener inside the Pod. A network policy must not conceal an
-	// unexpected plaintext listener from this assertion.
-	command(nil, "exec", "pod/"+name, "--", "/bin/bash", "-c", "if (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null; then exit 1; fi")
+	// Check both ports inside the Pod. The open HTTPS port proves that the
+	// shell can make a TCP connection. Policy cannot conceal the HTTP port.
+	command(nil, "exec", "pod/"+name, "--", "/bin/bash", "-c", "exec 4<>/dev/tcp/127.0.0.1/8443 || exit 2; exec 4>&-; if (exec 3<>/dev/tcp/127.0.0.1/8080) 2>/dev/null; then exit 1; fi")
+
 	secret := filepath.Join(t.TempDir(), "admin-secret")
 	if err := os.WriteFile(secret, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)

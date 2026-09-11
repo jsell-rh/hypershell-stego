@@ -126,3 +126,10 @@ CI run 34621260515 rejected stale compiler state after the Kafka test module
 became a direct dependency. Cluster generation reproduced the new state twice.
 The recorded state now includes that module-file hash. Generated service files
 did not change. The failed CI run remains a failure.
+
+The third run reached Pod readiness but failed its single HTTPS request to the
+Keycloak Service. The Service endpoint can lag Pod readiness. The fixture now
+waits at most 30 seconds for a successful verified HTTPS request. It does not
+bypass certificate verification. The local listener check requires an open
+HTTPS port before it tests that the HTTP port is closed. Its exec permission
+is limited to the named Keycloak fixture Pod.
