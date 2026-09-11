@@ -15,7 +15,12 @@ The test checks these behaviors:
 - Receive the committed event through the generated runtime.
 - Reject the final event write and verify rollback of the Gateway, database,
   and owner grant.
-- Replace the API Pod. Read the retained Gateway and deliver an update event.
+- Reconcile the Gateway identity through a separate controller process and a
+  real Keycloak Pod. Check the browser client and current identity condition.
+- Stop the controller, change identity state through HTTPS, and start a new
+  controller. Check that its initial scan repairs the state.
+- Replace the API Pod while the controller runs. Read the retained Gateway,
+  check identity repair after reconnect, and deliver an update event.
 - Receive correlated request logs and traces, plus request metrics, from both
   runtime instances. Check that private request and credential data is absent.
 
@@ -30,6 +35,8 @@ The command creates a separate namespace with a quota. The test Job has a
 30-minute deadline, a one-CPU test container with 3 GiB of memory, and a
 PostgreSQL sidecar with 500 millicores and 512 MiB. The generated API has a
 one-CPU and 512-MiB limit. Rollout can temporarily start a second API Pod.
+The Keycloak fixture has a one-CPU and 1-GiB limit and a ten-minute Pod deadline.
+The namespace CPU limit is five CPUs to permit the API rollout and fixtures.
 No container uses privilege. The command deletes the namespace after the run
 and keeps logs, source hashes, image metadata, and job status in a private
 results directory.
@@ -45,6 +52,20 @@ The application uses a separate database login with table and sequence access.
 PostgreSQL uses native verified TLS and SCRAM authentication. The Kafka protocol
 fixture uses mutual TLS. The OTLP collector uses verified TLS. Projected Secret
 files supply the database URL, key pairs, and public trust roots.
+
+The Keycloak fixture uses the pinned image and test realm from the existing
+Docker checks. It uses development mode with TLS 1.3, an explicit hostname,
+and no HTTP listener. Its network policy permits fixture requests on port 8443
+and denies outbound connections. It has no service-account token. Its writable
+container filesystem and test realm are not production configuration. Keycloak
+requires a separate production image and durable database; see the
+[Keycloak container guide](https://www.keycloak.org/server/containers).
+
+The identity controller runs as a separate race-enabled process inside the
+bounded test Pod. It uses the generated gRPC client, reconciliation runtime,
+scans, conditions, and telemetry. This checks controller behavior with the
+separate API and provider Pods. It does not check a generated controller image,
+controller health probes, or a controller Deployment.
 
 The fixture is not a production Kafka broker. The separate `service-image` CI
 job builds the generated Containerfile itself. The cluster check constructs

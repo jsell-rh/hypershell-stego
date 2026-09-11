@@ -91,6 +91,9 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	}))
 	consumer := kafkaConsumer(t, config)
 	key, auth := issuer(t)
+	auth = append(auth, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["gateway-controller"]`)
+	auth = withCleanupGrants(t, auth, cleanupGrant("gateway-controller", "Gateway", "identity", ""))
+	auth = withControllerWriteGrants(t, auth, writeGrant("gateway-controller", "configure.identity", ""))
 	apiIdentity := identity(t, apiHost)
 	apiDirectory := filepath.Dir(apiIdentity.config.CAFile)
 	cfg, err := pgx.ParseConfig(f.dsn)
@@ -261,6 +264,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 		}
 	}
 	checkRead()
+	reconcile := checkKubernetesGatewayIdentity(t, namespace, apply, command, owner, apiHost, apiIdentity, token(t, key, "gateway-controller"), id)
 	awaitQueueEmpty(t, f)
 	beforeGrants, beforeDatabases := count(t, f.db, "role_bindings"), count(t, f.db, "managed_databases")
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_deployment_event CHECK (kind <> 'gateway.created') NOT VALID"); err != nil {
@@ -284,6 +288,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 		t.Fatal("deployment did not replace its Pod")
 	}
 	checkRead()
+	reconcile()
 	imageUpdate := "example.test/gateway:v2"
 	updated, err := owner.UpdateGatewayWithResponse(requestContext, id, sdk.UpdateGatewayJSONRequestBody{Image: &imageUpdate})
 	if err != nil || updated.JSON200 == nil {

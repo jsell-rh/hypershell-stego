@@ -20,7 +20,7 @@
         "hard": {
           "pods": "5",
           "requests.cpu": "2",
-          "limits.cpu": "4",
+          "limits.cpu": "5",
           "requests.memory": "3Gi",
           "limits.memory": "6Gi",
           "requests.ephemeral-storage": "5Gi",

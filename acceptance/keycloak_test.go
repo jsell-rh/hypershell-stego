@@ -48,15 +48,7 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 	identity := identity(t, bindIP)
 	certDir := filepath.Dir(identity.config.CAFile)
 	realmDir := t.TempDir()
-	realm := map[string]any{
-		"realm": "workflow", "enabled": true, "sslRequired": "all",
-		"clients": []any{
-			map[string]any{"clientId": "provisioner", "enabled": true, "secret": "acceptance-only-admin-secret", "serviceAccountsEnabled": true, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": true},
-			map[string]any{"clientId": "gateway-audience", "enabled": true, "publicClient": false, "standardFlowEnabled": false},
-		},
-		"roles": map[string]any{"client": map[string]any{"gateway-audience": []any{map[string]any{"name": "openshell-user"}, map[string]any{"name": "openshell-admin"}}}},
-		"users": []any{map[string]any{"username": "service-account-provisioner", "enabled": true, "serviceAccountClientId": "provisioner", "clientRoles": map[string]any{"realm-management": []string{"manage-clients", "view-clients", "manage-users", "view-users"}}}},
-	}
+	realm := keycloakTestRealm()
 	if configure != nil {
 		configure(realm)
 	}
@@ -126,6 +118,20 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 	}
 	return &keycloakFixture{options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secretFile, CAFile: identity.config.CAFile}, http: client}
 }
+
+// keycloakTestRealm supplies the same realm to Docker and Kubernetes fixtures.
+func keycloakTestRealm() map[string]any {
+	return map[string]any{
+		"realm": "workflow", "enabled": true, "sslRequired": "all",
+		"clients": []any{
+			map[string]any{"clientId": "provisioner", "enabled": true, "secret": "acceptance-only-admin-secret", "serviceAccountsEnabled": true, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": true},
+			map[string]any{"clientId": "gateway-audience", "enabled": true, "publicClient": false, "standardFlowEnabled": false},
+		},
+		"roles": map[string]any{"client": map[string]any{"gateway-audience": []any{map[string]any{"name": "openshell-user"}, map[string]any{"name": "openshell-admin"}}}},
+		"users": []any{map[string]any{"username": "service-account-provisioner", "enabled": true, "serviceAccountClientId": "provisioner", "clientRoles": map[string]any{"realm-management": []string{"manage-clients", "view-clients", "manage-users", "view-users"}}}},
+	}
+}
+
 func makeRandom(t *testing.T, size int) []byte {
 	t.Helper()
 	b := make([]byte, size)
