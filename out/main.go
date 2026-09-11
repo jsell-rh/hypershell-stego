@@ -53,17 +53,16 @@ func run() (stegoErr error) {
 		return errors.New("DATABASE_URL environment variable is required")
 	}
 	stegoStage = "database.open"
-	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{Logger: gormlogger.Discard})
-	if err != nil {
-		return err
-	}
-	stegoStage = "database.handle"
-	sqlDB, err := db.DB()
+	sqlDB, err := storage.OpenDatabase(dsn)
 	if err != nil {
 		return err
 	}
 	defer sqlDB.Close()
-
+	db, err := gorm.Open(postgres.New(postgres.Config{Conn: sqlDB}), &gorm.Config{Logger: gormlogger.Discard})
+	if err != nil {
+		return err
+	}
+	stegoStage = "database.handle"
 	stegoStage = "component[0].constructor[0]"
 	store, err := storage.NewStore(db)
 	if err != nil {

@@ -46,5 +46,6 @@ half a CPU and 512 MiB. The job had a 30-minute deadline. It received no
 service-account token or workstation credentials. PostgreSQL listened only on
 the Pod's loopback interface. No performance test ran on the workstation.
 
-Database signals, other independent worker entry points, complete process
-logging, and production capacity evidence remain open.
+Shared [database signals](database-observability.md) now have a separate Gateway
+workflow. Other independent worker entry points, complete process logging,
+and production capacity evidence remain open.

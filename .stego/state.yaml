@@ -68,13 +68,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911024001-8ad255a4bcfc
+        module_version: v0.0.0-20260911132111-5c0dd1fec8ab
         vcs: git
-        revision: 8ad255a4bcfc877c6bcb77a53586cc0abaf1fe00
+        revision: 5c0dd1fec8abdddfda7cdb7e15830a492c23560d
         source_state: clean
     service_hash: 624461ea6dbe18e7d6eb90079557055fa91c59369298511a493e4de3f65dad61
     registry_sha: gateway-workflow
-    registry_content_sha256: 72455c8154ede98cbe18c65b3aec4c3665af7a92c327e2f2045f8ab82168d13f
+    registry_content_sha256: ba98324ad02a88c288182e23491b1e8e0c4a5befdc8dc543040682d08d750102
     components:
         cli-application:
             version: 1.6.0
@@ -101,13 +101,13 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         otel-tracing:
-            version: 1.9.0
+            version: 1.10.0
             sha: gateway-workflow
         outbox:
             version: 1.0.3
             sha: gateway-workflow
         postgres-adapter:
-            version: 3.13.3
+            version: 3.14.1
             sha: gateway-workflow
         postgres-client:
             version: 1.0.3
@@ -393,7 +393,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 5aa9ea66b6b15633f847af86a699fdee413aada716e6bb5c716df78dcf688e8a
+        cli/command/version.go: 78dcfe932cff26286b1e42fb5ffc9a326081f8d22516e611da08c97ab57b744f
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -437,7 +437,7 @@ last_applied:
         kubernetes/client.go: 66b577cb6cf902760a3bca83832926924e75b4465928237c5ab821755fd08e59
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
-        main.go: a4b0ed870ee348aee668e6d079e3db359263de2a377ecfe2851dccb445ae0253
+        main.go: 586160b323f08048fd78de4c50073314c8632c76cb4f7d6019ed039b4c04dc20
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
@@ -449,6 +449,7 @@ last_applied:
         storage/cleanup_summary.go: 56e097d230c2dbb958009f27b44b5ad4cbf82d097d1af0699409227aca91c635
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
         storage/cursor.go: 1431a8ec48d734bcd3a273fee725da162a8215704b0ab803f98c170b19ad05d8
+        storage/database.go: df8d8b33177979dfdde16813475a3e15e7da67ca14bfedeb78d186ffb5058db1
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 7730a4a9097229e704fc8058fc60fcf5ca7482444e618e556d7a95494cb03e23
         storage/migrations/000002_resource_versions.sql: 5554c5c06f91cebfa347600eb229cb3d70419579c411e6622ecaa6557ffb6de0
@@ -465,8 +466,9 @@ last_applied:
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
         tracing/controller.go: 330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222
+        tracing/database.go: c07154500eda0fc54b65419534375c7fca9bb215bffc34f1ddbb92d784ce173b
         tracing/http_client.go: ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683
         tracing/identity.go: 2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6
-        tracing/runtime.go: d1ae78f2c4bdc524c71dd5f5f1d257a46679b6ac0cc26bfc2a687204ae453bc7
-        tracing/service.go: 900e8c8ecab320d3f406ee3cf8a8019fb58521bb98649c88289b917be35fe729
+        tracing/runtime.go: 9ffaf66869f8ea7b3d02752ebaec050ff1d45f99aee41e6e7a8dc7b69aaac000
+        tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2

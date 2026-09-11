@@ -20,6 +20,15 @@ func checkRuntimeLogs(t *testing.T, output, service string, private ...string) s
 		if err := json.Unmarshal([]byte(line), &record); err != nil {
 			t.Fatal("invalid structured process log", err)
 		}
+		for _, secret := range private {
+			if strings.Contains(line, secret) {
+				t.Fatal("process log exposed private data")
+			}
+		}
+		// Database events have a separate field and correlation contract.
+		if record["event.name"] == "db.client.operation.completed" {
+			continue
+		}
 		event, ok := record["event.name"].(string)
 		if !ok {
 			continue
@@ -45,11 +54,6 @@ func checkRuntimeLogs(t *testing.T, output, service string, private ...string) s
 		}
 		if _, err := time.Parse(time.RFC3339Nano, timestamp); err != nil {
 			t.Fatal("invalid process event time")
-		}
-		for _, secret := range private {
-			if strings.Contains(line, secret) {
-				t.Fatal("process log exposed private data")
-			}
 		}
 		counts[event]++
 	}

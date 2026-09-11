@@ -75,10 +75,10 @@ func TestGatewayGRPCTracingAcrossWatchRestartAndCollectorFailure(t *testing.T) {
 					attrs := resource.GetResource().GetAttributes()
 					telemetryInstance(t, attrs, "hypershell-api-server")
 					for _, scope := range resource.ScopeSpans {
+						if scope.Scope.GetName() != "stego/grpc" {
+							continue
+						}
 						for _, span := range scope.Spans {
-							if scope.Scope.Name != "stego/grpc" {
-								t.Fatal("unexpected trace scope")
-							}
 							pending[hex.EncodeToString(span.TraceId)] = span
 						}
 					}

@@ -100,6 +100,9 @@ func TestGatewayHTTPTracingAcrossRestartAndCollectorFailure(t *testing.T) {
 					attributes := resource.GetResource().GetAttributes()
 					telemetryInstance(t, attributes, "hypershell-api-server")
 					for _, scope := range resource.ScopeSpans {
+						if scope.Scope.GetName() != "stego/http" {
+							continue
+						}
 						for _, span := range scope.Spans {
 							if hex.EncodeToString(span.TraceId) == traceID {
 								if hex.EncodeToString(span.ParentSpanId) != "2222222222222222" || span.TraceState != "" || len(span.Events) != 0 || len(span.Links) != 0 {

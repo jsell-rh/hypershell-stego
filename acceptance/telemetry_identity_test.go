@@ -154,6 +154,9 @@ func TestGatewayTelemetrySeparatesReplicasAndRestart(t *testing.T) {
 			for _, resource := range batch.ResourceSpans {
 				instance := readResource(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeSpans {
+					if scope.Scope.GetName() != "stego/http" && scope.Scope.GetName() != "stego/grpc" {
+						continue
+					}
 					for _, span := range scope.Spans {
 						spanInstances[hex.EncodeToString(span.SpanId)] = instance
 					}
@@ -170,6 +173,9 @@ func TestGatewayTelemetrySeparatesReplicasAndRestart(t *testing.T) {
 							starts[instance]++
 						case "telemetry.runtime.stopped":
 							stops[instance]++
+						case "db.client.operation.completed":
+							// Database identity and correlation have a separate acceptance test.
+							continue
 						case "http.server.request.completed", "rpc.server.call.completed":
 							logInstances[hex.EncodeToString(record.SpanId)] = instance
 						default:
@@ -186,6 +192,9 @@ func TestGatewayTelemetrySeparatesReplicasAndRestart(t *testing.T) {
 					observed[instance] = map[string]*metricpb.Metric{}
 				}
 				for _, scope := range resource.ScopeMetrics {
+					if scope.Scope.GetName() != "stego/requests" {
+						continue
+					}
 					for _, metric := range scope.Metrics {
 						observed[instance][metric.Name] = metric
 						for _, point := range metric.GetHistogram().GetDataPoints() {

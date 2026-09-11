@@ -160,3 +160,8 @@ one test CPU, a 3 GiB test memory limit, and a 30-minute deadline. Its source
 archive SHA-256 was
 `1d52189b924fe1137a07d8b3ad5fbbf131f3ea1b14fdc5bca0ef3c01f389d35d`.
 These focused results do not replace the required full CI result.
+
+Run [34601323734](https://github.com/jsell-rh/hypershell-stego/actions/runs/34601323734)
+for `41adffb8fece0537d0108639a11f96bbc298e34b` passed all six jobs, including
+full acceptance and the five provider workflows. This verifies the CLI network
+test correction. It precedes the database telemetry change.

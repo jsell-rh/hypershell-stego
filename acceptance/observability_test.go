@@ -122,6 +122,9 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 			for _, resource := range request.ResourceSpans {
 				check(resource.Resource.Attributes)
 				for _, scope := range resource.ScopeSpans {
+					if scope.Scope.Name != "stego/http" && scope.Scope.Name != "stego/grpc" {
+						continue
+					}
 					for _, span := range scope.Spans {
 						spans[hex.EncodeToString(span.TraceId)] = span
 					}
@@ -138,6 +141,9 @@ func TestGatewayLogsMetricsAndTracesAcrossRestart(t *testing.T) {
 								t.Fatal("runtime event exposed request fields")
 							}
 							serviceEvents[record.EventName]++
+							continue
+						}
+						if scope.Scope.Name != "stego/requests" {
 							continue
 						}
 						records[hex.EncodeToString(record.TraceId)] = record

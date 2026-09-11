@@ -21,6 +21,9 @@ recovery, API restart, and collector loss.
 The [instance identity workflow](telemetry-instance-identity.md) checks two
 simultaneous API processes and a replacement, with separate cumulative counts
 and matching log, span, and metric exemplar ownership.
+The [database observability workflow](database-observability.md) checks shared
+PostgreSQL signals across atomic Gateway creation, rollback, denied access,
+filtered lists, event delivery, and REST/gRPC reads after restart.
 The wider observability requirements remain open.
 
 The later [Gateway workload gate](gateway-workload.md) runs the actual Gateway
