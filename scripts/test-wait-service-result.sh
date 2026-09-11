@@ -12,22 +12,23 @@ if p.name.startswith("stego-result-test."):shutil.rmtree(p)
 PYEND' EXIT
 namespace=fixture
 pod=fixture
-oc_cmd=(oc_mock)
+oc_cmd=(bash "$fixture/oc-mock")
 sleep() { :; }
-oc_mock() {
+cat > "$fixture/oc-mock" <<'SHEND'
+set -euo pipefail
   case "$*" in
     *"cat /work/deployment.exit")
       n=$(cat "$results/attempts")
       n=$((n + 1))
       printf '%s\n' "$n" > "$results/attempts"
       case "$scenario" in
-        failed|missing) return 1 ;;
+        failed|missing) exit 1 ;;
       esac
       if ((n == 1)); then
         case "$scenario" in
-          empty) return 0 ;;
-          transient) return 1 ;;
-          malformed) printf 'private-invalid-record'; return 0 ;;
+          empty) exit 0 ;;
+          transient) exit 1 ;;
+          malformed) printf 'private-invalid-record'; exit 0 ;;
         esac
       fi
       printf '42\n'
@@ -35,15 +36,16 @@ oc_mock() {
     *"get pod"*)
       case "$scenario" in
         failed) printf 'Failed' ;;
-        missing) return 0 ;;
-        transient) return 1 ;;
+        missing) exit 0 ;;
+        transient) exit 1 ;;
         *) printf 'Running' ;;
       esac
       ;;
     *"logs"*) printf 'retained test output\n' ;;
-    *) return 2 ;;
+    *) exit 2 ;;
   esac
-}
+SHEND
+export results scenario
 for scenario in empty transient malformed failed missing; do
   results="$fixture/$scenario"
   mkdir "$results"
