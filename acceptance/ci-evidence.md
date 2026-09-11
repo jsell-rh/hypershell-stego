@@ -175,3 +175,40 @@ passed. The acceptance job failed in `TestConcurrentCurrentUserRegistration`:
 one caller exhausted the test's retries with PostgreSQL SQLSTATE 40001. This
 concurrency result remains open. It is not a passing full application run.
 The later pool revision is running in CI run 34605719340.
+
+## Concurrent current-user requests
+
+[Run 34605719340](https://github.com/jsell-rh/hypershell-stego/actions/runs/34605719340)
+for `628f39cd6d0e7307f0e9010487a514f6a4a52f30` passed all six jobs.
+The earlier run 34604410106 remains a failed result. Twenty unchanged
+registration test runs passed under race detection in jshell in 6.001 seconds.
+The earlier CI failure was not reproduced.
+
+The old test assumed that ten immediate retries would complete. The transaction
+contract permits serialization conflicts and does not promise that retry count.
+The test now forces eight transactions to read the absent identity before any
+first insert can commit. It covers direct calls and real REST requests. Callers
+retry complete operations within a 10-second deadline and a 64-attempt limit.
+Only conflict errors cause retries. Each run must observe a conflict, return the
+same ID to all callers, store exactly one user, and create no role grants.
+This changes acceptance evidence. It does not add automatic transaction retries
+or establish a repair to a production defect.
+
+Job `registration` ran in namespace `stego-registration-20260911` on 2026-09-11.
+It used Go 1.26.8 and PostgreSQL 18.6. The test container had one CPU and a 3 GiB
+memory limit. The database had half a CPU and a 512 MiB memory limit. The job
+deadline was 30 minutes. The unchanged source archive SHA-256 was
+`5b3873597c9e0cf6d114f19cfbf97304a520054843a5f83129bf0d38f319ca4c`.
+The candidate archive SHA-256 was
+`bdecb34f257cb8bed106108a43ae57489b426dd01427ae96cbac23dab24d8985`.
+Later edits changed comments and evidence only.
+
+Ten direct runs and ten REST runs passed under race detection in 46.210 seconds.
+Every run observed seven conflict retries. The current-user runtime and
+generated SDK Gateway workflows passed in 13.273 seconds. Acceptance `go vet`
+also passed. All 106 generated, state, and dependency file hashes matched the
+previous pinned build, the local checkout, and the cluster files after the tests.
+These focused results do not replace full CI for this revision.
+The SDK revision `6af8b82` was still running in
+[run 34608467385](https://github.com/jsell-rh/hypershell-stego/actions/runs/34608467385)
+when this record was written.

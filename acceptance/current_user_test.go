@@ -3,8 +3,6 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"sync"
 	"testing"
 	"time"
 
@@ -12,7 +10,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
-	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"github.com/segmentio/ksuid"
 )
 
@@ -144,55 +141,6 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 	foreign := currentUser(t, root, sign("recipient", "renamed-bob", "new@example.test", "hypershell", time.Now().Add(time.Hour)))
 	if foreign.ID == user.ID {
 		t.Fatal("different issuer adopted identity")
-	}
-}
-
-func TestConcurrentCurrentUserRegistration(t *testing.T) {
-	f := database(t)
-	service, err := users.New(f.storage)
-	if err != nil {
-		t.Fatal(err)
-	}
-	const workers = 8
-	start := make(chan struct{})
-	type outcome struct {
-		id  string
-		err error
-	}
-	results := make(chan outcome, workers)
-	var work sync.WaitGroup
-	for range workers {
-		work.Add(1)
-		go func() {
-			defer work.Done()
-			<-start
-			var result outcome
-			for range 10 {
-				row, err := service.Current(context.Background(), principal("new-recipient"))
-				result = outcome{row.ID, err}
-				if !errors.Is(err, store.ErrConflict) && !errors.Is(err, store.ErrSerialization) {
-					break
-				}
-			}
-			results <- result
-		}()
-	}
-	close(start)
-	work.Wait()
-	close(results)
-	var id string
-	for result := range results {
-		if result.err != nil || result.id == "" {
-			t.Fatal("concurrent registration", result.err)
-		}
-		if id != "" && id != result.id {
-			t.Fatal("concurrent registration created multiple identities")
-		}
-		id = result.id
-	}
-	var count int
-	if err := f.db.QueryRow("SELECT count(*) FROM users WHERE issuer=$1 AND subject=$2", "https://issuer.example", "new-recipient").Scan(&count); err != nil || count != 1 {
-		t.Fatal("duplicate identity", count, err)
 	}
 }
 

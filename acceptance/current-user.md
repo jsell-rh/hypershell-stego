@@ -44,7 +44,7 @@ transfer the stored identity.
 | Request limits | Target selectors and request bodies fail before they write an identity |
 | Identity | Profile changes keep the ID; reused names and different issuers receive different IDs |
 | Stored data | A failed profile update returns an error and preserves the previous profile |
-| Concurrent registration | Eight callers, with conflict retries, receive one stored user ID |
+| Concurrent registration | Direct and REST tests force eight first inserts to overlap; callers retry conflicts and receive one stored user ID without role grants |
 | Restart | The same user ID and timestamps remain after the generated process restarts |
 | Deleted user | Login cannot restore a deleted identity |
 | Complete sharing inputs | Real browser login obtains the recipient and role IDs through REST before the owner grants access |
@@ -71,3 +71,18 @@ concurrent load. Run
 `go test -mod=readonly -run '^$' -bench '^BenchmarkCurrentUserLookup$' -benchtime=100x ./acceptance`
 with the PostgreSQL test settings. This is a local measurement, not a production
 capacity claim.
+
+On 2026-09-11, the concurrency checks ran in the jshell cluster. A test-only
+database trigger holds each first insert until all eight transactions reach it.
+The test then releases the inserts and requires at least one conflict. Each
+caller retries the complete operation with a delay, a 10-second shared deadline,
+and a maximum of 64 attempts. Direct calls retry only storage conflicts and
+serialization errors. REST calls retry only HTTP 409. Other errors fail the test.
+The production transaction callback still runs once per call. The runtime does
+not replay application work.
+
+Ten direct runs and ten REST runs passed under race detection in 46.210 seconds.
+Each run observed seven conflict retries, one stored identity, and no role grant.
+The current-user and generated SDK Gateway workflows also passed in 13.273
+seconds. These checks prove the specified test case. They do not guarantee that
+all conflicts will clear within a fixed retry count under arbitrary load.
