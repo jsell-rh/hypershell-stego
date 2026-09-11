@@ -60,6 +60,8 @@ type Service struct {
 	cleanupPolicy         *auth.GrantPolicy
 	controllerWritePolicy *auth.GrantPolicy
 	databaseProvider      string
+	defaultReleaseID      string
+	defaultClusterID      string
 }
 
 func New(repository Repository, options ...Options) (*Service, error) {
@@ -72,6 +74,9 @@ func New(repository Repository, options ...Options) (*Service, error) {
 	selected := Options{}
 	if len(options) == 1 {
 		selected = options[0]
+	}
+	if err := validateDefaults(selected); err != nil {
+		return nil, err
 	}
 	provider, err := resolveDatabaseProvider(selected.DatabaseProvider)
 	if err != nil {
@@ -86,7 +91,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider}, nil
+	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.
@@ -100,6 +105,12 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 	}
 	if request.Phase != nil || request.Status != nil {
 		return gateway, ErrObservationOwned
+	}
+	if request.ReleaseID == "" {
+		request.ReleaseID = s.defaultReleaseID
+	}
+	if request.ClusterID == "" {
+		request.ClusterID = s.defaultClusterID
 	}
 	if err := validateCreate(request); err != nil {
 		return gateway, err

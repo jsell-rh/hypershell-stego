@@ -23,6 +23,8 @@ type Options struct {
 	CleanupPolicy         *auth.GrantPolicy
 	ControllerWritePolicy *auth.GrantPolicy
 	DatabaseProvider      string
+	DefaultReleaseID      string
+	DefaultClusterID      string
 }
 
 const ProviderDeployment = "deployment"
@@ -42,6 +44,11 @@ func resolveDatabaseProvider(raw string) (string, error) {
 func OptionsFromEnvironment() (Options, error) {
 	var options Options
 	var err error
+	options.DefaultReleaseID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID")
+	options.DefaultClusterID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID")
+	if err = validateDefaults(options); err != nil {
+		return Options{}, err
+	}
 	options.DatabaseProvider, err = resolveDatabaseProvider(os.Getenv("DATABASE_PROVIDER"))
 	if err != nil {
 		return Options{}, err
@@ -91,6 +98,16 @@ func (s *Service) AuthorizeCleanup(p Principal, resource, owner, target string) 
 	}
 	if !s.isControlPlane(p) || !s.cleanupPolicy.Allows(auth.Identity{Issuer: p.Issuer, UserID: p.Subject}, resource, "cleanup."+owner, target) {
 		return ErrForbidden
+	}
+	return nil
+}
+
+// Empty request IDs can use explicit deployment defaults. Stored IDs are exact.
+func validateDefaults(options Options) error {
+	for _, id := range []string{options.DefaultReleaseID, options.DefaultClusterID} {
+		if id != "" && !validID(id) {
+			return errors.New("Gateway defaults must be canonical KSUIDs")
+		}
 	}
 	return nil
 }

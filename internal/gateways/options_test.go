@@ -122,3 +122,20 @@ func TestControllerWriteConfigurationFailsClosed(t *testing.T) {
 		}
 	}
 }
+
+func TestGatewayDefaultsRequireCanonicalIDs(t *testing.T) {
+	for _, name := range []string{"HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID", "HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID"} {
+		t.Setenv(name, "")
+		for _, value := range []string{" ", "latest", "000000000000000000000000000", "../release"} {
+			t.Setenv(name, value)
+			if _, err := OptionsFromEnvironment(); err == nil {
+				t.Fatal("invalid Gateway default accepted")
+			}
+		}
+		t.Setenv(name, "0ujtsYcgvSTl8PAuAdqWYSMnLOv")
+		if _, err := OptionsFromEnvironment(); err != nil {
+			t.Fatal("canonical Gateway default rejected", err)
+		}
+		t.Setenv(name, "")
+	}
+}
