@@ -4,6 +4,10 @@ on:
   push:
   pull_request:
 
+env:
+  # CI uses the runner's loopback address for its database fixture.
+  STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK: '1'
+
 permissions:
   contents: read
 
@@ -35,6 +39,11 @@ jobs:
           go-version: '1.26.8'
           cache: true
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./...
+      - name: Enable test database TLS
+        timeout-minutes: 2
+        run: scripts/enable-test-postgres-tls.sh "$POSTGRES_CONTAINER" "$RUNNER_TEMP/postgres-tls"
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
       - run: scripts/check-gateway.sh
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable

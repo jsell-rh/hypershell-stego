@@ -85,7 +85,10 @@ requires PostgreSQL, the race detector, and a regeneration check.
 
 The generated entry point is `go run ./out`. It requires the database schema,
 the `DATABASE_URL` setting, a verified JWT issuer configuration, and a reachable
-Kafka broker with TLS. gRPC also requires `STEGO_GRPC_TLS_CERT` and
+Kafka broker with TLS. The service database requires `sslmode=verify-full` and
+a trusted server certificate. Set `sslrootcert` for a private certificate
+authority. See [database TLS](acceptance/database-tls.md) for the test exception
+and the pool and event-listener checks. gRPC also requires `STEGO_GRPC_TLS_CERT` and
 `STEGO_GRPC_TLS_KEY`. It uses TLS 1.3 and reads `STEGO_GRPC_ADDR`, which defaults
 to `127.0.0.1:9090`. HTTP reads `PORT`, which defaults to 8080. Application
 startup does not apply migrations. The REST list supports `page`, `size`, `search`, and `orderBy`, including a

@@ -11,6 +11,10 @@ if [[ -z ${STEGO_TEST_POSTGRES_DSN:-} ]]; then
   echo 'Set STEGO_TEST_POSTGRES_DSN to a PostgreSQL connection that can create test databases.' >&2
   exit 1
 fi
+if [[ -z ${STEGO_TEST_POSTGRES_CA_FILE:-} || ! -r $STEGO_TEST_POSTGRES_CA_FILE ]]; then
+  echo 'Set STEGO_TEST_POSTGRES_CA_FILE to the public CA file for the database TLS fixture.' >&2
+  exit 1
+fi
 export STEGO_REQUIRE_POSTGRES=1
 export STEGO_REQUIRE_KEYCLOAK=1
 export GOWORK=off

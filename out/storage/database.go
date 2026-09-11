@@ -5,12 +5,14 @@ package storage
 
 import (
 	"context"
+	"crypto/tls"
 	"database/sql"
 	"database/sql/driver"
 	"errors"
 	pgx "github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
 	telemetry "github.com/jsell-rh/hypershell-stego/out/tracing"
+	"net"
 	"os"
 	"strconv"
 	"time"
@@ -113,12 +115,56 @@ func databasePoolDuration(name string, fallback time.Duration) (time.Duration, e
 }
 
 func databaseConfiguration(dsn string) (*pgx.ConnConfig, error) {
+	insecure, err := databaseLoopbackTestMode()
+	if err != nil {
+		return nil, err
+	}
 	config, err := pgx.ParseConfig(dsn)
 	if err != nil {
 		return nil, errors.New("invalid database configuration")
 	}
+	if err := databaseTransport(config.Host, config.TLSConfig, insecure); err != nil {
+		return nil, err
+	}
+	for _, fallback := range config.Fallbacks {
+		if fallback == nil {
+			return nil, errors.New("invalid database transport")
+		}
+		if err := databaseTransport(fallback.Host, fallback.TLSConfig, insecure); err != nil {
+			return nil, err
+		}
+	}
 	config.Tracer = databaseTracer{}
 	return config, nil
+}
+
+func databaseLoopbackTestMode() (bool, error) {
+	value, present := os.LookupEnv("STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK")
+	if !present || value == "0" {
+		return false, nil
+	}
+	if value == "1" {
+		return true, nil
+	}
+	return false, errors.New("invalid database setting: STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK")
+}
+
+// Validate every connection target. A TLS failure must not select plaintext.
+func databaseTransport(host string, config *tls.Config, insecure bool) error {
+	if config == nil {
+		address := net.ParseIP(host)
+		if insecure && address != nil && address.IsLoopback() {
+			return nil
+		}
+		return errors.New("database connections require verified TLS")
+	}
+	if config.InsecureSkipVerify || config.ServerName == "" {
+		return errors.New("database connections require verified TLS")
+	}
+	if config.MinVersion < tls.VersionTLS12 {
+		config.MinVersion = tls.VersionTLS12
+	}
+	return nil
 }
 
 type databaseTracer struct{}
