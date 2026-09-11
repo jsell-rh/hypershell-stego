@@ -1,11 +1,14 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -16,14 +19,87 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// The controller runs as a separate process in the bounded test Pod. The API
-// and real Keycloak server run in separate Pods. This is an application check;
-// the Keycloak fixture is not a production deployment.
-func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(any), command func([]byte, ...string) []byte, owner *sdk.Client, apiHost string, apiIdentity testIdentity, bearer, id string) func() {
+// The generated API, generated identity worker, and real Keycloak server run
+// in separate Pods. The Keycloak fixture is not a production deployment.
+func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(any), command func([]byte, ...string) []byte, owner *sdk.Client, apiHost string, apiIdentity testIdentity, bearer, id string, exports []string) func() {
 	t.Helper()
 	k := startKubernetesKeycloak(t, namespace, apply, command)
-	binary := buildProgram(t, "./cmd/gateway-identity-controller")
-	stop, _ := startIdentityController(t, binary, k, apiHost+":9090", apiIdentity.config.CAFile, bearer)
+	image := os.Getenv("STEGO_TEST_WORKER_IMAGE")
+	group := os.Getenv("STEGO_TEST_FS_GROUP")
+	if image == "" || group == "" {
+		t.Fatal("require the generated worker image and file group")
+	}
+	const name = "hypershell-gateway-identity"
+	read := func(name string) []byte {
+		t.Helper()
+		data, err := os.ReadFile(name)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return data
+	}
+	files := map[string][]byte{"api-ca.pem": read(apiIdentity.config.CAFile), "api-token": []byte(bearer), "keycloak-ca.pem": read(k.options.CAFile), "keycloak-secret": read(k.options.SecretFile)}
+	environment := map[string]string{"HYPERSHELL_API_GRPC_ADDR": apiHost + ":9090", "HYPERSHELL_API_CA_FILE": "/var/run/stego/api-ca.pem", "HYPERSHELL_API_TOKEN_FILE": "/var/run/stego/api-token", "HYPERSHELL_KEYCLOAK_URL": k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM": k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID": k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE": "/var/run/stego/keycloak-secret", "HYPERSHELL_KEYCLOAK_CA_FILE": "/var/run/stego/keycloak-ca.pem"}
+	for _, entry := range exports {
+		key, value, _ := strings.Cut(entry, "=")
+		switch key {
+		case "OTEL_EXPORTER_OTLP_ENDPOINT":
+			value = "https://fixture." + namespace + ".svc:19093"
+		case "OTEL_EXPORTER_OTLP_CERTIFICATE":
+			files["telemetry-ca.pem"] = read(value)
+			value = "/var/run/stego/telemetry-ca.pem"
+		case "OTEL_METRIC_EXPORT_INTERVAL":
+			value = "10000"
+		}
+		environment[key] = value
+	}
+	t.Cleanup(func() {
+		command(nil, "delete", "deployment/"+name, "--wait=true", "--timeout=60s", "--ignore-not-found")
+		command(nil, "delete", "secret/"+name+"-files", "secret/"+name+"-runtime", "networkpolicy/"+name, "serviceaccount/"+name, "--ignore-not-found")
+	})
+	apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]any{"name": name + "-files", "namespace": namespace}, "data": files})
+	apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]any{"name": name + "-runtime", "namespace": namespace}, "stringData": environment})
+	renderContext, cancelRender := context.WithTimeout(context.Background(), 30*time.Second)
+	render := exec.CommandContext(renderContext, "go", "run", "-mod=readonly", "../out/deploy/render", "--worker", "gateway-identity", "--image", image, "--namespace", namespace, "--fs-group", group)
+	manifest, err := render.Output()
+	cancelRender()
+	if err != nil {
+		t.Fatal("generated worker renderer failed", err)
+	}
+	command(manifest, "apply", "-f", "-")
+	start := func() string {
+		t.Helper()
+		command(nil, "scale", "deployment/"+name, "--replicas=1")
+		command(nil, "rollout", "status", "deployment/"+name, "--timeout=180s")
+		var list struct {
+			Items []struct {
+				Metadata struct {
+					UID               string
+					DeletionTimestamp *string
+				}
+				Status struct{ ContainerStatuses []struct{ RestartCount int } }
+			}
+		}
+		if err := json.Unmarshal(command(nil, "get", "pods", "-l", "app.kubernetes.io/name="+name, "-o", "json"), &list); err != nil {
+			t.Fatal(err)
+		}
+		for _, pod := range list.Items {
+			if pod.Metadata.DeletionTimestamp == nil {
+				if len(pod.Status.ContainerStatuses) != 1 || pod.Status.ContainerStatuses[0].RestartCount != 0 {
+					t.Fatal("generated worker restarted before readiness")
+				}
+				return pod.Metadata.UID
+			}
+		}
+		t.Fatal("generated worker has no ready Pod")
+		return ""
+	}
+	stop := func() {
+		t.Helper()
+		command(nil, "scale", "deployment/"+name, "--replicas=0")
+		command(nil, "wait", "--for=delete", "pods", "-l", "app.kubernetes.io/name="+name, "--timeout=60s")
+	}
+	firstPod := start()
 	_, connection := grpcClient(t, apiHost+":9090", apiIdentity)
 	t.Cleanup(func() { connection.Close() })
 	states := control.NewGatewayIdentityServiceClient(connection)
@@ -68,7 +144,9 @@ func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(a
 	if err != nil || changed.JSON200 == nil || changed.JSON200.Oidc == nil || *changed.JSON200.Oidc != invalid {
 		t.Fatal("offline identity change failed", err)
 	}
-	stop, _ = startIdentityController(t, binary, k, apiHost+":9090", apiIdentity.config.CAFile, bearer)
+	if next := start(); next == firstPod || next == "" {
+		t.Fatal("worker restart did not replace its Pod")
+	}
 	if wait() != first {
 		t.Fatal("controller restart changed the Gateway identity")
 	}
@@ -85,8 +163,14 @@ func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(a
 		if wait() != first {
 			t.Fatal("API replacement changed the Gateway identity")
 		}
+		logs := command(nil, "logs", "deployment/"+name, "--tail=500")
+		for _, private := range [][]byte{[]byte(bearer), files["keycloak-secret"]} {
+			if bytes.Contains(logs, private) {
+				t.Fatal("worker logs exposed credentials")
+			}
+		}
 		stop()
-		t.Log("Gateway identity passed real Keycloak creation, controller restart, and API Pod replacement")
+		t.Log("Generated Gateway identity Deployment passed Keycloak creation, worker Pod replacement, and API Pod replacement")
 	}
 }
 
@@ -117,7 +201,7 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	})
 	apply(object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": object{
 		"podSelector": object{"matchLabels": labels}, "policyTypes": []string{"Ingress", "Egress"}, "egress": []any{},
-		"ingress": []any{object{"from": []any{object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}}}, "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
+		"ingress": []any{object{"from": []any{object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-identity"}}}}, "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
 	}})
 	apply(object{"apiVersion": "v1", "kind": "Secret", "metadata": meta, "data": map[string][]byte{"tls.crt": read("server.pem"), "tls.key": read("server-key.pem"), "workflow-realm.json": realm}})
 	apply(object{"apiVersion": "v1", "kind": "Service", "metadata": meta, "spec": object{"selector": labels, "ports": []any{object{"port": 8443}}}})

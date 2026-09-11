@@ -1,12 +1,9 @@
-// The identity controller connects Hypershell rules to generated clients.
-package main
+// Package gatewayidentityapp connects domain providers to the generated worker.
+package gatewayidentityapp
 
 import (
 	"context"
-	"log"
 	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
@@ -16,15 +13,8 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
-func main() {
-	if err := run(); err != nil {
-		log.Print(err)
-		os.Exit(1)
-	}
-}
-func run() error {
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer cancel()
+// Run supplies provider setup and the domain controller to STEGO.
+func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	provider, err := keycloak.NewClient(keycloak.Options{ServerURL: os.Getenv("HYPERSHELL_KEYCLOAK_URL"), Realm: os.Getenv("HYPERSHELL_KEYCLOAK_REALM"), ClientID: os.Getenv("HYPERSHELL_KEYCLOAK_CLIENT_ID"), SecretFile: os.Getenv("HYPERSHELL_KEYCLOAK_SECRET_FILE"), CAFile: os.Getenv("HYPERSHELL_KEYCLOAK_CA_FILE")})
 	if err != nil {
 		return err
@@ -39,5 +29,5 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	return runtime.Monitor(ctx, os.Getenv("HYPERSHELL_METRICS_ADDR"), controller.RunWithMetrics)
+	return controller.RunWithMetrics(ctx, metrics)
 }

@@ -255,7 +255,7 @@ func (c *Client) exchange(ctx context.Context, method, relative string, headers 
 	return Response{StatusCode: response.StatusCode, Header: response.Header.Clone(), Body: data}, nil
 }
 
-// ReadPrivateFile reads a bounded regular file with no group or other access.
+// ReadPrivateFile reads a bounded regular file with no execute, group-write, or other access.
 func ReadPrivateFile(name string) ([]byte, error) { return readFile(name, 16384, true) }
 func readFile(name string, limit int64, private bool) ([]byte, error) {
 	f, err := os.OpenFile(name, os.O_RDONLY|syscall.O_NONBLOCK, 0)
@@ -264,7 +264,7 @@ func readFile(name string, limit int64, private bool) ([]byte, error) {
 	}
 	defer f.Close()
 	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() || info.Size() > limit || (private && info.Mode().Perm()&0077 != 0) {
+	if err != nil || !info.Mode().IsRegular() || info.Size() > limit || (private && info.Mode().Perm()&0137 != 0) {
 		return nil, errors.New("invalid HTTP client credential file")
 	}
 	data, err := io.ReadAll(io.LimitReader(f, limit+1))

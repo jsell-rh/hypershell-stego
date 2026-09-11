@@ -81,7 +81,7 @@ result=$?
 set -e
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; tar cf - deployment.exit image.json first.sha256 second.sha256 after-tests.sha256 generated.tar 2>/dev/null' > "$results/evidence.tar" || true
+  'cd /work; tar cf - deployment.exit image.json worker-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar 2>/dev/null' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s

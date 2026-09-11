@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -28,8 +29,16 @@ func startIdentityController(t *testing.T, binary string, k *keycloakFixture, ad
 	if err := os.WriteFile(tokenFile, []byte(bearer), 0600); err != nil {
 		t.Fatal(err)
 	}
+	listener, err := net.Listen("tcp", "127.0.0.1:0")
+	if err != nil {
+		t.Fatal(err)
+	}
+	monitor := listener.Addr().String()
+	if err := listener.Close(); err != nil {
+		t.Fatal(err)
+	}
 	command := exec.Command(binary)
-	command.Env = append(os.Environ(), "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+tokenFile,
+	command.Env = append(os.Environ(), "STEGO_CONTROLLER_MONITOR_ADDR="+monitor, "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+tokenFile,
 		"HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile)
 	if raceEnabled {
 		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
@@ -75,6 +84,17 @@ func startIdentityController(t *testing.T, binary string, k *keycloakFixture, ad
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
+	for _, mode := range []string{"live", "ready"} {
+		probeContext, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		probe := exec.CommandContext(probeContext, binary, "--stego-probe="+mode)
+		probe.Env = command.Env
+		err := probe.Run()
+		cancel()
+		if err != nil {
+			stop()
+			t.Fatal("generated controller probe failed", mode, err)
+		}
+	}
 	return stop, output.String
 }
 func (k *keycloakFixture) gatewayClient(t *testing.T, id string) map[string]any {
@@ -115,7 +135,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	settings = withControllerWriteGrants(t, settings, writeGrant("gateway-controller", "configure.identity", ""))
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary := buildApplication(t)
-	controllerBinary := buildProgram(t, "./cmd/gateway-identity-controller")
+	controllerBinary := buildProgram(t, "./out/deploy/workers/gateway-identity")
 	stopAPI, address, grpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
 	root := address + "/api/hypershell/v1/gateways"
 	owner := token(t, key, "alice", "gateway:creator")

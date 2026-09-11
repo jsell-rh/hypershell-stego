@@ -232,7 +232,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "Gateway", "identity", ""))
 	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""))
 	_, config := broker(t, identity(t, "localhost"))
-	apiBinary, controllerBinary := buildApplication(t), buildProgram(t, "./cmd/gateway-identity-controller")
+	apiBinary, controllerBinary := buildApplication(t), buildProgram(t, "./out/deploy/workers/gateway-identity")
 	stopAPI, address, grpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
 	defer stopAPI()
 	root := address + "/api/hypershell/v1"

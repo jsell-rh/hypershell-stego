@@ -42,7 +42,10 @@ through Docker. No running reference Hypershell service is required.
 
 ## Controller configuration
 
-Run `go run ./cmd/gateway-identity-controller`. Supply these settings:
+The `gateway-identity` worker declaration makes STEGO generate the main,
+Containerfile, health probes, and deployment resources. Hypershell supplies
+provider setup through `internal/gatewayidentityapp.Run` and retains domain rules.
+Run `go run ./out/deploy/workers/gateway-identity`. Supply these settings:
 
 | Setting | Purpose |
 | --- | --- |
@@ -105,8 +108,9 @@ subject, audience, and roles. The reference enables the password grant. The vari
 [RFC 9700 section 2.4](https://www.rfc-editor.org/rfc/rfc9700.html#section-2.4).
 
 This workflow proves identity provisioning and service-account token use. It does
-not prove device login completion,
-Kubernetes deployment, Gateway workload health, or the other resource controllers.
+not prove device login completion, Gateway workload health, or the other
+resource controllers. The [cluster check](kubernetes-service.md) covers the
+generated API and identity worker Deployments.
 It does not establish full reference compatibility or production readiness.
 
 Browser login and Gateway user-role changes now have

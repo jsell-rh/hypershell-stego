@@ -297,7 +297,7 @@ func readFile(path string, maximum int64, private bool) ([]byte, error) {
 	}
 	defer file.Close()
 	info, err := file.Stat()
-	if err != nil || !info.Mode().IsRegular() || private && info.Mode().Perm()&0077 != 0 {
+	if err != nil || !info.Mode().IsRegular() || private && info.Mode().Perm()&0137 != 0 {
 		return nil, errors.New("RPC credential file has invalid type or permissions")
 	}
 	data, err := io.ReadAll(io.LimitReader(file, maximum+1))

@@ -4,7 +4,7 @@ package main
 
 import (
 	"bytes"
-	_ "embed"
+	"embed"
 	"flag"
 	"fmt"
 	"io"
@@ -15,14 +15,15 @@ import (
 	"text/template"
 )
 
-//go:embed manifest.json.tmpl
-var manifest string
+//go:embed *.json.tmpl
+var manifests embed.FS
 
 func render(args []string, output io.Writer) error {
 	flags := flag.NewFlagSet("render", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	image := flags.String("image", "", "Image with an explicit registry and SHA-256 digest")
 	namespace := flags.String("namespace", "", "Existing target namespace")
+	worker := flags.String("worker", "", "Declared controller worker")
 	group := flags.Uint64("fs-group", 65532, "Group for mounted files")
 	if err := flags.Parse(args); err != nil {
 		return fmt.Errorf("invalid deployment arguments")
@@ -47,7 +48,18 @@ func render(args []string, output io.Writer) error {
 			return fmt.Errorf("invalid registry port")
 		}
 	}
-	tmpl, err := template.New("deployment").Option("missingkey=error").Parse(manifest)
+	name := "manifest.json.tmpl"
+	if *worker != "" {
+		if !regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`).MatchString(*worker) {
+			return fmt.Errorf("invalid worker")
+		}
+		name = "worker-" + *worker + ".json.tmpl"
+	}
+	manifest, err := manifests.ReadFile(name)
+	if err != nil {
+		return fmt.Errorf("unknown worker")
+	}
+	tmpl, err := template.New("deployment").Option("missingkey=error").Parse(string(manifest))
 	if err != nil {
 		return fmt.Errorf("invalid generated deployment")
 	}

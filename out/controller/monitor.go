@@ -28,6 +28,16 @@ func Monitor(parent context.Context, address string, run func(context.Context, *
 	if address == "" {
 		return run(parent, nil)
 	}
+	if err := monitorAddress(address); err != nil {
+		return err
+	}
+	listener, err := net.Listen("tcp", address)
+	if err != nil {
+		return err
+	}
+	return monitorListener(parent, listener, run)
+}
+func monitorAddress(address string) error {
 	host, port, err := net.SplitHostPort(address)
 	if err != nil {
 		return errors.New("controller metrics require a loopback IP and port")
@@ -37,17 +47,13 @@ func Monitor(parent context.Context, address string, run func(context.Context, *
 	if err != nil || !ip.IsLoopback() || ip.Zone() != "" || portErr != nil || number < 1 || number > 65535 || strconv.Itoa(number) != port {
 		return errors.New("controller metrics require a loopback IP and port")
 	}
-	listener, err := net.Listen("tcp", address)
-	if err != nil {
-		return err
-	}
-	return monitorListener(parent, listener, run)
+	return nil
 }
 func monitorListener(parent context.Context, listener net.Listener, run func(context.Context, *Metrics) error) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	metrics := new(Metrics)
-	server := &http.Server{Handler: metrics, ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 5 * time.Second, MaxHeaderBytes: 4096}
+	server := &http.Server{Handler: controllerHealth(ctx, metrics), ReadHeaderTimeout: 2 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 5 * time.Second, IdleTimeout: 5 * time.Second, MaxHeaderBytes: 4096}
 	served, completed := make(chan error, 1), make(chan error, 1)
 	go func() { served <- server.Serve(listener) }()
 	go func() { completed <- run(ctx, metrics) }()

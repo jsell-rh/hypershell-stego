@@ -6,7 +6,7 @@
       "automountServiceAccountToken": false,
       "kind": "ServiceAccount",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-gateway-identity",
         "namespace": "{{.Namespace}}"
       }
     },
@@ -14,7 +14,7 @@
       "apiVersion": "networking.k8s.io/v1",
       "kind": "NetworkPolicy",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-gateway-identity",
         "namespace": "{{.Namespace}}"
       },
       "spec": {
@@ -22,7 +22,7 @@
           {
             "ports": [
               {
-                "port": 5432,
+                "port": 9090,
                 "protocol": "TCP"
               }
             ],
@@ -35,7 +35,7 @@
                 },
                 "podSelector": {
                   "matchLabels": {
-                    "app": "stego-fixture"
+                    "app.kubernetes.io/name": "hypershell"
                   }
                 }
               }
@@ -44,7 +44,7 @@
           {
             "ports": [
               {
-                "port": 19092,
+                "port": 8443,
                 "protocol": "TCP"
               }
             ],
@@ -57,7 +57,7 @@
                 },
                 "podSelector": {
                   "matchLabels": {
-                    "app": "stego-fixture"
+                    "app": "identity-fixture"
                   }
                 }
               }
@@ -107,77 +107,10 @@
             ]
           }
         ],
-        "ingress": [
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app.kubernetes.io/name": "hypershell-gateway-identity"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app": "stego-fixture"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 8443,
-                "protocol": "TCP"
-              }
-            ]
-          },
-          {
-            "from": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "kubernetes.io/metadata.name": "{{.Namespace}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "app": "stego-fixture"
-                  }
-                }
-              }
-            ],
-            "ports": [
-              {
-                "port": 9090,
-                "protocol": "TCP"
-              }
-            ]
-          }
-        ],
+        "ingress": [],
         "podSelector": {
           "matchLabels": {
-            "app.kubernetes.io/name": "hypershell"
+            "app.kubernetes.io/name": "hypershell-gateway-identity"
           }
         },
         "policyTypes": [
@@ -190,7 +123,7 @@
       "apiVersion": "apps/v1",
       "kind": "Deployment",
       "metadata": {
-        "name": "hypershell",
+        "name": "hypershell-gateway-identity",
         "namespace": "{{.Namespace}}"
       },
       "spec": {
@@ -199,20 +132,16 @@
         "revisionHistoryLimit": 2,
         "selector": {
           "matchLabels": {
-            "app.kubernetes.io/name": "hypershell"
+            "app.kubernetes.io/name": "hypershell-gateway-identity"
           }
         },
         "strategy": {
-          "rollingUpdate": {
-            "maxSurge": 1,
-            "maxUnavailable": 0
-          },
-          "type": "RollingUpdate"
+          "type": "Recreate"
         },
         "template": {
           "metadata": {
             "labels": {
-              "app.kubernetes.io/name": "hypershell"
+              "app.kubernetes.io/name": "hypershell-gateway-identity"
             }
           },
           "spec": {
@@ -225,75 +154,47 @@
                     "value": "384MiB"
                   },
                   {
-                    "name": "PORT",
-                    "value": "8443"
-                  },
-                  {
-                    "name": "STEGO_HTTP_REQUIRE_TLS",
-                    "value": "1"
-                  },
-                  {
-                    "name": "STEGO_HTTP_TLS_CERT",
-                    "value": "/var/run/stego/tls.crt"
-                  },
-                  {
-                    "name": "STEGO_HTTP_TLS_KEY",
-                    "value": "/var/run/stego/tls.key"
-                  },
-                  {
                     "name": "STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK",
                     "value": "0"
                   },
                   {
-                    "name": "STEGO_GRPC_ADDR",
-                    "value": "0.0.0.0:9090"
+                    "name": "STEGO_CONTROLLER_MONITOR_ADDR",
+                    "value": "127.0.0.1:9081"
                   },
                   {
-                    "name": "STEGO_GRPC_TLS_CERT",
-                    "value": "/var/run/stego/tls.crt"
-                  },
-                  {
-                    "name": "STEGO_GRPC_TLS_KEY",
-                    "value": "/var/run/stego/tls.key"
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "hypershell-gateway-identity"
                   }
                 ],
                 "envFrom": [
                   {
                     "secretRef": {
-                      "name": "hypershell-runtime"
+                      "name": "hypershell-gateway-identity-runtime"
                     }
                   }
                 ],
                 "image": "{{.Image}}",
                 "imagePullPolicy": "IfNotPresent",
                 "livenessProbe": {
-                  "failureThreshold": 3,
-                  "httpGet": {
-                    "path": "/livez",
-                    "port": "https",
-                    "scheme": "HTTPS"
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=live"
+                    ]
                   },
+                  "failureThreshold": 3,
                   "periodSeconds": 10,
                   "timeoutSeconds": 2
                 },
-                "name": "service",
-                "ports": [
-                  {
-                    "containerPort": 8443,
-                    "name": "https"
-                  },
-                  {
-                    "containerPort": 9090,
-                    "name": "grpc"
-                  }
-                ],
+                "name": "worker",
                 "readinessProbe": {
-                  "failureThreshold": 2,
-                  "httpGet": {
-                    "path": "/readyz",
-                    "port": "https",
-                    "scheme": "HTTPS"
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=ready"
+                    ]
                   },
+                  "failureThreshold": 2,
                   "periodSeconds": 3,
                   "timeoutSeconds": 2
                 },
@@ -319,12 +220,13 @@
                   "readOnlyRootFilesystem": true
                 },
                 "startupProbe": {
-                  "failureThreshold": 30,
-                  "httpGet": {
-                    "path": "/livez",
-                    "port": "https",
-                    "scheme": "HTTPS"
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=live"
+                    ]
                   },
+                  "failureThreshold": 30,
                   "periodSeconds": 2,
                   "timeoutSeconds": 2
                 },
@@ -348,14 +250,14 @@
                 "type": "RuntimeDefault"
               }
             },
-            "serviceAccountName": "hypershell",
+            "serviceAccountName": "hypershell-gateway-identity",
             "terminationGracePeriodSeconds": 60,
             "volumes": [
               {
                 "name": "files",
                 "secret": {
                   "defaultMode": 288,
-                  "secretName": "hypershell-files"
+                  "secretName": "hypershell-gateway-identity-files"
                 }
               },
               {
@@ -367,32 +269,6 @@
             ]
           }
         }
-      }
-    },
-    {
-      "apiVersion": "v1",
-      "kind": "Service",
-      "metadata": {
-        "name": "hypershell",
-        "namespace": "{{.Namespace}}"
-      },
-      "spec": {
-        "ports": [
-          {
-            "name": "https",
-            "port": 8443,
-            "targetPort": "https"
-          },
-          {
-            "name": "grpc",
-            "port": 9090,
-            "targetPort": "grpc"
-          }
-        ],
-        "selector": {
-          "app.kubernetes.io/name": "hypershell"
-        },
-        "type": "ClusterIP"
       }
     }
   ],

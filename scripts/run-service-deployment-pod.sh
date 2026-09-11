@@ -23,21 +23,32 @@ done
 cmp /work/first.sha256 /work/second.sha256
 go mod verify
 go vet ./acceptance ./out/...
-mkdir -p /work/layer/etc/ssl/certs
-CGO_ENABLED=0 go build -mod=readonly -trimpath -buildvcs=false -o /work/layer/service ./out
-cp /etc/ssl/certs/ca-certificates.crt /work/layer/etc/ssl/certs/
-chmod 555 /work/layer/service
-tar --sort=name --mtime=2026-09-11T00:00:00Z --owner=0 --group=0 --numeric-owner -czf /work/service-layer.tar.gz -C /work/layer .
 cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/ssl/certs/ca-certificates.crt >> /work/registry-ca.crt
 export SSL_CERT_FILE=/work/registry-ca.crt
 go run -mod=readonly scripts/service-image-auth.go
 registry=image-registry.openshift-image-registry.svc:5000
-reference="$registry/$STEGO_TEST_NAMESPACE/hypershell:acceptance"
-/work/oc image append --registry-config=/work/registry-auth.json --certificate-authority=/work/registry-ca.crt --created-at=2026-09-11T00:00:00Z --image='{"User":"65532:65532","Entrypoint":["/service"],"WorkingDir":"/"}' --meta='{"os":"linux","architecture":"amd64"}' --to="$reference" /work/service-layer.tar.gz
-/work/oc image info --registry-config=/work/registry-auth.json --certificate-authority=/work/registry-ca.crt -o json "$reference" > /work/image.json
+publish_image() {
+ image_entry=$1
+ image_target=$2
+ image_name=$3
+ image_metadata=$4
+ image_layer="/work/$image_entry-layer"
+ mkdir -p "$image_layer/etc/ssl/certs"
+ CGO_ENABLED=0 go build -mod=readonly -trimpath -buildvcs=false -o "$image_layer/$image_entry" "$image_target"
+ cp /etc/ssl/certs/ca-certificates.crt "$image_layer/etc/ssl/certs/"
+ chmod 555 "$image_layer/$image_entry"
+ tar --sort=name --mtime=2026-09-11T00:00:00Z --owner=0 --group=0 --numeric-owner -czf "/work/$image_entry-layer.tar.gz" -C "$image_layer" .
+ image_reference="$registry/$STEGO_TEST_NAMESPACE/$image_name:acceptance"
+ /work/oc image append --registry-config=/work/registry-auth.json --certificate-authority=/work/registry-ca.crt --created-at=2026-09-11T00:00:00Z --image="{\"User\":\"65532:65532\",\"Entrypoint\":[\"/$image_entry\"],\"WorkingDir\":\"/\"}" --meta='{"os":"linux","architecture":"amd64"}' --to="$image_reference" "/work/$image_entry-layer.tar.gz"
+ /work/oc image info --registry-config=/work/registry-auth.json --certificate-authority=/work/registry-ca.crt -o json "$image_reference" > "$image_metadata"
+}
+publish_image service ./out hypershell /work/image.json
+publish_image worker ./out/deploy/workers/gateway-identity hypershell-gateway-identity /work/worker-image.json
 unlink /work/registry-auth.json
-digest=$(go run -mod=readonly scripts/service-image-digest.go /work/image.json)
+digest=$(go run -mod=readonly scripts/service-image-digest.go /work/image.json service)
+worker_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/worker-image.json worker)
 export STEGO_TEST_SERVICE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell@$digest"
+export STEGO_TEST_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-identity@$worker_digest"
 export STEGO_TEST_OC=/work/oc
 go test -v -race -mod=readonly -count=1 -timeout=8m -run '^TestGeneratedKubernetesServiceGatewayWorkflow$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
