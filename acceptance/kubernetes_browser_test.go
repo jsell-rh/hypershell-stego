@@ -52,7 +52,33 @@ func (p *kubernetesBrowser) command(input []byte, args ...string) []byte {
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		if input != nil {
-			p.t.Fatal("Kubernetes browser fixture write failed", err)
+			// Secret errors can contain the request body. Log only a fixed category.
+			var document struct {
+				Kind     string
+				Metadata struct{ Name string }
+				Items    []struct{ Kind string }
+			}
+			if json.Unmarshal(input, &document) == nil && document.Kind == "List" && len(document.Items) > 0 {
+				public := true
+				for _, item := range document.Items {
+					switch item.Kind {
+					case "Deployment", "Service", "ServiceAccount", "NetworkPolicy":
+					default:
+						public = false
+					}
+				}
+				if public {
+					p.t.Fatalf("Generated deployment apply failed: %v\n%s", err, output)
+				}
+			}
+			category := "unclassified"
+			for _, reason := range []string{"Conflict", "Forbidden", "Invalid", "NotFound", "TooManyRequests", "ServiceUnavailable", "Timeout", "InternalError", "Unauthorized"} {
+				if bytes.Contains(output, []byte("("+reason+")")) {
+					category = reason
+					break
+				}
+			}
+			p.t.Fatalf("Kubernetes browser fixture write failed: kind=%s name=%s category=%s: %v", document.Kind, document.Metadata.Name, category, err)
 		}
 		p.t.Fatalf("Kubernetes browser command failed: %v\n%s", err, output)
 	}
