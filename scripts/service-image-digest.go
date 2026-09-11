@@ -11,8 +11,8 @@ import (
 )
 
 func main() {
-	if len(os.Args) != 3 || (os.Args[2] != "service" && os.Args[2] != "worker") {
-		panic("require image metadata path and service or worker kind")
+	if len(os.Args) != 3 || (os.Args[2] != "service" && os.Args[2] != "worker" && os.Args[2] != "rpc") {
+		panic("require image metadata path and service, worker, or rpc kind")
 	}
 	data, err := os.ReadFile(os.Args[1])
 	if err != nil {

@@ -40,12 +40,13 @@ if sys.argv[3] not in ('0','1'): raise SystemExit('STEGO_TEST_BROWSER_DEPLOYMENT
 if sys.argv[3]=='1':
     security={'runAsNonRoot':True,'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}}
     for item in job['items']:
-        if item['kind']=='ResourceQuota': item['spec']['hard']['limits.memory']='8Gi'
+        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'8Gi','limits.cpu':'8','pods':'6'})
         if item['kind']=='Role' and item['metadata']['name']=='service-check':
             for rule in item['rules']:
-                if 'deployments/scale' in rule['resources']: rule['resourceNames']=['hypershell','hypershell-console']
+                if 'deployments/scale' in rule['resources']: rule['resourceNames']=['hypershell','hypershell-console','hypershell-provisioner']
         if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
             item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-console'}}}],'ports':[{'port':5432,'protocol':'TCP'},{'port':19093,'protocol':'TCP'}]})
+            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-provisioner'}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
         if item['kind']=='Job':
             spec=item['spec']['template']['spec']
             spec['initContainers'].insert(0,{'name':'node-tools','image':'docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393','command':['sh','-c','mkdir -p /work/bin /work/node; cp /usr/local/bin/node /work/bin/node; cp -R /usr/local/lib/node_modules/npm /work/node/npm'],'securityContext':security,'resources':{'requests':{'cpu':'100m','memory':'128Mi'},'limits':{'cpu':'500m','memory':'256Mi'}},'volumeMounts':[{'name':'work','mountPath':'/work'}]})
@@ -98,7 +99,7 @@ source "$project/scripts/wait-service-result.sh"
 wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
+  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s

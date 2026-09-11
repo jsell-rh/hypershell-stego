@@ -33,14 +33,14 @@ func TestGeneratedKubernetesBrowserGatewayWorkflow(t *testing.T) {
 	if !strings.HasPrefix(p.namespace, "stego-service-") || p.group == "" || p.oc == "" || os.Getenv("STEGO_REQUIRE_BROWSER") != "1" {
 		t.Fatal("require the dedicated namespace, file group, cluster client, and rendered browser")
 	}
-	for _, name := range []string{"STEGO_TEST_SERVICE_IMAGE", "STEGO_TEST_CONSOLE_IMAGE"} {
+	for _, name := range []string{"STEGO_TEST_SERVICE_IMAGE", "STEGO_TEST_CONSOLE_IMAGE", "STEGO_TEST_PROVISIONER_IMAGE"} {
 		if !strings.Contains(os.Getenv(name), "@sha256:") {
 			t.Fatal("require a published image digest", name)
 		}
 	}
 	runBrowserGatewayWorkflow(t, p)
-	if len(p.pods) != 2 {
-		t.Fatal("both generated Deployments must run")
+	if len(p.pods) != 3 {
+		t.Fatal("all three generated Deployments must run")
 	}
 }
 func (p *kubernetesBrowser) host(name string) string { return name + "." + p.namespace + ".svc" }
@@ -222,7 +222,7 @@ func (p *kubernetesBrowser) startConsole(f *fixture, origin, api, apiCA string, 
 	p.checkDatabaseTLS(f)
 	return stop, logs
 }
-func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, env map[string]string, files map[string][]byte) (func(), func() string) {
+func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, env map[string]string, files map[string][]byte, target ...string) (func(), func() string) {
 	p.t.Helper()
 	dir := filepath.Dir(id.config.CAFile)
 	files["tls.crt"] = p.read(filepath.Join(dir, "server.pem"))
@@ -236,6 +236,7 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 	p.apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]string{"name": name + "-runtime", "namespace": p.namespace}, "stringData": env})
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	render := exec.CommandContext(ctx, "go", "run", "-mod=readonly", "./out/deploy/render", "--image", image, "--namespace", p.namespace, "--fs-group", p.group)
+	render.Args = append(render.Args, target...)
 	render.Dir = module
 	manifest, err := render.Output()
 	cancel()
@@ -310,6 +311,9 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 			p.t.Logf("%s process diagnostics: %s", name, logs())
 		}
 	})
+	if len(target) != 0 {
+		return stop, logs
+	}
 	client, err := web.New(web.Options{BaseURL: "https://" + p.host(name) + ":8443", CAFile: id.config.CAFile})
 	if err != nil {
 		p.t.Fatal(err)

@@ -1,3 +1,6 @@
+This record describes the earlier process assembly check. The current separate
+Deployment is described in [RPC deployment](rpc-deployment.md).
+
 The generated-provisioner workflow passed on 2026-09-11 with compiler
 `08fb8f9659ec1c225f81d15c4e0626d0e4528881`. The full deployed browser test passed
 in 148.48 seconds; its race-enabled package passed in 149.530 seconds. Contract

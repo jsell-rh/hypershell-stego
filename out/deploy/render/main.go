@@ -27,6 +27,7 @@ func render(args []string, output io.Writer) error {
 	image := flags.String("image", "", "Image with an explicit registry and SHA-256 digest")
 	namespace := flags.String("namespace", "", "Existing target namespace")
 	worker := flags.String("worker", "", "Declared controller worker")
+	rpc := flags.String("rpc-process", "", "Declared RPC process deployment")
 	group := flags.Uint64("fs-group", 65532, "Group for mounted files")
 	var external endpointFlags
 	flags.Var(&external, "egress", "Declared external endpoint: NAME=IP:PORT; use brackets for IPv6")
@@ -53,6 +54,9 @@ func render(args []string, output io.Writer) error {
 			return fmt.Errorf("invalid registry port")
 		}
 	}
+	if *worker != "" && *rpc != "" {
+		return fmt.Errorf("select one workload")
+	}
 	name := "manifest.json.tmpl"
 	if *worker != "" {
 		if !regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`).MatchString(*worker) {
@@ -60,9 +64,15 @@ func render(args []string, output io.Writer) error {
 		}
 		name = "worker-" + *worker + ".json.tmpl"
 	}
+	if *rpc != "" {
+		if !regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`).MatchString(*rpc) {
+			return fmt.Errorf("invalid RPC process")
+		}
+		name = "rpc-" + *rpc + ".json.tmpl"
+	}
 	manifest, err := manifests.ReadFile(name)
 	if err != nil {
-		return fmt.Errorf("unknown worker")
+		return fmt.Errorf("unknown workload")
 	}
 	tmpl, err := template.New("deployment").Option("missingkey=error").Parse(string(manifest))
 	if err != nil {

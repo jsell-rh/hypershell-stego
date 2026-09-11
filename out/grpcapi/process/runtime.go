@@ -37,7 +37,11 @@ type Open func(context.Context) (Application, error)
 // and telemetry flush. A callback that does not stop cannot keep the process alive.
 func Main(open Open) {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	code := supervise(ctx, open, 10*time.Second, 20*time.Second)
+	address := os.Getenv("STEGO_RPC_MONITOR_ADDR")
+	if address == "" {
+		address = "127.0.0.1:9082"
+	}
+	code := processCommand(ctx, os.Args[1:], address, open)
 	stop()
 	if code != 0 {
 		written := make(chan struct{})
@@ -53,7 +57,7 @@ func Main(open Open) {
 	os.Exit(code)
 }
 func supervise(parent context.Context, open Open, startup, shutdown time.Duration) int {
-	if parent == nil || open == nil || len(os.Args) > 1 {
+	if parent == nil || open == nil {
 		return 1
 	}
 	return superviseWork(parent, startup, shutdown, func(ctx context.Context, ready, stopping chan struct{}) int {

@@ -239,10 +239,6 @@
           {
             "name": "telemetry",
             "port": 19093
-          },
-          {
-            "name": "provisioner",
-            "port": 19094
           }
         ]
       }
@@ -292,10 +288,6 @@
               },
               {
                 "port": 19093,
-                "protocol": "TCP"
-              },
-              {
-                "port": 19094,
                 "protocol": "TCP"
               }
             ]

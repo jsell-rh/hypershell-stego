@@ -29,11 +29,14 @@ registry=image-registry.openshift-image-registry.svc:5000
 . /work/application/scripts/publish-service-image.sh
 publish_image service ./out hypershell /work/image.json
 (cd console; publish_image service ./out hypershell-console /work/console-image.json)
+publish_image rpc ./out/grpcapi/processes/provisioner hypershell-provisioner /work/provisioner-image.json
 unlink /work/registry-auth.json
 digest=$(go run -mod=readonly scripts/service-image-digest.go /work/image.json service)
 console_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/console-image.json service)
 export STEGO_TEST_SERVICE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell@$digest"
 export STEGO_TEST_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-console@$console_digest"
+provisioner_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/provisioner-image.json rpc)
+export STEGO_TEST_PROVISIONER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-provisioner@$provisioner_digest"
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 go test -v -race -mod=readonly -count=1 -timeout=10m -run '^(TestGeneratedKubernetesBrowserGatewayWorkflow|TestKubernetesWriteFailurePrivacy)$' ./acceptance

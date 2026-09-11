@@ -17,7 +17,7 @@ import (
 
 // Gateway readiness is an explicit fixture input. This test checks the account
 // UI and real identity provider, not Gateway workload provisioning.
-func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, subject string, browser *renderedBrowser, owner *consoleBrowser, runtimeLogs func() string) {
+func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, subject string, browser *renderedBrowser, owner *consoleBrowser, restartProvider func(), runtimeLogs func() string) {
 	t.Helper()
 	issuer := k.options.ServerURL + "/realms/workflow"
 	oidc, err := json.Marshal(map[string]string{"issuer": issuer, "client_id": "gateway-audience", "audience": "gateway-audience"})
@@ -88,6 +88,7 @@ func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, 
 		t.Fatal("incomplete one-time credential")
 	}
 	clear(data)
+	restartProvider()
 	response, grant := k.issue(t, credential.ClientID, credential.Secret)
 	if response.StatusCode != 200 {
 		t.Fatal("rendered credential cannot obtain a token", response.StatusCode)

@@ -495,3 +495,5 @@ Full Gateway workload provisioning through the console remains open.
 The [RPC process check](acceptance/rpc-process.md) replaces the handwritten
 provisioner entry point with STEGO output. Hypershell keeps the Keycloak provider
 and caller policy. STEGO supplies authentication, telemetry, signals, and cleanup.
+The [RPC deployment check](acceptance/rpc-deployment.md) adds a generated
+provisioner Deployment and replaces its Pod during the rendered account workflow.
