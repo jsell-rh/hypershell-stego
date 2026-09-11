@@ -61,3 +61,9 @@ Both test namespaces were removed. The cluster API confirmed removal.
 The [TypeScript client check](browser-typescript.md) now tests the generated
 CSRF transport with real Gateway requests. Integration with the reference UI
 and browser telemetry remains open.
+
+The user confirmed on 2026-09-11 that console sign-out must end both the console
+and identity-provider sessions, with a confirmation page. This is now an
+explicit requirement. The existing `identity_provider` setting and Keycloak
+acceptance test implement this choice. Opening the confirmation page must not
+end either session.
