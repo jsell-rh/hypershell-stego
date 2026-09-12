@@ -101,3 +101,32 @@ through the console, workload network isolation, certificate rotation, and
 capacity also remain open. This check does not run long enough to prove an
 entire Kubernetes token rotation cycle. It does not establish production
 readiness.
+
+## Compiler update check
+
+The same six-Deployment workflow passed on 2026-09-12 UTC with compiler
+`4b25d919ac5a04a497f5052ed9d9542ac3919778`. The application test took 299.49
+seconds; the race-enabled package took 300.538 seconds. Contract checks passed
+in 1.059 seconds. All application behavior and worker telemetry checks above
+passed, including real OpenShell use after Pod replacement.
+
+The fixed source is `/tmp/stego-allocator-baseline-szie5me5/application`.
+Results are in `/tmp/stego-service-results.jxLgjjhK`. The Job reached `Complete`
+with test exit code zero. All 225 output, state, and dependency hashes match
+both generation passes, the post-test output, the separate adapter generation,
+and the checkout. Six live worker access checks and three live token-projection
+checks passed. Test namespaces and cluster RBAC resources were removed. Their
+absence and removal of private fixture files were verified.
+
+The changed image digests are:
+
+- API: `sha256:6372c6d22b53c4b1511ebc5cd5d3b25d76c6155ba5b1709b3d40f18f01f146eb`
+- Database: `sha256:517c40dee966cf2be25b192a8aaf0c208250ce6570583197ab8728db0b3ca684`
+- Identity: `sha256:de82feb7c512d525341215c3391e0d0e80931a0376220b5709c231e3cab47edd`
+- Gateway workload: `sha256:60468aa2143429a500419600d1185de553942521ecf812242551f04b0491e459`
+
+Console and provisioner image digests did not change. Compiler
+[CI run 34664178527](https://github.com/jsell-rh/stego/actions/runs/34664178527)
+passed. The new namespace adapter was checked separately. It is not deployed
+in this application run. Namespace allocation and removal of broad worker
+permissions remain an [open application gate](namespace-allocation.md).

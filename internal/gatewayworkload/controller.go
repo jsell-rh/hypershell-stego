@@ -39,6 +39,18 @@ type Controller struct {
 	provider  Provider
 }
 
+// Source returns live hints and retained IDs without a provider inventory.
+// Callers must read current state before they act on an ID.
+func Source(api pb.GatewayServiceClient, state control.GatewayIdentityServiceClient) (runtime.Source[string], error) {
+	if api == nil || state == nil {
+		return runtime.Source[string]{}, errors.New("Gateway source requires API and state clients")
+	}
+	c := &Controller{gateways: api, state: state}
+	return runtime.Source[string]{Watch: c.watch, Scan: func(ctx context.Context, emit func(string) error) error {
+		return runtime.Scan(ctx, gatewayrecovery.Source(state), emit, runtime.ScanOptions{PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout})
+	}}, nil
+}
+
 func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, databases pb.ManagedDatabaseServiceClient, releases pb.GatewayReleaseServiceClient, provider Provider) (*Controller, error) {
 	if gateways == nil || state == nil || databases == nil || releases == nil || provider == nil {
 		return nil, errors.New("Gateway workload controller dependencies are required")

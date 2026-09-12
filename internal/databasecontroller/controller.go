@@ -39,6 +39,16 @@ type Controller struct {
 	providerName string
 }
 
+// Source returns live hints and retained IDs. Callers must read current state
+// before they act on an ID.
+func Source(api pb.ManagedDatabaseServiceClient) (runtime.Source[string], error) {
+	if api == nil {
+		return runtime.Source[string]{}, errors.New("database source requires an API client")
+	}
+	c := &Controller{api: api}
+	return runtime.Source[string]{Watch: c.watch, Scan: c.seed}, nil
+}
+
 func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, provider Provider) (*Controller, error) {
 	return NewForProvider(api, cleanup, "deployment", provider)
 }

@@ -124,13 +124,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260912001247-5affc101795c
+        module_version: v0.0.0-20260912011334-4b25d919ac5a
         vcs: git
-        revision: 5affc101795c43df2b4b8ee43c14209b5c68e2b7
+        revision: 4b25d919ac5a04a497f5052ed9d9542ac3919778
         source_state: clean
     service_hash: ed7e41e9455e436e4cb520d4e5e7e99e892b1e326d0dcc2f7ce6630834664765
     registry_sha: gateway-workflow
-    registry_content_sha256: a41ca571d3b9875d92240bbb32e12a7ad87a24db8a1517e94c2ad58bad0d0877
+    registry_content_sha256: 355734273a8e67879276c090f3105803d02f88d925f61db50749f540b4ed6f09
     components:
         browser-telemetry:
             version: 1.0.0
@@ -139,7 +139,7 @@ last_applied:
             version: 1.6.2
             sha: gateway-workflow
         controller:
-            version: 1.15.1
+            version: 1.16.0
             sha: gateway-workflow
         go-sdk:
             version: 2.0.2
@@ -163,7 +163,7 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         kubernetes-service:
-            version: 1.5.0
+            version: 1.7.0
             sha: gateway-workflow
         otel-tracing:
             version: 1.11.0
@@ -464,7 +464,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: d8d43b41e0adc13591db7e7ee8e8b6125b0bee0db42e87dc250c331800d0454f
+        cli/command/version.go: 13a4d8167831cc5ee5171b76c4fabd7c1cd72b66a7b9361de014db5c827ec785
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -479,10 +479,10 @@ last_applied:
         controller/stream.go: 4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff
         controller/sweep.go: a29c158b90022219fd81317249c0cf70607fdd370687a9b25987d074cffd8cce
         controller/telemetry.go: d36b871fc097b5270bb49e383f6c50c653ddadb9b0db5c344b1b68a3aba58e2e
-        controller/watch_keyed.go: 47d431a660d9ed8df3f0ae9010e89e30bace634e6d6eb303483b9c74d0e45951
+        controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/render/main.go: 6738363269098b472687974b720f7e0b60e62feb2bebd3fd96b701a30448d899
+        deploy/render/main.go: 61528bff275a71ba50da307330a786d67f8de708751e588bca55006087f6ce25
         deploy/render/manifest.json.tmpl: dd18872908ea364f3e1ebe2b3bddb04af5ce20968d7e5e3b92d4b39cbecb407d
         deploy/render/rpc-provisioner.json.tmpl: 971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b
         deploy/render/worker-database.json.tmpl: 12fd1d0ac54144db79ab12cd2c2bf7488432dcc3553c13e9d8e5340027318671

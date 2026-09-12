@@ -4,7 +4,9 @@ package main
 
 import (
 	"bytes"
+	"crypto/sha256"
 	"embed"
+	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -74,7 +76,10 @@ func render(args []string, output io.Writer) error {
 	if err != nil {
 		return fmt.Errorf("unknown workload")
 	}
-	tmpl, err := template.New("deployment").Option("missingkey=error").Parse(string(manifest))
+	tmpl, err := template.New("deployment").Funcs(template.FuncMap{"allocationID": func(namespace, service string) string {
+		value := sha256.Sum256([]byte(namespace + "." + service))
+		return hex.EncodeToString(value[:16])
+	}}).Option("missingkey=error").Parse(string(manifest))
 	if err != nil {
 		return fmt.Errorf("invalid generated deployment")
 	}
