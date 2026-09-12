@@ -150,7 +150,7 @@ func TestCNPGControllerSelectsProviderAndDoesNotInventCredentials(t *testing.T) 
 	db := cnpgRow()
 	api := &stateAPI{db: db}
 	provider := &recordingProvider{}
-	controller, err := NewForProvider(api, api, "cnpg", provider)
+	controller, err := NewForProvider(api, api, "cnpg", "", provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -167,7 +167,7 @@ func TestCNPGControllerSelectsProviderAndDoesNotInventCredentials(t *testing.T) 
 	if err = controller.reconcile(context.Background(), db.Metadata.Id); err != nil || len(api.updates) != 1 || len(provider.ensured) != 2 || len(provider.deleted) != 0 {
 		t.Fatal("other provider was changed", err)
 	}
-	if _, err = NewForProvider(api, api, "unknown", provider); err == nil {
+	if _, err = NewForProvider(api, api, "unknown", "", provider); err == nil {
 		t.Fatal("unknown provider accepted")
 	}
 }

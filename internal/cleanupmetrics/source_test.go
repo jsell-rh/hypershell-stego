@@ -48,7 +48,7 @@ func TestCleanupSummaryScopeAndTimestampChecks(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	for _, source := range []func(context.Context) (runtime.CleanupSample, error){Gateway(nil, "workload", "cluster"), Database(nil, "deployment")} {
+	for _, source := range []func(context.Context) (runtime.CleanupSample, error){Gateway(nil, "workload", "cluster"), Database(nil, "deployment", "cluster")} {
 		if _, err := source(context.Background()); !errors.Is(err, runtime.ErrMetricsContract) {
 			t.Fatal(err)
 		}

@@ -102,6 +102,7 @@ func TestIdentityCleanupDeadlineReopensConfirmation(t *testing.T) {
 func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool) {
 	databaseResource, identityResource := resource == "database", resource == "identity"
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
@@ -109,17 +110,17 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
 	if databaseResource {
-		settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "deployment"))
+		settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", f.cluster))
 	} else {
 		settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
 	}
 	if cleanup {
 		if databaseResource {
-			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
+			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", f.cluster))
 		} else if identityResource {
 			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "identity", ""))
 		} else {
-			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
+			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "ManagedDatabase", "record", f.cluster))
 		}
 	}
 	binary := buildApplication(t)
@@ -174,7 +175,7 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 		var controller interface{ Run(context.Context) error }
 		var err error
 		if databaseResource {
-			controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), &deadlineDatabaseObservationProvider{provider})
+			controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), f.cluster, &deadlineDatabaseObservationProvider{provider})
 		} else if identityResource {
 			controller, err = gatewayidentity.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), &deadlineIdentityObservationProvider{provider})
 		} else {

@@ -184,19 +184,20 @@ func startDatabaseController(t *testing.T, binary string, k *kubeFixture, addres
 func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	k := kubernetesFixture(t)
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "DATABASE_PROVIDER=deployment", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "deployment"))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", f.cluster))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", f.cluster))
 	binary := buildApplication(t)
 	controllerBinary := buildProgram(t, "./out/deploy/workers/database")
 	stopAPI, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stopAPI() }()
 	controllerToken := token(t, key, "controller")
-	stopController, logs := startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs := startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
 	defer func() { stopController() }()
 	creator, admin := token(t, key, "creator", "gateway:creator"), token(t, key, "operator", "platform:admin")
 	input, _ := json.Marshal(gateways.CreateRequest{Name: "database-workflow", ClusterID: f.cluster, ReleaseID: f.release})
@@ -250,7 +251,7 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 		t.Fatal("unencrypted database connection succeeded")
 	}
 	stopController()
-	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
 	k.must(t, "", "-n", namespace, "delete", "pod", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--wait=true")
 	k.must(t, "", "-n", namespace, "wait", "pods", "-l", "hypershell.redhat.io/database-id="+gateway.DatabaseID, "--for=condition=Ready", "--timeout=90s")
 	// Pod readiness does not wait for Service routing to reach the new Pod.
@@ -326,7 +327,7 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	// Deny cleanup first. A failed DELETE must remain eligible for replay.
 	role := k.options.ClusterIssuer
 	k.must(t, "", "patch", "clusterrole", role, "--type=json", "-p", `[{"op":"replace","path":"/rules/0/verbs","value":["get","create","patch"]}]`)
-	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
 	deadline = time.Now().Add(30 * time.Second)
 	for !controllerRetryLogged(logs()) {
 		if time.Now().After(deadline) {
@@ -381,11 +382,11 @@ func TestDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 			"finalizers": []string{"acceptance.hypershell.test/hold"}},
 	})
 	k.must(t, string(late), "create", "-f", "-")
-	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
 	awaitCleanup(false)
 	k.must(t, "", "get", "namespace", namespace)
 	stopController()
-	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startDatabaseController(t, controllerBinary, k, rpcAddress, tlsIdentity.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
 	k.must(t, "", "patch", "namespace", namespace, "--type=merge", "-p", `{"metadata":{"finalizers":[]}}`)
 	k.must(t, "", "wait", "--for=delete", "namespace/"+namespace, "--timeout=90s")
 	awaitCleanup(true)

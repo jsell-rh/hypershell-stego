@@ -114,7 +114,10 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		}
 	}
 	checkREST("managed_clusters", 201, data)
-	release, err := releases.CreateGatewayRelease(call(controller), &pb.CreateGatewayReleaseRequest{Name: "stable", Image: "registry.example/gateway:v1", RolloutStrategy: proto.String("canary"), CanaryPercent: proto.Int32(10), CanaryDuration: proto.String("30m"), Status: proto.String("ready")})
+	if _, err := releases.CreateGatewayRelease(call(controller), &pb.CreateGatewayReleaseRequest{Name: "denied", Image: "registry.example/gateway:v1"}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("controller created release configuration", err)
+	}
+	release, err := releases.CreateGatewayRelease(call(admin), &pb.CreateGatewayReleaseRequest{Name: "stable", Image: "registry.example/gateway:v1", RolloutStrategy: proto.String("canary"), CanaryPercent: proto.Int32(10), CanaryDuration: proto.String("30m"), Status: proto.String("ready")})
 	if err != nil {
 		t.Fatal(err)
 	}

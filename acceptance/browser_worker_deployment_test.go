@@ -52,6 +52,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			})
 			if worker.name == "database" {
 				env["DATABASE_PROVIDER"] = "deployment"
+				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_DATABASE_CLUSTER_ISSUER"] = w.options.ClusterIssuer
 			} else {
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster

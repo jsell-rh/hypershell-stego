@@ -16,7 +16,7 @@ message ObserveDatabaseCleanupRequest {
 message ObserveDatabaseCleanupResponse {}
 
 // The response identifies the authorized scope and contains no resource IDs.
-message GetDatabaseCleanupSummaryRequest { string owner = 1; string provider = 2; }
+message GetDatabaseCleanupSummaryRequest { string owner = 1; string provider = 2; string cluster_id = 3; }
 message CleanupSummary {
  string owner = 1;
  string target = 2;

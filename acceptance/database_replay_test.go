@@ -49,7 +49,7 @@ func testDatabaseReplay(t *testing.T, collation, mode string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := gateways.Principal{Subject: "controller", Username: "controller", Issuer: "https://issuer.example"}
+	p := gateways.Principal{Subject: "operator", Username: "operator", Issuer: "https://issuer.example", Roles: []string{"platform:admin"}}
 	deleted := map[string]string{}
 	retained := map[string]string{}
 	for i := 0; i < 103; i++ {

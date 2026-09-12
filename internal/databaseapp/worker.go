@@ -42,7 +42,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 		return err
 	}
 	defer connection.Close()
-	controller, err := databasecontroller.NewForProvider(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), name, provider)
+	controller, err := databasecontroller.NewForProvider(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), name, os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), provider)
 	if err != nil {
 		return err
 	}

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
+	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -37,6 +38,7 @@ type Controller struct {
 	cleanup      control.DatabaseCleanupServiceClient
 	provider     Provider
 	providerName string
+	cluster      string
 }
 
 // Source returns live hints and retained IDs. Callers must read current state
@@ -49,19 +51,19 @@ func Source(api pb.ManagedDatabaseServiceClient) (runtime.Source[string], error)
 	return runtime.Source[string]{Watch: c.watch, Scan: c.seed}, nil
 }
 
-func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, provider Provider) (*Controller, error) {
-	return NewForProvider(api, cleanup, "deployment", provider)
+func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, cluster string, provider Provider) (*Controller, error) {
+	return NewForProvider(api, cleanup, "deployment", cluster, provider)
 }
 
 // NewForProvider binds this controller to one database provider.
-func NewForProvider(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, name string, provider Provider) (*Controller, error) {
-	if name != "deployment" && name != "cnpg" {
+func NewForProvider(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, name, cluster string, provider Provider) (*Controller, error) {
+	if _, err := databaseplacement.Target(name, cluster); err != nil {
 		return nil, errors.New("database provider is not supported")
 	}
 	if api == nil || cleanup == nil || provider == nil {
 		return nil, errors.New("database controller dependencies are required")
 	}
-	return &Controller{api: api, cleanup: cleanup, provider: provider, providerName: name}, nil
+	return &Controller{api: api, cleanup: cleanup, provider: provider, providerName: name, cluster: cluster}, nil
 }
 func (c *Controller) Run(ctx context.Context) error {
 	return c.RunWithMetrics(ctx, nil)
@@ -73,7 +75,7 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
 			Metrics:  metrics,
-			Cleanup:  cleanupmetrics.Database(c.cleanup, c.providerName),
+			Cleanup:  cleanupmetrics.Database(c.cleanup, c.providerName, c.cluster),
 			Capacity: queueCapacity, Workers: workers, ResyncInterval: resyncInterval,
 			Timeout: reconcileTimeout, RetryMin: time.Second, RetryMax: 10 * time.Second,
 			Terminal: func(err error) bool {
@@ -193,6 +195,16 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return errors.New("database has no declared provider cleanup owner")
 	}
 	if db.GetProvider() != c.providerName {
+		return nil
+	}
+	cluster, err := databaseplacement.Read(header)
+	if err != nil {
+		return err
+	}
+	if _, err := databaseplacement.Target(db.GetProvider(), cluster); err != nil {
+		return err
+	}
+	if cluster != c.cluster {
 		return nil
 	}
 	return runtime.RunObservation(ctx, func(operation context.Context) error {

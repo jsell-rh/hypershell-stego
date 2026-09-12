@@ -175,8 +175,12 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 	dir := filepath.Dir(apiTLS.config.CAFile)
 	allowed, _ := json.Marshal([]string{controllerID})
 	settings = append(settings, "DATABASE_PROVIDER="+provider, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
-	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "ManagedDatabase", "provider", ""), cleanupGrant(controllerID, "Gateway", "identity", ""), cleanupGrant(controllerID, "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, provider))
+	databaseTarget := f.cluster
+	if cnpg {
+		databaseTarget = "cnpg"
+	}
+	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "ManagedDatabase", "provider", databaseTarget), cleanupGrant(controllerID, "ManagedDatabase", "record", f.cluster), cleanupGrant(controllerID, "Gateway", "identity", ""), cleanupGrant(controllerID, "Gateway", "workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, databaseTarget))
 	accountKey, accountAuth := issuer(t)
 	accountSettings, stopAccountProvider := startRealProvisioner(t, identityProvider, accountKey, accountAuth)
 	defer stopAccountProvider()
@@ -185,7 +189,12 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 	apiBinary := buildApplication(t)
 	stopAPI, address, rpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
 	dbBinary := buildProgram(t, "./out/deploy/workers/database")
-	stopDatabase, _ := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "DATABASE_PROVIDER="+provider)
+	stopDatabase, _ := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "DATABASE_PROVIDER="+provider, "HYPERSHELL_MANAGED_CLUSTER_ID="+func() string {
+		if cnpg {
+			return ""
+		}
+		return f.cluster
+	}())
 	identityBinary := buildProgram(t, "./out/deploy/workers/gateway-identity")
 	stopIdentity, _ := startIdentityController(t, identityBinary, identityProvider, rpcAddress, apiTLS.config.CAFile, controllerToken)
 	workloadBinary := buildProgram(t, "./out/deploy/workers/gateway-workload")

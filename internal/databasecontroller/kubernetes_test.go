@@ -195,7 +195,7 @@ func reconcileHint(ctx context.Context, c *Controller, event *pb.WatchManagedDat
 }
 func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 	p := &rejectProvider{}
-	c, _ := New(staleAPI{}, staleAPI{}, p)
+	c, _ := New(staleAPI{}, staleAPI{}, testClusterID, p)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "old", Type: pb.EventType_EVENT_TYPE_CREATED, ManagedDatabase: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "old"}, Provider: "deployment"}}
 	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.NotFound {
 		t.Fatal("missing retained state did not remain an error", err)
@@ -208,6 +208,8 @@ func TestStaleCreateCannotRecreateDeletedDatabase(t *testing.T) {
 		t.Fatal("event with a different ID was accepted")
 	}
 }
+
+const testClusterID = "000000000000000000000000001"
 
 type stateAPI struct {
 	pb.ManagedDatabaseServiceClient
@@ -238,6 +240,10 @@ func (a *stateAPI) GetManagedDatabase(ctx context.Context, _ *pb.GetManagedDatab
 		a.version = 1
 	}
 	header := metadata.Pairs("resource-version", strconv.FormatInt(a.version, 10), "resource-deleted", strconv.FormatBool(a.deleted), "resource-cleanup", `{"provider":`+strconv.FormatBool(a.cleanupComplete)+`}`)
+	header.Set("hypershell-database-placement", "cluster-v1")
+	if a.db.GetProvider() == "deployment" {
+		header.Set("hypershell-database-cluster-id", testClusterID)
+	}
 	if a.headerOverride != nil {
 		header = a.headerOverride
 	}
@@ -275,7 +281,7 @@ func TestReadinessLossAndFailedStatusWritesRemainVisible(t *testing.T) {
 	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment", Status: &ready}
 	failure := errors.New("status update failed")
 	api := &stateAPI{db: db, updateError: failure}
-	c, _ := New(api, api, pendingProvider{})
+	c, _ := New(api, api, testClusterID, pendingProvider{})
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 	if err := reconcileHint(context.Background(), c, event); !errors.Is(err, failure) {
 		t.Fatal("status update failure was lost", err)
@@ -324,7 +330,7 @@ func TestMissingDatabaseRevisionStopsProviderWork(t *testing.T) {
 		db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 		api := &stateAPI{db: db, headerOverride: header}
 		provider := &rejectProvider{}
-		c, _ := New(api, api, provider)
+		c, _ := New(api, api, testClusterID, provider)
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 		if err := reconcileHint(context.Background(), c, event); err == nil {
 			t.Fatal("missing revision accepted")
@@ -353,7 +359,7 @@ func TestDatabaseConflictRequiresAnotherProviderObservation(t *testing.T) {
 	db := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 	api := &stateAPI{db: db}
 	provider := &changeDuringEnsure{change: func() { api.version++ }}
-	c, _ := New(api, api, provider)
+	c, _ := New(api, api, testClusterID, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: db}
 	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.Aborted {
 		t.Fatal("old observation did not fail", err)
@@ -377,7 +383,7 @@ func TestLiveDatabaseEventUsesCurrentProvider(t *testing.T) {
 		row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: test.current}
 		api := &stateAPI{db: row}
 		provider := &rejectProvider{}
-		c, _ := New(api, api, provider)
+		c, _ := New(api, api, testClusterID, provider)
 		hint := proto.Clone(row).(*pb.ManagedDatabase)
 		hint.Provider = test.hint
 		event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_UPDATED, ManagedDatabase: hint}
@@ -395,7 +401,7 @@ func TestDatabaseDeleteHintCannotDeleteCurrentLiveState(t *testing.T) {
 	expected := proto.Clone(row)
 	api := &stateAPI{db: row}
 	provider := &recordingProvider{}
-	c, _ := New(api, api, provider)
+	c, _ := New(api, api, testClusterID, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
 	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
@@ -424,7 +430,7 @@ func TestDatabaseDeleteUsesCurrentRetainedRecord(t *testing.T) {
 		current := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment", Namespace: "current"}
 		api := &stateAPI{db: current, deleted: true, version: 7}
 		provider := &recordingProvider{}
-		c, _ := New(api, api, provider)
+		c, _ := New(api, api, testClusterID, provider)
 		hint := proto.Clone(current).(*pb.ManagedDatabase)
 		hint.Namespace = "old"
 		hint.Provider = "cnpg"
@@ -470,7 +476,7 @@ func TestDatabaseDeleteStopsWithoutAuthoritativeEvidence(t *testing.T) {
 			current := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Provider: "deployment"}
 			api := &stateAPI{db: current, deleted: true, readError: test.readError, headerOverride: test.header}
 			provider := &recordingProvider{}
-			c, _ := New(api, api, provider)
+			c, _ := New(api, api, testClusterID, provider)
 			hint := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 			event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: hint}
 			if err := reconcileHint(context.Background(), c, event); err == nil {
@@ -504,7 +510,7 @@ func TestCompletedDatabaseCleanupStillChecksForLateEffects(t *testing.T) {
 	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 	api := &stateAPI{db: row, deleted: true, version: 4, cleanupComplete: true}
 	provider := &recordingProvider{}
-	c, _ := New(api, api, provider)
+	c, _ := New(api, api, testClusterID, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
 	if err := reconcileHint(context.Background(), c, event); err != nil {
 		t.Fatal(err)
@@ -532,7 +538,7 @@ func TestDatabaseCleanupConflictRequiresFreshProviderWork(t *testing.T) {
 	row := &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: "database"}, Provider: "deployment"}
 	api := &stateAPI{db: row, deleted: true, version: 2, cleanupError: status.Error(codes.Aborted, "resource changed")}
 	provider := &recordingProvider{}
-	c, _ := New(api, api, provider)
+	c, _ := New(api, api, testClusterID, provider)
 	event := &pb.WatchManagedDatabasesResponse{ResourceId: "database", Type: pb.EventType_EVENT_TYPE_DELETED, ManagedDatabase: row}
 	if err := reconcileHint(context.Background(), c, event); status.Code(err) != codes.Aborted {
 		t.Fatal(err)
@@ -547,5 +553,44 @@ func TestDatabaseCleanupConflictRequiresFreshProviderWork(t *testing.T) {
 	}
 	if !api.cleanupComplete || len(provider.deleted) != 2 || api.reads != 2 {
 		t.Fatal("conflict did not require fresh cleanup work")
+	}
+}
+
+func TestRecordedClusterLimitsProviderWork(t *testing.T) {
+	for _, tc := range []struct {
+		name, cluster string
+		deleted, bad  bool
+	}{
+		{name: "current", cluster: testClusterID},
+		{name: "deleted current", cluster: testClusterID, deleted: true},
+		{name: "foreign", cluster: "000000000000000000000000002"},
+		{name: "deleted foreign", cluster: "000000000000000000000000002", deleted: true},
+		{name: "unassigned", bad: true},
+		{name: "invalid", cluster: "bad", bad: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			id := ksuid.New().String()
+			api := &stateAPI{deleted: tc.deleted, db: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Provider: "deployment"}, headerOverride: metadata.Pairs("resource-version", "1", "resource-deleted", strconv.FormatBool(tc.deleted), "resource-cleanup", `{"provider":false}`, "hypershell-database-placement", "cluster-v1")}
+			if tc.cluster != "" {
+				api.headerOverride.Set("hypershell-database-cluster-id", tc.cluster)
+			}
+			provider := &recordingProvider{}
+			c, err := New(api, api, testClusterID, provider)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = c.reconcile(context.Background(), id)
+			if (err != nil) != tc.bad {
+				t.Fatal(err)
+			}
+			if tc.cluster != testClusterID && (len(api.updates) != 0 || len(api.cleanupCalls) != 0 || len(provider.ensured) != 0 || len(provider.deleted) != 0) {
+				t.Fatal("foreign placement changed API state")
+			}
+		})
+	}
+	for _, cluster := range []string{"", "bad"} {
+		if _, err := New(&stateAPI{}, &stateAPI{}, cluster, &recordingProvider{}); err == nil {
+			t.Fatal("missing cluster accepted")
+		}
 	}
 }

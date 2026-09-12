@@ -13,7 +13,7 @@ last_applied:
                 mode: 420
             contracts/controlplane/database_cleanup.proto:
                 exists: true
-                sha256: 91c489dcecbe27ac69e5addfd7883db538e4d2d7d10b59b063e626f445c58fd7
+                sha256: 5f2faaba2220a30a86de9a791a2b597a0a13efa1f05b4dcc0377f843b767ca48
                 mode: 420
             contracts/controlplane/gateway_identity.proto:
                 exists: true
@@ -97,7 +97,7 @@ last_applied:
                 mode: 420
             internal/databaseapp/worker.go:
                 exists: true
-                sha256: 5e2ca15c32067b72e25497d96934fd6bdbc36f9e9eb3c671b5b83090b3aaab68
+                sha256: 4f7f6f569662faea04af0ff5e09c24389bcbe71b1a3b59d682be1a385f30d94c
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
@@ -119,7 +119,7 @@ last_applied:
                 exists: true
                 sha256: 467e0069104251e3bf78ff8d0143044d190986d439f53bf0437fb7d96464a4b0
                 mode: 420
-        sha256: f154f69dd5129239391f98e7e3c664bafa9028907a0e68e7260753902cfc221a
+        sha256: ec553a828f396f4c225e2847e6e763f8e3ff8f037cdf7993c2be38d5c1dd9e60
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -511,7 +511,7 @@ last_applied:
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
         grpcapi/client/client.go: 5b38f681b05ef0588dc3b46a40a9bf61ab7ae74880ff3638e6eacef4c6725eb3
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
-        grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: 47fa6ac08cbabdcaa9d502e2ac0890e4a01630ef92ab6d2dad8b7c804151b5ba
+        grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: 9f3de40510f99be61f2574f23d88429ac8f9a698a02abbf5719c220093c74ce8
         grpcapi/pb/hypershell/controlplane/v1/database_cleanup_grpc.pb.go: b5434cb72cc97eb475bf7124e6300d653cf8bed5865616e682f2e6331b3a5f4e
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: bfcbdde5835377906cf6a411eff09d7ef73b4516e60d8d375ad97614fd480a56
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: d678e7cc972b49e34e92800dbbe1678ba26b47f4aeb293a0173a15ed4c24ce43

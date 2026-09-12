@@ -29,7 +29,7 @@ func TestCNPGDatabaseWorkloadAndOfflineDeletion(t *testing.T) {
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "DATABASE_PROVIDER=cnpg", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", "cnpg"))
 	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "cnpg"))
 	binary := buildApplication(t)
 	controllerBinary := buildProgram(t, "./out/deploy/workers/database")

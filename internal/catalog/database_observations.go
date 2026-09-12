@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"encoding/json"
+	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -19,6 +20,22 @@ func databaseObservationPolicy(policy *gateways.Service) func(gateways.Principal
 		if err != nil || string(data) != "{}" {
 			return gateways.ErrInvalid
 		}
-		return policy.AuthorizeControllerWrite(p, "ManagedDatabase", "observe.provider", row.Provider)
+		target, err := databaseTarget(row)
+		if err != nil {
+			return err
+		}
+		return policy.AuthorizeControllerWrite(p, "ManagedDatabase", "observe.provider", target)
 	}
+}
+
+func databaseTarget(row model.ManagedDatabase) (string, error) {
+	cluster := ""
+	if row.ClusterID != nil {
+		cluster = *row.ClusterID
+	}
+	target, err := databaseplacement.Target(row.Provider, cluster)
+	if err != nil {
+		return "", gateways.ErrForbidden
+	}
+	return target, nil
 }

@@ -58,11 +58,11 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := principal("controller")
-	db, err := resources.Databases.Create(ctx, p, catalog.DatabaseCreate{Name: "cursor-deleted", Provider: "deployment"})
+	db, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: "cursor-deleted", Provider: "deployment"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := resources.Databases.Delete(ctx, p, db.ID); err != nil {
+	if err := resources.Databases.Delete(ctx, principal("operator", "platform:admin"), db.ID); err != nil {
 		t.Fatal(err)
 	}
 	gateway, err := f.service.Create(ctx, principal("alice", "gateway:creator"), f.request("cursor-gateway"))
@@ -123,7 +123,7 @@ func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
 	}
 	p := principal("controller")
 	for i := range 21 {
-		if _, err := resources.Databases.Create(ctx, p, catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "deployment"}); err != nil {
+		if _, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "deployment"}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -155,7 +155,7 @@ func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
 		}
 		after = rows[len(rows)-1].ID
 		if page == 0 {
-			if err := resources.Databases.Delete(ctx, p, rows[0].ID); err != nil {
+			if err := resources.Databases.Delete(ctx, principal("operator", "platform:admin"), rows[0].ID); err != nil {
 				t.Fatal(err)
 			}
 		}

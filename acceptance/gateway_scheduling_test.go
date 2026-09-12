@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -102,6 +103,7 @@ func TestGatewayIdentityCleanupMakesIndependentProgressAfterRestart(t *testing.T
 func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	t.Helper()
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
@@ -115,10 +117,14 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		endpoint = "managed_databases"
 	}
 	target := ""
-	if cleanupOwner == "workload" {
+	if cleanupOwner == "workload" || cleanupOwner == "provider" {
 		target = f.cluster
 	}
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", resource, cleanupOwner, target))
+	grants := []auth.Grant{cleanupGrant("controller", resource, cleanupOwner, target)}
+	if cleanupOwner == "workload" {
+		grants = append(grants, cleanupGrant("controller", "ManagedDatabase", "record", f.cluster))
+	}
+	settings = withCleanupGrants(t, settings, grants...)
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -181,7 +187,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	defer cancel()
 	summaryRead := func(callContext context.Context) (*control.CleanupSummary, error) {
 		if cleanupOwner == "provider" {
-			return control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(callContext, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "deployment"})
+			return control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(callContext, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "deployment", ClusterId: f.cluster})
 		}
 		return state.GetGatewayCleanupSummary(callContext, &control.GetGatewayCleanupSummaryRequest{Owner: cleanupOwner, Target: target})
 	}
@@ -195,8 +201,8 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	}
 	if cleanupOwner == "provider" {
 		other, err := control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(ctx, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "cnpg"})
-		if err != nil || other.GetPending() != 1 {
-			t.Fatal("provider summary lost its scope", other, err)
+		if status.Code(err) != codes.PermissionDenied {
+			t.Fatal("provider summary bypassed its grant", other, err)
 		}
 	} else {
 		otherOwner, otherTarget := "workload", f.cluster
@@ -212,7 +218,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		RunWithMetrics(context.Context, *runtime.Metrics) error
 	}
 	if cleanupOwner == "provider" {
-		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), &blockedDatabaseCleanupProvider{provider})
+		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), f.cluster, &blockedDatabaseCleanupProvider{provider})
 	} else if cleanupOwner == "identity" {
 		controller, err = gatewayidentity.New(api, state, &blockedIdentityCleanupProvider{provider})
 	} else {

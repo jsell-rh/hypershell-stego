@@ -50,13 +50,14 @@ func (s *idleReplayStream) Recv() (*pb.WatchManagedDatabasesResponse, error) {
 
 func TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart(t *testing.T) {
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", ""))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", f.cluster))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -78,7 +79,7 @@ func TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart(t *testing.T) {
 	_, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	api := &idleReplayClient{ManagedDatabaseServiceClient: pb.NewManagedDatabaseServiceClient(connection), entered: make(chan struct{}), stopped: make(chan struct{})}
 	provider := &retainedDatabaseProvider{deleted: make(chan *pb.ManagedDatabase, 8), ensured: make(chan struct{}, 1)}
-	controller, err := databasecontroller.New(api, control.NewDatabaseCleanupServiceClient(connection), provider)
+	controller, err := databasecontroller.New(api, control.NewDatabaseCleanupServiceClient(connection), f.cluster, provider)
 	if err != nil {
 		t.Fatal(err)
 	}

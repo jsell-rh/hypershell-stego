@@ -134,10 +134,26 @@ func (r *Resource[T, C, P]) ObserveCleanup(ctx context.Context, p gateways.Princ
 	if r.entity != "ManagedDatabase" || owner != "provider" {
 		return gateways.ErrForbidden
 	}
-	if err := r.authorizeCleanup(p, r.entity, owner, ""); err != nil {
-		return err
-	}
 	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		reader, ok := tx.(store.RetainedReader)
+		if !ok {
+			return errors.New("catalog storage has no retained reader")
+		}
+		value, err := reader.GetRetained(ctx, r.entity, id)
+		if err != nil {
+			return err
+		}
+		row, ok := value.(model.ManagedDatabase)
+		if !ok {
+			return errors.New("unexpected database storage result")
+		}
+		target, err := databaseTarget(row)
+		if err != nil {
+			return err
+		}
+		if err := r.authorizeCleanup(p, r.entity, owner, target); err != nil {
+			return err
+		}
 		writer, ok := tx.(store.CleanupWriter)
 		if !ok {
 			return errors.New("catalog storage does not support cleanup observations")
@@ -175,6 +191,9 @@ func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, in
 	var zero T
 	if err := r.authorize(p, true); err != nil {
 		return zero, err
+	}
+	if r.authorizeRecovery(p) == nil {
+		return zero, gateways.ErrForbidden
 	}
 	key, err := ksuid.NewRandom()
 	if err != nil {
@@ -228,6 +247,9 @@ func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id
 	var row T
 	if err := r.authorize(p, true); err != nil {
 		return row, err
+	}
+	if !r.requireControllerVersion && r.authorizeRecovery(p) == nil {
+		return row, gateways.ErrForbidden
 	}
 	if r.requireControllerVersion && version == 0 && r.authorizeRecovery(p) == nil {
 		return row, gateways.ErrObservationRequired
@@ -294,8 +316,25 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 		return store.ErrNotFound
 	}
 	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		if _, err := tx.Get(ctx, r.entity, id); err != nil {
+		value, err := tx.Get(ctx, r.entity, id)
+		if err != nil {
 			return err
+		}
+		if r.authorizeRecovery(p) == nil {
+			if r.entity != "ManagedDatabase" {
+				return gateways.ErrForbidden
+			}
+			row, ok := value.(model.ManagedDatabase)
+			if !ok {
+				return errors.New("unexpected database storage result")
+			}
+			target, err := databaseTarget(row)
+			if err != nil {
+				return err
+			}
+			if err := r.authorizeCleanup(p, r.entity, "record", target); err != nil {
+				return err
+			}
 		}
 		if r.foreignField != "" {
 			refs, err := tx.List(ctx, "Gateway", r.foreignField, id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})

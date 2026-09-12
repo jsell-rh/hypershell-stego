@@ -18,13 +18,14 @@ import (
 
 func TestDatabaseRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", "deployment"))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", f.cluster))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()

@@ -11,11 +11,11 @@ import (
 )
 
 func (s *databaseCleanupServer) GetDatabaseCleanupSummary(ctx context.Context, request *control.GetDatabaseCleanupSummaryRequest) (*control.CleanupSummary, error) {
-	result, err := s.resource.CleanupSummary(ctx, gateways.PrincipalFromContext(ctx), request.GetOwner(), request.GetProvider())
+	result, err := s.resource.CleanupSummary(ctx, gateways.PrincipalFromContext(ctx), request.GetOwner(), request.GetProvider(), request.GetClusterId())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return cleanupSummary(result, request.GetOwner(), "", request.GetProvider())
+	return cleanupSummary(result, request.GetOwner(), request.GetClusterId(), request.GetProvider())
 }
 func (s *identityServer) GetGatewayCleanupSummary(ctx context.Context, request *control.GetGatewayCleanupSummaryRequest) (*control.CleanupSummary, error) {
 	result, err := s.service.CleanupSummary(ctx, gateways.PrincipalFromContext(ctx), request.GetOwner(), request.GetTarget())

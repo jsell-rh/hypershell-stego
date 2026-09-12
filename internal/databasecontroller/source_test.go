@@ -84,7 +84,7 @@ func TestInvalidRecoveryStopsBeforeProviderWork(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			api := &scanAPI{stateAPI: &stateAPI{}, events: tc.events, badCapability: tc.badCapability, badScope: tc.badScope}
 			provider := &recordingProvider{}
-			controller, err := New(api, api, provider)
+			controller, err := New(api, api, testClusterID, provider)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -116,7 +116,7 @@ func TestRecoveryReadsLiveAndDeletedIDsWithoutOffsetLists(t *testing.T) {
 				api.events = append(api.events, &pb.WatchManagedDatabasesResponse{Type: kind, ResourceId: id, ManagedDatabase: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}}})
 			}
 		}
-		controller, err := New(api, api, &recordingProvider{})
+		controller, err := New(api, api, testClusterID, &recordingProvider{})
 		if err != nil {
 			t.Fatal(err)
 		}

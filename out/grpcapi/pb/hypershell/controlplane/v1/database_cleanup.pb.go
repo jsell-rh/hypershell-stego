@@ -125,6 +125,7 @@ type GetDatabaseCleanupSummaryRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Owner         string                 `protobuf:"bytes,1,opt,name=owner,proto3" json:"owner,omitempty"`
 	Provider      string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,3,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -169,6 +170,13 @@ func (x *GetDatabaseCleanupSummaryRequest) GetOwner() string {
 func (x *GetDatabaseCleanupSummaryRequest) GetProvider() string {
 	if x != nil {
 		return x.Provider
+	}
+	return ""
+}
+
+func (x *GetDatabaseCleanupSummaryRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
 	}
 	return ""
 }
@@ -266,10 +274,12 @@ const file_hypershell_controlplane_v1_database_cleanup_proto_rawDesc = "" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05owner\x18\x02 \x01(\tR\x05owner\x12\x1a\n" +
 	"\bcomplete\x18\x03 \x01(\bR\bcomplete\" \n" +
-	"\x1eObserveDatabaseCleanupResponse\"T\n" +
+	"\x1eObserveDatabaseCleanupResponse\"s\n" +
 	" GetDatabaseCleanupSummaryRequest\x12\x14\n" +
 	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x1a\n" +
-	"\bprovider\x18\x02 \x01(\tR\bprovider\"\xf4\x01\n" +
+	"\bprovider\x18\x02 \x01(\tR\bprovider\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x03 \x01(\tR\tclusterId\"\xf4\x01\n" +
 	"\x0eCleanupSummary\x12\x14\n" +
 	"\x05owner\x18\x01 \x01(\tR\x05owner\x12\x16\n" +
 	"\x06target\x18\x02 \x01(\tR\x06target\x12\x1a\n" +

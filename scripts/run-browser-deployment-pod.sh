@@ -52,7 +52,7 @@ if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
 fi
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
-go test -v -race -mod=readonly -count=1 -timeout=10m -run '^(TestGeneratedKubernetesBrowserGatewayWorkflow|TestKubernetesWriteFailurePrivacy)$' ./acceptance
+go test -v -race -mod=readonly -count=1 -timeout=10m -run '^(TestDatabaseClusterAccessRulesThroughGeneratedRuntime|TestDatabaseRetainedReplayThroughGeneratedRuntime|TestDatabaseDeleteReplayThroughGeneratedRuntime|TestRecoveryPagesAvoidTotals|TestDatabaseRecoveryCursorSurvivesEarlierDeletion|TestPlacementWorkflowThroughGeneratedRuntime|TestGatewayNetworkWorkflowThroughGeneratedRuntime|TestGeneratedKubernetesBrowserGatewayWorkflow|TestKubernetesWriteFailurePrivacy)$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
 tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum

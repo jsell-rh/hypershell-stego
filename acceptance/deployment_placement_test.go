@@ -540,6 +540,11 @@ func TestDatabaseClusterPlacementMigrationAndRetention(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	providerMigration, err := os.ReadFile("../migrations/000010_database_provider_placement.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	migration = append(migration, providerMigration...)
 	for range 2 {
 		if _, err := f.db.ExecContext(ctx, string(migration)); err != nil {
 			t.Fatal(err)
@@ -556,6 +561,9 @@ func TestDatabaseClusterPlacementMigrationAndRetention(t *testing.T) {
 	a, b := before.(model.ManagedDatabase), after.(model.ManagedDatabase)
 	if a.ID != b.ID || a.Namespace != b.Namespace || a.ResourceVersion != b.ResourceVersion || !a.UpdatedTime.Equal(b.UpdatedTime) || !a.CreatedTime.Equal(b.CreatedTime) || b.ClusterID != nil {
 		t.Fatal("migration changed existing record state")
+	}
+	if _, err := f.db.ExecContext(ctx, "UPDATE managed_databases SET cluster_id=$1 WHERE id=$2", f.cluster, f.database); err == nil {
+		t.Fatal("shared database accepted deployment placement")
 	}
 	if _, err := f.db.ExecContext(ctx, "UPDATE managed_databases SET cluster_id=$1 WHERE id=$2", ksuid.New().String(), f.database); err == nil {
 		t.Fatal("placement accepted a missing cluster")

@@ -32,3 +32,19 @@ func TestReadPlacementContract(t *testing.T) {
 		})
 	}
 }
+
+func TestGrantTargetRejectsUnassignedAndMixedPlacement(t *testing.T) {
+	cluster := ksuid.New().String()
+	for _, tc := range []struct {
+		provider, cluster, want string
+		bad                     bool
+	}{
+		{"deployment", cluster, cluster, false}, {"cnpg", "", "cnpg", false},
+		{"deployment", "", "", true}, {"deployment", "deployment", "", true}, {"cnpg", cluster, "", true}, {"unknown", cluster, "", true},
+	} {
+		got, err := Target(tc.provider, tc.cluster)
+		if (err != nil) != tc.bad || got != tc.want {
+			t.Fatal("invalid grant target", err)
+		}
+	}
+}

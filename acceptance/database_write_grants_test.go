@@ -19,6 +19,7 @@ import (
 
 func TestDatabaseControllerWriteGrantsAcrossProvidersAndRestart(t *testing.T) {
 	f := database(t)
+	assignTestDatabaseCluster(t, f)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	if _, err := f.db.Exec(`CREATE TABLE database_event_audit(kind text NOT NULL);
@@ -34,8 +35,8 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'manageddatabase.%') EXECUTE FUNCTION audit_dat
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["provider","other-provider","identity","ungranted","cleanup","wrong-operation"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "ManagedDatabase", "provider", ""))
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("provider", "deployment"), databaseWriteGrant("other-provider", "cnpg"), databaseWriteGrant("ordinary", "deployment"), writeGrant("identity", "configure.identity", ""), cleanupGrant("wrong-operation", "ManagedDatabase", "provider", "deployment"))
+	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "ManagedDatabase", "provider", f.cluster))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("provider", f.cluster), databaseWriteGrant("other-provider", "cnpg"), databaseWriteGrant("ordinary", f.cluster), writeGrant("identity", "configure.identity", ""), cleanupGrant("wrong-operation", "ManagedDatabase", "provider", "deployment"))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()

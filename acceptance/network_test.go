@@ -210,7 +210,10 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || notice.GetType() != pb.EventType_EVENT_TYPE_UPDATED || notice.GetGatewayNetwork().GetStatus() != "ready" || notice.GetGatewayNetwork().GetTopology() != "hub-spoke" {
 		t.Fatal("network REST patch watch", err)
 	}
-	if _, err := client.UpdateGatewayNetwork(call(controller), &pb.UpdateGatewayNetworkRequest{Id: id, TunnelMode: proto.String("")}); err != nil {
+	if _, err := client.UpdateGatewayNetwork(call(controller), &pb.UpdateGatewayNetworkRequest{Id: id, TunnelMode: proto.String("")}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("controller changed network configuration", err)
+	}
+	if _, err := client.UpdateGatewayNetwork(call(admin), &pb.UpdateGatewayNetworkRequest{Id: id, TunnelMode: proto.String("")}); err != nil {
 		t.Fatal(err)
 	}
 	notice, err = watch.Recv()
@@ -290,7 +293,10 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 	cliRun("logout")
 	readCatalogEvent(t, kafkaConsumer(t, config), cliNetwork.ID, "GatewayNetworks", "Delete", "gatewaynetwork.deleted")
 	// A second network created over gRPC must have the same REST contract.
-	second, err := client.CreateGatewayNetwork(call(controller), &pb.CreateGatewayNetworkRequest{Name: "from-grpc", Topology: proto.String("mesh")})
+	if _, err := client.CreateGatewayNetwork(call(controller), &pb.CreateGatewayNetworkRequest{Name: "denied"}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("controller created network configuration", err)
+	}
+	second, err := client.CreateGatewayNetwork(call(admin), &pb.CreateGatewayNetworkRequest{Name: "from-grpc", Topology: proto.String("mesh")})
 	if err != nil {
 		t.Fatal(err)
 	}

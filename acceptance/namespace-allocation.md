@@ -45,11 +45,6 @@ or cluster-scoped controller authorization.
 
 ## Required application gate
 
-Require the database worker to select its recorded managed cluster. Require
-the Gateway worker to check that its deployment database has the same
-placement. Limit database observation and cleanup grants by cluster; a client
-filter alone does not enforce this rule.
-
 Connect the adapter to a generated worker. Declare fixed namespace profiles
 and scoped roles. Replace resource-worker namespace
 writes with the generated allocation observations. Use an immutable public
@@ -101,3 +96,86 @@ An earlier source check also passed in 22.992 seconds. Its results are
 check adds invalid-ID compatibility and the two existing shared-database move
 tests. These checks do not deploy the namespace allocator. The application
 gate above remains open.
+
+## Cluster access rules
+
+A deployment database worker must set `HYPERSHELL_MANAGED_CLUSTER_ID` to its
+canonical managed-cluster ID. It reads retained placement before work. Missing
+or invalid placement is an error; a different cluster causes no provider or API
+write. The Gateway worker checks database placement and deletion state before
+provisioning. It checks placement before it removes a database record.
+
+The API uses the stored cluster as the exact target for these grants:
+
+- `observe.provider` in `HYPERSHELL_CONTROLLER_WRITE_GRANTS` permits database
+  observations. Each observation also requires the resource version.
+- `cleanup.provider` in `HYPERSHELL_CLEANUP_GRANTS` permits cleanup observations
+  and the cleanup summary for that cluster.
+- `cleanup.record` in `HYPERSHELL_CLEANUP_GRANTS` permits the Gateway worker to
+  delete its unused database record. Live Gateway references still prevent it.
+
+The resource is `ManagedDatabase` for all three grants. The target for the
+shared CNPG provider is `cnpg`; its worker must leave the managed-cluster ID
+empty. Old empty cleanup targets and the old `deployment` observation target
+provide no fallback. A controller's `platform:admin` role cannot bypass these
+rules. Controller subjects cannot create catalog records or change cluster,
+release, or network configuration.
+
+The private cleanup-summary request now includes `cluster_id` for deployment
+scope. The response confirms that scope. STEGO supplies the bounded aggregate
+query; the domain selects and authorizes its filter. The client checks the
+returned scope before it supplies a metric sample. No database record IDs enter
+the metric sample.
+
+Apply migration `000010_database_provider_placement.sql` after migration 000009.
+It prevents a CNPG row from acquiring a deployment-cluster scope. Deploy the
+new API and exact grants before the new workers. Verify and record legacy
+placement before enabling allocation for existing deployment databases. Public
+REST and protobuf resource shapes do not change.
+
+## Cluster access check attempts
+
+The first bounded jshell check passed all six selected controller packages
+under race detection. Fifteen application checks passed. Two application
+checks failed because their fixtures still used the old settings: the new
+cluster test selected shared CNPG mode, and the replay test used a controller
+to create catalog records. The corrected fixtures select deployment mode and
+use an operator for catalog creation. The run is a failure, not a pass.
+
+Results are in `/tmp/hypershell-cluster-grants-n0772p6g`. The Job reached
+`Failed`; its logs and generated files were collected. Its namespace and
+private fixture files are absent. Both generation passes match. The test
+command stopped before the post-test hash check.
+
+## Cluster access application check
+
+The corrected check passed on 2026-09-12 UTC. All nine selected application
+checks passed under race detection in 363.771 seconds. The two-cluster check
+passed in 8.50 seconds. It verifies exact observation, cleanup, and record-delete
+grants; denies foreign, unassigned, and old unscoped targets; checks that denied
+writes produce no database events; and repeats access checks after API restart.
+It also denies controller catalog creation and cluster-credential-reference
+changes, even when the controller has the platform administrator role.
+
+Delete and retained replay passed with both tested database collations. Network
+and placement workflows, recovery pagination, and diagnostic privacy also
+passed. The six-Deployment browser workflow passed in 310.21 seconds. It used
+the new cluster setting on the generated database worker. The actual OpenShell
+Gateway passed requests and provider-data recovery after Pod replacement.
+All three workers were replaced and exported metrics and correlated logs and
+traces before and after replacement. API, console, and provisioner replacement,
+service-account use, and confirmed identity-provider sign-out passed.
+
+Results are in `/tmp/stego-service-results.ozNoPlD4`. The fixed source is
+`/tmp/hypershell-cluster-worker-mux9pcw9/application`. All 654 application archive
+files match that source. All 225 generated, state, and dependency hashes match
+both generation passes, the post-test files, and the checkout. The only source
+change after the freeze is this evidence document. Input-manifest and console
+isolation checks passed in 1.068 seconds. The final account-deletion screenshot
+was reviewed. The Job reached `Complete` with exit zero. The test and workload
+namespaces, owned cluster RBAC objects, and private fixture files are absent.
+Their removal was verified.
+
+This check uses the existing bounded browser workload profile. It does not
+deploy the namespace allocator or remove broad worker namespace permissions.
+The namespace-allocation application gate remains open.
