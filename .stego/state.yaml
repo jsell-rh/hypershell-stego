@@ -97,7 +97,7 @@ last_applied:
                 mode: 420
             internal/databaseapp/worker.go:
                 exists: true
-                sha256: 4f7f6f569662faea04af0ff5e09c24389bcbe71b1a3b59d682be1a385f30d94c
+                sha256: 888d22a82e1c947431ff0ee5e44ce177226b4803f804b53ad312f002de8f5140
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
@@ -105,7 +105,7 @@ last_applied:
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: 84942bc8bca4db4b7008e0881ad334e6ce4a05f2d5375f0f49d38d4552ebef75
+                sha256: 9136c416ecfbccb70990bf25087fc5dad967c61f201c457bc215e91af22f4eb2
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -121,9 +121,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: d0b61e1aa8cc366a5b1744191d52d7274fb2f57779bc10d665ea27fa9f5c4512
+                sha256: 18b4daae326756338f81caad37e03da7f3362d602f1aad49c73863c37c8d569e
                 mode: 420
-        sha256: f7ff78b301263a45cb1da9a1f7f8af3c3e9ea8578b533edd6a13a886e06ecf8a
+        sha256: fceca2aec4e5809d8dc9773385de309ec27ff06464ed213b71cf2d272dee4b84
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -132,7 +132,7 @@ last_applied:
         vcs: git
         revision: 4b25d919ac5a04a497f5052ed9d9542ac3919778
         source_state: clean
-    service_hash: d0b61e1aa8cc366a5b1744191d52d7274fb2f57779bc10d665ea27fa9f5c4512
+    service_hash: 18b4daae326756338f81caad37e03da7f3362d602f1aad49c73863c37c8d569e
     registry_sha: gateway-workflow
     registry_content_sha256: 355734273a8e67879276c090f3105803d02f88d925f61db50749f540b4ed6f09
     components:
@@ -493,9 +493,9 @@ last_applied:
         deploy/render/main.go: 61528bff275a71ba50da307330a786d67f8de708751e588bca55006087f6ce25
         deploy/render/manifest.json.tmpl: 608011eaf59a1cebf2d0b3df4957ecd75ad34658808a164fa7f2672e3d523152
         deploy/render/rpc-provisioner.json.tmpl: 971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b
-        deploy/render/worker-database.json.tmpl: 12fd1d0ac54144db79ab12cd2c2bf7488432dcc3553c13e9d8e5340027318671
+        deploy/render/worker-database.json.tmpl: ebb6afdf9d38bc1b5dbd117225d9f4fb03a89031a7ca6f5a4e9059d8f463edf9
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
-        deploy/render/worker-gateway-workload.json.tmpl: 8fecdd82f3c7878ac047f764562fdee70cb44ae52b7dd30f01c04abc3a7acdf3
+        deploy/render/worker-gateway-workload.json.tmpl: 1bb590839f6c19b989bc2baf3326b7ccb8d536cac98ecc218142a4052b2a54c7
         deploy/render/worker-namespace-allocation.json.tmpl: 1f173886e4f1ae2644773ab76db33885afc2c726cdc408d8ea87ca520abe348f
         deploy/render/worker-sandbox-count.json.tmpl: 5ab2ddc8bc075024323be8fb9c3ae3a200102169a1a45332ef1936ebe8dda665
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7
