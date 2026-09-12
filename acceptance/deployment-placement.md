@@ -88,3 +88,8 @@ The placement record now drives the [database workload workflow](database-workfl
 That test uses an isolated Kubernetes cluster and verifies persistent data,
 TLS, restricted database privileges, and cleanup after disconnected deletion.
 Gateway workload deployment remains open.
+
+Database placement now also records the managed-cluster ID at creation. A
+normal Gateway patch cannot move a deployment database. See
+[recorded database placement](namespace-allocation.md#recorded-database-placement)
+for the private read contract, migration, and remaining allocation gate.

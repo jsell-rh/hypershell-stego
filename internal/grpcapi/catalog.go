@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
+	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -276,6 +277,9 @@ func (s *databaseServer) GetManagedDatabase(ctx context.Context, r *pb.GetManage
 		return nil, err
 	}
 	if retained {
+		if err := databaseplacement.Set(ctx, row.ClusterID); err != nil {
+			return nil, mapError(err)
+		}
 		observations, err := row.CleanupObservations()
 		if err != nil {
 			return nil, mapError(err)

@@ -458,7 +458,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Select([]string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Select([]string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status", "cluster_id"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -1043,7 +1043,7 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "ManagedDatabase":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 		query := s.db.WithContext(ctx).Model(&ManagedDatabase{})
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
@@ -1617,6 +1617,8 @@ func referenceTarget(entity, field string) string {
 		switch field {
 		case "id":
 			return "ManagedDatabase"
+		case "cluster_id":
+			return "ManagedCluster"
 		}
 	case "GatewayNetwork":
 		switch field {
@@ -1680,7 +1682,7 @@ func filterColumns(entity string) map[string]bool {
 	case "GatewayRelease":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 	case "ManagedDatabase":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 	case "GatewayNetwork":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
@@ -2185,7 +2187,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
 		}
-		validCols := map[string]bool{"name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+		validCols := map[string]bool{"name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity ManagedDatabase", k)
@@ -2200,7 +2202,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"} {
+		for _, col := range []string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status", "cluster_id"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}

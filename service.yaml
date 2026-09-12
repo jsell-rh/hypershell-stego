@@ -49,6 +49,7 @@ entities:
       - { name: instance_class, type: string, optional: true, max_length: 255 }
       - { name: connection_secret, type: string, optional: true, max_length: 253 }
       - { name: status, type: string, optional: true, max_length: 255 }
+      - { name: cluster_id, type: ref, to: ManagedCluster, optional: true }
   - name: GatewayNetwork
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }

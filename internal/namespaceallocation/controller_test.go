@@ -91,7 +91,7 @@ func TestGatewayAllocationRequiresCurrentPlacement(t *testing.T) {
 			tc.edit(a)
 			writes := &allocations{done: true}
 			c := &Controller{allocator: writes, state: a, cluster: cluster}
-			err := c.reconcile(context.Background(), "gateway:"+id, nil)
+			err := c.reconcile(context.Background(), "gateway:"+id)
 			if (err != nil) != tc.bad {
 				t.Fatal(err)
 			}
@@ -109,46 +109,61 @@ func TestDatabaseAllocationRequiresRetainedStateAndPlacement(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gateways.DatabaseNamespace(id)
 	for _, tc := range []struct {
-		name                           string
-		deleted, denied, missingHeader bool
-		provider                       string
-		calls                          int
+		name                                                                       string
+		deleted, foreign, missingState, missingPlacement, unassigned, badPlacement bool
+		provider                                                                   string
+		calls                                                                      int
 	}{
-		{name: "live", provider: "deployment", calls: 1}, {name: "deleted", provider: "deployment", deleted: true, calls: 1}, {name: "wrong cluster", provider: "deployment", denied: true}, {name: "missing state", provider: "deployment", missingHeader: true}, {name: "shared CNPG", provider: "cnpg"},
+		{name: "live", provider: "deployment", calls: 1},
+		{name: "deleted", provider: "deployment", deleted: true, calls: 1},
+		{name: "other cluster", provider: "deployment", foreign: true},
+		{name: "deleted other cluster", provider: "deployment", foreign: true, deleted: true},
+		{name: "missing state", provider: "deployment", missingState: true},
+		{name: "missing placement", provider: "deployment", missingPlacement: true},
+		{name: "unassigned", provider: "deployment", unassigned: true},
+		{name: "bad placement", provider: "deployment", badPlacement: true},
+		{name: "shared CNPG", provider: "cnpg", missingPlacement: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			api := &databaseAPI{row: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: tc.provider}, header: metadata.Pairs("resource-version", "2", "resource-deleted", strconv.FormatBool(tc.deleted))}
-			if tc.missingHeader {
-				api.header = nil
+			api := &databaseAPI{row: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: tc.provider}, header: metadata.Pairs("resource-version", "2", "resource-deleted", strconv.FormatBool(tc.deleted), "hypershell-database-placement", "cluster-v1", "hypershell-database-cluster-id", cluster)}
+			if tc.foreign {
+				api.header.Set("hypershell-database-cluster-id", ksuid.New().String())
+			}
+			if tc.missingPlacement {
+				api.header.Delete("hypershell-database-placement")
+			}
+			if tc.unassigned {
+				api.header.Delete("hypershell-database-cluster-id")
+			}
+			if tc.badPlacement {
+				api.header.Set("hypershell-database-cluster-id", "invalid")
+			}
+			if tc.missingState {
+				api.header.Delete("resource-version")
 			}
 			writes := &allocations{done: true}
 			c := &Controller{allocator: writes, databases: api, cluster: cluster}
-			checks := 0
-			err := c.reconcile(context.Background(), "database:"+id, func(_ context.Context, db *pb.ManagedDatabase, target string) error {
-				checks++
-				if db != api.row || target != cluster {
-					t.Fatal("placement input changed")
-				}
-				if tc.denied {
-					return errors.New("ambiguous placement")
-				}
-				return nil
-			})
-			if (err != nil) != (tc.denied || tc.missingHeader) {
+			err := c.reconcile(context.Background(), "database:"+id)
+			bad := tc.missingState || (tc.provider == "deployment" && (tc.missingPlacement || tc.unassigned || tc.badPlacement))
+			if (err != nil) != bad {
 				t.Fatal(err)
 			}
 			if !api.retained || len(writes.calls) != tc.calls {
 				t.Fatal(api.retained, writes.calls)
 			}
-			if tc.provider == "cnpg" && checks != 0 {
-				t.Fatal("CNPG entered deployment allocation")
-			}
-			if tc.deleted && len(writes.calls) == 1 && writes.calls[0] != "delete:database:"+ns+":"+id {
-				t.Fatal(writes.calls)
+			if tc.calls == 1 {
+				action := "ensure"
+				if tc.deleted {
+					action = "delete"
+				}
+				if writes.calls[0] != action+":database:"+ns+":"+id {
+					t.Fatal(writes.calls)
+				}
 			}
 		})
 	}
 }
+
 func TestPendingCleanupAndProviderErrorsArePreserved(t *testing.T) {
 	writes := &allocations{}
 	c := &Controller{allocator: writes}
@@ -159,9 +174,6 @@ func TestPendingCleanupAndProviderErrorsArePreserved(t *testing.T) {
 	writes.err = failure
 	if !errors.Is(c.remove(context.Background(), "gateway", "ns", "id"), failure) {
 		t.Fatal("cleanup failure was lost")
-	}
-	if err := c.Run(context.Background(), nil, nil); err == nil {
-		t.Fatal("missing placement accepted")
 	}
 }
 func TestResourceKindsRemainDistinct(t *testing.T) {

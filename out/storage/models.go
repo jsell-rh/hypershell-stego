@@ -75,17 +75,19 @@ type GatewayRelease struct {
 // ManagedDatabase represents the ManagedDatabase entity.
 type ManagedDatabase struct {
 	Meta
-	ResourceVersion  int64          `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
-	CleanupState     datatypes.JSON `json:"-" gorm:"column:stego_cleanup;type:jsonb;not null;default:'{}';->"`
-	Name             string         `json:"name" gorm:"column:name;not null;size:261;check:length(name) >= 1"`
-	Provider         string         `json:"provider" gorm:"column:provider;not null"`
-	Namespace        string         `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:29;check:length(namespace) >= 1"`
-	Region           *string        `json:"region,omitempty" gorm:"column:region;size:255"`
-	Engine           *string        `json:"engine,omitempty" gorm:"column:engine;size:64"`
-	EngineVersion    *string        `json:"engine_version,omitempty" gorm:"column:engine_version;size:64"`
-	InstanceClass    *string        `json:"instance_class,omitempty" gorm:"column:instance_class;size:255"`
-	ConnectionSecret *string        `json:"connection_secret,omitempty" gorm:"column:connection_secret;size:253"`
-	Status           *string        `json:"status,omitempty" gorm:"column:status;size:255"`
+	ResourceVersion  int64           `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
+	CleanupState     datatypes.JSON  `json:"-" gorm:"column:stego_cleanup;type:jsonb;not null;default:'{}';->"`
+	Name             string          `json:"name" gorm:"column:name;not null;size:261;check:length(name) >= 1"`
+	Provider         string          `json:"provider" gorm:"column:provider;not null"`
+	Namespace        string          `json:"namespace" gorm:"column:namespace;not null;uniqueIndex;size:29;check:length(namespace) >= 1"`
+	Region           *string         `json:"region,omitempty" gorm:"column:region;size:255"`
+	Engine           *string         `json:"engine,omitempty" gorm:"column:engine;size:64"`
+	EngineVersion    *string         `json:"engine_version,omitempty" gorm:"column:engine_version;size:64"`
+	InstanceClass    *string         `json:"instance_class,omitempty" gorm:"column:instance_class;size:255"`
+	ConnectionSecret *string         `json:"connection_secret,omitempty" gorm:"column:connection_secret;size:253"`
+	Status           *string         `json:"status,omitempty" gorm:"column:status;size:255"`
+	ClusterID        *string         `json:"cluster_id,omitempty" gorm:"column:cluster_id"`
+	ClusterIDRef     *ManagedCluster `json:"-" gorm:"foreignKey:ClusterID"`
 }
 
 // GatewayNetwork represents the GatewayNetwork entity.

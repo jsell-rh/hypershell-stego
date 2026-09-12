@@ -411,8 +411,13 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 	}
 	patch, _ := json.Marshal(map[string]string{"cluster_id": foreignID})
 	code, body = requestJSON(t, "PATCH", root+"/"+gateway.ID, alice, patch)
-	if code != 200 {
-		t.Fatal("change cluster assignment before deletion", code, string(body))
+	if code != 409 {
+		t.Fatal("deployment Gateway move was not rejected", code, string(body))
+	}
+	// Model a move from before database placement was recorded. Recovery must
+	// still remove the old workload after the API and worker restart.
+	if _, err := f.db.Exec(`UPDATE gateways SET cluster_id=$1 WHERE id=$2`, foreignID, gateway.ID); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := f.db.Exec(`ALTER TABLE managed_databases ADD CONSTRAINT acceptance_keep_database CHECK (deleted_at IS NULL)`); err != nil {
 		t.Fatal(err)

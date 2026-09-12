@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
+	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -37,7 +38,7 @@ type Controller struct {
 var ErrPending = errors.New("namespace cleanup is pending")
 
 // New connects both resource streams to one generated queue and telemetry scope.
-// Database placement is supplied separately; it must come from trusted state.
+// Database placement comes from the authorized retained read.
 func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, databases pb.ManagedDatabaseServiceClient) (*Controller, error) {
 	if _, err := gatewayworkload.Namespace(cluster); err != nil {
 		return nil, errors.New("namespace allocator requires a managed cluster ID")
@@ -74,18 +75,15 @@ func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
 	}}
 }
 
-// Run uses placement to check each database against the current managed cluster.
-// The caller must reject ambiguous placement; a watch event is not authority.
-func (c *Controller) Run(ctx context.Context, metrics *runtime.Metrics, placement func(context.Context, *pb.ManagedDatabase, string) error) error {
-	if placement == nil {
-		return errors.New("database cluster placement is required")
-	}
-	return runtime.RunKeyedWatches(ctx, c.sources, func(ctx context.Context, key string) error { return c.reconcile(ctx, key, placement) }, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
+// Run checks recorded database placement before allocation. A watch event
+// is not authority to create or remove a namespace.
+func (c *Controller) Run(ctx context.Context, metrics *runtime.Metrics) error {
+	return runtime.RunKeyedWatches(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
 		return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 	}}})
 }
 
-func (c *Controller) reconcile(ctx context.Context, key string, placement func(context.Context, *pb.ManagedDatabase, string) error) error {
+func (c *Controller) reconcile(ctx context.Context, key string) error {
 	kind, id, ok := strings.Cut(key, ":")
 	if !ok {
 		return errors.New("namespace work key has no resource kind")
@@ -141,8 +139,15 @@ func (c *Controller) reconcile(ctx context.Context, key string, placement func(c
 		if err != nil || db.GetNamespace() != name {
 			return errors.New("database allocation namespace is invalid")
 		}
-		if err := placement(ctx, db, c.cluster); err != nil {
+		cluster, err := databaseplacement.Read(header)
+		if err != nil {
 			return err
+		}
+		if cluster == "" {
+			return errors.New("database has no verified cluster placement")
+		}
+		if cluster != c.cluster {
+			return nil
 		}
 		if deleted {
 			return c.remove(ctx, "database", name, id)

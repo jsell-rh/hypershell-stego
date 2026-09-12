@@ -36,7 +36,7 @@ func (s *Store) ReadCleanupSummary(ctx context.Context, entity, owner, target, s
 		table = "managed_databases"
 		owners = map[string]bool{"provider": true}
 		targets = map[string]bool{}
-		scopes = map[string]bool{"connection_secret": true, "engine": true, "engine_version": true, "id": true, "instance_class": true, "name": true, "namespace": true, "provider": true, "region": true, "status": true}
+		scopes = map[string]bool{"cluster_id": true, "connection_secret": true, "engine": true, "engine_version": true, "id": true, "instance_class": true, "name": true, "namespace": true, "provider": true, "region": true, "status": true}
 	case "Gateway":
 		table = "gateways"
 		owners = map[string]bool{"identity": true, "workload": true}

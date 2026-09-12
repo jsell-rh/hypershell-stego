@@ -33,7 +33,7 @@ func (s *Store) ReadCursor(ctx context.Context, entity, scopeField, scopeValue s
 	case "GatewayRelease":
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 	case "ManagedDatabase":
-		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
+		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 	case "GatewayNetwork":
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":

@@ -306,6 +306,15 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 				return store.ErrConflict
 			}
 		}
+		if r.entity == "ManagedCluster" {
+			refs, err := tx.List(ctx, "ManagedDatabase", "cluster_id", id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
+			if err != nil {
+				return err
+			}
+			if refs.Total != 0 {
+				return store.ErrConflict
+			}
+		}
 		if err := tx.Delete(ctx, r.entity, id); err != nil {
 			return err
 		}

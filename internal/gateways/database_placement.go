@@ -23,7 +23,7 @@ func DatabaseNamespace(id string) (string, error) {
 
 // placeDatabase runs inside the Gateway creation transaction. A public request
 // cannot select an existing deployment database or change the provider setting.
-func (s *Service) placeDatabase(ctx context.Context, tx store.Transaction, gatewayName string) (string, error) {
+func (s *Service) placeDatabase(ctx context.Context, tx store.Transaction, gatewayName, clusterID string) (string, error) {
 	switch s.databaseProvider {
 	case ProviderCNPG:
 		result, err := tx.List(ctx, "ManagedDatabase", "", "", store.ListOptions{Page: 1, Size: 2})
@@ -48,7 +48,7 @@ func (s *Service) placeDatabase(ctx context.Context, tx store.Transaction, gatew
 		if err != nil {
 			return "", err
 		}
-		row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: "gw-" + gatewayName + "-db", Provider: ProviderDeployment, Namespace: namespace}
+		row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: "gw-" + gatewayName + "-db", Provider: ProviderDeployment, Namespace: namespace, ClusterID: &clusterID}
 		if err := tx.Create(ctx, "ManagedDatabase", row); err != nil {
 			return "", err
 		}

@@ -83,6 +83,7 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 				return err
 			}
 		}
+		previousClusterID := current.ClusterID
 		if err := applyPatch(&current, patch, consoleAddress); err != nil {
 			return err
 		}
@@ -94,6 +95,21 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 					}
 					return err
 				}
+			}
+		}
+		if current.ClusterID != previousClusterID {
+			value, err := tx.Get(ctx, "ManagedDatabase", current.DatabaseID)
+			if err != nil {
+				return err
+			}
+			database, ok := value.(model.ManagedDatabase)
+			if !ok {
+				return errors.New("unexpected database storage result")
+			}
+			// Deployment credentials and data stay in their assigned cluster.
+			// A normal Gateway patch cannot perform a database migration.
+			if database.Provider == ProviderDeployment {
+				return store.ErrConflict
 			}
 		}
 		if patch.Phase != nil || patch.Status != nil {

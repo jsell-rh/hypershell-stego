@@ -26,7 +26,8 @@ func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","other-controller","identity-controller","ungranted"]`)
+	// Shared CNPG placement permits a cluster change without database migration.
+	settings = append(settings, "DATABASE_PROVIDER=cnpg", "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","other-controller","identity-controller","ungranted"]`)
 	settings = withCleanupGrants(t, settings, cleanupGrant("identity-controller", "Gateway", "identity", ""), cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "Gateway", "workload", unrecorded), cleanupGrant("other-controller", "Gateway", "workload", second))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)

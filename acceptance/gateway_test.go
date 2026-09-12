@@ -98,6 +98,13 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
 		t.Fatal(err)
 	}
+	migration, err = os.ReadFile("../migrations/000009_database_cluster_placement.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
 	s, err := model.NewStore(orm)
 	if err != nil {
 		t.Fatal(err)

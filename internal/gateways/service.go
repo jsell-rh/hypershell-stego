@@ -128,7 +128,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 				return err
 			}
 		}
-		databaseID, err := s.placeDatabase(ctx, tx, request.Name)
+		databaseID, err := s.placeDatabase(ctx, tx, request.Name, request.ClusterID)
 		if err != nil {
 			return err
 		}

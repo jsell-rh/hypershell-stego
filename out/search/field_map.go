@@ -77,6 +77,7 @@ var EntityFieldMaps = map[string]map[string]string{
 		"updated_time":      "updated_time",
 		"created_at":        "created_time",
 		"updated_at":        "updated_time",
+		"cluster_id":        "cluster_id",
 		"connection_secret": "connection_secret",
 		"engine":            "engine",
 		"engine_version":    "engine_version",
@@ -240,6 +241,7 @@ var entityFieldTypes = map[string]map[string]string{
 		"instance_class":    "string",
 		"connection_secret": "string",
 		"status":            "string",
+		"cluster_id":        "ref",
 	},
 	"Role": {
 		"id":           "string",
