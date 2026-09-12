@@ -479,6 +479,10 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
 	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
 	f := database(t)
+	var workload *browserGatewayWorkload
+	if deployment != nil && os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
+		workload, settings = prepareBrowserGatewayWorkload(t, deployment, f, k, settings)
+	}
 	sessions := databaseSetup(t, false)
 	schema, err := os.ReadFile("../console/out/browser/schema.sql")
 	if err != nil {
@@ -626,7 +630,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if response.StatusCode != expectedStatus || json.Unmarshal(response.Body, &gateway) != nil {
 		t.Fatal("browser Gateway creation failed", response.StatusCode)
 	}
-	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || gateway.DatabaseID != f.database {
+	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || (workload == nil && gateway.DatabaseID != f.database) {
 		t.Fatal("browser Gateway contract changed")
 	}
 	var grants int
@@ -637,6 +641,9 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		t.Fatal("browser creation lost its event")
 	}
 	awaitQueueEmpty(t, f)
+	if workload != nil {
+		workload.start(alice, rpc, apiIdentity.config.CAFile, gateway.ID)
+	}
 	assertAccess := func() {
 		t.Helper()
 		response := alice.api(t, "GET", "/gateways/"+gateway.ID, nil)
@@ -738,13 +745,24 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	}
 	assertAccess()
 	if rendered != nil {
-		checkRenderedServiceAccounts(t, f, k, aliceID, rendered, alice, restartProvider, func() string {
+		runtimeLogs := func() string {
 			all := providerLogs() + before + logs()
+			if workload != nil {
+				for _, output := range workload.outputs {
+					all += output()
+				}
+			}
 			if deployment != nil {
 				all += string(deployment.command(nil, "logs", "deployment/hypershell", "--tail=10000"))
 			}
 			return all
-		})
+		}
+		if workload == nil {
+			checkRenderedServiceAccounts(t, f, k, aliceID, rendered, alice, restartProvider, runtimeLogs)
+		} else {
+			workload.check(gateway.ID)
+			checkRenderedServiceAccountsOnGateway(t, f, k, gateway.ID, "rendered-browser-workflow", workload.audience(gateway.ID), rendered, alice, restartProvider, runtimeLogs, workload.checkCredential)
+		}
 	}
 	response = alice.request(t, "GET", address+"/auth/logout", nil, nil)
 	if response.StatusCode != 200 || !bytes.Contains(response.Body, []byte(`name="csrf_token" value="`+alice.csrf+`"`)) {

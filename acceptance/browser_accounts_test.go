@@ -33,8 +33,14 @@ func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, 
 	}
 	k.bindGateway(t, "gateway-audience", gateway.ID)
 	observeGatewayFixture(t, f, gateway.ID)
+	checkRenderedServiceAccountsOnGateway(t, f, k, gateway.ID, "account-console-fixture", "gateway-audience", browser, owner, restartProvider, runtimeLogs, nil)
+}
+
+func checkRenderedServiceAccountsOnGateway(t *testing.T, f *fixture, k *keycloakFixture, gatewayID, gatewayName, audience string, browser *renderedBrowser, owner *consoleBrowser, restartProvider func(), runtimeLogs func() string, credentialCheck func(string)) {
+	t.Helper()
+	issuer := k.options.ServerURL + "/realms/workflow"
 	private := filepath.Join(t.TempDir(), "credential.json")
-	input := map[string]any{"origin": browser.Origin, "pins": browser.Pins, "gateway": gateway.ID, "privateFile": private}
+	input := map[string]any{"origin": browser.Origin, "pins": browser.Pins, "gateway": gatewayID, "gatewayName": gatewayName, "privateFile": private}
 	state := struct {
 		Session string `json:"session"`
 		ID      string `json:"id"`
@@ -97,11 +103,14 @@ func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, 
 	if !ok {
 		t.Fatal("credential token missing")
 	}
+	if credentialCheck != nil {
+		credentialCheck(token)
+	}
 	keys, err := k.http.Do(context.Background(), "GET", "/realms/workflow/protocol/openid-connect/certs", nil, nil)
 	if err != nil || keys.StatusCode != 200 {
 		t.Fatal("provider keys unavailable")
 	}
-	identity, err := auth.VerifyWithJWKS(auth.Config{Issuer: issuer, Audience: "gateway-audience", RolesClaim: "hypershell.roles"}, token, keys.Body)
+	identity, err := auth.VerifyWithJWKS(auth.Config{Issuer: issuer, Audience: audience, RolesClaim: "hypershell.roles"}, token, keys.Body)
 	if err != nil || identity.UserID == "" {
 		t.Fatal("rendered credential token failed verification")
 	}
@@ -126,7 +135,7 @@ func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, 
 	if grant["refresh_token"] != nil {
 		t.Fatal("service credential issued a refresh token")
 	}
-	for _, path := range []string{"/gateways/" + gateway.ID + "/service_accounts", "/gateways/" + gateway.ID + "/service_accounts/" + state.ID} {
+	for _, path := range []string{"/gateways/" + gatewayID + "/service_accounts", "/gateways/" + gatewayID + "/service_accounts/" + state.ID} {
 		response := owner.api(t, "GET", path, nil)
 		if response.StatusCode != 200 {
 			t.Fatal("account read failed", response.StatusCode)
@@ -155,7 +164,7 @@ func checkRenderedServiceAccounts(t *testing.T, f *fixture, k *keycloakFixture, 
 		t.Fatal("revoked rendered credential still issues tokens", response.StatusCode)
 	}
 	run("delete")
-	if response := owner.api(t, "GET", "/gateways/"+gateway.ID+"/service_accounts/"+state.ID, nil); response.StatusCode != 404 {
+	if response := owner.api(t, "GET", "/gateways/"+gatewayID+"/service_accounts/"+state.ID, nil); response.StatusCode != 404 {
 		t.Fatal("deleted account is still visible", response.StatusCode)
 	}
 	if strings.Contains(runtimeLogs(), credential.Secret) {

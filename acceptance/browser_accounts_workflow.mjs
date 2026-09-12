@@ -32,7 +32,7 @@ try{
   session=created.sessionId;await command('/timeouts',{implicit:0,pageLoad:20000,script:5000});
   await command('/url',{url:input.origin+'/auth/login?return_to='+encodeURIComponent('/gateways/'+input.gateway)});
   await type('#username','console-alice');await type('#password','acceptance-only-user-password');await click('#kc-login');
-  await until(()=>script('return document.body.innerText.includes("account-console-fixture")'),'fixture Gateway');
+  await until(()=>script('return document.body.innerText.includes(arguments[0])',[input.gatewayName]),'fixture Gateway');
   await accountsTab();await textButton('Create service account');await type('#service-account-name',accountName);
   await click('button[aria-label="OpenShell role"]');
   const option=await until(()=>script('return [...document.querySelectorAll("button")].find(e=>e.textContent.startsWith("openshell-admin"))'),'admin role');await command(`/element/${option[key]}/click`,{});
@@ -47,7 +47,7 @@ try{
   // This file is outside the retained evidence directory and is removed by Go.
   await writeFile(input.privateFile,JSON.stringify({id,client_id:account.client_id,secret}),{mode:0o600,flag:'wx'});
   await click('[role="dialog"] input[type="checkbox"]');await textButton('Finish setup');
-  await command('/refresh',{});await until(()=>script('return document.body.innerText.includes("account-console-fixture")'),'Gateway reload');await accountsTab();
+  await command('/refresh',{});await until(()=>script('return document.body.innerText.includes(arguments[0])',[input.gatewayName]),'Gateway reload');await accountsTab();
   assert.ok(!await script('return !!document.querySelector("input[aria-label=\\"Client secret\\"]")'),'secret survived handoff');
   const detail=await readAccounts('/'+id);assert.ok(detail.status===200,'account detail failed');
   assert.ok(!JSON.stringify(detail.body).includes(secret)&&!JSON.stringify(detail.body).includes('"client_secret":'),'detail exposed a credential');

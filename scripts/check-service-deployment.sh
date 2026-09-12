@@ -11,12 +11,29 @@ namespace="stego-service-$(date -u +%Y%m%d)-$(openssl rand -hex 3)"
 results=$(mktemp -d "${TMPDIR:-/tmp}/stego-service-results.XXXXXXXX")
 chmod 700 "$results"
 oc_cmd=(oc --context "$STEGO_TEST_CONTEXT" --request-timeout=30s)
+workload=${STEGO_TEST_BROWSER_WORKLOAD:-0}
+[[ $workload == 0 || $workload == 1 ]]
+if [[ $workload == 1 ]]; then
+  [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
+  : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
+fi
 created=false
 cleanup() {
   status=$?
   trap - EXIT
   if [[ $created == true ]]; then
     "${oc_cmd[@]}" -n "$namespace" get job service-check -o json > "$results/job-status.json" || true
+    if [[ $workload == 1 ]]; then
+      "${oc_cmd[@]}" get namespace -l "stego.test/browser-run=$namespace" -o name > "$results/owned-namespaces.txt" || true
+      while read -r target; do
+        gateway_id=$("${oc_cmd[@]}" get "$target" -o 'jsonpath={.metadata.labels.hypershell\.redhat\.io/gateway-id}' 2>/dev/null) || continue
+        if [[ $gateway_id =~ ^[0-9A-Za-z]{27}$ ]]; then
+          "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "hypershell.redhat.io/gateway-id=$gateway_id,app.kubernetes.io/managed-by=hypershell-gateway-controller" --wait=false || true
+        fi
+      done < "$results/owned-namespaces.txt"
+      "${oc_cmd[@]}" delete namespace -l "stego.test/browser-run=$namespace" --wait=false || true
+      "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "stego.test/browser-run=$namespace" --wait=false || true
+    fi
     "${oc_cmd[@]}" delete namespace "$namespace" --wait=false || true
     "${oc_cmd[@]}" --request-timeout=0 wait --for=delete namespace "$namespace" --timeout=60s || true
   fi
@@ -31,7 +48,7 @@ umask 077
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
-python3 - "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" <<'PY'
+python3 - "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}" <<'PY'
 import base64,json,secrets,sys
 from pathlib import Path
 ns,root=sys.argv[1],Path(sys.argv[2])
@@ -55,6 +72,13 @@ if sys.argv[3]=='1':
             test=spec['containers'][0]
             test['command'][-1]=test['command'][-1].replace('run-service-deployment-pod.sh','run-browser-deployment-pod.sh')
             test['env'] += [{'name':'STEGO_TEST_KUBERNETES_BROWSER','value':'1'},{'name':'STEGO_REQUIRE_BROWSER','value':'1'},{'name':'PATH','value':'/work/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}]
+if sys.argv[4]=='1':
+    import re
+    if sys.argv[3]!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',sys.argv[5]): raise SystemExit('Invalid Gateway test profile')
+    role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns))
+    job['items'] += role['items']
+    for item in job['items']:
+        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
 password=secrets.token_hex(24)
 encode=lambda value:base64.b64encode(value.encode()).decode()
 for item in job['items']:

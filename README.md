@@ -497,3 +497,9 @@ provisioner entry point with STEGO output. Hypershell keeps the Keycloak provide
 and caller policy. STEGO supplies authentication, telemetry, signals, and cleanup.
 The [RPC deployment check](acceptance/rpc-deployment.md) adds a generated
 provisioner Deployment and replaces its Pod during the rendered account workflow.
+
+The [browser Gateway workload check](acceptance/browser-gateway-workload.md)
+uses the actual console-created Gateway. Generated workers provision its
+PostgreSQL database, identity client, and OpenShell Deployment. Verified RPC,
+denied calls, provider data after Pod replacement, and a real browser-issued
+service credential passed in the bounded jshell profile.
