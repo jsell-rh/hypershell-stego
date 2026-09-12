@@ -22,7 +22,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 	if json.Unmarshal([]byte(os.Getenv("STEGO_TEST_KUBERNETES_EGRESS")), &endpoints) != nil || len(endpoints) == 0 || len(endpoints) > 16 {
 		w.t.Fatal("Kubernetes endpoint bindings missing")
 	}
-	for _, worker := range []struct{ name, token, image string }{{"database", "database", "STEGO_TEST_DATABASE_WORKER_IMAGE"}, {"gateway-identity", "identity", "STEGO_TEST_IDENTITY_WORKER_IMAGE"}, {"gateway-workload", "workload", "STEGO_TEST_GATEWAY_WORKER_IMAGE"}} {
+	for _, worker := range []struct{ name, token, image string }{{"namespace-allocation", "allocation", "STEGO_TEST_ALLOCATION_WORKER_IMAGE"}, {"database", "database", "STEGO_TEST_DATABASE_WORKER_IMAGE"}, {"gateway-identity", "identity", "STEGO_TEST_IDENTITY_WORKER_IMAGE"}, {"gateway-workload", "workload", "STEGO_TEST_GATEWAY_WORKER_IMAGE"}} {
 		name := "hypershell-" + worker.name
 		image := os.Getenv(worker.image)
 		if !strings.Contains(image, "@sha256:") {
@@ -41,6 +41,8 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			files["keycloak-secret"] = w.p.read(w.identity.options.SecretFile)
 			files["keycloak-ca.pem"] = w.p.read(w.identity.options.CAFile)
 		} else {
+			env["HYPERSHELL_CONTROL_NAMESPACE"] = w.p.namespace
+			env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 			env["HYPERSHELL_KUBERNETES_URL"] = "https://kubernetes.default.svc"
 			env["HYPERSHELL_KUBERNETES_CA_FILE"] = "/var/run/stego-kubernetes/ca.crt"
 			env["HYPERSHELL_KUBERNETES_TOKEN_FILE"] = "/var/run/stego-kubernetes/token"
@@ -54,7 +56,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				env["DATABASE_PROVIDER"] = "deployment"
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_DATABASE_CLUSTER_ISSUER"] = w.options.ClusterIssuer
-			} else {
+			} else if worker.name == "gateway-workload" {
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_GATEWAY_CLUSTER_ISSUER"] = w.options.ClusterIssuer
 				env["HYPERSHELL_GATEWAY_OIDC_ISSUER"] = w.identity.options.ServerURL + "/realms/workflow"

@@ -22,6 +22,7 @@ done
 cmp /work/first.sha256 /work/second.sha256
 node /work/node/npm/bin/npm-cli.js --cache /work/npm-cache ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
 go test -race -mod=readonly -count=1 -timeout=3m ./contracts -run '^(TestGeneratedProjectInputManifest|TestConsoleDeploymentIsolation)$'
+go test -race -mod=readonly -count=1 -timeout=3m ./internal/databasecontroller ./internal/gatewayworkload ./internal/namespaceallocation ./internal/namespaceallocationapp
 cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/ssl/certs/ca-certificates.crt >> /work/registry-ca.crt
 export SSL_CERT_FILE=/work/registry-ca.crt
 go run -mod=readonly scripts/service-image-auth.go
@@ -31,7 +32,7 @@ publish_image service ./out hypershell /work/image.json
 (cd console; publish_image service ./out hypershell-console /work/console-image.json)
 publish_image rpc ./out/grpcapi/processes/provisioner hypershell-provisioner /work/provisioner-image.json
 if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
- for worker in database gateway-identity gateway-workload; do
+ for worker in namespace-allocation database gateway-identity gateway-workload; do
   publish_image worker "./out/deploy/workers/$worker" "hypershell-$worker" "/work/$worker-image.json"
  done
 fi
@@ -43,6 +44,8 @@ export STEGO_TEST_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-cons
 provisioner_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/provisioner-image.json rpc)
 export STEGO_TEST_PROVISIONER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-provisioner@$provisioner_digest"
 if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
+ allocation_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/namespace-allocation-image.json worker)
+ export STEGO_TEST_ALLOCATION_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-namespace-allocation@$allocation_digest"
  database_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/database-image.json worker)
  identity_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-identity-image.json worker)
  gateway_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-workload-image.json worker)

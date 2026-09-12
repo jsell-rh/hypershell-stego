@@ -14,9 +14,11 @@ retained read. A database assigned to another cluster causes no allocation or
 deletion. Missing or malformed placement is an error. CNPG records do not enter
 the deployment allocation path.
 
-This adapter is not yet connected to a worker Deployment. The existing Gateway
-workflow still uses the resource workers' namespace permissions. Tests of the
-adapter do not prove that those permissions can be removed.
+The adapter now has a generated `namespace-allocation` worker. The application
+profiles grant namespaced roles to the database and Gateway workers. Their
+remaining cluster role only permits Namespace reads. The browser check uses
+seven Deployments. This adoption change is not yet accepted: the full workflow
+must pass with these permissions.
 
 ## Recorded database placement
 
@@ -45,12 +47,13 @@ or cluster-scoped controller authorization.
 
 ## Required application gate
 
-Connect the adapter to a generated worker. Declare fixed namespace profiles
-and scoped roles. Replace resource-worker namespace
-writes with the generated allocation observations. Use an immutable public
-record to retain the Gateway key fingerprint through the allocator.
+The implementation connects the generated worker, fixed profiles, and scoped
+roles. Resource workers observe allocation state. The Gateway worker writes an
+immutable public ConfigMap; the allocator retains its fingerprint and Gateway
+ID on the database Namespace. Keys cannot be used before that step completes.
+Test code no longer creates workload namespaces, quotas, or role bindings.
 
-Remove test-created workload namespaces, quotas, and bindings. Then run the real
+Run the real
 Gateway workflow with REST and gRPC access checks, event delivery, worker and
 application restarts, key-loss checks, and byte-identical regeneration. Prove
 that each worker is denied access to a foreign namespace. Keep this gate open
@@ -179,3 +182,41 @@ Their removal was verified.
 This check uses the existing bounded browser workload profile. It does not
 deploy the namespace allocator or remove broad worker namespace permissions.
 The namespace-allocation application gate remains open.
+
+## Allocator adoption status
+
+Set `HYPERSHELL_CONTROL_NAMESPACE` on the namespace allocator, deployment
+database worker, and Gateway worker. The value must name their control
+namespace. It selects the generated allocation identity. The generated worker
+roles do not permit the old direct namespace-write path. Direct provider
+construction without this setting remains available to the existing isolated
+provider tests; it is not the new deployment path.
+
+The current profiles cover deployment databases and the default Gateway
+workload. Shared CNPG allocation and the separate Sandbox namespace still need
+application checks and scoped profiles. Allocated Gateway mode rejects a
+separate Sandbox runtime class until that support exists. Existing namespaces
+without the allocation identity are not adopted. No migration or repair command
+is supplied by this change.
+
+The initial generation check passed both generation passes, the adapter race
+tests, and the new worker entry-point compile check. Results are in
+`/tmp/hypershell-allocator-generation-krf_i27s`. A status request had a TLS
+handshake timeout. The same Job was observed again and its result was collected;
+it was not restarted. The Job reached `Complete`, and its namespace and private
+fixture files are absent.
+
+The first application attempt uses fixed source
+`/tmp/hypershell-allocated-workflow-4tkrq73k/application` and results directory
+`/tmp/stego-service-results.RtCsac91`. Its contract checks and provider race tests
+passed. All seven Deployments started. The allocator created four workload
+namespaces and recorded both database key fingerprints. Both database Pods
+became ready. OpenShell startup failed because the identity-provider fixture
+still selected the old test namespace label. The fixture source now selects
+the allocator marker and Gateway profile. That correction needs a fresh run.
+
+The final test source also checks seven Deployments, admission through server
+dry-run requests, and REST deletion through namespace removal and stored cleanup
+observations. These added checks are not yet proved. Collection of the current
+Job and the next run require a refresh of the expired local jshell login. Do not
+report this attempt as a pass or its cluster resources as removed.

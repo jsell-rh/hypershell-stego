@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -28,6 +29,14 @@ func databaseOwner(id string) kube.Owner {
 func (k *Kubernetes) keys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) (object, error) {
 	if db.GetProvider() == gateways.ProviderCNPG {
 		return k.sharedKeys(ctx, gw, db)
+	}
+	if k.allocation != nil {
+		if err := k.allocation.RequireNamespace(ctx, "database", db.Namespace, db.Metadata.Id); err != nil {
+			if errors.Is(err, allocation.ErrPending) {
+				return nil, ErrPending
+			}
+			return nil, err
+		}
 	}
 	namespace, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace, nil)
 	if err != nil {
@@ -51,13 +60,25 @@ func (k *Kubernetes) keys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDat
 	if marker != "" && !strings.HasPrefix(marker, id+":") {
 		return nil, errors.New("Gateway database keys belong to a different Gateway")
 	}
+	var publicIdentity object
+	if k.allocation != nil {
+		publicIdentity, code, err = k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace+"/configmaps/openshell-key-identity", nil)
+		if err != nil {
+			return nil, err
+		}
+		if code == http.StatusNotFound {
+			publicIdentity = nil
+		} else if !k.databaseAllocationOwner(db.Metadata.Id).Matches(publicIdentity) || publicIdentity["immutable"] != true || kube.String(publicIdentity, "data", "gateway") != id || kube.String(publicIdentity, "data", "fingerprint") == "" {
+			return nil, errors.New("Gateway public key identity is invalid")
+		}
+	}
 	collection := "/api/v1/namespaces/" + db.Namespace + "/secrets"
 	secret, code, err := k.client.Request(ctx, http.MethodGet, collection+"/"+keysName, nil)
 	if err != nil {
 		return nil, err
 	}
 	if code == 404 {
-		if marker != "" {
+		if marker != "" || publicIdentity != nil {
 			return nil, errors.New("Gateway keys are missing; restore the original Secret")
 		}
 		values, err := newKeys()
@@ -93,6 +114,26 @@ func (k *Kubernetes) keys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDat
 	expected := id + ":" + hex.EncodeToString(sha256sum(encoded))
 	if marker != "" && marker != expected {
 		return nil, errors.New("Gateway keys differ from their durable identity; restore the original Secret")
+	}
+	if k.allocation != nil {
+		if publicIdentity != nil && kube.String(publicIdentity, "data", "fingerprint") != expected {
+			return nil, errors.New("Gateway keys differ from the public identity record")
+		}
+		if publicIdentity == nil {
+			labels := object{}
+			for key, value := range k.databaseAllocationOwner(db.Metadata.Id) {
+				labels[key] = value
+			}
+			record := object{"apiVersion": "v1", "kind": "ConfigMap", "metadata": object{"name": "openshell-key-identity", "labels": labels}, "immutable": true, "data": object{"gateway": id, "fingerprint": expected}}
+			if _, _, err := k.client.Request(ctx, http.MethodPost, "/api/v1/namespaces/"+db.Namespace+"/configmaps", record); err != nil {
+				return nil, err
+			}
+		}
+		// The key cannot be used until the allocator retains its public identity.
+		if marker != expected || linkedGateway != id {
+			return nil, ErrPending
+		}
+		return values, nil
 	}
 	if marker == "" || linkedGateway == "" {
 		// Use the first namespace observation. A conflict requires another pass.
@@ -176,4 +217,11 @@ func validateKeys(secret object) error {
 		return invalid
 	}
 	return nil
+}
+
+func (k *Kubernetes) databaseAllocationOwner(id string) kube.Owner {
+	result := databaseOwner(id)
+	result[allocation.MarkerLabel] = k.allocation.Marker()
+	result[allocation.ProfileLabel] = "database"
+	return result
 }

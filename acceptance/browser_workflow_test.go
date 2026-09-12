@@ -821,6 +821,9 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	}
 	// Login must now show the password form. A retained provider session would redirect.
 	alice.login(t, k, "console-alice")
+	if workload != nil {
+		workload.checkAllocatedDeletion(gateway.ID)
+	}
 	for _, log := range []string{before, logs()} {
 		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault", oldSessionKey, nextSessionKey} {
 			if strings.Contains(log, private) {

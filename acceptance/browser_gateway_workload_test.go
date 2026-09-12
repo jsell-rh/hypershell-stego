@@ -12,27 +12,27 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
 
-const browserRunLabel = "stego.test/browser-run"
+type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
-	t          *testing.T
-	p          *kubernetesBrowser
-	f          *fixture
-	identity   *keycloakFixture
-	owner      *consoleBrowser
-	kubernetes *kube.Client
-	options    databasecontroller.KubernetesOptions
-	tokens     map[string]string
-	namespaces []string
-	gatewayIDs map[string]string
-	call       gatewayCall
-	stops      []func()
-	outputs    []func() string
-	telemetry  []string
-	restarts   []func()
+	t           *testing.T
+	p           *kubernetesBrowser
+	f           *fixture
+	identity    *keycloakFixture
+	owner       *consoleBrowser
+	kubernetes  *kube.Client
+	options     databasecontroller.KubernetesOptions
+	tokens      map[string]string
+	allocations map[string]allocationTarget
+	call        gatewayCall
+	stops       []func()
+	outputs     []func() string
+	telemetry   []string
+	restarts    []func()
 }
 
 func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
@@ -55,27 +55,22 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	if err != nil {
 		t.Fatal("Kubernetes client setup failed")
 	}
-	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), gatewayIDs: map[string]string{}}
+	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
 	t.Cleanup(func() {
 		for i := len(w.stops) - 1; i >= 0; i-- {
 			w.stops[i]()
 		}
-		for ns, id := range w.gatewayIDs {
-			for _, kind := range []string{"clusterrolebindings", "clusterroles"} {
-				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				_, err := client.DeleteOwned(ctx, "/apis/rbac.authorization.k8s.io/v1/"+kind+"/"+ns, kube.Owner{"hypershell.redhat.io/gateway-id": id, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"})
-				cancel()
-				if err != nil {
-					t.Error("Gateway RBAC cleanup failed", kind, ns)
-				}
-			}
+		allocator, err := allocation.New(client, p.namespace)
+		if err != nil {
+			t.Error(err)
+			return
 		}
-		for _, ns := range w.namespaces {
+		for ns, target := range w.allocations {
 			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
 			for {
-				gone, err := client.DeleteOwned(ctx, "/api/v1/namespaces/"+ns, kube.Owner{browserRunLabel: p.namespace})
+				gone, err := allocator.Delete(ctx, target.profile, ns, target.id)
 				if err != nil {
-					t.Error("owned Gateway namespace cleanup failed", ns)
+					t.Error("allocation cleanup failed", ns, err)
 					break
 				}
 				if gone {
@@ -83,7 +78,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 				}
 				select {
 				case <-ctx.Done():
-					t.Error("owned Gateway namespace cleanup timed out", ns)
+					t.Error("allocation cleanup timed out", ns)
 				case <-time.After(time.Second):
 					continue
 				}
@@ -100,7 +95,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	settings = append(settings, "DATABASE_PROVIDER=deployment")
 	var subjects []string
 	ids := map[string]string{}
-	for _, name := range []string{"database", "identity", "workload"} {
+	for _, name := range []string{"database", "identity", "workload", "allocation"} {
 		username := "browser-controller-" + name
 		subject := k.human(t, username)
 		subjects = append(subjects, subject)
@@ -115,38 +110,9 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	return w, settings
 }
 
-func (w *browserGatewayWorkload) createNamespace(name, id, kind string) {
+func (w *browserGatewayWorkload) trackAllocation(name, id, profile string) {
 	w.t.Helper()
-	label, manager := "hypershell.redhat.io/gateway-id", "hypershell-gateway-controller"
-	if kind == "database" {
-		label, manager = "hypershell.redhat.io/database-id", "hypershell-database-controller"
-	}
-	value := kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": name, "labels": kube.Object{label: id, "app.kubernetes.io/managed-by": manager, "pod-security.kubernetes.io/enforce": "restricted", browserRunLabel: w.p.namespace}}}
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	_, code, err := w.kubernetes.Request(ctx, http.MethodPost, "/api/v1/namespaces", value)
-	if err != nil || code != http.StatusCreated {
-		w.t.Fatal("cannot create isolated Gateway namespace", name, code)
-	}
-	w.namespaces = append(w.namespaces, name)
-	if kind == "gateway" {
-		w.gatewayIDs[name] = id
-	}
-	apply := func(value any) {
-		data, err := json.Marshal(value)
-		if err != nil {
-			w.t.Fatal(err)
-		}
-		w.p.command(data, "--namespace="+name, "apply", "-f", "-")
-	}
-	meta := map[string]string{"name": "browser-budget", "namespace": name}
-	apply(map[string]any{"apiVersion": "v1", "kind": "ResourceQuota", "metadata": meta, "spec": map[string]any{"hard": map[string]string{"pods": "2", "limits.cpu": "1", "limits.memory": "1Gi", "limits.ephemeral-storage": "512Mi", "requests.storage": "2Gi"}}})
-	apply(map[string]any{"apiVersion": "v1", "kind": "LimitRange", "metadata": meta, "spec": map[string]any{"limits": []any{map[string]any{"type": "Container", "default": map[string]string{"ephemeral-storage": "256Mi"}, "defaultRequest": map[string]string{"ephemeral-storage": "32Mi"}}}}})
-	account := "openshell-gateway"
-	if kind == "database" {
-		account = "default"
-	}
-	apply(map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "RoleBinding", "metadata": meta, "roleRef": map[string]string{"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": "system:openshift:scc:nonroot-v2"}, "subjects": []any{map[string]string{"kind": "ServiceAccount", "name": account, "namespace": name}}})
+	w.allocations[name] = allocationTarget{profile: profile, id: id}
 }
 
 func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatewayID string) {
@@ -172,12 +138,13 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 		w.t.Fatal("unexpected browser Gateway placement count")
 	}
 	for _, p := range placements {
-		w.createNamespace(p.databaseNamespace, p.database, "database")
-		w.createNamespace(p.namespace, p.id, "gateway")
+		w.trackAllocation(p.databaseNamespace, p.database, "database")
+		w.trackAllocation(p.namespace, p.id, "gateway")
 	}
 	w.startWorkers(address, ca)
 	w.check(gatewayID)
 	w.checkRPC(gatewayID)
+	w.checkAllocationAccess()
 	for _, restart := range w.restarts {
 		restart()
 	}

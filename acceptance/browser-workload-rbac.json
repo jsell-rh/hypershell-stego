@@ -140,6 +140,72 @@
             "patch",
             "delete"
           ]
+        },
+        {
+          "apiGroups": [
+            "admissionregistration.k8s.io"
+          ],
+          "resources": [
+            "validatingadmissionpolicies",
+            "validatingadmissionpolicybindings"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "clusterroles"
+          ],
+          "resourceNames": [
+            "@NAMESPACE@.hypershell-namespace-allocation.database-worker",
+            "@NAMESPACE@.hypershell-namespace-allocation.database-keys",
+            "@NAMESPACE@.hypershell-namespace-allocation.gateway-worker",
+            "@NAMESPACE@.hypershell-namespace-allocation.gateway-runtime",
+            "@NAMESPACE@.hypershell-namespace-allocation.gateway-reviews",
+            "@NAMESPACE@.hypershell-namespace-allocation.proof"
+          ],
+          "verbs": [
+            "bind"
+          ]
+        },
+        {
+          "apiGroups": [
+            "coordination.k8s.io"
+          ],
+          "resources": [
+            "leases"
+          ],
+          "resourceNames": [
+            "@ALLOCATOR_MARKER@"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "serviceaccounts/token"
+          ],
+          "resourceNames": [
+            "hypershell-namespace-allocation",
+            "hypershell-database",
+            "hypershell-gateway-workload",
+            "hypershell-gateway-identity"
+          ],
+          "verbs": [
+            "create"
+          ]
         }
       ]
     },

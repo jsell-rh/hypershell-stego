@@ -24,7 +24,11 @@ cleanup() {
   if [[ $created == true ]]; then
     "${oc_cmd[@]}" -n "$namespace" get job service-check -o json > "$results/job-status.json" || true
     if [[ $workload == 1 ]]; then
+      "${oc_cmd[@]}" -n "$namespace" scale deployment --all --replicas=0 >/dev/null 2>&1 || true
+      allocation_marker=$(python3 -c 'import hashlib,sys; print(hashlib.sha256((sys.argv[1]+".hypershell-namespace-allocation").encode()).hexdigest()[:32])' "$namespace")
       "${oc_cmd[@]}" get namespace -l "stego.test/browser-run=$namespace" -o name > "$results/owned-namespaces.txt" || true
+      "${oc_cmd[@]}" get namespace -l "stego.dev/allocator=$allocation_marker" -o name >> "$results/owned-namespaces.txt" || true
+      sort -u -o "$results/owned-namespaces.txt" "$results/owned-namespaces.txt"
       while read -r target; do
         gateway_id=$("${oc_cmd[@]}" get "$target" -o 'jsonpath={.metadata.labels.hypershell\.redhat\.io/gateway-id}' 2>/dev/null) || continue
         if [[ $gateway_id =~ ^[0-9A-Za-z]{27}$ ]]; then
@@ -33,6 +37,15 @@ cleanup() {
       done < "$results/owned-namespaces.txt"
       for worker in database gateway-workload; do
         "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-$worker" "clusterrolebinding/$namespace.hypershell-$worker" --ignore-not-found || true
+      done
+      "${oc_cmd[@]}" delete clusterrolebinding -l "stego.dev/allocator=$allocation_marker" --wait=false || true
+      "${oc_cmd[@]}" delete namespace -l "stego.dev/allocator=$allocation_marker" --wait=false || true
+      for role in database-worker database-keys gateway-worker gateway-runtime gateway-reviews proof; do
+        "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation.$role" --ignore-not-found || true
+      done
+      "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation" "clusterrolebinding/$namespace.hypershell-namespace-allocation" --ignore-not-found || true
+      for policy in allocation ownership resources; do
+        "${oc_cmd[@]}" delete "validatingadmissionpolicy/$namespace.hypershell-namespace-allocation.$policy" "validatingadmissionpolicybinding/$namespace.hypershell-namespace-allocation.$policy" --ignore-not-found || true
       done
       "${oc_cmd[@]}" delete namespace -l "stego.test/browser-run=$namespace" --wait=false || true
       "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "stego.test/browser-run=$namespace" --wait=false || true
@@ -98,15 +111,17 @@ if sys.argv[4]=='1':
         endpoints.add(f'[{ip}]:443' if ip.version==6 else f'{ip}:443')
     if not 1<=len(endpoints)<=16: raise SystemExit('Invalid Kubernetes endpoint set')
     for item in job['items']:
-        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'10Gi','limits.cpu':'11','pods':'9'})
+        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'11Gi','limits.cpu':'12','pods':'10'})
         if item['kind']=='Role' and item['metadata']['name']=='service-check':
             for rule in item['rules']:
-                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-database','hypershell-gateway-identity','hypershell-gateway-workload']
+                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-namespace-allocation','hypershell-database','hypershell-gateway-identity','hypershell-gateway-workload']
         if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
-            for worker in ['database','gateway-identity','gateway-workload']:
+            for worker in ['namespace-allocation','database','gateway-identity','gateway-workload']:
                 item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
         if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'].append({'name':'STEGO_TEST_KUBERNETES_EGRESS','value':json.dumps(sorted(endpoints))})
-    role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns))
+    import hashlib
+    marker=hashlib.sha256((ns+'.hypershell-namespace-allocation').encode()).hexdigest()[:32]
+    role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns).replace('@ALLOCATOR_MARKER@',marker))
     job['items'] += role['items']
     for item in job['items']:
         if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
@@ -154,7 +169,7 @@ source "$project/scripts/wait-service-result.sh"
 wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json database-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
+  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json database-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s

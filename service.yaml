@@ -137,14 +137,87 @@ overrides:
           - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
+    allocation_roles:
+      - name: database-worker
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets, persistentvolumeclaims, services, configmaps], verbs: [get, create, patch]}
+          - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
+          - {api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
+      - name: database-keys
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], verbs: [get, create, patch, delete]}
+          - {api_group: "", resources: [configmaps], verbs: [get, create]}
+      - name: gateway-worker
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets, configmaps, services, serviceaccounts], verbs: [get, create, patch]}
+          - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
+          - {api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
+      - name: gateway-runtime
+        scope: namespace
+        rules:
+          - {api_group: agents.x-k8s.io, resources: [sandboxes, sandboxes/status], verbs: [get, list, watch, create, update, patch, delete]}
+          - {api_group: "", resources: [events], verbs: [get, list, watch]}
+          - {api_group: "", resources: [pods], verbs: [get]}
+      - name: gateway-reviews
+        scope: cluster
+        rules:
+          - {api_group: authentication.k8s.io, resources: [tokenreviews], verbs: [create]}
+          - {api_group: "", resources: [nodes], verbs: [get, list, watch]}
+          - {api_group: "", resources: [namespaces], verbs: [get]}
+    allocation_profiles:
+      - name: gateway
+        namespace_prefix: openshell-
+        suffix_length: 16
+        owner_label: hypershell.redhat.io/gateway-id
+        manager: hypershell-gateway-controller
+        quota:
+          - {resource: pods, value: "2"}
+          - {resource: limits.cpu, value: "1"}
+          - {resource: limits.memory, value: 1Gi}
+          - {resource: limits.ephemeral-storage, value: 512Mi}
+          - {resource: requests.storage, value: 2Gi}
+        bindings:
+          - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}
+          - {role: gateway-runtime, service_account: openshell-gateway, namespace: allocated}
+          - {role: gateway-reviews, service_account: openshell-gateway, namespace: allocated}
+          - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
+      - name: database
+        namespace_prefix: openshell-db-
+        suffix_length: 16
+        owner_label: hypershell.redhat.io/database-id
+        manager: hypershell-database-controller
+        identity_config_map: openshell-key-identity
+        identity_labels:
+          - {field: gateway, key: hypershell.redhat.io/gateway-id}
+        identity_annotations:
+          - {field: fingerprint, key: hypershell.redhat.io/gateway-keys}
+        quota:
+          - {resource: pods, value: "2"}
+          - {resource: limits.cpu, value: "1"}
+          - {resource: limits.memory, value: 1Gi}
+          - {resource: limits.ephemeral-storage, value: 512Mi}
+          - {resource: requests.storage, value: 2Gi}
+        bindings:
+          - {role: database-worker, service_account: hypershell-database, namespace: control}
+          - {role: database-keys, service_account: hypershell-gateway-workload, namespace: control}
+          - {external_role: "system:openshift:scc:nonroot-v2", service_account: default, namespace: allocated}
     workers:
+      - name: namespace-allocation
+        namespace_allocator: true
+        kubernetes_api: true
+        package: internal/namespaceallocationapp
+        function: Run
+        external_endpoints: [kubernetes]
+        network_peers:
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: database
         kubernetes_api: true
         kubernetes_permissions:
-          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get, create, patch, delete]}
-          - {scope: cluster, api_group: "", resources: [secrets, persistentvolumeclaims, services, configmaps], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: apps, resources: [deployments], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
+          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get]}
         package: internal/databaseapp
         function: Run
         external_endpoints: [kubernetes]
@@ -154,17 +227,7 @@ overrides:
       - name: gateway-workload
         kubernetes_api: true
         kubernetes_permissions:
-          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get, list, create, patch, delete]}
-          - {scope: cluster, api_group: "", resources: [secrets], verbs: [get, create, patch, delete]}
-          - {scope: cluster, api_group: "", resources: [configmaps, services, serviceaccounts], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: "", resources: [nodes, events], verbs: [get, list, watch]}
-          - {scope: cluster, api_group: "", resources: [pods], verbs: [get]}
-          - {scope: cluster, api_group: apps, resources: [deployments], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: rbac.authorization.k8s.io, resources: [roles, rolebindings], verbs: [get, create, patch]}
-          - {scope: cluster, api_group: rbac.authorization.k8s.io, resources: [clusterroles, clusterrolebindings], verbs: [get, list, create, patch, delete]}
-          - {scope: cluster, api_group: authentication.k8s.io, resources: [tokenreviews], verbs: [create]}
-          - {scope: cluster, api_group: agents.x-k8s.io, resources: [sandboxes, sandboxes/status], verbs: [get, list, watch, create, update, patch, delete]}
+          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get]}
         package: internal/gatewayworkloadapp
         function: Run
         external_endpoints: [kubernetes]
@@ -186,6 +249,7 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     network_peers:
+      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-namespace-allocation, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-console, port: 8443, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-identity, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-database, port: 9090, protocol: TCP}

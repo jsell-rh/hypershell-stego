@@ -15,6 +15,7 @@ import (
 	"regexp"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -29,10 +30,11 @@ const manager = "hypershell-database-controller"
 var dnsName = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
 var ErrPending = errors.New("database workload is not ready")
 
-type KubernetesOptions struct{ ServerURL, CAFile, TokenFile, ClusterIssuer string }
+type KubernetesOptions struct{ ServerURL, CAFile, TokenFile, ClusterIssuer, ControlNamespace string }
 type Kubernetes struct {
-	client *kube.Client
-	issuer string
+	client     *kube.Client
+	issuer     string
+	allocation *allocation.Allocator
 }
 type object = kube.Object
 
@@ -44,7 +46,15 @@ func NewKubernetes(o KubernetesOptions) (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Kubernetes{c, o.ClusterIssuer}, nil
+	var allocator *allocation.Allocator
+	if o.ControlNamespace != "" {
+		allocator, err = allocation.New(c, o.ControlNamespace)
+		if err != nil {
+			c.Close()
+			return nil, err
+		}
+	}
+	return &Kubernetes{client: c, issuer: o.ClusterIssuer, allocation: allocator}, nil
 }
 func (k *Kubernetes) Close() { k.client.Close() }
 func (k *Kubernetes) request(ctx context.Context, method, path string, input object) (object, int, error) {
@@ -117,11 +127,20 @@ func (k *Kubernetes) Ensure(ctx context.Context, db *pb.ManagedDatabase) error {
 		return err
 	}
 	id, ns := db.Metadata.Id, db.Namespace
-	namespace := definition("v1", "Namespace", ns, id)
-	namespace["metadata"].(object)["labels"].(object)["hypershell.redhat.io/database-provider"] = "deployment"
-	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
-	if _, err := k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
-		return err
+	if k.allocation != nil {
+		if err := k.allocation.RequireNamespace(ctx, "database", ns, id); err != nil {
+			if errors.Is(err, allocation.ErrPending) {
+				return ErrPending
+			}
+			return err
+		}
+	} else {
+		namespace := definition("v1", "Namespace", ns, id)
+		namespace["metadata"].(object)["labels"].(object)["hypershell.redhat.io/database-provider"] = "deployment"
+		namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
+		if _, err := k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
+			return err
+		}
 	}
 	core := "/api/v1/namespaces/" + ns
 	// cert-manager owns issuance and renewal. The certificate name and Secret are
@@ -256,7 +275,7 @@ func deploymentObject(id, namespace, certificateHash string) object {
 	env = append(env, object{"name": "PGDATA", "value": "/var/lib/postgresql/data/pgdata"}, object{"name": "POSTGRES_INITDB_ARGS", "value": "--auth-host=scram-sha-256"})
 	container := object{"name": "postgres", "image": PostgresImage, "imagePullPolicy": "IfNotPresent", "args": []string{"postgres", "-c", "ssl=on", "-c", "ssl_min_protocol_version=TLSv1.3", "-c", "ssl_cert_file=/tls/tls.crt", "-c", "ssl_key_file=/tls/tls.key", "-c", "hba_file=/config/pg_hba.conf"}, "env": env,
 		"securityContext": object{"allowPrivilegeEscalation": false, "privileged": false, "readOnlyRootFilesystem": true, "capabilities": object{"drop": []string{"ALL"}}},
-		"resources":       object{"requests": object{"cpu": "100m", "memory": "256Mi"}, "limits": object{"cpu": "500m", "memory": "512Mi"}},
+		"resources":       object{"requests": object{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "32Mi"}, "limits": object{"cpu": "500m", "memory": "512Mi", "ephemeral-storage": "256Mi"}},
 		"ports":           []object{{"name": "postgresql", "containerPort": 5432}},
 		"volumeMounts":    []object{{"name": "data", "mountPath": "/var/lib/postgresql/data"}, {"name": "run", "mountPath": "/var/run/postgresql"}, {"name": "tmp", "mountPath": "/tmp"}, {"name": "tls", "mountPath": "/tls", "readOnly": true}, {"name": "config", "mountPath": "/config", "readOnly": true}, {"name": "config", "mountPath": "/docker-entrypoint-initdb.d/init.sh", "subPath": "init.sh", "readOnly": true}},
 		"readinessProbe":  object{"exec": object{"command": []string{"sh", "-ec", `export PGPASSWORD="$APP_PASSWORD"; exec psql "host=$DB_TLS_NAME hostaddr=127.0.0.1 sslmode=verify-full sslrootcert=/tls/ca.crt user=openshell dbname=openshell connect_timeout=2" -Atqc 'SELECT 1'`}}, "periodSeconds": 3, "timeoutSeconds": 3},
@@ -271,7 +290,13 @@ func (k *Kubernetes) Delete(ctx context.Context, db *pb.ManagedDatabase) error {
 	if err := validatePlacement(db); err != nil {
 		return err
 	}
-	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+db.Namespace, owner(db.Metadata.Id))
+	var gone bool
+	var err error
+	if k.allocation != nil {
+		gone, err = k.allocation.NamespaceGone(ctx, "database", db.Namespace, db.Metadata.Id)
+	} else {
+		gone, err = k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+db.Namespace, owner(db.Metadata.Id))
+	}
 	if err != nil {
 		return err
 	}

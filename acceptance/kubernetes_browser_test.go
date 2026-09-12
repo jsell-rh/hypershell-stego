@@ -41,7 +41,7 @@ func TestGeneratedKubernetesBrowserGatewayWorkflow(t *testing.T) {
 	runBrowserGatewayWorkflow(t, p)
 	expected := 3
 	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
-		expected = 6
+		expected = 7
 	}
 	if len(p.pods) != expected {
 		t.Fatal("all generated Deployments must run")

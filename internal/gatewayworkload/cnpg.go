@@ -262,6 +262,10 @@ func (k *Kubernetes) deleteSharedDatabase(ctx context.Context, gw *pb.Gateway) e
 	if !keyResourceOwned(namespace, databaseOwner(gw.DatabaseId)) {
 		return errors.New("Gateway database namespace has a different owner")
 	}
+	if k.allocation != nil && kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") == "database" {
+		_, err := k.allocation.NamespaceGone(ctx, "database", ns, gw.DatabaseId)
+		return err
+	}
 	switch kube.String(namespace, "metadata", "labels", providerLabel) {
 	case gateways.ProviderDeployment:
 		// A changed routing label must not hide a live shared Cluster.

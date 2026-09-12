@@ -273,7 +273,7 @@ jobs:
           test "$(docker image inspect --format '{{json .Config.Entrypoint}}' hypershell-provisioner:check)" = '["/rpc"]'
       - name: Build and check the generated worker images
         run: |
-          for worker in database gateway-identity gateway-workload sandbox-count; do
+          for worker in namespace-allocation database gateway-identity gateway-workload sandbox-count; do
             docker build --file "out/deploy/workers/$worker/Containerfile" --tag "hypershell-$worker:check" .
             test "$(docker image inspect --format '{{.Config.User}}' "hypershell-$worker:check")" = '65532:65532'
             test "$(docker image inspect --format '{{json .Config.Entrypoint}}' "hypershell-$worker:check")" = '["/worker"]'

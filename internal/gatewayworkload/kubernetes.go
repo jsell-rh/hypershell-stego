@@ -17,6 +17,7 @@ import (
 	"os"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -24,15 +25,17 @@ import (
 type object = kube.Object
 type Options struct {
 	SandboxRuntimeClass                                    string
+	ControlNamespace                                       string
 	CNPGDialAddress                                        string
 	ClusterID                                              string
 	ServerURL, CAFile, TokenFile, ClusterIssuer            string
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
 }
 type Kubernetes struct {
-	client  *kube.Client
-	options Options
-	trust   string
+	client     *kube.Client
+	options    Options
+	trust      string
+	allocation *allocation.Allocator
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
@@ -62,7 +65,19 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Kubernetes{c, o, string(trust)}, nil
+	var allocator *allocation.Allocator
+	if o.ControlNamespace != "" {
+		if o.SandboxRuntimeClass != "" {
+			c.Close()
+			return nil, errors.New("separate Sandbox allocation is not yet configured")
+		}
+		allocator, err = allocation.New(c, o.ControlNamespace)
+		if err != nil {
+			c.Close()
+			return nil, err
+		}
+	}
+	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator}, nil
 }
 
 // Only certificates can enter the public ConfigMap. Never copy a private key
@@ -117,6 +132,14 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 		return errors.New("Gateway supervisor image differs from controller configuration")
 	}
 	id, ns := gw.Metadata.Id, gw.Namespace
+	if k.allocation != nil {
+		if err := k.allocation.RequireNamespace(ctx, "gateway", ns, id); err != nil {
+			if errors.Is(err, allocation.ErrPending) {
+				return ErrPending
+			}
+			return err
+		}
+	}
 	keys, err := k.keys(ctx, gw, db)
 	if err != nil {
 		return err
@@ -125,10 +148,12 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 	if err != nil {
 		return err
 	}
-	namespace := definition("v1", "Namespace", ns, id)
-	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
-	if _, err = k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
-		return err
+	if k.allocation == nil {
+		namespace := definition("v1", "Namespace", ns, id)
+		namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
+		if _, err = k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
+			return err
+		}
 	}
 	core := "/api/v1/namespaces/" + ns
 	for name, values := range map[string]object{keysName: keys, "openshell-gateway-db-credentials": dbData} {
@@ -212,6 +237,9 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 		return err
 	}
 	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(crt))) {
+		if k.allocation != nil && entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" {
+			continue
+		}
 		if _, err = k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
 		}
@@ -245,6 +273,16 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 	if err != nil {
 		return err
 	}
+	if k.allocation != nil {
+		gone, err := k.allocation.NamespaceGone(ctx, "gateway", ns, id)
+		if err != nil {
+			return err
+		}
+		if !gone {
+			return ErrPending
+		}
+		return k.deleteSharedDatabase(ctx, gw)
+	}
 	sandboxNS, _ := SandboxNamespace(id)
 	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+sandboxNS, owner(id))
 	if err != nil {
@@ -277,6 +315,11 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 }
 
 func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {
+	// Allocated resources use retained API records for recovery. The resource
+	// worker has no cluster-wide namespace or binding inventory permission.
+	if k.allocation != nil {
+		return nil, nil
+	}
 	seen := map[string]bool{}
 	ids := []string{}
 	for _, scan := range []struct {

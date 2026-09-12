@@ -26,7 +26,7 @@ func workerService(resource *resourcepb.Resource) (string, string, bool) {
 	name := signalAttribute(resource.GetAttributes(), "service.name").GetStringValue()
 	id := signalAttribute(resource.GetAttributes(), "service.instance.id").GetStringValue()
 	switch name {
-	case "hypershell-database", "hypershell-gateway-identity", "hypershell-gateway-workload":
+	case "hypershell-namespace-allocation", "hypershell-database", "hypershell-gateway-identity", "hypershell-gateway-workload":
 		return name, id, true
 	}
 	return "", "", false
@@ -149,7 +149,7 @@ func (w *workerSignalEvidence) check(t *testing.T) {
 	deadline := time.Now().Add(15 * time.Second)
 	for {
 		w.Lock()
-		ready := !w.invalid && len(w.instances) == 3
+		ready := !w.invalid && len(w.instances) == 4
 		for _, states := range w.instances {
 			ready = ready && len(states) == 2
 			for _, s := range states {
@@ -159,11 +159,11 @@ func (w *workerSignalEvidence) check(t *testing.T) {
 		invalid := w.invalid
 		w.Unlock()
 		if ready {
-			t.Log("All three workers exported metrics and correlated logs and traces before and after Pod replacement")
+			t.Log("All four workers exported metrics and correlated logs and traces before and after Pod replacement")
 			return
 		}
 		if invalid || time.Now().After(deadline) {
-			t.Fatal("worker telemetry did not prove all six process instances")
+			t.Fatal("worker telemetry did not prove all eight process instances")
 		}
 		time.Sleep(100 * time.Millisecond)
 	}

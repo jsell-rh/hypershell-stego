@@ -1,0 +1,897 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.allocation"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConditions": [
+          {
+            "expression": "request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\"",
+            "name": "selected-identity"
+          }
+        ],
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "namespaces",
+                "resourcequotas"
+              ]
+            },
+            {
+              "apiGroups": [
+                "rbac.authorization.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "rolebindings",
+                "clusterrolebindings"
+              ]
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "request.operation != 'UPDATE' || (object.metadata.labels['stego.dev/allocation-profile'] == oldObject.metadata.labels['stego.dev/allocation-profile'] \u0026\u0026 object.metadata.labels['app.kubernetes.io/managed-by'] == oldObject.metadata.labels['app.kubernetes.io/managed-by'] \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"gateway\" || object.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == oldObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"]) \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"database\" || object.metadata.labels[\"hypershell.redhat.io/database-id\"] == oldObject.metadata.labels[\"hypershell.redhat.io/database-id\"]))",
+            "message": "Allocator cannot change resource ownership"
+          },
+          {
+            "expression": "request.resource.resource != 'namespaces' || ((((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (variables.o.metadata.name != '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 'pod-security.kubernetes.io/enforce' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted') || (((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (variables.o.metadata.name != '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 'pod-security.kubernetes.io/enforce' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted'))",
+            "message": "Namespace must match its allocation profile"
+          },
+          {
+            "expression": "request.resource.resource != 'resourcequotas' || (((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 variables.o.metadata.name == 'stego-allocation' \u0026\u0026 has(variables.o.spec) \u0026\u0026 has(variables.o.spec.hard) \u0026\u0026 size(variables.o.spec.hard) == 5 \u0026\u0026 \"limits.cpu\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.cpu\"]).compareTo(quantity(\"1\")) == 0 \u0026\u0026 \"limits.ephemeral-storage\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.ephemeral-storage\"]).compareTo(quantity(\"512Mi\")) == 0 \u0026\u0026 \"limits.memory\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.memory\"]).compareTo(quantity(\"1Gi\")) == 0 \u0026\u0026 \"pods\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"pods\"]).compareTo(quantity(\"2\")) == 0 \u0026\u0026 \"requests.storage\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"requests.storage\"]).compareTo(quantity(\"2Gi\")) == 0) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 variables.o.metadata.name == 'stego-allocation' \u0026\u0026 has(variables.o.spec) \u0026\u0026 has(variables.o.spec.hard) \u0026\u0026 size(variables.o.spec.hard) == 5 \u0026\u0026 \"limits.cpu\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.cpu\"]).compareTo(quantity(\"1\")) == 0 \u0026\u0026 \"limits.ephemeral-storage\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.ephemeral-storage\"]).compareTo(quantity(\"512Mi\")) == 0 \u0026\u0026 \"limits.memory\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"limits.memory\"]).compareTo(quantity(\"1Gi\")) == 0 \u0026\u0026 \"pods\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"pods\"]).compareTo(quantity(\"2\")) == 0 \u0026\u0026 \"requests.storage\" in variables.o.spec.hard \u0026\u0026 quantity(variables.o.spec.hard[\"requests.storage\"]).compareTo(quantity(\"2Gi\")) == 0))",
+            "message": "Quota must match its allocation profile"
+          },
+          {
+            "expression": "request.resource.resource != 'rolebindings' || ((request.operation == 'DELETE' \u0026\u0026 (((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 variables.o.metadata.name.matches(\"^stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-([0-9]|1[0-5]|proof)$\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.proof\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"hypershell-namespace-allocation\" \u0026\u0026 variables.o.subjects[0].namespace == '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-proof\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.gateway-worker\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"hypershell-gateway-workload\" \u0026\u0026 variables.o.subjects[0].namespace == '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-0\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.gateway-runtime\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"openshell-gateway\" \u0026\u0026 variables.o.subjects[0].namespace == namespaceObject.metadata.name \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-1\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"system:openshift:scc:nonroot-v2\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"openshell-gateway\" \u0026\u0026 variables.o.subjects[0].namespace == namespaceObject.metadata.name \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-3\")) || (request.operation == 'DELETE' \u0026\u0026 (((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 variables.o.metadata.name.matches(\"^stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-([0-9]|1[0-5]|proof)$\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.proof\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"hypershell-namespace-allocation\" \u0026\u0026 variables.o.subjects[0].namespace == '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-proof\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.database-worker\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"hypershell-database\" \u0026\u0026 variables.o.subjects[0].namespace == '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-0\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.database-keys\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"hypershell-gateway-workload\" \u0026\u0026 variables.o.subjects[0].namespace == '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-1\")) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/database-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"system:openshift:scc:nonroot-v2\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"default\" \u0026\u0026 variables.o.subjects[0].namespace == namespaceObject.metadata.name \u0026\u0026 variables.o.metadata.name == \"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-2\")))",
+            "message": "Binding must match its allocated namespace"
+          },
+          {
+            "expression": "request.resource.resource != 'clusterrolebindings' || ((request.operation == 'DELETE' \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 (variables.o.subjects[0].namespace != '{{.Namespace}}' \u0026\u0026 variables.o.subjects[0].namespace.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 variables.o.metadata.name.startsWith(\"{{.Namespace}}.hypershell-namespace-allocation.\" + variables.o.subjects[0].namespace + '.') \u0026\u0026 variables.o.metadata.name.matches('.*[.]([0-9]|1[0-5])$')) || (((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (has(variables.o.roleRef) \u0026\u0026 variables.o.roleRef.apiGroup == 'rbac.authorization.k8s.io' \u0026\u0026 variables.o.roleRef.kind == 'ClusterRole' \u0026\u0026 variables.o.roleRef.name == \"{{.Namespace}}.hypershell-namespace-allocation.gateway-reviews\" \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 variables.o.subjects[0].kind == 'ServiceAccount' \u0026\u0026 (!has(variables.o.subjects[0].apiGroup) || variables.o.subjects[0].apiGroup == '') \u0026\u0026 variables.o.subjects[0].name == \"openshell-gateway\" \u0026\u0026 variables.o.subjects[0].namespace == variables.o.subjects[0].namespace \u0026\u0026 variables.o.metadata.name == \"{{.Namespace}}.hypershell-namespace-allocation.\" + variables.o.subjects[0].namespace + \".2\") \u0026\u0026 (variables.o.subjects[0].namespace != '{{.Namespace}}' \u0026\u0026 variables.o.subjects[0].namespace.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 (request.operation == 'DELETE' || authorizer.group('coordination.k8s.io').resource('leases').namespace(variables.o.subjects[0].namespace).name(\"{{allocationID .Namespace `hypershell-namespace-allocation`}}\").check('get').allowed())) || (request.operation == 'DELETE' \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 has(variables.o.subjects) \u0026\u0026 size(variables.o.subjects) == 1 \u0026\u0026 (variables.o.subjects[0].namespace != '{{.Namespace}}' \u0026\u0026 variables.o.subjects[0].namespace.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 variables.o.metadata.name.startsWith(\"{{.Namespace}}.hypershell-namespace-allocation.\" + variables.o.subjects[0].namespace + '.') \u0026\u0026 variables.o.metadata.name.matches('.*[.]([0-9]|1[0-5])$')))",
+            "message": "Cluster binding requires an allocated namespace and a declared role"
+          },
+          {
+            "expression": "oldObject == null || (oldObject != null \u0026\u0026 has(oldObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in oldObject.metadata.labels \u0026\u0026 oldObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")",
+            "message": "Allocator cannot change a foreign resource"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "object != null ? object : oldObject",
+            "name": "o"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.allocation"
+      },
+      "spec": {
+        "policyName": "{{.Namespace}}.hypershell-namespace-allocation.allocation",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.ownership"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConditions": [
+          {
+            "expression": "(object != null \u0026\u0026 has(object.metadata.labels) \u0026\u0026 'stego.dev/allocator' in object.metadata.labels \u0026\u0026 object.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") || (oldObject != null \u0026\u0026 has(oldObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in oldObject.metadata.labels \u0026\u0026 oldObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")",
+            "name": "selected-identity"
+          }
+        ],
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "namespaces"
+              ]
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "request.operation == 'DELETE' || (request.operation == 'CREATE' ? (request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\" \u0026\u0026 ((((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (variables.o.metadata.name != '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 'pod-security.kubernetes.io/enforce' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted') || (((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"database\" \u0026\u0026 \"hypershell.redhat.io/database-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/database-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-database-controller\") \u0026\u0026 (variables.o.metadata.name != '{{.Namespace}}' \u0026\u0026 variables.o.metadata.name.matches(\"^openshell-db-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 'pod-security.kubernetes.io/enforce' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted'))) : ((oldObject != null \u0026\u0026 has(oldObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in oldObject.metadata.labels \u0026\u0026 oldObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 (object != null \u0026\u0026 has(object.metadata.labels) \u0026\u0026 'stego.dev/allocator' in object.metadata.labels \u0026\u0026 object.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 object.metadata.labels['stego.dev/allocator'] == oldObject.metadata.labels['stego.dev/allocator'] \u0026\u0026 object.metadata.labels['stego.dev/allocation-profile'] == oldObject.metadata.labels['stego.dev/allocation-profile'] \u0026\u0026 object.metadata.labels['app.kubernetes.io/managed-by'] == oldObject.metadata.labels['app.kubernetes.io/managed-by'] \u0026\u0026 object.metadata.labels['pod-security.kubernetes.io/enforce'] == 'restricted' \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"gateway\" || object.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == oldObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"]) \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"database\" || object.metadata.labels[\"hypershell.redhat.io/database-id\"] == oldObject.metadata.labels[\"hypershell.redhat.io/database-id\"]) \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"database\" || ((has(oldObject.metadata.labels) \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in oldObject.metadata.labels) ? ((has(object.metadata.labels) \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in object.metadata.labels) \u0026\u0026 object.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == oldObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"]) : (!(has(object.metadata.labels) \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in object.metadata.labels) || request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\"))) \u0026\u0026 (oldObject.metadata.labels['stego.dev/allocation-profile'] != \"database\" || ((has(oldObject.metadata.annotations) \u0026\u0026 \"hypershell.redhat.io/gateway-keys\" in oldObject.metadata.annotations) ? ((has(object.metadata.annotations) \u0026\u0026 \"hypershell.redhat.io/gateway-keys\" in object.metadata.annotations) \u0026\u0026 object.metadata.annotations[\"hypershell.redhat.io/gateway-keys\"] == oldObject.metadata.annotations[\"hypershell.redhat.io/gateway-keys\"]) : (!(has(object.metadata.annotations) \u0026\u0026 \"hypershell.redhat.io/gateway-keys\" in object.metadata.annotations) || request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\")))))",
+            "message": "Allocation identity and restricted Pod security are immutable"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "object != null ? object : oldObject",
+            "name": "o"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.ownership"
+      },
+      "spec": {
+        "policyName": "{{.Namespace}}.hypershell-namespace-allocation.ownership",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.resources"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConditions": [
+          {
+            "expression": "!has(request.name) || (request.resource.resource == 'resourcequotas' ? request.name == 'stego-allocation' : request.name.startsWith(\"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-\"))",
+            "name": "selected-identity"
+          }
+        ],
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "resourcequotas"
+              ]
+            },
+            {
+              "apiGroups": [
+                "rbac.authorization.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "rolebindings"
+              ]
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "!((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")) || request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\" || (request.operation == 'DELETE' \u0026\u0026 has(namespaceObject.metadata.deletionTimestamp))",
+            "message": "Only the allocator can change allocation limits and bindings"
+          }
+        ],
+        "variables": [
+          {
+            "expression": "object != null ? object : oldObject",
+            "name": "o"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.resources"
+      },
+      "spec": {
+        "policyName": "{{.Namespace}}.hypershell-namespace-allocation.resources",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.database-worker"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps",
+            "persistentvolumeclaims",
+            "secrets",
+            "services"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "cert-manager.io"
+          ],
+          "resources": [
+            "certificates"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.database-keys"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "secrets"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps"
+          ],
+          "verbs": [
+            "create",
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.gateway-worker"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps",
+            "secrets",
+            "serviceaccounts",
+            "services"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "cert-manager.io"
+          ],
+          "resources": [
+            "certificates"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.gateway-runtime"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "agents.x-k8s.io"
+          ],
+          "resources": [
+            "sandboxes",
+            "sandboxes/status"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "list",
+            "patch",
+            "update",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "events"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.gateway-reviews"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "authentication.k8s.io"
+          ],
+          "resources": [
+            "tokenreviews"
+          ],
+          "verbs": [
+            "create"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "nodes"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.proof"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "coordination.k8s.io"
+          ],
+          "resourceNames": [
+            "{{allocationID .Namespace `hypershell-namespace-allocation`}}"
+          ],
+          "resources": [
+            "leases"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resourceNames": [
+            "openshell-key-identity"
+          ],
+          "resources": [
+            "configmaps"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "resourcequotas"
+          ],
+          "verbs": [
+            "get",
+            "create",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "rolebindings",
+            "clusterrolebindings"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resourceNames": [
+            "system:openshift:scc:nonroot-v2",
+            "{{.Namespace}}.hypershell-namespace-allocation.database-keys",
+            "{{.Namespace}}.hypershell-namespace-allocation.database-worker",
+            "{{.Namespace}}.hypershell-namespace-allocation.gateway-reviews",
+            "{{.Namespace}}.hypershell-namespace-allocation.gateway-runtime",
+            "{{.Namespace}}.hypershell-namespace-allocation.gateway-worker",
+            "{{.Namespace}}.hypershell-namespace-allocation.proof"
+          ],
+          "resources": [
+            "clusterroles"
+          ],
+          "verbs": [
+            "bind"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{.Namespace}}.hypershell-namespace-allocation"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-namespace-allocation",
+          "namespace": "{{.Namespace}}"
+        }
+      ]
+    },
+    {
+      "apiVersion": "v1",
+      "automountServiceAccountToken": false,
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "hypershell-namespace-allocation",
+        "namespace": "{{.Namespace}}"
+      }
+    },
+    {
+      "apiVersion": "networking.k8s.io/v1",
+      "kind": "NetworkPolicy",
+      "metadata": {
+        "name": "hypershell-namespace-allocation",
+        "namespace": "{{.Namespace}}"
+      },
+      "spec": {
+        "egress": [
+          {
+            "ports": [
+              {
+                "port": 9090,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app.kubernetes.io/name": "hypershell"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 19093,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
+                    "app": "stego-fixture"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 0,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "stego-external:kubernetes"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 5353,
+                "protocol": "UDP"
+              },
+              {
+                "port": 5353,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "openshift-dns"
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "ingress": [],
+        "podSelector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "hypershell-namespace-allocation"
+          }
+        },
+        "policyTypes": [
+          "Ingress",
+          "Egress"
+        ]
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "Deployment",
+      "metadata": {
+        "name": "hypershell-namespace-allocation",
+        "namespace": "{{.Namespace}}"
+      },
+      "spec": {
+        "progressDeadlineSeconds": 180,
+        "replicas": 1,
+        "revisionHistoryLimit": 2,
+        "selector": {
+          "matchLabels": {
+            "app.kubernetes.io/name": "hypershell-namespace-allocation"
+          }
+        },
+        "strategy": {
+          "type": "Recreate"
+        },
+        "template": {
+          "metadata": {
+            "labels": {
+              "app.kubernetes.io/name": "hypershell-namespace-allocation"
+            }
+          },
+          "spec": {
+            "automountServiceAccountToken": false,
+            "containers": [
+              {
+                "env": [
+                  {
+                    "name": "GOMEMLIMIT",
+                    "value": "384MiB"
+                  },
+                  {
+                    "name": "STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK",
+                    "value": "0"
+                  },
+                  {
+                    "name": "STEGO_CONTROLLER_MONITOR_ADDR",
+                    "value": "127.0.0.1:9081"
+                  },
+                  {
+                    "name": "OTEL_SERVICE_NAME",
+                    "value": "hypershell-namespace-allocation"
+                  }
+                ],
+                "envFrom": [
+                  {
+                    "secretRef": {
+                      "name": "hypershell-namespace-allocation-runtime"
+                    }
+                  }
+                ],
+                "image": "{{.Image}}",
+                "imagePullPolicy": "IfNotPresent",
+                "livenessProbe": {
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=live"
+                    ]
+                  },
+                  "failureThreshold": 3,
+                  "periodSeconds": 10,
+                  "timeoutSeconds": 2
+                },
+                "name": "worker",
+                "readinessProbe": {
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=ready"
+                    ]
+                  },
+                  "failureThreshold": 2,
+                  "periodSeconds": 3,
+                  "timeoutSeconds": 2
+                },
+                "resources": {
+                  "limits": {
+                    "cpu": "1",
+                    "ephemeral-storage": "128Mi",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "ephemeral-storage": "32Mi",
+                    "memory": "128Mi"
+                  }
+                },
+                "securityContext": {
+                  "allowPrivilegeEscalation": false,
+                  "capabilities": {
+                    "drop": [
+                      "ALL"
+                    ]
+                  },
+                  "readOnlyRootFilesystem": true
+                },
+                "startupProbe": {
+                  "exec": {
+                    "command": [
+                      "/worker",
+                      "--stego-probe=live"
+                    ]
+                  },
+                  "failureThreshold": 30,
+                  "periodSeconds": 2,
+                  "timeoutSeconds": 2
+                },
+                "volumeMounts": [
+                  {
+                    "mountPath": "/var/run/stego",
+                    "name": "files",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/tmp",
+                    "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/var/run/stego-kubernetes",
+                    "name": "kubernetes-api",
+                    "readOnly": true
+                  }
+                ]
+              }
+            ],
+            "securityContext": {
+              "fsGroup": {{.FSGroup}},
+              "runAsNonRoot": true,
+              "seccompProfile": {
+                "type": "RuntimeDefault"
+              }
+            },
+            "serviceAccountName": "hypershell-namespace-allocation",
+            "terminationGracePeriodSeconds": 60,
+            "volumes": [
+              {
+                "name": "files",
+                "secret": {
+                  "defaultMode": 288,
+                  "secretName": "hypershell-namespace-allocation-files"
+                }
+              },
+              {
+                "emptyDir": {
+                  "sizeLimit": "64Mi"
+                },
+                "name": "tmp"
+              },
+              {
+                "name": "kubernetes-api",
+                "projected": {
+                  "defaultMode": 288,
+                  "sources": [
+                    {
+                      "serviceAccountToken": {
+                        "expirationSeconds": 3600,
+                        "path": "token"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "ca.crt"
+                          }
+                        ],
+                        "name": "kube-root-ca.crt"
+                      }
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  ],
+  "kind": "List"
+}

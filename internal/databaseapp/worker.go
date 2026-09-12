@@ -19,7 +19,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	if name == "" {
 		name = "deployment"
 	}
-	options := databasecontroller.KubernetesOptions{ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")}
+	options := databasecontroller.KubernetesOptions{ControlNamespace: os.Getenv("HYPERSHELL_CONTROL_NAMESPACE"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")}
 	var provider interface {
 		databasecontroller.Provider
 		Close()
