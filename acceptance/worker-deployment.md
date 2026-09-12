@@ -130,3 +130,19 @@ Console and provisioner image digests did not change. Compiler
 passed. The new namespace adapter was checked separately. It is not deployed
 in this application run. Namespace allocation and removal of broad worker
 permissions remain an [open application gate](namespace-allocation.md).
+
+## Shared client token rotation
+
+The separate STEGO live check passed on 2026-09-12 UTC with active OTEL.
+The same generated client used two server-confirmed projected credentials
+without a restart. Secret access remained denied after rotation. Logs, metrics,
+and traces reached the verified TLS collector without the selected private
+values. The three Kubernetes runtime files and the HTTP client match this
+application after module-path substitution and Go formatting.
+
+The live case took 410.03 seconds; the race-enabled runtime suite took 414.174
+seconds. Results are in `/tmp/stego-token-rotation-4af00kxw`. The Job reached
+`Complete`, and the test namespace is absent. See the
+[STEGO check](https://github.com/jsell-rh/stego/blob/9f717ec/specs/kubernetes-identity.md#live-token-rotation-check).
+This proves the shared client behavior. A deployed Hypershell worker still
+needs a test that spans its own token rotation.
