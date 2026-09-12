@@ -39,8 +39,12 @@ func TestGeneratedKubernetesBrowserGatewayWorkflow(t *testing.T) {
 		}
 	}
 	runBrowserGatewayWorkflow(t, p)
-	if len(p.pods) != 3 {
-		t.Fatal("all three generated Deployments must run")
+	expected := 3
+	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
+		expected = 6
+	}
+	if len(p.pods) != expected {
+		t.Fatal("all generated Deployments must run")
 	}
 }
 func (p *kubernetesBrowser) host(name string) string { return name + "." + p.namespace + ".svc" }
@@ -224,9 +228,11 @@ func (p *kubernetesBrowser) startConsole(f *fixture, origin, api, apiCA string, 
 }
 func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, env map[string]string, files map[string][]byte, target ...string) (func(), func() string) {
 	p.t.Helper()
-	dir := filepath.Dir(id.config.CAFile)
-	files["tls.crt"] = p.read(filepath.Join(dir, "server.pem"))
-	files["tls.key"] = p.read(filepath.Join(dir, "server-key.pem"))
+	if id.config.CAFile != "" {
+		dir := filepath.Dir(id.config.CAFile)
+		files["tls.crt"] = p.read(filepath.Join(dir, "server.pem"))
+		files["tls.key"] = p.read(filepath.Join(dir, "server-key.pem"))
+	}
 	if p.pods[name] == "" {
 		p.t.Cleanup(func() {
 			p.command(nil, "delete", "deployment/"+name, "service/"+name, "serviceaccount/"+name, "networkpolicy/"+name, "secret/"+name+"-files", "secret/"+name+"-runtime", "--ignore-not-found")

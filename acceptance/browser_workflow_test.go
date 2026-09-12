@@ -761,6 +761,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 			checkRenderedServiceAccounts(t, f, k, aliceID, rendered, alice, restartProvider, runtimeLogs)
 		} else {
 			workload.check(gateway.ID)
+			signals.workers.check(t)
 			checkRenderedServiceAccountsOnGateway(t, f, k, gateway.ID, "rendered-browser-workflow", workload.audience(gateway.ID), rendered, alice, restartProvider, runtimeLogs, workload.checkCredential)
 		}
 	}

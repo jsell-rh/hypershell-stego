@@ -31,6 +31,9 @@ cleanup() {
           "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "hypershell.redhat.io/gateway-id=$gateway_id,app.kubernetes.io/managed-by=hypershell-gateway-controller" --wait=false || true
         fi
       done < "$results/owned-namespaces.txt"
+      for worker in database gateway-workload; do
+        "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-$worker" "clusterrolebinding/$namespace.hypershell-$worker" --ignore-not-found || true
+      done
       "${oc_cmd[@]}" delete namespace -l "stego.test/browser-run=$namespace" --wait=false || true
       "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "stego.test/browser-run=$namespace" --wait=false || true
     fi
@@ -48,6 +51,10 @@ umask 077
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
+if [[ $workload == 1 ]]; then
+  "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
+  "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
+fi
 python3 - "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}" <<'PY'
 import base64,json,secrets,sys
 from pathlib import Path
@@ -75,6 +82,30 @@ if sys.argv[3]=='1':
 if sys.argv[4]=='1':
     import re
     if sys.argv[3]!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',sys.argv[5]): raise SystemExit('Invalid Gateway test profile')
+    import ipaddress
+    endpoints=set()
+    for item in json.loads((root/'kubernetes-endpoints.json').read_text())['items']:
+        for endpoint in item['endpoints']:
+            if endpoint.get('conditions',{}).get('ready') is not True: continue
+            for port in item['ports']:
+                if port.get('protocol')!='TCP' or port.get('name')!='https': continue
+                for address in endpoint['addresses']:
+                    ip=ipaddress.ip_address(address)
+                    endpoints.add(f'[{ip}]:{port["port"]}' if ip.version==6 else f'{ip}:{port["port"]}')
+    service=json.loads((root/'kubernetes-service.json').read_text())
+    for address in service['spec'].get('clusterIPs',[service['spec']['clusterIP']]):
+        ip=ipaddress.ip_address(address)
+        endpoints.add(f'[{ip}]:443' if ip.version==6 else f'{ip}:443')
+    if not 1<=len(endpoints)<=16: raise SystemExit('Invalid Kubernetes endpoint set')
+    for item in job['items']:
+        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'10Gi','limits.cpu':'11','pods':'9'})
+        if item['kind']=='Role' and item['metadata']['name']=='service-check':
+            for rule in item['rules']:
+                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-database','hypershell-gateway-identity','hypershell-gateway-workload']
+        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
+            for worker in ['database','gateway-identity','gateway-workload']:
+                item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
+        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'].append({'name':'STEGO_TEST_KUBERNETES_EGRESS','value':json.dumps(sorted(endpoints))})
     role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns))
     job['items'] += role['items']
     for item in job['items']:
@@ -123,7 +154,7 @@ source "$project/scripts/wait-service-result.sh"
 wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
+  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json database-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s

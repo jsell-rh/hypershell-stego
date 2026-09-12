@@ -2,6 +2,188 @@
   "apiVersion": "v1",
   "items": [
     {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-gateway-workload"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "list",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "secrets"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps",
+            "serviceaccounts",
+            "services"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "events",
+            "nodes"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "cert-manager.io"
+          ],
+          "resources": [
+            "certificates"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "rolebindings",
+            "roles"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "clusterrolebindings",
+            "clusterroles"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "list",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "authentication.k8s.io"
+          ],
+          "resources": [
+            "tokenreviews"
+          ],
+          "verbs": [
+            "create"
+          ]
+        },
+        {
+          "apiGroups": [
+            "agents.x-k8s.io"
+          ],
+          "resources": [
+            "sandboxes",
+            "sandboxes/status"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "list",
+            "patch",
+            "update",
+            "watch"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-gateway-workload"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{.Namespace}}.hypershell-gateway-workload"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-gateway-workload",
+          "namespace": "{{.Namespace}}"
+        }
+      ]
+    },
+    {
       "apiVersion": "v1",
       "automountServiceAccountToken": false,
       "kind": "ServiceAccount",
@@ -232,6 +414,11 @@
                   {
                     "mountPath": "/tmp",
                     "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/var/run/stego-kubernetes",
+                    "name": "kubernetes-api",
+                    "readOnly": true
                   }
                 ]
               }
@@ -258,6 +445,31 @@
                   "sizeLimit": "64Mi"
                 },
                 "name": "tmp"
+              },
+              {
+                "name": "kubernetes-api",
+                "projected": {
+                  "defaultMode": 288,
+                  "sources": [
+                    {
+                      "serviceAccountToken": {
+                        "expirationSeconds": 3600,
+                        "path": "token"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "ca.crt"
+                          }
+                        ],
+                        "name": "kube-root-ca.crt"
+                      }
+                    }
+                  ]
+                }
               }
             ]
           }

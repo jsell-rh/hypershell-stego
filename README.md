@@ -503,3 +503,9 @@ uses the actual console-created Gateway. Generated workers provision its
 PostgreSQL database, identity client, and OpenShell Deployment. Verified RPC,
 denied calls, provider data after Pod replacement, and a real browser-issued
 service credential passed in the bounded jshell profile.
+
+The [worker deployment check](acceptance/worker-deployment.md) runs all three
+controllers as separate generated Deployments. It verifies their Kubernetes
+identity projections, declared RBAC, Pod replacement, and metrics with
+correlated logs and traces. The complete browser Gateway and account workflow
+passed with these workers. Shared-cluster isolation remains open.

@@ -166,6 +166,7 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 }
 
 type httpDiagnosticCollector struct {
+	workers     *workerSignalEvidence
 	unavailable atomic.Bool
 	traces      *workflowTraceCollector
 	logs        *workflowLogCollector
@@ -194,9 +195,17 @@ func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*http
 		logs:    &workflowLogCollector{received: make(chan *logcollector.ExportLogsServiceRequest, 64)},
 		metrics: &workflowMetricCollector{received: make(chan *metriccollector.ExportMetricsServiceRequest, 64)},
 	}
+	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
+		signals.workers = &workerSignalEvidence{}
+	}
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 		if signals.unavailable.Load() {
 			return nil, status.Error(codes.Unavailable, "private-collector-fault")
+		}
+		if signals.workers != nil {
+			if response, handled := signals.workers.collect(request); handled {
+				return response, nil
+			}
 		}
 		return next(ctx, request)
 	}))

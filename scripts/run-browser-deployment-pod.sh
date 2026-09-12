@@ -30,6 +30,11 @@ registry=image-registry.openshift-image-registry.svc:5000
 publish_image service ./out hypershell /work/image.json
 (cd console; publish_image service ./out hypershell-console /work/console-image.json)
 publish_image rpc ./out/grpcapi/processes/provisioner hypershell-provisioner /work/provisioner-image.json
+if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
+ for worker in database gateway-identity gateway-workload; do
+  publish_image worker "./out/deploy/workers/$worker" "hypershell-$worker" "/work/$worker-image.json"
+ done
+fi
 unlink /work/registry-auth.json
 digest=$(go run -mod=readonly scripts/service-image-digest.go /work/image.json service)
 console_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/console-image.json service)
@@ -37,6 +42,14 @@ export STEGO_TEST_SERVICE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell@$dig
 export STEGO_TEST_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-console@$console_digest"
 provisioner_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/provisioner-image.json rpc)
 export STEGO_TEST_PROVISIONER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-provisioner@$provisioner_digest"
+if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
+ database_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/database-image.json worker)
+ identity_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-identity-image.json worker)
+ gateway_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-workload-image.json worker)
+ export STEGO_TEST_DATABASE_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-database@$database_digest"
+ export STEGO_TEST_IDENTITY_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-identity@$identity_digest"
+ export STEGO_TEST_GATEWAY_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-workload@$gateway_digest"
+fi
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 go test -v -race -mod=readonly -count=1 -timeout=10m -run '^(TestGeneratedKubernetesBrowserGatewayWorkflow|TestKubernetesWriteFailurePrivacy)$' ./acceptance

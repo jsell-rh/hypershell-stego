@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260911233448-00b270db3934
+        module_version: v0.0.0-20260912001247-5affc101795c
         vcs: git
-        revision: 00b270db3934b88df1e451716d8547da1f7089e2
+        revision: 5affc101795c43df2b4b8ee43c14209b5c68e2b7
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: a36ae6f93ae4afabc6faebd2c128351883089594eeaebe17156660d5bd22a3e0
+    registry_content_sha256: a41ca571d3b9875d92240bbb32e12a7ad87a24db8a1517e94c2ad58bad0d0877
     components:
         browser-backend:
             version: 1.5.0
@@ -47,7 +47,7 @@ last_applied:
             version: 1.0.0
             sha: browser-workflow
         kubernetes-service:
-            version: 1.4.0
+            version: 1.5.0
             sha: browser-workflow
         otel-tracing:
             version: 1.11.0

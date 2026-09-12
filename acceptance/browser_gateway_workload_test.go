@@ -31,6 +31,8 @@ type browserGatewayWorkload struct {
 	call       gatewayCall
 	stops      []func()
 	outputs    []func() string
+	telemetry  []string
+	restarts   []func()
 }
 
 func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
@@ -53,7 +55,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	if err != nil {
 		t.Fatal("Kubernetes client setup failed")
 	}
-	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, gatewayIDs: map[string]string{}}
+	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), gatewayIDs: map[string]string{}}
 	t.Cleanup(func() {
 		for i := len(w.stops) - 1; i >= 0; i-- {
 			w.stops[i]()
@@ -173,19 +175,13 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 		w.createNamespace(p.databaseNamespace, p.database, "database")
 		w.createNamespace(p.namespace, p.id, "gateway")
 	}
-	k := &kubeFixture{options: w.options}
-	stop, logs := startDatabaseController(w.t, buildProgram(w.t, "./out/deploy/workers/database"), k, address, ca, w.tokens["database"], "DATABASE_PROVIDER=deployment")
-	w.stops = append(w.stops, stop)
-	w.outputs = append(w.outputs, logs)
-	stop, logs = startIdentityController(w.t, buildProgram(w.t, "./out/deploy/workers/gateway-identity"), w.identity, address, ca, w.tokens["identity"])
-	w.stops = append(w.stops, stop)
-	w.outputs = append(w.outputs, logs)
-	settings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + w.f.cluster, "HYPERSHELL_GATEWAY_CLUSTER_ISSUER=" + w.options.ClusterIssuer, "HYPERSHELL_GATEWAY_OIDC_ISSUER=" + w.identity.options.ServerURL + "/realms/workflow", "HYPERSHELL_GATEWAY_TRUST_BUNDLE=" + w.identity.options.CAFile, "HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + sandboxImage, "HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + supervisorImage}
-	stop, logs = startDatabaseController(w.t, buildProgram(w.t, "./out/deploy/workers/gateway-workload"), k, address, ca, w.tokens["workload"], settings...)
-	w.stops = append(w.stops, stop)
-	w.outputs = append(w.outputs, logs)
+	w.startWorkers(address, ca)
 	w.check(gatewayID)
 	w.checkRPC(gatewayID)
+	for _, restart := range w.restarts {
+		restart()
+	}
+	w.check(gatewayID)
 }
 
 func (w *browserGatewayWorkload) check(id string) {

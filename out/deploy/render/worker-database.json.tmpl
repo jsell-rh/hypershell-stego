@@ -2,6 +2,90 @@
   "apiVersion": "v1",
   "items": [
     {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-database"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "create",
+            "delete",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps",
+            "persistentvolumeclaims",
+            "secrets",
+            "services"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "cert-manager.io"
+          ],
+          "resources": [
+            "certificates"
+          ],
+          "verbs": [
+            "create",
+            "get",
+            "patch"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-database"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{.Namespace}}.hypershell-database"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-database",
+          "namespace": "{{.Namespace}}"
+        }
+      ]
+    },
+    {
       "apiVersion": "v1",
       "automountServiceAccountToken": false,
       "kind": "ServiceAccount",
@@ -232,6 +316,11 @@
                   {
                     "mountPath": "/tmp",
                     "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/var/run/stego-kubernetes",
+                    "name": "kubernetes-api",
+                    "readOnly": true
                   }
                 ]
               }
@@ -258,6 +347,31 @@
                   "sizeLimit": "64Mi"
                 },
                 "name": "tmp"
+              },
+              {
+                "name": "kubernetes-api",
+                "projected": {
+                  "defaultMode": 288,
+                  "sources": [
+                    {
+                      "serviceAccountToken": {
+                        "expirationSeconds": 3600,
+                        "path": "token"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "ca.crt"
+                          }
+                        ],
+                        "name": "kube-root-ca.crt"
+                      }
+                    }
+                  ]
+                }
               }
             ]
           }
