@@ -51,6 +51,14 @@ objects did not change. An unrelated validation failure cannot pass this check.
 Production Kubernetes errors still omit response bodies. The complete restart
 and deletion gate remains pending; the fourth attempt is not a full pass.
 
+That run also exceeded the old 45-second namespace teardown limit. Its database
+namespace retained a CNPG Database finalizer during deletion. Teardown now
+removes Gateway namespaces first, waits for owned CNPG Database resources and
+the Cluster to disappear, and removes the database namespace last. Each phase
+uses bounded calls. The operator remains available until database namespace
+removal. This fixture cleanup does not establish the normal API behavior for
+deletion of a shared database server.
+
 The current test needs Python with PyYAML on the host. Use the command below
 with the saved jshell context. The current wrapper installs the temporary CNPG
 operator; the operator details in the historical section do not apply.

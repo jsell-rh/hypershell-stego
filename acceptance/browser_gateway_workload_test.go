@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"sort"
 	"testing"
 	"time"
 
@@ -61,6 +62,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	}
 	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
 	t.Cleanup(func() {
+		defer client.Close()
 		for i := len(w.stops) - 1; i >= 0; i-- {
 			w.stops[i]()
 		}
@@ -69,13 +71,33 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 			t.Error(err)
 			return
 		}
-		for ns, target := range w.allocations {
-			ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
+		names := make([]string, 0, len(w.allocations))
+		for ns := range w.allocations {
+			names = append(names, ns)
+		}
+		sort.Slice(names, func(i, j int) bool {
+			left, right := w.allocations[names[i]].profile, w.allocations[names[j]].profile
+			if left != right {
+				return left == "gateway"
+			}
+			return names[i] < names[j]
+		})
+		for _, ns := range names {
+			target := w.allocations[ns]
+			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
+			if target.profile == "database" {
+				if err := w.cleanupCNPGFixture(ctx, allocator, ns, target.id); err != nil {
+					t.Error("CNPG fixture cleanup failed", err)
+					cancel()
+					return
+				}
+			}
 			for {
 				gone, err := allocator.Delete(ctx, target.profile, ns, target.id)
 				if err != nil {
 					t.Error("allocation cleanup failed", ns, err)
-					break
+					cancel()
+					return
 				}
 				if gone {
 					break
@@ -83,6 +105,8 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 				select {
 				case <-ctx.Done():
 					t.Error("allocation cleanup timed out", ns)
+					cancel()
+					return
 				case <-time.After(time.Second):
 					continue
 				}
@@ -90,7 +114,6 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 			}
 			cancel()
 		}
-		client.Close()
 	})
 	// These are declared placement inputs. Controllers must supply observations.
 	if _, err := f.db.Exec("UPDATE gateway_releases SET image=$1 WHERE id=$2", gatewayImage, f.release); err != nil {
