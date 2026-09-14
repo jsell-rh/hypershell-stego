@@ -30,17 +30,6 @@ func catalogCommands() []command.Command {
 			{Flag: "canary-duration", Key: "canary_duration", Type: "string", Nullable: true},
 			{Flag: "status", Key: "status", Type: "string", Nullable: true},
 		}},
-		{"managedDatabase", "managed-database", "managed_databases", []command.Field{
-			{Flag: "cluster-id", Key: "cluster_id", Type: "string", Required: true},
-			{Flag: "name", Key: "name", Type: "string"},
-			{Flag: "provider", Key: "provider", Type: "string"},
-			{Flag: "region", Key: "region", Type: "string", Nullable: true},
-			{Flag: "engine", Key: "engine", Type: "string", Nullable: true},
-			{Flag: "engine-version", Key: "engine_version", Type: "string", Nullable: true},
-			{Flag: "instance-class", Key: "instance_class", Type: "string", Nullable: true},
-			{Flag: "connection-secret", Key: "connection_secret", Type: "string", Nullable: true},
-			{Flag: "status", Key: "status", Type: "string", Nullable: true},
-		}},
 	}
 	query := []command.Field{{Flag: "page", Key: "page", Type: "integer"}, {Flag: "size", Key: "size", Type: "integer"}, {Flag: "search", Key: "search", Type: "string"}, {Flag: "order-by", Key: "orderBy", Type: "string"}}
 	var commands []command.Command

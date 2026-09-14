@@ -61,29 +61,6 @@
           {
             "ports": [
               {
-                "port": 5432,
-                "protocol": "TCP"
-              }
-            ],
-            "to": [
-              {
-                "namespaceSelector": {
-                  "matchLabels": {
-                    "stego.dev/allocation-profile": "database",
-                    "stego.dev/allocator": "{{allocationID .Namespace `hypershell-namespace-allocation`}}"
-                  }
-                },
-                "podSelector": {
-                  "matchLabels": {
-                    "cnpg.io/cluster": "openshell-db"
-                  }
-                }
-              }
-            ]
-          },
-          {
-            "ports": [
-              {
                 "port": 9090,
                 "protocol": "TCP"
               }
@@ -121,6 +98,21 @@
                   "matchLabels": {
                     "app": "stego-fixture"
                   }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 0,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "stego-external:gateway-postgres"
                 }
               }
             ]

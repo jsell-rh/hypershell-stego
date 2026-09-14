@@ -20,15 +20,6 @@ func Gateway(api control.GatewayIdentityServiceClient, owner, target string) fun
 		return sample(response, err, owner, target, "")
 	}
 }
-func Database(api control.DatabaseCleanupServiceClient, provider, cluster string) func(context.Context) (runtime.CleanupSample, error) {
-	return func(ctx context.Context) (runtime.CleanupSample, error) {
-		if api == nil {
-			return runtime.CleanupSample{}, runtime.ErrMetricsContract
-		}
-		response, err := api.GetDatabaseCleanupSummary(ctx, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: provider, ClusterId: cluster})
-		return sample(response, err, "provider", cluster, provider)
-	}
-}
 func sample(response *control.CleanupSummary, err error, owner, target, provider string) (runtime.CleanupSample, error) {
 	var result runtime.CleanupSample
 	if err != nil {

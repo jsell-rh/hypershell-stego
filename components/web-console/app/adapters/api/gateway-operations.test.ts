@@ -66,7 +66,6 @@ function gateway(overrides: Partial<Gateway> = {}): Gateway {
     created_at: "2026-01-01T00:00:00Z",
     created_by: "",
     credential_driver: "",
-    database_id: "database-1",
     external_dns: "gateway.example.com",
     href: "/api/hypershell/v1/gateways/gateway-1",
     id: "gateway-1",
@@ -757,7 +756,7 @@ describe("gateway API operations adapter", () => {
     gatewayApi.create.mockResolvedValue({
       status: 200,
       etag: null,
-      body: gateway({ database_id: "", release_id: "" }),
+      body: gateway({ release_id: "" }),
     });
 
     await controlPlane.provisionGateway(

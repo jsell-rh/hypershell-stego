@@ -6,15 +6,12 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
-	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -29,16 +26,16 @@ const observationCommitTimeout = 2 * time.Second
 type Provider interface {
 	Handles(*pb.Gateway) bool
 	CleanupTarget() string
-	Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error
-	Delete(context.Context, *pb.Gateway, *pb.ManagedDatabase) error
+	Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error
+	Delete(context.Context, *pb.Gateway) error
+	DeleteDatabase(context.Context, *pb.Gateway) error
 	GatewayIDs(context.Context) ([]string, error)
 }
 type Controller struct {
-	gateways  pb.GatewayServiceClient
-	state     control.GatewayIdentityServiceClient
-	databases pb.ManagedDatabaseServiceClient
-	releases  pb.GatewayReleaseServiceClient
-	provider  Provider
+	gateways pb.GatewayServiceClient
+	state    control.GatewayIdentityServiceClient
+	releases pb.GatewayReleaseServiceClient
+	provider Provider
 }
 
 // Source returns live hints and retained IDs without a provider inventory.
@@ -53,11 +50,11 @@ func Source(api pb.GatewayServiceClient, state control.GatewayIdentityServiceCli
 	}}, nil
 }
 
-func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, databases pb.ManagedDatabaseServiceClient, releases pb.GatewayReleaseServiceClient, provider Provider) (*Controller, error) {
-	if gateways == nil || state == nil || databases == nil || releases == nil || provider == nil {
+func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, releases pb.GatewayReleaseServiceClient, provider Provider) (*Controller, error) {
+	if gateways == nil || state == nil || releases == nil || provider == nil {
 		return nil, errors.New("Gateway workload controller dependencies are required")
 	}
-	return &Controller{gateways, state, databases, releases, provider}, nil
+	return &Controller{gateways, state, releases, provider}, nil
 }
 
 // Run connects domain state and actions to the generated controller runtime.
@@ -136,16 +133,27 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return errors.New("Gateway state has no workload cleanup target history")
 	}
 	complete, recorded := observations.GetTargets()[target]
+	sqlHistory := state.GetCleanupTargets()["sql"]
+	if sqlHistory == nil {
+		return errors.New("Gateway state has no SQL cleanup target history")
+	}
+	sqlComplete, sqlRecorded := sqlHistory.GetTargets()[target]
+	if recorded != sqlRecorded {
+		return errors.New("Gateway cleanup histories differ")
+	}
 	if state.GetDeleted() {
 		if !recorded {
 			return nil
 		}
+		owner := "workload"
+		remove := c.provider.Delete
+		if !sqlComplete {
+			owner = "sql"
+			complete = false
+			remove = c.provider.DeleteDatabase
+		}
 		return runtime.RunObservation(ctx, func(operation context.Context) error {
-			database, _, err := c.database(operation, gw.GetDatabaseId(), target)
-			if err != nil {
-				return err
-			}
-			return c.provider.Delete(operation, gw, database)
+			return remove(operation, gw)
 		}, func(commit context.Context, failure error) error {
 			observed := failure == nil
 			if complete == observed {
@@ -155,7 +163,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			if err != nil {
 				return err
 			}
-			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: target, Complete: observed})
+			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: owner, Target: target, Complete: observed})
 			return err
 		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 	}
@@ -166,18 +174,11 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return errors.New("current workload target was not recorded before provider work")
 	}
 	return runtime.RunObservation(ctx, func(operation context.Context) error {
-		database, deleted, err := c.database(operation, gw.GetDatabaseId(), gw.GetClusterId())
-		if err != nil {
-			return err
-		}
-		if deleted {
-			return errors.New("Gateway database is deleted")
-		}
 		release, err := c.releases.GetGatewayRelease(operation, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
 		if err != nil {
 			return err
 		}
-		return c.provider.Ensure(operation, gw, database, release.GetGatewayRelease())
+		return c.provider.Ensure(operation, gw, release.GetGatewayRelease())
 	}, func(commit context.Context, observation error) error {
 		phase, desired := "Running", "Healthy"
 		if errors.Is(observation, ErrPending) {
@@ -198,36 +199,4 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
-}
-
-// Read placement and deletion state before provider work or database removal.
-func (c *Controller) database(ctx context.Context, id, cluster string) (*pb.ManagedDatabase, bool, error) {
-	read, err := rpc.WithRetainedResourceRead(ctx)
-	if err != nil {
-		return nil, false, err
-	}
-	var header metadata.MD
-	response, err := c.databases.GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header))
-	if err != nil {
-		return nil, false, err
-	}
-	row := response.GetManagedDatabase()
-	if id == "" || row.GetMetadata().GetId() != id {
-		return nil, false, errors.New("Gateway database ID is invalid")
-	}
-	_, deleted, err := rpc.ObservedResourceState(header)
-	if err != nil {
-		return nil, false, err
-	}
-	placement, err := databaseplacement.Read(header)
-	if err != nil {
-		return nil, false, err
-	}
-	if _, err := databaseplacement.Target(row.GetProvider(), placement); err != nil {
-		return nil, false, err
-	}
-	if placement != cluster || row.GetClusterId() != placement {
-		return nil, false, errors.New("Gateway database belongs to a different cluster")
-	}
-	return row, deleted, nil
 }

@@ -4,7 +4,6 @@ export interface GatewayRecord {
   consoleUrl?: string;
   createdAt?: string;
   createdBy?: string;
-  databaseId: string;
   externalDns?: string;
   id: string;
   name: string;

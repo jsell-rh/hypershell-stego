@@ -8,7 +8,6 @@ import (
 	"net/url"
 	"regexp"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
@@ -33,6 +32,16 @@ func Namespace(id string) (string, error) {
 	return "openshell-" + hex.EncodeToString(parsed.Payload()[:8]), nil
 }
 
+// StateNamespace retains credentials until SQL cleanup is complete.
+// It uses all ID bytes and does not depend on the Gateway workload namespace.
+func StateNamespace(id string) (string, error) {
+	parsed, err := ksuid.Parse(id)
+	if err != nil || parsed == ksuid.Nil || parsed.String() != id {
+		return "", errors.New("invalid Gateway ID")
+	}
+	return "openshell-state-" + hex.EncodeToString(parsed.Bytes()), nil
+}
+
 // SandboxNamespace separates sandbox permissions from Gateway credentials.
 func SandboxNamespace(id string) (string, error) {
 	ns, err := Namespace(id)
@@ -52,15 +61,11 @@ type oidcConfig struct {
 	UserRole   string `json:"user_role"`
 }
 
-func validate(gw *pb.Gateway, db *pb.ManagedDatabase, release *pb.GatewayRelease, issuer string) (oidcConfig, error) {
+func validate(gw *pb.Gateway, release *pb.GatewayRelease, issuer string) (oidcConfig, error) {
 	var oidc oidcConfig
 	ns, err := Namespace(gw.GetMetadata().GetId())
-	if err != nil || gw.GetNamespace() != ns || gw.GetDatabaseId() == "" || gw.GetDatabaseId() != db.GetMetadata().GetId() || gw.GetReleaseId() != release.GetMetadata().GetId() {
+	if err != nil || gw.GetNamespace() != ns || gw.GetReleaseId() != release.GetMetadata().GetId() {
 		return oidc, errors.New("Gateway placement does not match its records")
-	}
-	dbNS, err := gateways.DatabaseNamespace(gw.GetDatabaseId())
-	if err != nil || db.GetNamespace() != dbNS || (db.GetProvider() != gateways.ProviderDeployment && db.GetProvider() != gateways.ProviderCNPG) {
-		return oidc, errors.New("Gateway requires a matching supported database")
 	}
 	if !digestImage.MatchString(release.GetImage()) || (gw.GetImage() != "" && gw.GetImage() != release.GetImage()) {
 		return oidc, errors.New("Gateway image must match a release pinned by digest")
@@ -68,7 +73,7 @@ func validate(gw *pb.Gateway, db *pb.ManagedDatabase, release *pb.GatewayRelease
 	if gw.GetCredentialDriver() != "" || (gw.GetServiceType() != "" && gw.GetServiceType() != "ClusterIP") || gw.GetTlsMode() != "" || gw.GetExternalDns() != "" || len(gw.GetServerDnsNames()) != 0 {
 		return oidc, errors.New("Gateway workload overrides are not supported")
 	}
-	if gw.GetOidc() == "" || db.GetStatus() != "ready" {
+	if gw.GetOidc() == "" {
 		return oidc, ErrPending
 	}
 	if json.Unmarshal([]byte(gw.GetOidc()), &oidc) != nil {

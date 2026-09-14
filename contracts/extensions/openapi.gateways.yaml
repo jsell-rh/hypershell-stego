@@ -227,7 +227,6 @@ components:
             - name
             - cluster_id
             - release_id
-            - database_id
             - namespace
           properties:
             name:
@@ -236,9 +235,6 @@ components:
               type: string
             release_id:
               type: string
-            database_id:
-              type: string
-              description: Server-assigned ManagedDatabase identifier
             namespace:
               type: string
               readOnly: true

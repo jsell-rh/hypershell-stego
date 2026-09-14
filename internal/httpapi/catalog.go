@@ -143,24 +143,6 @@ func presentGatewayRelease(row model.GatewayRelease) GatewayRelease {
 	return GatewayRelease{Reference: Reference{ID: row.ID, Kind: "GatewayRelease", Href: "/api/hypershell/v1/gateway_releases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Image: row.Image, RolloutStrategy: row.RolloutStrategy, CanaryPercent: row.CanaryPercent, CanaryDuration: row.CanaryDuration, Status: row.Status}
 }
 
-type ManagedDatabase struct {
-	ClusterID *string `json:"cluster_id,omitempty"`
-	Reference
-	Name             string  `json:"name"`
-	Provider         string  `json:"provider"`
-	Namespace        string  `json:"namespace"`
-	Region           *string `json:"region,omitempty"`
-	Engine           *string `json:"engine,omitempty"`
-	EngineVersion    *string `json:"engine_version,omitempty"`
-	InstanceClass    *string `json:"instance_class,omitempty"`
-	ConnectionSecret *string `json:"connection_secret,omitempty"`
-	Status           *string `json:"status,omitempty"`
-}
-
-func presentManagedDatabase(row model.ManagedDatabase) ManagedDatabase {
-	return ManagedDatabase{Reference: Reference{ID: row.ID, Kind: "ManagedDatabase", Href: "/api/hypershell/v1/managed_databases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Provider: row.Provider, ClusterID: row.ClusterID, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
-}
-
 type GatewayNetwork struct {
 	Reference
 	Name         string  `json:"name"`
@@ -181,9 +163,6 @@ func registerPlacement(mux *http.ServeMux, auth *requestAuth, service *catalog.S
 		return err
 	}
 	if err := registerCatalog(mux, auth, service.Releases, "GatewayRelease", "/api/hypershell/v1/gateway_releases", presentGatewayRelease); err != nil {
-		return err
-	}
-	if err := registerCatalog(mux, auth, service.Databases, "ManagedDatabase", "/api/hypershell/v1/managed_databases", presentManagedDatabase); err != nil {
 		return err
 	}
 	return nil

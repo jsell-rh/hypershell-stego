@@ -29,7 +29,6 @@ type Gateway struct {
 	Name               string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	ClusterId          string                 `protobuf:"bytes,4,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 	ReleaseId          string                 `protobuf:"bytes,5,opt,name=release_id,json=releaseId,proto3" json:"release_id,omitempty"`
-	DatabaseId         string                 `protobuf:"bytes,6,opt,name=database_id,json=databaseId,proto3" json:"database_id,omitempty"`
 	Namespace          string                 `protobuf:"bytes,7,opt,name=namespace,proto3" json:"namespace,omitempty"`
 	ExternalDns        *string                `protobuf:"bytes,8,opt,name=external_dns,json=externalDns,proto3,oneof" json:"external_dns,omitempty"`
 	TlsMode            *string                `protobuf:"bytes,9,opt,name=tls_mode,json=tlsMode,proto3,oneof" json:"tls_mode,omitempty"`
@@ -103,13 +102,6 @@ func (x *Gateway) GetClusterId() string {
 func (x *Gateway) GetReleaseId() string {
 	if x != nil {
 		return x.ReleaseId
-	}
-	return ""
-}
-
-func (x *Gateway) GetDatabaseId() string {
-	if x != nil {
-		return x.DatabaseId
 	}
 	return ""
 }
@@ -1203,16 +1195,14 @@ var File_hypershell_v1_gateways_proto protoreflect.FileDescriptor
 
 const file_hypershell_v1_gateways_proto_rawDesc = "" +
 	"\n" +
-	"\x1chypershell/v1/gateways.proto\x12\rhypershell.v1\x1a\x1ahypershell/v1/common.proto\"\xc3\a\n" +
+	"\x1chypershell/v1/gateways.proto\x12\rhypershell.v1\x1a\x1ahypershell/v1/common.proto\"\xb5\a\n" +
 	"\aGateway\x12:\n" +
 	"\bmetadata\x18\x01 \x01(\v2\x1e.hypershell.v1.ObjectReferenceR\bmetadata\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
 	"cluster_id\x18\x04 \x01(\tR\tclusterId\x12\x1d\n" +
 	"\n" +
-	"release_id\x18\x05 \x01(\tR\treleaseId\x12\x1f\n" +
-	"\vdatabase_id\x18\x06 \x01(\tR\n" +
-	"databaseId\x12\x1c\n" +
+	"release_id\x18\x05 \x01(\tR\treleaseId\x12\x1c\n" +
 	"\tnamespace\x18\a \x01(\tR\tnamespace\x12&\n" +
 	"\fexternal_dns\x18\b \x01(\tH\x00R\vexternalDns\x88\x01\x01\x12\x1e\n" +
 	"\btls_mode\x18\t \x01(\tH\x01R\atlsMode\x88\x01\x01\x12&\n" +
@@ -1242,7 +1232,7 @@ const file_hypershell_v1_gateways_proto_rawDesc = "" +
 	"\x06_routeB\x14\n" +
 	"\x12_credential_driverB\x17\n" +
 	"\x15_active_sandbox_countB\x12\n" +
-	"\x10_console_addressJ\x04\b\x03\x10\x04R\bfleet_id\"\x9a\x05\n" +
+	"\x10_console_addressJ\x04\b\x03\x10\x04J\x04\b\x06\x10\aR\bfleet_idR\vdatabase_id\"\x9a\x05\n" +
 	"\x14CreateGatewayRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +

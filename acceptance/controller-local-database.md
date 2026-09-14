@@ -52,9 +52,10 @@ component may depend on a Hypershell entity name.
 
 ## Acceptance and current state
 
-Gateway requests no longer accept `database_id`. Responses, storage, and the
-controller still use database registration and the old field. The implementation
-does not yet satisfy the complete decision. The earlier registration and CNPG resource
+The source now removes the field from requests, responses, storage, SDK inputs,
+and the console. The database catalog and server resource controller are removed.
+The replacement workload controller uses STEGO's SQL lifecycle. The full
+application gate has not passed on this model. The earlier registration and CNPG resource
 tests are historical evidence; they do not establish this new contract.
 
 The next application gate must create a Gateway without a database field or
@@ -95,8 +96,91 @@ produced the same files before and after the checks. The
 [request evidence](gateway-request-contract-evidence.json) records source
 hashes, failed attempts, limits, and cleanup.
 
-This is an intermediate code change. Gateway responses and storage still have
-the field. The catalog, registration calls, and old controller still exist.
-The selected tests still seed a database record. They do not prove the required
-creation workflow without a database catalog. The next change must remove
-those dependencies and connect the assigned controller to STEGO's SQL lifecycle.
+At the request-only revision, responses and storage still had the field, and
+selected tests seeded a database record. That result does not prove creation
+without a database catalog.
+
+## Model and controller transition
+
+The active OpenAPI documents are separate from the captured reference. Gateway
+response field 6 and its `database_id` name are reserved in protobuf. The active
+service has no `ManagedDatabase` entity, API methods, or registration commands.
+The Gateway transaction checks only its cluster and release. Cluster changes
+return a conflict because a normal patch cannot migrate stored Gateway data.
+
+The installation supplies `hypershell-gateway-workload-files`. Set
+`HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE` to the absolute path of its JSON file
+under `/var/run/stego`. The file contains `host`, `port`, `database`, `user`,
+`password`, and `ca` (PEM certificates). Its permissions must deny access by
+other users. Each attempt reads the current projected file. The SQL administrator
+must have the permissions required by STEGO's PostgreSQL provisioning contract.
+The provisioning database contains STEGO's private ledger. It is separate from
+Gateway application databases.
+
+A Gateway state namespace retains its signing keys, encryption key, SQL password,
+and server binding. An immutable public record and a namespace annotation pin
+that state before SQL provisioning can start. The namespace permits no Pods or
+persistent volumes. A workload namespace can be replaced without replacing the
+source keys. The controller records SQL cleanup and workload cleanup separately.
+It records SQL cleanup first. The allocator removes source state only after both
+records show completion. Later workload checks can reopen workload cleanup
+without the SQL credentials. Give the controller exact `Gateway` grants for
+`cleanup.sql` and `cleanup.workload`, each with its assigned cluster as target.
+Missing recorded credentials or a changed destination stops the operation.
+
+STEGO supplies deterministic SQL names from the full installation and resource
+identity. These names retain case-sensitive ID distinctions. They differ from
+the draft PR's lowercased Gateway names. The controller publishes only the
+Gateway login, encoded URI, and TLS trust to the Gateway workload. It never
+publishes the SQL administrator's credentials.
+
+The fresh schema generation is `controller-local-v1`. The generated API startup
+runs entity, outbox, and role setup in the same guarded bootstrap transaction.
+A recognized generation does not repeat setup. Old or unknown schema state is
+rejected before application writes. Historical migration files remain unchanged.
+
+The application test conversion is incomplete. In particular, the old catalog,
+CNPG resource, and live workload fixtures still refer to removed types. The full
+`generate.sh` dependency check and acceptance suite remain required. A limited
+production build or state unit test is not the application gate. Cleanup before
+initial state creation, loss of local state, installation network policy, and
+real controller-local SQL behavior require end-to-end checks before release.
+
+## Focused application check
+
+`controller-local-api.files` selects the application tests for this transition.
+It includes creation and rollback, access filters, REST and gRPC, event delivery,
+watch failures, API restart, rejected retired fields, schema rejection, and SQL
+cleanup grants. Run these tests with PostgreSQL required in a bounded CI or
+cluster Job. From `acceptance`, use:
+
+```sh
+xargs go test -race -mod=readonly -count=1 -timeout=12m < controller-local-api.files
+```
+
+The file list is explicit because older provider fixtures still import removed
+packages. This check does not establish that the complete acceptance package
+builds. It does not replace the live Gateway workload and SQL lifecycle gate.
+
+## Verified API result
+
+The bounded jshell Job `controller-local-c22019941c11` passed all 21 selected
+application tests and 59 top-level tests in total under the race detector. It
+passed the production Go build and two identical generation runs. It used
+STEGO `c71878eebe67e488dea9dd199815df023d11ffb5`, whose
+[full CI passed](https://github.com/jsell-rh/stego/actions/runs/34909222364).
+The previous Job passed console typecheck and lint on the same console source
+and bundle. Its three API fixture failures were corrected before the repeat.
+
+The API result covers creation without a database catalog, atomic owner grants,
+rollback, filtered lists, denied requests, REST/gRPC reads, watch failure,
+durable event delivery, restart, retired-field rejection, and separate SQL
+cleanup grants and versions. Legacy-schema checks preserve rows and an existing
+prepared SQL statement. They do not run an old API binary.
+
+[Recorded evidence](controller-local-api-evidence.json) includes test names,
+frozen input hashes, generated output hashes, limits, prior failure scope, and
+cleanup results. The Job, Pods, and private fixtures are absent. The shared test
+Lease was released. The full acceptance conversion and live SQL/workload gate
+remain open. In particular, cleanup before initial source state exists still
+needs a complete application test and implementation review.

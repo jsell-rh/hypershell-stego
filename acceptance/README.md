@@ -1,3 +1,7 @@
+The [controller-local database change](controller-local-database.md) replaces
+the database catalog. The results below describe earlier revisions unless a
+result explicitly names the new model. The full workload gate must pass again.
+
 The requested Gateway workflow gate passed. Local race tests, pinned
 regeneration, and remote CI passed for
 [the implementation](https://github.com/jsell-rh/hypershell-stego/actions/runs/34286086055)

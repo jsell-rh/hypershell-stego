@@ -32,12 +32,10 @@ func (s *Store) ReadCursor(ctx context.Context, entity, scopeField, scopeValue s
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 	case "GatewayRelease":
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
-	case "ManagedDatabase":
-		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 	case "GatewayNetwork":
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
-		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 	case "RoleBinding":
 		columns = map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 	case "ServiceAccount":
@@ -135,27 +133,6 @@ func (s *Store) ReadCursor(ctx context.Context, entity, scopeField, scopeValue s
 		return cursorcontract.CursorResult{Items: rows, NextID: next, More: more}, nil
 	case "GatewayRelease":
 		rows, ok := result.Items.([]GatewayRelease)
-		if !ok || len(rows) > opts.Limit+1 {
-			return cursorcontract.CursorResult{}, cursorcontract.ErrCursorResult
-		}
-		ids := map[string]bool{}
-		for _, row := range rows {
-			if row.ID == "" || len(row.ID) > 256 || !utf8.ValidString(row.ID) || strings.IndexByte(row.ID, 0) >= 0 || ids[row.ID] || row.ID == opts.AfterID {
-				return cursorcontract.CursorResult{}, cursorcontract.ErrCursorResult
-			}
-			ids[row.ID] = true
-		}
-		more := len(rows) > opts.Limit
-		if more {
-			rows = rows[:opts.Limit:opts.Limit]
-		}
-		next := ""
-		if len(rows) > 0 {
-			next = rows[len(rows)-1].ID
-		}
-		return cursorcontract.CursorResult{Items: rows, NextID: next, More: more}, nil
-	case "ManagedDatabase":
-		rows, ok := result.Items.([]ManagedDatabase)
 		if !ok || len(rows) > opts.Limit+1 {
 			return cursorcontract.CursorResult{}, cursorcontract.ErrCursorResult
 		}

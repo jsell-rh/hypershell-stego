@@ -53,16 +53,11 @@ func (s *Store) ReadScopedCleanupSummary(ctx context.Context, entity, owner, tar
 	var table string
 	var owners, targets, scopes map[string]bool
 	switch entity {
-	case "ManagedDatabase":
-		table = "managed_databases"
-		owners = map[string]bool{"provider": true}
-		targets = map[string]bool{}
-		scopes = map[string]bool{"cluster_id": true, "connection_secret": true, "engine": true, "engine_version": true, "id": true, "instance_class": true, "name": true, "namespace": true, "provider": true, "region": true, "status": true}
 	case "Gateway":
 		table = "gateways"
-		owners = map[string]bool{"identity": true, "workload": true}
-		targets = map[string]bool{"workload": true}
-		scopes = map[string]bool{"cluster_id": true, "console_address": true, "credential_driver": true, "database_id": true, "external_dns": true, "id": true, "image": true, "name": true, "namespace": true, "oidc": true, "release_id": true, "route": true, "route_address": true, "service_type": true, "supervisor_image": true, "tls_mode": true}
+		owners = map[string]bool{"identity": true, "sql": true, "workload": true}
+		targets = map[string]bool{"sql": true, "workload": true}
+		scopes = map[string]bool{"cluster_id": true, "console_address": true, "credential_driver": true, "external_dns": true, "id": true, "image": true, "name": true, "namespace": true, "oidc": true, "release_id": true, "route": true, "route_address": true, "service_type": true, "supervisor_image": true, "tls_mode": true}
 	default:
 		return zero, contract.ErrCleanupSummary
 	}
@@ -114,16 +109,11 @@ func (s *Store) HasUnfinishedReferences(ctx context.Context, reference contract.
 	var owners, fields map[string]bool
 	var targetFields map[string]string
 	switch reference.Entity {
-	case "ManagedDatabase":
-		table = "managed_databases"
-		owners = map[string]bool{"provider": true}
-		fields = map[string]bool{"cluster_id": true}
-		targetFields = map[string]string{}
 	case "Gateway":
 		table = "gateways"
-		owners = map[string]bool{"identity": true, "workload": true}
-		fields = map[string]bool{"cluster_id": true, "database_id": true, "release_id": true}
-		targetFields = map[string]string{"workload": "cluster_id"}
+		owners = map[string]bool{"identity": true, "sql": true, "workload": true}
+		fields = map[string]bool{"cluster_id": true, "release_id": true}
+		targetFields = map[string]string{"sql": "cluster_id", "workload": "cluster_id"}
 	default:
 		return false, contract.ErrCleanupReference
 	}

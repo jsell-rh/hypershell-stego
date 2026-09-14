@@ -1,10 +1,12 @@
 This repository is the test bed for a STEGO-based Hypershell variant.
 
-The [controller-local database target](acceptance/controller-local-database.md)
-removes `database_id` and `ManagedDatabase`. The current implementation still
-uses that retired model. Earlier database registration and provider evidence
-does not prove the new target. This transition requires matching releases and
-fresh installation or explicit teardown and recreation.
+The [controller-local database change](acceptance/controller-local-database.md)
+removes `database_id`, `ManagedDatabase`, and database registration from the
+application. Controllers use an installation-supplied PostgreSQL server.
+The new source is under test. Earlier database registration and provider results
+do not prove this model. The full application gate remains open. This transition
+requires matching releases and a fresh schema. Existing installations require
+explicit teardown and recreation; the application does not perform that action.
 
 STEGO must provide common service infrastructure and generated contracts.
 Hypershell must supply its unique business rules and application workflows
@@ -76,7 +78,7 @@ Run `scripts/generate.sh` to regenerate with the pinned STEGO compiler. Run
 The [compiler preflight checks](acceptance/compiler-preflight.md) reject invalid
 component inputs before rendering and retain the checked source snapshots.
 
-Run `go test ./...` to verify the source hashes, validate OpenAPI references, and
+Run `go test ./contracts` in CI to verify the source hashes, validate OpenAPI references, and
 compile the protobuf contracts. The checks cover 37 REST operations, 41 gRPC
 methods, and six server watch streams. They also check gateway field ownership,
 reserved wire numbers, and the restriction on returning service-account secrets.
@@ -97,7 +99,8 @@ authority. See [database TLS](acceptance/database-tls.md) for the test exception
 and the pool and event-listener checks. gRPC also requires `STEGO_GRPC_TLS_CERT` and
 `STEGO_GRPC_TLS_KEY`. It uses TLS 1.3 and reads `STEGO_GRPC_ADDR`, which defaults
 to `127.0.0.1:9090`. HTTP reads `PORT`, which defaults to 8080. Application
-startup does not apply migrations. The REST list supports `page`, `size`, `search`, and `orderBy`, including a
+startup initializes only a fresh schema under the generation guard. It rejects
+old or unknown schema state before writes. The REST list supports `page`, `size`, `search`, and `orderBy`, including a
 zero-size count request, with a maximum page size of 100. Search and ordering use
 declared fields. The `fields` parameter selects public fields in list items.
 Related-resource search remains open work.
@@ -144,7 +147,7 @@ from the start. STEGO does not replay the transaction callback.
 
 A patch preserves omitted fields. Null fields and an empty `server_dns_names`
 list also preserve the stored values, as in the reference. Placement owns
-`database_id` and `namespace`. Patches cannot set `active_sandbox_count`.
+`namespace`. A normal patch cannot change the execution cluster. Patches cannot set `active_sandbox_count`.
 The credential driver cannot change after a nonempty value has been stored.
 Both transports apply `supervisor_image` and `credential_driver` from their
 declared request contracts. The reference gRPC handler omits these assignments.
@@ -294,25 +297,15 @@ decision.
 claims through REST and gRPC. Removal preserves Gateway ownership. The workflow
 covers event delivery, old streams, failures, real provider changes, and restart.
 
-The [placement catalog workflow](acceptance/placement-catalog.md) now creates cluster, release,
-and database records through the generated API before Gateway creation. REST,
-gRPC, access checks, atomic events, watches, restart, and migration checks cover
-this path. Catalog writes require a platform admin or configured controller.
-The Gateway workload gate below verifies deployment.
+The active placement catalog contains clusters, releases, and networks. Gateway
+creation does not require a database record. The controller reads its declared
+PostgreSQL configuration and uses STEGO to create a separate SQL database and
+login for the Gateway. The installation owns the PostgreSQL server.
 
-The [deployment placement workflow](acceptance/deployment-placement.md) now makes a separate
-database record for each Gateway by default. The database, Gateway, owner grant,
-and three events commit together. Set `DATABASE_PROVIDER=cnpg` explicitly to use
-the shared CNPG path. REST requires a `database_id` property but accepts an empty
-string. Apply migration 000007 before the new API starts. The database workload and cleanup now have a separate acceptance gate.
-
-The [database workload workflow](acceptance/database-workflow.md) now provisions PostgreSQL on Kubernetes
-from a Gateway creation event. It checks verified TLS, limited database roles,
-persistent data, stable credentials, foreign namespace denial, and cleanup after
-offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
-are part of this path. The cluster test has its own required CI job. Production
-database operations remain open.
-
+The former deployment and CNPG resource workflows are historical evidence.
+Their tests and setup scripts still need conversion to the controller-local
+contract. They do not prove the new workflow. Do not use their database seed,
+`DATABASE_PROVIDER`, or legacy migration instructions for this release.
 
 The [Gateway workload gate](acceptance/gateway-workload.md) runs the actual
 OpenShell Gateway with PostgreSQL and Keycloak. It checks owner and viewer

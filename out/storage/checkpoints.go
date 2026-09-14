@@ -67,7 +67,6 @@ func validCheckpointKey(entity, id, scope string) bool {
 	case "Role":
 	case "ManagedCluster":
 	case "GatewayRelease":
-	case "ManagedDatabase":
 	case "GatewayNetwork":
 	case "Gateway":
 	case "RoleBinding":

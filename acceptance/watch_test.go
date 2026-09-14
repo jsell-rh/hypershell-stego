@@ -137,7 +137,7 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	all := []*gatewayWatch{a, a2, viewer, admin, controller}
 	expect(owners, pb.EventType_EVENT_TYPE_CREATED, id, "watch-create")
 	got, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id})
-	if err != nil || got.Gateway.DatabaseId != f.database {
+	if err != nil || got.Gateway.ClusterId != f.cluster {
 		t.Fatalf("watch creation lacks committed grant or placement: %v %v", got, err)
 	}
 	// A database notice is not authority to return a deleted resource.

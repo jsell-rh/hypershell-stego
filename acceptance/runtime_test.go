@@ -58,7 +58,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(repository, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
+	service, err := gateways.New(repository, gateways.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -138,7 +138,7 @@ func startBoth(t testing.TB, binary, dsn string, config Config, settings ...stri
 func applicationEnvironment(t testing.TB, dsn string, config Config, settings ...string) []string {
 	t.Helper()
 	environment := append(os.Environ(),
-		"DATABASE_URL="+dsn, "PORT=0", "DATABASE_PROVIDER=cnpg",
+		"DATABASE_URL="+dsn, "PORT=0",
 		"STEGO_KAFKA_BROKERS="+strings.Join(config.Brokers, ","), "STEGO_KAFKA_TOPIC="+config.Topic,
 		"STEGO_KAFKA_AUTHENTICATION="+config.Authentication, "STEGO_KAFKA_CA_FILE="+config.CAFile,
 		"STEGO_KAFKA_CLIENT_CERTIFICATE_FILE="+config.ClientCertificateFile, "STEGO_KAFKA_CLIENT_KEY_FILE="+config.ClientKeyFile,

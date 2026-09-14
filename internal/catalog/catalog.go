@@ -21,10 +21,9 @@ type Query struct {
 	OrderBy    []store.OrderByField
 }
 type Service struct {
-	Networks  *Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]
-	Clusters  *Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]
-	Releases  *Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]
-	Databases *Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]
+	Networks *Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]
+	Clusters *Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]
+	Releases *Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]
 }
 
 // Resource binds one catalog type to its storage and validation rules.
@@ -33,12 +32,9 @@ type Resource[T, C, P any] struct {
 	repository                        store.Transactor
 	authorize                         func(gateways.Principal, bool) error
 	authorizeRecovery                 func(gateways.Principal) error
-	authorizeCleanup                  func(gateways.Principal, string, string, string) error
 	entity, foreignField, eventPrefix string
 	create                            func(string, C) (T, error)
 	patch                             func(*T, P) error
-	requireControllerVersion          bool
-	authorizeObservation              func(gateways.Principal, T, P) error
 }
 
 func New(repository store.Transactor, policy *gateways.Service) (*Service, error) {
@@ -46,10 +42,9 @@ func New(repository store.Transactor, policy *gateways.Service) (*Service, error
 		return nil, errors.New("catalog requires storage and access rules")
 	}
 	return &Service{
-		Networks:  &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork, false, nil},
-		Clusters:  &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster, false, nil},
-		Releases:  &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease, false, nil},
-		Databases: &Resource[model.ManagedDatabase, DatabaseCreate, DatabasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, policy.AuthorizeCleanup, "ManagedDatabase", "database_id", "manageddatabase", newDatabase, patchDatabase, true, databaseObservationPolicy(policy)},
+		Networks: &Resource[model.GatewayNetwork, NetworkCreate, NetworkPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayNetwork", "", "gatewaynetwork", newNetwork, patchNetwork},
+		Clusters: &Resource[model.ManagedCluster, ClusterCreate, ClusterPatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "ManagedCluster", "cluster_id", "managedcluster", newCluster, patchCluster},
+		Releases: &Resource[model.GatewayRelease, ReleaseCreate, ReleasePatch]{repository, policy.AuthorizeCatalog, policy.AuthorizeRecovery, "GatewayRelease", "release_id", "gatewayrelease", newRelease, patchRelease},
 	}, nil
 }
 func validID(id string) bool {
@@ -60,10 +55,6 @@ func textField(s string, required bool, max int) bool {
 	return (!required || strings.TrimSpace(s) != "") && len(s) <= max && utf8.ValidString(s) && !strings.ContainsRune(s, 0)
 }
 
-// DatabaseNamespace derives the immutable namespace from a canonical KSUID.
-func DatabaseNamespace(id string) (string, error) {
-	return gateways.DatabaseNamespace(id)
-}
 func (r *Resource[T, C, P]) Get(ctx context.Context, p gateways.Principal, id string) (T, error) {
 	var row T
 	if err := r.authorize(p, false); err != nil {
@@ -88,83 +79,6 @@ func (r *Resource[T, C, P]) Get(ctx context.Context, p gateways.Principal, id st
 }
 
 // GetRetained requires controller access and reads current deletion state.
-func (r *Resource[T, C, P]) GetRetained(ctx context.Context, p gateways.Principal, id string) (T, error) {
-	var row T
-	if err := r.authorizeRecovery(p); err != nil {
-		return row, err
-	}
-	if err := r.authorize(p, false); err != nil {
-		return row, err
-	}
-	if !validID(id) {
-		return row, store.ErrNotFound
-	}
-	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		reader, ok := tx.(store.RetainedReader)
-		if !ok {
-			return errors.New("catalog storage does not support retained reads")
-		}
-		value, err := reader.GetRetained(ctx, r.entity, id)
-		if err != nil {
-			return err
-		}
-		row, ok = value.(T)
-		if !ok {
-			return errors.New("unexpected catalog storage result")
-		}
-		return nil
-	})
-	return row, err
-}
-
-// ObserveCleanup records a controller observation and its event together.
-func (r *Resource[T, C, P]) ObserveCleanup(ctx context.Context, p gateways.Principal, id string, version int64, owner string, complete bool) error {
-	if err := r.authorizeRecovery(p); err != nil {
-		return err
-	}
-	if err := r.authorize(p, true); err != nil {
-		return err
-	}
-	if !validID(id) {
-		return store.ErrNotFound
-	}
-	if version < 1 {
-		return gateways.ErrObservationRequired
-	}
-	if r.entity != "ManagedDatabase" || owner != "provider" {
-		return gateways.ErrForbidden
-	}
-	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		reader, ok := tx.(store.RetainedReader)
-		if !ok {
-			return errors.New("catalog storage has no retained reader")
-		}
-		value, err := reader.GetRetained(ctx, r.entity, id)
-		if err != nil {
-			return err
-		}
-		row, ok := value.(model.ManagedDatabase)
-		if !ok {
-			return errors.New("unexpected database storage result")
-		}
-		target, err := databaseTarget(row)
-		if err != nil {
-			return err
-		}
-		if err := r.authorizeCleanup(p, r.entity, owner, target); err != nil {
-			return err
-		}
-		writer, ok := tx.(store.CleanupWriter)
-		if !ok {
-			return errors.New("catalog storage does not support cleanup observations")
-		}
-		if err := writer.ObserveCleanupIfVersion(ctx, r.entity, id, version, owner, complete); err != nil {
-			return err
-		}
-		// A deletion notice requests another current-state check.
-		return r.notify(tx, id, "Delete", "deleted")
-	})
-}
 func (r *Resource[T, C, P]) List(ctx context.Context, p gateways.Principal, q Query) (store.ListResult, error) {
 	if err := r.authorize(p, false); err != nil {
 		return store.ListResult{}, err
@@ -205,9 +119,6 @@ func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, in
 		return zero, err
 	}
 	err = r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		if err := validateDatabaseReference(ctx, tx, row); err != nil {
-			return err
-		}
 		if err := tx.Create(ctx, r.entity, row); err != nil {
 			return err
 		}
@@ -228,34 +139,12 @@ func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, in
 	return row, nil
 }
 func (r *Resource[T, C, P]) Update(ctx context.Context, p gateways.Principal, id string, input P) (T, error) {
-	return r.update(ctx, p, id, input, 0)
-}
-
-// UpdateIfVersion binds a controller result to the revision read before its work.
-func (r *Resource[T, C, P]) UpdateIfVersion(ctx context.Context, p gateways.Principal, id string, input P, version int64) (T, error) {
-	var zero T
-	if err := r.authorizeRecovery(p); err != nil {
-		return zero, err
-	}
-	if !r.requireControllerVersion {
-		return zero, gateways.ErrInvalid
-	}
-	if version < 1 {
-		return zero, gateways.ErrObservationRequired
-	}
-	return r.update(ctx, p, id, input, version)
-}
-
-func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id string, input P, version int64) (T, error) {
 	var row T
 	if err := r.authorize(p, true); err != nil {
 		return row, err
 	}
-	if !r.requireControllerVersion && r.authorizeRecovery(p) == nil {
+	if r.authorizeRecovery(p) == nil {
 		return row, gateways.ErrForbidden
-	}
-	if r.requireControllerVersion && version == 0 && r.authorizeRecovery(p) == nil {
-		return row, gateways.ErrObservationRequired
 	}
 	if !validID(id) {
 		return row, store.ErrNotFound
@@ -270,29 +159,10 @@ func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id
 		if !ok {
 			return errors.New("unexpected catalog storage result")
 		}
-		if version > 0 {
-			if r.authorizeObservation == nil {
-				return gateways.ErrForbidden
-			}
-			if err := r.authorizeObservation(p, row, input); err != nil {
-				return err
-			}
-		}
 		if err := r.patch(&row, input); err != nil {
 			return err
 		}
-		if err := validateDatabaseReference(ctx, tx, row); err != nil {
-			return err
-		}
-		if version > 0 {
-			writer, ok := tx.(store.VersionedWriter)
-			if !ok {
-				return errors.New("catalog storage does not support conditional writes")
-			}
-			if err := writer.ReplaceIfVersion(ctx, r.entity, id, version, row); err != nil {
-				return err
-			}
-		} else if err := tx.Replace(ctx, r.entity, id, row); err != nil {
+		if err := tx.Replace(ctx, r.entity, id, row); err != nil {
 			return err
 		}
 		value, err = tx.Get(ctx, r.entity, id)
@@ -322,31 +192,15 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 		return store.ErrNotFound
 	}
 	return r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		value, err := tx.Get(ctx, r.entity, id)
+		_, err := tx.Get(ctx, r.entity, id)
 		if err != nil {
 			return err
 		}
 		if r.authorizeRecovery(p) == nil {
-			if r.entity != "ManagedDatabase" {
-				return gateways.ErrForbidden
-			}
-			row, ok := value.(model.ManagedDatabase)
-			if !ok {
-				return errors.New("unexpected database storage result")
-			}
-			target, err := databaseTarget(row)
-			if err != nil {
-				return err
-			}
-			if err := r.authorizeCleanup(p, r.entity, "record", target); err != nil {
-				return err
-			}
+			return gateways.ErrForbidden
 		}
-		if r.entity == "ManagedDatabase" || r.entity == "ManagedCluster" {
-			references := []store.CleanupReference{{Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "workload"}}
-			if r.entity == "ManagedCluster" {
-				references = append(references, store.CleanupReference{Entity: "ManagedDatabase", Field: "cluster_id", ID: id, Owner: "provider"})
-			}
+		if r.entity == "ManagedCluster" {
+			references := []store.CleanupReference{{Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "workload"}, {Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "sql"}}
 			reader, ok := tx.(store.CleanupReferenceReader)
 			if !ok {
 				return errors.New("catalog storage has no cleanup reference reader")
@@ -406,8 +260,6 @@ func (r *Resource[T, C, P]) Event(ctx context.Context, p gateways.Principal, id 
 		case model.ManagedCluster:
 			gone = v.DeletedAt.Valid
 		case model.GatewayRelease:
-			gone = v.DeletedAt.Valid
-		case model.ManagedDatabase:
 			gone = v.DeletedAt.Valid
 		default:
 			return errors.New("unexpected catalog type")
@@ -548,161 +400,4 @@ func validateRelease(row model.GatewayRelease) error {
 		return gateways.ErrInvalid
 	}
 	return nil
-}
-
-type DatabaseCreate struct {
-	ClusterID        string  `json:"cluster_id"`
-	Name             string  `json:"name,omitempty"`
-	Provider         string  `json:"provider,omitempty"`
-	Region           *string `json:"region,omitempty"`
-	Engine           *string `json:"engine,omitempty"`
-	EngineVersion    *string `json:"engine_version,omitempty"`
-	InstanceClass    *string `json:"instance_class,omitempty"`
-	ConnectionSecret *string `json:"connection_secret,omitempty"`
-	Status           *string `json:"status,omitempty"`
-}
-
-func validateDatabaseReference(ctx context.Context, tx store.Transaction, value any) error {
-	row, ok := value.(model.ManagedDatabase)
-	if !ok {
-		return nil
-	}
-	if row.ClusterID == nil || !validID(*row.ClusterID) {
-		return gateways.ErrInvalid
-	}
-	_, err := tx.Get(ctx, "ManagedCluster", *row.ClusterID)
-	if errors.Is(err, store.ErrNotFound) {
-		return gateways.ErrInvalid
-	}
-	return err
-}
-
-type DatabasePatch struct {
-	ClusterID        *string `json:"cluster_id,omitempty"`
-	Name             *string `json:"name,omitempty"`
-	Provider         *string `json:"provider,omitempty"`
-	Region           *string `json:"region,omitempty"`
-	Engine           *string `json:"engine,omitempty"`
-	EngineVersion    *string `json:"engine_version,omitempty"`
-	InstanceClass    *string `json:"instance_class,omitempty"`
-	ConnectionSecret *string `json:"connection_secret,omitempty"`
-	Status           *string `json:"status,omitempty"`
-}
-
-func newDatabase(id string, input DatabaseCreate) (model.ManagedDatabase, error) {
-	row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: input.Name, Provider: input.Provider, ClusterID: &input.ClusterID, Region: input.Region, Engine: input.Engine, EngineVersion: input.EngineVersion, InstanceClass: input.InstanceClass, ConnectionSecret: input.ConnectionSecret, Status: input.Status}
-	var err error
-	row.Namespace, err = DatabaseNamespace(id)
-	if err != nil {
-		return row, err
-	}
-	return row, validateDatabase(row)
-}
-func patchDatabase(row *model.ManagedDatabase, input DatabasePatch) error {
-	if input.ClusterID != nil {
-		if !validID(*input.ClusterID) || (row.ClusterID != nil && *row.ClusterID != *input.ClusterID) {
-			return gateways.ErrInvalid
-		}
-		row.ClusterID = input.ClusterID
-	}
-
-	if input.Provider != nil && *input.Provider != row.Provider {
-		return gateways.ErrInvalid
-	}
-	if input.Name != nil {
-		row.Name = *input.Name
-	}
-	if input.Provider != nil {
-		row.Provider = *input.Provider
-	}
-	if input.Region != nil {
-		row.Region = input.Region
-	}
-	if input.Engine != nil {
-		row.Engine = input.Engine
-	}
-	if input.EngineVersion != nil {
-		row.EngineVersion = input.EngineVersion
-	}
-	if input.InstanceClass != nil {
-		row.InstanceClass = input.InstanceClass
-	}
-	if input.ConnectionSecret != nil {
-		row.ConnectionSecret = input.ConnectionSecret
-	}
-	if input.Status != nil {
-		row.Status = input.Status
-	}
-	return validateDatabase(*row)
-}
-func validateDatabase(row model.ManagedDatabase) error {
-	if !textField(row.Name, true, 261) {
-		return gateways.ErrInvalid
-	}
-	if (row.Provider != gateways.ProviderCNPG && row.Provider != gateways.ProviderExternal) || row.ClusterID == nil || !validID(*row.ClusterID) {
-		return gateways.ErrInvalid
-	}
-	if !textField(row.Namespace, true, 29) {
-		return gateways.ErrInvalid
-	}
-	if row.Region != nil && !textField(*row.Region, false, 255) {
-		return gateways.ErrInvalid
-	}
-	if row.Engine != nil && !textField(*row.Engine, false, 64) {
-		return gateways.ErrInvalid
-	}
-	if row.EngineVersion != nil && !textField(*row.EngineVersion, false, 64) {
-		return gateways.ErrInvalid
-	}
-	if row.InstanceClass != nil && !textField(*row.InstanceClass, false, 255) {
-		return gateways.ErrInvalid
-	}
-	if row.ConnectionSecret != nil && !textField(*row.ConnectionSecret, false, 253) {
-		return gateways.ErrInvalid
-	}
-	if row.Status != nil && !textField(*row.Status, false, 255) {
-		return gateways.ErrInvalid
-	}
-	return nil
-}
-
-// Deleted returns a bounded page of tombstones in database ID order. The cursor
-// is a canonical ID. A live watch must start before the first page is requested.
-func (r *Resource[T, C, P]) Deleted(ctx context.Context, p gateways.Principal, after string, limit int) ([]T, bool, error) {
-	return r.recoveryPage(ctx, p, after, limit, store.CursorDeleted)
-}
-
-// Retained returns live and deleted rows in database ID order. Recovery access
-// is required. Start the live watch before the first page and repeat scans.
-func (r *Resource[T, C, P]) Retained(ctx context.Context, p gateways.Principal, after string, limit int) ([]T, bool, error) {
-	return r.recoveryPage(ctx, p, after, limit, store.CursorAll)
-}
-
-func (r *Resource[T, C, P]) recoveryPage(ctx context.Context, p gateways.Principal, after string, limit int, deletion store.CursorDeletion) ([]T, bool, error) {
-	if err := r.authorizeRecovery(p); err != nil {
-		return nil, false, err
-	}
-	if after != "" && !validID(after) {
-		return nil, false, gateways.ErrInvalid
-	}
-	options := store.CursorOptions{AfterID: after, Limit: limit, Deletion: deletion}
-	var rows []T
-	var more bool
-	err := r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		reader, ok := tx.(store.CursorReader)
-		if !ok {
-			return errors.New("catalog storage does not support cursor reads")
-		}
-		result, err := reader.ReadCursor(ctx, r.entity, "", "", options)
-		if err != nil {
-			return err
-		}
-		rows, ok = result.Items.([]T)
-		if !ok {
-			return errors.New("unexpected catalog storage result")
-		}
-		more = result.More
-		return nil
-	})
-	return rows, more, err
 }

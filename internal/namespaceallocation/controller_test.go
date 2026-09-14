@@ -3,10 +3,8 @@ package namespaceallocation
 import (
 	"context"
 	"errors"
-	"strconv"
 	"testing"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -14,7 +12,6 @@ import (
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -44,36 +41,18 @@ func (a *stateAPI) GetGatewayIdentityState(context.Context, *control.GetGatewayI
 	return a.row, a.err
 }
 
-type databaseAPI struct {
-	pb.ManagedDatabaseServiceClient
-	row      *pb.ManagedDatabase
-	header   metadata.MD
-	err      error
-	retained bool
-}
-
-func (a *databaseAPI) GetManagedDatabase(ctx context.Context, _ *pb.GetManagedDatabaseRequest, options ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
-	md, _ := metadata.FromOutgoingContext(ctx)
-	a.retained = len(md.Get("resource-read-mode")) == 1 && md.Get("resource-read-mode")[0] == "retained-v1"
-	for _, o := range options {
-		if h, ok := o.(grpc.HeaderCallOption); ok {
-			*h.HeaderAddr = a.header
-		}
-	}
-	return &pb.GetManagedDatabaseResponse{ManagedDatabase: a.row}, a.err
-}
 func TestGatewayAllocationRequiresCurrentPlacement(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
-	original := &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}}}
+	original := &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: true}}}}
 	for _, tc := range []struct {
 		name, action string
 		bad          bool
 		edit         func(*stateAPI)
 	}{
 		{"current", "ensure", false, func(*stateAPI) {}},
-		{"deleted", "delete", false, func(a *stateAPI) { a.row.Deleted = true }},
-		{"moved", "delete", false, func(a *stateAPI) { a.row.Gateway.ClusterId = ksuid.New().String() }},
+		{"deleted", "delete", true, func(a *stateAPI) { a.row.Deleted = true }},
+		{"moved", "delete", true, func(a *stateAPI) { a.row.Gateway.ClusterId = ksuid.New().String() }},
 		{"unassigned", "", false, func(a *stateAPI) {
 			a.row.Gateway.ClusterId = ksuid.New().String()
 			delete(a.row.CleanupTargets["workload"].Targets, cluster)
@@ -99,74 +78,17 @@ func TestGatewayAllocationRequiresCurrentPlacement(t *testing.T) {
 				if len(writes.calls) != 0 {
 					t.Fatal(writes.calls)
 				}
+			} else if tc.action == "ensure" {
+				stateName, _ := gatewayworkload.StateNamespace(id)
+				if len(writes.calls) != 2 || writes.calls[0] != "ensure:gateway-state:"+stateName+":"+id || writes.calls[1] != "ensure:gateway:"+ns+":"+id {
+					t.Fatal(writes.calls)
+				}
 			} else if len(writes.calls) != 1 || writes.calls[0] != tc.action+":gateway:"+ns+":"+id {
 				t.Fatal(writes.calls)
 			}
 		})
 	}
 }
-func TestDatabaseAllocationRequiresRetainedStateAndPlacement(t *testing.T) {
-	id, cluster := ksuid.New().String(), ksuid.New().String()
-	ns, _ := gateways.DatabaseNamespace(id)
-	for _, tc := range []struct {
-		name                                                                       string
-		deleted, foreign, missingState, missingPlacement, unassigned, badPlacement bool
-		provider                                                                   string
-		calls                                                                      int
-	}{
-		{name: "live", provider: "cnpg", calls: 1},
-		{name: "deleted", provider: "cnpg", deleted: true, calls: 1},
-		{name: "other cluster", provider: "cnpg", foreign: true},
-		{name: "deleted other cluster", provider: "cnpg", foreign: true, deleted: true},
-		{name: "missing state", provider: "cnpg", missingState: true},
-		{name: "missing placement", provider: "cnpg", missingPlacement: true},
-		{name: "unassigned", provider: "cnpg", unassigned: true},
-		{name: "bad placement", provider: "cnpg", badPlacement: true},
-		{name: "removed deployment", provider: "deployment", missingPlacement: true},
-		{name: "external needs a separate profile", provider: "external", missingPlacement: true},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			api := &databaseAPI{row: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: tc.provider, ClusterId: proto.String(cluster)}, header: metadata.Pairs("resource-version", "2", "resource-deleted", strconv.FormatBool(tc.deleted), "hypershell-database-placement", "cluster-v1", "hypershell-database-cluster-id", cluster)}
-			if tc.foreign {
-				other := ksuid.New().String()
-				api.row.ClusterId = &other
-				api.header.Set("hypershell-database-cluster-id", other)
-			}
-			if tc.missingPlacement {
-				api.header.Delete("hypershell-database-placement")
-			}
-			if tc.unassigned {
-				api.header.Delete("hypershell-database-cluster-id")
-			}
-			if tc.badPlacement {
-				api.header.Set("hypershell-database-cluster-id", "invalid")
-			}
-			if tc.missingState {
-				api.header.Delete("resource-version")
-			}
-			writes := &allocations{done: true}
-			c := &Controller{allocator: writes, databases: api, cluster: cluster}
-			err := c.reconcile(context.Background(), "database:"+id)
-			bad := tc.missingState || (tc.provider == "cnpg" && (tc.missingPlacement || tc.unassigned || tc.badPlacement))
-			if (err != nil) != bad {
-				t.Fatal(err)
-			}
-			if !api.retained || len(writes.calls) != tc.calls {
-				t.Fatal(api.retained, writes.calls)
-			}
-			if tc.calls == 1 {
-				action := "ensure"
-				if tc.deleted {
-					action = "delete"
-				}
-				if writes.calls[0] != action+":database:"+ns+":"+id {
-					t.Fatal(writes.calls)
-				}
-			}
-		})
-	}
-}
-
 func TestPendingCleanupAndProviderErrorsArePreserved(t *testing.T) {
 	writes := &allocations{}
 	c := &Controller{allocator: writes}
@@ -200,6 +122,27 @@ func TestResourceKindsRemainDistinct(t *testing.T) {
 			return nil
 		}); err != nil {
 			t.Fatal(err)
+		}
+	}
+}
+
+func TestStateAllocationRemainsUntilSQLCleanupCompletes(t *testing.T) {
+	id, cluster := ksuid.New().String(), ksuid.New().String()
+	ns, _ := gatewayworkload.Namespace(id)
+	stateName, _ := gatewayworkload.StateNamespace(id)
+	for _, sqlComplete := range []bool{false, true} {
+		for _, workloadComplete := range []bool{false, true} {
+			a := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, Deleted: true, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: workloadComplete}}, "sql": {Targets: map[string]bool{cluster: sqlComplete}}}}}
+			writes := &allocations{done: true}
+			c := &Controller{allocator: writes, state: a, cluster: cluster}
+			err := c.reconcile(context.Background(), "gateway:"+id)
+			if sqlComplete && workloadComplete {
+				if err != nil || len(writes.calls) != 2 || writes.calls[1] != "delete:gateway-state:"+stateName+":"+id {
+					t.Fatal("completed state was not removed", err, writes.calls)
+				}
+			} else if !errors.Is(err, ErrPending) || len(writes.calls) != 1 || writes.calls[0] != "delete:gateway:"+ns+":"+id {
+				t.Fatal("SQL state was removed early", sqlComplete, workloadComplete, err, writes.calls)
+			}
 		}
 	}
 }

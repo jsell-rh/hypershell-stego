@@ -30,7 +30,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 		return err
 	}
 	defer connection.Close()
-	controller, err := namespaceallocation.New(os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), allocator, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), pb.NewManagedDatabaseServiceClient(connection))
+	controller, err := namespaceallocation.New(os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), allocator, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection))
 	if err != nil {
 		return err
 	}

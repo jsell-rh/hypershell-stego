@@ -29,7 +29,7 @@ func Migrate(db *gorm.DB) error {
 	if db == nil || db.Config == nil || db.Statement == nil {
 		return fmt.Errorf("migration requires an initialized database")
 	}
-	return db.Transaction(func(db *gorm.DB) error {
+	return BootstrapSchema(db, func(db *gorm.DB) error {
 		for _, m := range migrations {
 			if err := m.Func(db); err != nil {
 				return fmt.Errorf("migration %s: %w", m.Name, err)
@@ -47,7 +47,6 @@ func init() {
 			&ManagedCluster{},
 			&GatewayRelease{},
 			&GatewayNetwork{},
-			&ManagedDatabase{},
 			&Gateway{},
 			&RoleBinding{},
 			&ServiceAccount{},

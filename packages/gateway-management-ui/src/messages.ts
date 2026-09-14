@@ -381,11 +381,7 @@ export const messages = defineMessages({
     defaultMessage: "Loading gateways",
     description: "Accessible label shown while gateway data is loading.",
   },
-  managedDatabaseId: {
-    id: "app.gateway.managedDatabaseId",
-    defaultMessage: "Managed database ID",
-    description: "Label for a gateway's managed database identifier.",
-  },
+
   moreClustersAvailable: {
     id: "app.gateway.cluster.moreResults",
     defaultMessage:

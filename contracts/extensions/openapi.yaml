@@ -27,39 +27,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/ObjectReference'
   /api/hypershell/v1/managed_clusters:
-    $ref: '../reference/openapi/openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters'
+    $ref: 'openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters'
   /api/hypershell/v1/managed_clusters/{id}:
-    $ref: '../reference/openapi/openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters~1{id}'
-  /api/hypershell/v1/managed_databases:
-    $ref: 'openapi.managedDatabases.yaml#/paths/~1api~1hypershell~1v1~1managed_databases'
-  /api/hypershell/v1/managed_databases/{id}:
-    $ref: 'openapi.managedDatabases.yaml#/paths/~1api~1hypershell~1v1~1managed_databases~1{id}'
+    $ref: 'openapi.managedClusters.yaml#/paths/~1api~1hypershell~1v1~1managed_clusters~1{id}'
   /api/hypershell/v1/gateway_releases:
-    $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases'
+    $ref: 'openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases'
   /api/hypershell/v1/gateway_releases/{id}:
-    $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases~1{id}'
+    $ref: 'openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases~1{id}'
   /api/hypershell/v1/gateways:
     $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways'
   /api/hypershell/v1/gateways/{id}:
     $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{id}'
   /api/hypershell/v1/gateways/{gateway_id}/service_accounts:
-    $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts'
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts'
   /api/hypershell/v1/gateways/{gateway_id}/service_accounts/{service_account_id}:
-    $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}'
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}'
   /api/hypershell/v1/gateways/{gateway_id}/service_accounts/{service_account_id}/revoke:
-    $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}~1revoke'
+    $ref: 'openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts~1{service_account_id}~1revoke'
   /api/hypershell/v1/gateway_networks:
-    $ref: '../reference/openapi/openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks'
+    $ref: 'openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks'
   /api/hypershell/v1/gateway_networks/{id}:
-    $ref: '../reference/openapi/openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks~1{id}'
+    $ref: 'openapi.gatewayNetworks.yaml#/paths/~1api~1hypershell~1v1~1gateway_networks~1{id}'
   /api/hypershell/v1/roles:
-    $ref: '../reference/openapi/openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles'
+    $ref: 'openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles'
   /api/hypershell/v1/roles/{id}:
-    $ref: '../reference/openapi/openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles~1{id}'
+    $ref: 'openapi.roles.yaml#/paths/~1api~1hypershell~1v1~1roles~1{id}'
   /api/hypershell/v1/role_bindings:
-    $ref: '../reference/openapi/openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings'
+    $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings'
   /api/hypershell/v1/role_bindings/{id}:
-    $ref: '../reference/openapi/openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings~1{id}'
+    $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings~1{id}'
   # AUTO-ADD NEW PATHS
 components:
   schemas:
@@ -103,23 +99,17 @@ components:
             operation_id:
               type: string
     ManagedCluster:
-      $ref: '../reference/openapi/openapi.managedClusters.yaml#/components/schemas/ManagedCluster'
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedCluster'
     ManagedClusterList:
-      $ref: '../reference/openapi/openapi.managedClusters.yaml#/components/schemas/ManagedClusterList'
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedClusterList'
     ManagedClusterPatchRequest:
-      $ref: '../reference/openapi/openapi.managedClusters.yaml#/components/schemas/ManagedClusterPatchRequest'
-    ManagedDatabase:
-      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabase'
-    ManagedDatabaseList:
-      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabaseList'
-    ManagedDatabasePatchRequest:
-      $ref: 'openapi.managedDatabases.yaml#/components/schemas/ManagedDatabasePatchRequest'
+      $ref: 'openapi.managedClusters.yaml#/components/schemas/ManagedClusterPatchRequest'
     GatewayRelease:
-      $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/components/schemas/GatewayRelease'
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayRelease'
     GatewayReleaseList:
-      $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/components/schemas/GatewayReleaseList'
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayReleaseList'
     GatewayReleasePatchRequest:
-      $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/components/schemas/GatewayReleasePatchRequest'
+      $ref: 'openapi.gatewayReleases.yaml#/components/schemas/GatewayReleasePatchRequest'
     Gateway:
       $ref: 'openapi.gateways.yaml#/components/schemas/Gateway'
     GatewayList:
@@ -127,41 +117,41 @@ components:
     GatewayPatchRequest:
       $ref: 'openapi.gateways.yaml#/components/schemas/GatewayPatchRequest'
     OpenShellGatewayServiceAccountRole:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountRole'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountRole'
     OpenShellGatewayServiceAccountStatus:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountStatus'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountStatus'
     OpenShellGatewayServiceAccountCreateRequest:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateRequest'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateRequest'
     OpenShellGatewayServiceAccountListItem:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountListItem'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountListItem'
     OpenShellGatewayServiceAccountConnection:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountConnection'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountConnection'
     OpenShellGatewayServiceAccountCredential:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCredential'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCredential'
     OpenShellGatewayServiceAccountGetResponse:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountGetResponse'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountGetResponse'
     OpenShellGatewayServiceAccountCreateResponse:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateResponse'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCreateResponse'
     OpenShellGatewayServiceAccountExpirationPolicy:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountExpirationPolicy'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountExpirationPolicy'
     OpenShellGatewayServiceAccountCapabilities:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCapabilities'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountCapabilities'
     OpenShellGatewayServiceAccountList:
-      $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountList'
+      $ref: 'openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountList'
     GatewayNetwork:
-      $ref: '../reference/openapi/openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetwork'
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetwork'
     GatewayNetworkList:
-      $ref: '../reference/openapi/openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkList'
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkList'
     GatewayNetworkPatchRequest:
-      $ref: '../reference/openapi/openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkPatchRequest'
+      $ref: 'openapi.gatewayNetworks.yaml#/components/schemas/GatewayNetworkPatchRequest'
     Role:
-      $ref: '../reference/openapi/openapi.roles.yaml#/components/schemas/Role'
+      $ref: 'openapi.roles.yaml#/components/schemas/Role'
     RoleList:
-      $ref: '../reference/openapi/openapi.roles.yaml#/components/schemas/RoleList'
+      $ref: 'openapi.roles.yaml#/components/schemas/RoleList'
     RoleBinding:
-      $ref: '../reference/openapi/openapi.roleBindings.yaml#/components/schemas/RoleBinding'
+      $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBinding'
     RoleBindingList:
-      $ref: '../reference/openapi/openapi.roleBindings.yaml#/components/schemas/RoleBindingList'
+      $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBindingList'
     # AUTO-ADD NEW SCHEMAS
   parameters:
     id:

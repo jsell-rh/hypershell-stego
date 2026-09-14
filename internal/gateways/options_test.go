@@ -34,27 +34,6 @@ func TestControlPlaneConfigurationFailsClosed(t *testing.T) {
 	}
 }
 
-func TestDatabaseProviderConfiguration(t *testing.T) {
-	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", "")
-	for _, value := range []string{"", ProviderExternal, ProviderCNPG} {
-		t.Setenv("DATABASE_PROVIDER", value)
-		options, err := OptionsFromEnvironment()
-		want := value
-		if want == "" {
-			want = ProviderCNPG
-		}
-		if err != nil || options.DatabaseProvider != want {
-			t.Fatal("database provider", value, options, err)
-		}
-	}
-	for _, value := range []string{"deployment", "postgres", "CNPG", " deployment", "cnpg ", "deployment,cnpg"} {
-		t.Setenv("DATABASE_PROVIDER", value)
-		if _, err := OptionsFromEnvironment(); err == nil {
-			t.Fatal("invalid provider accepted", value)
-		}
-	}
-}
-
 func TestCleanupRequiresAnExactGrant(t *testing.T) {
 	caller := Principal{Issuer: "https://issuer.example", Subject: "worker", Username: "worker", Roles: []string{"platform:admin"}}
 	service := &Service{controlPlaneSubjects: map[string]bool{"worker": true}}

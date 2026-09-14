@@ -25,7 +25,6 @@ function gateway(overrides: Partial<GatewayRecord> = {}): GatewayRecord {
   return {
     clusterId: "",
     createdAt: CREATED_AT,
-    databaseId: "database-1",
     externalDns: "gateway.example.com",
     id: "gateway-1",
     name: "Team gateway",

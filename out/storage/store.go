@@ -63,6 +63,9 @@ func NewStore(db *gorm.DB) (*Store, error) {
 	if db.Config == nil || db.Statement == nil || db.NamingStrategy == nil {
 		return nil, errors.New("storage requires an initialized GORM database")
 	}
+	if err := VerifySchema(db); err != nil {
+		return nil, err
+	}
 	schemaInitialization.Lock()
 	defer schemaInitialization.Unlock()
 	for _, model := range []any{
@@ -70,7 +73,6 @@ func NewStore(db *gorm.DB) (*Store, error) {
 		&Role{},
 		&ManagedCluster{},
 		&GatewayRelease{},
-		&ManagedDatabase{},
 		&GatewayNetwork{},
 		&Gateway{},
 		&RoleBinding{},
@@ -151,22 +153,6 @@ func (s *Store) Create(ctx context.Context, entity string, value any) error {
 		var v GatewayRelease
 		if err := json.Unmarshal(data, &v); err != nil {
 			return fmt.Errorf("unmarshaling GatewayRelease: %w", err)
-		}
-		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
-			if isUniqueConstraintError(err) {
-				return stegostorage.ErrConflict
-			}
-			return err
-		}
-		return nil
-	case "ManagedDatabase":
-		data, err := json.Marshal(value)
-		if err != nil {
-			return fmt.Errorf("marshaling ManagedDatabase: %w", err)
-		}
-		var v ManagedDatabase
-		if err := json.Unmarshal(data, &v); err != nil {
-			return fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
 		}
 		if err := s.db.WithContext(ctx).Create(&v).Error; err != nil {
 			if isUniqueConstraintError(err) {
@@ -293,15 +279,6 @@ func (s *Store) Get(ctx context.Context, entity string, id string) (any, error) 
 		return v, nil
 	case "GatewayRelease":
 		var v GatewayRelease
-		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
-			if errors.Is(err, gorm.ErrRecordNotFound) {
-				return nil, stegostorage.ErrNotFound
-			}
-			return nil, err
-		}
-		return v, nil
-	case "ManagedDatabase":
-		var v ManagedDatabase
 		if err := s.db.WithContext(ctx).First(&v, "id = ?", id).Error; err != nil {
 			if errors.Is(err, gorm.ErrRecordNotFound) {
 				return nil, stegostorage.ErrNotFound
@@ -448,27 +425,6 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return stegostorage.ErrNotFound
 		}
 		return nil
-	case "ManagedDatabase":
-		data, err := json.Marshal(value)
-		if err != nil {
-			return fmt.Errorf("marshaling ManagedDatabase: %w", err)
-		}
-		var v ManagedDatabase
-		if err := json.Unmarshal(data, &v); err != nil {
-			return fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
-		}
-		v.ID = id
-		result := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Select([]string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status", "cluster_id"}).Updates(&v)
-		if result.Error != nil {
-			if isUniqueConstraintError(result.Error) {
-				return stegostorage.ErrConflict
-			}
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return stegostorage.ErrNotFound
-		}
-		return nil
 	case "GatewayNetwork":
 		data, err := json.Marshal(value)
 		if err != nil {
@@ -500,7 +456,7 @@ func (s *Store) Replace(ctx context.Context, entity string, id string, value any
 			return fmt.Errorf("unmarshaling Gateway: %w", err)
 		}
 		v.ID = id
-		result := s.db.WithContext(ctx).Model(&Gateway{}).Where("id = ?", id).Select([]string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&v)
+		result := s.db.WithContext(ctx).Model(&Gateway{}).Where("id = ?", id).Select([]string{"name", "cluster_id", "release_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"}).Updates(&v)
 		if result.Error != nil {
 			if isUniqueConstraintError(result.Error) {
 				return stegostorage.ErrConflict
@@ -612,15 +568,6 @@ func (s *Store) Delete(ctx context.Context, entity string, id string) error {
 		return nil
 	case "GatewayRelease":
 		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&GatewayRelease{})
-		if result.Error != nil {
-			return result.Error
-		}
-		if result.RowsAffected == 0 {
-			return stegostorage.ErrNotFound
-		}
-		return nil
-	case "ManagedDatabase":
-		result := s.db.WithContext(ctx).Where("id = ?", id).Delete(&ManagedDatabase{})
 		if result.Error != nil {
 			return result.Error
 		}
@@ -1042,95 +989,6 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 			return stegostorage.ListResult{}, err
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
-	case "ManagedDatabase":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
-		query := s.db.WithContext(ctx).Model(&ManagedDatabase{})
-		if opts.IncludeDeleted || opts.OnlyDeleted {
-			query = query.Unscoped()
-		}
-		if opts.OnlyDeleted {
-			query = query.Where("deleted_at IS NOT NULL")
-		}
-		query, err := s.applyRelated(ctx, query, "ManagedDatabase", opts.Related)
-		if err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		query, err = s.applyRowFilter(ctx, query, "ManagedDatabase", opts.Filter)
-		if err != nil {
-			return stegostorage.ListResult{}, err
-		}
-		if scopeField != "" && scopeValue != "" {
-			if !validCols[scopeField] {
-				return stegostorage.ListResult{}, fmt.Errorf("invalid scope field %q for entity ManagedDatabase", scopeField)
-			}
-			query = query.Where(scopeField+" = ?", scopeValue)
-		}
-		for _, field := range filterKeys(opts.ImplicitFilters) {
-			value := opts.ImplicitFilters[field]
-			if !validCols[field] {
-				return stegostorage.ListResult{}, fmt.Errorf("invalid implicit filter field %q for entity ManagedDatabase", field)
-			}
-			query = query.Where(field+" = ?", value)
-		}
-		if opts.Search != "" {
-			searchResult, err := search.NewSearchEngine().ParseSearch("ManagedDatabase", opts.Search)
-			if err != nil {
-				return stegostorage.ListResult{}, fmt.Errorf("%w: %s", stegostorage.ErrSearch, err)
-			}
-			if searchResult != nil {
-				query = query.Where(searchResult.Where, searchResult.Args...)
-			}
-		}
-		for _, ob := range opts.OrderBy {
-			if !validCols[ob.Field] || (ob.Direction != "asc" && ob.Direction != "desc") {
-				return stegostorage.ListResult{}, fmt.Errorf("invalid ordering")
-			}
-			if validCols[ob.Field] {
-				query = query.Order(ob.Field + " " + ob.Direction)
-			}
-		}
-		if cursor && afterID != "" {
-			query = query.Where("id > ?", afterID)
-		}
-		var total int64
-		if !cursor {
-			if err := query.Count(&total).Error; err != nil {
-				if opts.Search != "" && searchInputError(err) {
-					return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
-				}
-				return stegostorage.ListResult{}, err
-			}
-			if opts.CountOnly {
-				return stegostorage.ListResult{Items: []ManagedDatabase{}, Total: total}, nil
-			}
-		}
-		if len(opts.Fields) > 0 {
-			// Always include id; add requested fields that exist.
-			selectCols := []string{"id"}
-			selectCols = append(selectCols, "stego_revision")
-			selectCols = append(selectCols, "stego_cleanup", "deleted_at")
-			for _, f := range opts.Fields {
-				if validCols[f] {
-					selectCols = append(selectCols, f)
-				}
-			}
-			query = query.Select(selectCols)
-		}
-		offset := (opts.Page - 1) * opts.Size
-		if offset > 0 {
-			query = query.Offset(offset)
-		}
-		if opts.Size > 0 {
-			query = query.Limit(opts.Size)
-		}
-		var result []ManagedDatabase
-		if err := query.Find(&result).Error; err != nil {
-			if opts.Search != "" && searchInputError(err) {
-				return stegostorage.ListResult{}, fmt.Errorf("%w: invalid search value", stegostorage.ErrSearch)
-			}
-			return stegostorage.ListResult{}, err
-		}
-		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "GatewayNetwork":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&GatewayNetwork{})
@@ -1219,9 +1077,9 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 		}
 		return stegostorage.ListResult{Items: result, Total: total}, nil
 	case "Gateway":
-		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
-		query = query.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"database_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
+		query = query.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1287,6 +1145,7 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 			selectCols = append(selectCols, "stego_revision")
 			selectCols = append(selectCols, "stego_cleanup", "deleted_at")
 			selectCols = append(selectCols, "stego_cleanup_targets")
+			selectCols = append(selectCols, "cluster_id")
 			selectCols = append(selectCols, "cluster_id")
 			selectCols = append(selectCols, "stego_generation", "stego_observations")
 			for _, f := range opts.Fields {
@@ -1613,13 +1472,6 @@ func referenceTarget(entity, field string) string {
 		case "id":
 			return "GatewayRelease"
 		}
-	case "ManagedDatabase":
-		switch field {
-		case "id":
-			return "ManagedDatabase"
-		case "cluster_id":
-			return "ManagedCluster"
-		}
 	case "GatewayNetwork":
 		switch field {
 		case "id":
@@ -1633,8 +1485,6 @@ func referenceTarget(entity, field string) string {
 			return "ManagedCluster"
 		case "release_id":
 			return "GatewayRelease"
-		case "database_id":
-			return "ManagedDatabase"
 		}
 	case "RoleBinding":
 		switch field {
@@ -1681,12 +1531,10 @@ func filterColumns(entity string) map[string]bool {
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 	case "GatewayRelease":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
-	case "ManagedDatabase":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
 	case "GatewayNetwork":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
-		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 	case "RoleBinding":
 		return map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 	case "ServiceAccount":
@@ -1707,8 +1555,6 @@ func textColumns(entity string) map[string]bool {
 		return map[string]bool{"name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 	case "GatewayRelease":
 		return map[string]bool{"name": true, "image": true, "rollout_strategy": true, "canary_duration": true, "status": true}
-	case "ManagedDatabase":
-		return map[string]bool{"name": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true}
 	case "GatewayNetwork":
 		return map[string]bool{"name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 	case "Gateway":
@@ -1745,13 +1591,11 @@ func (s *Store) relatedExpression(ctx context.Context, target string, filter ste
 		related = s.db.WithContext(ctx).Model(&ManagedCluster{}).Select(filter.ForeignField)
 	case "GatewayRelease":
 		related = s.db.WithContext(ctx).Model(&GatewayRelease{}).Select(filter.ForeignField)
-	case "ManagedDatabase":
-		related = s.db.WithContext(ctx).Model(&ManagedDatabase{}).Select(filter.ForeignField)
 	case "GatewayNetwork":
 		related = s.db.WithContext(ctx).Model(&GatewayNetwork{}).Select(filter.ForeignField)
 	case "Gateway":
 		related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
-		related = related.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"database_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
+		related = related.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
 	case "RoleBinding":
 		related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
 	case "ServiceAccount":
@@ -2178,74 +2022,6 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			return false, err
 		}
 		return created, nil
-	case "ManagedDatabase":
-		data, err := json.Marshal(value)
-		if err != nil {
-			return false, fmt.Errorf("marshaling ManagedDatabase: %w", err)
-		}
-		var v ManagedDatabase
-		if err := json.Unmarshal(data, &v); err != nil {
-			return false, fmt.Errorf("unmarshaling ManagedDatabase: %w", err)
-		}
-		validCols := map[string]bool{"name": true, "provider": true, "namespace": true, "region": true, "engine": true, "engine_version": true, "instance_class": true, "connection_secret": true, "status": true, "cluster_id": true}
-		for _, k := range upsertKey {
-			if !validCols[k] {
-				return false, fmt.Errorf("invalid upsert key field %q for entity ManagedDatabase", k)
-			}
-		}
-		conflictCols := make([]clause.Column, len(upsertKey))
-		for i, k := range upsertKey {
-			conflictCols[i] = clause.Column{Name: k}
-		}
-		keySet := make(map[string]bool, len(upsertKey))
-		for _, k := range upsertKey {
-			keySet[k] = true
-		}
-		var updateCols []string
-		for _, col := range []string{"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status", "cluster_id"} {
-			if !keySet[col] {
-				updateCols = append(updateCols, col)
-			}
-		}
-		onConflict := clause.OnConflict{
-			Columns: conflictCols,
-		}
-		if len(updateCols) > 0 {
-			onConflict.DoUpdates = clause.AssignmentColumns(updateCols)
-			if concurrency == "optimistic" {
-				return false, fmt.Errorf("optimistic concurrency requires a 'generation' field on entity ManagedDatabase")
-			}
-		} else {
-			onConflict.DoNothing = true
-		}
-		var created bool
-		err = s.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-			var valueMap map[string]any
-			if err := json.Unmarshal(data, &valueMap); err != nil {
-				return fmt.Errorf("unmarshaling ManagedDatabase to map: %w", err)
-			}
-			whereClause := make(map[string]any, len(upsertKey))
-			for _, k := range upsertKey {
-				whereClause[k] = valueMap[k]
-			}
-			var existingCount int64
-			if err := tx.Model(&ManagedDatabase{}).Where(whereClause).Count(&existingCount).Error; err != nil {
-				return err
-			}
-			result := tx.Clauses(onConflict).Create(&v)
-			if result.Error != nil {
-				return result.Error
-			}
-			if concurrency == "optimistic" && result.RowsAffected == 0 {
-				return stegostorage.ErrConflict
-			}
-			created = existingCount == 0
-			return nil
-		}, &sql.TxOptions{Isolation: sql.LevelSerializable})
-		if err != nil {
-			return false, err
-		}
-		return created, nil
 	case "GatewayNetwork":
 		data, err := json.Marshal(value)
 		if err != nil {
@@ -2323,7 +2099,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 		if err := json.Unmarshal(data, &v); err != nil {
 			return false, fmt.Errorf("unmarshaling Gateway: %w", err)
 		}
-		validCols := map[string]bool{"name": true, "cluster_id": true, "release_id": true, "database_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
+		validCols := map[string]bool{"name": true, "cluster_id": true, "release_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		for _, k := range upsertKey {
 			if !validCols[k] {
 				return false, fmt.Errorf("invalid upsert key field %q for entity Gateway", k)
@@ -2338,7 +2114,7 @@ func (s *Store) Upsert(ctx context.Context, entity string, value any, upsertKey 
 			keySet[k] = true
 		}
 		var updateCols []string
-		for _, col := range []string{"name", "cluster_id", "release_id", "database_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"} {
+		for _, col := range []string{"name", "cluster_id", "release_id", "namespace", "external_dns", "tls_mode", "service_type", "image", "supervisor_image", "server_dns_names", "route_address", "console_address", "oidc", "route", "credential_driver", "active_sandbox_count"} {
 			if !keySet[col] {
 				updateCols = append(updateCols, col)
 			}
@@ -2630,12 +2406,6 @@ func (s *Store) Exists(ctx context.Context, entity string, id string) (bool, err
 	case "GatewayRelease":
 		var count int64
 		if err := s.db.WithContext(ctx).Model(&GatewayRelease{}).Where("id = ?", id).Count(&count).Error; err != nil {
-			return false, err
-		}
-		return count > 0, nil
-	case "ManagedDatabase":
-		var count int64
-		if err := s.db.WithContext(ctx).Model(&ManagedDatabase{}).Where("id = ?", id).Count(&count).Error; err != nil {
 			return false, err
 		}
 		return count > 0, nil

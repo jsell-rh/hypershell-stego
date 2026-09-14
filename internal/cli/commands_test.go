@@ -69,10 +69,9 @@ func TestGrantCreationFieldsFollowDomainContract(t *testing.T) {
 
 func TestCatalogCreationFieldsFollowDomainContract(t *testing.T) {
 	types := map[string]reflect.Type{
-		"/api/hypershell/v1/gateway_networks":  reflect.TypeFor[catalog.NetworkCreate](),
-		"/api/hypershell/v1/managed_clusters":  reflect.TypeFor[catalog.ClusterCreate](),
-		"/api/hypershell/v1/gateway_releases":  reflect.TypeFor[catalog.ReleaseCreate](),
-		"/api/hypershell/v1/managed_databases": reflect.TypeFor[catalog.DatabaseCreate](),
+		"/api/hypershell/v1/gateway_networks": reflect.TypeFor[catalog.NetworkCreate](),
+		"/api/hypershell/v1/managed_clusters": reflect.TypeFor[catalog.ClusterCreate](),
+		"/api/hypershell/v1/gateway_releases": reflect.TypeFor[catalog.ReleaseCreate](),
 	}
 	for _, definition := range catalogCommands() {
 		if definition.Method == "POST" {
@@ -83,11 +82,10 @@ func TestCatalogCreationFieldsFollowDomainContract(t *testing.T) {
 
 func TestApplyPatchFieldsFollowDomainContracts(t *testing.T) {
 	types := map[string]reflect.Type{
-		"Gateway":         reflect.TypeFor[gateways.PatchRequest](),
-		"ManagedCluster":  reflect.TypeFor[catalog.ClusterPatch](),
-		"GatewayRelease":  reflect.TypeFor[catalog.ReleasePatch](),
-		"ManagedDatabase": reflect.TypeFor[catalog.DatabasePatch](),
-		"GatewayNetwork":  reflect.TypeFor[catalog.NetworkPatch](),
+		"Gateway":        reflect.TypeFor[gateways.PatchRequest](),
+		"ManagedCluster": reflect.TypeFor[catalog.ClusterPatch](),
+		"GatewayRelease": reflect.TypeFor[catalog.ReleasePatch](),
+		"GatewayNetwork": reflect.TypeFor[catalog.NetworkPatch](),
 	}
 	resources := Commands().Resources
 	if len(resources) != len(types)+1 {

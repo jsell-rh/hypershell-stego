@@ -327,10 +327,6 @@ var errClientAborted = status.Error(codes.Internal, "RPC callback did not return
 // Only methods from the compiled contract can become telemetry attributes.
 func clientMethod(method string) string {
 	switch method {
-	case "/hypershell.controlplane.v1.DatabaseCleanupService/GetDatabaseCleanupSummary":
-		return method[1:]
-	case "/hypershell.controlplane.v1.DatabaseCleanupService/ObserveDatabaseCleanup":
-		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState":
@@ -422,18 +418,6 @@ func clientMethod(method string) string {
 	case "/hypershell.v1.ManagedClusterService/UpdateManagedCluster":
 		return method[1:]
 	case "/hypershell.v1.ManagedClusterService/WatchManagedClusters":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/CreateManagedDatabase":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/DeleteManagedDatabase":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/GetManagedDatabase":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/ListManagedDatabases":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/UpdateManagedDatabase":
-		return method[1:]
-	case "/hypershell.v1.ManagedDatabaseService/WatchManagedDatabases":
 		return method[1:]
 	case "/hypershell.v1.RoleBindingService/ListRoleBindings":
 		return method[1:]

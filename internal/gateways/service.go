@@ -57,7 +57,6 @@ type Service struct {
 	controlPlaneSubjects  map[string]bool
 	cleanupPolicy         *auth.GrantPolicy
 	controllerWritePolicy *auth.GrantPolicy
-	databaseProvider      string
 	defaultReleaseID      string
 	defaultClusterID      string
 }
@@ -76,10 +75,6 @@ func New(repository Repository, options ...Options) (*Service, error) {
 	if err := validateDefaults(selected); err != nil {
 		return nil, err
 	}
-	provider, err := resolveDatabaseProvider(selected.DatabaseProvider)
-	if err != nil {
-		return nil, err
-	}
 	subjects := map[string]bool{}
 	if len(options) == 1 {
 		if err := validateSubjects(options[0].ControlPlaneSubjects); err != nil {
@@ -89,7 +84,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, databaseProvider: provider, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
+	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.
@@ -126,10 +121,6 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 				return err
 			}
 		}
-		databaseID, err := s.placeDatabase(ctx, tx, request.Name, request.ClusterID)
-		if err != nil {
-			return err
-		}
 		id, err := ksuid.NewRandom()
 		if err != nil {
 			return err
@@ -140,7 +131,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 		}
 		gateway = model.Gateway{
 			Meta: model.Meta{ID: id.String()}, Name: request.Name,
-			ClusterID: request.ClusterID, ReleaseID: request.ReleaseID, DatabaseID: databaseID,
+			ClusterID: request.ClusterID, ReleaseID: request.ReleaseID,
 			Namespace:   "openshell-" + hex.EncodeToString(id.Payload()[:8]),
 			ExternalDns: request.ExternalDNS, TlsMode: request.TLSMode, ServiceType: request.ServiceType,
 			Status: request.Status, Phase: request.Phase, Image: request.Image, SupervisorImage: request.SupervisorImage,

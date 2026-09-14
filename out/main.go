@@ -75,6 +75,10 @@ func run() (stegoErr error) {
 			return err
 		}
 	}
+	stegoStage = "component[0].database[0]"
+	if err := storage.Migrate(db); err != nil {
+		return err
+	}
 	stegoStage = "component[0].constructor[0]"
 	store, err := storage.NewStore(db)
 	if err != nil {

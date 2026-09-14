@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -33,6 +34,31 @@ func TestGatewayRequestsRejectRetiredDatabaseField(t *testing.T) {
 	if code != 201 || json.Unmarshal(output, &row) != nil || row.ID == "" {
 		t.Fatal("creation without the retired field failed", code)
 	}
+	var responseFields map[string]json.RawMessage
+	if json.Unmarshal(output, &responseFields) != nil {
+		t.Fatal("invalid Gateway response")
+	}
+	if _, present := responseFields["database_id"]; present {
+		t.Fatal("Gateway response contains the retired field")
+	}
+	var catalog, column bool
+	if err := f.db.QueryRow(`SELECT to_regclass('public.managed_databases') IS NOT NULL, EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='gateways' AND column_name='database_id')`).Scan(&catalog, &column); err != nil || catalog || column {
+		t.Fatal("fresh schema retains the database catalog", err)
+	}
+	retiredRequest, err := http.NewRequest(http.MethodGet, address+"/api/hypershell/v1/managed_databases", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retiredRequest.Header.Set("Authorization", "Bearer "+creator)
+	retiredResponse, err := (&http.Client{Timeout: 5 * time.Second}).Do(retiredRequest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	retiredResponse.Body.Close()
+	if retiredResponse.StatusCode != http.StatusNotFound {
+		t.Fatal("retired database API is still registered", retiredResponse.StatusCode)
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	client, _ := grpcClient(t, grpcAddress, tlsIdentity)

@@ -22,24 +22,8 @@ type Options struct {
 	ControlPlaneSubjects  []string
 	CleanupPolicy         *auth.GrantPolicy
 	ControllerWritePolicy *auth.GrantPolicy
-	DatabaseProvider      string
 	DefaultReleaseID      string
 	DefaultClusterID      string
-}
-
-const ProviderDeployment = "deployment"
-const ProviderCNPG = "cnpg"
-const ProviderExternal = "external"
-
-func resolveDatabaseProvider(raw string) (string, error) {
-	switch raw {
-	case "", ProviderCNPG:
-		return ProviderCNPG, nil
-	case ProviderExternal:
-		return ProviderExternal, nil
-	default:
-		return "", errors.New("DATABASE_PROVIDER must be cnpg or external")
-	}
 }
 
 func OptionsFromEnvironment() (Options, error) {
@@ -48,10 +32,6 @@ func OptionsFromEnvironment() (Options, error) {
 	options.DefaultReleaseID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID")
 	options.DefaultClusterID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID")
 	if err = validateDefaults(options); err != nil {
-		return Options{}, err
-	}
-	options.DatabaseProvider, err = resolveDatabaseProvider(os.Getenv("DATABASE_PROVIDER"))
-	if err != nil {
 		return Options{}, err
 	}
 	if raw := os.Getenv("HYPERSHELL_CLEANUP_GRANTS"); raw != "" {

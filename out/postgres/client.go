@@ -34,6 +34,8 @@ type Options struct {
 	User, Database, Password string
 	CA                       []byte
 	DialAddress              string
+	// ServerIdentity pins the durable server record. Empty permits initial setup.
+	ServerIdentity string
 }
 
 // Error carries safe operation metadata. It never wraps a database message,
@@ -155,10 +157,12 @@ func configuration(o Options) (*pgx.ConnConfig, error) {
 // bound separately. The caller must discard destinations after an error.
 // Read-only session defaults are defense in depth, not a SQL sandbox. Do not
 // accept query text from an untrusted caller or use this API to change state.
-func ReadRow(ctx context.Context, o Options, query string, args []any, destinations ...any) error {
+func ReadRow(ctx context.Context, o Options, query string, args []any, destinations ...any) (err error) {
 	if ctx == nil || !plain(query, MaxQueryBytes) || len(args) > 128 || len(destinations) == 0 || len(destinations) > 32 {
 		return errors.New("invalid PostgreSQL read")
 	}
+	ctx, done := databaseSignal(ctx, "read")
+	defer func() { done(err) }()
 	for _, destination := range destinations {
 		value := reflect.ValueOf(destination)
 		if !value.IsValid() || value.Kind() != reflect.Pointer || value.IsNil() {

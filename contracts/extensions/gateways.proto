@@ -13,7 +13,8 @@ message Gateway {
   reserved "fleet_id";
   string cluster_id = 4;
   string release_id = 5;
-  string database_id = 6;
+  reserved 6;
+  reserved "database_id";
   string namespace = 7;
   optional string external_dns = 8;
   optional string tls_mode = 9;

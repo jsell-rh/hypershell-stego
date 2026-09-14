@@ -39,7 +39,6 @@ const navigation = {
 
 const createdGateway = {
   clusterId: "",
-  databaseId: "",
   externalDns: "",
   id: "gateway-1",
   name: "team-gateway",

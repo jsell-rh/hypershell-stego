@@ -15,8 +15,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
-	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/schema"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -26,20 +26,20 @@ import (
 )
 
 type fixture struct {
-	db                         *sql.DB
-	dsn                        string
-	storage                    *model.Store
-	service                    *gateways.Service
-	cluster, release, database string
+	db               *sql.DB
+	dsn              string
+	storage          *model.Store
+	service          *gateways.Service
+	cluster, release string
 }
 
 func database(t testing.TB) *fixture { return databaseSetup(t, true) }
 
 func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
-	return databaseSetupWithID(t, seedPlacement, "")
+	return databaseSetupFresh(t, seedPlacement)
 }
 
-func databaseSetupWithID(t testing.TB, seedPlacement bool, databaseID string) *fixture {
+func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 	t.Helper()
 	dsn := os.Getenv("STEGO_TEST_POSTGRES_DSN")
 	if dsn == "" {
@@ -91,101 +91,29 @@ func databaseSetupWithID(t testing.TB, seedPlacement bool, databaseID string) *f
 	if err != nil {
 		t.Fatal(err)
 	}
-	// Schema creation is an explicit acceptance setup step, outside request handling.
-	if err := model.Migrate(orm); err != nil {
-		t.Fatal(err)
-	}
-	migration, err := os.ReadFile("../out/outbox/migrations/000001_outbox.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000009_database_cluster_placement.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000010_database_provider_placement.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000011_local_database_providers.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+	if err := schema.Initialize(orm); err != nil {
 		t.Fatal(err)
 	}
 	s, err := model.NewStore(orm)
 	if err != nil {
 		t.Fatal(err)
 	}
-	svc, err := gateways.New(s, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
+	svc, err := gateways.New(s, gateways.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if databaseID == "" {
-		databaseID = ksuid.New().String()
-	}
-	parsed, err := ksuid.Parse(databaseID)
-	if err != nil || parsed == ksuid.Nil || parsed.String() != databaseID {
-		t.Fatal("invalid fixture database ID")
-	}
-	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String(), database: databaseID}
-	databaseNamespace, err := catalog.DatabaseNamespace(f.database)
-	if err != nil {
-		t.Fatal(err)
-	}
+	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String()}
 	if seedPlacement {
 		if err := s.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"}); err != nil {
 			t.Fatal(err)
 		}
 		for entity, value := range map[string]any{
-			"GatewayRelease":  model.GatewayRelease{Meta: model.Meta{ID: f.release}, Name: "release", Image: "registry.example/gateway:v1"},
-			"ManagedDatabase": model.ManagedDatabase{Meta: model.Meta{ID: f.database}, Name: "database", Provider: "cnpg", ClusterID: &f.cluster, Namespace: databaseNamespace},
+			"GatewayRelease": model.GatewayRelease{Meta: model.Meta{ID: f.release}, Name: "release", Image: "registry.example/gateway:v1"},
 		} {
 			if err := s.Create(ctx, entity, value); err != nil {
 				t.Fatal(err)
 			}
 		}
-	}
-	if err := applyRoleCatalog(ctx, db); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000005_global_roles.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000006_placement_catalog.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000007_deployment_database_names.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
-	migration, err = os.ReadFile("../migrations/000008_gateway_networks.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
 	}
 	return f
 }
@@ -258,9 +186,7 @@ func TestGatewayCreationCommitsOwnerAndEvent(t *testing.T) {
 	if gateway.Namespace != "openshell-"+hex.EncodeToString(id.Payload()[:8]) {
 		t.Fatalf("namespace: %s", gateway.Namespace)
 	}
-	if gateway.DatabaseID != f.database {
-		t.Fatal("stored database selection differs")
-	}
+
 	if gateway.CreatedTime.IsZero() || gateway.UpdatedTime.IsZero() {
 		t.Fatal("stored timestamps are missing")
 	}

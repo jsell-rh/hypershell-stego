@@ -2,151 +2,15 @@ package gatewayworkload
 
 import (
 	"bytes"
-	"context"
 	"crypto/ed25519"
 	"crypto/rand"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
-	"net/http"
-	"strings"
-
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
-	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
 
-func databaseOwner(id string) kube.Owner {
-	return kube.Owner{"hypershell.redhat.io/database-id": id, managerLabel: "hypershell-database-controller"}
-}
-
-// The database namespace retains the key material when the Gateway namespace
-// is replaced. The marker prevents silent rekeying after a lost Secret.
-func (k *Kubernetes) keys(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) (object, error) {
-	if db.GetProvider() == gateways.ProviderCNPG {
-		return k.sharedKeys(ctx, gw, db)
-	}
-	if k.allocation != nil {
-		if err := k.allocation.RequireNamespace(ctx, "database", db.Namespace, db.Metadata.Id); err != nil {
-			if errors.Is(err, allocation.ErrPending) {
-				return nil, ErrPending
-			}
-			return nil, err
-		}
-	}
-	namespace, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace, nil)
-	if err != nil {
-		return nil, err
-	}
-	if code == 404 {
-		return nil, ErrPending
-	}
-	if !databaseOwner(db.Metadata.Id).Matches(namespace) {
-		return nil, errors.New("Gateway database namespace has a different owner")
-	}
-	id := gw.Metadata.Id
-	marker := kube.String(namespace, "metadata", "annotations", keysMarker)
-	linkedGateway := kube.String(namespace, "metadata", "labels", ownerLabel)
-	if (marker == "") != (linkedGateway == "") {
-		return nil, errors.New("Gateway key identity is incomplete; restore its original metadata")
-	}
-	if linkedGateway != "" && linkedGateway != id {
-		return nil, errors.New("Gateway database namespace is linked to a different Gateway")
-	}
-	if marker != "" && !strings.HasPrefix(marker, id+":") {
-		return nil, errors.New("Gateway database keys belong to a different Gateway")
-	}
-	var publicIdentity object
-	if k.allocation != nil {
-		publicIdentity, code, err = k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+db.Namespace+"/configmaps/openshell-key-identity", nil)
-		if err != nil {
-			return nil, err
-		}
-		if code == http.StatusNotFound {
-			publicIdentity = nil
-		} else if !k.databaseAllocationOwner(db.Metadata.Id).Matches(publicIdentity) || publicIdentity["immutable"] != true || kube.String(publicIdentity, "data", "gateway") != id || kube.String(publicIdentity, "data", "fingerprint") == "" {
-			return nil, errors.New("Gateway public key identity is invalid")
-		}
-	}
-	collection := "/api/v1/namespaces/" + db.Namespace + "/secrets"
-	secret, code, err := k.client.Request(ctx, http.MethodGet, collection+"/"+keysName, nil)
-	if err != nil {
-		return nil, err
-	}
-	if code == 404 {
-		if marker != "" || publicIdentity != nil {
-			return nil, errors.New("Gateway keys are missing; restore the original Secret")
-		}
-		values, err := newKeys()
-		if err != nil {
-			return nil, err
-		}
-		secret = definition("v1", "Secret", keysName, id)
-		secret["type"] = "Opaque"
-		secret["immutable"] = true
-		secret["data"] = values
-		secret, _, err = k.client.Request(ctx, http.MethodPost, collection, secret)
-		if err != nil {
-			return nil, err
-		}
-	}
-	if !owner(id).Matches(secret) {
-		return nil, errors.New("Gateway key Secret has a different owner")
-	}
-	if err := validateKeys(secret); err != nil {
-		return nil, err
-	}
-	if secret["immutable"] != true {
-		return nil, errors.New("Gateway source keys must be immutable")
-	}
-	values := object{}
-	for _, key := range []string{"signing.pem", "public.pem", "kid", "key-encryption-key"} {
-		values[key] = kube.String(secret, "data", key)
-	}
-	encoded, err := json.Marshal(values)
-	if err != nil {
-		return nil, err
-	}
-	expected := id + ":" + hex.EncodeToString(sha256sum(encoded))
-	if marker != "" && marker != expected {
-		return nil, errors.New("Gateway keys differ from their durable identity; restore the original Secret")
-	}
-	if k.allocation != nil {
-		if publicIdentity != nil && kube.String(publicIdentity, "data", "fingerprint") != expected {
-			return nil, errors.New("Gateway keys differ from the public identity record")
-		}
-		if publicIdentity == nil {
-			labels := object{}
-			for key, value := range k.databaseAllocationOwner(db.Metadata.Id) {
-				labels[key] = value
-			}
-			record := object{"apiVersion": "v1", "kind": "ConfigMap", "metadata": object{"name": "openshell-key-identity", "labels": labels}, "immutable": true, "data": object{"gateway": id, "fingerprint": expected}}
-			if _, _, err := k.client.Request(ctx, http.MethodPost, "/api/v1/namespaces/"+db.Namespace+"/configmaps", record); err != nil {
-				return nil, err
-			}
-		}
-		// The key cannot be used until the allocator retains its public identity.
-		if marker != expected || linkedGateway != id {
-			return nil, ErrPending
-		}
-		return values, nil
-	}
-	if marker == "" || linkedGateway == "" {
-		// Use the first namespace observation. A conflict requires another pass.
-		patch := object{"metadata": object{"uid": kube.String(namespace, "metadata", "uid"), "resourceVersion": kube.String(namespace, "metadata", "resourceVersion"), "annotations": object{keysMarker: expected}, "labels": object{ownerLabel: id}}}
-		if kube.String(patch, "metadata", "uid") == "" || kube.String(patch, "metadata", "resourceVersion") == "" {
-			return nil, errors.New("Gateway database namespace has no identity")
-		}
-		if _, _, err = k.client.Request(ctx, http.MethodPatch, "/api/v1/namespaces/"+db.Namespace, patch); err != nil {
-			return nil, err
-		}
-	}
-	return values, nil
-}
 func newKeys() (object, error) {
 	public, private, err := ed25519.GenerateKey(rand.Reader)
 	if err != nil {
@@ -217,11 +81,4 @@ func validateKeys(secret object) error {
 		return invalid
 	}
 	return nil
-}
-
-func (k *Kubernetes) databaseAllocationOwner(id string) kube.Owner {
-	result := databaseOwner(id)
-	result[allocation.MarkerLabel] = k.allocation.Marker()
-	result[allocation.ProfileLabel] = "database"
-	return result
 }

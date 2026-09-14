@@ -33,10 +33,12 @@ func TestGeneratedGatewayDescriptorsMatchReleaseContract(t *testing.T) {
 	}
 	for _, actual := range []interface{ Path() string }{pb.File_hypershell_v1_common_proto, pb.File_hypershell_v1_gateways_proto} {
 		expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(actual.Path()))
-		// Only these two request fields are retired in this transition step.
+		// Reserve the retired field in requests and in the Gateway response.
 		for _, message := range expected.MessageType {
 			number := int32(0)
 			switch message.GetName() {
+			case "Gateway":
+				number = 6
 			case "CreateGatewayRequest":
 				number = 5
 			case "UpdateGatewayRequest":
@@ -139,7 +141,7 @@ func TestGatewayWorkflowAcrossRESTAndGRPC(t *testing.T) {
 	if _, err := ksuid.Parse(id); err != nil {
 		t.Fatal(err)
 	}
-	if gateway.Namespace == "" || gateway.DatabaseId != f.database || gateway.Metadata.Kind != "Gateway" || gateway.Metadata.Href != "/api/hypershell/v1/gateways/"+id || gateway.Metadata.CreatedAt.CheckValid() != nil || gateway.SupervisorImage == nil || gateway.CredentialDriver == nil || len(gateway.ServerDnsNames) != 1 {
+	if gateway.Namespace == "" || gateway.Metadata.Kind != "Gateway" || gateway.Metadata.Href != "/api/hypershell/v1/gateways/"+id || gateway.Metadata.CreatedAt.CheckValid() != nil || gateway.SupervisorImage == nil || gateway.CredentialDriver == nil || len(gateway.ServerDnsNames) != 1 {
 		t.Fatalf("wrong gRPC response: %v", gateway)
 	}
 	if readEvent(t, consumer, id) == "" {

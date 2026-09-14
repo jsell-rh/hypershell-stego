@@ -96,19 +96,7 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 			}
 		}
 		if current.ClusterID != previousClusterID {
-			value, err := tx.Get(ctx, "ManagedDatabase", current.DatabaseID)
-			if err != nil {
-				return err
-			}
-			database, ok := value.(model.ManagedDatabase)
-			if !ok {
-				return errors.New("unexpected database storage result")
-			}
-			// Database credentials and data stay in their assigned cluster.
-			// A normal Gateway patch cannot perform a database migration.
-			if database.ClusterID == nil || *database.ClusterID != current.ClusterID {
-				return store.ErrConflict
-			}
+			return store.ErrConflict
 		}
 		if patch.Phase != nil || patch.Status != nil {
 			writer, ok := tx.(store.ObservationWriter)

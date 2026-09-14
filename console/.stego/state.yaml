@@ -25,20 +25,20 @@ last_applied:
                 mode: 420
             ui/build.zip:
                 exists: true
-                sha256: d1c2209a51b6c938a6e5f2fc12882979f8491e5b23714c5955e018dda78659ea
+                sha256: 6bf08e52adce2274496eafc72fb5beb7d90217d00663c5a1e8513974d78dd7e7
                 mode: 420
-        sha256: 8a113c169a73f9cb8148ac98e8249d8b8c05d573fc49767fc2a879b77fb23b88
+        sha256: eb23bff90a9a71f2eb1d852bea4ad9b2fd7188100a26c444b9bb9cbb8c6a055e
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914173631-ce29df073378
+        module_version: v0.0.0-20260914233100-c71878eebe67
         vcs: git
-        revision: ce29df073378340a21bdba31b99ca333fd829f98
+        revision: c71878eebe67e488dea9dd199815df023d11ffb5
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: b7f3ad5db5ef17293675d5d485c96c4aa5ef16fdebd09fc38e00e065f95fb2ca
+    registry_content_sha256: 97a7a6ee989b5936218ad507a3a4d570c8e1a2c0a719dac6766b5b3078759f91
     components:
         browser-backend:
             version: 1.5.0
@@ -47,16 +47,16 @@ last_applied:
             version: 1.0.0
             sha: browser-workflow
         kubernetes-service:
-            version: 1.7.0
+            version: 1.8.2
             sha: browser-workflow
         otel-tracing:
             version: 1.11.0
             sha: browser-workflow
         postgres-adapter:
-            version: 4.0.0
+            version: 4.3.1
             sha: browser-workflow
     files:
-        browser/backend.go: add21349342360bd1f3e8a33796e06225c57a9e6991287b76f2185367ce9f3c0
+        browser/backend.go: c014c4113ce229739c5a2eddf7ae44f4412edffaee8916f6f81e7ed72430242b
         browser/client/client.go: 137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a
         browser/handlers.go: 64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
@@ -83,7 +83,7 @@ last_applied:
         browser/public/assets/SkipToContent-DD3FH02A.js: 20b7ad8759dedd6537655a8c763ead09842c6d34c107a358329a008787e0e9b5
         browser/public/assets/Tooltip-BLSuDaSq.css: 94a1a40f9f51c6b50795df67c6862d83eb6937f7a3cd0f683fb806700292dfd3
         browser/public/assets/Tooltip-FxqhyjOa.js: 205ff547c3156ec1dfe25c2deabfb496ff6a262caf42ba0308c11db39bf93859
-        browser/public/assets/application-CbCIHpq-.js: 3082aede86058780414616f77941c4bf5b581a2c2d0ae3c73fd9000e1faec111
+        browser/public/assets/application-BzJqysbd.js: 59d4bfccd28c058a31bad987c58697243d963fed901b9179da911108f590624e
         browser/public/assets/application-khmxz-hr.css: e60d63111b9df73c6a83ce84ca49127dba7ba2e14ad9b24a7f6848a35c05fa21
         browser/public/assets/catalog-HSSKH2S1.js: e05fe8348ff9ac276672cfdbc6b86871eb6e58af39277a49b0b0bd8e3ee4911e
         browser/public/assets/components-DQsZKrfN.js: 81862ccc1a09e335427c67f5b4b867162a8b1f33318a4fd562352a87533989c9
@@ -93,17 +93,17 @@ last_applied:
         browser/public/assets/favicon-32-BqX1IrQb.png: c7538ac17a62d1592737dd82b5a211174499663c0914ec358c8a4f2550f8fe98
         browser/public/assets/favicon-48-BsT24p2l.png: d5e0eb0660eaf252f0516614cf0ca47ef5528ebd12362f939c93eafd83a0caef
         browser/public/assets/favicon-180-jcq6LAU0.png: a4ec2cf4e2b927d91f1d5b7f3d01926e08cc5a749b1c82a5dd406cff1ee86279
-        browser/public/assets/gateway-UvjBcKJC.js: f494f186f7377e1bb6adf3b8320b33a2c9875215537aaad9bcb39b98fc266d4d
-        browser/public/assets/gateway-new-JIa117A8.js: 601d341a4a3a8f569e55fed2fd45fe1011a104164f2bbd9b1386ac8a89dba719
-        browser/public/assets/home-DQn7rW4c.js: 9daf7bb87429287c86a057da46664f277d0d10f5c6739355712772c7ab5eb438
+        browser/public/assets/gateway-mFBt4QmD.js: 736a4336726f05d552a9f34384ca2bd8bb7f95eb30557fa14989901bf1a5daad
+        browser/public/assets/gateway-new-D1VOhHIl.js: d83c06f81dbf9068c8e6704f25cb28cbe855a29973171bb50b2eb1ae13ebd04a
+        browser/public/assets/home-Bcfh-xrn.js: e458da7a607c4773e1ca90a581e0d72328f38cde854bdeed69edcd41404d1d52
         browser/public/assets/jsx-runtime-KJkY8l8U.js: cf2bfab16c630d00f84b59033ead66408c3ab1818aa89406cf27cc3cb1e0bf89
         browser/public/assets/lib-s8g9F_k7.js: 76e8f02ef93b761048b5e1aa7681996d153b775ae3b94b431dd27a06f507fca8
         browser/public/assets/login-BEKlfXt0.js: 8f16329bc05fb2cfb1f375539f0c7646c0f25d0ebffee4e8f128c0e44ec4768d
         browser/public/assets/login-D24d52nV.css: 69edc4ce9f967f814abf63a6da46f9fb084751fdecb967b2bc9919c1e3ea28fd
         browser/public/assets/logo-D5Bfz3pC.png: 6bb861be2b9a114404927f6f355310aff6352aba1a191d9e1d87036a365e8a6c
-        browser/public/assets/manifest-adaad657.js: 6d217ba88b6f3b3f8b41b793dd58e3715ef4d8d5546cd7ec11e591101287e0c9
+        browser/public/assets/manifest-8dc15155.js: cbef8f00f2f7b9448077a9c0fa06be07406d12dc65ba15ddc0c51642d9dac19f
         browser/public/assets/messages-DNSn_P3a.js: fbfd9e749e089b046613f5089792fd14f1cb5f6ce6c80c1940ab924ebd86dc1c
-        browser/public/assets/metrics-By5XXB0i.js: 1db9f33c0fa261e20f6874c8a04b240404172562e5c818f822a73ccbcfb8c345
+        browser/public/assets/metrics-BsMiEaIf.js: 0e055a90f5be47ad6d21ab983a783f3c733d9371e2f22371e40dbe263f592dc3
         browser/public/assets/not-found-2mWujS_f.js: 7cf656e0bb77188e4dcc63b95d74b604bf4e4ec4416e56fb2f4673afff37bb41
         browser/public/assets/page-meta-DAEWVLyo.js: 1682258dc51376f3885790ae49e0ca5578dd89bcd96f8247245ad950aa66edc7
         browser/public/assets/pf-v6-pficon-Dy6oiu9u.woff2: 322295638da2105dffff0eb18ee10ccffcac38888778b7b1b4624772d513e65d
@@ -113,8 +113,8 @@ last_applied:
         browser/public/assets/root-BJvDT2Lb.css: 88558b26d77507b3c8ad2bcfd5a1db12bce56230c6dc91c164b322bfc45a07ee
         browser/public/assets/root-CTWVupYe.js: 208c90736769d2d756884370561aefc4f9e9149462e81930ad0a0e9c3edae306
         browser/public/assets/src-BSfgdRCl.css: 2d8e47cf64b10b83b8957a492050da2cde099278c8560e23f7093e0438536942
-        browser/public/assets/src-CgpYGHMC.js: da6389e522b683e545a7df02a92c7c05d45bda186f983fa25e781ef700390bb7
-        browser/public/index.html: c5f25a525146950e81abe8d9f6132f02aa83886eb8a6ebf209813fdde407aa6c
+        browser/public/assets/src-DWb-85VG.js: a0f72f835ff99c7072d0f5ad60cdfadd9644dbad90168bcbe96a495d06d38e02
+        browser/public/index.html: 63e1fc4d324cb0177103f98ff48503a42260dc7674163566dde82a5e4b5073e0
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/store.go: 44a23268b3344b56cb12b8b2741e4efd2017deca873c6a5110d6d1c783633b23
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881

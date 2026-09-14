@@ -69,8 +69,6 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	pb.RegisterGatewayNetworkServiceServer(registrar, &networkServer{resource: placement.Networks, source: source})
 	pb.RegisterManagedClusterServiceServer(registrar, &clusterServer{resource: placement.Clusters, source: source})
 	pb.RegisterGatewayReleaseServiceServer(registrar, &releaseServer{resource: placement.Releases, source: source})
-	pb.RegisterManagedDatabaseServiceServer(registrar, &databaseServer{resource: placement.Databases, source: source})
-	control.RegisterDatabaseCleanupServiceServer(registrar, &databaseCleanupServer{resource: placement.Databases})
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
 	pb.RegisterRoleBindingServiceServer(registrar, &grantServer{service: service, source: source})
 	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})
@@ -206,7 +204,7 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 	if err := updated.CheckValid(); err != nil {
 		return nil, err
 	}
-	return &pb.Gateway{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "Gateway", Href: "/api/hypershell/v1/gateways/" + row.ID, CreatedAt: created, UpdatedAt: updated}, Name: row.Name, ClusterId: row.ClusterID, ReleaseId: row.ReleaseID, DatabaseId: row.DatabaseID, Namespace: row.Namespace,
+	return &pb.Gateway{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "Gateway", Href: "/api/hypershell/v1/gateways/" + row.ID, CreatedAt: created, UpdatedAt: updated}, Name: row.Name, ClusterId: row.ClusterID, ReleaseId: row.ReleaseID, Namespace: row.Namespace,
 		ExternalDns: row.ExternalDns, TlsMode: row.TlsMode, ServiceType: row.ServiceType, Status: row.Status, Phase: row.Phase, Image: row.Image, SupervisorImage: row.SupervisorImage, ServerDnsNames: names, RouteAddress: row.RouteAddress, ConsoleAddress: row.ConsoleAddress, Oidc: row.Oidc, Route: row.Route, CredentialDriver: row.CredentialDriver, ActiveSandboxCount: row.ActiveSandboxCount}, nil
 }
 func mapError(err error) error {

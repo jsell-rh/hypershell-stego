@@ -13,7 +13,7 @@ func TestListProjectionCoversPublicResponseFields(t *testing.T) {
 	}
 	for entity, typ := range map[string]reflect.Type{
 		"Gateway": reflect.TypeFor[Gateway](), "GatewayNetwork": reflect.TypeFor[GatewayNetwork](),
-		"ManagedCluster": reflect.TypeFor[ManagedCluster](), "ManagedDatabase": reflect.TypeFor[ManagedDatabase](),
+		"ManagedCluster": reflect.TypeFor[ManagedCluster](),
 		"GatewayRelease": reflect.TypeFor[GatewayRelease](), "Role": reflect.TypeFor[Role](), "RoleBinding": reflect.TypeFor[grantItem](),
 	} {
 		var check func(reflect.Type)

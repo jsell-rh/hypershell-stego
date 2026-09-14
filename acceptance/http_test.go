@@ -118,7 +118,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 	if _, err := ksuid.Parse(gateway.ID); err != nil {
 		t.Fatalf("invalid Gateway ID: %s", gateway.ID)
 	}
-	if gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.DatabaseID != f.database || gateway.CreatedBy != "alice" || gateway.CreatedAt.IsZero() || len(gateway.ServerDNSNames) != 1 {
+	if gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "alice" || gateway.CreatedAt.IsZero() || len(gateway.ServerDNSNames) != 1 {
 		t.Fatalf("Gateway response shape: %s", data)
 	}
 	if strings.Contains(string(data), "created_time") || strings.Contains(string(data), "updated_time") || strings.Contains(string(data), "metadata") {
@@ -128,7 +128,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 		t.Fatal("REST creation lost its durable event ID")
 	}
 	awaitQueueEmpty(t, f)
-	reference, err := contracts.Load(context.Background())
+	document, err := contracts.LoadActiveOpenAPI(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -136,9 +136,9 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 	if err := json.Unmarshal(data, &value); err != nil {
 		t.Fatal(err)
 	}
-	schema := reference.OpenAPI.Paths.Value("/api/hypershell/v1/gateways").Post.Responses.Status(201).Value.Content.Get("application/json").Schema.Value
+	schema := document.Paths.Value("/api/hypershell/v1/gateways").Post.Responses.Status(201).Value.Content.Get("application/json").Schema.Value
 	if err := schema.VisitJSON(value); err != nil {
-		t.Fatalf("response violates the pinned API contract: %v", err)
+		t.Fatalf("response violates the active API contract: %v", err)
 	}
 	status, read := requestJSON(t, "GET", path+"/"+gateway.ID, owner, nil)
 	if status != 200 || !bytes.Equal(data, read) {

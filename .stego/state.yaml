@@ -11,69 +11,45 @@ last_applied:
                 exists: true
                 sha256: 503141e16fef9afbe4279e7eaf894724150401dcd39745d6e6f1a78322944502
                 mode: 420
-            contracts/controlplane/database_cleanup.proto:
-                exists: true
-                sha256: 5f2faaba2220a30a86de9a791a2b597a0a13efa1f05b4dcc0377f843b767ca48
-                mode: 420
             contracts/controlplane/gateway_identity.proto:
                 exists: true
-                sha256: 446d4bb6f8d1ce2d0cb558f5a3b41b4249d312b50b38408e5964e2379879a928
+                sha256: 6a2be7ad78c260602cb7c182e1a692d86ce40ca236adf296d6ad2dbb4027415f
                 mode: 420
             contracts/extensions/gateways.proto:
                 exists: true
-                sha256: 231a8255ab992557c6858023ae463a4d2de974967d58fcfc9c7084fd8ff3c8a8
+                sha256: 84ce8aac2404fb3200e149e07d2e3b4fa3349748b3cb6cf0eaa8ca66dc88d3f5
                 mode: 420
-            contracts/extensions/managed_databases.proto:
-                exists: true
-                sha256: ca11a9bdf27fc4d4dace1e1e0f76cec40f2a04b65f06203073436cc90a10da55
-                mode: 420
-            contracts/extensions/openapi.gateways.yaml:
-                exists: true
-                sha256: d54acd68811254600575cd017c304aac33d29b310f7c4fbdd59240c57fcc3ddb
-                mode: 420
-            contracts/extensions/openapi.managedDatabases.yaml:
-                exists: true
-                sha256: ff0bf15249c38de285e4ed35d6f1ef01cf3d40992fdedde6e3c1035d086b7e60
-                mode: 420
-            contracts/extensions/openapi.yaml:
-                exists: true
-                sha256: aff6d9522a89a4f46e03041295e0838a40c1b5f3ea0a467c64e95e6a62acce00
-                mode: 420
-            contracts/reference/openapi/openapi.gatewayNetworks.yaml:
+            contracts/extensions/openapi.gatewayNetworks.yaml:
                 exists: true
                 sha256: bbe191a86efe586659d2d3fcc2078ec3e52c55c16cec5ff276f51317bc8a11e1
                 mode: 420
-            contracts/reference/openapi/openapi.gatewayReleases.yaml:
+            contracts/extensions/openapi.gatewayReleases.yaml:
                 exists: true
                 sha256: d664b5c2cf58fc3690c4cd41e3fd6bb5ee82551d7e32cef658738aa0995db135
                 mode: 420
-            contracts/reference/openapi/openapi.gateways.yaml:
+            contracts/extensions/openapi.gateways.yaml:
                 exists: true
-                sha256: b7758843defe17d4f3df3dd9ccbc59afc4a4ee92bc9f27f6f3169f24d5e4274a
+                sha256: 8ddf6437f6c6c069f94461d80388c69db17664267dd813621d26c7dc9b54b9c6
                 mode: 420
-            contracts/reference/openapi/openapi.managedClusters.yaml:
+            contracts/extensions/openapi.managedClusters.yaml:
                 exists: true
                 sha256: af6dd6dc32d1b52f543343faee5da6a7eae42b02b7d23525d4a76d4b529013c7
                 mode: 420
-            contracts/reference/openapi/openapi.managedDatabases.yaml:
-                exists: true
-                sha256: 498ff69362816341d4dd1fec184fbae63907cf5a4890f6b376b0a665fe4d7e74
-                mode: 420
-            contracts/reference/openapi/openapi.roleBindings.yaml:
+            contracts/extensions/openapi.roleBindings.yaml:
                 exists: true
                 sha256: 7bb7416d3a507dc868b09ea06575f3a697a6e7c0f54d00af395a67f8bacea273
                 mode: 420
-            contracts/reference/openapi/openapi.roles.yaml:
+            contracts/extensions/openapi.roles.yaml:
                 exists: true
                 sha256: 7e80d4c5d090ecde1755b9c651c6ba87464d2a78b6b31a104961a53b9d82f8e8
                 mode: 420
-            contracts/reference/openapi/openapi.serviceAccounts.yaml:
+            contracts/extensions/openapi.serviceAccounts.yaml:
                 exists: true
                 sha256: 8227acdc6912e1408e2dff81c17cfb67a229073b8c86abf31742adfad62bc6ca
                 mode: 420
-            contracts/reference/openapi/openapi.yaml:
+            contracts/extensions/openapi.yaml:
                 exists: true
-                sha256: a9815d0b0ad761770035ada57903491d410a9df1e1e3a543ca1b2f235b483da7
+                sha256: 642cce071b45694102fe959cf7bd81118767a306fad09dd8f4e3b1cbdc1fda1a
                 mode: 420
             contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto:
                 exists: true
@@ -107,21 +83,17 @@ last_applied:
                 exists: true
                 sha256: 48b39c7119c0bb0b91837e1890214af98635ee3c67e4f96ffd518df00fc03535
                 mode: 420
-            internal/databaseapp/worker.go:
-                exists: true
-                sha256: 7a3a0a19065491973082123a5ab89f0507231a46af4be491e35a6eed7c474571
-                mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
                 sha256: 1e9eba83e181d6dc1a5c19d1717ceaed8f89ce03b16a54ab5ea12242b87ee3fe
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: 9136c416ecfbccb70990bf25087fc5dad967c61f201c457bc215e91af22f4eb2
+                sha256: a393c4829580c697b9e69aa2f8896e3710e2fb8d73928bb42f6dd22cb3ffd018
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
-                sha256: 6dcc2adea3b4ab7e340dc3216e632eab715080142766fb021e7aaa021da75b8f
+                sha256: 3f11982b5129f36097c86d07b92658845df86b626d283700190f7f4173566e2f
                 mode: 420
             internal/sandboxcountapp/worker.go:
                 exists: true
@@ -133,20 +105,20 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 1acc6934dc23a7311966ce2a90cf5d7b266bfb36cc8afacc3087019f58a491cf
+                sha256: ff30ba0d55f9f24c3c094dc5d82fd725ee4c8d87a31c44e6f62fb6e863b1fe91
                 mode: 420
-        sha256: ceadbd63b7d32b5e0ab89f25ebb51d616dc1deedf8e8dae161a17737bb2f77ae
+        sha256: 20f6d50f7b120570fea33a8bf978b8de6cef6485f745ce2e108035c9e28a44d0
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914173631-ce29df073378
+        module_version: v0.0.0-20260914233100-c71878eebe67
         vcs: git
-        revision: ce29df073378340a21bdba31b99ca333fd829f98
+        revision: c71878eebe67e488dea9dd199815df023d11ffb5
         source_state: clean
-    service_hash: 1acc6934dc23a7311966ce2a90cf5d7b266bfb36cc8afacc3087019f58a491cf
+    service_hash: ff30ba0d55f9f24c3c094dc5d82fd725ee4c8d87a31c44e6f62fb6e863b1fe91
     registry_sha: gateway-workflow
-    registry_content_sha256: b7f3ad5db5ef17293675d5d485c96c4aa5ef16fdebd09fc38e00e065f95fb2ca
+    registry_content_sha256: 97a7a6ee989b5936218ad507a3a4d570c8e1a2c0a719dac6766b5b3078759f91
     components:
         browser-telemetry:
             version: 1.0.0
@@ -179,19 +151,19 @@ last_applied:
             version: 1.3.2
             sha: gateway-workflow
         kubernetes-service:
-            version: 1.7.0
+            version: 1.8.2
             sha: gateway-workflow
         otel-tracing:
             version: 1.11.0
             sha: gateway-workflow
         outbox:
-            version: 1.0.3
+            version: 1.1.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 4.0.0
+            version: 4.3.1
             sha: gateway-workflow
         postgres-client:
-            version: 1.0.3
+            version: 1.2.0
             sha: gateway-workflow
         tsl-search:
             version: 1.0.2
@@ -210,9 +182,6 @@ last_applied:
             - name: release_id
               type: ref
               hash: b0d8cc972a66919a45bd3f299822cd8a117bb92c8b3eb1e40a9db115376081a6
-            - name: database_id
-              type: ref
-              hash: 5a1047228d1d0b496b75c03febbbcdd68182ede3b590bacde8f305dcb6e9868c
             - name: namespace
               type: string
               hash: d82af01663a4c3d75dd99bc2e43532716a5af4046b106eaf22be99e8e2daee26
@@ -312,37 +281,6 @@ last_applied:
             - name: api_server_url
               type: string
               hash: c25b4fa14ffc75d754fbda4dfd1017a1ffe0053ff43ce127f26b92a9744d8db0
-        ManagedDatabase:
-            - name: name
-              type: string
-              hash: 7e683f6a81d158e9f79c040bd4afbedea8a770af5202de1bbdf27663de7badc5
-            - name: provider
-              type: enum
-              hash: 4f4310385d09adb25b02ae7ad659c305188cdae4874bf87971b793b32d8768d5
-            - name: namespace
-              type: string
-              hash: 8126045c4cc79c28f6048ad535eb2c7e1e650991fdbb2a848802482c856b5140
-            - name: region
-              type: string
-              hash: d8040619787e3480672d9c2f00d6829e36cee6e9ffea656cf23a01d392e3df86
-            - name: engine
-              type: string
-              hash: e9ccaa0d7ce1c920ae5a0a547712d86005027b5f9410ad5c0759fb940b22d618
-            - name: engine_version
-              type: string
-              hash: d061898a49cbe9d43706d39d69cbcaafc25e34589db532e82f912a97cf77db09
-            - name: instance_class
-              type: string
-              hash: bdddccb96358dde786624d49ebea900497fb8fd63ac20a7c0ab68ce5c30539a4
-            - name: connection_secret
-              type: string
-              hash: 9cdc45e5398e6cafd9b48de8aaa1b1556c3a8d6110c7000e434eb309a3918cbd
-            - name: status
-              type: string
-              hash: fe736ad272d4bd4e4b785cd1d2f4ac63c83b5e1a724580842cf21e6608288e83
-            - name: cluster_id
-              type: ref
-              hash: a03cbaa1c538d70efaba95fe78ee762830c7faa151555799c942d79066307fb9
         Role:
             - name: name
               type: string
@@ -483,7 +421,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 40bb0261256dbab39b42b5df922879c2a3a51b3001711253aecf4a77cc7c6fb2
+        cli/command/version.go: dc4f200e09f3c2a7bfe0102d2af443fdd197833656a70d75613556392e1c5f8d
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 86f37da2a27f9d2443bb9a1b4e41bdcef0f182ba5fa18928005380d952535548
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -501,20 +439,16 @@ last_applied:
         controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/allocation/allocation.go: b0099370c3f5bd3aec9e23f92e1057a431f6d782632b126ed6237b7b8cdfbc0c
+        deploy/allocation/allocation.go: cbd9e0b8454acbd5da853ea52b4a40964ae746545c13a467d827e9a7ef2998da
         deploy/render/main.go: 61528bff275a71ba50da307330a786d67f8de708751e588bca55006087f6ce25
-        deploy/render/manifest.json.tmpl: 608011eaf59a1cebf2d0b3df4957ecd75ad34658808a164fa7f2672e3d523152
+        deploy/render/manifest.json.tmpl: 460eeec60b8155e9c62828142ba55a829ef3f24b594f581ba33d56fcd52ad60f
         deploy/render/rpc-provisioner.json.tmpl: 971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b
-        deploy/render/worker-database.json.tmpl: ebb6afdf9d38bc1b5dbd117225d9f4fb03a89031a7ca6f5a4e9059d8f463edf9
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
-        deploy/render/worker-gateway-workload.json.tmpl: 65087e6263628a4c0efc2de9c902fed9a9105133098aecb0c1116c7d205bfca4
-        deploy/render/worker-namespace-allocation.json.tmpl: 9621e3a0ce426ff965babd8535557a33c17dcab17cfc9579ae1cde0a8b0c945a
+        deploy/render/worker-gateway-workload.json.tmpl: eb45d144303edd7f90dc0cc926590fa01dbc9e877b08772e44e5d1cf5a418992
+        deploy/render/worker-namespace-allocation.json.tmpl: 89103458dc3dc0928e227ab8968e050058cd953816a7b31fe000d7256b76431a
         deploy/render/worker-sandbox-count.json.tmpl: 962635b1d71def1bdc3503322cc4e8e4a2279be43649a4767a73d5631c40a454
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7
         deploy/rpc/provisioner/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/workers/database/Containerfile: 0e56e74e778b72026a41e69fa56b8ca6545fa844be3023cf7832cefc4264070a
-        deploy/workers/database/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/workers/database/main.go: 2a68109336345615d5cc14c23456fe804ceff5e5da47540b29ab506b0a646612
         deploy/workers/gateway-identity/Containerfile: 5f7395f954d74b6f2596b369c38a026e8c3c34213f7cadc9e51b20c09d1d2da9
         deploy/workers/gateway-identity/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/workers/gateway-identity/main.go: c805af057be7fd418e6566e283981579b6c237f88b9936e1c50729fc71456151
@@ -530,11 +464,9 @@ last_applied:
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
-        grpcapi/client/client.go: 5b38f681b05ef0588dc3b46a40a9bf61ab7ae74880ff3638e6eacef4c6725eb3
+        grpcapi/client/client.go: 3c4f18768e6610cdcde8253c2ac054d66e0479360e75db8b37bbb7be833454ae
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
-        grpcapi/pb/hypershell/controlplane/v1/database_cleanup.pb.go: 9f3de40510f99be61f2574f23d88429ac8f9a698a02abbf5719c220093c74ce8
-        grpcapi/pb/hypershell/controlplane/v1/database_cleanup_grpc.pb.go: b5434cb72cc97eb475bf7124e6300d653cf8bed5865616e682f2e6331b3a5f4e
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: bfcbdde5835377906cf6a411eff09d7ef73b4516e60d8d375ad97614fd480a56
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 06df76452d4182f83fe2a1f6305f0a82a73dd68aac50fef3882f2fdd7793aadf
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: d678e7cc972b49e34e92800dbbe1678ba26b47f4aeb293a0173a15ed4c24ce43
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
@@ -543,12 +475,10 @@ last_applied:
         grpcapi/pb/hypershell/v1/gateway_networks_grpc.pb.go: a17a74dfdb0bb5df5645f5a363c76044c040573ccfe5e36d8ec6ac037d53af6c
         grpcapi/pb/hypershell/v1/gateway_releases.pb.go: fa323b2558aca9f9c3b38059102bae3836f12afecae40e158c80f9aaa8f42dd6
         grpcapi/pb/hypershell/v1/gateway_releases_grpc.pb.go: f36e68264492625508c714e182c33ff3e1c7b42df7b56a3b1f0152db06847156
-        grpcapi/pb/hypershell/v1/gateways.pb.go: 7f996a9b3d603b6ec777ca40423eee10398eca79ba24f0535c81e8e802d09333
+        grpcapi/pb/hypershell/v1/gateways.pb.go: c940cdf741c6129b8794acb2319295cca83faa1301cfc82c69c8957938a81a5f
         grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
         grpcapi/pb/hypershell/v1/managed_clusters.pb.go: d23a61cecd3af2a4ca6295cc6d7b030c08a2665bbe077794232b66bbddcd7ebd
         grpcapi/pb/hypershell/v1/managed_clusters_grpc.pb.go: aa087866ba13e2a773645b22753cef3ae236746d962f720b0c19cd02b364cc93
-        grpcapi/pb/hypershell/v1/managed_databases.pb.go: 4c4f96b82ffb5feaa2e264582073a9662fc3f1fbc0477ed1f57f125cd544e486
-        grpcapi/pb/hypershell/v1/managed_databases_grpc.pb.go: b4390743b458806268c2ac498468fe64a0b0530a336c87a2714348e229fbe4d5
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
         grpcapi/process/health.go: 993deafa82b3695780ab3b0a923db9b80cb5038165997f97d9b57c4ca99eba86
@@ -562,36 +492,39 @@ last_applied:
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         kubernetes/watch_set.go: 8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47
-        main.go: f1c29ed7b7c8542a21c373d084fc6b940ff1f204f1d5e31360eb49c585cf493b
+        main.go: b97743f310382b253e9960e1963592d7e8059b69d7a9cb1e81f19dbbd38bb403
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
         outbox/queue.go: a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f
+        outbox/schema.go: b8fc87fd5109f5f7ba99383d51785a90f2468755b8f49b56951d138f5f9f5c45
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
-        postgres/client.go: 58d82cdcb3c86fa149fe1bbf6015e3e30f776b894084137f22bcb6cd3252f58c
-        sdk/api.go: 37bf29cf669f9630664bd743186fa2dfbd4be21a1fdf6edfbdf578bd817c4c4d
+        postgres/client.go: dde40af3259df8263c647c912cbe7119442b70982007a1e6298d0041cd34f5b8
+        postgres/provision.go: af9e0809b31a68e883b6669af0375b796a5eb73981c4dcbb8c9d536f6aefc91f
+        sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
-        sdk/internal/wire/api.go: 00c3ebbb3be98c38dc4d536ebd897591c7c1b8e1f4856a00af682b549f40779f
-        search/field_map.go: 96384a1e941c1ef3bc941d8bbb364b34cfc152d974a91fa4e4c2be3983f0a6c3
+        sdk/internal/wire/api.go: 479a8e76dbb0c6e7f93f4b9a31bafce2eabcebe05b6ad582c7fb741fd72f30d2
+        search/field_map.go: 58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
-        storage/checkpoints.go: dc308df35390c5b13e4751691060b0c9d2033988a25c35df9e96fc386a0ae323
-        storage/cleanup_summary.go: ba0a3a6224f8035bd137e854d400c547f4de86352e9e5ca433631a59fbb8c72f
+        storage/checkpoints.go: 75df704470c3ddc5dd4ba29ff9b73acedf4a3fde7885600b52db656af03206fd
+        storage/cleanup_summary.go: 4b18dc9750db136dcecd65990ea9efc4e4727c608c555ed7ffcf0bf9178e56ee
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
-        storage/cursor.go: f16bf7b76a0574a4e2d45196631eb35e6f5f4710223be39f62d52c1306ca8052
+        storage/cursor.go: 2a8499a29f1b616a8358212e47da5aefef9c1240166615f404395fec7d96d109
         storage/database.go: 280f46b5c6e04748a3d4c284545bcc46a0c3d0b966d9019469e60030b0e12e24
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
-        storage/migrate.go: db7405fbb5805404ad23f7da3119c969fa70141f72539ce0b58421e4d05509f9
-        storage/migrations/000002_resource_versions.sql: af003e055f7110f1fe6c4dbff36be276ed2996fe29fc9d70e7f34162dd33c74e
-        storage/migrations/000003_resource_generations.sql: af003e055f7110f1fe6c4dbff36be276ed2996fe29fc9d70e7f34162dd33c74e
-        storage/migrations/000004_resource_cleanup.sql: af003e055f7110f1fe6c4dbff36be276ed2996fe29fc9d70e7f34162dd33c74e
-        storage/migrations/000005_cleanup_targets.sql: af003e055f7110f1fe6c4dbff36be276ed2996fe29fc9d70e7f34162dd33c74e
+        storage/migrate.go: 752a082bf74ffbcbe2ef740849cccbf3e4eb044fe40d19a368841974fa0d2ff3
+        storage/migrations/000002_resource_versions.sql: 8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304
+        storage/migrations/000003_resource_generations.sql: 8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304
+        storage/migrations/000004_resource_cleanup.sql: 8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304
+        storage/migrations/000005_cleanup_targets.sql: 8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304
         storage/migrations/000006_scan_checkpoints.sql: 148a9b3aa6ac989ce458b5d878e6f5b250ecc1f10762331dd1df0adcc82e9f95
-        storage/migrations/000007_resource_conditions.sql: af003e055f7110f1fe6c4dbff36be276ed2996fe29fc9d70e7f34162dd33c74e
-        storage/models.go: d6d6d02f67f94e73a76070025698dba8ac0daab46f4664532a8a31ad340849c0
+        storage/migrations/000007_resource_conditions.sql: 8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304
+        storage/models.go: 335a6c44188cdccdee083278af825e4c165ad53fa32c181a2cf33471da67fb6b
+        storage/schema_generation.go: 6b65cbec70ee70f22c56f65d1e63d9e5245d41b3902e5a5cd324a5947f7f34eb
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 468ed512ccb02fa69a0c9c9a3cff0a49a0186e5d36a3fb606b643217a2cafd43
-        storage/transaction.go: 301b53e6f059e20def3d995707cee36b658e1c33550fcf0e5352638b181bf551
-        storage/versions.go: 60f225ccf4355598be4f8cab82914613827ae35bf33c4dde83c94627f9bbdf28
+        storage/store.go: 45b983870e49600ddd00309b0315384adada3f276fb7dc6a938b13a58ac58ce3
+        storage/transaction.go: a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721
+        storage/versions.go: 42d36a362826e411786ee08d56c51a39948ae901fa632a802f01fd4caa6d128c
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
@@ -602,6 +535,6 @@ last_applied:
         tracing/runtime.go: eec2c4b3f54d4dc9b9a4955c963e8fce80370d9fc2107b53a2f15d31135dbb92
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
-        tssdk/index.d.ts: f18111d048685ea2010c0561218f81ad035190b591ef2c586c58e5cc68a859b1
-        tssdk/index.js: 3b4a2125d3f494fdd6f48b01df23603d3216938d6208f57ebe8b7a34de8b2dc8
+        tssdk/index.d.ts: 316c2a67341f9afcded25f44e60cd1249cd6ab2473ee47bc575b6a77503aa1f6
+        tssdk/index.js: 33e4b98ac44883eeee4114517c351489b6808a7563762e5ee3285b830d3f71fc
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

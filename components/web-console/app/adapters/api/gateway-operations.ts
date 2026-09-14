@@ -150,7 +150,6 @@ function toGatewayRecord(gateway: Gateway): GatewayRecord {
     ...(consoleUrl ? { consoleUrl } : {}),
     ...(gateway.created_at ? { createdAt: gateway.created_at } : {}),
     ...(createdBy ? { createdBy } : {}),
-    databaseId: gateway.database_id,
     externalDns:
       optionalString(gateway.external_dns) ||
       endpointFromRouteAddress(gateway.route_address),

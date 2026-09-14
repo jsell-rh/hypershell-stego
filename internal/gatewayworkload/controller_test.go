@@ -15,15 +15,7 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
-
-func localRecords(t *testing.T) (*pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) {
-	t.Helper()
-	gw, db, release := records(t)
-	db.Provider, db.ClusterId = "cnpg", proto.String(gw.ClusterId)
-	return gw, db, release
-}
 
 type stateFixture struct {
 	control.GatewayIdentityServiceClient
@@ -52,40 +44,6 @@ func (f *apiFixture) UpdateGateway(_ context.Context, r *pb.UpdateGatewayRequest
 	return &pb.UpdateGatewayResponse{}, f.err
 }
 
-type databaseFixture struct {
-	pb.ManagedDatabaseServiceClient
-	row       *pb.ManagedDatabase
-	err       error
-	deletes   int
-	deleteErr error
-	header    metadata.MD
-}
-
-func (f *databaseFixture) DeleteManagedDatabase(context.Context, *pb.DeleteManagedDatabaseRequest, ...grpc.CallOption) (*pb.DeleteManagedDatabaseResponse, error) {
-	f.deletes++
-	return &pb.DeleteManagedDatabaseResponse{}, f.deleteErr
-}
-
-func (f *databaseFixture) GetManagedDatabase(ctx context.Context, _ *pb.GetManagedDatabaseRequest, options ...grpc.CallOption) (*pb.GetManagedDatabaseResponse, error) {
-	md, _ := metadata.FromOutgoingContext(ctx)
-	if len(md.Get("resource-read-mode")) != 1 || md.Get("resource-read-mode")[0] != "retained-v1" {
-		return nil, status.Error(codes.InvalidArgument, "retained read required")
-	}
-	header := metadata.Pairs("resource-version", "1", "resource-deleted", "false", "hypershell-database-placement", "cluster-v1")
-	if f.row.GetProvider() == "cnpg" || f.row.GetProvider() == "external" {
-		header.Set("hypershell-database-cluster-id", testClusterID)
-	}
-	if f.header != nil {
-		header = f.header.Copy()
-	}
-	for _, option := range options {
-		if h, ok := option.(grpc.HeaderCallOption); ok {
-			*h.HeaderAddr = header
-		}
-	}
-	return &pb.GetManagedDatabaseResponse{ManagedDatabase: f.row}, f.err
-}
-
 type releaseFixture struct {
 	pb.GatewayReleaseServiceClient
 	row *pb.GatewayRelease
@@ -99,11 +57,12 @@ type providerFixture struct {
 	target           string
 	unassigned       bool
 	creates, deletes int
+	sqlDeletes       int
 	err              error
 }
 
 func workloadHistory(target string) map[string]*control.CleanupTargetObservations {
-	return map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{target: false}}}
+	return map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{target: false}}, "sql": {Targets: map[string]bool{target: true}}}
 }
 func (f *providerFixture) CleanupTarget() string {
 	if f.target != "" {
@@ -115,24 +74,28 @@ func (f *stateFixture) ObserveGatewayCleanup(ctx context.Context, r *control.Obs
 	f.observations++
 	md, _ := metadata.FromOutgoingContext(ctx)
 	versions := md.Get("if-resource-version")
-	if len(versions) != 1 || versions[0] != strconv.FormatInt(f.state.ResourceVersion, 10) || r.Owner != "workload" || r.Target != testClusterID || r.Id != f.state.Gateway.Metadata.Id {
+	if len(versions) != 1 || versions[0] != strconv.FormatInt(f.state.ResourceVersion, 10) || (r.Owner != "workload" && r.Owner != "sql") || r.Target != testClusterID || r.Id != f.state.Gateway.Metadata.Id {
 		return nil, status.Error(codes.InvalidArgument, "invalid target observation")
 	}
 	if f.conflict {
 		return nil, status.Error(codes.Aborted, "resource changed")
 	}
-	f.state.CleanupTargets["workload"].Targets[r.Target] = r.Complete
+	f.state.CleanupTargets[r.Owner].Targets[r.Target] = r.Complete
 	f.state.ResourceVersion++
 	return &control.ObserveGatewayCleanupResponse{}, nil
 }
 func (f *providerFixture) Handles(*pb.Gateway) bool { return !f.unassigned }
 
-func (f *providerFixture) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
+func (f *providerFixture) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
 	f.creates++
 	return f.err
 }
-func (f *providerFixture) Delete(context.Context, *pb.Gateway, *pb.ManagedDatabase) error {
+func (f *providerFixture) Delete(context.Context, *pb.Gateway) error {
 	f.deletes++
+	return f.err
+}
+func (f *providerFixture) DeleteDatabase(context.Context, *pb.Gateway) error {
+	f.sqlDeletes++
 	return f.err
 }
 func (f *providerFixture) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
@@ -153,13 +116,17 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			provider := new(providerFixture)
 			api := new(apiFixture)
-			c, err := New(api, &stateFixture{state: tc.state, err: tc.err}, &databaseFixture{err: status.Error(codes.NotFound, "already deleted")}, new(releaseFixture), provider)
+			c, err := New(api, &stateFixture{state: tc.state, err: tc.err}, new(releaseFixture), provider)
 			if err != nil {
 				t.Fatal(err)
 			}
 			err = c.reconcile(context.Background(), "gateway")
-			if err == nil || provider.deletes != 0 {
-				t.Fatal("unsafe deletion without current database state", err)
+			if tc.name == "deleted" {
+				if err != nil || provider.deletes != 1 {
+					t.Fatal("retained Gateway cleanup did not run", err)
+				}
+			} else if err == nil || provider.deletes != 0 {
+				t.Fatal("unsafe deletion without current Gateway state", err)
 			}
 
 			if provider.creates != 0 || api.updates != 0 {
@@ -170,51 +137,48 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 }
 
 func TestGatewayCleanupRetainsTheSharedDatabaseServer(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	provider := &providerFixture{err: ErrPending}
-	database := &databaseFixture{row: db}
 	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), Gateway: gw, ResourceVersion: 1, ResourceGeneration: 1, Deleted: true}}
-	c, err := New(new(apiFixture), state, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || database.deletes != 0 || provider.deletes != 1 {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || provider.deletes != 1 {
 		t.Fatal("pending SQL cleanup was lost", err)
 	}
 	provider.err = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || database.deletes != 0 || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
 		t.Fatal("cleanup did not retain the shared server", err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || database.deletes != 0 || provider.deletes != 3 {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 3 || provider.sqlDeletes != 0 {
 		t.Fatal("late-effect check changed the shared server", err)
 	}
 }
 
 func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	for _, deleted := range []bool{false, true} {
 		provider := &providerFixture{unassigned: true, target: "other"}
-		database := &databaseFixture{row: db}
 		api := new(apiFixture)
-		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: deleted}}, database, &releaseFixture{row: release}, provider)
+		c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: deleted}}, &releaseFixture{row: release}, provider)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 0 || database.deletes != 0 || api.updates != 0 {
+		if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 0 || api.updates != 0 {
 			t.Fatal("unassigned Gateway caused a write", err)
 		}
 	}
 }
 func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	ready := "Healthy"
 	running := "Running"
 	gw.Phase = &running
 	gw.Status = &ready
 	provider := &providerFixture{err: ErrPending}
 	api := new(apiFixture)
-	database := &databaseFixture{row: db}
-	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(api, &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw}}, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -252,22 +216,17 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.desired != "Healthy" || api.phase != "Running" {
 		t.Fatal("legacy health state was not repaired", err)
 	}
-	database.err = status.Error(codes.NotFound, "database missing")
-	before = provider.creates
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || (api.desired != "WorkloadUnavailable" || api.phase != "Degraded") || provider.creates != before {
-		t.Fatal("missing database reached provider", err)
-	}
+
 }
 
 func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	provider := &providerFixture{unassigned: true}
-	database := &databaseFixture{row: db}
-	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, database, &releaseFixture{row: release}, provider)
+	c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, ObservedGeneration: 1, Gateway: gw, Deleted: true}}, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 1 || database.deletes != 0 {
+	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 1 {
 		t.Fatal("former cluster retained deleted Gateway", err)
 	}
 }
@@ -296,7 +255,7 @@ func TestRecoveryScanRejectsInvalidPages(t *testing.T) {
 	id := ksuid.New().String()
 	for _, page := range [][]string{{"invalid"}, {id, "invalid"}, {id, ksuid.Nil.String()}, {id, id}, make([]string, 101)} {
 		state := &recoveryFixture{pages: [][]string{page}}
-		c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
+		c, _ := New(new(apiFixture), state, new(releaseFixture), new(providerFixture))
 		emitted := 0
 		if err := c.seed(context.Background(), func(string) error { emitted++; return nil }); err == nil {
 			t.Fatal("invalid page was accepted")
@@ -313,7 +272,7 @@ func TestRecoveryScanAdvancesAcrossPages(t *testing.T) {
 	}
 	slices.Sort(ids)
 	state := &recoveryFixture{pages: [][]string{ids[:100], ids[100:]}}
-	c, _ := New(new(apiFixture), state, new(databaseFixture), new(releaseFixture), new(providerFixture))
+	c, _ := New(new(apiFixture), state, new(releaseFixture), new(providerFixture))
 	queue := make(chan string, QueueCapacity)
 	if err := c.seed(context.Background(), func(id string) error { queue <- id; return nil }); err != nil {
 		t.Fatal(err)
@@ -357,7 +316,7 @@ func (s *slowRecovery) GetGatewayIdentityState(_ context.Context, r *control.Get
 func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 	id := ksuid.New().String()
 	state := &slowRecovery{recoveryFixture: recoveryFixture{pages: [][]string{{id}}, delay: ResyncInterval + 100*time.Millisecond}, observed: make(chan string, 1)}
-	c, _ := New(new(recoveryAPI), state, &databaseFixture{err: status.Error(codes.NotFound, "absent")}, new(releaseFixture), new(providerFixture))
+	c, _ := New(new(recoveryAPI), state, new(releaseFixture), new(providerFixture))
 	ctx, cancel := context.WithTimeout(context.Background(), ResyncInterval+5*time.Second)
 	defer cancel()
 	done := make(chan error, 1)
@@ -381,13 +340,13 @@ func TestRecoveryScanCanExceedTheResyncInterval(t *testing.T) {
 }
 
 func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	healthy, running := "Healthy", "Running"
 	gw.Status, gw.Phase = &healthy, &running
 	state := &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), Gateway: gw, ResourceVersion: 9, ResourceGeneration: 2, ObservedGeneration: 1}
 	api := new(apiFixture)
 	provider := new(providerFixture)
-	c, err := New(api, &stateFixture{state: state}, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+	c, err := New(api, &stateFixture{state: state}, &releaseFixture{row: release}, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,67 +364,56 @@ func (f *recoveryFixture) ObserveGatewayCleanup(context.Context, *control.Observ
 }
 
 func TestTargetCleanupRetriesAndChecksLateEffects(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	provider := &providerFixture{unassigned: true}
 	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: true}, conflict: true}
-	c, _ := New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted || provider.deletes != 1 {
-		t.Fatal("stale target observation was accepted", err)
+	c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted {
+		t.Fatal("stale target observation accepted", err)
 	}
 	state.conflict = false
-	// The provider still identifies this cluster after its last local object is gone.
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
-		t.Fatal("retry lost the recorded target", err)
-	}
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 3 || state.observations != 2 {
-		t.Fatal("completed target stopped checks or repeated a write", err)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil {
+		t.Fatal(err)
 	}
 	provider.err = ErrPending
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || state.state.CleanupTargets["workload"].Targets[testClusterID] {
-		t.Fatal("late effect did not reopen the target", err)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || state.state.CleanupTargets["workload"].Targets[testClusterID] || !state.state.CleanupTargets["sql"].Targets[testClusterID] {
+		t.Fatal("late workload effect lost its cleanup state", err)
 	}
 	provider.err = nil
-	c, _ = New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
-		t.Fatal("new controller did not recover its target", err)
+	c, _ = New(new(apiFixture), state, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || !state.state.CleanupTargets["workload"].Targets[testClusterID] || provider.sqlDeletes != 0 {
+		t.Fatal("restart repeated SQL cleanup or lost workload cleanup", err)
+	}
+}
+
+func TestSQLCleanupIsRecordedBeforeWorkloadCompletion(t *testing.T) {
+	gw, release := records(t)
+	provider := &providerFixture{}
+	history := workloadHistory(testClusterID)
+	history["sql"].Targets[testClusterID] = false
+	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: history, ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: true}, conflict: true}
+	c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted || provider.sqlDeletes != 1 || history["sql"].Targets[testClusterID] {
+		t.Fatal("SQL cleanup lost its uncommitted state", err)
+	}
+	state.conflict = false
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || !history["sql"].Targets[testClusterID] || history["workload"].Targets[testClusterID] {
+		t.Fatal("SQL cleanup was not recorded separately", err)
+	}
+	c, _ = New(new(apiFixture), state, &releaseFixture{row: release}, provider)
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || provider.deletes != 1 || !history["workload"].Targets[testClusterID] {
+		t.Fatal("workload cleanup repeated SQL after restart", err)
 	}
 }
 
 func TestMissingTargetHistoryStopsProviderWork(t *testing.T) {
-	gw, db, release := localRecords(t)
+	gw, release := records(t)
 	for _, deleted := range []bool{false, true} {
 		provider := new(providerFixture)
 		state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: deleted}}
-		c, _ := New(new(apiFixture), state, &databaseFixture{row: db}, &releaseFixture{row: release}, provider)
+		c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
 		if err := c.reconcile(context.Background(), gw.Metadata.Id); err == nil || provider.creates != 0 || provider.deletes != 0 {
 			t.Fatal("missing history reached the provider", err)
 		}
-	}
-}
-
-func TestDatabasePlacementStopsGatewayProviderWork(t *testing.T) {
-	for _, tc := range []struct {
-		name   string
-		change func(metadata.MD)
-	}{
-		{"other cluster", func(h metadata.MD) { h.Set("hypershell-database-cluster-id", "000000000000000000000000002") }},
-		{"unassigned", func(h metadata.MD) { h.Delete("hypershell-database-cluster-id") }},
-		{"missing placement contract", func(h metadata.MD) { h.Delete("hypershell-database-placement") }},
-		{"deleted", func(h metadata.MD) { h.Set("resource-deleted", "true") }},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			gw, db, release := localRecords(t)
-			header := metadata.Pairs("resource-version", "1", "resource-deleted", "false", "hypershell-database-placement", "cluster-v1", "hypershell-database-cluster-id", testClusterID)
-			tc.change(header)
-			database := &databaseFixture{row: db, header: header}
-			provider := new(providerFixture)
-			c, err := New(new(apiFixture), &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), Gateway: gw, ResourceVersion: 1, ResourceGeneration: 1}}, database, &releaseFixture{row: release}, provider)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := c.reconcile(context.Background(), gw.Metadata.Id); err == nil || provider.creates != 0 || database.deletes != 0 {
-				t.Fatal("invalid database placement reached provider work", err)
-			}
-		})
 	}
 }

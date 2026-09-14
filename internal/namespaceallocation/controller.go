@@ -7,17 +7,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
-	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
-	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,31 +24,25 @@ type Allocator interface {
 type Controller struct {
 	allocator Allocator
 	state     control.GatewayIdentityServiceClient
-	databases pb.ManagedDatabaseServiceClient
 	sources   []runtime.Source[string]
 	cluster   string
 }
 
 var ErrPending = errors.New("namespace cleanup is pending")
 
-// New connects both resource streams to one generated queue and telemetry scope.
-// Database placement comes from the authorized retained read.
-func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, databases pb.ManagedDatabaseServiceClient) (*Controller, error) {
+// New connects Gateway state to the generated queue and telemetry scope.
+func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient) (*Controller, error) {
 	if _, err := gatewayworkload.Namespace(cluster); err != nil {
 		return nil, errors.New("namespace allocator requires a managed cluster ID")
 	}
-	if allocator == nil || state == nil || databases == nil {
+	if allocator == nil || state == nil {
 		return nil, errors.New("namespace allocator dependencies are required")
 	}
 	gatewaySource, err := gatewayworkload.Source(gatewaysAPI, state)
 	if err != nil {
 		return nil, err
 	}
-	databaseSource, err := databasecontroller.Source(databases)
-	if err != nil {
-		return nil, err
-	}
-	return &Controller{allocator: allocator, state: state, databases: databases, cluster: cluster, sources: []runtime.Source[string]{tag("gateway:", gatewaySource), tag("database:", databaseSource)}}, nil
+	return &Controller{allocator: allocator, state: state, cluster: cluster, sources: []runtime.Source[string]{tag("gateway:", gatewaySource)}}, nil
 }
 
 func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
@@ -75,7 +63,7 @@ func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
 	}}
 }
 
-// Run checks recorded database placement before allocation. A watch event
+// Run checks recorded Gateway placement before allocation. A watch event
 // is not authority to create or remove a namespace.
 func (c *Controller) Run(ctx context.Context, metrics *runtime.Metrics) error {
 	return runtime.RunKeyedWatches(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
@@ -103,56 +91,38 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 		if history == nil {
 			return errors.New("Gateway allocation has no cleanup history")
 		}
-		_, recorded := history.GetTargets()[c.cluster]
+		complete, recorded := history.GetTargets()[c.cluster]
+		stateName, err := gatewayworkload.StateNamespace(id)
+		if err != nil {
+			return err
+		}
 		if response.GetDeleted() || gw.GetClusterId() != c.cluster {
 			if !recorded {
 				return nil
 			}
-			return c.remove(ctx, "gateway", name, id)
+			if err := c.remove(ctx, "gateway", name, id); err != nil {
+				return err
+			}
+			sqlHistory := response.GetCleanupTargets()["sql"]
+			if sqlHistory == nil {
+				return errors.New("Gateway allocation has no SQL cleanup history")
+			}
+			sqlComplete, sqlRecorded := sqlHistory.GetTargets()[c.cluster]
+			if !sqlRecorded {
+				return errors.New("Gateway SQL cleanup placement is not recorded")
+			}
+			if !complete || !sqlComplete {
+				return ErrPending
+			}
+			return c.remove(ctx, "gateway-state", stateName, id)
 		}
 		if !recorded {
 			return errors.New("Gateway placement is not recorded")
 		}
+		if err := c.allocator.Ensure(ctx, "gateway-state", stateName, id); err != nil {
+			return err
+		}
 		return c.allocator.Ensure(ctx, "gateway", name, id)
-	case "database":
-		read, err := rpc.WithRetainedResourceRead(ctx)
-		if err != nil {
-			return err
-		}
-		var header metadata.MD
-		response, err := c.databases.GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header))
-		if err != nil {
-			return err
-		}
-		db := response.GetManagedDatabase()
-		if db.GetMetadata().GetId() != id {
-			return errors.New("database allocation state has a different ID")
-		}
-		_, deleted, err := rpc.ObservedResourceState(header)
-		if err != nil {
-			return err
-		}
-		if db.GetProvider() != gateways.ProviderCNPG {
-			return nil
-		}
-		name, err := gateways.DatabaseNamespace(id)
-		if err != nil || db.GetNamespace() != name {
-			return errors.New("database allocation namespace is invalid")
-		}
-		cluster, err := databaseplacement.Read(header)
-		if err != nil {
-			return err
-		}
-		if _, err := databaseplacement.Target(db.GetProvider(), cluster); err != nil || cluster != db.GetClusterId() {
-			return errors.New("database has no verified cluster placement")
-		}
-		if cluster != c.cluster {
-			return nil
-		}
-		if deleted {
-			return c.remove(ctx, "database", name, id)
-		}
-		return c.allocator.Ensure(ctx, "database", name, id)
 	default:
 		return errors.New("namespace work key has an unknown resource kind")
 	}

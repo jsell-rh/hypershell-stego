@@ -15,6 +15,7 @@ import (
 	placement "github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/roles"
+	_ "github.com/jsell-rh/hypershell-stego/internal/schema"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
@@ -38,7 +39,6 @@ type Gateway struct {
 	Name               string   `json:"name"`
 	ClusterID          string   `json:"cluster_id"`
 	ReleaseID          string   `json:"release_id"`
-	DatabaseID         string   `json:"database_id"`
 	Namespace          string   `json:"namespace"`
 	ExternalDNS        *string  `json:"external_dns,omitempty"`
 	TLSMode            *string  `json:"tls_mode,omitempty"`
@@ -252,7 +252,7 @@ func present(row model.Gateway, creator string) (Gateway, error) {
 			return Gateway{}, errors.New("stored server DNS names are invalid")
 		}
 	}
-	return Gateway{Reference: Reference{ID: row.ID, Kind: "Gateway", Href: collectionPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, ClusterID: row.ClusterID, ReleaseID: row.ReleaseID, DatabaseID: row.DatabaseID, Namespace: row.Namespace,
+	return Gateway{Reference: Reference{ID: row.ID, Kind: "Gateway", Href: collectionPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, ClusterID: row.ClusterID, ReleaseID: row.ReleaseID, Namespace: row.Namespace,
 		ExternalDNS: row.ExternalDns, TLSMode: row.TlsMode, ServiceType: row.ServiceType, Status: row.Status, Phase: row.Phase, Image: row.Image, SupervisorImage: row.SupervisorImage, ServerDNSNames: names, RouteAddress: row.RouteAddress, ConsoleAddress: row.ConsoleAddress, OIDC: row.Oidc, Route: row.Route, CredentialDriver: row.CredentialDriver, ActiveSandboxCount: row.ActiveSandboxCount, CreatedBy: creator}, nil
 }
 

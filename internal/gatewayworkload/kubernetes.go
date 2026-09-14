@@ -13,10 +13,9 @@ import (
 	"errors"
 	"io"
 	"net/http"
-	"net/url"
 	"os"
+	"path/filepath"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -26,7 +25,7 @@ type object = kube.Object
 type Options struct {
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
-	CNPGDialAddress                                        string
+	DatabaseConfigFile                                     string
 	ClusterID                                              string
 	ServerURL, CAFile, TokenFile, ClusterIssuer            string
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
@@ -39,8 +38,8 @@ type Kubernetes struct {
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
-	if err := validateCNPGDialAddress(o.CNPGDialAddress); err != nil {
-		return nil, err
+	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" {
+		return nil, errors.New("Gateway controller requires an explicit database file and control namespace")
 	}
 	if _, err := Namespace(o.ClusterID); err != nil {
 		return nil, errors.New("Gateway controller requires a managed cluster ID")
@@ -120,11 +119,11 @@ func (k *Kubernetes) ensure(ctx context.Context, path string, desired object, id
 	return k.client.Ensure(ctx, path, desired, owner(id))
 }
 
-func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase, release *pb.GatewayRelease) error {
+func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.GatewayRelease) error {
 	if !k.Handles(gw) {
 		return errors.New("Gateway belongs to a different managed cluster")
 	}
-	oidc, err := validate(gw, db, release, k.options.Issuer)
+	oidc, err := validate(gw, release, k.options.Issuer)
 	if err != nil {
 		return err
 	}
@@ -140,20 +139,17 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 			return err
 		}
 	}
-	keys, err := k.keys(ctx, gw, db)
+	state, databaseConfig, err := k.localState(ctx, gw)
 	if err != nil {
 		return err
 	}
-	dbData, err := k.databaseCredentials(ctx, gw, db)
+	keys := object{}
+	for _, key := range []string{"signing.pem", "public.pem", "kid", "key-encryption-key"} {
+		keys[key] = kube.String(state, "data", key)
+	}
+	dbData, err := k.databaseCredentials(ctx, gw, state, databaseConfig)
 	if err != nil {
 		return err
-	}
-	if k.allocation == nil {
-		namespace := definition("v1", "Namespace", ns, id)
-		namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
-		if _, err = k.ensure(ctx, "/api/v1/namespaces", namespace, id); err != nil {
-			return err
-		}
 	}
 	core := "/api/v1/namespaces/" + ns
 	for name, values := range map[string]object{keysName: keys, "openshell-gateway-db-credentials": dbData} {
@@ -267,118 +263,41 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 }
 func sha256sum(value []byte) []byte { sum := sha256.Sum256(value); return sum[:] }
 
-func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) error {
-	if err := k.validateCleanupDatabase(gw, db); err != nil {
-		return err
+func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
+	if !k.Handles(gw) {
+		return errors.New("Gateway cleanup belongs to a different cluster")
 	}
 	id := gw.GetMetadata().GetId()
 	ns, err := Namespace(id)
-	if err != nil {
-		return err
+	if err != nil || ns != gw.GetNamespace() {
+		return errors.New("Gateway cleanup namespace is invalid")
 	}
-	if k.allocation != nil {
-		gone, err := k.allocation.NamespaceGone(ctx, "gateway", ns, id)
-		if err != nil {
-			return err
-		}
-		if !gone {
-			return ErrPending
-		}
-		return k.deleteSharedDatabase(ctx, gw, db)
+	if k.allocation == nil {
+		return errors.New("Gateway cleanup requires namespace allocation")
 	}
-	sandboxNS, _ := SandboxNamespace(id)
-	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+sandboxNS, owner(id))
+	gone, err := k.allocation.NamespaceGone(ctx, "gateway", ns, id)
 	if err != nil {
 		return err
 	}
 	if !gone {
 		return ErrPending
 	}
-	for _, path := range []string{admissionAPI + "/validatingadmissionpolicybindings/", admissionAPI + "/validatingadmissionpolicies/", mutationAPI + "/mutatingadmissionpolicybindings/", mutationAPI + "/mutatingadmissionpolicies/"} {
-		gone, err := k.client.DeleteOwned(ctx, path+sandboxNS, owner(id))
-		if err != nil {
-			return err
-		}
-		if !gone {
-			return ErrPending
-		}
-	}
-	// Remove the cluster binding before the namespace. Namespace deletion removes
-	// namespaced resources. The database retains the durable encryption keys.
-	for _, path := range []string{"/apis/rbac.authorization.k8s.io/v1/clusterrolebindings/" + ns, "/apis/rbac.authorization.k8s.io/v1/clusterroles/" + ns, "/api/v1/namespaces/" + ns} {
-		gone, err := k.client.DeleteOwned(ctx, path, owner(id))
-		if err != nil {
-			return err
-		}
-		if !gone {
-			return ErrPending
-		}
-	}
-	return k.deleteSharedDatabase(ctx, gw, db)
+	return nil
 }
 
-func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {
-	// Allocated resources use retained API records for recovery. The resource
-	// worker has no cluster-wide namespace or binding inventory permission.
-	if k.allocation != nil {
-		return nil, nil
+// DeleteDatabase waits for workload removal and retains the destination until
+// STEGO has durably removed the SQL database and login.
+func (k *Kubernetes) DeleteDatabase(ctx context.Context, gw *pb.Gateway) error {
+	if err := k.Delete(ctx, gw); err != nil {
+		return err
 	}
-	seen := map[string]bool{}
-	ids := []string{}
-	for _, scan := range []struct {
-		collection, selector string
-		database             bool
-	}{
-		{"/api/v1/namespaces", managerLabel + "=" + manager, false},
-		{"/apis/rbac.authorization.k8s.io/v1/clusterrolebindings", managerLabel + "=" + manager, false},
-		{"/apis/rbac.authorization.k8s.io/v1/clusterroles", managerLabel + "=" + manager, false},
-		{"/api/v1/namespaces", managerLabel + "=hypershell-database-controller," + ownerLabel, true},
-	} {
-		cursor := ""
-		for page := 0; page < 100; page++ {
-			query := url.Values{"limit": {"100"}, "labelSelector": {scan.selector}, "continue": {cursor}}
-			list, _, err := k.client.Request(ctx, http.MethodGet, scan.collection+"?"+query.Encode(), nil)
-			if err != nil {
-				return nil, err
-			}
-			items, ok := list["items"].([]any)
-			if !ok || len(items) > 100 {
-				return nil, errors.New("Gateway resource inventory is invalid")
-			}
-			for _, item := range items {
-				row, ok := item.(map[string]any)
-				if !ok {
-					return nil, errors.New("Gateway resource inventory is invalid")
-				}
-				id := kube.String(row, "metadata", "labels", ownerLabel)
-				ns, err := Namespace(id)
-				matches := owner(id).Matches(row)
-				if scan.database {
-					dbID := kube.String(row, "metadata", "labels", "hypershell.redhat.io/database-id")
-					var dbErr error
-					ns, dbErr = gateways.DatabaseNamespace(dbID)
-					matches = dbErr == nil && databaseOwner(dbID).Matches(row)
-				}
-				sandboxNS, _ := SandboxNamespace(id)
-				name := kube.String(row, "metadata", "name")
-				validName := name == ns || (!scan.database && scan.collection == "/api/v1/namespaces" && name == sandboxNS)
-				if err != nil || !validName || !matches {
-					return nil, errors.New("Gateway resource inventory has invalid ownership")
-				}
-				if !seen[id] {
-					seen[id] = true
-					ids = append(ids, id)
-				}
-			}
-			next := kube.String(list, "metadata", "continue")
-			if next == "" {
-				break
-			}
-			if next == cursor || page == 99 {
-				return nil, errors.New("Gateway resource inventory exceeds its limit")
-			}
-			cursor = next
-		}
+	state, config, err := k.readLocalState(ctx, gw)
+	if err != nil {
+		return err
 	}
-	return ids, nil
+	return k.deleteDatabase(ctx, gw, state, config)
 }
+
+// Retained API records supply recovery IDs. The resource worker has no
+// permission to list namespaces or credentials in other installations.
+func (k *Kubernetes) GatewayIDs(context.Context) ([]string, error) { return nil, nil }

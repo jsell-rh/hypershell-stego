@@ -81,7 +81,7 @@ func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, ve
 	if err := validatePrincipal(p); err != nil {
 		return err
 	}
-	if !s.isControlPlane(p) || (owner != "identity" && owner != "workload") || (owner == "identity" && target != "") || (owner == "workload" && !validID(target)) {
+	if !s.isControlPlane(p) || (owner != "identity" && owner != "workload" && owner != "sql") || (owner == "identity" && target != "") || ((owner == "workload" || owner == "sql") && !validID(target)) {
 		return ErrForbidden
 	}
 	if err := s.AuthorizeCleanup(p, "Gateway", owner, target); err != nil {
@@ -94,7 +94,7 @@ func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, ve
 		return ErrObservationRequired
 	}
 	return s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		if owner == "workload" {
+		if owner == "workload" || owner == "sql" {
 			writer, ok := tx.(store.TargetCleanupWriter)
 			if !ok {
 				return errors.New("Gateway storage does not support target cleanup")

@@ -36,20 +36,6 @@ entities:
       - { name: canary_percent, type: int32, optional: true, min: 0, max: 100 }
       - { name: canary_duration, type: string, optional: true, max_length: 64 }
       - { name: status, type: string, optional: true, max_length: 255 }
-  - name: ManagedDatabase
-    versioned: true
-    cleanup_owners: [provider]
-    fields:
-      - { name: name, type: string, min_length: 1, max_length: 261 }
-      - { name: provider, type: enum, values: [cnpg, external] }
-      - { name: namespace, type: string, min_length: 1, max_length: 29, unique: true }
-      - { name: region, type: string, optional: true, max_length: 255 }
-      - { name: engine, type: string, optional: true, max_length: 64 }
-      - { name: engine_version, type: string, optional: true, max_length: 64 }
-      - { name: instance_class, type: string, optional: true, max_length: 255 }
-      - { name: connection_secret, type: string, optional: true, max_length: 253 }
-      - { name: status, type: string, optional: true, max_length: 255 }
-      - { name: cluster_id, type: ref, to: ManagedCluster, optional: true }
   - name: GatewayNetwork
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
@@ -60,16 +46,15 @@ entities:
   - name: Gateway
     versioned: true
     conditions: {identity: [ClientReady], identity_users: [GrantsSynchronized]}
-    cleanup_owners: [identity, workload]
-    cleanup_targets: {workload: cluster_id}
-    generation_fields: [name, cluster_id, release_id, database_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, route_address, oidc, route, credential_driver]
+    cleanup_owners: [identity, workload, sql]
+    cleanup_targets: {workload: cluster_id, sql: cluster_id}
+    generation_fields: [name, cluster_id, release_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, route_address, oidc, route, credential_driver]
     observations:
       workload: [phase, status]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
       - { name: cluster_id, type: ref, to: ManagedCluster }
       - { name: release_id, type: ref, to: GatewayRelease }
-      - { name: database_id, type: ref, to: ManagedDatabase }
       - { name: namespace, type: string, unique: true, max_length: 26 }
       - { name: external_dns, type: string, optional: true }
       - { name: tls_mode, type: string, optional: true }
@@ -142,18 +127,10 @@ overrides:
         scope: namespace
         rules:
           - {api_group: "", resources: [pods], verbs: [get, list, watch]}
-      - name: database-worker
+      - name: gateway-state
         scope: namespace
         rules:
-          - {api_group: "", resources: [pods], verbs: [get]}
-          - {api_group: postgresql.cnpg.io, resources: [clusters], verbs: [get, create, patch]}
-      - name: database-keys
-        scope: namespace
-        rules:
-          - {api_group: "", resources: [secrets], verbs: [get, create, patch, delete]}
-          - {api_group: "", resources: [configmaps], verbs: [get, create, delete]}
-          - {api_group: postgresql.cnpg.io, resources: [clusters], verbs: [get, patch]}
-          - {api_group: postgresql.cnpg.io, resources: [databases], verbs: [get, create, patch, delete]}
+          - {api_group: "", resources: [secrets, configmaps], verbs: [get, create]}
       - name: gateway-worker
         scope: namespace
         rules:
@@ -190,36 +167,27 @@ overrides:
           - {role: gateway-reviews, service_account: openshell-gateway, namespace: allocated}
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
-      - name: database
-        namespace_prefix: openshell-db-
-        suffix_length: 16
-        owner_label: hypershell.redhat.io/database-id
-        manager: hypershell-database-controller
+      - name: gateway-state
+        identity_config_map: openshell-state-identity
+        identity_annotations:
+          - {field: sha256, key: hypershell.redhat.io/state-identity}
+        namespace_prefix: openshell-state-
+        suffix_length: 40
+        owner_label: hypershell.redhat.io/gateway-id
+        manager: hypershell-gateway-controller
         quota:
-          - {resource: pods, value: "2"}
-          - {resource: limits.cpu, value: "2"}
-          - {resource: limits.memory, value: 1Gi}
-          - {resource: limits.ephemeral-storage, value: 512Mi}
-          - {resource: requests.storage, value: 2Gi}
+          - {resource: pods, value: "0"}
+          - {resource: limits.cpu, value: "1"}
+          - {resource: limits.memory, value: 64Mi}
+          - {resource: limits.ephemeral-storage, value: 64Mi}
+          - {resource: requests.storage, value: "0"}
         bindings:
-          - {role: database-worker, service_account: hypershell-database, namespace: control}
-          - {role: database-keys, service_account: hypershell-gateway-workload, namespace: control}
-          - {external_role: cnpg-manager, service_account: cnpg-manager, namespace: external, external_namespace: cnpg-system}
+          - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}
     workers:
       - name: namespace-allocation
         namespace_allocator: true
         kubernetes_api: true
         package: internal/namespaceallocationapp
-        function: Run
-        external_endpoints: [kubernetes]
-        network_peers:
-          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
-          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
-      - name: database
-        kubernetes_api: true
-        kubernetes_permissions:
-          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get]}
-        package: internal/databaseapp
         function: Run
         external_endpoints: [kubernetes]
         network_peers:
@@ -231,9 +199,9 @@ overrides:
           - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get]}
         package: internal/gatewayworkloadapp
         function: Run
-        external_endpoints: [kubernetes]
+        external_endpoints: [kubernetes, gateway-postgres]
+        files_secret: hypershell-gateway-workload-files
         network_peers:
-          - {direction: egress, allocation_profile: database, pod_label: cnpg.io/cluster, pod_value: openshell-db, port: 5432, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: sandbox-count
@@ -257,7 +225,6 @@ overrides:
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-namespace-allocation, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-console, port: 8443, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-identity, port: 9090, protocol: TCP}
-      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-database, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-workload, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-sandbox-count, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
@@ -273,35 +240,28 @@ overrides:
     error_codes: [service_account_name_exists]
     document: contracts/extensions/openapi.yaml
     references:
-      - contracts/extensions/openapi.managedDatabases.yaml
       - contracts/extensions/openapi.gateways.yaml
-      - contracts/reference/openapi/openapi.yaml
-      - contracts/reference/openapi/openapi.gatewayNetworks.yaml
-      - contracts/reference/openapi/openapi.gatewayReleases.yaml
-      - contracts/reference/openapi/openapi.gateways.yaml
-      - contracts/reference/openapi/openapi.managedClusters.yaml
-      - contracts/reference/openapi/openapi.managedDatabases.yaml
-      - contracts/reference/openapi/openapi.roleBindings.yaml
-      - contracts/reference/openapi/openapi.roles.yaml
-      - contracts/reference/openapi/openapi.serviceAccounts.yaml
+      - contracts/extensions/openapi.gatewayNetworks.yaml
+      - contracts/extensions/openapi.gatewayReleases.yaml
+      - contracts/extensions/openapi.managedClusters.yaml
+      - contracts/extensions/openapi.roleBindings.yaml
+      - contracts/extensions/openapi.roles.yaml
+      - contracts/extensions/openapi.serviceAccounts.yaml
   go-sdk:
     document: contracts/extensions/openapi.yaml
     references:
-      - contracts/extensions/openapi.managedDatabases.yaml
       - contracts/extensions/openapi.gateways.yaml
-      - contracts/reference/openapi/openapi.yaml
-      - contracts/reference/openapi/openapi.gatewayNetworks.yaml
-      - contracts/reference/openapi/openapi.gatewayReleases.yaml
-      - contracts/reference/openapi/openapi.gateways.yaml
-      - contracts/reference/openapi/openapi.managedClusters.yaml
-      - contracts/reference/openapi/openapi.managedDatabases.yaml
-      - contracts/reference/openapi/openapi.roleBindings.yaml
-      - contracts/reference/openapi/openapi.roles.yaml
-      - contracts/reference/openapi/openapi.serviceAccounts.yaml
+      - contracts/extensions/openapi.gatewayNetworks.yaml
+      - contracts/extensions/openapi.gatewayReleases.yaml
+      - contracts/extensions/openapi.managedClusters.yaml
+      - contracts/extensions/openapi.roleBindings.yaml
+      - contracts/extensions/openapi.roles.yaml
+      - contracts/extensions/openapi.serviceAccounts.yaml
   health-check:
     database: true
   postgres-adapter:
-    migrations: external
+    migrations: startup
+    schema_generation: controller-local-v1
   jwt-auth:
     roles_claim: realm_access.roles
     mode: verifier
@@ -325,13 +285,9 @@ overrides:
         import_path: hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto
         import_path: hypershell/controlplane/v1/gateway_identity.proto
-      - path: contracts/controlplane/database_cleanup.proto
-        import_path: hypershell/controlplane/v1/database_cleanup.proto
       - path: contracts/reference/proto/hypershell/v1/managed_clusters.proto
         import_path: hypershell/v1/managed_clusters.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_releases.proto
         import_path: hypershell/v1/gateway_releases.proto
-      - path: contracts/extensions/managed_databases.proto
-        import_path: hypershell/v1/managed_databases.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_networks.proto
         import_path: hypershell/v1/gateway_networks.proto

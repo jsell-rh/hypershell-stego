@@ -32,7 +32,7 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if updated.Name != "changed" || updated.DatabaseID != created.DatabaseID || updated.Namespace != created.Namespace || updated.ExternalDns == nil || *updated.ExternalDns != "" || updated.SupervisorImage == nil || *updated.SupervisorImage != "supervisor:v2" || updated.CredentialDriver == nil || *updated.CredentialDriver != "driver-a" || string(updated.ServerDnsNames) != string(created.ServerDnsNames) || updated.ActiveSandboxCount == nil || *updated.ActiveSandboxCount != 4 || updated.ConsoleAddress == nil || *updated.ConsoleAddress != "https://console.example.test" {
+	if updated.Name != "changed" || updated.Namespace != created.Namespace || updated.ExternalDns == nil || *updated.ExternalDns != "" || updated.SupervisorImage == nil || *updated.SupervisorImage != "supervisor:v2" || updated.CredentialDriver == nil || *updated.CredentialDriver != "driver-a" || string(updated.ServerDnsNames) != string(created.ServerDnsNames) || updated.ActiveSandboxCount == nil || *updated.ActiveSandboxCount != 4 || updated.ConsoleAddress == nil || *updated.ConsoleAddress != "https://console.example.test" {
 		t.Fatalf("patch changed protected fields or lost values: %+v", updated)
 	}
 	if !updated.CreatedTime.Equal(created.CreatedTime) || !updated.UpdatedTime.After(created.UpdatedTime) {
@@ -165,7 +165,7 @@ func TestConcurrentChangeCannotBeOverwrittenByGatewayPatch(t *testing.T) {
 		t.Fatal(err)
 	}
 	read, release := make(chan struct{}), make(chan struct{})
-	service, err := gateways.New(pausedRepository{Repository: f.storage, read: read, release: release}, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
+	service, err := gateways.New(pausedRepository{Repository: f.storage, read: read, release: release}, gateways.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -210,7 +210,7 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller-subject"}, ControllerWritePolicy: controllerWritePolicy(t, "https://issuer.example", writeGrant("controller-subject", "configure.console", f.cluster))})
+	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller-subject"}, ControllerWritePolicy: controllerWritePolicy(t, "https://issuer.example", writeGrant("controller-subject", "configure.console", f.cluster))})
 	if err != nil {
 		t.Fatal(err)
 	}
