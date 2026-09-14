@@ -3,7 +3,6 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -81,22 +80,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	// unassigned database must not hide the Gateway's former cluster reference.
 	stop()
 	connection.Close()
-	if _, err := f.db.Exec(`ALTER TABLE managed_databases DROP CONSTRAINT hypershell_database_locality`); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.db.Exec(`UPDATE managed_databases SET cluster_id=NULL WHERE id=$1`, f.database); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.db.Exec(`UPDATE gateways SET cluster_id=$1 WHERE id=$2`, second, row.ID); err != nil {
-		t.Fatal(err)
-	}
-	migration, err := os.ReadFile("../migrations/000011_local_database_providers.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.db.ExecContext(ctx, string(migration)); err != nil {
-		t.Fatal(err)
-	}
+	restoreLegacyGatewayPlacement(t, f, row.ID, second)
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	root = address + "/api/hypershell/v1/gateways"
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)

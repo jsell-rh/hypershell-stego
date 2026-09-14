@@ -1,13 +1,14 @@
 # Gateway controller write permissions
 
 The API uses STEGO's generated exact grant policy for conditional Gateway
-patches. Hypershell maps its fields to these operations:
+patches and sandbox count calls. Hypershell maps its fields to these operations:
 
 | Operation | Fields | Target |
 | --- | --- | --- |
 | `observe.workload` | Both `phase` and `status` | Stored ManagedCluster ID |
 | `configure.identity` | `oidc` | Empty string |
 | `configure.console` | `console_address` | Stored ManagedCluster ID |
+| `observe.sandbox-count` | `active_sandbox_count`, through count RPCs | Stored ManagedCluster ID |
 
 Set `HYPERSHELL_CONTROLLER_WRITE_GRANTS` to a JSON array. For example:
 
@@ -23,11 +24,14 @@ Set `HYPERSHELL_CONTROLLER_WRITE_GRANTS` to a JSON array. For example:
 ]
 ```
 
-Each request requires a verified token, a subject in
+Each conditional patch requires a verified token, a subject in
 `HYPERSHELL_CONTROL_PLANE_SUBJECTS`, the current resource revision, and an exact
 grant. Missing grants deny writes. Invalid grant configuration stops API setup.
 Cleanup grants do not grant these operations. Roles and usernames do not replace
 the subject or grant checks. Grant changes require restart of every API instance.
+Count calls use the same subject and grant checks inside the Gateway row lock.
+They do not accept a caller-supplied revision. An exact count grant does not
+permit workload status, identity settings, or console address changes.
 
 Use separate subjects for identity and workload controllers. Give each workload
 subject only its required cluster grants. Processes that share a token share all
@@ -37,7 +41,8 @@ Each controller patch writes one field group. Mixed groups are invalid. Other
 controller patch fields and empty controller patches are denied. Workload and
 console checks use the current stored cluster in the mutation transaction.
 The request cannot change placement to obtain another target's permission.
-After an owner moves a Gateway, the former cluster's grant cannot update it.
+New moves that separate a Gateway from its database are denied. For retained
+data from an old move, the former cluster's grant cannot update the Gateway.
 
 OIDC settings are an input to workload reconciliation. An identity write still
 uses the revision check and advances the workload's desired generation. This
@@ -46,7 +51,9 @@ their existing access to these settings.
 
 `TestGatewayControllerWriteGrantsAcrossPlacementAndRestart` checks separate
 subjects, missing grants, cleanup-only grants, admin roles, field groups, cluster
-movement, REST bypass attempts, and revocation after restart with the same token.
+new-move denial, restored old placement, REST bypass attempts, and revocation
+after restart with the same token. Old placement is restored only with the API
+stopped; current database constraints are restored before startup.
 It checks unchanged Gateway state on denial. A test database trigger records
 committed Gateway events independently of outbox delivery. Successful writes
 must commit one Gateway event and deliver it through the generated runtime.
@@ -64,8 +71,8 @@ The generated policy remains in STEGO. This application contains only the field
 mapping, environment wiring, and transaction call. No new scheduler or policy
 engine is introduced here.
 
-This change covers conditional Gateway patches only. Other controller paths,
-including creation, deletion, counts, grants, catalog writes, and private reads,
+These checks cover conditional Gateway patches and sandbox counts. Other
+controller paths, including creation, deletion, grants, catalog writes, and private reads,
 still need a complete permission model. Conditional database patches now have
 their own [provider grant contract](database-write-permissions.md). Provider
 credentials and cross-process fencing remain separate open work.

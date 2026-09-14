@@ -14,11 +14,12 @@ import (
 
 func controllerService(t *testing.T, f *fixture) (*gateways.Service, gateways.Principal) {
 	t.Helper()
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
+	controller := principal("controller")
+	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{controller.Subject}, ControllerWritePolicy: controllerWritePolicy(t, controller.Issuer, writeGrant(controller.Subject, "observe.sandbox-count", f.cluster))})
 	if err != nil {
 		t.Fatal(err)
 	}
-	return service, principal("controller")
+	return service, controller
 }
 
 func TestSandboxCountTransitionsAndEvents(t *testing.T) {

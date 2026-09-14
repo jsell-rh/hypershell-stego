@@ -159,7 +159,7 @@ a separate operation grant. Other controller patch fields are denied.
 Conditional database patches require a
 [provider observation grant](acceptance/database-write-permissions.md) in the
 same setting. Only `status` and `connection_secret` are permitted, with the
-stored provider name as the grant target. A controller cannot change desired
+stored ManagedCluster ID as the grant target. A controller cannot change desired
 database settings through this path.
 
 Gateway deletion removes related provider clients before it commits the Gateway,
@@ -168,9 +168,12 @@ prevents concurrent account creation from escaping cleanup. Provider failure
 returns HTTP 503 or gRPC `Unavailable` and keeps the Gateway. See the
 [Gateway account cleanup workflow](acceptance/gateway-account-cleanup.md).
 
-The gRPC `AdjustActiveSandboxCount` and `SetActiveSandboxCount` methods now use
-STEGO's resource-locking transaction. Only configured control-plane subjects
-can call them. Owners, viewers, creators, and admins have no implicit access.
+The gRPC `AdjustActiveSandboxCount`, `SetActiveSandboxCount`, and private
+`SetObservedSandboxCount` methods use STEGO's resource-locking transaction.
+They require a configured control-plane subject and a `Gateway` /
+`observe.sandbox-count` grant for the locked Gateway's ManagedCluster ID in
+`HYPERSHELL_CONTROLLER_WRITE_GRANTS`. Other controller grants do not permit
+count changes. Owners, viewers, creators, and admins have no implicit access.
 The count is floored at zero. An unset count becomes zero on the first operation.
 An unchanged stored value emits no event. A missing or deleted namespace returns
 zero and emits no event. A result above the signed 32-bit limit returns gRPC

@@ -180,7 +180,7 @@ func testGatewayWorkload(t *testing.T, cnpg bool) {
 		databaseTarget = "cnpg"
 	}
 	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "ManagedDatabase", "provider", databaseTarget), cleanupGrant(controllerID, "ManagedDatabase", "record", f.cluster), cleanupGrant(controllerID, "Gateway", "identity", ""), cleanupGrant(controllerID, "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), databaseWriteGrant(controllerID, databaseTarget))
+	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""), writeGrant(controllerID, "observe.workload", f.cluster), writeGrant(controllerID, "observe.sandbox-count", f.cluster), databaseWriteGrant(controllerID, databaseTarget))
 	accountKey, accountAuth := issuer(t)
 	accountSettings, stopAccountProvider := startRealProvisioner(t, identityProvider, accountKey, accountAuth)
 	defer stopAccountProvider()

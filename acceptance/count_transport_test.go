@@ -28,10 +28,12 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	// Shared CNPG placement permits a cluster change without database migration.
-	settings = append(settings, "DATABASE_PROVIDER=cnpg", "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	foreign := ksuid.New().String()
+	settings = append(settings, "DATABASE_PROVIDER=cnpg", "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","second"]`)
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.sandbox-count", f.cluster), writeGrant("second", "observe.sandbox-count", foreign))
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	defer func() { stop() }()
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	observed := identitypb.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
@@ -41,6 +43,8 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	owner := token(t, key, "alice")
 	control := call(token(t, key, "controller"))
+	secondControl := call(token(t, key, "second"))
+	countCaller := control
 	created, err := client.CreateGateway(call(token(t, key, "alice", "gateway:creator")), &pb.CreateGatewayRequest{Name: "counts", ClusterId: f.cluster, ReleaseId: f.release})
 	if err != nil {
 		t.Fatal(err)
@@ -132,14 +136,13 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if !before.Gateway.Metadata.UpdatedAt.AsTime().Equal(after.Gateway.Metadata.UpdatedAt.AsTime()) || count(t, f.db, "stego_outbox.messages") != 0 {
 		t.Fatal("equal count changed state")
 	}
-	// A previous cluster cannot write after the Gateway moves. This check and
-	// the count change use the same row lock.
-	foreign := ksuid.New().String()
+	// A previous cluster cannot write after a recovered old move. This check and
+	// the count change use the same row lock. New remote moves remain forbidden.
 	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: foreign}, Name: "other-count-cluster", Provider: "kubernetes", KubeconfigSecret: "unused"}); err != nil {
 		t.Fatal(err)
 	}
 	setObserved := func(cluster string, count int32) error {
-		_, err := observed.SetObservedSandboxCount(control, &identitypb.SetObservedSandboxCountRequest{Namespace: namespace, ClusterId: cluster, Count: count})
+		_, err := observed.SetObservedSandboxCount(countCaller, &identitypb.SetObservedSandboxCountRequest{Namespace: namespace, ClusterId: cluster, Count: count})
 		return err
 	}
 	if err := setObserved(foreign, 8); status.Code(err) != codes.FailedPrecondition {
@@ -166,29 +169,39 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	updateEvent()
 	awaitQueueEmpty(t, f)
 	readCount(3)
-	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &foreign}); err != nil {
-		t.Fatal(err)
+	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &foreign}); status.Code(err) != codes.AlreadyExists {
+		t.Fatal("Gateway move bypassed database locality", err)
 	}
-	updateEvent()
-	awaitQueueEmpty(t, f)
-	if err := setObserved(f.cluster, 8); status.Code(err) != codes.FailedPrecondition {
+	readCount(3)
+	if count(t, f.db, "stego_outbox.messages") != 0 {
+		t.Fatal("denied move emitted an event")
+	}
+	restore := func(cluster string) {
+		t.Helper()
+		connection.Close()
+		stop()
+		restoreLegacyGatewayPlacement(t, f, id, cluster)
+		stop, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+		client, connection = grpcClient(t, grpcAddress, tlsIdentity)
+		observed = identitypb.NewGatewayIdentityServiceClient(connection)
+	}
+	restore(foreign)
+	if err := setObserved(f.cluster, 8); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("former cluster wrote count", err)
 	}
 	readCount(3)
 	if count(t, f.db, "stego_outbox.messages") != 0 {
 		t.Fatal("former cluster emitted an event")
 	}
+	countCaller = secondControl
 	if err := setObserved(foreign, 0); err != nil {
 		t.Fatal(err)
 	}
 	updateEvent()
 	awaitQueueEmpty(t, f)
 	readCount(0)
-	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &f.cluster}); err != nil {
-		t.Fatal(err)
-	}
-	updateEvent()
-	awaitQueueEmpty(t, f)
+	restore(f.cluster)
+	countCaller = control
 	const workers = 32
 	start := make(chan struct{})
 	values := make(chan int32, workers)

@@ -18,11 +18,19 @@ A periodic Gateway catalog read also finds Gateways with no active Pods. The
 controller sends absolute values from its cache, so repeated writes are safe.
 One writer prevents its own older write from overtaking a newer observation.
 
-The private `SetObservedSandboxCount` RPC checks the current Gateway cluster
-under the same row lock as the count change. A former cluster cannot change the
-count after a Gateway moves. Only configured control-plane subjects can call it.
-The count and update event commit together. Equal values emit no event. The
-public reference Adjust and Set APIs remain available to control-plane callers.
+All three count RPCs require a configured control-plane subject and an exact
+`Gateway` / `observe.sandbox-count` grant for the stored ManagedCluster ID.
+Set this grant in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. A workload, identity,
+console, or cleanup grant does not permit count changes. Neither an administrator
+role nor a count grant without the subject allowlist is sufficient.
+
+The grant check and count change use the same Gateway row lock. The private
+`SetObservedSandboxCount` RPC also checks the caller's cluster ID against the
+stored cluster. A former cluster cannot change the count after an old move is
+restored. New moves that would separate a Gateway from its database are denied.
+The count and update event commit together. Equal values emit no event.
+The reference Adjust and Set APIs use the same exact grant check, including
+when the requested value equals the stored value.
 
 Use one active count controller per managed cluster. Multiple independent
 controllers can overwrite a newer count with an older cache observation. The
@@ -35,6 +43,9 @@ Required settings are `HYPERSHELL_MANAGED_CLUSTER_ID`, `HYPERSHELL_API_GRPC_ADDR
 `HYPERSHELL_KUBERNETES_CA_FILE`, and `HYPERSHELL_KUBERNETES_TOKEN_FILE`.
 Use projected tokens and the separate
 [Pod read role](../deploy/sandbox-count-controller-rbac.yaml).
+That role currently has cluster-wide Pod access. The shared-cluster work must
+limit Pod watches to allocated Gateway and sandbox namespaces. The count API
+grant check covers API writes; Kubernetes read isolation remains open.
 `HYPERSHELL_SANDBOX_COUNT_RESYNC` defaults to two minutes. Its range is one second
 to five minutes. It controls Gateway catalog refresh and cache-based repair.
 
@@ -48,9 +59,16 @@ Unit tests cover active phase transitions, duplicate events, replacement Pods,
 empty baselines, serialized writes, retry after failure, count drift, and access
 loss. The transport test covers REST and gRPC reads, denied writes, atomic event
 failure, generated event delivery, and rejection of writes from a former cluster.
+It restores old placement only while the API is stopped. Its fixture restores
+the current database constraints before API startup. The separate grant test
+checks all three count methods, foreign targets, unrelated controller grants,
+unchanged rows and committed events after denial, and revocation after restart.
 The real sandbox test uses a separate Pod read account. It checks zero, creation,
 drift repair, controller restart with an existing Pod, Gateway and database
 restart, namespace replacement, and sandbox deletion.
+
+The following historical results predate exact count grants and local database
+placement. They do not prove the current permission changes.
 
 A baseline run on `7db4475` failed after real sandbox execution because REST had
 no active count. With the controller, the fresh-cluster Gateway workflow passed
@@ -87,3 +105,30 @@ Pinned generation from compiler
 bytes used by the workload test. The separate count transport workflow passed
 in 7.23 seconds with that pin. Application static checks passed. Compiler CI
 passed in run `34390663953`; the new application CI run follows publication.
+
+## Exact count grants and local placement
+
+On 2026-09-14, the bounded jshell Job `stego-placement-5ed89300/check` compared
+the previous count handler with the exact-grant check. The previous handler
+allowed the second cluster's controller to change the first cluster's count.
+The fixed handler passed all eight selected checks under race detection in
+41.890 seconds. The exact-grant test took 8.68 seconds; the REST and gRPC count
+workflow took 11.25 seconds.
+
+The checks cover Adjust, Set, and observed-count calls; foreign clusters;
+unrelated controller grants; administrator roles; unchanged records and
+committed events after denial; equal values; grant revocation with the same
+token after restart; atomic event failure; and concurrent increments. The
+placement checks reject new remote moves and preserve separate coverage for
+old moved records. Both controller field grants and retained cleanup passed
+with the shared legacy-placement fixture.
+
+Results are in `/tmp/hypershell-count-grants-n8dgwwuu`. All 230 generated and
+build-file hashes match both generation passes, the post-test files, and the
+checkout. The frozen source contains 823 files. Only this document, the
+controller-permission document, and the README changed after the source freeze.
+The Job completed, and its namespace and private launch files were removed.
+
+The check uses PostgreSQL, the generated API, and the generated event runtime.
+It does not run the Kubernetes Pod watcher. Restricting that watcher's read
+permissions to allocated namespaces remains a separate required change.

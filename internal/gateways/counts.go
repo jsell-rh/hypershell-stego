@@ -20,8 +20,8 @@ func (s *Service) SetActiveSandboxCount(ctx context.Context, p Principal, namesp
 	return s.changeCount(ctx, p, namespace, count, false, "")
 }
 
-// A count change depends only on the locked Gateway row and the verified
-// control-plane identity. Other resource grants do not permit this operation.
+// A count change requires an exact grant for the locked Gateway's cluster.
+// The count grant does not permit other workload observations.
 func (s *Service) changeCount(ctx context.Context, p Principal, namespace string, input int32, relative bool, cluster string) (int32, error) {
 	if err := validatePrincipal(p); err != nil {
 		return 0, err
@@ -39,6 +39,9 @@ func (s *Service) changeCount(ctx context.Context, p Principal, namespace string
 		row, ok := value.(model.Gateway)
 		if !ok {
 			return errors.New("unexpected Gateway storage result")
+		}
+		if err := s.AuthorizeControllerWrite(p, "Gateway", "observe.sandbox-count", row.ClusterID); err != nil {
+			return err
 		}
 		if cluster != "" && row.ClusterID != cluster {
 			return ErrPlacementChanged

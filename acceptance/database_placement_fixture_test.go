@@ -49,3 +49,36 @@ func databaseCreateBody(t *testing.T, name, provider, cluster string) []byte {
 	}
 	return body
 }
+
+// restoreLegacyGatewayPlacement models an old move with a shared database.
+// Stop the API before this fixture runs. Current constraints are restored in
+// the same transaction; production requests cannot use this path.
+func restoreLegacyGatewayPlacement(t *testing.T, f *fixture, gateway, cluster string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	tx, err := f.db.BeginTx(ctx, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer tx.Rollback()
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE managed_databases DROP CONSTRAINT hypershell_database_locality`); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tx.ExecContext(ctx, `UPDATE managed_databases SET cluster_id=NULL WHERE id=(SELECT database_id FROM gateways WHERE id=$1)`, gateway); err != nil {
+		t.Fatal(err)
+	}
+	result, err := tx.ExecContext(ctx, `UPDATE gateways SET cluster_id=$1 WHERE id=$2`, cluster, gateway)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if n, err := result.RowsAffected(); err != nil || n != 1 {
+		t.Fatal("legacy placement requires one Gateway", n, err)
+	}
+	if _, err := tx.ExecContext(ctx, `ALTER TABLE managed_databases ADD CONSTRAINT hypershell_database_locality CHECK (cluster_id IS NOT NULL) NOT VALID`); err != nil {
+		t.Fatal(err)
+	}
+	if err := tx.Commit(); err != nil {
+		t.Fatal(err)
+	}
+}
