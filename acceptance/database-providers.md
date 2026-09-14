@@ -163,9 +163,8 @@ database volumes, and private launch files. See the
 [browser workflow evidence](browser-gateway-workload.md) for details.
 
 External PostgreSQL provisioning, legacy deployment code removal, and conversion
-of the full CI suite remain open. Normal deletion of a shared database server
-also needs a check that its provider finalizers complete before namespace
-removal.
+of the full CI suite remain open. Normal shared-server deletion is now covered
+by the live browser gate described below.
 Keep these changes on the working branch until the remaining checks pass.
 
 ## Recovery, deadlines, and cleanup scope
@@ -230,5 +229,20 @@ files were removed. Evidence is in `/tmp/hypershell-parent-cleanup-ovoz71se`.
 STEGO revision `2f3a2c06bff4a0a6811757e9a168eb810f57ce53` also passed its full
 [compiler CI](https://github.com/jsell-rh/stego/actions/runs/34862811090).
 
-These checks use controlled providers. The added live browser check for final
-Gateway and CNPG server deletion has compiled but has not yet run.
+These API checks use controlled providers. The live browser gate also passed
+with actual CNPG in bounded jshell Job
+`stego-service-20260914-e45e42/service-check`. It used application revision
+`62730aac9ab5b7b222da4595c0209ad6c729926d` and the same STEGO revision.
+
+The browser backend denied server deletion while a Gateway was live. Generated
+controllers then removed the last Gateway's SQL database, login, credentials,
+keys, and namespace. Both Gateway Database resources were absent before server
+deletion. Database namespace removal and provider confirmation released the
+managed cluster for deletion. The resulting events were delivered. The host
+verified removal of the recorded persistent volume.
+
+The full browser test passed in 464.73 seconds. All 821 source files and 230
+generated and build-record hashes matched. All test resources and the 26
+recorded CNPG installation resources were removed. Evidence is in
+`/tmp/stego-service-results.G73rO35y`; see the
+[browser workflow record](browser-gateway-workload.md) for the complete scope.

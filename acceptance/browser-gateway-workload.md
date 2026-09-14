@@ -3,59 +3,70 @@
 ## Current CNPG gate
 
 The complete CNPG browser Gateway workflow passed on 2026-09-14 UTC. The test
-passed in 409.01 seconds; the race-enabled acceptance package passed in
-410.057 seconds. The Job reached `Complete`, and the test wrapper exited zero.
+passed in 464.73 seconds; the race-enabled acceptance package passed in
+465.776 seconds. The Job reached `Complete`, and the test wrapper exited zero.
 
 The tested application revision is
-`7f46379f382de6e2f0f2d262e1f880f65ba8af0a`. It uses STEGO
-`158f448545f253cd582035aff3ec51c1302ef6ac`. STEGO's full checks passed in
-[CI run 34852254025](https://github.com/jsell-rh/stego/actions/runs/34852254025).
+`62730aac9ab5b7b222da4595c0209ad6c729926d`. It uses STEGO
+`2f3a2c06bff4a0a6811757e9a168eb810f57ce53`. STEGO's full checks passed in
+[CI run 34862811090](https://github.com/jsell-rh/stego/actions/runs/34862811090).
 
 The live workflow proved:
 
-- Browser Gateway creation, grants, REST and gRPC access, and event delivery.
+- Rendered browser Gateway creation, grants, filtered lists, denied requests,
+  REST and gRPC access, and event delivery.
 - Two healthy Gateways on one local CNPG server, with separate restricted SQL
   logins, verified TLS, and denied access to other and system databases.
-- Gateway provider data recovery after Pod replacement. All four generated
-  workers were then replaced; SQL isolation and credential identities persisted.
+- Gateway data recovery after Pod replacement. All four generated workers were
+  then replaced; SQL isolation and credential identities persisted.
 - Eighteen worker access checks and three denials from the expected generated
   admission rules. Public dry-run requests did not change stored objects.
 - Worker metrics and correlated logs and traces before and after replacement.
 - API, console, and provisioner replacement; service credential issuance, use,
   reload, revocation, and deletion; session renewal, key rotation, and sign-out.
-- REST Gateway deletion with actual removal of its SQL database, login, keys,
-  namespace, and cluster bindings. The other Gateway and shared server remained.
+- REST deletion of the first Gateway with removal of its SQL database, login,
+  keys, namespace, and cluster bindings. The other Gateway remained available.
+- Denied database-server deletion while the second Gateway was live. Normal
+  browser-backend requests then removed the last Gateway and the CNPG server.
+  The test checked that both SQL databases, logins, credentials, keys, and CNPG
+  Database resources were absent before server deletion.
+- Generated controller confirmation of database cleanup after namespace removal.
+  Managed-cluster deletion then succeeded, and deletion events were delivered.
+- Actual removal of the recorded persistent volume, checked by the host without
+  granting volume access to application workers.
 
-All 818 tracked files matched the frozen source before this evidence update.
+All 821 tracked files matched the frozen source before this evidence update.
 All 230 generated and build-record hashes matched both generation passes,
 the post-test files, the collected archive, and the checkout. No generated
-file changed during the tests.
+file changed during the tests. The rendered Gateway detail image was reviewed;
+it shows the expected Gateway and healthy state.
 
-Results are in `/tmp/stego-service-results.vgYuxDm1`; the frozen source is in
-`/tmp/hypershell-cnpg-browser-p4dcrnsk`. Cleanup checks found no remaining CNPG
-installation resources, allocated or test namespaces, test cluster roles,
-bindings, admission policies, database volumes, or private launch files.
+Results are in `/tmp/stego-service-results.G73rO35y`; the frozen source is in
+`/tmp/hypershell-parent-browser-__51ffdf`. Its source archive SHA-256 is
+`fb4b54f7a5ca8b66ad146f6d5e95ec87b2ec3265f33bd3f4dc902477467152d9`.
+Job `stego-service-20260914-e45e42/service-check` completed. Cleanup checks found
+no remaining allocated or test namespaces, test cluster roles, bindings,
+admission policies, database volumes, private launch files, or any of the 26
+recorded CNPG installation resources. The operator namespace was allowed to
+finish normal Kubernetes finalization; no finalizer was removed by hand.
+
+The new API regression check also proved REST and gRPC denial after restart,
+partial cleanup, and reopened cleanup. Denial left parent records and committed
+events unchanged. See [database provider evidence](database-providers.md).
+
+The test starts seven generated Deployments, including the namespace allocator
+and three resource workers. The database worker has no Secret access. The
+Gateway worker reaches PostgreSQL through a generated network peer for its
+database allocation profile. A checksum-pinned CNPG operator runs in a separate
+namespace. Its namespaced writes, watches, and admission webhooks are limited
+to the test database namespace. A separate Job owns its Deployment and enforces
+a 30-minute lifetime. The installer refuses existing resources and records
+UIDs for cleanup.
 
 External PostgreSQL provisioning, removal of the old deployment runtime, and
-conversion of the older CI fixtures remain open. This gate does not establish
-production capacity or complete workload network isolation.
-
-The current test uses two Gateways and one local CNPG server. It starts seven
-generated Deployments, including the namespace allocator and three resource
-workers. The database worker has no Secret access. The Gateway worker reaches
-PostgreSQL through a generated network peer for its database allocation profile.
-
-The host installs a checksum-pinned CNPG operator in a separate namespace. Its
-namespaced write permissions are bound by the generated allocator. Its watches
-and admission webhooks select the one test database namespace. The operator Deployment
-starts after the allocation is ready. A separate Job owns the Deployment. Its
-30-minute deadline and immediate TTL cleanup limit the operator lifetime if the
-host exits. The installer refuses existing resources and records UIDs for cleanup.
-
-The SQL checks require two distinct restricted logins, verified TLS, denied
-access to other databases, stable object identities across worker replacement,
-and removal of one Gateway without removal of the other or the shared server.
-The current application result is recorded above.
+conversion of the older CI fixtures remain open. The console asset archive also
+needs an update. This gate does not establish production capacity, complete
+workload network isolation, or a complete Sandbox workflow.
 
 ## Earlier CNPG attempts
 
