@@ -58,3 +58,51 @@ The database selector still names the removed deployment-backed provider.
 It must be replaced with external PostgreSQL and CNPG evidence. Gateway and
 Sandbox workflow conversion remains open. Existing test code stays available
 for that conversion. This work does not establish a passing full CI result.
+
+## First restricted-identity run
+
+The unchanged watch fixture failed in Job
+`stego-ci/gateway-api-3edadb2a0720` on 2026-09-14. The count request returned
+gRPC PermissionDenied. The other 11 required tests passed. The package took
+33.618 seconds. The source archive SHA-256 was
+`b8e00db4e661dd2badc268ddd4b8e3b330c022fb73feb9461285109b5773bbaa`.
+It contained 837 tracked files. Evidence is in
+`/tmp/hypershell-ci-gateway-baseline`.
+
+The committed output and both compiler runs had the same 231 file hashes.
+The failed test stopped the script before its final hash check. This run does
+not prove unchanged output after testing. The Job, Pods, two Secrets, and
+ConfigMap were removed. The shared Lease was released before the GitHub run.
+
+## Passing GitHub run
+
+[Run 34883281239](https://github.com/jsell-rh/hypershell-stego/actions/runs/34883281239)
+passed for `e491f85e39b8f383f2c8c0ab8460696ed2bba357`.
+All 13 required tests passed under race detection in 47.595 seconds. The
+catalog test took 7.87 seconds; the watch test took 6.53 seconds. No required
+test was skipped. The bounded cluster Job took 4 minutes 50 seconds, including
+compiler and application builds.
+
+The workflow installed the pinned OpenShift client, read the restricted CI
+credential, created Job `stego-ci/gateway-api-2519005f3b01`, collected its
+result, and removed its fixture. No operator credential was supplied to
+GitHub or the test Pod. GitHub also removed its local kubeconfig and uploaded
+the evidence artifact `gateway-api-34883281239-1`.
+
+All 231 committed, first-generation, second-generation, and post-test file
+hashes matched. The generated archive also matched all 231 checkout files.
+The frozen source manifest covered 839 files and has SHA-256
+`2fe78844735a99b5dba7c8fe0214bb5e9ecd5d37f3171811a6466555b5e7608a`.
+Only this evidence document changed after the test. The downloaded artifact
+is in `/tmp/hypershell-ci-gateway-34883281239`.
+
+The Job reached Complete. CI checked that the Job, its Pods, both Secrets,
+and the ConfigMap were absent before it released the shared Lease. Separate
+reads confirmed the Job and named fixture objects were absent and the Lease
+holder was empty. The safe summary is in
+[the committed result](jshell-gateway-ci-evidence.json).
+
+The separate full application run `34883281256` still has failed workload
+jobs. Those failures identify fixture conversions that remain required.
+This passing API gate does not replace the full application, rendered browser,
+external PostgreSQL/RDS, or Sandbox acceptance requirements.

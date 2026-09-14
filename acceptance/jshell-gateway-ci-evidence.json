@@ -1,0 +1,51 @@
+{
+  "required": [
+    "TestGatewayCreationCommitsOwnerAndEvent",
+    "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+    "TestEventFailureRollsBackGatewayAndOwner",
+    "TestAccessFiltersRunBeforeCountAndPagination",
+    "TestGeneratedGatewayDescriptorsMatchReference",
+    "TestGatewayWorkflowThroughGeneratedRESTProcess",
+    "TestGatewayWorkflowAcrossRESTAndGRPC",
+    "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+    "TestGatewayWatchThroughGeneratedRuntime",
+    "TestPlacementWorkflowThroughGeneratedRuntime",
+    "TestLocalDatabaseSelectionAndRollback",
+    "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+    "TestLocalDatabaseMigrationPreservesLegacyRows"
+  ],
+  "passed": [
+    "TestAccessFiltersRunBeforeCountAndPagination",
+    "TestEventFailureRollsBackGatewayAndOwner",
+    "TestEventFailureRollsBackGatewayAndOwner/gateway.created",
+    "TestEventFailureRollsBackGatewayAndOwner/rolebinding.created",
+    "TestGatewayCreationCommitsOwnerAndEvent",
+    "TestGatewayWatchThroughGeneratedRuntime",
+    "TestGatewayWorkflowAcrossRESTAndGRPC",
+    "TestGatewayWorkflowThroughGeneratedRESTProcess",
+    "TestGeneratedGatewayDescriptorsMatchReference",
+    "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+    "TestLocalDatabaseMigrationPreservesLegacyRows",
+    "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+    "TestLocalDatabaseSelectionAndRollback",
+    "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+    "TestPlacementWorkflowThroughGeneratedRuntime"
+  ],
+  "failed": [],
+  "missing": [],
+  "exit_code": 0,
+  "revision": "e491f85e39b8f383f2c8c0ab8460696ed2bba357",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34883281239",
+  "package_seconds": 47.595,
+  "generated_files": 231,
+  "committed_first_second_after_hashes_equal": true,
+  "generated_checkout_match": true,
+  "frozen_files": 839,
+  "source_manifest_sha256": "2fe78844735a99b5dba7c8fe0214bb5e9ecd5d37f3171811a6466555b5e7608a",
+  "cleanup": {
+    "job_absent": "gateway-api-2519005f3b01",
+    "pods_absent": true,
+    "fixture_resources_absent": true
+  },
+  "lease_released": true
+}
