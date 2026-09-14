@@ -20,7 +20,26 @@ name or an API event is not proof of placement. The reconciler must run beside
 the database it manages. Do not select a remote server merely because it is the
 only database catalog entry in the control plane.
 
-## One logical database per Gateway
+## Database sharing within an installation
+
+The user clarified the sharing requirement on 2026-09-14. For this design,
+"instance" means one Hypershell installation. Each installation has its own
+PostgreSQL server or set of servers. Support both layouts:
+
+- Keycloak, the API, and Gateway databases share one PostgreSQL server, with
+  separate logical databases and logins.
+- Components use separate PostgreSQL servers. A Gateway can also have a server
+  of its own.
+
+Sharing a server does not permit sharing a login or access to another component's
+database. Each Gateway still has its own logical database and login. Server
+connection rules and database permissions must enforce this boundary. Operators
+must select the layout explicitly, and Gateway locality rules still apply.
+
+This is a target requirement. It does not claim that external PostgreSQL
+provisioning or both deployment layouts are complete.
+
+## Per-Gateway resources
 
 Both providers must create one logical database and one login for each Gateway.
 The user explicitly requires external PostgreSQL reconciliation to create the
