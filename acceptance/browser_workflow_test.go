@@ -830,6 +830,17 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	alice.login(t, k, "console-alice")
 	if workload != nil {
 		workload.checkAllocatedDeletion(gateway.ID)
+		operatorID := k.human(t, "console-operator")
+		k.adminRequest(t, "POST", "/clients/"+clients[0].ID+"/roles", map[string]any{"name": "platform:admin"})
+		response := k.adminRequest(t, "GET", "/clients/"+clients[0].ID+"/roles/platform:admin", nil)
+		var operatorRole map[string]any
+		if json.Unmarshal(response.Body, &operatorRole) != nil {
+			t.Fatal("operator role missing")
+		}
+		k.adminRequest(t, "POST", "/users/"+operatorID+"/role-mappings/clients/"+clients[0].ID, []any{operatorRole})
+		operator := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
+		operator.login(t, k, "console-operator")
+		workload.checkDatabaseDeletion(operator, consumer)
 	}
 	for _, log := range []string{before, logs()} {
 		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault", oldSessionKey, nextSessionKey} {

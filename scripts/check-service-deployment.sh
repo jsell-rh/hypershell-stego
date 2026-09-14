@@ -186,4 +186,7 @@ else
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Failed job/service-check --timeout=60s || true
 fi
 tail -30 "$results/deployment.log"
+if [[ $result == 0 && $workload == 1 ]]; then
+  python3 "$project/scripts/check-database-volume-deletion.py" --context "$STEGO_TEST_CONTEXT" --evidence "$results"
+fi
 exit "$result"
