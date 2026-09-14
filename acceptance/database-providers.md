@@ -80,6 +80,32 @@ verified by the contract gate below. Generated SDK type names need review becaus
 new OpenAPI source paths changed some names. Keep this work on the working
 branch until the remaining workflow fixtures and contract checks pass.
 
+## Access checks for local servers and legacy records
+
+The bounded jshell Job `stego-placement-c98fbff8/check` passed four application
+checks under race detection on 2026-09-14. The package took 26.881 seconds.
+The access check uses two local CNPG servers and a separate legacy cluster.
+It proves exact controller grants, denied foreign-cluster writes, and unchanged
+records and database events after denial. Gateway cleanup must complete before
+the database record can be deleted. The checks repeat after API restart.
+
+Unassigned CNPG records and removed-provider records remain readable as legacy
+data. Neither an old unscoped grant nor an exact cluster grant permits writes
+to those records. The test restores current database constraints before API
+startup. It does not weaken the production registration rules.
+
+The first attempt placed a removed-provider record beside the valid CNPG server.
+Gateway creation correctly rejected that ambiguous selection. The revised test
+uses a separate legacy cluster so that valid Gateway creation can proceed and
+the denied-write checks can run.
+
+Results are in `/tmp/hypershell-cluster-access-eaxnvxfy`. Two generation runs and
+the post-test files have matching hashes for all 230 generated and build files.
+The Job completed. All 822 frozen source files were checked; only the compiler
+pin and two evidence documents changed after the source freeze. Its namespace
+and private launch files are absent. This test does not provision a PostgreSQL database
+for a Gateway; the separate CNPG workflow covers that behavior.
+
 ## CNPG namespace allocation
 
 The CNPG worker now requires the control namespace and managed-cluster ID.

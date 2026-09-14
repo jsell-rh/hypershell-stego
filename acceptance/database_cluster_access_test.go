@@ -3,11 +3,13 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"reflect"
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
@@ -29,18 +31,47 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	second := ksuid.New().String()
+	legacyCluster := ksuid.New().String()
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: second}, Name: "second", Provider: "kubernetes", KubeconfigSecret: "second-ref"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: legacyCluster}, Name: "legacy", Provider: "kubernetes", KubeconfigSecret: "legacy-ref"}); err != nil {
+		t.Fatal(err)
+	}
+	// Retain separate examples of pre-locality data. Restore current constraints
+	// before the API starts; these rows must stay readable but cannot be changed.
+	unassignedID, removedID := ksuid.New().String(), ksuid.New().String()
+	if _, err := f.db.Exec(`ALTER TABLE managed_databases DROP CONSTRAINT chk_managed_databases_provider; ALTER TABLE managed_databases DROP CONSTRAINT hypershell_database_locality`); err != nil {
+		t.Fatal(err)
+	}
+	for _, row := range []struct {
+		id, provider string
+		cluster      any
+	}{{unassignedID, "cnpg", nil}, {removedID, "deployment", legacyCluster}} {
+		ns, err := catalog.DatabaseNamespace(row.id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := f.db.Exec(`INSERT INTO managed_databases(id,name,provider,namespace,cluster_id,created_time,updated_time) VALUES($1,'legacy',$2,$3,$4,now(),now())`, row.id, row.provider, ns, row.cluster); err != nil {
+			t.Fatal(err)
+		}
+	}
+	migration, err := os.ReadFile("../migrations/000011_local_database_providers.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.db.ExecContext(ctx, string(migration)); err != nil {
 		t.Fatal(err)
 	}
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	apiTLS := identity(t, "localhost")
 	dir := filepath.Dir(apiTLS.config.CAFile)
-	settings = append(settings, "DATABASE_PROVIDER=deployment", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["first","second","legacy"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("first", f.cluster), databaseWriteGrant("second", second), databaseWriteGrant("legacy", "deployment"))
-	settings = withCleanupGrants(t, settings, cleanupGrant("first", "ManagedDatabase", "provider", f.cluster), cleanupGrant("first", "ManagedDatabase", "record", f.cluster), cleanupGrant("second", "ManagedDatabase", "provider", second), cleanupGrant("second", "ManagedDatabase", "record", second), cleanupGrant("legacy", "ManagedDatabase", "provider", ""), cleanupGrant("legacy", "ManagedDatabase", "record", ""))
+	settings = append(settings, "DATABASE_PROVIDER=cnpg", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["first","second","legacy","workload"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("first", f.cluster), databaseWriteGrant("second", second), databaseWriteGrant("legacy", "deployment"), databaseWriteGrant("legacy", legacyCluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant("first", "ManagedDatabase", "provider", f.cluster), cleanupGrant("first", "ManagedDatabase", "record", f.cluster), cleanupGrant("second", "ManagedDatabase", "provider", second), cleanupGrant("second", "ManagedDatabase", "record", second), cleanupGrant("legacy", "ManagedDatabase", "provider", ""), cleanupGrant("legacy", "ManagedDatabase", "record", ""), cleanupGrant("legacy", "ManagedDatabase", "provider", legacyCluster), cleanupGrant("legacy", "ManagedDatabase", "record", legacyCluster), cleanupGrant("workload", "Gateway", "workload", f.cluster), cleanupGrant("workload", "Gateway", "workload", second))
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -48,7 +79,7 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 	databases := pb.NewManagedDatabaseServiceClient(connection)
 	cleanup := control.NewDatabaseCleanupServiceClient(connection)
 	tokens := map[string]string{}
-	for _, name := range []string{"first", "second", "legacy", "admin"} {
+	for _, name := range []string{"first", "second", "legacy", "admin", "workload"} {
 		tokens[name] = token(t, key, name, "platform:admin")
 	}
 	tokens["owner"] = token(t, key, "owner", "gateway:creator")
@@ -63,13 +94,25 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 		}
 		return r.Gateway
 	}
+	root := address + "/api/hypershell/v1/managed_databases"
+	code, body := requestJSON(t, "POST", root, tokens["admin"], databaseCreateBody(t, "second", "cnpg", second))
+	var secondDatabase httpapi.ManagedDatabase
+	if code != 201 || json.Unmarshal(body, &secondDatabase) != nil || secondDatabase.ClusterID == nil || *secondDatabase.ClusterID != second {
+		t.Fatal("second database setup", code)
+	}
 	firstGateway, secondGateway := create(f.cluster), create(second)
 	firstID, secondID := firstGateway.DatabaseId, secondGateway.DatabaseId
-	root := address + "/api/hypershell/v1/managed_databases"
-	code, body := requestJSON(t, "POST", root, tokens["admin"], []byte(`{"name":"unassigned","provider":"deployment"}`))
-	var unassigned httpapi.ManagedDatabase
-	if code != 201 || json.Unmarshal(body, &unassigned) != nil {
-		t.Fatal("unassigned setup", code)
+	if firstID != f.database || secondID != secondDatabase.ID || firstID == secondID {
+		t.Fatal("Gateway selected a database outside its cluster")
+	}
+	for _, body := range [][]byte{[]byte(`{"name":"unassigned","provider":"cnpg"}`), databaseCreateBody(t, "removed-provider", "deployment", f.cluster)} {
+		before, events := count(t, f.db, "managed_databases"), count(t, f.db, "database_scope_events")
+		if code, _ := requestJSON(t, "POST", root, tokens["admin"], body); code != 400 {
+			t.Fatal("invalid database registration was accepted", code)
+		}
+		if count(t, f.db, "managed_databases") != before || count(t, f.db, "database_scope_events") != events {
+			t.Fatal("invalid registration changed database state or events")
+		}
 	}
 	read := func(id string) (int64, string, bool) {
 		t.Helper()
@@ -98,7 +141,10 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 	if _, cluster, _ := read(secondID); cluster != second {
 		t.Fatal("second placement changed")
 	}
-	if _, cluster, _ := read(unassigned.ID); cluster != "" {
+	if _, cluster, _ := read(removedID); cluster != legacyCluster {
+		t.Fatal("legacy provider placement was changed")
+	}
+	if _, cluster, _ := read(unassignedID); cluster != "" {
 		t.Fatal("unassigned placement was inferred")
 	}
 	state := func(id string) model.ManagedDatabase {
@@ -126,7 +172,7 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 			t.Fatal("denied write changed database")
 		}
 	}
-	for _, row := range []struct{ subject, id string }{{"first", secondID}, {"second", firstID}, {"legacy", firstID}, {"first", unassigned.ID}, {"legacy", unassigned.ID}} {
+	for _, row := range []struct{ subject, id string }{{"first", secondID}, {"second", firstID}, {"legacy", firstID}, {"first", unassignedID}, {"legacy", unassignedID}, {"first", removedID}, {"legacy", removedID}} {
 		write(row.subject, row.id, codes.PermissionDenied)
 	}
 	write("first", firstID, codes.OK)
@@ -135,14 +181,14 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 		if code, _ := requestJSON(t, "PATCH", address+"/api/hypershell/v1/managed_clusters/"+f.cluster, tokens[subject], []byte(`{"kubeconfig_secret":"changed"}`)); code != 403 {
 			t.Fatal("controller changed a cluster credential reference", code)
 		}
-		if code, _ := requestJSON(t, "POST", root, tokens[subject], []byte(`{"name":"bypass","provider":"deployment"}`)); code != 403 {
+		if code, _ := requestJSON(t, "POST", root, tokens[subject], databaseCreateBody(t, "bypass", "cnpg", f.cluster)); code != 403 {
 			t.Fatal("controller created catalog record", code)
 		}
-		if _, err := databases.CreateManagedDatabase(call(subject), &pb.CreateManagedDatabaseRequest{Name: "bypass", Provider: "deployment"}); status.Code(err) != codes.PermissionDenied {
+		if _, err := databases.CreateManagedDatabase(call(subject), &pb.CreateManagedDatabaseRequest{Name: "bypass", Provider: "cnpg", ClusterId: f.cluster}); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("controller gRPC create", err)
 		}
 	}
-	for _, row := range []struct{ subject, id string }{{"first", secondID}, {"second", firstID}, {"legacy", firstID}, {"first", unassigned.ID}} {
+	for _, row := range []struct{ subject, id string }{{"first", secondID}, {"second", firstID}, {"legacy", firstID}, {"first", unassignedID}, {"first", removedID}, {"legacy", removedID}} {
 		before := state(row.id)
 		beforeEvents := count(t, f.db, "database_scope_events")
 		if _, err := databases.DeleteManagedDatabase(call(row.subject), &pb.DeleteManagedDatabaseRequest{Id: row.id}); status.Code(err) != codes.PermissionDenied {
@@ -160,6 +206,23 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 	}
 	for _, gateway := range []*pb.Gateway{firstGateway, secondGateway} {
 		if _, err := gatewayAPI.DeleteGateway(call("owner"), &pb.DeleteGatewayRequest{Id: gateway.Metadata.Id}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := databases.DeleteManagedDatabase(call("first"), &pb.DeleteManagedDatabaseRequest{Id: firstID}); status.Code(err) != codes.AlreadyExists {
+		t.Fatal("pending Gateway cleanup did not protect database", err)
+	}
+	gatewayState := control.NewGatewayIdentityServiceClient(connection)
+	for _, gateway := range []*pb.Gateway{firstGateway, secondGateway} {
+		current, err := gatewayState.GetGatewayIdentityState(call("workload"), &control.GetGatewayIdentityStateRequest{Id: gateway.Metadata.Id})
+		if err != nil || !current.GetDeleted() {
+			t.Fatal("Gateway cleanup setup", err)
+		}
+		write, err := rpc.WithResourceVersion(call("workload"), current.ResourceVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := gatewayState.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: gateway.Metadata.Id, Owner: "workload", Target: gateway.ClusterId, Complete: true}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -195,7 +258,7 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 	observe("legacy", firstID, codes.PermissionDenied)
 	summary := func(subject, cluster string, pending int64, want codes.Code) {
 		t.Helper()
-		r, err := cleanup.GetDatabaseCleanupSummary(call(subject), &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "deployment", ClusterId: cluster})
+		r, err := cleanup.GetDatabaseCleanupSummary(call(subject), &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "cnpg", ClusterId: cluster})
 		if status.Code(err) != want {
 			t.Fatal("summary scope", err)
 		}
@@ -221,5 +284,15 @@ func TestDatabaseClusterAccessRulesThroughGeneratedRuntime(t *testing.T) {
 	summary("second", second, 1, codes.OK)
 	observe("first", secondID, codes.PermissionDenied)
 	observe("second", secondID, codes.OK)
+	summary("second", second, 0, codes.OK)
+	for _, row := range []struct{ subject, id string }{{"first", unassignedID}, {"legacy", unassignedID}, {"first", removedID}, {"legacy", removedID}} {
+		write(row.subject, row.id, codes.PermissionDenied)
+	}
+	if _, cluster, deleted := read(unassignedID); cluster != "" || deleted {
+		t.Fatal("restart changed the unassigned legacy record")
+	}
+	if _, cluster, deleted := read(removedID); cluster != legacyCluster || deleted {
+		t.Fatal("restart changed the removed-provider record")
+	}
 	t.Log("Recorded cluster grants survived API restart; foreign, unassigned, and unscoped writes were denied")
 }
