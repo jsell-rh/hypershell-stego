@@ -48,6 +48,9 @@ def main():
     spec = importlib.util.spec_from_file_location("live_lock", root / "scripts/jshell_live_lock.py")
     lock = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(lock)
+    observer_spec = importlib.util.spec_from_file_location("job_observation", root / "scripts/jshell_job_observation.py")
+    observer = importlib.util.module_from_spec(observer_spec)
+    observer_spec.loader.exec_module(observer)
     namespace, name = "stego-ci", "gateway-api-" + uuid.uuid4().hex[:12]
     prefix = ["oc", "--context=" + args.context, "--request-timeout=20s", "-n", namespace]
 
@@ -121,6 +124,7 @@ exit "$code"
     (result / "job.json").write_text(json.dumps(job, indent=2) + "\n")
     targets = [("Secret", "cli-test-postgres"), ("Secret", "database-tls"), ("ConfigMap", "database-ca"), ("Job", name)]
     pod_name, code = None, None
+    started, collected, stopped = False, False, False
     print("Gateway API Job: " + namespace + "/" + name, flush=True)
     lock.acquire(args.context, name, namespace, name)
     try:
@@ -155,20 +159,20 @@ exit "$code"
             time.sleep(2)
         oc("wait", "--for=condition=Ready", "pod/" + pod_name, "--timeout=150s", timeout=170)
         oc("exec", "-i", pod_name, "-c", "test", "--", "tar", "xf", "-", "-C", "/work/application", data=(result / "source.tar").read_bytes(), timeout=120)
+        # The start write can succeed even if its response is lost.
+        started = True
         oc("exec", pod_name, "-c", "test", "--", "touch", "/work/start")
-        while True:
-            # A failed observation is not proof that the Job stopped.
-            raw = oc("exec", pod_name, "-c", "test", "--", "sh", "-c", 'if [ -f /work/result ]; then cat /work/result; fi')
-            if raw.strip():
-                code = int(raw.strip())
-                break
-            current = get("Job", name)
-            if not current or any(c["type"] == "Failed" and c["status"] == "True" for c in current.get("status", {}).get("conditions", [])) or time.monotonic() > deadline:
-                raise RuntimeError("The existing test Job has no complete result")
-            time.sleep(5)
+        try:
+            code = observer.wait_for_result(
+                lambda: oc("exec", pod_name, "-c", "test", "--", "sh", "-c", 'if [ -f /work/result ]; then cat /work/result; fi'),
+                lambda: get("Job", name), deadline)
+        except observer.StoppedJob:
+            stopped = True
+            raise
         for path in ["test.log", "tests.jsonl", "committed.sha256", "first.sha256", "second.sha256", "after.sha256", "generated.tar"]:
             data = oc("exec", pod_name, "-c", "test", "--", "sh", "-c", 'if [ -f /work/"$1" ]; then cat /work/"$1"; fi', "collect", path, timeout=90)
             (result / path).write_bytes(data)
+        collected = True
         oc("exec", pod_name, "-c", "test", "--", "touch", "/work/collected")
         oc("wait", "--for=condition=" + ("Complete" if code == 0 else "Failed"), "job/" + name, "--timeout=60s", timeout=80)
         (result / "job-final.json").write_text(json.dumps(get("Job", name), indent=2) + "\n")
@@ -182,29 +186,33 @@ exit "$code"
         if code != 0 or missing or failed:
             raise RuntimeError("The Gateway API gate failed; inspect the saved results")
     finally:
-        # Keep the Lease if cleanup or an ownership check fails.
-        for kind, resource in reversed(targets):
-            current = get(kind, resource)
-            if not current:
-                continue
-            meta = current["metadata"]
-            if meta.get("labels", {}).get("stego.test/run") != name:
-                raise RuntimeError("CI cleanup refuses a resource with another owner")
-            if kind == "Job":
-                (result / "job-final.json").write_text(json.dumps(current, indent=2) + "\n")
-            group = "/apis/batch/v1" if kind == "Job" else "/api/v1"
-            path = group + "/namespaces/" + namespace + "/" + {"Job": "jobs", "Secret": "secrets", "ConfigMap": "configmaps"}[kind] + "/" + resource
-            options = {"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": {"uid": meta["uid"], "resourceVersion": meta["resourceVersion"]}, "propagationPolicy": "Foreground"}
-            oc("delete", "--raw=" + path, "-f", "-", data=json.dumps(options).encode())
-            until = time.monotonic() + 90
-            while get(kind, resource):
-                if time.monotonic() >= until:
-                    raise RuntimeError("A CI fixture resource remains; retain the shared Lease")
-                time.sleep(1)
-        if json.loads(oc("get", "pods", "-l", "job-name=" + name, "-o", "json"))["items"]:
-            raise RuntimeError("CI test Pods remain; retain the shared Lease")
-        (result / "cleanup.json").write_text(json.dumps({"job_absent": name, "pods_absent": True, "fixture_resources_absent": True}) + "\n")
-        lock.release(args.context, name)
+        if started and not collected and not stopped:
+            (result / "retained.json").write_text(json.dumps({"job": name, "namespace": namespace, "reason": "result_not_collected", "lease_retained": True}) + "\n")
+            print("The Job result is not collected. Retain its fixture and Lease for inspection.", flush=True)
+        else:
+            # Keep the Lease if cleanup or an ownership check fails.
+            for kind, resource in reversed(targets):
+                current = get(kind, resource)
+                if not current:
+                    continue
+                meta = current["metadata"]
+                if meta.get("labels", {}).get("stego.test/run") != name:
+                    raise RuntimeError("CI cleanup refuses a resource with another owner")
+                if kind == "Job":
+                    (result / "job-final.json").write_text(json.dumps(current, indent=2) + "\n")
+                group = "/apis/batch/v1" if kind == "Job" else "/api/v1"
+                path = group + "/namespaces/" + namespace + "/" + {"Job": "jobs", "Secret": "secrets", "ConfigMap": "configmaps"}[kind] + "/" + resource
+                options = {"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": {"uid": meta["uid"], "resourceVersion": meta["resourceVersion"]}, "propagationPolicy": "Foreground"}
+                oc("delete", "--raw=" + path, "-f", "-", data=json.dumps(options).encode())
+                until = time.monotonic() + 90
+                while get(kind, resource):
+                    if time.monotonic() >= until:
+                        raise RuntimeError("A CI fixture resource remains; retain the shared Lease")
+                    time.sleep(1)
+            if json.loads(oc("get", "pods", "-l", "job-name=" + name, "-o", "json"))["items"]:
+                raise RuntimeError("CI test Pods remain; retain the shared Lease")
+            (result / "cleanup.json").write_text(json.dumps({"job_absent": name, "pods_absent": True, "fixture_resources_absent": True}) + "\n")
+            lock.release(args.context, name)
     print("Gateway API gate passed. Results: " + str(result), flush=True)
 
 

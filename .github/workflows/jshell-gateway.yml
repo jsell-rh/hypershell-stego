@@ -19,6 +19,8 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
+      - name: Check Job observation recovery
+        run: python3 scripts/test_jshell_job_observation.py
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
