@@ -97,8 +97,8 @@ func (s *Store) ReadScopedCleanupSummary(ctx context.Context, entity, owner, tar
 
 }
 
-// HasUnfinishedReferences checks all retained targets through their aggregate
-// owner state. It stops at the first live or unfinished child. No IDs are read.
+// HasUnfinishedReferences checks current references and unfinished former targets.
+// It stops at the first live or unfinished child. No IDs are read.
 func (s *Store) HasUnfinishedReferences(ctx context.Context, reference contract.CleanupReference) (bool, error) {
 	validText := func(value string) bool {
 		return value != "" && len(value) <= 256 && utf8.ValidString(value) && !strings.ContainsRune(value, 0)
@@ -112,15 +112,18 @@ func (s *Store) HasUnfinishedReferences(ctx context.Context, reference contract.
 
 	var table string
 	var owners, fields map[string]bool
+	var targetFields map[string]string
 	switch reference.Entity {
 	case "ManagedDatabase":
 		table = "managed_databases"
 		owners = map[string]bool{"provider": true}
 		fields = map[string]bool{"cluster_id": true}
+		targetFields = map[string]string{}
 	case "Gateway":
 		table = "gateways"
 		owners = map[string]bool{"identity": true, "workload": true}
 		fields = map[string]bool{"cluster_id": true, "database_id": true, "release_id": true}
+		targetFields = map[string]string{"workload": "cluster_id"}
 	default:
 		return false, contract.ErrCleanupReference
 	}
@@ -129,9 +132,15 @@ func (s *Store) HasUnfinishedReferences(ctx context.Context, reference contract.
 	}
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
-	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM %q WHERE %q COLLATE \"C\" = ? AND (deleted_at IS NULL OR stego_cleanup -> ? IS DISTINCT FROM 'true'::jsonb))", table, reference.Field)
+	predicate := fmt.Sprintf("(%q COLLATE \"C\" = ? AND (deleted_at IS NULL OR stego_cleanup -> ? IS DISTINCT FROM 'true'::jsonb))", reference.Field)
+	args := []any{reference.ID, reference.Owner}
+	if targetFields[reference.Owner] == reference.Field {
+		predicate += " OR (jsonb_exists(stego_cleanup_targets -> ?, ?) AND stego_cleanup_targets -> ? -> ? IS DISTINCT FROM 'true'::jsonb)"
+		args = append(args, reference.Owner, reference.ID, reference.Owner, reference.ID)
+	}
+	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM %q WHERE %s)", table, predicate)
 	var pending bool
-	err := s.db.WithContext(operation).Raw(query, reference.ID, reference.Owner).Scan(&pending).Error
+	err := s.db.WithContext(operation).Raw(query, args...).Scan(&pending).Error
 	return pending, err
 
 }

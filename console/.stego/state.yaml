@@ -32,9 +32,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914153218-2f3a2c06bff4
+        module_version: v0.0.0-20260914161735-97d3877237bc
         vcs: git
-        revision: 2f3a2c06bff4a0a6811757e9a168eb810f57ce53
+        revision: 97d3877237bcd507a1bdba876016726b0fab6d09
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow

@@ -26,10 +26,24 @@ Periodic checks continue after success. A later pending or failed provider check
 requests a false observation for that target. An unchanged observation does not
 produce another event. If an observation write fails, a later pass must retry.
 
-The REST and TLS gRPC acceptance check moves a Gateway, deletes it, records each
-cluster separately, restarts the API, and checks independent identity cleanup.
-It also checks stale revisions, denied callers, unrecorded targets, event
-rollback, delivery, and reopening one target. The real Kubernetes workflow moves
+The REST and TLS gRPC acceptance check rejects a new move that would separate
+the Gateway from its database. With the API stopped, it restores a fixture from
+an old installation: a moved Gateway with both cluster targets and an unassigned
+CNPG server. It restores the current constraints before API startup. This tests
+old data without permitting new remote placement.
+
+The check deletes the Gateway, records each cluster separately, restarts the
+API, and checks independent identity cleanup. It also checks stale revisions,
+denied callers, unrecorded targets, event rollback, delivery, and reopened work.
+Both REST and gRPC must deny cluster deletion while its cleanup is pending.
+Denied deletion must change neither the cluster record nor its events. The
+current cluster remains blocked while any workload target is unfinished.
+After both targets complete, both cluster deletions must deliver their events.
+
+STEGO supplies the reference and target-history query. Hypershell selects the
+Gateway's workload owner and cluster reference in its catalog deletion rule.
+
+The earlier Kubernetes workflow moves
 the Gateway before deletion. It then removes the former cluster's resources,
 restarts its controller, creates a late namespace with a blocking finalizer,
 and verifies that cleanup becomes pending again. After another restart and
@@ -53,12 +67,41 @@ The generated migration refuses to infer earlier locations from the current
 cluster field. No history import protocol is provided yet. New databases and
 restarts of the same target contract are covered by the application tests.
 
-Local validation on 2026-09-09 passed the controller race tests, the focused API
+Historical validation on 2026-09-09 passed the controller race tests, the focused API
 checks, the complete Gateway Kubernetes workflow, and the full application race
 suite. The Gateway workflow took 243.581 seconds; the full acceptance package
 took 555.058 seconds. Pinned regeneration reproduced all 69 generated, dependency,
-and state file hashes. Use `scripts/check-gateway.sh` and
-`scripts/check-gateway-workload.sh` to repeat the application checks.
+and state file hashes. These results predate the local database requirement.
+Run current application checks in CI or a bounded jshell Job.
 
 Cleanup observation writes also require [explicit grants](cleanup-permissions.md)
 for the verified issuer, subject, resource, operation, and target.
+
+## Locality and former-cluster check
+
+On 2026-09-14, the bounded jshell Job `stego-placement-55ba7679/check` compared
+the old generated query with compiler `97d3877237bcd507a1bdba876016726b0fab6d09`.
+The old query returned HTTP 204 for a former cluster with unfinished cleanup.
+The fixed query passed the REST and TLS gRPC checks. The target-history test
+took 11.54 seconds. All seven selected application checks passed under race
+detection in 43.250 seconds.
+
+The checks cover new-move denial, retained former-cluster cleanup, independent
+owner and target observations, grant revocation, restart, reopened work, event
+rollback, and event delivery after successful parent deletion. They also cover
+local database registration, legacy row preservation, controller access, and
+parent deletion concurrent with Gateway creation.
+
+An earlier attempt stopped before this comparison because its event audit also
+counted identity events. The final audit selects Gateway events and cluster
+deletion events. No production access or event rule was weakened.
+
+Results are in `/tmp/hypershell-former-parent-xemnouyd`. Both generation passes
+and the post-test files have identical hashes for all 230 generated and build
+files. The collected output supplies the committed generated files. The Job
+completed, and its namespace and private launch files were removed. The full
+compiler CI run also passed for this compiler revision.
+
+This check uses PostgreSQL and the generated API runtime. It does not deploy
+Gateway Pods or database servers. The separate CNPG browser workflow supplies
+that evidence; external PostgreSQL provisioning remains open.
