@@ -17,6 +17,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -153,7 +154,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	releaseID := release.GetGatewayRelease().GetMetadata().GetId()
-	code, data = requestJSON(t, "POST", base+"/managed_databases", admin, []byte(`{"name":"shared","provider":"cnpg","region":"east","engine":"postgresql","engine_version":"18","instance_class":"small","connection_secret":"database-access","status":"ready"}`))
+	code, data = requestJSON(t, "POST", base+"/managed_databases", admin, []byte(fmt.Sprintf(`{"name":"shared","provider":"cnpg","cluster_id":%q,"region":"east","engine":"postgresql","engine_version":"18","instance_class":"small","connection_secret":"database-access","status":"ready"}`, cluster.ID)))
 	var database httpapi.ManagedDatabase
 	if code != 201 || json.Unmarshal(data, &database) != nil {
 		t.Fatal("database creation", code, string(data))
@@ -354,6 +355,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err := f.db.QueryRow(`SELECT id::text FROM stego_outbox.messages`).Scan(&offlineMessageID); err != nil {
 		t.Fatal(err)
 	}
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", cluster.ID), cleanupGrant("controller", "ManagedDatabase", "provider", cluster.ID))
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	base = address + "/api/hypershell/v1"
 	gatewayClient, connection = grpcClient(t, grpcAddress, tlsIdentity)
@@ -371,6 +373,47 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code, _ := requestJSON(t, "DELETE", base+"/gateways/"+gateway.ID, owner, nil); code != 204 {
 		t.Fatal("Gateway removal", code)
 	}
+	for _, target := range []string{"managed_databases/" + database.ID, "managed_clusters/" + cluster.ID} {
+		if code, _ := requestJSON(t, "DELETE", base+"/"+target, admin, nil); code != 409 {
+			t.Fatal("catalog deletion ignored pending Gateway cleanup", target, code)
+		}
+	}
+	// This API fixture has no Kubernetes workload. Record the cleanup observation
+	// through the same versioned, scoped RPC that the real worker uses.
+	state := control.NewGatewayIdentityServiceClient(connection)
+	retained, err := state.GetGatewayIdentityState(call(controller), &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+	if err != nil || !retained.GetDeleted() || retained.GetGateway().GetClusterId() != cluster.ID {
+		t.Fatal("retained Gateway cleanup state", err)
+	}
+	write, err := rpc.WithResourceVersion(call(controller), retained.GetResourceVersion())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: gateway.ID, Owner: "workload", Target: cluster.ID, Complete: true}); err != nil {
+		t.Fatal("Gateway cleanup observation", err)
+	}
+	observeDatabaseCleanup := func(id string) {
+		t.Helper()
+		read, err := rpc.WithRetainedResourceRead(call(controller))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var header metadata.MD
+		if _, err := databases.GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header)); err != nil {
+			t.Fatal(err)
+		}
+		version, deleted, err := rpc.ObservedResourceState(header)
+		if err != nil || !deleted {
+			t.Fatal("retained database cleanup state", err)
+		}
+		write, err := rpc.WithResourceVersion(call(controller), version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := control.NewDatabaseCleanupServiceClient(connection).ObserveDatabaseCleanup(write, &control.ObserveDatabaseCleanupRequest{Id: id, Owner: "provider", Complete: true}); err != nil {
+			t.Fatal("database cleanup observation", err)
+		}
+	}
 	dbWatch, err := databases.WatchManagedDatabases(call(creator), &pb.WatchManagedDatabasesRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -378,9 +421,15 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if _, err := dbWatch.Header(); err != nil {
 		t.Fatal(err)
 	}
-	for _, v := range []struct{ path, id string }{{"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}, {"managed_databases", database.ID}} {
+	for _, v := range []struct{ path, id string }{{"managed_databases", database.ID}, {"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}} {
 		if code, _ := requestJSON(t, "DELETE", base+"/"+v.path+"/"+v.id, admin, nil); code != 204 {
 			t.Fatal("unused catalog removal", v.path, code)
+		}
+		if v.path == "managed_databases" {
+			if code, _ := requestJSON(t, "DELETE", base+"/managed_clusters/"+cluster.ID, admin, nil); code != 409 {
+				t.Fatal("cluster deletion ignored pending database cleanup", code)
+			}
+			observeDatabaseCleanup(v.id)
 		}
 		if code, _ := requestJSON(t, "GET", base+"/"+v.path+"/"+v.id, creator, nil); code != 404 {
 			t.Fatal("deleted catalog read", v.path, code)
@@ -398,7 +447,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	spareDB, err := databases.CreateManagedDatabase(call(admin), &pb.CreateManagedDatabaseRequest{Name: "spare", Provider: "cnpg"})
+	spareDB, err := databases.CreateManagedDatabase(call(admin), &pb.CreateManagedDatabaseRequest{Name: "spare", Provider: "cnpg", ClusterId: spareCluster.ManagedCluster.Metadata.Id})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -431,13 +480,24 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || databaseList.GetMetadata().GetTotal() != 1 || len(databaseList.Items) != 1 || databaseList.Items[0].GetRegion() != "north" {
 		t.Fatal("RPC database list", databaseList, err)
 	}
-	if _, err := clusters.DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: spareCluster.ManagedCluster.Metadata.Id}); err != nil {
-		t.Fatal(err)
+	stop()
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", spareCluster.ManagedCluster.Metadata.Id))
+	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
+	clusters = pb.NewManagedClusterServiceClient(connection)
+	releases = pb.NewGatewayReleaseServiceClient(connection)
+	databases = pb.NewManagedDatabaseServiceClient(connection)
+	if _, err := clusters.DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: spareCluster.ManagedCluster.Metadata.Id}); status.Code(err) != codes.AlreadyExists {
+		t.Fatal("cluster deletion ignored its registered database", err)
 	}
 	if _, err := releases.DeleteGatewayRelease(call(admin), &pb.DeleteGatewayReleaseRequest{Id: spareRelease.ID}); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := databases.DeleteManagedDatabase(call(admin), &pb.DeleteManagedDatabaseRequest{Id: spareDB.ManagedDatabase.Metadata.Id}); err != nil {
+		t.Fatal(err)
+	}
+	observeDatabaseCleanup(spareDB.ManagedDatabase.Metadata.Id)
+	if _, err := clusters.DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: spareCluster.ManagedCluster.Metadata.Id}); err != nil {
 		t.Fatal(err)
 	}
 

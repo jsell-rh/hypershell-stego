@@ -94,6 +94,7 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.sandbox-count", f.cluster))
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	readEvent(t, consumer, anchor.ID)
@@ -190,6 +191,9 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	}
 	if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_watch`); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := client.AdjustActiveSandboxCount(ownerCtx, &pb.AdjustActiveSandboxCountRequest{Namespace: rest.Namespace, Delta: 3}); status.Code(err) != codes.PermissionDenied {
+		t.Fatalf("owner changed the observed sandbox count: %v", err)
 	}
 	counted, err := client.AdjustActiveSandboxCount(controllerCtx, &pb.AdjustActiveSandboxCountRequest{Namespace: rest.Namespace, Delta: 3})
 	if err != nil || counted.ActiveSandboxCount != 3 {

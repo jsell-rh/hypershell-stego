@@ -1,3 +1,10 @@
+The deployment-backed database provider is removed. Current installations
+support registered external PostgreSQL or CNPG servers in the selected cluster.
+The older evidence below describes the previous scope. Its dedicated
+server-per-Gateway API tests still need conversion; they are not current
+passing evidence. See [local database placement](database-providers.md) and
+[the jshell API gate](jshell-gateway-ci.md).
+
 The generated application now uses the reference deployment placement path by
 default. Each Gateway creation makes a new ManagedDatabase with provider
 `deployment`. The database name is `gw-<gateway-name>-db`. Its namespace comes from
