@@ -1,5 +1,10 @@
 # Namespace allocation adoption
 
+The [database provider decision](database-providers.md) of 2026-09-14 supersedes
+the deployment-backed database target below. Earlier results remain evidence
+for their recorded source only. The next application gate must use CNPG or
+external PostgreSQL with the required locality and per-Gateway database access.
+
 ## Required shared-cluster support
 
 The user confirmed on 2026-09-14 that managed clusters can contain unrelated
@@ -237,6 +242,14 @@ the allocator marker and Gateway profile. That correction needs a fresh run.
 
 The final test source also checks seven Deployments, admission through server
 dry-run requests, and REST deletion through namespace removal and stored cleanup
-observations. These added checks are not yet proved. Collection of the current
-Job and the next run require a refresh of the expired local jshell login. Do not
-report this attempt as a pass or its cluster resources as removed.
+observations. These added cluster checks are not yet proved. All eight CI jobs
+passed for commit `074ce1cd955f72fb40f53575111195182cc6baae` in
+[run 34668451111](https://github.com/jsell-rh/hypershell-stego/actions/runs/34668451111).
+CI does not run this seven-Deployment cluster workflow.
+
+The login was restored on 2026-09-14. The existing collector resumed and found
+no Pod completion record or Job. It exited with status 1. This attempt is not a
+pass. Cleanup removed the remaining owned roles, bindings, and admission
+policies. A separate check confirmed that the control and workload namespaces,
+owned cluster resources, and private local fixture files were absent. The result
+is recorded in `/tmp/stego-service-results.RtCsac91/cleanup.json`.
