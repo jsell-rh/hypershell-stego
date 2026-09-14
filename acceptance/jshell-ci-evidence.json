@@ -210,5 +210,14 @@
   ],
   "live_jobs_created": 0,
   "second_holder_denied": true,
-  "wrong_holder_release_denied": true
+  "wrong_holder_release_denied": true,
+  "renewal": {
+    "issued_at": "2026-09-14T19:31:02Z",
+    "expires_at": "2026-09-14T20:31:02Z",
+    "permissions_passed": 18,
+    "admission_passed": 20,
+    "live_jobs_created": 0,
+    "local_evidence": "/tmp/stego-ci-identity-d28rnlx4/verification.json",
+    "evidence_sha256": "d978df319d1048ae1dff044adf3148bfda262adfd5e09cf26c876abb85b654ba"
+  }
 }

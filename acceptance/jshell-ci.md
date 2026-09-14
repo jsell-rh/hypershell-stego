@@ -43,7 +43,7 @@ fixture installers currently require.
 ## Credential renewal
 
 The API token lasts one hour. The issued token expires at
-`2026-09-14T19:38:11Z`. This is not an unattended CI credential service.
+`2026-09-14T20:31:02Z`. This is not an unattended CI credential service.
 An operator can renew it with the following command. The script sends the
 credential directly to GitHub and never prints it.
 
@@ -84,3 +84,7 @@ and the remaining workload fixture conversions are still open. Do not give the C
 Do not treat the old failed CI jobs as passed. The first setup commits used `[skip ci]` to avoid starting the prohibited old
 kind jobs. The old installer is now removed. Unconverted selectors fail
 explicitly, so a later push cannot start privileged kind nodes.
+
+The credential was renewed at `2026-09-14T19:31:02Z` before the next CI run.
+The renewed identity passed all 18 permission checks and 20 admission checks.
+Those checks created no live Job. The renewal did not change its permissions.

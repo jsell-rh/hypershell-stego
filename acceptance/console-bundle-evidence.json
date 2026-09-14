@@ -121,5 +121,24 @@
       "fixture_resources_absent": true
     },
     "shared_lease_released": true
+  },
+  "final_ci": {
+    "source_commit": "8596c672cf899003e7743a857e100d3612234510",
+    "web_console_job": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34887406627",
+    "web_console_result": "success",
+    "gateway_api_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34887406595",
+    "gateway_api_result": "success",
+    "required_tests": 13,
+    "api_package_seconds": 41.138,
+    "generated_hashes": 231,
+    "committed_first_second_after_checkout_match": true,
+    "cleanup": {
+      "job_absent": "gateway-api-344369fb66c0",
+      "pods_absent": true,
+      "fixture_resources_absent": true
+    },
+    "shared_lease_released": true,
+    "local_results": "/tmp/hypershell-gateway-ci-34887406595",
+    "full_application_result": "Not passed. Old workload jobs fail; the broad acceptance job is separate."
   }
 }
