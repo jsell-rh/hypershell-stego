@@ -132,3 +132,24 @@ The Job completed, and its namespace and private launch files were removed.
 The check uses PostgreSQL, the generated API, and the generated event runtime.
 It does not run the Kubernetes Pod watcher. Restricting that watcher's read
 permissions to allocated namespaces remains a separate required change.
+
+## Separate HTTP stream limits
+
+Compiler `cfec3aa3e4f81c6561c509cd0e13791863a8e282` gives streams a separate
+request limit. The previous client let 16 open watches block namespace identity
+reads. The compiler regression first failed with that client, then passed with
+the change. It uses real TLS connections and runs the Kubernetes check with and
+without OTEL. Full compiler CI passed in run `34870924358`.
+
+The bounded jshell Job `stego-stream-app-76bc4fbc/check` regenerated this variant
+twice. All 230 generated and build-file hashes match both passes, the files after
+testing, and the checkout. The four count-controller checks passed. The exact
+grant test passed in 11.77 seconds, and the REST/gRPC count workflow passed in
+10.69 seconds. These checks include denied writes, event rollback and delivery,
+and restart. They are correctness checks, not production capacity measurements.
+
+Results are in `/tmp/hypershell-stream-limits-dc9z5wu_`. The Job completed, and
+its namespace and private launch files were removed. This document changed after
+the source freeze. The Pod watcher still needs watches and permissions limited
+to allocated namespaces. The transport change supplies request capacity for
+those ownership checks; it does not supply the watch assignment mechanism.

@@ -32,9 +32,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914161735-97d3877237bc
+        module_version: v0.0.0-20260914164850-cfec3aa3e4f8
         vcs: git
-        revision: 97d3877237bcd507a1bdba876016726b0fab6d09
+        revision: cfec3aa3e4f81c6561c509cd0e13791863a8e282
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
@@ -57,7 +57,7 @@ last_applied:
             sha: browser-workflow
     files:
         browser/backend.go: 8e758e2fb79fac7684cc4e9b3ed55c1c8831093689473a69a2d72f29917cce5e
-        browser/client/client.go: fa5cc830627d59e6632383dc696dda8266016b503684865bedb408e5a5682389
+        browser/client/client.go: 137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a
         browser/handlers.go: 64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
         browser/oauth.go: f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e

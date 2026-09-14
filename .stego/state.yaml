@@ -136,9 +136,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914161735-97d3877237bc
+        module_version: v0.0.0-20260914164850-cfec3aa3e4f8
         vcs: git
-        revision: 97d3877237bcd507a1bdba876016726b0fab6d09
+        revision: cfec3aa3e4f81c6561c509cd0e13791863a8e282
         source_state: clean
     service_hash: d3b25741e13ff66406a6ec20fd17c3256e08af0b3f56c420f6ef2303d8599c00
     registry_sha: gateway-workflow
@@ -457,7 +457,7 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: 22aa42cfe8b5a4b48fd0fb9b71eb89568608fd0ab1566acf2cba03a6eaa9043d
+        application/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
         application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
@@ -467,7 +467,7 @@ last_applied:
         browsertelemetry/index.js: 72d4776927a5e8b87208ec71b500a588bcec69a10ac47cee02d7848748480d93
         browsertelemetry/package.json: 6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90
         cli/buildidentity/runtime.go: 5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911
-        cli/client/client.go: 22aa42cfe8b5a4b48fd0fb9b71eb89568608fd0ab1566acf2cba03a6eaa9043d
+        cli/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
         cli/cmd/main.go: 28174ab7e7443ef442cc2c708d10c901ea19e2e68afb8f60ac42270e862eb424
         cli/command/apply.go: bcd632e752e05e53ffc517dee9d1479485dc0cce2cd60e1f4effd7d0770d6007
         cli/command/apply_immutable.go: a1954d710b1821ae3d1a2375f4d0a9dd143cb33257bfe21d147b7056aa6c05dc
@@ -479,7 +479,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 022c699c2fa1589a18d51be582e44d5d6ba3b45124b5287c6e9c85b628d82671
+        cli/command/version.go: ab54b6e766bd108f2844dbe21f22a10fa654a05c11d737986b1e8269e552a7b2
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 86f37da2a27f9d2443bb9a1b4e41bdcef0f182ba5fa18928005380d952535548
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -565,7 +565,7 @@ last_applied:
         postgres/client.go: 58d82cdcb3c86fa149fe1bbf6015e3e30f776b894084137f22bcb6cd3252f58c
         sdk/api.go: 42c89e61f0f73046a34f627ce987296c0f1ba42ff9767c272a33c043b28a6b36
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
-        sdk/internal/transport/client.go: ad0565aabdf80d50a4ecb44979f06e85cef660551b438853d031c73b98167429
+        sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
         sdk/internal/wire/api.go: 4b95a582a39161576fff9d5cf9b8607f08a5c1c51d4f8449b6ecd70b6f9f0d4d
         search/field_map.go: 96384a1e941c1ef3bc941d8bbb364b34cfc152d974a91fa4e4c2be3983f0a6c3
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
