@@ -136,9 +136,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914135512-158f448545f2
+        module_version: v0.0.0-20260914151634-f8585bc9bd8b
         vcs: git
-        revision: 158f448545f253cd582035aff3ec51c1302ef6ac
+        revision: f8585bc9bd8ba235cf9bd0f0c8625ab249182dca
         source_state: clean
     service_hash: d3b25741e13ff66406a6ec20fd17c3256e08af0b3f56c420f6ef2303d8599c00
     registry_sha: gateway-workflow
@@ -479,9 +479,9 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 3fc026824627b63eed7e48f4752fd8a1ebe53385829375cb11953f58a0a42745
+        cli/command/version.go: 61c97411c2a02617d91830b7d60e2c4339ba9499ec8abbcfb1466807555394f7
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
-        contracts/storage/storage.go: a45fe2727239b37240c3128a75cff0b8e32ea0fa3f4b98514c4fc31fac3805ce
+        contracts/storage/storage.go: fe802d579b524069ac55fbddcf4d7fd22b30a9eb9ffeb7105cdd954a4ba32509
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75
         controller/keyed.go: 53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b
@@ -570,7 +570,7 @@ last_applied:
         search/field_map.go: 96384a1e941c1ef3bc941d8bbb364b34cfc152d974a91fa4e4c2be3983f0a6c3
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: dc308df35390c5b13e4751691060b0c9d2033988a25c35df9e96fc386a0ae323
-        storage/cleanup_summary.go: fc954e72849dbaf26299e5afc4adc7332b98bdf1306f63c6ade004f7518894a6
+        storage/cleanup_summary.go: e748922f7efa40a4a33437ea89a05eba055ce9566cc27b27504a7cf76166eacb
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
         storage/cursor.go: f16bf7b76a0574a4e2d45196631eb35e6f5f4710223be39f62d52c1306ca8052
         storage/database.go: 280f46b5c6e04748a3d4c284545bcc46a0c3d0b966d9019469e60030b0e12e24

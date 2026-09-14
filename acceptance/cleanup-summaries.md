@@ -1,13 +1,15 @@
 The controller metrics now include pending cleanup outside the admitted queue.
 STEGO supplies the aggregate storage query, independent sampler, and fixed metric
-names. Hypershell supplies the owner, target, provider scope, and access checks.
-The compiler pin is `93cacec0cb6d3a2b5f8c2376159e03574f6ed571`, with PostgreSQL
-adapter 3.11.0 and controller 1.10.0.
+names. Hypershell supplies the owner, target, provider and cluster scope, and
+access checks. The compiler pin is
+`f8585bc9bd8ba235cf9bd0f0c8625ab249182dca`, with PostgreSQL adapter 4.1.0
+and controller 1.16.0.
 
 The private gRPC API provides two summary methods:
 
 - `GetGatewayCleanupSummary` selects the identity owner or one workload target.
-- `GetDatabaseCleanupSummary` selects the provider owner and one database provider.
+- `GetDatabaseCleanupSummary` selects the provider owner, database provider,
+  and managed-cluster ID together.
 
 Each response repeats its scope and returns the pending deleted-resource count,
 the oldest original deletion time, and the database statement time. The oldest
@@ -17,13 +19,16 @@ count; reopening restores it with its original deletion time.
 
 A caller must be a configured controller with the matching cleanup grant.
 Gateway workload grants select an exact cluster target. Identity grants select
-the identity owner. The database cleanup grant covers its provider owner; the
-request then selects the exact `deployment` or `cnpg` provider. Ordinary users
+the identity owner. The database cleanup grant selects the stored cluster ID
+for its provider owner. The query combines that cluster with the requested
+`cnpg` or `external` provider through STEGO's `ScopedCleanupSummaryReader`. Ordinary users
 and platform administrators do not gain access through their public catalog
 permissions. These reads neither record completion nor authorize deletion.
 
-The deployment database controller samples only `deployment` records. Gateway
-workload controllers sample their configured cluster target. The identity
+The CNPG database controller samples only `cnpg` records in its configured
+cluster. It excludes external PostgreSQL records in that cluster and CNPG
+records in other clusters. Gateway workload controllers sample their configured
+cluster target. The identity
 controller samples its identity owner. The sandbox-count controller has no
 cleanup source. A summary for another provider can be read by an authorized
 operator, but this change does not add another provider implementation.
@@ -58,8 +63,10 @@ required for the aggregate query.
 The three cleanup workflows use PostgreSQL, generated REST and TLS gRPC servers,
 and a Kafka protocol fixture. They create and delete records, restart the API,
 and then verify two pending records. Public callers and an ungranted cleanup
-owner are denied. The database test adds a deleted CNPG record and proves that
-it does not enter the deployment count.
+owner are denied. The database test adds a deleted external PostgreSQL record
+in the same cluster and a CNPG record in another cluster. Neither can enter
+the local CNPG count. A request for the foreign cluster is denied. The local
+external record stays pending after CNPG cleanup finishes.
 
 Each workflow then forces a provider retry and holds one resource while the
 other completes. HTTP metrics report available pending cleanup without resource
@@ -67,7 +74,23 @@ IDs or private errors. Direct summary reads show one pending resource, then zero
 and no oldest timestamp after both complete. Existing revision, event delivery,
 public 404, and one-action-per-key checks remain in force.
 
-The three workflows and offline CLI version check passed with race detection in
+On 2026-09-14, bounded jshell Job `stego-placement-99ccfb3f/check` proved the
+combined scope. The old cluster-only query counted three pending records where
+the local CNPG scope had two. That test failed as required. With the generated
+combined query, all three independent-cleanup workflows passed. The database
+workflow excluded both the external record and the foreign cluster, denied the
+foreign summary request, and left external cleanup pending after CNPG finished.
+
+Catalog, database controller, and cleanup metrics unit tests also passed with
+the race detector. Both generation runs and the post-test output matched all
+230 generated and build-record hashes. The Job completed, and its namespace
+and private launch files were removed. Evidence is in
+`/tmp/hypershell-cleanup-scopes-ct37y56i`. Full STEGO CI passed at `cfb2302`,
+which adds only a registry test correction and documentation to the pinned
+compiler feature revision.
+
+The original summary gate used provider-name scope and the former deployment
+provider. Its three workflows and offline CLI version check passed in
 20.603 seconds. Unit, contract, and static checks passed. The full compiler race
 suite passed with PostgreSQL required. The selected application checks do not
 claim a full application or real Kubernetes suite run for this change. The

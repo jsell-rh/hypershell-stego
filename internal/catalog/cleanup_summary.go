@@ -28,13 +28,14 @@ func (r *Resource[T, C, P]) CleanupSummary(ctx context.Context, p gateways.Princ
 		return result, err
 	}
 	err = r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		reader, ok := tx.(store.CleanupSummaryReader)
+		reader, ok := tx.(store.ScopedCleanupSummaryReader)
 		if !ok {
 			return errors.New("catalog storage has no cleanup summary reader")
 		}
 		var err error
-		field, value := "cluster_id", cluster
-		result, err = reader.ReadCleanupSummary(ctx, r.entity, owner, "", field, value)
+		result, err = reader.ReadScopedCleanupSummary(ctx, r.entity, owner, "",
+			store.CleanupScope{Field: "cluster_id", Value: cluster},
+			store.CleanupScope{Field: "provider", Value: provider})
 		return err
 	})
 	return result, err
