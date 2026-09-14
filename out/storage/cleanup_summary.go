@@ -13,6 +13,7 @@ import (
 
 var _ contract.CleanupSummaryReader = (*Store)(nil)
 var _ contract.ScopedCleanupSummaryReader = (*Store)(nil)
+var _ contract.CleanupReferenceReader = (*Store)(nil)
 
 // ReadCleanupSummary reads pending deleted rows for one declared owner and,
 // when required, one retained target. Scope values use exact text equality.
@@ -93,5 +94,44 @@ func (s *Store) ReadScopedCleanupSummary(ctx context.Context, entity, owner, tar
 		return zero, contract.ErrCleanupSummary
 	}
 	return result, nil
+
+}
+
+// HasUnfinishedReferences checks all retained targets through their aggregate
+// owner state. It stops at the first live or unfinished child. No IDs are read.
+func (s *Store) HasUnfinishedReferences(ctx context.Context, reference contract.CleanupReference) (bool, error) {
+	validText := func(value string) bool {
+		return value != "" && len(value) <= 256 && utf8.ValidString(value) && !strings.ContainsRune(value, 0)
+	}
+	if ctx == nil || s == nil || s.db == nil || !validText(reference.Entity) || !validText(reference.Field) || !validText(reference.ID) || !validText(reference.Owner) {
+		return false, contract.ErrCleanupReference
+	}
+	if err := ctx.Err(); err != nil {
+		return false, err
+	}
+
+	var table string
+	var owners, fields map[string]bool
+	switch reference.Entity {
+	case "ManagedDatabase":
+		table = "managed_databases"
+		owners = map[string]bool{"provider": true}
+		fields = map[string]bool{"cluster_id": true}
+	case "Gateway":
+		table = "gateways"
+		owners = map[string]bool{"identity": true, "workload": true}
+		fields = map[string]bool{"cluster_id": true, "database_id": true, "release_id": true}
+	default:
+		return false, contract.ErrCleanupReference
+	}
+	if !owners[reference.Owner] || !fields[reference.Field] {
+		return false, contract.ErrCleanupReference
+	}
+	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
+	defer cancel()
+	query := fmt.Sprintf("SELECT EXISTS (SELECT 1 FROM %q WHERE %q COLLATE \"C\" = ? AND (deleted_at IS NULL OR stego_cleanup -> ? IS DISTINCT FROM 'true'::jsonb))", table, reference.Field)
+	var pending bool
+	err := s.db.WithContext(operation).Raw(query, reference.ID, reference.Owner).Scan(&pending).Error
+	return pending, err
 
 }

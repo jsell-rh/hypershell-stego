@@ -1,0 +1,162 @@
+package acceptance
+
+import (
+	"context"
+	"encoding/json"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
+)
+
+func TestDatabaseDeletionWaitsForGatewayCleanupAndRestart(t *testing.T) {
+	f := database(t)
+	if _, err := f.db.Exec(`CREATE TABLE parent_delete_events(kind text NOT NULL);
+CREATE FUNCTION audit_parent_delete() RETURNS trigger LANGUAGE plpgsql AS $$
+BEGIN INSERT INTO parent_delete_events VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE TRIGGER audit_parent_delete AFTER INSERT ON stego_outbox.messages
+FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_parent_delete()`); err != nil {
+		t.Fatal(err)
+	}
+	_, config := broker(t, identity(t, "localhost"))
+	consumer := kafkaConsumer(t, config)
+	key, settings := issuer(t)
+	apiTLS := identity(t, "localhost")
+	dir := filepath.Dir(apiTLS.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["worker","database"]`)
+	settings = withCleanupGrants(t, settings, cleanupGrant("worker", "Gateway", "workload", f.cluster), cleanupGrant("database", "ManagedDatabase", "provider", f.cluster))
+	binary := buildApplication(t)
+	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	defer func() { stop() }()
+	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	defer cancel()
+	admin := token(t, key, "operator", "platform:admin")
+	owner := token(t, key, "owner", "gateway:creator")
+	call := func(bearer string) context.Context {
+		return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
+	}
+	_, connection := grpcClient(t, grpcAddress, apiTLS)
+	state := control.NewGatewayIdentityServiceClient(connection)
+	databases := pb.NewManagedDatabaseServiceClient(connection)
+	databaseCleanup := control.NewDatabaseCleanupServiceClient(connection)
+	restart := func() {
+		connection.Close()
+		stop()
+		stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+		_, connection = grpcClient(t, grpcAddress, apiTLS)
+		state = control.NewGatewayIdentityServiceClient(connection)
+		databases = pb.NewManagedDatabaseServiceClient(connection)
+		databaseCleanup = control.NewDatabaseCleanupServiceClient(connection)
+	}
+	var ids []string
+	for _, name := range []string{"first", "second"} {
+		body, _ := json.Marshal(f.request(name))
+		code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, body)
+		var row httpapi.Gateway
+		if code != 201 || json.Unmarshal(data, &row) != nil {
+			t.Fatal("create Gateway", code)
+		}
+		ids = append(ids, row.ID)
+		readGatewayEvent(t, consumer, row.ID, "Create", "gateway.created")
+		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 204 {
+			t.Fatal("delete Gateway", code)
+		}
+		readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+	}
+	awaitQueueEmpty(t, f)
+	blocked := func(resource, id, table string) {
+		t.Helper()
+		var before, after string
+		if err := f.db.QueryRow("SELECT to_jsonb(parent)::text FROM "+table+" parent WHERE id=$1 AND deleted_at IS NULL", id).Scan(&before); err != nil {
+			t.Fatal(err)
+		}
+		events := count(t, f.db, "parent_delete_events")
+		code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/"+resource+"/"+id, admin, nil)
+		if code != 409 {
+			t.Fatalf("parent deletion bypassed pending cleanup: %s got %d, want 409", resource, code)
+		}
+		var err error
+		if resource == "managed_databases" {
+			_, err = databases.DeleteManagedDatabase(call(admin), &pb.DeleteManagedDatabaseRequest{Id: id})
+		} else {
+			_, err = pb.NewManagedClusterServiceClient(connection).DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: id})
+		}
+		if status.Code(err) != codes.AlreadyExists {
+			t.Fatal("gRPC parent deletion bypassed pending cleanup", err)
+		}
+		if err := f.db.QueryRow("SELECT to_jsonb(parent)::text FROM "+table+" parent WHERE id=$1 AND deleted_at IS NULL", id).Scan(&after); err != nil || before != after || count(t, f.db, "parent_delete_events") != events {
+			t.Fatal("denied parent deletion changed state or events", err)
+		}
+	}
+	blocked("managed_databases", f.database, "managed_databases")
+	restart()
+	blocked("managed_databases", f.database, "managed_databases")
+	observe := func(id string, complete bool) {
+		t.Helper()
+		current, err := state.GetGatewayIdentityState(call(token(t, key, "worker")), &control.GetGatewayIdentityStateRequest{Id: id})
+		if err != nil {
+			t.Fatal(err)
+		}
+		write, err := rpc.WithResourceVersion(call(token(t, key, "worker")), current.ResourceVersion)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: f.cluster, Complete: complete}); err != nil {
+			t.Fatal(err)
+		}
+		readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+		awaitQueueEmpty(t, f)
+	}
+	observe(ids[0], true)
+	blocked("managed_databases", f.database, "managed_databases")
+	observe(ids[1], true)
+	observe(ids[0], false)
+	blocked("managed_databases", f.database, "managed_databases")
+	observe(ids[0], true)
+	if _, err := databases.DeleteManagedDatabase(call(admin), &pb.DeleteManagedDatabaseRequest{Id: f.database}); err != nil {
+		t.Fatal("finished Gateway cleanup did not release database", err)
+	}
+	readCatalogEvent(t, consumer, f.database, "ManagedDatabases", "Delete", "manageddatabase.deleted")
+	awaitQueueEmpty(t, f)
+	blocked("managed_clusters", f.cluster, "managed_clusters")
+	restart()
+	blocked("managed_clusters", f.cluster, "managed_clusters")
+	read, err := rpc.WithRetainedResourceRead(call(token(t, key, "database")))
+	if err != nil {
+		t.Fatal(err)
+	}
+	var header metadata.MD
+	if _, err := databases.GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: f.database}, grpc.Header(&header)); err != nil {
+		t.Fatal(err)
+	}
+	version, deleted, err := rpc.ObservedResourceState(header)
+	if err != nil || !deleted {
+		t.Fatal("missing retained database state", err)
+	}
+	write, err := rpc.WithResourceVersion(call(token(t, key, "database")), version)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := databaseCleanup.ObserveDatabaseCleanup(write, &control.ObserveDatabaseCleanupRequest{Id: f.database, Owner: "provider", Complete: true}); err != nil {
+		t.Fatal(err)
+	}
+	readCatalogEvent(t, consumer, f.database, "ManagedDatabases", "Delete", "manageddatabase.deleted")
+	awaitQueueEmpty(t, f)
+	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/managed_clusters/"+f.cluster, admin, nil); code != 204 {
+		t.Fatal("finished database cleanup did not release cluster", code)
+	}
+	readCatalogEvent(t, consumer, f.cluster, "ManagedClusters", "Delete", "managedcluster.deleted")
+	for _, path := range []string{"managed_databases/" + f.database, "managed_clusters/" + f.cluster} {
+		if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/"+path, admin, nil); code != 404 {
+			t.Fatal("deleted parent remained public", code)
+		}
+	}
+}

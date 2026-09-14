@@ -201,3 +201,34 @@ These are control-plane checks with controlled providers. The live CNPG workload
 evidence is recorded above. Older deployment workflow fixtures, the console
 asset archive, and other outdated contract inputs still prevent a full variant
 CI pass.
+
+## Parent deletion waits for cleanup
+
+Database deletion now requires each referenced Gateway to be deleted and its
+workload cleanup to be complete. Managed-cluster deletion also requires database
+provider cleanup to be complete. The check includes all retained workload
+targets. Hypershell selects the links and owners; STEGO supplies the common
+query in the same serializable transaction as deletion and event creation.
+
+On 2026-09-14, bounded jshell Job `stego-placement-769ca55c/check` passed four
+application tests with the race detector in 41.900 seconds. The new test proved
+REST and gRPC denial, unchanged parent records and committed events on denial,
+API restart, partial cleanup, reopened cleanup, and successful parent deletion
+after the required cleanup. Retained replay, independent cleanup after restart,
+and the existing shared-database workflow also passed. The catalog, database
+controller, and cleanup metrics unit packages passed.
+
+The old API failed the regression check: it returned HTTP 204 while Gateway
+cleanup was pending. The first test attempt failed because the test used an
+incorrect version column; that attempt is not a pass. The corrected test compares
+the full stored parent record, including its deletion state.
+
+Two generation runs and post-test output matched all 230 generated and build
+record hashes. All 821 frozen source files matched the checkout before generated
+output was imported. The Job completed, and its namespace and private launch
+files were removed. Evidence is in `/tmp/hypershell-parent-cleanup-ovoz71se`.
+STEGO revision `2f3a2c06bff4a0a6811757e9a168eb810f57ce53` also passed its full
+[compiler CI](https://github.com/jsell-rh/stego/actions/runs/34862811090).
+
+These checks use controlled providers. The added live browser check for final
+Gateway and CNPG server deletion has compiled but has not yet run.

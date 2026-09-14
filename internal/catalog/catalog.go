@@ -312,8 +312,8 @@ func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id
 	return row, nil
 }
 
-// Delete checks live Gateway references and removes the record in one serializable
-// transaction. A concurrent Gateway change must commit before it or return a conflict.
+// Delete checks references and required cleanup in the same serializable
+// transaction that removes the record and commits its event.
 func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id string) error {
 	if err := r.authorize(p, true); err != nil {
 		return err
@@ -342,7 +342,25 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 				return err
 			}
 		}
-		if r.foreignField != "" {
+		if r.entity == "ManagedDatabase" || r.entity == "ManagedCluster" {
+			references := []store.CleanupReference{{Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "workload"}}
+			if r.entity == "ManagedCluster" {
+				references = append(references, store.CleanupReference{Entity: "ManagedDatabase", Field: "cluster_id", ID: id, Owner: "provider"})
+			}
+			reader, ok := tx.(store.CleanupReferenceReader)
+			if !ok {
+				return errors.New("catalog storage has no cleanup reference reader")
+			}
+			for _, reference := range references {
+				pending, err := reader.HasUnfinishedReferences(ctx, reference)
+				if err != nil {
+					return err
+				}
+				if pending {
+					return store.ErrConflict
+				}
+			}
+		} else if r.foreignField != "" {
 			refs, err := tx.List(ctx, "Gateway", r.foreignField, id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
 			if err != nil {
 				return err
@@ -351,15 +369,7 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 				return store.ErrConflict
 			}
 		}
-		if r.entity == "ManagedCluster" {
-			refs, err := tx.List(ctx, "ManagedDatabase", "cluster_id", id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
-			if err != nil {
-				return err
-			}
-			if refs.Total != 0 {
-				return store.ErrConflict
-			}
-		}
+
 		if err := tx.Delete(ctx, r.entity, id); err != nil {
 			return err
 		}
