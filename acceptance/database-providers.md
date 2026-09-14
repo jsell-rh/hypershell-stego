@@ -1,5 +1,10 @@
 # Database providers and locality
 
+The [controller-local database decision](controller-local-database.md) supersedes
+the registration, catalog selection, and application-owned server lifecycle
+below. The following sections retain the earlier design and test history.
+They do not define the current target or prove its implementation.
+
 The user changed the database requirement on 2026-09-14. Deployment-backed
 PostgreSQL is no longer a supported target. The replacement must support CNPG
 and external PostgreSQL. This decision supersedes the earlier deployment

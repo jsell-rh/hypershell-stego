@@ -1,5 +1,11 @@
 This repository is the test bed for a STEGO-based Hypershell variant.
 
+The [controller-local database target](acceptance/controller-local-database.md)
+removes `database_id` and `ManagedDatabase`. The current implementation still
+uses that retired model. Earlier database registration and provider evidence
+does not prove the new target. This transition requires matching releases and
+fresh installation or explicit teardown and recreation.
+
 STEGO must provide common service infrastructure and generated contracts.
 Hypershell must supply its unique business rules and application workflows
 through explicit extension points. No STEGO component may depend on a Hypershell
