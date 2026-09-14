@@ -75,8 +75,8 @@ Local evidence is in `/tmp/hypershell-local-database-final-a52ya99b`.
 This gate covers registration and selection. It does not prove SQL provisioning,
 physical network locality, cross-database access denial, or the complete Gateway
 workflow. Deployment runtime removal and conversion of the older application
-fixtures remain open. The cleanup summary also needs a check that combines
-provider and cluster filters. Generated SDK type names need review because the
+fixtures remain open. Combined provider and cluster cleanup summaries are now
+verified by the contract gate below. Generated SDK type names need review because the
 new OpenAPI source paths changed some names. Keep this work on the working
 branch until the remaining workflow fixtures and contract checks pass.
 
@@ -163,7 +163,41 @@ database volumes, and private launch files. See the
 [browser workflow evidence](browser-gateway-workload.md) for details.
 
 External PostgreSQL provisioning, legacy deployment code removal, and conversion
-of the full CI suite remain open. The cleanup summary still needs combined
-provider and cluster filtering. Normal deletion of a shared database server also
-needs a check that its provider finalizers complete before namespace removal.
+of the full CI suite remain open. Normal deletion of a shared database server
+also needs a check that its provider finalizers complete before namespace
+removal.
 Keep these changes on the working branch until the remaining checks pass.
+
+## Recovery, deadlines, and cleanup scope
+
+On 2026-09-14, bounded jshell Job `stego-placement-99ccfb3f/check` passed 12
+application tests with the race detector in 176.973 seconds. Catalog, database
+controller, and cleanup metrics unit packages also passed.
+
+The updated tests register CNPG records with an explicit managed-cluster ID.
+They preserve these checks:
+
+- Deleted and retained replay under C and ICU ordering, including pagination,
+  exact IDs, provider and cluster fields, API restart, and empty history.
+- Recovery pages with no count query, and cursor continuation after an earlier
+  row is deleted.
+- Provider deadlines, failure observations, reopened cleanup, later recovery,
+  and worker shutdown for Gateway, database, and identity controllers.
+- Independent cleanup with one blocked resource, retries, private TLS gRPC
+  observations, REST deletion, event delivery, metrics, and access denial.
+
+The old cleanup query failed the new scope check: it included an external record
+in the local CNPG total. The fixed query combines provider and cluster filters
+through STEGO. The three cleanup workflows then passed. See
+[cleanup summaries](cleanup-summaries.md) for the scope and grant rules.
+
+Two generation runs and the post-test output matched all 230 generated and
+build-record hashes. The frozen source contained 818 tracked files; only the
+summary documentation changed during the run. The Job completed. Its namespace
+and private launch files were removed. Evidence is in
+`/tmp/hypershell-cleanup-scopes-ct37y56i`.
+
+These are control-plane checks with controlled providers. The live CNPG workload
+evidence is recorded above. Older deployment workflow fixtures, the console
+asset archive, and other outdated contract inputs still prevent a full variant
+CI pass.

@@ -32,7 +32,7 @@ func TestDatabaseRetainedReplayThroughGeneratedRuntime(t *testing.T) {
 }
 
 func testDatabaseReplay(t *testing.T, collation, mode string) {
-	f := databaseSetup(t, false)
+	f := databaseCatalogFixture(t)
 	// Use fixed SQL so the test does not accept an arbitrary SQL identifier.
 	statement := `ALTER TABLE managed_databases ALTER COLUMN id TYPE text COLLATE "C"`
 	if collation == "und-x-icu" {
@@ -53,7 +53,7 @@ func testDatabaseReplay(t *testing.T, collation, mode string) {
 	deleted := map[string]string{}
 	retained := map[string]string{}
 	for i := 0; i < 103; i++ {
-		row, err := catalogs.Databases.Create(context.Background(), p, catalog.DatabaseCreate{Name: fmt.Sprintf("db-%03d", i), Provider: "deployment"})
+		row, err := catalogs.Databases.Create(context.Background(), p, catalog.DatabaseCreate{Name: fmt.Sprintf("db-%03d", i), Provider: "cnpg", ClusterID: f.cluster})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -68,7 +68,7 @@ func testDatabaseReplay(t *testing.T, collation, mode string) {
 	}
 	// Include enough deleted records to cross the 100-row replay page.
 	for i := 0; i < 12; i++ {
-		row, err := catalogs.Databases.Create(context.Background(), p, catalog.DatabaseCreate{Name: fmt.Sprintf("extra-%d", i), Provider: "deployment"})
+		row, err := catalogs.Databases.Create(context.Background(), p, catalog.DatabaseCreate{Name: fmt.Sprintf("extra-%d", i), Provider: "cnpg", ClusterID: f.cluster})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,7 +85,7 @@ func testDatabaseReplay(t *testing.T, collation, mode string) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: "order-" + prefix, Namespace: ns, Provider: "deployment"}
+		row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: "order-" + prefix, Namespace: ns, Provider: "cnpg", ClusterID: &f.cluster}
 		if err := f.storage.Create(context.Background(), "ManagedDatabase", row); err != nil {
 			t.Fatal(err)
 		}
@@ -179,7 +179,7 @@ func testDatabaseReplay(t *testing.T, collation, mode string) {
 			if _, removed := deleted[id]; removed {
 				kind = pb.EventType_EVENT_TYPE_DELETED
 			}
-			if !ok || event.GetType() != kind || event.GetManagedDatabase().GetNamespace() != ns || event.GetManagedDatabase().GetProvider() != "deployment" {
+			if !ok || event.GetType() != kind || event.GetManagedDatabase().GetNamespace() != ns || event.GetManagedDatabase().GetProvider() != "cnpg" || event.GetManagedDatabase().GetClusterId() != f.cluster {
 				t.Fatal("invalid replay row", event)
 			}
 			actual = append(actual, id)

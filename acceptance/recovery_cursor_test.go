@@ -58,7 +58,7 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := principal("controller")
-	db, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: "cursor-deleted", Provider: "deployment"})
+	db, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: "cursor-deleted", Provider: "cnpg", ClusterID: f.cluster})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,7 +110,7 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 
 // Removal of an earlier live row must not shift later rows out of recovery.
 func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
-	f := databaseSetup(t, false)
+	f := databaseCatalogFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 	policy, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
@@ -123,7 +123,7 @@ func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
 	}
 	p := principal("controller")
 	for i := range 21 {
-		if _, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "deployment"}); err != nil {
+		if _, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "cnpg", ClusterID: f.cluster}); err != nil {
 			t.Fatal(err)
 		}
 	}

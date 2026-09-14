@@ -101,8 +101,12 @@ func TestIdentityCleanupDeadlineReopensConfirmation(t *testing.T) {
 }
 func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool) {
 	databaseResource, identityResource := resource == "database", resource == "identity"
-	f := database(t)
-	assignTestDatabaseCluster(t, f)
+	var f *fixture
+	if databaseResource {
+		f = databaseCatalogFixture(t)
+	} else {
+		f = database(t)
+	}
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
@@ -132,7 +136,7 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	if databaseResource {
 		path, healthyPhase, healthyStatus, failedPhase, failedStatus = "/api/hypershell/v1/managed_databases", "", "ready", "", "error"
 		owner = token(t, key, "alice", "platform:admin")
-		body, _ = json.Marshal(map[string]string{"name": "deadline-observation", "provider": "deployment"})
+		body = databaseCreateBody(t, "deadline-observation", "cnpg", f.cluster)
 	}
 	action, kind := "Update", "updated"
 	if cleanup {
