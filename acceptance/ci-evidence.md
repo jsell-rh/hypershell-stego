@@ -280,3 +280,26 @@ cgroup counters and container limits remain in force. No browser or workload
 test was run on the workstation. Shell syntax and workflow YAML checks passed.
 The next CI result must establish whether this diagnostic change works in the
 container; it is not a fix for the browser failure.
+
+
+[Run 34905810788](https://github.com/jsell-rh/hypershell-stego/actions/runs/34905810788)
+passed its separate browser and console jobs for `43fae31`. The browser test
+reported an explicit pass in 80.52 seconds. The resource sampler recorded
+103 samples, a 208004 KiB `/tmp` peak, no `/dev/shm` use, and a maximum of 174
+open files in a sampled process. There were no cgroup memory or PID-limit events.
+This is one passing run, not a confirmed explanation of the earlier failure.
+
+Image inspection found that the final Gateway screenshot showed a loading
+screen. The list-to-detail assertion could match the Gateway name in the old
+list before navigation completed. Create, reload, account, and access checks
+still have their recorded results; this screenshot did not prove the final
+detail view. The browser driver now requires the exact Gateway URL and a visible
+matching `h1` before each successful detail assertion. It still needs a new CI
+result. The service-account deletion image showed the completed empty account
+list and is retained in `/tmp/hypershell-browser-34905810788`.
+
+The separate [API run 34905810838](https://github.com/jsell-rh/hypershell-stego/actions/runs/34905810838)
+passed all 17 required tests for `43fae31`. Its saved verification has no missing
+or failed tests, and its cleanup record confirms that the Job, Pods, and fixture
+resources were removed. The new schema test acquired the shared Lease only
+after that API run released it.

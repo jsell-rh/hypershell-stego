@@ -23,6 +23,9 @@ async function element(selector){return until(async()=>{const all=await command(
 const click=async selector=>command(`/element/${await element(selector)}/click`,{});
 const type=async(selector,text)=>command(`/element/${await element(selector)}/value`,{text});
 const script=(source,args=[])=>command('/execute/sync',{script:source,args});
+async function gatewayDetail(id,label) {
+ await until(()=>script(`return location.pathname===arguments[0] && [...document.querySelectorAll('h1')].some(heading=>heading.textContent.trim()===arguments[1] && heading.getClientRects().length>0)`,['/gateways/'+id,'rendered-browser-workflow']),label);
+}
 async function newSession(){
  const value=await request('/session',{capabilities:{alwaysMatch:{browserName:'chrome','goog:loggingPrefs':{performance:'ALL',browser:'ALL'},'goog:chromeOptions':{binary:process.env.STEGO_TEST_CHROMIUM_BINARY??'/usr/bin/chromium',args:['--headless=new','--disable-gpu','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--no-first-run','--window-size=1280,960',`--user-data-dir=/tmp/stego-chrome-${Date.now()}`,`--ignore-certificate-errors-spki-list=${input.pins.join(',')}`]}}}});
  session=value.sessionId;await command('/timeouts',{implicit:0,pageLoad:20000,script:5000});
@@ -45,17 +48,17 @@ try {
   await click('button[type="submit"]');
   const url=await until(async()=>{const value=await command('/url');return /\/gateways\/[0-9A-Za-z]{27}$/.test(value)?value:undefined;},'Gateway detail');
   const id=new URL(url).pathname.split('/').at(-1);
-  await until(()=>script('return document.body.innerText.includes("rendered-browser-workflow")'),'Gateway name');
+  await gatewayDetail(id,'Gateway name');
   await script('window.dispatchEvent(new Event("pagehide"))');
   await writeFile(outputPath,JSON.stringify({id,session}));
  }else if(phase==='reload'){
   await command('/refresh',{});
-  await until(()=>script('return document.body.innerText.includes("rendered-browser-workflow")'),'Gateway after cold reload');
+  await gatewayDetail(input.id,'Gateway after cold reload');
   await writeFile(outputPath,JSON.stringify({reloaded:true}));
  }else if(phase==='verify'){
   await command('/log',{type:'performance'});
   await command('/refresh',{});
-  await until(()=>script('return document.body.innerText.includes("rendered-browser-workflow")'),'Gateway with collector failure');
+  await gatewayDetail(input.id,'Gateway with collector failure');
   await script('window.dispatchEvent(new Event("pagehide"))');
   const failedSignals=new Set();
   await until(async()=>{
@@ -68,11 +71,11 @@ try {
    }
    return ['traces','logs','metrics'].every(signal=>failedSignals.has('/telemetry/v1/'+signal));
   },'bounded telemetry failure');
-  await until(()=>script('return document.body.innerText.includes("rendered-browser-workflow")'),'Gateway after restart');
+  await gatewayDetail(input.id,'Gateway after restart');
   await command('/url',{url:input.origin+'/'});
   await element(`a[href="/gateways/${input.id}"]`);
   await click(`a[href="/gateways/${input.id}"]`);
-  await until(()=>script('return document.body.innerText.includes("rendered-browser-workflow")'),'Gateway from list');
+  await gatewayDetail(input.id,'Gateway from list');
   await writeFile(outputPath+'.png',Buffer.from(await command('/screenshot'),'base64'));
   await command('',undefined,'DELETE');session=undefined;
   await newSession();await login('console-bob');
