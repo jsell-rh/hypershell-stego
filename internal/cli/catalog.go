@@ -31,6 +31,7 @@ func catalogCommands() []command.Command {
 			{Flag: "status", Key: "status", Type: "string", Nullable: true},
 		}},
 		{"managedDatabase", "managed-database", "managed_databases", []command.Field{
+			{Flag: "cluster-id", Key: "cluster_id", Type: "string", Required: true},
 			{Flag: "name", Key: "name", Type: "string"},
 			{Flag: "provider", Key: "provider", Type: "string"},
 			{Flag: "region", Key: "region", Type: "string", Nullable: true},

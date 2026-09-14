@@ -99,22 +99,26 @@ func TestGeneratedCLIApplyWorkflow(t *testing.T) {
 		}
 		return results, problem, err
 	}
-	catalogs := `kind: ManagedCluster
+	foundation := `kind: ManagedCluster
 metadata: {name: apply-cluster}
 spec: {provider: kubernetes, kubeconfig_secret: cluster-access}
 ---
 kind: GatewayRelease
 metadata: {name: apply-release}
 spec: {image: registry.example/gateway:v1, canary_percent: 0}
----
-kind: ManagedDatabase
+`
+	dependentCatalogs := func(cluster string) string {
+		return fmt.Sprintf(`kind: ManagedDatabase
 metadata: {name: apply-database}
-spec: {provider: cnpg, connection_secret: database-access}
+spec: {provider: cnpg, cluster_id: %s, connection_secret: database-access}
 ---
 kind: GatewayNetwork
 metadata: {name: apply-network}
 spec: {topology: mesh, status: planned}
-`
+`, cluster)
+	}
+	// Offline validation checks shape. Real placement uses the returned cluster ID.
+	catalogs := foundation + "---\n" + dependentCatalogs(ksuid.New().String())
 	data, problem, err := run("offline", catalogs, "apply", "-f", "-", "--dry-run", "-o", "json")
 	var dry []command.ApplyResult
 	if err != nil || json.Unmarshal(data, &dry) != nil || len(dry) != 4 || requests.Load() != 0 || count(t, f.db, "managed_clusters") != 0 || count(t, f.db, "stego_outbox.messages") != 0 {
@@ -132,10 +136,17 @@ spec: {topology: mesh, status: planned}
 		}
 		success(name, "login", "--url", proxy.URL, "--token-file", file, "--ca-file", ca)
 	}
-	created, problem, err := apply("admin", catalogs)
-	if err != nil || len(created) != 4 {
-		t.Fatal("apply catalogs", err, problem)
+	created, problem, err := apply("admin", foundation)
+	if err != nil || len(created) != 2 || created[0].Kind != "ManagedCluster" {
+		t.Fatal("apply cluster and release", err, problem)
 	}
+	dependent := dependentCatalogs(created[0].ID)
+	rest, problem, err := apply("admin", dependent)
+	if err != nil || len(rest) != 2 {
+		t.Fatal("apply database and network", err, problem)
+	}
+	created = append(created, rest...)
+	catalogs = foundation + "---\n" + dependent
 	ids := map[string]string{}
 	for _, result := range created {
 		if result.Status != "created" {
@@ -252,6 +263,7 @@ spec: {topology: mesh, status: planned}
 	awaitQueueEmpty(t, f)
 	connection.Close()
 	stop()
+	settings = cliCleanupSettings(t, settings, ids["ManagedCluster"])
 	stop, address, rpcAddress = startBoth(t, api, f.dsn, brokerConfig, settings...)
 	backend.Store(address)
 	rpc, connection = grpcClient(t, rpcAddress, rpcIdentity)
@@ -271,7 +283,7 @@ spec: {topology: mesh, status: planned}
 	for _, id := range []string{gatewayID, firstID, duplicate.ID} {
 		success("owner", "delete", "gateway", id, "--yes")
 	}
-	// The default mode creates a dedicated database. Reapply must keep that ID.
+	// The default selects the local CNPG server. Reapply must keep that ID.
 	connection.Close()
 	stop()
 	defaults := append(append([]string{}, settings...), "DATABASE_PROVIDER=")
@@ -283,18 +295,17 @@ spec: {topology: mesh, status: planned}
 		t.Fatal("default apply creation", err, problem)
 	}
 	defaultID := results[0].ID
-	var dedicated httpapi.Gateway
-	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &dedicated) != nil || dedicated.DatabaseID == "" || dedicated.DatabaseID == ids["ManagedDatabase"] {
-		t.Fatal("default apply did not create a dedicated database")
+	var defaultGatewayRow httpapi.Gateway
+	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &defaultGatewayRow) != nil || defaultGatewayRow.DatabaseID == "" || defaultGatewayRow.DatabaseID != ids["ManagedDatabase"] {
+		t.Fatal("default apply did not select the local database server")
 	}
-	databaseID := dedicated.DatabaseID
+	databaseID := defaultGatewayRow.DatabaseID
 	readEvent(t, kafkaConsumer(t, brokerConfig), defaultID)
-	readCatalogEvent(t, kafkaConsumer(t, brokerConfig), databaseID, "ManagedDatabases", "Create", "manageddatabase.created")
 	results, problem, err = apply("owner", defaultInput)
 	if err != nil || results[0].Status != "configured" || results[0].ID != defaultID {
 		t.Fatal("default repeat apply", err, problem)
 	}
-	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &dedicated) != nil || dedicated.DatabaseID != databaseID || count(t, f.db, "managed_databases") != 2 {
+	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &defaultGatewayRow) != nil || defaultGatewayRow.DatabaseID != databaseID || count(t, f.db, "managed_databases") != 1 {
 		t.Fatal("default apply changed database placement")
 	}
 	rpc, connection = grpcClient(t, rpcAddress, rpcIdentity)
@@ -303,10 +314,21 @@ spec: {topology: mesh, status: planned}
 		t.Fatal("gRPC default apply placement", err)
 	}
 	success("owner", "delete", "gateway", defaultID, "--yes")
-	success("admin", "delete", "managedDatabase", databaseID, "--yes")
-	for kind, path := range map[string]string{"ManagedCluster": "managedCluster", "GatewayRelease": "gatewayRelease", "ManagedDatabase": "managedDatabase", "GatewayNetwork": "gatewayNetwork"} {
-		success("admin", "delete", path, ids[kind], "--yes")
+	if _, problem, err := run("admin", "", "delete", "managedDatabase", databaseID, "--yes"); err == nil || !strings.Contains(problem, "HTTP 409") {
+		t.Fatal("CLI deleted the database before Gateway cleanup", err, problem)
 	}
+	cleanupToken := token(t, key, "cli-cleanup")
+	observeCLIGatewayCleanup(t, connection, cleanupToken, ids["ManagedCluster"], gatewayID, firstID, duplicate.ID, defaultID)
+	success("admin", "delete", "managedDatabase", databaseID, "--yes")
+	if _, problem, err := run("admin", "", "delete", "managedCluster", ids["ManagedCluster"], "--yes"); err == nil || !strings.Contains(problem, "HTTP 409") {
+		t.Fatal("CLI deleted the cluster before database cleanup", err, problem)
+	}
+	observeCLIDatabaseCleanup(t, connection, cleanupToken, databaseID)
+	for _, resource := range []struct{ kind, path string }{{"GatewayRelease", "gatewayRelease"}, {"GatewayNetwork", "gatewayNetwork"}, {"ManagedCluster", "managedCluster"}} {
+		success("admin", "delete", resource.path, ids[resource.kind], "--yes")
+	}
+	connection.Close()
+
 	awaitQueueEmptyAfterRestart(t, f)
 	for _, name := range []string{"admin", "alice", "owner", "bob"} {
 		success(name, "logout")

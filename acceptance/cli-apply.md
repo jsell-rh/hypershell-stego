@@ -3,7 +3,7 @@ database, and Gateway-network records. It accepts YAML or JSON files, directory
 trees, and stdin. Hypershell supplies the kinds, paths, and create/patch fields.
 STEGO supplies input loading, validation, target lookup, HTTPS requests, dry runs,
 and result reporting. The compiler pin is
-`ae8364b9525e279ac75257ee963f881a91d6b044`.
+`2f3a2c06bff4a0a6811757e9a168eb810f57ce53`.
 
 The input uses the envelope from the current reference CLI:
 
@@ -20,9 +20,15 @@ spec:
 ```
 
 Use returned catalog IDs for the cluster and release. The API selects database
-placement. Under CNPG it uses the sole live catalog record. Under the default
-mode it creates a dedicated database. The compatibility `database_id` input
-cannot override this choice. Reapplying the Gateway keeps its database ID.
+placement. It selects the sole live server of the configured provider in that
+managed cluster. The default provider is CNPG. A missing or ambiguous local
+server prevents creation. The compatibility `database_id` input cannot override
+this choice. Reapplying the Gateway keeps its database server ID.
+
+A ManagedDatabase document requires `spec.cluster_id`. First create or apply the
+ManagedCluster record, then use its returned ID in the database document. Apply
+does not resolve a new cluster's name into an ID for another document. An offline
+dry run cannot verify that the referenced cluster exists.
 
 ```sh
 hsctl apply -f gateway.yaml --dry-run
@@ -56,7 +62,7 @@ cannot create a user, grant, event, or resource. It reports `validated`, rather
 than claiming that the API will accept the input. It does not check permissions,
 reference existence, or server-only constraints. The runtime has explicit file,
 document, directory, depth, field, and network limits; see the
-[compiler contract](https://github.com/jsell-rh/stego/blob/ae8364b9525e279ac75257ee963f881a91d6b044/specs/cli-apply.md).
+[compiler contract](https://github.com/jsell-rh/stego/blob/2f3a2c06bff4a0a6811757e9a168eb810f57ce53/specs/cli-apply.md).
 
 Successful results report `created` or `configured` with the returned ID. A client
 error reports `failed`. A transport error, server error, or invalid write response
@@ -67,7 +73,8 @@ terminal control sequences. `--output-file` creates a new private file and canno
 overwrite an input file.
 
 The normal API policy remains in force. Catalog and network writes require a
-platform administrator or configured controller. Gateway creation requires the
+platform administrator. Controllers have separate scoped observation and cleanup
+permissions. Gateway creation requires the
 creator role. An owner can patch an owned Gateway without retaining that role.
 Each API mutation preserves its transaction and event contract. Applying several
 resources is not one database transaction. Name lookup and creation are also
@@ -88,13 +95,19 @@ TLS. The CLI uses verified HTTPS. The workflow proves:
 - Partial results and a failure exit status after a domain reference error.
 - Ambiguous-name rejection and explicit ID selection.
 - State and owner access after restart, with further CLI patch requests.
-- Dedicated database creation under the default mode and stable placement on reapply.
-- Resource deletion and queue drainage.
+- Local CNPG selection under the default mode and stable placement on reapply.
+- Parent deletion denied until scoped provider cleanup, then deletion and queue drainage.
 
-The focused race workflow passed in 8.43 seconds. Create and patch field checks
-passed. This duration includes setup and is not a capacity claim. The compiler
-race suite and compiler CI passed. Pinned regeneration and application static
-checks passed. CI runs the full application and workload gates.
+The earlier deployment-based fixture no longer matches the supported providers.
+The updated workflow uses the returned cluster ID and controlled cleanup
+observations through authenticated TLS gRPC. The apply test passed with the
+race detector in 10.54 seconds on 2026-09-14 in bounded jshell Job
+`stego-placement-1a725083/check`. The catalog CLI test, API parent-cleanup test,
+and field-contract tests also passed. Both generation passes and post-test
+output matched all 230 generated and build-record hashes. The Job completed;
+its namespace and private launch files were removed. Evidence is in
+`/tmp/hypershell-cli-placement-ximht64v`. Full Hypershell CI remains incomplete.
+The [live browser gate](browser-gateway-workload.md) proves actual CNPG effects.
 
 The [role-binding apply mapping](cli-immutable-apply.md) now uses immutable
 identity fields and reports matching records as unchanged. The name and PATCH
