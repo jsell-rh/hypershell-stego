@@ -297,14 +297,13 @@ and the remaining extraction work.
 Gateway field groups and cluster scopes through gRPC, REST denial, events,
 placement changes, and grant removal after API restart.
 
-The full-suite budget is 18 minutes. Its CI job allows 25 minutes for setup and
-execution. [Run 34414730663](https://github.com/jsell-rh/hypershell-stego/actions/runs/34414730663)
-reached the previous 12-minute suite limit while
-`TestGatewayWatchThroughGeneratedRuntime` had run for four seconds. The log records no
-earlier assertion failure. The larger budget covers the growing suite,
-including retained-lease recovery and backlog checks. Individual request and
-workflow deadlines remain in their tests. All packages still run with race
-detection; no test is omitted to reduce elapsed time.
+CI runs the Go acceptance checks and the rendered browser workflow in separate
+jobs. The core package limit is 25 minutes, with a 30-minute job limit. The
+browser package limit is 8 minutes, with a 15-minute job limit. Both use race
+detection. The browser job requires an explicit passing test result; a missing
+or skipped result fails. Request and workflow deadlines remain in each test.
+The [CI evidence](ci-evidence.md#separate-browser-result) records the latest
+failure and the added browser resource samples.
 
 The [CNPG database workflow](cnpg-database.md) tests shared Cluster creation,
 encrypted SQL, restart, repair, and cleanup through the generated runtime.

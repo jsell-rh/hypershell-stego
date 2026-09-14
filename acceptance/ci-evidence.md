@@ -250,3 +250,33 @@ hashes matched across two fresh pinned builds and after testing. See the
 [database startup evidence](database-startup.md) for the source hashes, setup
 correction, resource limits, and remaining requirements. Full CI for the new
 application revision is still required.
+
+## Separate browser result
+
+[Run 34887406627](https://github.com/jsell-rh/hypershell-stego/actions/runs/34887406627)
+for `8596c672cf899003e7743a857e100d3612234510` failed. The console and service-image
+jobs passed. The five unconverted workload jobs failed. The complete Go suite
+finished in 1472.395 seconds and failed the rendered browser check, old deployment
+placement checks, and a stored-grant login check. This was not a package timeout.
+
+The saved browser page reported `ERR_INSUFFICIENT_RESOURCES` during navigation.
+The container was still running. It recorded no OOM kill, memory-limit event,
+or PID-limit event. Its memory peak was 534396928 bytes against a 1610612736-byte
+limit. The final `/tmp` and `/dev/shm` usage was low. Those final readings do not
+prove the peak shared-memory, temporary-file, or file-descriptor use. The cause
+remains unresolved. Evidence is in `/tmp/hypershell-browser-34887406627`.
+
+CI now runs the rendered browser workflow separately from the rest of the Go
+suite. Both jobs must finish successfully for the workflow to pass. Neither job
+cancels the other on failure. The browser test must have an explicit pass event;
+a missing or skipped test fails. The no-argument local script still selects the
+complete suite, subject to this repository's limits on local execution.
+
+The bounded browser container samples `/tmp`, `/dev/shm`, and per-process open
+file counts once per second. It writes sampled peaks and the driver's file
+limits to the saved resource report. It does not record process arguments,
+environment variables, or file names. Samples can miss short peaks. Existing
+cgroup counters and container limits remain in force. No browser or workload
+test was run on the workstation. Shell syntax and workflow YAML checks passed.
+The next CI result must establish whether this diagnostic change works in the
+container; it is not a fix for the browser failure.
