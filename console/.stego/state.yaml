@@ -25,9 +25,9 @@ last_applied:
                 mode: 420
             ui/build.zip:
                 exists: true
-                sha256: 738d5d6725f36ece23b153a68de9ea751ac93ab57c6237112d0684ba763a0b2d
+                sha256: 596fd56787ac8a19eac450538a4f6c77d8a6ddc582f9c982bd37330b9c6e566d
                 mode: 420
-        sha256: 75febd4fee9ba91ca733fe95f19974acd3fec075089d1fd04b9f83fb1210c581
+        sha256: c4b3f42693733f74577e02c6cee981c1a45c45c89a9a4bbd504c36e73bf26c16
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -56,7 +56,7 @@ last_applied:
             version: 4.0.0
             sha: browser-workflow
     files:
-        browser/backend.go: 8e758e2fb79fac7684cc4e9b3ed55c1c8831093689473a69a2d72f29917cce5e
+        browser/backend.go: ab068e2746095377561f107350d8e3ee5493be7885d64b215b68cad6cf93245d
         browser/client/client.go: 137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a
         browser/handlers.go: 64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
@@ -83,7 +83,7 @@ last_applied:
         browser/public/assets/SkipToContent-DD3FH02A.js: 20b7ad8759dedd6537655a8c763ead09842c6d34c107a358329a008787e0e9b5
         browser/public/assets/Tooltip-BLSuDaSq.css: 94a1a40f9f51c6b50795df67c6862d83eb6937f7a3cd0f683fb806700292dfd3
         browser/public/assets/Tooltip-FxqhyjOa.js: 205ff547c3156ec1dfe25c2deabfb496ff6a262caf42ba0308c11db39bf93859
-        browser/public/assets/application-BD1BlONT.js: 401012eefa6e9dc67a905302bfa4d5e57c82d388d4e666b215913273b107adac
+        browser/public/assets/application-8FRHj1Qo.js: 82b798cfc1e20046e8477467363af7993e7d0d944b63082dfb8e28b58176979f
         browser/public/assets/application-khmxz-hr.css: e60d63111b9df73c6a83ce84ca49127dba7ba2e14ad9b24a7f6848a35c05fa21
         browser/public/assets/catalog-HSSKH2S1.js: e05fe8348ff9ac276672cfdbc6b86871eb6e58af39277a49b0b0bd8e3ee4911e
         browser/public/assets/components-DQsZKrfN.js: 81862ccc1a09e335427c67f5b4b867162a8b1f33318a4fd562352a87533989c9
@@ -101,7 +101,7 @@ last_applied:
         browser/public/assets/login-BEKlfXt0.js: 8f16329bc05fb2cfb1f375539f0c7646c0f25d0ebffee4e8f128c0e44ec4768d
         browser/public/assets/login-D24d52nV.css: 69edc4ce9f967f814abf63a6da46f9fb084751fdecb967b2bc9919c1e3ea28fd
         browser/public/assets/logo-D5Bfz3pC.png: 6bb861be2b9a114404927f6f355310aff6352aba1a191d9e1d87036a365e8a6c
-        browser/public/assets/manifest-77cf63a7.js: c07730f442ab8721c188f89f26a9de8669aee59bfc40ed926f46a61b3f55a431
+        browser/public/assets/manifest-25392a11.js: 0d7cb568ae4ffdf5cbd42f9cf08183e6030e0d365f4d9368870eb02ef3e2254c
         browser/public/assets/messages-DNSn_P3a.js: fbfd9e749e089b046613f5089792fd14f1cb5f6ce6c80c1940ab924ebd86dc1c
         browser/public/assets/metrics-By5XXB0i.js: 1db9f33c0fa261e20f6874c8a04b240404172562e5c818f822a73ccbcfb8c345
         browser/public/assets/not-found-2mWujS_f.js: 7cf656e0bb77188e4dcc63b95d74b604bf4e4ec4416e56fb2f4673afff37bb41
@@ -114,7 +114,7 @@ last_applied:
         browser/public/assets/root-CTWVupYe.js: 208c90736769d2d756884370561aefc4f9e9149462e81930ad0a0e9c3edae306
         browser/public/assets/src-BSfgdRCl.css: 2d8e47cf64b10b83b8957a492050da2cde099278c8560e23f7093e0438536942
         browser/public/assets/src-CgpYGHMC.js: da6389e522b683e545a7df02a92c7c05d45bda186f983fa25e781ef700390bb7
-        browser/public/index.html: 11172b3f4281c8059ff607179e56c608a76bb2f14a197233e9901d2244ccc166
+        browser/public/index.html: 339a8552cdd4d17c56e3a993cc00f40ee0a12e11146985bac9499eff8c483e1e
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/store.go: 44a23268b3344b56cb12b8b2741e4efd2017deca873c6a5110d6d1c783633b23
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881

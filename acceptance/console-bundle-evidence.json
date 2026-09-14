@@ -55,5 +55,71 @@
       "results": "/tmp/hypershell-console-bundle-v2",
       "result": "failed before build: npm cache path was not writable"
     }
-  ]
+  ],
+  "backend_generation": {
+    "source_commit": "7b876ed926c748b3a4d258676dbadfe57284a256",
+    "local_results": "/tmp/hypershell-console-regenerate-v1",
+    "job": "console-regenerate-250ad1bea55c",
+    "job_complete": true,
+    "finished_at": "2026-09-14T19:30:11Z",
+    "generated_files": 231,
+    "first_second_after_hashes_match": true,
+    "checkout_matches": true,
+    "changed_file_hashes": {
+      "console/.stego/state.yaml": "8a41dc9791601703e9814ae1d39c77f1e37762e4c8bb3b72cf66ecbc536d0508",
+      "console/out/browser/public/assets/application-8FRHj1Qo.js": "82b798cfc1e20046e8477467363af7993e7d0d944b63082dfb8e28b58176979f",
+      "console/out/browser/public/assets/manifest-25392a11.js": "0d7cb568ae4ffdf5cbd42f9cf08183e6030e0d365f4d9368870eb02ef3e2254c",
+      "console/out/browser/public/index.html": "339a8552cdd4d17c56e3a993cc00f40ee0a12e11146985bac9499eff8c483e1e",
+      "console/out/browser/backend.go": "ab068e2746095377561f107350d8e3ee5493be7885d64b215b68cad6cf93245d"
+    },
+    "deleted_paths": [
+      "console/out/browser/public/assets/application-BD1BlONT.js",
+      "console/out/browser/public/assets/manifest-77cf63a7.js"
+    ],
+    "api_gate": {
+      "required": [
+        "TestGatewayCreationCommitsOwnerAndEvent",
+        "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+        "TestEventFailureRollsBackGatewayAndOwner",
+        "TestAccessFiltersRunBeforeCountAndPagination",
+        "TestGeneratedGatewayDescriptorsMatchReference",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestGatewayWatchThroughGeneratedRuntime",
+        "TestPlacementWorkflowThroughGeneratedRuntime",
+        "TestLocalDatabaseSelectionAndRollback",
+        "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+        "TestLocalDatabaseMigrationPreservesLegacyRows"
+      ],
+      "passed": [
+        "TestAccessFiltersRunBeforeCountAndPagination",
+        "TestEventFailureRollsBackGatewayAndOwner",
+        "TestEventFailureRollsBackGatewayAndOwner/gateway.created",
+        "TestEventFailureRollsBackGatewayAndOwner/rolebinding.created",
+        "TestGatewayCreationCommitsOwnerAndEvent",
+        "TestGatewayWatchThroughGeneratedRuntime",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGeneratedGatewayDescriptorsMatchReference",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestLocalDatabaseMigrationPreservesLegacyRows",
+        "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+        "TestLocalDatabaseSelectionAndRollback",
+        "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+        "TestPlacementWorkflowThroughGeneratedRuntime"
+      ],
+      "failed": [],
+      "missing": [],
+      "exit_code": 0
+    },
+    "api_package_seconds": 45.421,
+    "console_module": "go test -v -race -mod=readonly -count=1 -timeout=2m ./... compiled all packages; this module has no test files",
+    "cleanup": {
+      "job_absent": "console-regenerate-250ad1bea55c",
+      "pods_absent": true,
+      "fixture_resources_absent": true
+    },
+    "shared_lease_released": true
+  }
 }

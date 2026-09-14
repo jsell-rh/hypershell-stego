@@ -14,3 +14,4 @@ for package in hypershell-domain-probes hypershell-gateway-management-ui hypersh
 done
 pnpm --filter @openshift-online/hypershell-web-console build
 scripts/check-console-assets.sh
+scripts/generate.sh --check
