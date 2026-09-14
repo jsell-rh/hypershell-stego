@@ -1,0 +1,214 @@
+{
+  "permissions": [
+    {
+      "verb": "create",
+      "resource": "jobs.batch",
+      "namespace": "stego-ci",
+      "allowed": true
+    },
+    {
+      "verb": "get",
+      "resource": "pods/log",
+      "namespace": "stego-ci",
+      "allowed": true
+    },
+    {
+      "verb": "create",
+      "resource": "pods/exec",
+      "namespace": "stego-ci",
+      "allowed": true
+    },
+    {
+      "verb": "patch",
+      "resource": "leases.coordination.k8s.io/jshell-live-test",
+      "namespace": "stego-ci",
+      "allowed": true
+    },
+    {
+      "verb": "create",
+      "resource": "jobs.batch",
+      "namespace": "default",
+      "allowed": false
+    },
+    {
+      "verb": "get",
+      "resource": "secrets",
+      "namespace": "default",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "clusterroles.rbac.authorization.k8s.io",
+      "namespace": "",
+      "allowed": false
+    },
+    {
+      "verb": "patch",
+      "resource": "validatingadmissionpolicies.admissionregistration.k8s.io",
+      "namespace": "",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "namespaces",
+      "namespace": "",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "rolebindings.rbac.authorization.k8s.io",
+      "namespace": "stego-ci",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "serviceaccounts/token",
+      "namespace": "stego-ci",
+      "allowed": false
+    },
+    {
+      "verb": "patch",
+      "resource": "leases.coordination.k8s.io/other",
+      "namespace": "stego-ci",
+      "allowed": false
+    },
+    {
+      "verb": "get",
+      "resource": "secrets",
+      "namespace": "stego-ci-access",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "jobs.batch",
+      "namespace": "stego-ci-access",
+      "allowed": false
+    },
+    {
+      "verb": "create",
+      "resource": "serviceaccounts/token",
+      "namespace": "stego-ci-access",
+      "allowed": false
+    },
+    {
+      "verb": "impersonate",
+      "resource": "users",
+      "namespace": "",
+      "allowed": false
+    },
+    {
+      "verb": "get",
+      "resource": "secrets/cli-test-postgres",
+      "namespace": "stego-ci",
+      "allowed": true
+    },
+    {
+      "verb": "get",
+      "resource": "secrets/unlisted",
+      "namespace": "stego-ci",
+      "allowed": false
+    }
+  ],
+  "admission": [
+    {
+      "case": "bounded",
+      "allowed": true,
+      "denial_source": null
+    },
+    {
+      "case": "no_deadline",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "long_deadline",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "retry",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "no_cleanup",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "automatic_token",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "projected_token",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "worker_identity",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "privileged",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "host_network",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "writable_root",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "no_limits",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "unlisted_secret_volume",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "unlisted_secret_env",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "unlisted_secret_envfrom",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "unlisted_projected_secret",
+      "allowed": false,
+      "denial_source": "stego-ci-bounded-jobs"
+    },
+    {
+      "case": "csi_volume",
+      "allowed": false,
+      "denial_source": "uses an inline volume provided by CSIDriver fixture.example"
+    },
+    {
+      "case": "Opaque",
+      "allowed": true
+    },
+    {
+      "case": "kubernetes.io/service-account-token",
+      "allowed": false
+    },
+    {
+      "case": "unlisted",
+      "allowed": false
+    }
+  ],
+  "live_jobs_created": 0,
+  "second_holder_denied": true,
+  "wrong_holder_release_denied": true
+}

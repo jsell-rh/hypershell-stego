@@ -14,3 +14,5 @@ node_modules/
 /components/web-console/domain-probes/dist/
 **/*.tsbuildinfo
 **/coverage/
+
+__pycache__/

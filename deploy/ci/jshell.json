@@ -1,0 +1,442 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "stego-ci",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci",
+          "pod-security.kubernetes.io/enforce": "restricted"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "Namespace",
+      "metadata": {
+        "name": "stego-ci-access",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci",
+          "pod-security.kubernetes.io/enforce": "restricted"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "credentials-only",
+        "namespace": "stego-ci-access",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "hard": {
+          "pods": "0",
+          "persistentvolumeclaims": "0"
+        }
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "hypershell-ci",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci-access"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ResourceQuota",
+      "metadata": {
+        "name": "live-test",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci"
+      },
+      "spec": {
+        "hard": {
+          "pods": "1",
+          "limits.cpu": "1500m",
+          "limits.memory": "3584Mi",
+          "limits.ephemeral-storage": "8Gi",
+          "count/jobs.batch": "2",
+          "count/secrets": "16",
+          "count/configmaps": "16",
+          "persistentvolumeclaims": "0"
+        }
+      }
+    },
+    {
+      "apiVersion": "coordination.k8s.io/v1",
+      "kind": "Lease",
+      "metadata": {
+        "name": "jshell-live-test",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci"
+      },
+      "spec": {
+        "holderIdentity": "",
+        "leaseDurationSeconds": 1200
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "hypershell-ci",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "batch"
+          ],
+          "resources": [
+            "jobs"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods/log"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods/exec"
+          ],
+          "verbs": [
+            "create"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "configmaps"
+          ],
+          "verbs": [
+            "get",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "secrets"
+          ],
+          "verbs": [
+            "create"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "secrets"
+          ],
+          "resourceNames": [
+            "cli-test-postgres",
+            "database-tls",
+            "cnpg-credentials",
+            "count-credentials"
+          ],
+          "verbs": [
+            "get",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "coordination.k8s.io"
+          ],
+          "resources": [
+            "leases"
+          ],
+          "resourceNames": [
+            "jshell-live-test"
+          ],
+          "verbs": [
+            "get",
+            "update",
+            "patch"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "hypershell-ci",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "hypershell-ci"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-ci",
+          "namespace": "stego-ci-access"
+        }
+      ]
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-ci-bounded-jobs",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "namespaceSelector": {
+            "matchLabels": {
+              "kubernetes.io/metadata.name": "stego-ci"
+            }
+          },
+          "resourceRules": [
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            }
+          ],
+          "matchPolicy": "Equivalent",
+          "objectSelector": {}
+        },
+        "validations": [
+          {
+            "expression": "has(object.spec.activeDeadlineSeconds) && object.spec.activeDeadlineSeconds > 0 && object.spec.activeDeadlineSeconds <= 1200",
+            "message": "CI Jobs require a deadline of at most 1200 seconds"
+          },
+          {
+            "expression": "has(object.spec.backoffLimit) && object.spec.backoffLimit == 0",
+            "message": "CI Jobs must not restart automatically"
+          },
+          {
+            "expression": "has(object.spec.ttlSecondsAfterFinished) && object.spec.ttlSecondsAfterFinished >= 0 && object.spec.ttlSecondsAfterFinished <= 3600",
+            "message": "CI Jobs require a cleanup deadline of at most 3600 seconds"
+          },
+          {
+            "expression": "has(object.spec.template.spec.automountServiceAccountToken) && !object.spec.template.spec.automountServiceAccountToken",
+            "message": "CI Jobs must not mount an API token automatically"
+          },
+          {
+            "expression": "!has(object.spec.template.spec.serviceAccountName) || object.spec.template.spec.serviceAccountName == 'default'",
+            "message": "CI Jobs use the unprivileged default service account"
+          },
+          {
+            "expression": "!has(object.spec.template.spec.volumes) || object.spec.template.spec.volumes.all(v, !has(v.projected) || v.projected.sources.all(s, !has(s.serviceAccountToken)))",
+            "message": "CI Jobs must not project a service account token"
+          },
+          {
+            "expression": "(!has(variables.p.hostNetwork) || !variables.p.hostNetwork) && (!has(variables.p.hostPID) || !variables.p.hostPID) && (!has(variables.p.hostIPC) || !variables.p.hostIPC)",
+            "message": "CI Jobs must not use host namespaces"
+          },
+          {
+            "expression": "!has(variables.p.volumes) || variables.p.volumes.all(v, !has(v.hostPath))",
+            "message": "CI Jobs must not mount host paths"
+          },
+          {
+            "expression": "has(variables.p.securityContext) && has(variables.p.securityContext.runAsNonRoot) && variables.p.securityContext.runAsNonRoot && has(variables.p.securityContext.seccompProfile) && variables.p.securityContext.seccompProfile.type == 'RuntimeDefault'",
+            "message": "CI Jobs require a non-root user and RuntimeDefault seccomp"
+          },
+          {
+            "expression": "variables.containers.all(c, has(c.securityContext) && (!has(c.securityContext.privileged) || !c.securityContext.privileged) && has(c.securityContext.allowPrivilegeEscalation) && !c.securityContext.allowPrivilegeEscalation && has(c.securityContext.readOnlyRootFilesystem) && c.securityContext.readOnlyRootFilesystem && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop)",
+            "message": "CI containers require a read-only root, no added privilege, and all capabilities removed"
+          },
+          {
+            "expression": "variables.containers.all(c, has(c.resources) && has(c.resources.limits) && 'cpu' in c.resources.limits && 'memory' in c.resources.limits && 'ephemeral-storage' in c.resources.limits)",
+            "message": "CI containers require CPU, memory, and storage limits"
+          },
+          {
+            "expression": "!has(variables.p.volumes) || variables.p.volumes.all(v, has(v.emptyDir) || has(v.secret) || has(v.configMap) || has(v.projected) || has(v.downwardAPI))",
+            "message": "CI Jobs use only declared temporary or projected volumes"
+          },
+          {
+            "expression": "!has(variables.p.volumes) || variables.p.volumes.all(v, !has(v.secret) || v.secret.secretName in variables.secrets)",
+            "message": "CI Jobs cannot mount an undeclared Secret"
+          },
+          {
+            "expression": "!has(variables.p.volumes) || variables.p.volumes.all(v, !has(v.projected) || v.projected.sources.all(s, !has(s.secret) || s.secret.name in variables.secrets))",
+            "message": "CI Jobs cannot project an undeclared Secret"
+          },
+          {
+            "expression": "variables.containers.all(c, !has(c.env) || c.env.all(e, !has(e.valueFrom) || !has(e.valueFrom.secretKeyRef) || e.valueFrom.secretKeyRef.name in variables.secrets))",
+            "message": "CI Jobs cannot read an undeclared Secret through environment variables"
+          },
+          {
+            "expression": "variables.containers.all(c, !has(c.envFrom) || c.envFrom.all(e, !has(e.secretRef) || e.secretRef.name in variables.secrets))",
+            "message": "CI Jobs cannot import an undeclared Secret into the environment"
+          }
+        ],
+        "variables": [
+          {
+            "name": "p",
+            "expression": "object.spec.template.spec"
+          },
+          {
+            "name": "containers",
+            "expression": "variables.p.containers + (has(variables.p.initContainers) ? variables.p.initContainers : [])"
+          },
+          {
+            "name": "secrets",
+            "expression": "[\"cli-test-postgres\", \"database-tls\", \"cnpg-credentials\", \"count-credentials\"]"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-ci-bounded-jobs",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-ci-bounded-jobs",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-ci-no-legacy-tokens",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "matchPolicy": "Equivalent",
+          "namespaceSelector": {
+            "matchLabels": {
+              "kubernetes.io/metadata.name": "stego-ci"
+            }
+          },
+          "objectSelector": {},
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE"
+              ],
+              "resources": [
+                "secrets"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "object.type != 'kubernetes.io/service-account-token'",
+            "message": "CI cannot create lasting service account token Secrets"
+          },
+          {
+            "expression": "!('system:serviceaccounts:stego-ci-access' in request.userInfo.groups) || object.metadata.name in [\"cli-test-postgres\", \"database-tls\", \"cnpg-credentials\", \"count-credentials\"]",
+            "message": "CI can create only declared test Secrets"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-ci-no-legacy-tokens",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-ci-no-legacy-tokens",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    }
+  ]
+}

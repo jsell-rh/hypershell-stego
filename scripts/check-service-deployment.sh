@@ -17,14 +17,20 @@ if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
 fi
+# Keep the lock and operator helpers fixed for this run.
+cp scripts/jshell_live_lock.py scripts/cnpg-test-operator.py "$results/"
+python3 "$results/jshell_live_lock.py" acquire --context "$STEGO_TEST_CONTEXT" \
+  --holder "$namespace" --namespace "$namespace" --job service-check
 created=false
-cleanup() {
-  status=$?
-  trap - EXIT
+cleanup_resources() {
   if [[ $created == true ]]; then
     "${oc_cmd[@]}" -n "$namespace" get job service-check -o json > "$results/job-status.json" || true
+    # Stop test processes before namespace or permission cleanup.
+    "${oc_cmd[@]}" -n "$namespace" delete job service-check --ignore-not-found \
+      --cascade=foreground --wait=true --timeout=90s || return 1
+
     if [[ $workload == 1 ]]; then
-      "${oc_cmd[@]}" -n "$namespace" scale deployment --all --replicas=0 >/dev/null 2>&1 || true
+      "${oc_cmd[@]}" -n "$namespace" delete deployment --all --cascade=foreground --wait=true --timeout=90s || return 1
       allocation_marker=$(python3 -c 'import hashlib,sys; print(hashlib.sha256((sys.argv[1]+".hypershell-namespace-allocation").encode()).hexdigest()[:32])' "$namespace")
       "${oc_cmd[@]}" get namespace -l "stego.test/browser-run=$namespace" -o name > "$results/owned-namespaces.txt" || true
       "${oc_cmd[@]}" get namespace -l "stego.dev/allocator=$allocation_marker" -o name >> "$results/owned-namespaces.txt" || true
@@ -43,9 +49,9 @@ cleanup() {
       if [[ -e $results/cnpg-plan.json ]]; then
         database_namespace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database_namespace"])' "$results/cnpg-plan.json")
         "${oc_cmd[@]}" wait --for=delete "namespace/$database_namespace" --timeout=60s || true
-        python3 "$project/scripts/cnpg-test-operator.py" remove --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results" || status=1
+        python3 "$results/cnpg-test-operator.py" remove --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results" || status=1
       fi
-      for role in database-worker database-keys gateway-worker gateway-runtime gateway-reviews proof; do
+      for role in database-worker database-keys gateway-worker gateway-runtime gateway-reviews sandbox-count proof; do
         "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation.$role" --ignore-not-found || true
       done
       "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation" "clusterrolebinding/$namespace.hypershell-namespace-allocation" --ignore-not-found || true
@@ -57,6 +63,51 @@ cleanup() {
     fi
     "${oc_cmd[@]}" delete namespace "$namespace" --wait=false || true
     "${oc_cmd[@]}" --request-timeout=0 wait --for=delete namespace "$namespace" --timeout=60s || true
+  fi
+  # Check absence before releasing the shared Lease. Read errors retain the Lease.
+  python3 - "$STEGO_TEST_CONTEXT" "$namespace" "$results" <<'CHECK_CLEANUP'
+import hashlib, json, subprocess, sys, time
+from pathlib import Path
+context, namespace, directory = sys.argv[1:]
+root = Path(directory)
+marker = hashlib.sha256((namespace + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]
+command = ['oc', '--context', context, '--request-timeout=20s']
+def get(*words):
+    result = subprocess.run(command + ['get', *words, '-o', 'json'], check=True, capture_output=True, text=True, timeout=30)
+    return json.loads(result.stdout) if result.stdout.strip() else None
+journal = json.loads((root / 'cnpg-created.json').read_text()) if (root / 'cnpg-created.json').exists() else []
+for attempt in range(12):
+    remaining = []
+    for kind in ['namespaces', 'clusterroles', 'clusterrolebindings', 'validatingadmissionpolicies', 'validatingadmissionpolicybindings']:
+        for obj in get(kind)['items']:
+            meta = obj['metadata']
+            labels = meta.get('labels', {})
+            if meta['name'] == namespace or meta['name'].startswith(namespace + '.') or labels.get('stego.test/browser-run') == namespace or labels.get('stego.dev/allocator') == marker:
+                remaining.append(kind + '/' + meta['name'])
+    for obj in journal:
+        meta = obj['metadata']
+        words = [obj['kind'], meta['name'], '--ignore-not-found']
+        if 'namespace' in meta:
+            words += ['-n', meta['namespace']]
+        if get(*words):
+            remaining.append(obj['kind'] + '/' + meta['name'])
+    if not remaining:
+        (root / 'cleanup.json').write_text(json.dumps({'namespace_absent': namespace, 'owned_resources_absent': True, 'cnpg_resources_absent': len(journal)}) + '\n')
+        break
+    if attempt == 11:
+        raise RuntimeError('Resources remain; keep the live-test Lease: ' + ', '.join(remaining))
+    time.sleep(5)
+CHECK_CLEANUP
+}
+cleanup() {
+  status=$?
+  trap - EXIT
+  if cleanup_resources; then
+    python3 "$results/jshell_live_lock.py" release --context "$STEGO_TEST_CONTEXT" \
+      --holder "$namespace" || status=1
+  else
+    status=1
+    echo "Cleanup failed. Keep the shared live-test Lease for inspection." >&2
   fi
   for file in "$results/private-job.json" "$results/server.key"; do
     [[ ! -e $file ]] || unlink -- "$file"
@@ -70,7 +121,7 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
 if [[ $workload == 1 ]]; then
-  python3 scripts/cnpg-test-operator.py prepare --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
+  python3 "$results/cnpg-test-operator.py" prepare --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
 fi
@@ -153,7 +204,7 @@ PY
 "${oc_cmd[@]}" create namespace "$namespace" --save-config
 created=true
 if [[ $workload == 1 ]]; then
-  python3 scripts/cnpg-test-operator.py install --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
+  python3 "$results/cnpg-test-operator.py" install --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
 fi
 "${oc_cmd[@]}" apply -f "$results/private-job.json"
 for file in "$results/private-job.json" "$results/server.key"; do

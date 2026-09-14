@@ -7,6 +7,7 @@ directory holds frozen source, generated files, and logs, but no credentials.
 
 import argparse
 import hashlib
+import importlib.util
 import json
 from pathlib import Path
 import secrets
@@ -23,6 +24,9 @@ def main():
     parser.add_argument("--source", type=Path, default=Path(__file__).resolve().parent.parent)
     args = parser.parse_args()
     root = args.source.resolve()
+    spec = importlib.util.spec_from_file_location("stego_live_lock", root / "scripts/jshell_live_lock.py")
+    live_lock = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(live_lock)
     result = Path(tempfile.mkdtemp(prefix="hypershell-count-live-"))
     namespace = "stego-count-live-" + uuid.uuid4().hex[:8]
     marker = hashlib.sha256((namespace + ".hypershell-namespace-allocation").encode()).hexdigest()[:32]
@@ -42,6 +46,7 @@ def main():
 
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
     required = {"acceptance/count_namespace_live_test.go", "scripts/check-count-namespaces.py"}
+    required.add("scripts/jshell_live_lock.py")
     if not required.issubset(names):
         raise RuntimeError("Track the live test and runner before freezing source")
     hashes = {}
@@ -106,6 +111,7 @@ exit "$code"
     created = False
     pod = None
     code = None
+    live_lock.acquire(args.context, namespace, namespace, "check")
     try:
         # A name collision must fail. Never adopt an existing test namespace.
         oc("create", "-f", "-", data=json.dumps({"apiVersion": "v1", "kind": "Namespace", "metadata": {"name": namespace}}).encode())
@@ -233,6 +239,7 @@ exit "$code"
             oc("delete", "namespace", namespace, "--wait=false")
             oc("wait", "--for=delete", "namespace/" + namespace, "--timeout=90s", timeout=105)
             (result / "cleanup.json").write_text(json.dumps({"namespace_absent": namespace, "allocator_marker": marker, "gateway_namespaces_absent": True, "gateway_cluster_bindings_absent": True, "fallback": fallback}) + "\n")
+        live_lock.release(args.context, namespace)
     if code != 0:
         raise SystemExit("Live namespace count check failed; see " + str(result))
     print("Live namespace count check passed. Results: " + str(result), flush=True)
