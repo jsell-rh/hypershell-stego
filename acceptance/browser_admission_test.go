@@ -30,10 +30,11 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, database, t
 		name, method, path string
 		body               kube.Object
 		rules              []rule
+		harness            bool
 	}{
-		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}},
-		{"quota change", "PATCH", "/api/v1/namespaces/" + database + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}},
-		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"allocation", "Allocator cannot change resource ownership"}, {"ownership", "Allocation identity and restricted Pod security are immutable"}}},
+		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}, false},
+		{"quota change", "PATCH", "/api/v1/namespaces/" + database + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}, false},
+		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, true},
 	}
 	type result struct {
 		Name   string
@@ -50,7 +51,21 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, database, t
 		if probe.method == "PATCH" {
 			contentType = "application/merge-patch+json"
 		}
-		response, err := client.Do(ctx, probe.method, probe.path, http.Header{"Authorization": {"Bearer " + token}, "Content-Type": {contentType}, "Accept": {"application/json"}}, body)
+		bearer := token
+		if probe.harness {
+			// The allocator has no namespace patch grant. Use the test actor, which
+			// has that grant, to reach the ownership policy that applies to all actors.
+			value, err := transport.ReadPrivateFile(w.options.TokenFile)
+			if err != nil {
+				w.t.Fatal("admission test identity is unavailable")
+			}
+			bearer = strings.TrimSpace(string(value))
+			clear(value)
+			if bearer == "" {
+				w.t.Fatal("admission test identity is empty")
+			}
+		}
+		response, err := client.Do(ctx, probe.method, probe.path, http.Header{"Authorization": {"Bearer " + bearer}, "Content-Type": {contentType}, "Accept": {"application/json"}}, body)
 		if err != nil {
 			w.t.Fatal("admission dry-run transport failed")
 		}

@@ -59,6 +59,15 @@ uses bounded calls. The operator remains available until database namespace
 removal. This fixture cleanup does not establish the normal API behavior for
 deletion of a shared database server.
 
+The fifth attempt repeated initial readiness, SQL isolation, and RPC recovery.
+The namespace and quota probes matched their generated admission rules. The
+identity-change probe stopped at RBAC because the allocator has no namespace
+patch permission. A separate server dry-run with the permitted test identity
+reached the ownership policy and returned its expected immutable-identity rule.
+The workflow now uses that identity for this one public dry-run probe. A separate
+access check still requires namespace patch denial for the allocator. The fifth
+attempt is not a full workflow pass.
+
 The current test needs Python with PyYAML on the host. Use the command below
 with the saved jshell context. The current wrapper installs the temporary CNPG
 operator; the operator details in the historical section do not apply.
