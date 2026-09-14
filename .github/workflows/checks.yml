@@ -238,12 +238,6 @@ jobs:
           go-version: '1.26.8'
           cache: true
       - run: scripts/generate.sh --check
-      - name: Prepare VM devices
-        run: |
-          sudo modprobe vhost_vsock
-          sudo modprobe vhost_net
-          test -c /dev/kvm
-          sudo chown "$(id -u):$(id -g)" /dev/kvm
       - run: scripts/check-sandbox-workload.sh
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
