@@ -47,7 +47,7 @@ func (p *blockedCleanupProvider) GatewayIDs(context.Context) ([]string, error) {
 func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
+func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway, _ *pb.ManagedDatabase) error {
 	return p.deleteID(ctx, gw.GetMetadata().GetId())
 }
 func (p *blockedCleanupProvider) deleteID(ctx context.Context, id string) error {

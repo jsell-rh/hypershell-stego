@@ -267,7 +267,10 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, db *pb.ManagedD
 }
 func sha256sum(value []byte) []byte { sum := sha256.Sum256(value); return sum[:] }
 
-func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
+func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) error {
+	if err := k.validateCleanupDatabase(gw, db); err != nil {
+		return err
+	}
 	id := gw.GetMetadata().GetId()
 	ns, err := Namespace(id)
 	if err != nil {
@@ -281,7 +284,7 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 		if !gone {
 			return ErrPending
 		}
-		return k.deleteSharedDatabase(ctx, gw)
+		return k.deleteSharedDatabase(ctx, gw, db)
 	}
 	sandboxNS, _ := SandboxNamespace(id)
 	gone, err := k.client.DeleteOwned(ctx, "/api/v1/namespaces/"+sandboxNS, owner(id))
@@ -311,7 +314,7 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 			return ErrPending
 		}
 	}
-	return k.deleteSharedDatabase(ctx, gw)
+	return k.deleteSharedDatabase(ctx, gw, db)
 }
 
 func (k *Kubernetes) GatewayIDs(ctx context.Context) ([]string, error) {

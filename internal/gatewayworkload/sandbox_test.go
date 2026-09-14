@@ -9,7 +9,7 @@ import (
 )
 
 func TestSandboxDeletionRetainsAdmissionUntilNamespaceIsAbsent(t *testing.T) {
-	gw, _, _ := records(t)
+	gw, db, _ := localRecords(t)
 	ns, _ := SandboxNamespace(gw.Metadata.Id)
 	for _, state := range []string{"live", "terminating", "foreign"} {
 		t.Run(state, func(t *testing.T) {
@@ -35,7 +35,7 @@ func TestSandboxDeletionRetainsAdmissionUntilNamespaceIsAbsent(t *testing.T) {
 				}
 				_ = json.NewEncoder(w).Encode(obj)
 			})
-			err := k.Delete(context.Background(), gw)
+			err := k.Delete(context.Background(), gw, db)
 			if err == nil {
 				t.Fatal("cleanup finished while sandbox namespace existed")
 			}

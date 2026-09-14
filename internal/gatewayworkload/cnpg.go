@@ -21,7 +21,6 @@ import (
 )
 
 const sharedAPI = "/apis/postgresql.cnpg.io/v1/namespaces/"
-const providerLabel = "hypershell.redhat.io/database-provider"
 const maxManagedRoles = 1024
 
 func validateCNPGDialAddress(address string) error { return dbclient.ValidateDialAddress(address) }
@@ -243,7 +242,23 @@ func (k *Kubernetes) cnpgCredentials(ctx context.Context, gw *pb.Gateway, db *pb
 	return object{"uri": base64.StdEncoding.EncodeToString([]byte(address.String())), "ca.crt": base64.StdEncoding.EncodeToString(ca)}, nil
 }
 
-func (k *Kubernetes) deleteSharedDatabase(ctx context.Context, gw *pb.Gateway) error {
+// Cleanup uses the retained database record. Namespace labels cannot select
+// a provider or suppress SQL cleanup.
+func (k *Kubernetes) validateCleanupDatabase(gw *pb.Gateway, db *pb.ManagedDatabase) error {
+	if db.GetProvider() != gateways.ProviderCNPG || gw.GetDatabaseId() == "" || gw.GetDatabaseId() != db.GetMetadata().GetId() || db.GetClusterId() != k.options.ClusterID {
+		return errors.New("Gateway cleanup requires a local CNPG database record")
+	}
+	ns, err := gateways.DatabaseNamespace(db.GetMetadata().GetId())
+	if err != nil || ns != db.GetNamespace() {
+		return errors.New("Gateway cleanup database namespace is invalid")
+	}
+	return nil
+}
+func (k *Kubernetes) deleteSharedDatabase(ctx context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) error {
+	if err := k.validateCleanupDatabase(gw, db); err != nil {
+		return err
+	}
+
 	name, err := sharedResourceName(gw.GetMetadata().GetId())
 	if err != nil {
 		return err
@@ -262,24 +277,10 @@ func (k *Kubernetes) deleteSharedDatabase(ctx context.Context, gw *pb.Gateway) e
 	if !keyResourceOwned(namespace, databaseOwner(gw.DatabaseId)) {
 		return errors.New("Gateway database namespace has a different owner")
 	}
-	if k.allocation != nil && kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") == "database" {
-		_, err := k.allocation.NamespaceGone(ctx, "database", ns, gw.DatabaseId)
-		return err
-	}
-	switch kube.String(namespace, "metadata", "labels", providerLabel) {
-	case gateways.ProviderDeployment:
-		// A changed routing label must not hide a live shared Cluster.
-		_, clusterCode, err := k.client.Request(ctx, http.MethodGet, sharedAPI+ns+"/clusters/"+databasecontroller.CNPGClusterName, nil)
-		if err != nil {
+	if k.allocation != nil {
+		if err := k.allocation.RequireNamespace(ctx, "database", ns, gw.DatabaseId); err != nil {
 			return err
 		}
-		if clusterCode != 404 {
-			return errors.New("Gateway database provider identity conflicts with a CNPG Cluster")
-		}
-		return nil
-	case gateways.ProviderCNPG:
-	default:
-		return errors.New("Gateway database namespace has no valid provider identity")
 	}
 	cluster, err := k.sharedCluster(ctx, ns, gw.DatabaseId)
 	if err != nil {

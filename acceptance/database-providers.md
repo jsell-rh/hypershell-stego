@@ -99,4 +99,46 @@ had identical hashes for 230 generated files and build records. Evidence is in
 
 These checks use a Kubernetes test server for provider effects. A live CNPG
 operator with the generated namespace permissions remains a required check.
-Gateway SQL cleanup and the older workflow fixtures still need conversion.
+The older workflow fixtures still need conversion.
+
+## Gateway cleanup and runtime evidence
+
+Gateway cleanup now reads the retained database record before provider effects.
+The provider checks the database ID, namespace, provider, and local cluster.
+Namespace labels cannot select the provider or skip SQL cleanup. A shared CNPG
+server remains after a Gateway is deleted. Cleanup waits for the Gateway's SQL
+resources; it does not delete the shared server record.
+
+On 2026-09-14, jshell Job `stego-placement-4e6e16cc/check` passed all four affected
+unit packages with the race detector: database controller, namespace adapter,
+database worker, and Gateway workload. It also passed the five API and placement
+checks above and `TestSharedDatabaseCleanupThroughGeneratedRuntime`.
+
+The new application check created two Gateways through REST on one database
+registration. It observed the deletion event, restarted the API, and recovered
+pending cleanup through the generated controller runtime. The other Gateway and
+shared server remained. The test uses a controlled SQL provider. It does not
+prove actual PostgreSQL creation, connection isolation, or removal.
+
+The final check used STEGO revision
+`b71f580bae99c68f66e8d7186ef288e56d16bcbb`. This revision fixes a race between
+parent cancellation and task-context cancellation. Both generated service entry
+points include the fix. STEGO's full race suite, module verification, and
+vulnerability scan passed in [CI run 34849489853](https://github.com/jsell-rh/stego/actions/runs/34849489853).
+
+All 814 frozen source files matched the checkout before generated files were
+collected. Both generation runs, the checks, and the collected files had matching
+hashes for 230 generated files and build records. The Job completed, and its
+namespace and private launch files were removed. Evidence is in
+`/tmp/hypershell-shared-cleanup-e1c0sfvs`.
+
+The first attempt, `stego-placement-d2a85c38/check`, failed because its event
+assertion had not consumed the earlier creation event. The corrected test reads
+creation and deletion in order. That failed Job and its namespace were removed
+before the final run. Do not treat the first attempt as a pass.
+
+The next application gate is a live CNPG operator with generated allocation and
+worker permissions, actual per-Gateway SQL state, and database access checks.
+External PostgreSQL provisioning, legacy deployment code removal, and conversion
+of the full workflow suite remain open. Keep these changes on the working branch
+until that application gate passes.

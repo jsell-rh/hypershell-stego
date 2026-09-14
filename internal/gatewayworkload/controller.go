@@ -8,7 +8,6 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
 	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayrecovery"
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -31,7 +30,7 @@ type Provider interface {
 	Handles(*pb.Gateway) bool
 	CleanupTarget() string
 	Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error
-	Delete(context.Context, *pb.Gateway) error
+	Delete(context.Context, *pb.Gateway, *pb.ManagedDatabase) error
 	GatewayIDs(context.Context) ([]string, error)
 }
 type Controller struct {
@@ -141,8 +140,12 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if !recorded {
 			return nil
 		}
-		failure := runtime.RunObservation(ctx, func(operation context.Context) error {
-			return c.provider.Delete(operation, gw)
+		return runtime.RunObservation(ctx, func(operation context.Context) error {
+			database, _, err := c.database(operation, gw.GetDatabaseId(), target)
+			if err != nil {
+				return err
+			}
+			return c.provider.Delete(operation, gw, database)
 		}, func(commit context.Context, failure error) error {
 			observed := failure == nil
 			if complete == observed {
@@ -155,34 +158,6 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: target, Complete: observed})
 			return err
 		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
-		if failure != nil {
-			return failure
-		}
-		db, deleted, err := c.database(ctx, gw.GetDatabaseId(), target)
-		if status.Code(err) == codes.NotFound {
-			return nil
-		}
-		if err != nil {
-			return err
-		}
-		if deleted {
-			return nil
-		}
-		if gw.GetDatabaseId() == "" || db.GetMetadata().GetId() != gw.GetDatabaseId() {
-			return errors.New("deleted Gateway database does not match its placement")
-		}
-		if db.GetProvider() != gateways.ProviderDeployment {
-			return nil
-		}
-		ns, err := gateways.DatabaseNamespace(db.Metadata.Id)
-		if err != nil || db.GetNamespace() != ns {
-			return errors.New("deleted Gateway database namespace does not match its ID")
-		}
-		_, err = c.databases.DeleteManagedDatabase(ctx, &pb.DeleteManagedDatabaseRequest{Id: db.Metadata.Id})
-		if status.Code(err) == codes.NotFound {
-			return nil
-		}
-		return err
 	}
 	if !c.provider.Handles(gw) {
 		return nil
@@ -251,7 +226,7 @@ func (c *Controller) database(ctx context.Context, id, cluster string) (*pb.Mana
 	if _, err := databaseplacement.Target(row.GetProvider(), placement); err != nil {
 		return nil, false, err
 	}
-	if placement != cluster {
+	if placement != cluster || row.GetClusterId() != placement {
 		return nil, false, errors.New("Gateway database belongs to a different cluster")
 	}
 	return row, deleted, nil
