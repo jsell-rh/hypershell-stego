@@ -76,3 +76,27 @@ fixtures remain open. The cleanup summary also needs a check that combines
 provider and cluster filters. Generated SDK type names need review because the
 new OpenAPI source paths changed some names. Keep this work on the working
 branch until the supported-provider workflow passes.
+
+## CNPG namespace allocation
+
+The CNPG worker now requires the control namespace and managed-cluster ID.
+It checks the generated allocation before it writes a CNPG Cluster. It cannot
+create or delete a namespace. The allocator removes a deleted database's
+namespace; the CNPG worker confirms cleanup only after the namespace is absent.
+The worker rejects the removed deployment provider at startup.
+
+The database allocation profile now grants namespaced CNPG permissions. Its
+Gateway worker binding includes the per-Gateway database, role, and key cleanup
+operations. The database worker has no Secret access. Separate immutable key
+records replace the old single-Gateway namespace identity for shared CNPG.
+
+On 2026-09-14, jshell Job `stego-placement-3db3ed0f/check` passed the full database
+controller, namespace adapter, and database worker unit packages with the race
+detector. It also passed the five registration, migration, API compatibility,
+and default-release checks listed above. Both generation runs and the checks
+had identical hashes for 230 generated files and build records. Evidence is in
+`/tmp/hypershell-cnpg-allocation-bktshuoq`.
+
+These checks use a Kubernetes test server for provider effects. A live CNPG
+operator with the generated namespace permissions remains a required check.
+Gateway SQL cleanup and the older workflow fixtures still need conversion.

@@ -30,7 +30,7 @@ const manager = "hypershell-database-controller"
 var dnsName = regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`)
 var ErrPending = errors.New("database workload is not ready")
 
-type KubernetesOptions struct{ ServerURL, CAFile, TokenFile, ClusterIssuer, ControlNamespace string }
+type KubernetesOptions struct{ ServerURL, CAFile, TokenFile, ClusterIssuer, ControlNamespace, ClusterID string }
 type Kubernetes struct {
 	client     *kube.Client
 	issuer     string

@@ -132,7 +132,7 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 		if err != nil {
 			return err
 		}
-		if db.GetProvider() != gateways.ProviderDeployment {
+		if db.GetProvider() != gateways.ProviderCNPG {
 			return nil
 		}
 		name, err := gateways.DatabaseNamespace(id)
@@ -143,7 +143,7 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 		if err != nil {
 			return err
 		}
-		if cluster == "" {
+		if _, err := databaseplacement.Target(db.GetProvider(), cluster); err != nil || cluster != db.GetClusterId() {
 			return errors.New("database has no verified cluster placement")
 		}
 		if cluster != c.cluster {

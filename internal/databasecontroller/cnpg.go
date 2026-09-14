@@ -5,7 +5,9 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/jsell-rh/hypershell-stego/internal/databaseplacement"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -16,20 +18,38 @@ const cnpgAPI = "/apis/postgresql.cnpg.io/v1"
 
 // CNPG supplies the shared database Cluster. The operator owns its Pods,
 // certificates, and volumes. Gateway database and role policy is separate.
-type CNPG struct{ client *kube.Client }
+type CNPG struct {
+	client     *kube.Client
+	allocation *allocation.Allocator
+	cluster    string
+}
 
 func NewCNPG(o KubernetesOptions) (*CNPG, error) {
+	if _, err := databaseplacement.Target(gateways.ProviderCNPG, o.ClusterID); err != nil {
+		return nil, errors.New("CNPG requires a managed cluster ID")
+	}
+	if o.ControlNamespace == "" {
+		return nil, errors.New("CNPG requires a namespace allocator")
+	}
 	c, err := kube.New(kube.Options{ServerURL: o.ServerURL, CAFile: o.CAFile, TokenFile: o.TokenFile})
 	if err != nil {
 		return nil, err
 	}
-	return &CNPG{client: c}, nil
+	allocator, err := allocation.New(c, o.ControlNamespace)
+	if err != nil {
+		c.Close()
+		return nil, err
+	}
+	return &CNPG{client: c, allocation: allocator, cluster: o.ClusterID}, nil
 }
 func (c *CNPG) Close() { c.client.Close() }
 
 func validateCNPGPlacement(db *pb.ManagedDatabase) error {
 	if db == nil || db.GetProvider() != gateways.ProviderCNPG {
 		return errors.New("CNPG database placement is required")
+	}
+	if _, err := databaseplacement.Target(gateways.ProviderCNPG, db.GetClusterId()); err != nil {
+		return err
 	}
 	ns, err := gateways.DatabaseNamespace(db.GetMetadata().GetId())
 	if err != nil || db.GetNamespace() != ns {
@@ -72,7 +92,7 @@ func cnpgDefinition(id string) object {
 	cluster["spec"] = object{
 		"instances": 1, "imageName": CNPGPostgresImage, "enableSuperuserAccess": false,
 		"storage":    object{"size": "1Gi"},
-		"resources":  object{"requests": object{"cpu": "100m", "memory": "256Mi"}, "limits": object{"cpu": "1", "memory": "512Mi"}},
+		"resources":  object{"requests": object{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "64Mi"}, "limits": object{"cpu": "1", "memory": "512Mi", "ephemeral-storage": "256Mi"}},
 		"bootstrap":  object{"initdb": object{"database": "openshell", "owner": "openshell", "dataChecksums": true}},
 		"postgresql": object{"parameters": object{"password_encryption": "scram-sha-256"}, "pg_hba": []string{"hostnossl all all all reject", "hostssl sameuser all all scram-sha-256", "hostssl all all all reject"}},
 	}
@@ -82,14 +102,17 @@ func (c *CNPG) Ensure(ctx context.Context, db *pb.ManagedDatabase) error {
 	if err := validateCNPG(db); err != nil {
 		return err
 	}
+	if c.allocation == nil || db.GetClusterId() != c.cluster {
+		return errors.New("CNPG allocation does not match the database cluster")
+	}
 	if err := c.requireAPI(ctx); err != nil {
 		return err
 	}
 	id, ns := db.GetMetadata().GetId(), db.GetNamespace()
-	namespace := definition("v1", "Namespace", ns, id)
-	namespace["metadata"].(object)["labels"].(object)["hypershell.redhat.io/database-provider"] = "cnpg"
-	namespace["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
-	if _, err := c.client.Ensure(ctx, "/api/v1/namespaces", namespace, owner(id)); err != nil {
+	if err := c.allocation.RequireNamespace(ctx, "database", ns, id); err != nil {
+		if errors.Is(err, allocation.ErrPending) {
+			return ErrPending
+		}
 		return err
 	}
 	// Always repair the desired object, including after a prior ready observation.
@@ -156,34 +179,16 @@ func cnpgPodReady(pod object, uid string) bool {
 	return image && ready && running
 }
 
+// Delete observes namespace removal by the allocator. CNPG owns its resource
+// finalizers. The resource worker has no permission to delete namespaces.
 func (c *CNPG) Delete(ctx context.Context, db *pb.ManagedDatabase) error {
-	// Unsupported mutable settings cannot prevent cleanup of a valid placement.
 	if err := validateCNPGPlacement(db); err != nil {
 		return err
 	}
-	path := "/api/v1/namespaces/" + db.GetNamespace()
-	namespace, code, err := c.client.Request(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return err
+	if c.allocation == nil || db.GetClusterId() != c.cluster {
+		return errors.New("CNPG allocation does not match the database cluster")
 	}
-	if code == 404 {
-		return nil
-	}
-	if !owner(db.GetMetadata().GetId()).Matches(namespace) {
-		return errors.New("CNPG namespace has a different owner")
-	}
-	if err := c.requireAPI(ctx); err != nil {
-		return err
-	}
-	// Check Cluster ownership before deleting the containing namespace.
-	gone, err := c.client.DeleteOwned(ctx, cnpgAPI+"/namespaces/"+db.GetNamespace()+"/clusters/"+CNPGClusterName, owner(db.GetMetadata().GetId()))
-	if err != nil {
-		return err
-	}
-	if !gone {
-		return ErrPending
-	}
-	gone, err = c.client.DeleteOwned(ctx, path, owner(db.GetMetadata().GetId()))
+	gone, err := c.allocation.NamespaceGone(ctx, "database", db.GetNamespace(), db.GetMetadata().GetId())
 	if err != nil {
 		return err
 	}

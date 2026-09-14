@@ -17,17 +17,15 @@ import (
 func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	name := os.Getenv("DATABASE_PROVIDER")
 	if name == "" {
-		name = "deployment"
+		name = "cnpg"
 	}
-	options := databasecontroller.KubernetesOptions{ControlNamespace: os.Getenv("HYPERSHELL_CONTROL_NAMESPACE"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")}
+	options := databasecontroller.KubernetesOptions{ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ControlNamespace: os.Getenv("HYPERSHELL_CONTROL_NAMESPACE"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_DATABASE_CLUSTER_ISSUER")}
 	var provider interface {
 		databasecontroller.Provider
 		Close()
 	}
 	var err error
 	switch name {
-	case "deployment":
-		provider, err = databasecontroller.NewKubernetes(options)
 	case "cnpg":
 		provider, err = databasecontroller.NewCNPG(options)
 	default:

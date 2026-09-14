@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/protobuf/proto"
@@ -23,7 +24,23 @@ func cnpgDiscovery() object {
 func cnpgRow() *pb.ManagedDatabase {
 	id := ksuid.New().String()
 	ns, _ := gateways.DatabaseNamespace(id)
-	return &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: "cnpg"}
+	return &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: "cnpg", ClusterId: proto.String(testClusterID)}
+}
+func testCNPG(t *testing.T, k *Kubernetes) *CNPG {
+	t.Helper()
+	a, err := allocation.New(k.client, "control")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return &CNPG{client: k.client, allocation: a, cluster: testClusterID}
+}
+func TestCNPGRequiresExplicitAllocationAndCluster(t *testing.T) {
+	for _, o := range []KubernetesOptions{{}, {ClusterID: testClusterID}, {ControlNamespace: "control"}, {ClusterID: "bad", ControlNamespace: "control"}} {
+		if c, err := NewCNPG(o); err == nil {
+			c.Close()
+			t.Fatal("incomplete placement accepted")
+		}
+	}
 }
 func TestCNPGMissingAPIsPreventEffects(t *testing.T) {
 	for _, mode := range []string{"absent", "partial", "version", "kind", "namespace", "verbs", "denied"} {
@@ -58,7 +75,7 @@ func TestCNPGMissingAPIsPreventEffects(t *testing.T) {
 				}
 				_ = json.NewEncoder(w).Encode(api)
 			})
-			c := &CNPG{client: k.client}
+			c := testCNPG(t, k)
 			if err := c.Ensure(context.Background(), cnpgRow()); err == nil {
 				t.Fatal("missing API accepted")
 			}
@@ -70,7 +87,7 @@ func TestCNPGOptionsFailBeforeEffects(t *testing.T) {
 		t.Error("invalid options reached Kubernetes")
 		w.WriteHeader(500)
 	})
-	c := &CNPG{client: k.client}
+	c := testCNPG(t, k)
 	db := cnpgRow()
 	for _, field := range []**string{&db.Engine, &db.EngineVersion, &db.Region, &db.InstanceClass, &db.ConnectionSecret} {
 		*field = proto.String("unsupported")
@@ -87,70 +104,11 @@ func TestCNPGOptionsFailBeforeEffects(t *testing.T) {
 		t.Fatal("foreign placement accepted")
 	}
 }
-func TestCNPGCleanupChecksClusterBeforeNamespace(t *testing.T) {
-	for _, mode := range []string{"foreign", "pending", "denied", "gone"} {
-		t.Run(mode, func(t *testing.T) {
-			db := cnpgRow()
-			namespaceDeletes, clusterDeletes := 0, 0
-			k, _ := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
-				if r.URL.Path == cnpgAPI {
-					_ = json.NewEncoder(w).Encode(cnpgDiscovery())
-					return
-				}
-				ns := r.URL.Path == "/api/v1/namespaces/"+db.Namespace
-				if r.Method == "DELETE" {
-					if ns {
-						namespaceDeletes++
-					} else {
-						clusterDeletes++
-					}
-					var options object
-					_ = json.NewDecoder(r.Body).Decode(&options)
-					if str(options, "preconditions", "uid") != "uid" || str(options, "preconditions", "resourceVersion") != "7" {
-						t.Error("missing deletion preconditions")
-					}
-					if mode == "denied" {
-						w.WriteHeader(403)
-						return
-					}
-					_ = json.NewEncoder(w).Encode(object{"kind": "Status"})
-					return
-				}
-				if !ns && mode == "gone" {
-					w.WriteHeader(404)
-					return
-				}
-				meta := object{"uid": "uid", "resourceVersion": "7", "labels": labels(db.Metadata.Id)}
-				if !ns && mode == "foreign" {
-					meta["labels"] = labels("other")
-				}
-				if !ns && mode == "pending" {
-					meta["deletionTimestamp"] = "2026-09-10T00:00:00Z"
-				}
-				_ = json.NewEncoder(w).Encode(object{"metadata": meta})
-			})
-			err := (&CNPG{client: k.client}).Delete(context.Background(), db)
-			if err == nil {
-				t.Fatal("unconfirmed deletion completed")
-			}
-			if mode == "gone" {
-				if namespaceDeletes != 1 || !errors.Is(err, ErrPending) {
-					t.Fatal("namespace was not submitted after Cluster absence", err)
-				}
-			} else if namespaceDeletes != 0 {
-				t.Fatal("namespace deleted before Cluster cleanup")
-			}
-			if mode == "denied" && (clusterDeletes != 1 || errors.Is(err, ErrPending)) {
-				t.Fatal("denied Cluster delete was lost", err)
-			}
-		})
-	}
-}
 func TestCNPGControllerSelectsProviderAndDoesNotInventCredentials(t *testing.T) {
 	db := cnpgRow()
 	api := &stateAPI{db: db}
 	provider := &recordingProvider{}
-	controller, err := NewForProvider(api, api, "cnpg", "", provider)
+	controller, err := NewForProvider(api, api, "cnpg", testClusterID, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,6 +152,100 @@ func TestCNPGPodReadinessRequiresCurrentOwnerAndRunningImage(t *testing.T) {
 			}
 			if cnpgPodReady(pod, "current") != (mode == "ready") {
 				t.Fatal("wrong readiness result")
+			}
+		})
+	}
+}
+
+func TestCNPGWritesOnlyInsideVerifiedAllocation(t *testing.T) {
+	for _, phase := range []string{"active", "absent", "deleting", "foreign", "wrong-cluster"} {
+		t.Run(phase, func(t *testing.T) {
+			db := cnpgRow()
+			var c *CNPG
+			reads, writes := 0, 0
+			k, _ := testKubernetes(t, func(w http.ResponseWriter, r *http.Request) {
+				reads++
+				switch r.URL.Path {
+				case cnpgAPI:
+					if r.Method != "GET" {
+						t.Error("changed API discovery")
+						w.WriteHeader(500)
+						return
+					}
+					_ = json.NewEncoder(w).Encode(cnpgDiscovery())
+				case "/api/v1/namespaces/" + db.Namespace:
+					if r.Method != "GET" {
+						t.Error("worker wrote a namespace")
+						w.WriteHeader(500)
+						return
+					}
+					if phase == "absent" {
+						w.WriteHeader(404)
+						return
+					}
+					label := labels(db.Metadata.Id)
+					label[allocation.MarkerLabel], label[allocation.ProfileLabel] = c.allocation.Marker(), "database"
+					if phase == "foreign" {
+						label[allocation.MarkerLabel] = "foreign"
+					}
+					meta := object{"uid": "ns-uid", "resourceVersion": "1", "labels": label}
+					if phase == "deleting" {
+						meta["deletionTimestamp"] = "2026-09-14T00:00:00Z"
+					}
+					_ = json.NewEncoder(w).Encode(object{"metadata": meta})
+				case cnpgAPI + "/namespaces/" + db.Namespace + "/clusters/" + CNPGClusterName:
+					if r.Method != "GET" {
+						t.Error("unexpected resource update")
+						w.WriteHeader(500)
+						return
+					}
+					w.WriteHeader(404)
+				case cnpgAPI + "/namespaces/" + db.Namespace + "/clusters":
+					if r.Method != "POST" || phase != "active" {
+						t.Error("resource write without allocation")
+						w.WriteHeader(500)
+						return
+					}
+					writes++
+					var cluster object
+					if err := json.NewDecoder(r.Body).Decode(&cluster); err != nil {
+						t.Error(err)
+						w.WriteHeader(500)
+						return
+					}
+					if !owner(db.Metadata.Id).Matches(cluster) || !contains(cluster, cnpgDefinition(db.Metadata.Id)) {
+						t.Error("incorrect CNPG intent")
+					}
+					cluster["metadata"].(map[string]any)["uid"] = "cluster-uid"
+					cluster["metadata"].(map[string]any)["resourceVersion"] = "1"
+					w.WriteHeader(201)
+					_ = json.NewEncoder(w).Encode(cluster)
+				default:
+					t.Error("unexpected Kubernetes request", r.Method, r.URL.Path)
+					w.WriteHeader(500)
+				}
+			})
+			c = testCNPG(t, k)
+			if phase == "wrong-cluster" {
+				db.ClusterId = proto.String("000000000000000000000000002")
+			}
+			err := c.Ensure(context.Background(), db)
+			if phase == "active" || phase == "absent" || phase == "deleting" {
+				if !errors.Is(err, ErrPending) {
+					t.Fatal("readiness is not pending", err)
+				}
+			} else if err == nil || errors.Is(err, ErrPending) {
+				t.Fatal("invalid placement accepted", err)
+			}
+			expected := 0
+			if phase == "active" {
+				expected = 1
+			}
+			if writes != expected {
+				t.Fatal("wrong resource write count", writes)
+			}
+			if phase == "wrong-cluster" && reads != 0 {
+				t.Fatal("foreign placement reached Kubernetes")
 			}
 		})
 	}

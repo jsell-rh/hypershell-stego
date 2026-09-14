@@ -114,20 +114,23 @@ func TestDatabaseAllocationRequiresRetainedStateAndPlacement(t *testing.T) {
 		provider                                                                   string
 		calls                                                                      int
 	}{
-		{name: "live", provider: "deployment", calls: 1},
-		{name: "deleted", provider: "deployment", deleted: true, calls: 1},
-		{name: "other cluster", provider: "deployment", foreign: true},
-		{name: "deleted other cluster", provider: "deployment", foreign: true, deleted: true},
-		{name: "missing state", provider: "deployment", missingState: true},
-		{name: "missing placement", provider: "deployment", missingPlacement: true},
-		{name: "unassigned", provider: "deployment", unassigned: true},
-		{name: "bad placement", provider: "deployment", badPlacement: true},
-		{name: "shared CNPG", provider: "cnpg", missingPlacement: true},
+		{name: "live", provider: "cnpg", calls: 1},
+		{name: "deleted", provider: "cnpg", deleted: true, calls: 1},
+		{name: "other cluster", provider: "cnpg", foreign: true},
+		{name: "deleted other cluster", provider: "cnpg", foreign: true, deleted: true},
+		{name: "missing state", provider: "cnpg", missingState: true},
+		{name: "missing placement", provider: "cnpg", missingPlacement: true},
+		{name: "unassigned", provider: "cnpg", unassigned: true},
+		{name: "bad placement", provider: "cnpg", badPlacement: true},
+		{name: "removed deployment", provider: "deployment", missingPlacement: true},
+		{name: "external needs a separate profile", provider: "external", missingPlacement: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			api := &databaseAPI{row: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: tc.provider}, header: metadata.Pairs("resource-version", "2", "resource-deleted", strconv.FormatBool(tc.deleted), "hypershell-database-placement", "cluster-v1", "hypershell-database-cluster-id", cluster)}
+			api := &databaseAPI{row: &pb.ManagedDatabase{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, Provider: tc.provider, ClusterId: proto.String(cluster)}, header: metadata.Pairs("resource-version", "2", "resource-deleted", strconv.FormatBool(tc.deleted), "hypershell-database-placement", "cluster-v1", "hypershell-database-cluster-id", cluster)}
 			if tc.foreign {
-				api.header.Set("hypershell-database-cluster-id", ksuid.New().String())
+				other := ksuid.New().String()
+				api.row.ClusterId = &other
+				api.header.Set("hypershell-database-cluster-id", other)
 			}
 			if tc.missingPlacement {
 				api.header.Delete("hypershell-database-placement")
@@ -144,7 +147,7 @@ func TestDatabaseAllocationRequiresRetainedStateAndPlacement(t *testing.T) {
 			writes := &allocations{done: true}
 			c := &Controller{allocator: writes, databases: api, cluster: cluster}
 			err := c.reconcile(context.Background(), "database:"+id)
-			bad := tc.missingState || (tc.provider == "deployment" && (tc.missingPlacement || tc.unassigned || tc.badPlacement))
+			bad := tc.missingState || (tc.provider == "cnpg" && (tc.missingPlacement || tc.unassigned || tc.badPlacement))
 			if (err != nil) != bad {
 				t.Fatal(err)
 			}
