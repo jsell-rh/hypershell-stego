@@ -25,13 +25,26 @@ def write(path, value):
 
 
 def oc(context, *args, data=None):
-    result = subprocess.run(['oc', '--context=' + context, '--request-timeout=30s', *args],
-                            input=None if data is None else json.dumps(data),
-                            capture_output=True, text=True, timeout=40)
-    if result.returncode:
-        # The installer never handles credentials. Keep failures bounded.
-        raise RuntimeError(result.stderr[-2000:])
-    return json.loads(result.stdout) if result.stdout.strip() else None
+    attempts = 3 if args and args[0] == 'get' else 1
+    for attempt in range(attempts):
+        try:
+            result = subprocess.run(['oc', '--context=' + context, '--request-timeout=30s', *args],
+                                    input=None if data is None else json.dumps(data),
+                                    capture_output=True, text=True, timeout=40)
+        except subprocess.TimeoutExpired:
+            if attempt + 1 == attempts:
+                raise
+        else:
+            if result.returncode == 0:
+                return json.loads(result.stdout) if result.stdout.strip() else None
+            transient = any(text in result.stderr for text in (
+                'TLS handshake timeout', 'i/o timeout', 'connection reset',
+                'unexpected EOF', 'context deadline exceeded', 'Client.Timeout'))
+            if not transient or attempt + 1 == attempts:
+                # The installer never handles credentials. Keep failures bounded.
+                raise RuntimeError(result.stderr[-2000:])
+        time.sleep(attempt + 1)
+
 
 
 def get(context, obj):
@@ -50,13 +63,25 @@ def prepare(args):
     if hashlib.sha256(raw).hexdigest() != SHA256:
         raise RuntimeError('CNPG manifest checksum differs')
     documents = list(yaml.safe_load_all(raw))
-    payload = secrets.token_bytes(16)
-    value = int.from_bytes((int(time.time()) - 1400000000).to_bytes(4, 'big') + payload, 'big')
-    alphabet, database_id = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', ''
-    while value:
-        value, digit = divmod(value, 62)
-        database_id = alphabet[digit] + database_id
-    database_id = database_id.rjust(27, '0')
+    alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
+    database_id = args.database_id
+    if database_id is None:
+        payload = secrets.token_bytes(16)
+        value = int.from_bytes((int(time.time()) - 1400000000).to_bytes(4, 'big') + payload, 'big')
+        database_id = ''
+        while value:
+            value, digit = divmod(value, 62)
+            database_id = alphabet[digit] + database_id
+        database_id = database_id.rjust(27, '0')
+    else:
+        if len(database_id) != 27 or any(c not in alphabet for c in database_id):
+            raise RuntimeError('Invalid CNPG test database ID')
+        value = 0
+        for c in database_id:
+            value = value * 62 + alphabet.index(c)
+        if value == 0 or value >= 1 << 160:
+            raise RuntimeError('Invalid CNPG test database ID')
+        payload = value.to_bytes(20, 'big')[4:]
     database_ns = 'openshell-db-' + payload[:8].hex()
     items = []
     role = next(o for o in documents if o['kind'] == 'ClusterRole' and o['metadata']['name'] == 'cnpg-manager')
@@ -194,7 +219,10 @@ if __name__ == '__main__':
     parser.add_argument('--context', required=True)
     parser.add_argument('--namespace', required=True)
     parser.add_argument('--evidence', required=True, type=Path)
+    parser.add_argument('--database-id', help='Existing test catalog ID; prepare only')
     args = parser.parse_args()
-    if not args.namespace.startswith('stego-service-'):
+    if not args.namespace.startswith(('stego-service-', 'stego-cnpg-live-')):
         raise SystemExit('Use a dedicated service test namespace')
+    if args.database_id is not None and args.action != 'prepare':
+        raise SystemExit('--database-id applies only to prepare')
     globals()[args.action](args)

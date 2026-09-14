@@ -28,11 +28,16 @@ import (
 
 type kubeFixture struct {
 	config  string
+	context string
 	options databasecontroller.KubernetesOptions
 }
 
 func (k *kubeFixture) command(ctx context.Context, input string, args ...string) ([]byte, error) {
-	cmd := exec.CommandContext(ctx, "kubectl", append([]string{"--kubeconfig", k.config}, args...)...)
+	flags := []string{"--kubeconfig", k.config}
+	if k.context != "" {
+		flags = append(flags, "--context", k.context)
+	}
+	cmd := exec.CommandContext(ctx, "kubectl", append(flags, args...)...)
 	if input != "" {
 		cmd.Stdin = strings.NewReader(input)
 	}
