@@ -419,7 +419,7 @@ type stegoTask struct {
 func stegoRunTasks(parent context.Context, tasks []stegoTask) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
-	if ctx.Err() != nil {
+	if parent.Err() != nil || ctx.Err() != nil {
 		return nil
 	}
 	results := make(chan error, len(tasks))
@@ -435,10 +435,11 @@ func stegoRunTasks(parent context.Context, tasks []stegoTask) error {
 					recover()
 					err = errors.New("task aborted before return")
 				}
-				if err == nil && ctx.Err() == nil {
+				// Parent cancellation can be visible before it reaches this child.
+				if err == nil && parent.Err() == nil && ctx.Err() == nil {
 					err = errors.New("task stopped before cancellation")
 				}
-				if err == context.Canceled && ctx.Err() != nil {
+				if err == context.Canceled && (parent.Err() != nil || ctx.Err() != nil) {
 					err = nil
 				}
 				if err != nil {

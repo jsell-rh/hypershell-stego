@@ -32,9 +32,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260912011334-4b25d919ac5a
+        module_version: v0.0.0-20260914132843-b71f580bae99
         vcs: git
-        revision: 4b25d919ac5a04a497f5052ed9d9542ac3919778
+        revision: b71f580bae99c68f66e8d7186ef288e56d16bcbb
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
@@ -125,7 +125,7 @@ last_applied:
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2
-        main.go: b47cbedde3f3a91c31f645be31c7705473b539b99c6ca3c6747bb0497b25997a
+        main.go: 5c6e5623dc3c5470240a2b956e6c743fe795ff58a71b7a39189c26deaa882ec3
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
