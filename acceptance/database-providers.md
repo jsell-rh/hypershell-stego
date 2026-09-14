@@ -63,6 +63,17 @@ External-provider acceptance must include RDS with the permissions available
 there. A test against unrestricted local PostgreSQL is not sufficient evidence
 for RDS support. This requirement does not claim that RDS integration is complete.
 
+AWS documents that the RDS PostgreSQL administrator is not a PostgreSQL
+superuser and has no host OS access. External provisioning must use declared
+SQL privileges; it must not require host-file changes or superuser access.
+Application logins must not inherit the provisioning account's administrative
+roles. See the [RDS role contract](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.Roles.rds_superuser.html).
+
+AWS also documents revoking default PUBLIC privileges and granting database
+access to selected roles. This is a supported basis for the SQL access policy;
+actual RDS connection tests must prove the required denied access. See
+[RDS database access control](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Appendix.PostgreSQL.CommonDBATasks.Access.html).
+
 ## Per-Gateway resources
 
 Both providers must create one logical database and one login for each Gateway.
