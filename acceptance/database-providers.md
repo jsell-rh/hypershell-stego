@@ -39,6 +39,30 @@ must select the layout explicitly, and Gateway locality rules still apply.
 This is a target requirement. It does not claim that external PostgreSQL
 provisioning or both deployment layouts are complete.
 
+## Server lifecycle and RDS
+
+Terraform-created Amazon RDS is a required production layout. Terraform can
+create the PostgreSQL server before the Kubernetes cluster or Hypershell
+installation exists. Installation must accept that existing server through
+operator configuration and bind it to the managed cluster when that cluster
+is registered. It must not require Hypershell to create the server first.
+
+Server ownership and logical database ownership are separate:
+
+- For external RDS, Terraform owns the server lifecycle. Hypershell manages its
+  Gateway logical databases, logins, permissions, and credentials. Gateway or
+  catalog deletion must not delete the external server or unrelated databases.
+- For dynamic CNPG, Hypershell manages the declared PostgreSQL server and its
+  Gateway logical databases. Server deletion must wait for dependent cleanup.
+
+Both layouts retain the installation boundary, shared or separate component
+servers, verified TLS, and Gateway locality requirements. An unavailable
+external server must not cause automatic creation of a replacement CNPG server.
+
+External-provider acceptance must include RDS with the permissions available
+there. A test against unrestricted local PostgreSQL is not sufficient evidence
+for RDS support. This requirement does not claim that RDS integration is complete.
+
 ## Per-Gateway resources
 
 Both providers must create one logical database and one login for each Gateway.
