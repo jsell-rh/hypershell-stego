@@ -85,7 +85,7 @@ def prepare(args):
                 hook['timeoutSeconds'] = 5
         elif kind == 'Deployment':
             pod = obj['spec']['template']
-            pod['spec']['restartPolicy'] = 'Never'
+            obj['spec']['replicas'] = 0
             container = pod['spec']['containers'][0]
             container['image'] = IMAGE
             container['args'] = [a.replace('--max-concurrent-reconciles=10', '--max-concurrent-reconciles=2') for a in container['args']]
@@ -100,7 +100,6 @@ def prepare(args):
             for volume in pod['spec']['volumes']:
                 if 'emptyDir' in volume:
                     volume['emptyDir']['sizeLimit'] = '64Mi'
-            obj = {'apiVersion': 'batch/v1', 'kind': 'Job', 'metadata': obj['metadata'], 'spec': {'suspend': True, 'backoffLimit': 0, 'activeDeadlineSeconds': 1800, 'template': pod}}
         obj['metadata'].setdefault('labels', {})[LABEL] = args.namespace
         if kind == 'Namespace':
             obj['metadata']['labels']['pod-security.kubernetes.io/enforce'] = 'restricted'
@@ -115,12 +114,26 @@ def prepare(args):
         resource('ClusterRole', 'cnpg-test-observer', rules=global_rules),
         resource('ClusterRoleBinding', 'cnpg-test-observer', subjects=subject, roleRef={'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole', 'name': 'cnpg-test-observer'}),
         resource('RoleBinding', 'cnpg-manager', OPERATOR_NS, subjects=subject, roleRef={'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole', 'name': 'cnpg-manager'}),
-        resource('Role', 'cnpg-test-start', OPERATOR_NS, rules=[{'apiGroups':['batch'], 'resources':['jobs'], 'resourceNames':['cnpg-controller-manager'], 'verbs':['get','patch']}]),
+        resource('Role', 'cnpg-test-start', OPERATOR_NS, rules=[{'apiGroups':['batch'], 'resources':['jobs'], 'resourceNames':['cnpg-test-lifetime'], 'verbs':['get','patch']}, {'apiGroups':['apps'], 'resources':['deployments'], 'resourceNames':['cnpg-controller-manager'], 'verbs':['get','patch']}]),
         resource('RoleBinding', 'cnpg-test-start', OPERATOR_NS, subjects=[{'kind':'ServiceAccount','name':'service-check','namespace':args.namespace}], roleRef={'apiGroup':'rbac.authorization.k8s.io','kind':'Role','name':'cnpg-test-start'}),
-        {'apiVersion': 'v1', 'kind': 'ResourceQuota', 'metadata': {'name': 'cnpg-test', 'namespace': OPERATOR_NS, 'labels': {LABEL: args.namespace}}, 'spec': {'hard': {'pods': '1', 'limits.cpu': '500m', 'limits.memory': '512Mi', 'limits.ephemeral-storage': '128Mi'}}},
+        {'apiVersion': 'v1', 'kind': 'ResourceQuota', 'metadata': {'name': 'cnpg-test', 'namespace': OPERATOR_NS, 'labels': {LABEL: args.namespace}}, 'spec': {'hard': {'pods': '2', 'limits.cpu': '550m', 'limits.memory': '544Mi', 'limits.ephemeral-storage': '144Mi'}}},
     ]
-    # Install limits and permissions before the Pod can start.
-    items.sort(key=lambda o: 0 if o['kind'] == 'Namespace' else 2 if o['kind'] == 'Job' else 1)
+    # CNPG requires a Deployment for certificate ownership. A separate Job owns
+    # that Deployment. Its deadline and TTL also stop CNPG if the host exits.
+    items.append({'apiVersion': 'batch/v1', 'kind': 'Job',
+        'metadata': {'name': 'cnpg-test-lifetime', 'namespace': OPERATOR_NS, 'labels': {LABEL: args.namespace}},
+        'spec': {'suspend': True, 'backoffLimit': 0, 'activeDeadlineSeconds': 1800, 'ttlSecondsAfterFinished': 0,
+            'template': {'metadata': {'labels': {LABEL: args.namespace}}, 'spec': {
+                'restartPolicy': 'Never', 'automountServiceAccountToken': False,
+                'securityContext': {'runAsNonRoot': True, 'seccompProfile': {'type': 'RuntimeDefault'}},
+                'containers': [{'name': 'deadline',
+                    'image': 'docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393',
+                    'command': ['/bin/sleep', '3600'],
+                    'securityContext': {'readOnlyRootFilesystem': True, 'allowPrivilegeEscalation': False, 'capabilities': {'drop': ['ALL']}},
+                    'resources': {'requests': {'cpu': '5m', 'memory': '8Mi', 'ephemeral-storage': '1Mi'},
+                        'limits': {'cpu': '50m', 'memory': '32Mi', 'ephemeral-storage': '16Mi'}}}]}}}})
+    # Install limits and permissions first, then the lifetime Job and Deployment.
+    items.sort(key=lambda o: {'Namespace': 0, 'Job': 2, 'Deployment': 3}.get(o['kind'], 1))
     for obj in items:
         if get(args.context, obj):
             raise RuntimeError('CNPG test refuses an existing resource: ' + obj['kind'] + '/' + obj['metadata']['name'])
@@ -135,6 +148,10 @@ def install(args):
     if created:
         raise RuntimeError('CNPG installation has started; inspect the existing operator')
     for obj in plan['items']:
+        if obj['kind'] == 'Deployment':
+            lifetime = next(o for o in created if o['kind'] == 'Job' and o['metadata']['name'] == 'cnpg-test-lifetime')
+            obj['metadata']['ownerReferences'] = [{'apiVersion': 'batch/v1', 'kind': 'Job',
+                'name': lifetime['metadata']['name'], 'uid': lifetime['metadata']['uid']}]
         # Create, never apply: do not change a resource installed by another actor.
         result = oc(args.context, 'create', '-f', '-', '-o', 'json', data=obj)
         created.append({'apiVersion': obj['apiVersion'], 'kind': obj['kind'], 'metadata': {k: result['metadata'][k] for k in ('name', 'namespace', 'uid') if k in result['metadata']}})
@@ -163,7 +180,7 @@ def remove(args):
                 raise RuntimeError('CNPG cleanup refuses a CRD that still has resources')
         version = obj['apiVersion']
         prefix = '/api/v1' if version == 'v1' else '/apis/' + version
-        resources = {'Namespace': 'namespaces', 'CustomResourceDefinition': 'customresourcedefinitions', 'ClusterRole': 'clusterroles', 'ClusterRoleBinding': 'clusterrolebindings', 'Role': 'roles', 'RoleBinding': 'rolebindings', 'ServiceAccount': 'serviceaccounts', 'Service': 'services', 'ConfigMap': 'configmaps', 'ResourceQuota': 'resourcequotas', 'Job': 'jobs', 'MutatingWebhookConfiguration': 'mutatingwebhookconfigurations', 'ValidatingWebhookConfiguration': 'validatingwebhookconfigurations'}
+        resources = {'Namespace': 'namespaces', 'CustomResourceDefinition': 'customresourcedefinitions', 'ClusterRole': 'clusterroles', 'ClusterRoleBinding': 'clusterrolebindings', 'Role': 'roles', 'RoleBinding': 'rolebindings', 'ServiceAccount': 'serviceaccounts', 'Service': 'services', 'ConfigMap': 'configmaps', 'ResourceQuota': 'resourcequotas', 'Job': 'jobs', 'Deployment': 'deployments', 'MutatingWebhookConfiguration': 'mutatingwebhookconfigurations', 'ValidatingWebhookConfiguration': 'validatingwebhookconfigurations'}
         if 'namespace' in obj['metadata']:
             prefix += '/namespaces/' + obj['metadata']['namespace']
         target = prefix + '/' + resources[obj['kind']] + '/' + obj['metadata']['name']

@@ -9,9 +9,10 @@ PostgreSQL through a generated network peer for its database allocation profile.
 
 The host installs a checksum-pinned CNPG operator in a separate namespace. Its
 namespaced write permissions are bound by the generated allocator. Its watches
-and admission webhooks select the one test database namespace. A suspended Job
-starts after the allocation is ready and has a 30-minute execution limit. The
-installer refuses existing operator resources and records UIDs for cleanup.
+and admission webhooks select the one test database namespace. The operator Deployment
+starts after the allocation is ready. A separate Job owns the Deployment. Its
+30-minute deadline and immediate TTL cleanup limit the operator lifetime if the
+host exits. The installer refuses existing resources and records UIDs for cleanup.
 
 The SQL checks require two distinct restricted logins, verified TLS, denied
 access to other databases, stable object identities across worker replacement,
@@ -23,6 +24,17 @@ repeat generation, controller race checks, image builds, and the local placement
 checks. Browser setup then stopped because the fixture tried to change an
 existing database ID. The fixture now supplies its final ID at creation.
 Both attempts and their CNPG resources were removed. Neither is a workflow pass.
+
+The third attempt created the namespace allocation and passed the denied
+database-provider write check. CNPG then stopped because its certificate code
+requires a Deployment owner. The wrapper now preserves that Deployment and
+uses a separate lifetime Job. The third attempt is also a failure.
+
+A small jshell check used the same lifetime Job template with a five-second
+deadline. Kubernetes removed both the Job and its owned Deployment after
+37.5 seconds, including Pod termination. The check namespace was then removed.
+Evidence is in `/tmp/stego-cnpg-lifetime-a2m2xe2t`. This checks the lifetime
+mechanism; the corrected CNPG application run is still required.
 
 The current test needs Python with PyYAML on the host. Use the command below
 with the saved jshell context. The current wrapper installs the temporary CNPG

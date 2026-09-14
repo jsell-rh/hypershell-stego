@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"time"
 
@@ -112,8 +113,8 @@ func (w *browserGatewayWorkload) checkSQLDeletion(id string) {
 	}
 }
 
-// Start the bounded operator only after the generated allocator grants its
-// namespace access. The operator must not wait through the image build.
+// Start the operator and its lifetime limit only after the generated allocator
+// grants namespace access. The deadline excludes the image build.
 func (w *browserGatewayWorkload) startCNPG() {
 	w.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
@@ -141,14 +142,51 @@ func (w *browserGatewayWorkload) startCNPG() {
 		case <-time.After(time.Second):
 		}
 	}
-	path = "/apis/batch/v1/namespaces/cnpg-system/jobs/cnpg-controller-manager"
+	path = "/apis/batch/v1/namespaces/cnpg-system/jobs/cnpg-test-lifetime"
 	job, code, err := w.kubernetes.Request(ctx, "GET", path, nil)
 	if err != nil || code != 200 {
-		w.t.Fatal("bounded CNPG operator is unavailable", code)
+		w.t.Fatal("CNPG lifetime Job is unavailable", code)
 	}
 	_, err = w.kubernetes.PatchOwned(ctx, path, job, kube.Object{"spec": kube.Object{"suspend": false}}, kube.Owner{"stego.test/cnpg-run": w.p.namespace})
 	if err != nil {
-		w.t.Fatal("bounded CNPG operator could not start", err)
+		w.t.Fatal("CNPG lifetime Job could not start", err)
+	}
+	path = "/apis/apps/v1/namespaces/cnpg-system/deployments/cnpg-controller-manager"
+	deployment, code, err := w.kubernetes.Request(ctx, "GET", path, nil)
+	if err != nil || code != 200 {
+		w.t.Fatal("CNPG operator Deployment is unavailable", code)
+	}
+	refs, _ := kube.Nested(deployment, "metadata", "ownerReferences").([]any)
+	bounded := false
+	for _, raw := range refs {
+		ref, _ := raw.(map[string]any)
+		if kube.String(ref, "apiVersion") == "batch/v1" && kube.String(ref, "kind") == "Job" && kube.String(ref, "name") == "cnpg-test-lifetime" && kube.String(ref, "uid") == kube.String(job, "metadata", "uid") {
+			bounded = true
+		}
+	}
+	deadline, _ := kube.Nested(job, "spec", "activeDeadlineSeconds").(json.Number)
+	ttl, _ := kube.Nested(job, "spec", "ttlSecondsAfterFinished").(json.Number)
+	if !bounded || deadline != "1800" || ttl != "0" {
+		w.t.Fatal("CNPG operator lifetime is not bounded")
+	}
+	_, err = w.kubernetes.PatchOwned(ctx, path, deployment, kube.Object{"spec": kube.Object{"replicas": 1}}, kube.Owner{"stego.test/cnpg-run": w.p.namespace})
+	if err != nil {
+		w.t.Fatal("CNPG operator Deployment could not start", err)
+	}
+	for {
+		deployment, code, err = w.kubernetes.Request(ctx, "GET", path, nil)
+		if err != nil || code != 200 {
+			w.t.Fatal("CNPG operator readiness read failed", code)
+		}
+		available, _ := kube.Nested(deployment, "status", "availableReplicas").(json.Number)
+		if available == "1" {
+			break
+		}
+		select {
+		case <-ctx.Done():
+			w.t.Fatal("CNPG operator did not become available")
+		case <-time.After(time.Second):
+		}
 	}
 }
 
