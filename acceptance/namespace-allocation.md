@@ -1,5 +1,25 @@
 # Namespace allocation adoption
 
+## Required shared-cluster support
+
+The user confirmed on 2026-09-14 that managed clusters can contain unrelated
+workloads. Strict namespace isolation is required. The application must use the
+separate STEGO allocator and namespace-scoped worker grants. It must not require
+a dedicated cluster or broad worker permissions as a deployment workaround.
+
+The application gate must prove that the deployed workers cannot read Secrets
+or change workloads in unrelated namespaces. The allocator must not read
+application Secrets. Creation, cleanup, restart, and regeneration must preserve
+these limits. Existing foreign namespaces must not be adopted or removed.
+
+The allocator branch is not yet proof of complete shared-cluster support. The
+full workflow, active admission checks, network and storage isolation, and
+allocation capacity limits remain acceptance requirements. Shared CNPG and
+separate Sandbox placement must meet the same requirement before those paths
+are supported on a shared cluster.
+
+## Responsibility split
+
 The common runtime is in STEGO. The Hypershell adapter in
 `internal/namespaceallocation` maps current Gateway and ManagedDatabase records
 to the `gateway` and `database` profiles. It shares the existing watch and
