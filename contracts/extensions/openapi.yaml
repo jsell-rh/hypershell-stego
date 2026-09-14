@@ -39,9 +39,9 @@ paths:
   /api/hypershell/v1/gateway_releases/{id}:
     $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/paths/~1api~1hypershell~1v1~1gateway_releases~1{id}'
   /api/hypershell/v1/gateways:
-    $ref: '../reference/openapi/openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways'
+    $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways'
   /api/hypershell/v1/gateways/{id}:
-    $ref: '../reference/openapi/openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{id}'
+    $ref: 'openapi.gateways.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{id}'
   /api/hypershell/v1/gateways/{gateway_id}/service_accounts:
     $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/paths/~1api~1hypershell~1v1~1gateways~1{gateway_id}~1service_accounts'
   /api/hypershell/v1/gateways/{gateway_id}/service_accounts/{service_account_id}:
@@ -121,11 +121,11 @@ components:
     GatewayReleasePatchRequest:
       $ref: '../reference/openapi/openapi.gatewayReleases.yaml#/components/schemas/GatewayReleasePatchRequest'
     Gateway:
-      $ref: '../reference/openapi/openapi.gateways.yaml#/components/schemas/Gateway'
+      $ref: 'openapi.gateways.yaml#/components/schemas/Gateway'
     GatewayList:
-      $ref: '../reference/openapi/openapi.gateways.yaml#/components/schemas/GatewayList'
+      $ref: 'openapi.gateways.yaml#/components/schemas/GatewayList'
     GatewayPatchRequest:
-      $ref: '../reference/openapi/openapi.gateways.yaml#/components/schemas/GatewayPatchRequest'
+      $ref: 'openapi.gateways.yaml#/components/schemas/GatewayPatchRequest'
     OpenShellGatewayServiceAccountRole:
       $ref: '../reference/openapi/openapi.serviceAccounts.yaml#/components/schemas/OpenShellGatewayServiceAccountRole'
     OpenShellGatewayServiceAccountStatus:

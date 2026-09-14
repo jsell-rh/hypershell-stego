@@ -52,8 +52,9 @@ component may depend on a Hypershell entity name.
 
 ## Acceptance and current state
 
-The current implementation still uses database registration and `database_id`.
-It does not yet satisfy this decision. The earlier registration and CNPG resource
+Gateway requests no longer accept `database_id`. Responses, storage, and the
+controller still use database registration and the old field. The implementation
+does not yet satisfy the complete decision. The earlier registration and CNPG resource
 tests are historical evidence; they do not establish this new contract.
 
 The next application gate must create a Gateway without a database field or
@@ -75,3 +76,27 @@ test ran. The optional gRPC cluster ID assertion had a type mismatch. The Job,
 Pods, Secrets, and ConfigMap were removed, and the shared Lease was released.
 The failed evidence remains in `/tmp/hypershell-registered-placement-v1`.
 It is not a passing gate and will not be used to justify the retired model.
+
+## Request contract removal
+
+The first code change removes `database_id` from Gateway create and patch
+requests. The Go and TypeScript SDKs, CLI, and console use the new request
+shape. REST rejects the retired property, including empty and null values.
+gRPC reserves the old field numbers and names and rejects unknown request
+fields. The captured upstream contracts remain unchanged; the application
+contracts declare this breaking change.
+
+The bounded jshell check passed all 17 required Gateway tests under race
+detection. It checks REST and gRPC rejection, valid creation, ownership,
+filtered access, SDK and CLI calls, event delivery, and restart. The rejection
+test records every event insert so delivery cannot hide an unwanted event.
+Console type, architecture, lint, and UI checks passed. Repeated generation
+produced the same files before and after the checks. The
+[request evidence](gateway-request-contract-evidence.json) records source
+hashes, failed attempts, limits, and cleanup.
+
+This is an intermediate code change. Gateway responses and storage still have
+the field. The catalog, registration calls, and old controller still exist.
+The selected tests still seed a database record. They do not prove the required
+creation workflow without a database catalog. The next change must remove
+those dependencies and connect the assigned controller to STEGO's SQL lifecycle.

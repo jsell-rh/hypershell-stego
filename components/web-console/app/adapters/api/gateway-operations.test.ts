@@ -772,7 +772,6 @@ describe("gateway API operations adapter", () => {
       {
         body: {
           cluster_id: "cluster-east",
-          database_id: "",
           name: "team-gateway",
           release_id: "",
           route: '{"enabled":true}',

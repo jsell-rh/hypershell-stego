@@ -25,7 +25,7 @@ Create a Gateway with catalog IDs from the API:
 
 ```sh
 bin/hsctl create gateway --name example \
-  --cluster-id CLUSTER_ID --release-id RELEASE_ID --database-id '' \
+  --cluster-id CLUSTER_ID --release-id RELEASE_ID \
   --server-dns-names '["gateway.example.test"]'
 bin/hsctl get gateway GATEWAY_ID
 bin/hsctl list gateways --size 20 --search "name = 'example'"

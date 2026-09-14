@@ -127,7 +127,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 		}
 	}
 	var gateway httpapi.Gateway
-	data := success("alice", "create", "gateway", "--name", "cli-grants", "--cluster-id", f.cluster, "--release-id", f.release, "--database-id", "")
+	data := success("alice", "create", "gateway", "--name", "cli-grants", "--cluster-id", f.cluster, "--release-id", f.release)
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("CLI did not create the Gateway")
 	}

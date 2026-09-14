@@ -106,7 +106,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 	path := address + "/api/hypershell/v1/gateways"
 	creator := token(t, key, "alice", "gateway:creator")
 	owner := token(t, key, "alice")
-	body := []byte(fmt.Sprintf(`{"name":"gateway","cluster_id":%q,"release_id":%q,"database_id":"ignored","server_dns_names":["gw.example.test"],"supervisor_image":"supervisor:v1","oidc":"{\"issuer\":\"https://issuer.example\"}"}`, f.cluster, f.release))
+	body := []byte(fmt.Sprintf(`{"name":"gateway","cluster_id":%q,"release_id":%q,"server_dns_names":["gw.example.test"],"supervisor_image":"supervisor:v1","oidc":"{\"issuer\":\"https://issuer.example\"}"}`, f.cluster, f.release))
 	status, data := requestJSON(t, "POST", path, creator, body)
 	if status != http.StatusCreated {
 		t.Fatalf("create status %d: %s", status, data)

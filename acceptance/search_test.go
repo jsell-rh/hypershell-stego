@@ -18,7 +18,7 @@ func TestRESTSearchAndOrderingPreserveGatewayAccess(t *testing.T) {
 	defer stop()
 	path := address + "/api/hypershell/v1/gateways"
 	for _, item := range []struct{ name, user string }{{"a-allowed", "alice"}, {"z-allowed", "alice"}, {"b-hidden", "bob"}} {
-		body := []byte(fmt.Sprintf(`{"name":%q,"cluster_id":%q,"release_id":%q,"database_id":"ignored"}`, item.name, f.cluster, f.release))
+		body := []byte(fmt.Sprintf(`{"name":%q,"cluster_id":%q,"release_id":%q}`, item.name, f.cluster, f.release))
 		code, data := requestJSON(t, "POST", path, token(t, key, item.user, "gateway:creator"), body)
 		if code != 201 {
 			t.Fatalf("create: %d %s", code, data)

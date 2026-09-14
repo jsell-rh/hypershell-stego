@@ -9,7 +9,7 @@ func applyResources(commands []command.Command) []command.ApplyResource {
 		kind, path string
 		required   []string
 	}{
-		{"Gateway", "gateways", []string{"name", "cluster_id", "release_id", "database_id"}},
+		{"Gateway", "gateways", []string{"name", "cluster_id", "release_id"}},
 		{"ManagedCluster", "managed_clusters", []string{"name", "provider", "kubeconfig_secret"}},
 		{"GatewayRelease", "gateway_releases", []string{"name", "image"}},
 		{"ManagedDatabase", "managed_databases", []string{"name", "provider", "cluster_id"}},

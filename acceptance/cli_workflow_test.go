@@ -160,7 +160,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	if err != nil || bytes.Contains(saved, []byte(owner)) {
 		t.Fatal("configuration copied the token")
 	}
-	created := success("create", "gateway", "--name", "cli-workflow", "--cluster-id", f.cluster, "--release-id", f.release, "--database-id", "", "--server-dns-names", `["cli.example.test"]`)
+	created := success("create", "gateway", "--name", "cli-workflow", "--cluster-id", f.cluster, "--release-id", f.release, "--server-dns-names", `["cli.example.test"]`)
 	var gateway httpapi.Gateway
 	if err := json.Unmarshal(created, &gateway); err != nil || gateway.ID == "" {
 		t.Fatal("invalid CLI creation response", err)
@@ -221,7 +221,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	body := filepath.Join(t.TempDir(), "create.json")
-	request, _ := json.Marshal(map[string]string{"name": "cli-rollback", "cluster_id": f.cluster, "release_id": f.release, "database_id": ""})
+	request, _ := json.Marshal(map[string]string{"name": "cli-rollback", "cluster_id": f.cluster, "release_id": f.release})
 	if err := os.WriteFile(body, request, 0600); err != nil {
 		t.Fatal(err)
 	}

@@ -28,7 +28,7 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 	if _, err := f.db.Exec(`UPDATE gateways SET active_sandbox_count=4,console_address='https://console.example.test' WHERE id=$1`, created.ID); err != nil {
 		t.Fatal(err)
 	}
-	updated, err := f.service.Update(ctx, owner, created.ID, gateways.PatchRequest{Name: pointer("changed"), DatabaseID: pointer("ignored"), ExternalDNS: pointer(""), SupervisorImage: pointer("supervisor:v2"), CredentialDriver: pointer("driver-a"), ServerDNSNames: []string{}})
+	updated, err := f.service.Update(ctx, owner, created.ID, gateways.PatchRequest{Name: pointer("changed"), ExternalDNS: pointer(""), SupervisorImage: pointer("supervisor:v2"), CredentialDriver: pointer("driver-a"), ServerDNSNames: []string{}})
 	if err != nil {
 		t.Fatal(err)
 	}

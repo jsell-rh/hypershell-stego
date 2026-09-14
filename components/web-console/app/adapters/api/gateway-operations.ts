@@ -550,7 +550,6 @@ export function createGatewayControlPlaneAdapter(
               {
                 body: {
                   cluster_id: input.clusterId,
-                  database_id: "",
                   name: input.name,
                   release_id: "",
                   route: JSON.stringify({ enabled: true }),

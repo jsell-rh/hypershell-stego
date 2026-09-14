@@ -106,3 +106,18 @@ The separate full application run `34883281256` still has failed workload
 jobs. Those failures identify fixture conversions that remain required.
 This passing API gate does not replace the full application, rendered browser,
 external PostgreSQL/RDS, or Sandbox acceptance requirements.
+
+## Request contract and result recovery
+
+The required API set now has 17 tests. The added checks cover removed request
+fields, the generated Go SDK, CLI, and mutations through REST, gRPC, and restart.
+The descriptor check permits only the declared retirement of the two request
+fields and their optional-field metadata. All other captured wire fields must
+match. See the [request contract record](controller-local-database.md#request-contract-removal).
+
+The runner now retries a failed read of the same Job result. A failed read does
+not establish that the Job stopped. If the result cannot be collected, the
+runner retains the active Job, its fixtures, and the Lease. Six small unit tests
+cover observation loss, status loss, deadline handling, missing Jobs, terminal
+Jobs, and invalid results. The passing request run also injected a result-read
+timeout and then completed on the same Job. No mutation was retried.

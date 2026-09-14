@@ -202,7 +202,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if _, err := states.GetGatewayIdentityState(ownerContext, &control.GetGatewayIdentityStateRequest{Id: created.ID}); status.Code(err) != codes.PermissionDenied {
 		t.Fatalf("owner read control-plane state: %v", err)
 	}
-	second, err := client.CreateGateway(ownerContext, &pb.CreateGatewayRequest{Name: "watch-identity", ClusterId: f.cluster, ReleaseId: f.release, DatabaseId: f.database})
+	second, err := client.CreateGateway(ownerContext, &pb.CreateGatewayRequest{Name: "watch-identity", ClusterId: f.cluster, ReleaseId: f.release})
 	if err != nil {
 		t.Fatal(err)
 	}

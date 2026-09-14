@@ -154,7 +154,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	}
 	ids := make([]string, 0, 2)
 	for _, name := range []string{"blocked-cleanup", "independent-cleanup"} {
-		input := map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release, "database_id": f.database}
+		input := map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release}
 		if cleanupOwner == "provider" {
 			input = map[string]string{"name": name, "provider": "cnpg", "cluster_id": f.cluster}
 		}

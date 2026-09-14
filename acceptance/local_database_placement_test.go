@@ -35,7 +35,6 @@ func TestLocalDatabaseSelectionAndRollback(t *testing.T) {
 	}
 	creator := principal("local-owner", "gateway:creator")
 	request := f.request("local")
-	request.DatabaseID = otherDatabase
 	row, err := f.service.Create(ctx, creator, request)
 	if err != nil || row.DatabaseID != f.database || row.ClusterID != f.cluster {
 		t.Fatal("Gateway used a foreign database", err)

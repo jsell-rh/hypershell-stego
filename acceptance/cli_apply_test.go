@@ -175,7 +175,7 @@ spec: {topology: mesh, status: planned}
 		if id != "" {
 			identifier = "  id: " + id + "\n"
 		}
-		return fmt.Sprintf("apiVersion: hypershell/v1\nkind: Gateway\nmetadata:\n  name: %q\n%sspec:\n  cluster_id: %s\n  release_id: %s\n  database_id: ignored-placeholder\n  image: %s\n", name, identifier, cluster, ids["GatewayRelease"], image)
+		return fmt.Sprintf("apiVersion: hypershell/v1\nkind: Gateway\nmetadata:\n  name: %q\n%sspec:\n  cluster_id: %s\n  release_id: %s\n  image: %s\n", name, identifier, cluster, ids["GatewayRelease"], image)
 	}
 	gatewayFile := gatewayDocument(gatewayName, "", "registry.example/gateway:v1", ids["ManagedCluster"])
 	results, problem, err := apply("alice", gatewayFile)
@@ -248,7 +248,7 @@ spec: {topology: mesh, status: planned}
 	readEvent(t, kafkaConsumer(t, brokerConfig), firstID)
 	// The API permits duplicate names. Apply must refuse to choose one by accident.
 	var duplicate httpapi.Gateway
-	data = success("alice", "create", "gateway", "--name", gatewayName, "--cluster-id", ids["ManagedCluster"], "--release-id", ids["GatewayRelease"], "--database-id", "placeholder")
+	data = success("alice", "create", "gateway", "--name", gatewayName, "--cluster-id", ids["ManagedCluster"], "--release-id", ids["GatewayRelease"])
 	if json.Unmarshal(data, &duplicate) != nil || duplicate.ID == "" {
 		t.Fatal("duplicate-name fixture")
 	}

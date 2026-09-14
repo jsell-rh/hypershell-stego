@@ -274,6 +274,7 @@ overrides:
     document: contracts/extensions/openapi.yaml
     references:
       - contracts/extensions/openapi.managedDatabases.yaml
+      - contracts/extensions/openapi.gateways.yaml
       - contracts/reference/openapi/openapi.yaml
       - contracts/reference/openapi/openapi.gatewayNetworks.yaml
       - contracts/reference/openapi/openapi.gatewayReleases.yaml
@@ -287,6 +288,7 @@ overrides:
     document: contracts/extensions/openapi.yaml
     references:
       - contracts/extensions/openapi.managedDatabases.yaml
+      - contracts/extensions/openapi.gateways.yaml
       - contracts/reference/openapi/openapi.yaml
       - contracts/reference/openapi/openapi.gatewayNetworks.yaml
       - contracts/reference/openapi/openapi.gatewayReleases.yaml
@@ -315,7 +317,7 @@ overrides:
     proto_files:
       - path: contracts/reference/proto/hypershell/v1/common.proto
         import_path: hypershell/v1/common.proto
-      - path: contracts/reference/proto/hypershell/v1/gateways.proto
+      - path: contracts/extensions/gateways.proto
         import_path: hypershell/v1/gateways.proto
       - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
         import_path: hypershell/provisioner/v1/service_accounts.proto

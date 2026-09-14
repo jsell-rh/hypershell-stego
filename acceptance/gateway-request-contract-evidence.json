@@ -1,0 +1,104 @@
+{
+  "date": "2026-09-14",
+  "scope": "Retire database selection from Gateway requests. Response, storage, and controller removal remain open.",
+  "source_base_commit": "131cf4a",
+  "source_files": 849,
+  "source_manifest_sha256": "13599828708ddd39dfb98ce29121aef5f29e7e76dca4bc9a945e88eed67172c9",
+  "source_archive_sha256": "63753b10fd11c53a9db1645caf2a665e53c757604332d9bd243ff20104eb25d1",
+  "job": "gateway-request-d7df32fd1ee5",
+  "namespace": "stego-ci",
+  "context": "jshell-ci",
+  "job_complete": true,
+  "finished_at": "2026-09-14T22:44:45Z",
+  "verification": {
+    "required": [
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestGatewayRequestsRejectRetiredDatabaseField",
+      "TestGeneratedGoSDKGatewayWorkflow",
+      "TestGeneratedCLIWorkflow",
+      "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGatewayWatchThroughGeneratedRuntime",
+      "TestPlacementWorkflowThroughGeneratedRuntime",
+      "TestLocalDatabaseSelectionAndRollback",
+      "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+      "TestLocalDatabaseMigrationPreservesLegacyRows"
+    ],
+    "passed": [
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestEventFailureRollsBackGatewayAndOwner/gateway.created",
+      "TestEventFailureRollsBackGatewayAndOwner/rolebinding.created",
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+      "TestGatewayRequestsRejectRetiredDatabaseField",
+      "TestGatewayWatchThroughGeneratedRuntime",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGeneratedCLIWorkflow",
+      "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+      "TestGeneratedGoSDKGatewayWorkflow",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestLocalDatabaseMigrationPreservesLegacyRows",
+      "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
+      "TestLocalDatabaseSelectionAndRollback",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestPlacementWorkflowThroughGeneratedRuntime"
+    ],
+    "failed": [],
+    "missing": [],
+    "exit_code": 0
+  },
+  "acceptance_seconds": 74.308,
+  "generated_files": 231,
+  "generated_hash_manifest_sha256": "5d871c7008078817f17f690615f8bfc069ce81620d61a7293166683a8e7a7674",
+  "first_second_after_equal": true,
+  "console_bundle_sha256": "d1c2209a51b6c938a6e5f2fc12882979f8491e5b23714c5955e018dda78659ea",
+  "ui_test_summaries": [
+    "Tests  7 passed (7)",
+    "Tests  164 passed (164)",
+    "Tests  58 passed (58)"
+  ],
+  "checks": [
+    "Pinned generation before tests, repeated generation, and generation after tests",
+    "Race checks for contracts, CLI, HTTP, 17 required Gateway tests, and console packages",
+    "Console TypeScript, architecture, lint, and bounded Vitest checks",
+    "Console asset build repeated with equal archives",
+    "Generated browser SDK compile checks reject database_id on create and patch"
+  ],
+  "injected_result_observation_timeout": {
+    "job": "gateway-request-d7df32fd1ee5",
+    "injected_result_read_timeout": true
+  },
+  "cleanup": {
+    "job_absent": "gateway-request-d7df32fd1ee5",
+    "pods_absent": true,
+    "fixture_resources_absent": true
+  },
+  "local_results": "/tmp/hypershell-gateway-request-v4",
+  "earlier_attempts": [
+    {
+      "results": "/tmp/hypershell-gateway-request-v1",
+      "result": "Compilation failed on an unused import. No runtime pass."
+    },
+    {
+      "results": "/tmp/hypershell-gateway-request-v2",
+      "result": "The old runner deleted an active Job after a result-read timeout. No complete result was collected."
+    },
+    {
+      "results": "/tmp/hypershell-gateway-request-v3",
+      "result": "15 required tests passed. Two new assertions failed: changed role claims and retained optional protobuf metadata."
+    }
+  ],
+  "limits": [
+    "The fixture still seeds the old database catalog. This is not the no-catalog acceptance gate.",
+    "Full application CI, rendered browser, controller-local SQL, schema transition, and actual RDS acceptance remain required."
+  ],
+  "changes_after_test": "Documentation and two test comments only. Generated files were copied without edits."
+}

@@ -15,12 +15,10 @@ import (
 
 // PatchRequest contains the public patch fields. Nil leaves a field unchanged.
 // An empty DNS list also leaves that field unchanged, as in the reference API.
-// DatabaseID is accepted for compatibility and does not change placement.
 type PatchRequest struct {
 	Name             *string  `json:"name,omitempty"`
 	ClusterID        *string  `json:"cluster_id,omitempty"`
 	ReleaseID        *string  `json:"release_id,omitempty"`
-	DatabaseID       *string  `json:"database_id,omitempty"`
 	ExternalDNS      *string  `json:"external_dns,omitempty"`
 	TLSMode          *string  `json:"tls_mode,omitempty"`
 	ServiceType      *string  `json:"service_type,omitempty"`

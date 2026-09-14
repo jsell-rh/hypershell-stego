@@ -311,7 +311,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("database update watch", databaseNotice, err)
 	}
 
-	body, _ := json.Marshal(gateways.CreateRequest{Name: "api-placed", ClusterID: cluster.ID, ReleaseID: releaseID, DatabaseID: "ignored"})
+	body, _ := json.Marshal(gateways.CreateRequest{Name: "api-placed", ClusterID: cluster.ID, ReleaseID: releaseID})
 	code, data = requestJSON(t, "POST", base+"/gateways", creator, body)
 	var gateway httpapi.Gateway
 	if code != 201 || json.Unmarshal(data, &gateway) != nil || gateway.DatabaseID != database.ID {

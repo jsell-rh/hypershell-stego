@@ -300,7 +300,7 @@ type Gateway struct {
 	// CredentialDriver JSON-encoded credential storage driver configuration
 	CredentialDriver *string `json:"credential_driver,omitempty"`
 
-	// DatabaseId Server-assigned ManagedDatabase identifier; client-supplied values are ignored
+	// DatabaseId Server-assigned ManagedDatabase identifier
 	DatabaseId  string  `json:"database_id"`
 	ExternalDns *string `json:"external_dns,omitempty"`
 	Href        *string `json:"href,omitempty"`
@@ -387,24 +387,21 @@ type GatewayNetworkPatchRequest struct {
 
 // GatewayPatchRequest defines model for GatewayPatchRequest.
 type GatewayPatchRequest struct {
-	ClusterId        *string `json:"cluster_id,omitempty"`
-	CredentialDriver *string `json:"credential_driver,omitempty"`
-
-	// DatabaseId Server-owned placement field; values supplied through PATCH are ignored
-	DatabaseId      *string   `json:"database_id,omitempty"`
-	ExternalDns     *string   `json:"external_dns,omitempty"`
-	Image           *string   `json:"image,omitempty"`
-	Name            *string   `json:"name,omitempty"`
-	Oidc            *string   `json:"oidc,omitempty"`
-	Phase           *string   `json:"phase,omitempty"`
-	ReleaseId       *string   `json:"release_id,omitempty"`
-	Route           *string   `json:"route,omitempty"`
-	RouteAddress    *string   `json:"route_address,omitempty"`
-	ServerDnsNames  *[]string `json:"server_dns_names,omitempty"`
-	ServiceType     *string   `json:"service_type,omitempty"`
-	Status          *string   `json:"status,omitempty"`
-	SupervisorImage *string   `json:"supervisor_image,omitempty"`
-	TlsMode         *string   `json:"tls_mode,omitempty"`
+	ClusterId        *string   `json:"cluster_id,omitempty"`
+	CredentialDriver *string   `json:"credential_driver,omitempty"`
+	ExternalDns      *string   `json:"external_dns,omitempty"`
+	Image            *string   `json:"image,omitempty"`
+	Name             *string   `json:"name,omitempty"`
+	Oidc             *string   `json:"oidc,omitempty"`
+	Phase            *string   `json:"phase,omitempty"`
+	ReleaseId        *string   `json:"release_id,omitempty"`
+	Route            *string   `json:"route,omitempty"`
+	RouteAddress     *string   `json:"route_address,omitempty"`
+	ServerDnsNames   *[]string `json:"server_dns_names,omitempty"`
+	ServiceType      *string   `json:"service_type,omitempty"`
+	Status           *string   `json:"status,omitempty"`
+	SupervisorImage  *string   `json:"supervisor_image,omitempty"`
+	TlsMode          *string   `json:"tls_mode,omitempty"`
 }
 
 // GatewayRelease defines model for GatewayRelease.
@@ -748,39 +745,6 @@ type RoleList struct {
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
 }
 
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysGatewayCreateRequest defines model for _contracts_reference_openapi_openapi.gateways_GatewayCreateRequest.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysGatewayCreateRequest struct {
-	ClusterId string `json:"cluster_id"`
-
-	// CredentialDriver JSON-encoded credential storage driver configuration
-	CredentialDriver *string `json:"credential_driver,omitempty"`
-
-	// DatabaseId Required placement placeholder; the API server ignores its value and assigns the ManagedDatabase
-	DatabaseId  string  `json:"database_id"`
-	ExternalDns *string `json:"external_dns,omitempty"`
-
-	// Image Container image for the gateway deployment
-	Image *string `json:"image,omitempty"`
-	Name  string  `json:"name"`
-
-	// Oidc JSON-encoded OIDC authentication configuration
-	Oidc      *string `json:"oidc,omitempty"`
-	Phase     *string `json:"phase,omitempty"`
-	ReleaseId string  `json:"release_id"`
-
-	// Route JSON-encoded route configuration
-	Route *string `json:"route,omitempty"`
-
-	// ServerDnsNames DNS names for TLS certificate SANs
-	ServerDnsNames *[]string `json:"server_dns_names,omitempty"`
-	ServiceType    *string   `json:"service_type,omitempty"`
-	Status         *string   `json:"status,omitempty"`
-
-	// SupervisorImage Container image for the supervisor sidecar
-	SupervisorImage *string `json:"supervisor_image,omitempty"`
-	TlsMode         *string `json:"tls_mode,omitempty"`
-}
-
 // UnderscoreContractsReferenceOpenapiOpenapiError defines model for _contracts_reference_openapi_openapi_Error.
 type UnderscoreContractsReferenceOpenapiOpenapiError struct {
 	Code        *string    `json:"code,omitempty"`
@@ -812,6 +776,36 @@ type UnderscoreContractsReferenceOpenapiOpenapiObjectReference struct {
 	Id        *string    `json:"id,omitempty"`
 	Kind      *string    `json:"kind,omitempty"`
 	UpdatedAt *time.Time `json:"updated_at,omitempty"`
+}
+
+// OpenapiGatewaysGatewayCreateRequest defines model for openapi.gateways_GatewayCreateRequest.
+type OpenapiGatewaysGatewayCreateRequest struct {
+	ClusterId string `json:"cluster_id"`
+
+	// CredentialDriver JSON-encoded credential storage driver configuration
+	CredentialDriver *string `json:"credential_driver,omitempty"`
+	ExternalDns      *string `json:"external_dns,omitempty"`
+
+	// Image Container image for the gateway deployment
+	Image *string `json:"image,omitempty"`
+	Name  string  `json:"name"`
+
+	// Oidc JSON-encoded OIDC authentication configuration
+	Oidc      *string `json:"oidc,omitempty"`
+	Phase     *string `json:"phase,omitempty"`
+	ReleaseId string  `json:"release_id"`
+
+	// Route JSON-encoded route configuration
+	Route *string `json:"route,omitempty"`
+
+	// ServerDnsNames DNS names for TLS certificate SANs
+	ServerDnsNames *[]string `json:"server_dns_names,omitempty"`
+	ServiceType    *string   `json:"service_type,omitempty"`
+	Status         *string   `json:"status,omitempty"`
+
+	// SupervisorImage Container image for the supervisor sidecar
+	SupervisorImage *string `json:"supervisor_image,omitempty"`
+	TlsMode         *string `json:"tls_mode,omitempty"`
 }
 
 // OpenapiManagedDatabasesManagedDatabaseCreateRequest defines model for openapi.managedDatabases_ManagedDatabaseCreateRequest.
@@ -868,24 +862,6 @@ type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSearch = string
 
 // UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSize defines model for _contracts_reference_openapi_openapi.gatewayReleases_size.
 type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSize = int
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysFields defines model for _contracts_reference_openapi_openapi.gateways_fields.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysFields = string
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysId defines model for _contracts_reference_openapi_openapi.gateways_id.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysId = string
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysOrderBy defines model for _contracts_reference_openapi_openapi.gateways_orderBy.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysOrderBy = string
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysPage defines model for _contracts_reference_openapi_openapi.gateways_page.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysPage = int
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysSearch defines model for _contracts_reference_openapi_openapi.gateways_search.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysSearch = string
-
-// UnderscoreContractsReferenceOpenapiOpenapiGatewaysSize defines model for _contracts_reference_openapi_openapi.gateways_size.
-type UnderscoreContractsReferenceOpenapiOpenapiGatewaysSize = int
 
 // UnderscoreContractsReferenceOpenapiOpenapiManagedClustersFields defines model for _contracts_reference_openapi_openapi.managedClusters_fields.
 type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersFields = string
@@ -970,6 +946,24 @@ type Fields = string
 
 // Id defines model for id.
 type Id = string
+
+// OpenapiGatewaysFields defines model for openapi.gateways_fields.
+type OpenapiGatewaysFields = string
+
+// OpenapiGatewaysId defines model for openapi.gateways_id.
+type OpenapiGatewaysId = string
+
+// OpenapiGatewaysOrderBy defines model for openapi.gateways_orderBy.
+type OpenapiGatewaysOrderBy = string
+
+// OpenapiGatewaysPage defines model for openapi.gateways_page.
+type OpenapiGatewaysPage = int
+
+// OpenapiGatewaysSearch defines model for openapi.gateways_search.
+type OpenapiGatewaysSearch = string
+
+// OpenapiGatewaysSize defines model for openapi.gateways_size.
+type OpenapiGatewaysSize = int
 
 // OpenapiManagedDatabasesFields defines model for openapi.managedDatabases_fields.
 type OpenapiManagedDatabasesFields = string
@@ -1145,10 +1139,10 @@ type ListGatewayReleasesParams struct {
 // ListGatewaysParams defines parameters for ListGateways.
 type ListGatewaysParams struct {
 	// Page Page number of record list when record list exceeds specified page size
-	Page *UnderscoreContractsReferenceOpenapiOpenapiGatewaysPage `form:"page,omitempty" json:"page,omitempty"`
+	Page *OpenapiGatewaysPage `form:"page,omitempty" json:"page,omitempty"`
 
 	// Size Maximum number of records to return
-	Size *UnderscoreContractsReferenceOpenapiOpenapiGatewaysSize `form:"size,omitempty" json:"size,omitempty"`
+	Size *OpenapiGatewaysSize `form:"size,omitempty" json:"size,omitempty"`
 
 	// Search Specifies the search criteria. The syntax of this parameter is
 	// similar to the syntax of the _where_ clause of an SQL statement,
@@ -1170,7 +1164,7 @@ type ListGatewaysParams struct {
 	// If the parameter isn't provided, or if the value is empty, then
 	// all the accounts that the user has permission to see will be
 	// returned.
-	Search *UnderscoreContractsReferenceOpenapiOpenapiGatewaysSearch `form:"search,omitempty" json:"search,omitempty"`
+	Search *OpenapiGatewaysSearch `form:"search,omitempty" json:"search,omitempty"`
 
 	// OrderBy Specifies the order by criteria. The syntax of this parameter is
 	// similar to the syntax of the _order by_ clause of an SQL statement,
@@ -1189,7 +1183,7 @@ type ListGatewaysParams struct {
 	//
 	// If the parameter isn't provided, or if the value is empty, then
 	// no explicit ordering will be applied.
-	OrderBy *UnderscoreContractsReferenceOpenapiOpenapiGatewaysOrderBy `form:"orderBy,omitempty" json:"orderBy,omitempty"`
+	OrderBy *OpenapiGatewaysOrderBy `form:"orderBy,omitempty" json:"orderBy,omitempty"`
 
 	// Fields Supplies a comma-separated list of fields to be returned.
 	// Fields of sub-structures and of arrays use <structure>.<field> notation.
@@ -1199,7 +1193,7 @@ type ListGatewaysParams struct {
 	// ```
 	// curl '/api/v1/subscriptions?fields=id,href,plan.id,plan.kind,labels.*&fetchLabels=true'
 	// ```
-	Fields *UnderscoreContractsReferenceOpenapiOpenapiGatewaysFields `form:"fields,omitempty" json:"fields,omitempty"`
+	Fields *OpenapiGatewaysFields `form:"fields,omitempty" json:"fields,omitempty"`
 }
 
 // ListGatewayServiceAccountsParams defines parameters for ListGatewayServiceAccounts.
@@ -1389,7 +1383,7 @@ type CreateGatewayReleaseJSONRequestBody = GatewayRelease
 type UpdateGatewayReleaseJSONRequestBody = GatewayReleasePatchRequest
 
 // CreateGatewayJSONRequestBody defines body for CreateGateway for application/json ContentType.
-type CreateGatewayJSONRequestBody = UnderscoreContractsReferenceOpenapiOpenapiGatewaysGatewayCreateRequest
+type CreateGatewayJSONRequestBody = OpenapiGatewaysGatewayCreateRequest
 
 // CreateGatewayServiceAccountJSONRequestBody defines body for CreateGatewayServiceAccount for application/json ContentType.
 type CreateGatewayServiceAccountJSONRequestBody = OpenShellGatewayServiceAccountCreateRequest
@@ -1628,26 +1622,26 @@ type ClientInterface interface {
 	// DeleteGateway Delete a gateway
 	//
 	// Corresponds with DELETE /api/hypershell/v1/gateways/{id} (the `DeleteGateway` operationId).
-	DeleteGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	DeleteGateway(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// GetGateway Get an gateway by id
 	//
 	// Corresponds with GET /api/hypershell/v1/gateways/{id} (the `GetGateway` operationId).
-	GetGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error)
+	GetGateway(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateGatewayWithBody Update an gateway
 	//
 	// Takes any type of body and a specified content type.
 	//
 	// Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-	UpdateGatewayWithBody(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateGatewayWithBody(ctx context.Context, id OpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// UpdateGateway Update an gateway
 	//
 	// Takes a body of the `application/json` content type.
 	//
 	// Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-	UpdateGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
+	UpdateGateway(ctx context.Context, id OpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error)
 
 	// ListManagedClusters Returns a list of managedClusters
 	//
@@ -2152,7 +2146,7 @@ func (c *Client) RevokeGatewayServiceAccount(ctx context.Context, gatewayId Unde
 // DeleteGateway Delete a gateway
 //
 // Corresponds with DELETE /api/hypershell/v1/gateways/{id} (the `DeleteGateway` operationId).
-func (c *Client) DeleteGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) DeleteGateway(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewDeleteGatewayRequest(c.Server, id)
 	if err != nil {
 		return nil, err
@@ -2167,7 +2161,7 @@ func (c *Client) DeleteGateway(ctx context.Context, id UnderscoreContractsRefere
 // GetGateway Get an gateway by id
 //
 // Corresponds with GET /api/hypershell/v1/gateways/{id} (the `GetGateway` operationId).
-func (c *Client) GetGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) GetGateway(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetGatewayRequest(c.Server, id)
 	if err != nil {
 		return nil, err
@@ -2184,7 +2178,7 @@ func (c *Client) GetGateway(ctx context.Context, id UnderscoreContractsReference
 // Takes any type of body and a specified content type.
 //
 // Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-func (c *Client) UpdateGatewayWithBody(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateGatewayWithBody(ctx context.Context, id OpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateGatewayRequestWithBody(c.Server, id, contentType, body)
 	if err != nil {
 		return nil, err
@@ -2201,7 +2195,7 @@ func (c *Client) UpdateGatewayWithBody(ctx context.Context, id UnderscoreContrac
 // Takes a body of the `application/json` content type.
 //
 // Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-func (c *Client) UpdateGateway(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
+func (c *Client) UpdateGateway(ctx context.Context, id OpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewUpdateGatewayRequest(c.Server, id, body)
 	if err != nil {
 		return nil, err
@@ -3511,7 +3505,7 @@ func NewRevokeGatewayServiceAccountRequest(server string, gatewayId UnderscoreCo
 }
 
 // NewDeleteGatewayRequest constructs an http.Request for the DeleteGateway method
-func NewDeleteGatewayRequest(server string, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId) (*http.Request, error) {
+func NewDeleteGatewayRequest(server string, id OpenapiGatewaysId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3545,7 +3539,7 @@ func NewDeleteGatewayRequest(server string, id UnderscoreContractsReferenceOpena
 }
 
 // NewGetGatewayRequest constructs an http.Request for the GetGateway method
-func NewGetGatewayRequest(server string, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId) (*http.Request, error) {
+func NewGetGatewayRequest(server string, id OpenapiGatewaysId) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -3579,7 +3573,7 @@ func NewGetGatewayRequest(server string, id UnderscoreContractsReferenceOpenapiO
 }
 
 // NewUpdateGatewayRequest calls the generic UpdateGateway builder with application/json body
-func NewUpdateGatewayRequest(server string, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, body UpdateGatewayJSONRequestBody) (*http.Request, error) {
+func NewUpdateGatewayRequest(server string, id OpenapiGatewaysId, body UpdateGatewayJSONRequestBody) (*http.Request, error) {
 	var bodyReader io.Reader
 	buf, err := json.Marshal(body)
 	if err != nil {
@@ -3590,7 +3584,7 @@ func NewUpdateGatewayRequest(server string, id UnderscoreContractsReferenceOpena
 }
 
 // NewUpdateGatewayRequestWithBody constructs an http.Request for the UpdateGateway method, with any body, and a specified content type
-func NewUpdateGatewayRequestWithBody(server string, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, contentType string, body io.Reader) (*http.Request, error) {
+func NewUpdateGatewayRequestWithBody(server string, id OpenapiGatewaysId, contentType string, body io.Reader) (*http.Request, error) {
 	var err error
 
 	var pathParam0 string
@@ -4722,28 +4716,28 @@ type ClientWithResponsesInterface interface {
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with DELETE /api/hypershell/v1/gateways/{id} (the `DeleteGateway` operationId).
-	DeleteGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*DeleteGatewayResponse, error)
+	DeleteGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*DeleteGatewayResponse, error)
 
 	// GetGatewayWithResponse Get an gateway by id
 	//
 	// Returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with GET /api/hypershell/v1/gateways/{id} (the `GetGateway` operationId).
-	GetGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*GetGatewayResponse, error)
+	GetGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*GetGatewayResponse, error)
 
 	// UpdateGatewayWithBodyWithResponse Update an gateway
 	//
 	// Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-	UpdateGatewayWithBodyWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error)
+	UpdateGatewayWithBodyWithResponse(ctx context.Context, id OpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error)
 
 	// UpdateGatewayWithResponse Update an gateway
 	//
 	// Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 	//
 	// Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-	UpdateGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error)
+	UpdateGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error)
 
 	// ListManagedClustersWithResponse Returns a list of managedClusters
 	//
@@ -5610,11 +5604,11 @@ type ListGatewaysResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *GatewayList
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON401 *Error
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON403 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON500 *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -5623,17 +5617,17 @@ func (r ListGatewaysResponse) GetJSON200() *GatewayList {
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r ListGatewaysResponse) GetJSON401() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r ListGatewaysResponse) GetJSON401() *Error {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r ListGatewaysResponse) GetJSON403() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r ListGatewaysResponse) GetJSON403() *Error {
 	return r.JSON403
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r ListGatewaysResponse) GetJSON500() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r ListGatewaysResponse) GetJSON500() *Error {
 	return r.JSON500
 }
 
@@ -5672,15 +5666,15 @@ type CreateGatewayResponse struct {
 	// JSON201 the response for an HTTP 201 `application/json` response
 	JSON201 *Gateway
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON400 *Error
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON401 *Error
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON403 *Error
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON409 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON500 *Error
 }
 
 // GetJSON201 returns the response for an HTTP 201 `application/json` response
@@ -5689,27 +5683,27 @@ func (r CreateGatewayResponse) GetJSON201() *Gateway {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r CreateGatewayResponse) GetJSON400() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r CreateGatewayResponse) GetJSON400() *Error {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r CreateGatewayResponse) GetJSON401() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r CreateGatewayResponse) GetJSON401() *Error {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r CreateGatewayResponse) GetJSON403() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r CreateGatewayResponse) GetJSON403() *Error {
 	return r.JSON403
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r CreateGatewayResponse) GetJSON409() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r CreateGatewayResponse) GetJSON409() *Error {
 	return r.JSON409
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r CreateGatewayResponse) GetJSON500() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r CreateGatewayResponse) GetJSON500() *Error {
 	return r.JSON500
 }
 
@@ -6064,32 +6058,32 @@ type DeleteGatewayResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON401 *Error
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON403 *Error
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON404 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON500 *Error
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r DeleteGatewayResponse) GetJSON401() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r DeleteGatewayResponse) GetJSON401() *Error {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r DeleteGatewayResponse) GetJSON403() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r DeleteGatewayResponse) GetJSON403() *Error {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r DeleteGatewayResponse) GetJSON404() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r DeleteGatewayResponse) GetJSON404() *Error {
 	return r.JSON404
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r DeleteGatewayResponse) GetJSON500() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r DeleteGatewayResponse) GetJSON500() *Error {
 	return r.JSON500
 }
 
@@ -6128,13 +6122,13 @@ type GetGatewayResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Gateway
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON401 *Error
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON403 *Error
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON404 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON500 *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -6143,22 +6137,22 @@ func (r GetGatewayResponse) GetJSON200() *Gateway {
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r GetGatewayResponse) GetJSON401() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r GetGatewayResponse) GetJSON401() *Error {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r GetGatewayResponse) GetJSON403() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r GetGatewayResponse) GetJSON403() *Error {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r GetGatewayResponse) GetJSON404() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r GetGatewayResponse) GetJSON404() *Error {
 	return r.JSON404
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r GetGatewayResponse) GetJSON500() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r GetGatewayResponse) GetJSON500() *Error {
 	return r.JSON500
 }
 
@@ -6197,17 +6191,17 @@ type UpdateGatewayResponse struct {
 	// JSON200 the response for an HTTP 200 `application/json` response
 	JSON200 *Gateway
 	// JSON400 the response for an HTTP 400 `application/json` response
-	JSON400 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON400 *Error
 	// JSON401 the response for an HTTP 401 `application/json` response
-	JSON401 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON401 *Error
 	// JSON403 the response for an HTTP 403 `application/json` response
-	JSON403 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON403 *Error
 	// JSON404 the response for an HTTP 404 `application/json` response
-	JSON404 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON404 *Error
 	// JSON409 the response for an HTTP 409 `application/json` response
-	JSON409 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON409 *Error
 	// JSON500 the response for an HTTP 500 `application/json` response
-	JSON500 *UnderscoreContractsReferenceOpenapiOpenapiError
+	JSON500 *Error
 }
 
 // GetJSON200 returns the response for an HTTP 200 `application/json` response
@@ -6216,32 +6210,32 @@ func (r UpdateGatewayResponse) GetJSON200() *Gateway {
 }
 
 // GetJSON400 returns the response for an HTTP 400 `application/json` response
-func (r UpdateGatewayResponse) GetJSON400() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON400() *Error {
 	return r.JSON400
 }
 
 // GetJSON401 returns the response for an HTTP 401 `application/json` response
-func (r UpdateGatewayResponse) GetJSON401() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON401() *Error {
 	return r.JSON401
 }
 
 // GetJSON403 returns the response for an HTTP 403 `application/json` response
-func (r UpdateGatewayResponse) GetJSON403() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON403() *Error {
 	return r.JSON403
 }
 
 // GetJSON404 returns the response for an HTTP 404 `application/json` response
-func (r UpdateGatewayResponse) GetJSON404() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON404() *Error {
 	return r.JSON404
 }
 
 // GetJSON409 returns the response for an HTTP 409 `application/json` response
-func (r UpdateGatewayResponse) GetJSON409() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON409() *Error {
 	return r.JSON409
 }
 
 // GetJSON500 returns the response for an HTTP 500 `application/json` response
-func (r UpdateGatewayResponse) GetJSON500() *UnderscoreContractsReferenceOpenapiOpenapiError {
+func (r UpdateGatewayResponse) GetJSON500() *Error {
 	return r.JSON500
 }
 
@@ -7646,7 +7640,7 @@ func (c *ClientWithResponses) RevokeGatewayServiceAccountWithResponse(ctx contex
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with DELETE /api/hypershell/v1/gateways/{id} (the `DeleteGateway` operationId).
-func (c *ClientWithResponses) DeleteGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*DeleteGatewayResponse, error) {
+func (c *ClientWithResponses) DeleteGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*DeleteGatewayResponse, error) {
 	rsp, err := c.DeleteGateway(ctx, id, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -7659,7 +7653,7 @@ func (c *ClientWithResponses) DeleteGatewayWithResponse(ctx context.Context, id 
 // Returns a wrapper object for the known response body format(s).
 //
 // Corresponds with GET /api/hypershell/v1/gateways/{id} (the `GetGateway` operationId).
-func (c *ClientWithResponses) GetGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, reqEditors ...RequestEditorFn) (*GetGatewayResponse, error) {
+func (c *ClientWithResponses) GetGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, reqEditors ...RequestEditorFn) (*GetGatewayResponse, error) {
 	rsp, err := c.GetGateway(ctx, id, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -7672,7 +7666,7 @@ func (c *ClientWithResponses) GetGatewayWithResponse(ctx context.Context, id Und
 // Takes any type of body and a specified content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-func (c *ClientWithResponses) UpdateGatewayWithBodyWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error) {
+func (c *ClientWithResponses) UpdateGatewayWithBodyWithResponse(ctx context.Context, id OpenapiGatewaysId, contentType string, body io.Reader, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error) {
 	rsp, err := c.UpdateGatewayWithBody(ctx, id, contentType, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -7685,7 +7679,7 @@ func (c *ClientWithResponses) UpdateGatewayWithBodyWithResponse(ctx context.Cont
 // Takes a body of the `application/json` content type, and returns a wrapper object for the known response body format(s).
 //
 // Corresponds with PATCH /api/hypershell/v1/gateways/{id} (the `UpdateGateway` operationId).
-func (c *ClientWithResponses) UpdateGatewayWithResponse(ctx context.Context, id UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error) {
+func (c *ClientWithResponses) UpdateGatewayWithResponse(ctx context.Context, id OpenapiGatewaysId, body UpdateGatewayJSONRequestBody, reqEditors ...RequestEditorFn) (*UpdateGatewayResponse, error) {
 	rsp, err := c.UpdateGateway(ctx, id, body, reqEditors...)
 	if err != nil {
 		return nil, err
@@ -8561,21 +8555,21 @@ func ParseListGatewaysResponse(rsp *http.Response) (*ListGatewaysResponse, error
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8608,35 +8602,35 @@ func ParseCreateGatewayResponse(rsp *http.Response) (*CreateGatewayResponse, err
 		response.JSON201 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8941,28 +8935,28 @@ func ParseDeleteGatewayResponse(rsp *http.Response) (*DeleteGatewayResponse, err
 		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -8995,28 +8989,28 @@ func ParseGetGatewayResponse(rsp *http.Response) (*GetGatewayResponse, error) {
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
@@ -9049,42 +9043,42 @@ func ParseUpdateGatewayResponse(rsp *http.Response) (*UpdateGatewayResponse, err
 		response.JSON200 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 400:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON400 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON401 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 403:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON403 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 404:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON404 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 409:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}
 		response.JSON409 = &dest
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 500:
-		var dest UnderscoreContractsReferenceOpenapiOpenapiError
+		var dest Error
 		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
 			return nil, err
 		}

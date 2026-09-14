@@ -20,10 +20,14 @@ import uuid
 
 REQUIRED = [
     "TestGatewayCreationCommitsOwnerAndEvent",
+    "TestGatewayRequestsRejectRetiredDatabaseField",
+    "TestGeneratedGoSDKGatewayWorkflow",
+    "TestGeneratedCLIWorkflow",
+    "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
     "TestOwnerGrantFailureRollsBackGatewayAndEvent",
     "TestEventFailureRollsBackGatewayAndOwner",
     "TestAccessFiltersRunBeforeCountAndPagination",
-    "TestGeneratedGatewayDescriptorsMatchReference",
+    "TestGeneratedGatewayDescriptorsMatchReleaseContract",
     "TestGatewayWorkflowThroughGeneratedRESTProcess",
     "TestGatewayWorkflowAcrossRESTAndGRPC",
     "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",

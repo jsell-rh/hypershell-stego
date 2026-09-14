@@ -121,7 +121,7 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 		t.Fatalf("initial list: %v %v", list, err)
 	}
 	path := httpAddress + "/api/hypershell/v1/gateways"
-	body := []byte(fmt.Sprintf(`{"name":"watch-create","cluster_id":%q,"release_id":%q,"database_id":"ignored"}`, f.cluster, f.release))
+	body := []byte(fmt.Sprintf(`{"name":"watch-create","cluster_id":%q,"release_id":%q}`, f.cluster, f.release))
 	code, data := requestJSON(t, "POST", path, token(t, key, "alice", "gateway:creator"), body)
 	var rest httpapi.Gateway
 	if code != 201 || json.Unmarshal(data, &rest) != nil {

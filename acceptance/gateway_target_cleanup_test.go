@@ -55,7 +55,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	identityController := call(token(t, key, "identity-controller"))
 	ungranted := call(token(t, key, "ungranted"))
 	root := address + "/api/hypershell/v1/gateways"
-	body, _ := json.Marshal(map[string]string{"name": "cleanup", "cluster_id": f.cluster, "release_id": f.release, "database_id": f.database})
+	body, _ := json.Marshal(map[string]string{"name": "cleanup", "cluster_id": f.cluster, "release_id": f.release})
 	code, data := requestJSON(t, "POST", root, owner, body)
 	var row httpapi.Gateway
 	if code != 201 || json.Unmarshal(data, &row) != nil {

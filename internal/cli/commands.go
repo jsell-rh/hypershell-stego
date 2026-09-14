@@ -11,7 +11,6 @@ func Commands() command.Application {
 		{Flag: "name", Key: "name", Type: "string", Required: true},
 		{Flag: "cluster-id", Key: "cluster_id", Type: "string", Required: true},
 		{Flag: "release-id", Key: "release_id", Type: "string", Required: true},
-		{Flag: "database-id", Key: "database_id", Type: "string", Required: true},
 		{Flag: "server-dns-names", Key: "server_dns_names", Type: "string-list", Nullable: true},
 	}
 	for _, name := range []string{"external_dns", "tls_mode", "service_type", "status", "phase", "image", "supervisor_image", "oidc", "route", "credential_driver"} {

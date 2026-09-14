@@ -30,7 +30,7 @@ func TestRESTFieldSelectionPreservesAccessAcrossRestart(t *testing.T) {
 	root := "/api/hypershell/v1/gateways"
 	ids := map[string]string{}
 	for _, item := range []struct{ name, user string }{{"a-visible", "alice"}, {"z-visible", "alice"}, {"b-hidden", "bob"}} {
-		body := []byte(fmt.Sprintf(`{"name":%q,"cluster_id":%q,"release_id":%q,"database_id":"ignored","server_dns_names":["one.example","two.example"]}`, item.name, f.cluster, f.release))
+		body := []byte(fmt.Sprintf(`{"name":%q,"cluster_id":%q,"release_id":%q,"server_dns_names":["one.example","two.example"]}`, item.name, f.cluster, f.release))
 		code, data := requestJSON(t, "POST", address+root, token(t, key, item.user, "gateway:creator"), body)
 		var row httpapi.Gateway
 		if code != 201 || json.Unmarshal(data, &row) != nil {

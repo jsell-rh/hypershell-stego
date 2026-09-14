@@ -42,7 +42,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
 	}
 	path := httpAddress + "/api/hypershell/v1/gateways"
-	code, data := requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"original","cluster_id":%q,"release_id":%q,"database_id":"ignored","server_dns_names":["old.example.test"]}`, f.cluster, f.release)))
+	code, data := requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"original","cluster_id":%q,"release_id":%q,"server_dns_names":["old.example.test"]}`, f.cluster, f.release)))
 	var original httpapi.Gateway
 	if code != 201 || json.Unmarshal(data, &original) != nil {
 		t.Fatalf("create: %d %s", code, data)
@@ -57,7 +57,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		awaitQueueEmpty(t, f)
 	}
 	event("Create", "gateway.created")
-	code, data = requestJSON(t, "PATCH", path+"/"+original.ID, owner, []byte(`{"name":"rest-patch","database_id":"not-placement","external_dns":"","tls_mode":"passthrough","service_type":"ClusterIP","image":"gateway:v2","supervisor_image":"supervisor:v2","server_dns_names":["new.example.test"],"route_address":"gateway.example.test","oidc":"{}","route":"{}","credential_driver":"driver-a"}`))
+	code, data = requestJSON(t, "PATCH", path+"/"+original.ID, owner, []byte(`{"name":"rest-patch","external_dns":"","tls_mode":"passthrough","service_type":"ClusterIP","image":"gateway:v2","supervisor_image":"supervisor:v2","server_dns_names":["new.example.test"],"route_address":"gateway.example.test","oidc":"{}","route":"{}","credential_driver":"driver-a"}`))
 	var patched httpapi.Gateway
 	if code != 200 || json.Unmarshal(data, &patched) != nil {
 		t.Fatalf("REST patch: %d %s", code, data)
@@ -82,7 +82,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	if err != nil || got.Gateway.Name != "rest-patch" || got.Gateway.GetCredentialDriver() != "driver-a" || got.Gateway.GetSupervisorImage() != "supervisor:v2" || got.Gateway.GetExternalDns() != "" || len(got.Gateway.ServerDnsNames) != 1 || got.Gateway.ServerDnsNames[0] != "new.example.test" {
 		t.Fatalf("gRPC read after REST patch: %v %v", got, err)
 	}
-	updated, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: original.ID, Name: pointer("grpc-patch"), SupervisorImage: pointer("supervisor:v3"), CredentialDriver: pointer("driver-a"), ServerDnsNames: []string{}, DatabaseId: pointer("ignored")})
+	updated, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: original.ID, Name: pointer("grpc-patch"), SupervisorImage: pointer("supervisor:v3"), CredentialDriver: pointer("driver-a"), ServerDnsNames: []string{}})
 	if err != nil || updated.Gateway.GetSupervisorImage() != "supervisor:v3" || updated.Gateway.GetCredentialDriver() != "driver-a" || len(updated.Gateway.ServerDnsNames) != 1 {
 		t.Fatalf("gRPC patch: %v %v", updated, err)
 	}

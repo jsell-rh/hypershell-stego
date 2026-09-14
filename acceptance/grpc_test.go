@@ -23,15 +23,59 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
-func TestGeneratedGatewayDescriptorsMatchReference(t *testing.T) {
+func TestGeneratedGatewayDescriptorsMatchReleaseContract(t *testing.T) {
 	reference, err := contracts.Load(context.Background())
 	if err != nil {
 		t.Fatal(err)
 	}
 	for _, actual := range []interface{ Path() string }{pb.File_hypershell_v1_common_proto, pb.File_hypershell_v1_gateways_proto} {
 		expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(actual.Path()))
+		// Only these two request fields are retired in this transition step.
+		for _, message := range expected.MessageType {
+			number := int32(0)
+			switch message.GetName() {
+			case "CreateGatewayRequest":
+				number = 5
+			case "UpdateGatewayRequest":
+				number = 6
+			}
+			if number == 0 {
+				continue
+			}
+			found := false
+			retiredOneof := int32(-1)
+			fields := message.Field[:0]
+			for _, field := range message.Field {
+				if field.GetName() == "database_id" && field.GetNumber() == number {
+					found = true
+					if field.GetProto3Optional() {
+						retiredOneof = field.GetOneofIndex()
+					}
+					continue
+				}
+				fields = append(fields, field)
+			}
+			if !found {
+				t.Fatal("captured retired field differs")
+			}
+			message.Field = fields
+			if retiredOneof >= 0 {
+				if message.OneofDecl[retiredOneof].GetName() != "_database_id" {
+					t.Fatal("captured optional field group differs")
+				}
+				message.OneofDecl = append(message.OneofDecl[:retiredOneof], message.OneofDecl[retiredOneof+1:]...)
+				for _, field := range message.Field {
+					if field.OneofIndex != nil && field.GetOneofIndex() > retiredOneof {
+						field.OneofIndex = proto.Int32(field.GetOneofIndex() - 1)
+					}
+				}
+			}
+			message.ReservedRange = append(message.ReservedRange, &descriptorpb.DescriptorProto_ReservedRange{Start: proto.Int32(number), End: proto.Int32(number + 1)})
+			message.ReservedName = append(message.ReservedName, "database_id")
+		}
 		descriptor := pb.File_hypershell_v1_gateways_proto
 		if actual.Path() == "hypershell/v1/common.proto" {
 			descriptor = pb.File_hypershell_v1_common_proto
@@ -108,7 +152,7 @@ func TestGatewayWorkflowAcrossRESTAndGRPC(t *testing.T) {
 	if json.Unmarshal(data, &rest) != nil || code != 200 || rest.ID != id || rest.Namespace != gateway.Namespace || rest.CreatedBy != "alice" || !rest.CreatedAt.Equal(gateway.Metadata.CreatedAt.AsTime()) || rest.SupervisorImage == nil || *rest.SupervisorImage != gateway.GetSupervisorImage() {
 		t.Fatalf("REST did not retrieve gRPC creation: %d %s", code, data)
 	}
-	body := []byte(fmt.Sprintf(`{"name":"rest-created","cluster_id":%q,"release_id":%q,"database_id":"ignored"}`, f.cluster, f.release))
+	body := []byte(fmt.Sprintf(`{"name":"rest-created","cluster_id":%q,"release_id":%q}`, f.cluster, f.release))
 	code, data = requestJSON(t, "POST", path, creator, body)
 	if code != 201 || json.Unmarshal(data, &rest) != nil {
 		t.Fatalf("REST create: %d %s", code, data)

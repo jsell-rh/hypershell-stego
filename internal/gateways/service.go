@@ -29,12 +29,10 @@ type Principal struct {
 }
 
 // CreateRequest contains client fields. Namespace and ownership are absent.
-// DatabaseID is a REST placeholder. Placement supplies the stored value.
 type CreateRequest struct {
 	Name             string   `json:"name"`
 	ClusterID        string   `json:"cluster_id"`
 	ReleaseID        string   `json:"release_id"`
-	DatabaseID       string   `json:"database_id" stego:"required"`
 	ExternalDNS      *string  `json:"external_dns,omitempty"`
 	TLSMode          *string  `json:"tls_mode,omitempty"`
 	ServiceType      *string  `json:"service_type,omitempty"`

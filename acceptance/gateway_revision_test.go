@@ -41,7 +41,7 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	}
 	controller := call(token(t, key, "controller"))
 	path := httpAddress + "/api/hypershell/v1/gateways"
-	code, data := requestJSON(t, "POST", path, token(t, key, "alice", "gateway:creator"), []byte(fmt.Sprintf(`{"name":"version-check","cluster_id":%q,"release_id":%q,"database_id":"ignored"}`, f.cluster, f.release)))
+	code, data := requestJSON(t, "POST", path, token(t, key, "alice", "gateway:creator"), []byte(fmt.Sprintf(`{"name":"version-check","cluster_id":%q,"release_id":%q}`, f.cluster, f.release)))
 	var gateway httpapi.Gateway
 	if code != 201 || json.Unmarshal(data, &gateway) != nil {
 		t.Fatalf("create: %d %s", code, data)
@@ -177,7 +177,7 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	}
 	reject(call(owner), codes.PermissionDenied)
 	creator := token(t, key, "alice", "gateway:creator")
-	code, data = requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"forged","cluster_id":%q,"release_id":%q,"database_id":"ignored","status":"Healthy"}`, f.cluster, f.release)))
+	code, data = requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"forged","cluster_id":%q,"release_id":%q,"status":"Healthy"}`, f.cluster, f.release)))
 	if code != 403 {
 		t.Fatalf("creator supplied status: %d %s", code, data)
 	}

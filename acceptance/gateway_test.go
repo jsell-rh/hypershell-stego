@@ -229,7 +229,7 @@ func benchmarkGatewayFilteredPage(b *testing.B, analyzed bool) {
 }
 
 func (f *fixture) request(name string) gateways.CreateRequest {
-	return gateways.CreateRequest{Name: name, ClusterID: f.cluster, ReleaseID: f.release, DatabaseID: "client-placeholder"}
+	return gateways.CreateRequest{Name: name, ClusterID: f.cluster, ReleaseID: f.release}
 }
 func principal(name string, roles ...string) gateways.Principal {
 	return gateways.Principal{Issuer: "https://issuer.example", Subject: name, Username: name, Email: name + "@example.test", Name: name, Roles: roles}
@@ -259,7 +259,7 @@ func TestGatewayCreationCommitsOwnerAndEvent(t *testing.T) {
 		t.Fatalf("namespace: %s", gateway.Namespace)
 	}
 	if gateway.DatabaseID != f.database {
-		t.Fatal("client database_id was not replaced")
+		t.Fatal("stored database selection differs")
 	}
 	if gateway.CreatedTime.IsZero() || gateway.UpdatedTime.IsZero() {
 		t.Fatal("stored timestamps are missing")

@@ -78,8 +78,12 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 }
 
 func (s *server) CreateGateway(ctx context.Context, request *pb.CreateGatewayRequest) (*pb.CreateGatewayResponse, error) {
+	// This breaking release accepts only its declared request fields.
+	if len(request.ProtoReflect().GetUnknown()) != 0 {
+		return nil, status.Error(codes.InvalidArgument, "request contains unsupported fields")
+	}
 	row, err := s.service.Create(ctx, gateways.PrincipalFromContext(ctx), gateways.CreateRequest{
-		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId, DatabaseID: request.DatabaseId,
+		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId,
 		ExternalDNS: request.ExternalDns, TLSMode: request.TlsMode, ServiceType: request.ServiceType, Status: request.Status, Phase: request.Phase, Image: request.Image, SupervisorImage: request.SupervisorImage, ServerDNSNames: request.ServerDnsNames, OIDC: request.Oidc, Route: request.Route, CredentialDriver: request.CredentialDriver,
 	})
 	if err != nil {
@@ -106,11 +110,15 @@ func (s *server) GetGateway(ctx context.Context, request *pb.GetGatewayRequest) 
 	return &pb.GetGatewayResponse{Gateway: gateway}, nil
 }
 func (s *server) UpdateGateway(ctx context.Context, request *pb.UpdateGatewayRequest) (*pb.UpdateGatewayResponse, error) {
+	// This breaking release accepts only its declared request fields.
+	if len(request.ProtoReflect().GetUnknown()) != 0 {
+		return nil, status.Error(codes.InvalidArgument, "request contains unsupported fields")
+	}
 	if request.Id == "" {
 		return nil, status.Error(codes.InvalidArgument, "id is required")
 	}
 	patch := gateways.PatchRequest{
-		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId, DatabaseID: request.DatabaseId,
+		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId,
 		ExternalDNS: request.ExternalDns, TLSMode: request.TlsMode, ServiceType: request.ServiceType, Status: request.Status, Phase: request.Phase,
 		Image: request.Image, SupervisorImage: request.SupervisorImage, ServerDNSNames: request.ServerDnsNames, RouteAddress: request.RouteAddress,
 		OIDC: request.Oidc, Route: request.Route, CredentialDriver: request.CredentialDriver,

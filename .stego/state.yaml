@@ -19,9 +19,17 @@ last_applied:
                 exists: true
                 sha256: 446d4bb6f8d1ce2d0cb558f5a3b41b4249d312b50b38408e5964e2379879a928
                 mode: 420
+            contracts/extensions/gateways.proto:
+                exists: true
+                sha256: 231a8255ab992557c6858023ae463a4d2de974967d58fcfc9c7084fd8ff3c8a8
+                mode: 420
             contracts/extensions/managed_databases.proto:
                 exists: true
                 sha256: ca11a9bdf27fc4d4dace1e1e0f76cec40f2a04b65f06203073436cc90a10da55
+                mode: 420
+            contracts/extensions/openapi.gateways.yaml:
+                exists: true
+                sha256: d54acd68811254600575cd017c304aac33d29b310f7c4fbdd59240c57fcc3ddb
                 mode: 420
             contracts/extensions/openapi.managedDatabases.yaml:
                 exists: true
@@ -29,7 +37,7 @@ last_applied:
                 mode: 420
             contracts/extensions/openapi.yaml:
                 exists: true
-                sha256: 7c6b5249ba86f0530fdcaab6c00a8d693c231123e3e28f76ee6f31a5908e97d5
+                sha256: aff6d9522a89a4f46e03041295e0838a40c1b5f3ea0a467c64e95e6a62acce00
                 mode: 420
             contracts/reference/openapi/openapi.gatewayNetworks.yaml:
                 exists: true
@@ -83,10 +91,6 @@ last_applied:
                 exists: true
                 sha256: 02d77553d3b4c02e209edd71fe470065343236f7bf75f33be6ec397331f67a86
                 mode: 420
-            contracts/reference/proto/hypershell/v1/gateways.proto:
-                exists: true
-                sha256: 0e914cb960518a908971f55ee5f60ffa4dc2efcfc3767ecae617f26306344ae5
-                mode: 420
             contracts/reference/proto/hypershell/v1/managed_clusters.proto:
                 exists: true
                 sha256: d6faf0c02a37a167b1fada90746ace4c95874504fc20344a94ab3b8a30941db4
@@ -129,9 +133,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: f96115358ed3b18d67ff21add8ccb9aab7ac4680b36217dffd429fb1e02ee9e6
+                sha256: 1acc6934dc23a7311966ce2a90cf5d7b266bfb36cc8afacc3087019f58a491cf
                 mode: 420
-        sha256: 31a6418a262c7e80c7d68011530ff0fa9aae733b8c70ac23589d9e6d3371dba0
+        sha256: ceadbd63b7d32b5e0ab89f25ebb51d616dc1deedf8e8dae161a17737bb2f77ae
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -140,7 +144,7 @@ last_applied:
         vcs: git
         revision: ce29df073378340a21bdba31b99ca333fd829f98
         source_state: clean
-    service_hash: f96115358ed3b18d67ff21add8ccb9aab7ac4680b36217dffd429fb1e02ee9e6
+    service_hash: 1acc6934dc23a7311966ce2a90cf5d7b266bfb36cc8afacc3087019f58a491cf
     registry_sha: gateway-workflow
     registry_content_sha256: b7f3ad5db5ef17293675d5d485c96c4aa5ef16fdebd09fc38e00e065f95fb2ca
     components:
@@ -539,7 +543,7 @@ last_applied:
         grpcapi/pb/hypershell/v1/gateway_networks_grpc.pb.go: a17a74dfdb0bb5df5645f5a363c76044c040573ccfe5e36d8ec6ac037d53af6c
         grpcapi/pb/hypershell/v1/gateway_releases.pb.go: fa323b2558aca9f9c3b38059102bae3836f12afecae40e158c80f9aaa8f42dd6
         grpcapi/pb/hypershell/v1/gateway_releases_grpc.pb.go: f36e68264492625508c714e182c33ff3e1c7b42df7b56a3b1f0152db06847156
-        grpcapi/pb/hypershell/v1/gateways.pb.go: 4104a8ad6413ef2fffd03f98fde05a9940b23abf0548216410cb9315c19c1394
+        grpcapi/pb/hypershell/v1/gateways.pb.go: 7f996a9b3d603b6ec777ca40423eee10398eca79ba24f0535c81e8e802d09333
         grpcapi/pb/hypershell/v1/gateways_grpc.pb.go: 6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722
         grpcapi/pb/hypershell/v1/managed_clusters.pb.go: d23a61cecd3af2a4ca6295cc6d7b030c08a2665bbe077794232b66bbddcd7ebd
         grpcapi/pb/hypershell/v1/managed_clusters_grpc.pb.go: aa087866ba13e2a773645b22753cef3ae236746d962f720b0c19cd02b364cc93
@@ -564,10 +568,10 @@ last_applied:
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
         postgres/client.go: 58d82cdcb3c86fa149fe1bbf6015e3e30f776b894084137f22bcb6cd3252f58c
-        sdk/api.go: 42c89e61f0f73046a34f627ce987296c0f1ba42ff9767c272a33c043b28a6b36
+        sdk/api.go: 37bf29cf669f9630664bd743186fa2dfbd4be21a1fdf6edfbdf578bd817c4c4d
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
-        sdk/internal/wire/api.go: 4b95a582a39161576fff9d5cf9b8607f08a5c1c51d4f8449b6ecd70b6f9f0d4d
+        sdk/internal/wire/api.go: 00c3ebbb3be98c38dc4d536ebd897591c7c1b8e1f4856a00af682b549f40779f
         search/field_map.go: 96384a1e941c1ef3bc941d8bbb364b34cfc152d974a91fa4e4c2be3983f0a6c3
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: dc308df35390c5b13e4751691060b0c9d2033988a25c35df9e96fc386a0ae323
@@ -598,6 +602,6 @@ last_applied:
         tracing/runtime.go: eec2c4b3f54d4dc9b9a4955c963e8fce80370d9fc2107b53a2f15d31135dbb92
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
-        tssdk/index.d.ts: 15910379ddd5d18af390ca30c5a670a7d55b192e55af870c0584ba3d19992bd4
-        tssdk/index.js: 8d7820d3ad4bb26b07ee86122fc7826aef16fbd69361ddf597bf86a26af30a5d
+        tssdk/index.d.ts: f18111d048685ea2010c0561218f81ad035190b591ef2c586c58e5cc68a859b1
+        tssdk/index.js: 3b4a2125d3f494fdd6f48b01df23603d3216938d6208f57ebe8b7a34de8b2dc8
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

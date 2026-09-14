@@ -26,7 +26,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
 
 func TestDeploymentPlacementThroughGeneratedRuntime(t *testing.T) {
@@ -73,9 +72,9 @@ func TestDeploymentPlacementThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	gatewayWatch := watchGateways(t, client, call(owner))
-	// A present empty placeholder is valid. An absent or null property is not.
+	// Requests no longer contain a database-selection field.
 	name := strings.Repeat("g", 255)
-	input := gateways.CreateRequest{Name: name, ClusterID: cluster.ID, ReleaseID: release.ID, DatabaseID: ""}
+	input := gateways.CreateRequest{Name: name, ClusterID: cluster.ID, ReleaseID: release.ID}
 	encoded, _ := json.Marshal(input)
 	code, body = requestJSON(t, "POST", base+"/gateways", alice, encoded)
 	var first httpapi.Gateway
@@ -177,8 +176,8 @@ func TestDeploymentPlacementThroughGeneratedRuntime(t *testing.T) {
 	if code, _ := requestJSON(t, "PATCH", base+"/gateways/"+first.ID, owner, []byte(fmt.Sprintf(`{"cluster_id":%q}`, cluster.ID))); code != 200 {
 		t.Fatal("same-cluster patch failed", code)
 	}
-	// Another creator cannot select the first Gateway's private database.
-	second, err := client.CreateGateway(call(bob), &pb.CreateGatewayRequest{Name: "second", ClusterId: cluster.ID, ReleaseId: release.ID, DatabaseId: first.DatabaseID})
+	// This old provider test still expects separate database catalog rows.
+	second, err := client.CreateGateway(call(bob), &pb.CreateGatewayRequest{Name: "second", ClusterId: cluster.ID, ReleaseId: release.ID})
 	if err != nil || second.Gateway.DatabaseId == first.DatabaseID || second.Gateway.DatabaseId == "" {
 		t.Fatal("private database isolation", second, err)
 	}
@@ -193,25 +192,21 @@ func TestDeploymentPlacementThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || list.GetMetadata().GetTotal() != 1 || len(list.Items) != 1 || list.Items[0].Metadata.Id != first.ID {
 		t.Fatal("deployment filtered list", list, err)
 	}
-	patched, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: first.ID, DatabaseId: proto.String(second.Gateway.DatabaseId)})
+	patched, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: first.ID})
 	if err != nil || patched.Gateway.DatabaseId != first.DatabaseID {
 		t.Fatal("gRPC placement reassignment", patched, err)
 	}
 	code, body = requestJSON(t, "PATCH", base+"/gateways/"+first.ID, owner, []byte(fmt.Sprintf(`{"database_id":%q}`, second.Gateway.DatabaseId)))
-	if code != 200 {
-		t.Fatal("REST placement placeholder patch", code, string(body))
-	}
-	var patchedREST httpapi.Gateway
-	if json.Unmarshal(body, &patchedREST) != nil || patchedREST.DatabaseID != first.DatabaseID {
-		t.Fatal("REST changed placement", string(body))
+	if code != 400 {
+		t.Fatal("retired REST database field accepted", code)
 	}
 	gatewayWatch.cancel()
 	for _, bad := range []string{
-		fmt.Sprintf(`{"name":"missing","cluster_id":%q,"release_id":%q}`, cluster.ID, release.ID),
+		fmt.Sprintf(`{"name":"empty","cluster_id":%q,"release_id":%q,"database_id":""}`, cluster.ID, release.ID),
 		fmt.Sprintf(`{"name":"null","cluster_id":%q,"release_id":%q,"database_id":null}`, cluster.ID, release.ID),
 	} {
 		if code, _ := requestJSON(t, "POST", base+"/gateways", alice, []byte(bad)); code != 400 {
-			t.Fatal("required placement placeholder", code)
+			t.Fatal("retired placement field", code)
 		}
 	}
 	if code, _ := requestJSON(t, "POST", base+"/gateways", owner, encoded); code != 403 {
@@ -242,7 +237,7 @@ func TestDeploymentPlacementThroughGeneratedRuntime(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	offline, err := service.Create(ctx, principal("alice", "gateway:creator"), gateways.CreateRequest{Name: "offline", ClusterID: cluster.ID, ReleaseID: release.ID, DatabaseID: first.DatabaseID})
+	offline, err := service.Create(ctx, principal("alice", "gateway:creator"), gateways.CreateRequest{Name: "offline", ClusterID: cluster.ID, ReleaseID: release.ID})
 	if err != nil {
 		t.Fatal(err)
 	}

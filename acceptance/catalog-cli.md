@@ -30,14 +30,15 @@ hsctl list managedClusters --size 20
 hsctl list gatewayReleases --size 20
 hsctl list managedDatabases --size 20
 hsctl create gateway --name example --cluster-id CLUSTER_ID \
-  --release-id RELEASE_ID --database-id DATABASE_ID
+  --release-id RELEASE_ID
 ```
 
 The API selects the sole live database server of the configured provider in the
 Gateway's managed cluster. The default provider is CNPG. External PostgreSQL is
 also a supported catalog provider; its SQL provisioning remains open. A missing
-or ambiguous local server prevents Gateway creation. The client database ID is
-a compatibility placeholder and cannot override selection. New deployment-backed
+or ambiguous local server prevents Gateway creation. Gateway requests no longer
+accept a database ID. The remaining server catalog is pending removal under the
+[controller-local target](controller-local-database.md). New deployment-backed
 database records are rejected. Use `get managedDatabase ID` to inspect the
 returned server record. The server assigns its namespace. Secret fields hold
 references. These commands do not create a Kubernetes cluster or upload a Secret.

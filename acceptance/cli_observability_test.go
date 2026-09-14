@@ -101,7 +101,7 @@ func TestGeneratedCLIObservabilityAcrossRestart(t *testing.T) {
 		return output.Bytes()
 	}
 	run("success", nil, "login", "--url", proxy.URL, "--token-file", tokenFile, "--ca-file", ca)
-	data := run("success", nil, "create", "gateway", "--name", "private-cli-gateway", "--cluster-id", f.cluster, "--release-id", f.release, "--database-id", "")
+	data := run("success", nil, "create", "gateway", "--name", "private-cli-gateway", "--cluster-id", f.cluster, "--release-id", f.release)
 	var gateway httpapi.Gateway
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("CLI stdout is not a Gateway")

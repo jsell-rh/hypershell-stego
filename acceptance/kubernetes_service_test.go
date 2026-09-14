@@ -215,7 +215,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	owner, other := client(ownerToken), client(otherToken)
 	requestContext, cancelRequests := context.WithTimeout(context.Background(), 6*time.Minute)
 	defer cancelRequests()
-	input := sdk.CreateGatewayJSONRequestBody{Name: "deployed-gateway", ClusterId: f.cluster, ReleaseId: f.release, DatabaseId: ""}
+	input := sdk.CreateGatewayJSONRequestBody{Name: "deployed-gateway", ClusterId: f.cluster, ReleaseId: f.release}
 	result, err := owner.CreateGatewayWithResponse(requestContext, input)
 	if err != nil || result.JSON201 == nil || result.JSON201.Id == nil {
 		t.Fatal("deployed Gateway creation failed", err)

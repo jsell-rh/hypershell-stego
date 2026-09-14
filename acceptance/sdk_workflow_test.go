@@ -78,7 +78,7 @@ func TestGeneratedGoSDKGatewayWorkflow(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	dns := []string{"private-sdk.example.test"}
-	input := sdk.CreateGatewayJSONRequestBody{Name: "private-sdk-gateway", ClusterId: f.cluster, ReleaseId: f.release, DatabaseId: "", ServerDnsNames: &dns}
+	input := sdk.CreateGatewayJSONRequestBody{Name: "private-sdk-gateway", ClusterId: f.cluster, ReleaseId: f.release, ServerDnsNames: &dns}
 	created, err := owner.CreateGatewayWithResponse(ctx, input)
 	if err != nil || created.JSON201 == nil || created.JSON201.Id == nil {
 		t.Fatal("SDK creation failed", err)

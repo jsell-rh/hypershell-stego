@@ -15,15 +15,15 @@ metadata:
 spec:
   cluster_id: CLUSTER_ID
   release_id: RELEASE_ID
-  database_id: ignored-placeholder
   image: registry.example/gateway:v1
 ```
 
 Use returned catalog IDs for the cluster and release. The API selects database
 placement. It selects the sole live server of the configured provider in that
 managed cluster. The default provider is CNPG. A missing or ambiguous local
-server prevents creation. The compatibility `database_id` input cannot override
-this choice. Reapplying the Gateway keeps its database server ID.
+server prevents creation. Gateway requests no longer accept `database_id`.
+The remaining server catalog is pending removal under the
+[controller-local target](controller-local-database.md).
 
 A ManagedDatabase document requires `spec.cluster_id`. First create or apply the
 ManagedCluster record, then use its returned ID in the database document. Apply

@@ -175,7 +175,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	}
 	success("admin", "delete", "gateway-release", nullable.ID, "--yes")
 	var gateway httpapi.Gateway
-	data := success("alice", "create", "gateway", "--name", "catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id, "--database-id", entries[2].id)
+	data := success("alice", "create", "gateway", "--name", "catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id)
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" || gateway.ClusterID != entries[0].id || gateway.ReleaseID != entries[1].id || gateway.DatabaseID != entries[2].id {
 		t.Fatal("CLI Gateway did not use the returned catalog IDs")
 	}
@@ -216,7 +216,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	stop, address, rpcAddress = startBoth(t, api, f.dsn, brokerConfig, defaultSettings...)
 	backend.Store(address)
 	var defaultGatewayRow httpapi.Gateway
-	data = success("alice", "create", "gateway", "--name", "default-catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id, "--database-id", entries[2].id)
+	data = success("alice", "create", "gateway", "--name", "default-catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id)
 	if json.Unmarshal(data, &defaultGatewayRow) != nil || defaultGatewayRow.ID == "" || defaultGatewayRow.DatabaseID == "" || defaultGatewayRow.DatabaseID != entries[2].id {
 		t.Fatal("default CLI creation did not select the local database server")
 	}
