@@ -625,6 +625,19 @@ func (tx catalogRaceTransaction) List(ctx context.Context, entity, field, value 
 	}
 	return result, err
 }
+func (tx catalogRaceTransaction) HasUnfinishedReferences(ctx context.Context, reference storage.CleanupReference) (bool, error) {
+	pending, err := tx.Transaction.(storage.CleanupReferenceReader).HasUnfinishedReferences(ctx, reference)
+	if err == nil && reference.Entity == "Gateway" {
+		close(tx.ready)
+		select {
+		case <-tx.resume:
+		case <-ctx.Done():
+			return false, ctx.Err()
+		}
+	}
+	return pending, err
+}
+
 func TestCatalogDeletionCannotRaceGatewayCreation(t *testing.T) {
 	for _, entity := range []string{"cluster", "release", "database"} {
 		t.Run(entity, func(t *testing.T) {
@@ -657,8 +670,18 @@ func TestCatalogDeletionCannotRaceGatewayCreation(t *testing.T) {
 			gateway, createErr := f.service.Create(ctx, principal("alice", "gateway:creator"), f.request("concurrent-placement"))
 			close(resume)
 			deleteErr := <-outcome
-			if createErr != nil || !errors.Is(deleteErr, storage.ErrSerialization) {
+			want := storage.ErrSerialization
+			if entity == "cluster" {
+				// Its live database is an independent reference. That reference
+				// must block deletion before the transaction attempts a write.
+				want = storage.ErrConflict
+			}
+			if createErr != nil || !errors.Is(deleteErr, want) {
 				t.Fatal("concurrent placement result", createErr, deleteErr)
+			}
+			var deleteEvents int
+			if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages WHERE kind IN ('managedcluster.deleted','gatewayrelease.deleted','manageddatabase.deleted')").Scan(&deleteEvents); err != nil || deleteEvents != 0 {
+				t.Fatal("rejected parent deletion committed an event", err)
 			}
 			if _, err := f.service.Get(ctx, principal("alice"), gateway.ID); err != nil {
 				t.Fatal(err)

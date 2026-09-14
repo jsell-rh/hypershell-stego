@@ -1,3 +1,40 @@
+# Placement catalogs
+
+## Current deletion and concurrency checks
+
+Database registration now requires a managed-cluster ID. The current providers
+are CNPG and external PostgreSQL. New deployment-backed records are rejected.
+The [database provider record](database-providers.md) defines locality and
+legacy-data handling. The [browser workflow](browser-gateway-workload.md) proves
+actual CNPG creation, access rules, restart, telemetry, and deletion.
+
+Database deletion waits for Gateway workload cleanup. Managed-cluster deletion
+also waits for database provider cleanup. Release deletion checks live Gateway
+links. Each check, deletion, and event uses one serializable transaction.
+
+On 2026-09-14, bounded jshell Job `stego-placement-a1337633/check` passed all three
+cases of `TestCatalogDeletionCannotRaceGatewayCreation` with the race detector.
+The test pauses the actual generated reference query, commits Gateway creation,
+and resumes deletion. PostgreSQL aborts the database and release deletion
+transactions. Cluster deletion returns a conflict because its live database is
+an independent reference. Every placement record remains readable, and rejected
+deletions commit no event. The test took 0.73 seconds; the package took 1.777
+seconds.
+
+Both generation passes and post-test output matched all 230 generated and build
+record hashes. The tested code matched the checkout. Only CLI documentation
+changed after that snapshot, before this evidence update. The Job completed,
+and its namespace and private launch files were removed. Evidence is in
+`/tmp/hypershell-parent-race-d2v2v7b4`. STEGO remains pinned to
+`2f3a2c06bff4a0a6811757e9a168eb810f57ce53`.
+
+The broader placement and migration fixtures still need conversion to the
+current provider model. Earlier full-suite results below are historical and
+do not establish a current CI pass. Run heavy checks in CI or a bounded jshell
+Job. Do not run workload, performance, or stress tests on the workstation.
+
+## Earlier catalog schema and results
+
 The placement workflow creates a cluster, release, and managed database through
 the generated application. It uses the returned IDs to create and retrieve a
 Gateway. The test database starts with the schema and built-in roles. It has no
@@ -78,18 +115,17 @@ API does not dereference or execute them.
 
 Run `scripts/check-gateway.sh` with PostgreSQL and Docker available. It verifies
 dependencies, pinned regeneration, and the full race suite with Keycloak required.
-Use `go test -race -count=1 ./acceptance -run 'TestPlacement|TestCatalog'` for the
-focused workflow, migration, and concurrency checks. Set `STEGO_TEST_POSTGRES_DSN`
-and `STEGO_REQUIRE_POSTGRES=1` for the focused command.
+Use the focused workflow, migration, and concurrency checks only in a bounded
+cluster Job or CI. Set `STEGO_TEST_POSTGRES_DSN` and `STEGO_REQUIRE_POSTGRES=1`
+in that test environment.
 
 A local 100-call benchmark read a 20-row page from 10,001 matching cluster
 records. It averaged 4.212 ms, 222,506 bytes, and 2,865 allocations per call on
 Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9 185H. It includes the domain
 access rule, transaction, count, and page query. It excludes HTTP, TLS, token
 verification, request role preparation, and concurrent load. This is a local
-query measurement, not a production capacity result. Run
-`go test -run '^$' -bench '^BenchmarkCatalogFilteredPage$' -benchtime=100x -benchmem ./acceptance`
-with the PostgreSQL variables above to repeat it.
+query measurement, not a production capacity result. It predates the current
+restriction on local performance tests. Do not repeat it on the workstation.
 
 The full local race suite passed with PostgreSQL and Keycloak required. The
 acceptance package took 312.660 seconds. Dependency verification passed. The
