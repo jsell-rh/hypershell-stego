@@ -34,7 +34,22 @@ A small jshell check used the same lifetime Job template with a five-second
 deadline. Kubernetes removed both the Job and its owned Deployment after
 37.5 seconds, including Pod termination. The check namespace was then removed.
 Evidence is in `/tmp/stego-cnpg-lifetime-a2m2xe2t`. This checks the lifetime
-mechanism; the corrected CNPG application run is still required.
+mechanism.
+
+The fourth attempt started CNPG with the generated namespace permissions. Both
+Gateways became healthy. Both SQL logins passed verified TLS, distinct database
+ownership, and denied access to the other Gateway and system databases. The
+browser-created Gateway passed verified RPC, denied requests, and provider data
+recovery after Pod replacement.
+
+That attempt then stopped because its admission test required HTTP 403, while
+the server returned 422. Kubernetes uses `Invalid` when a validation rule omits
+an explicit reason ([admission policy reference](https://kubernetes.io/docs/reference/access-authn-authz/validating-admission-policy/)).
+The test now requires the expected generated policy name and rule message in a
+bounded response to a public dry-run request. It also checks that the stored
+objects did not change. An unrelated validation failure cannot pass this check.
+Production Kubernetes errors still omit response bodies. The complete restart
+and deletion gate remains pending; the fourth attempt is not a full pass.
 
 The current test needs Python with PyYAML on the host. Use the command below
 with the saved jshell context. The current wrapper installs the temporary CNPG

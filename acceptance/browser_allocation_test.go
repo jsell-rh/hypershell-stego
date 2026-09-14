@@ -65,6 +65,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		{"gateway-identity", database, "", "secrets", "get", false},
 	}
 	clients := map[string]*kube.Client{}
+	allocatorToken := ""
 	for _, test := range checks {
 		client := clients[test.Worker]
 		if client == nil {
@@ -73,6 +74,9 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 				w.t.Fatal("test identity request failed", code)
 			}
 			value := kube.String(token, "status", "token")
+			if test.Worker == "namespace-allocation" {
+				allocatorToken = value
+			}
 			if value == "" {
 				w.t.Fatal("test identity is empty")
 			}
@@ -93,24 +97,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("worker access differs from allocation", test, code)
 		}
 	}
-	// Server dry-run executes authorization and admission without storing changes.
-	// https://kubernetes.io/docs/reference/using-api/api-concepts/#dry-run
-	allocatorClient := clients["namespace-allocation"]
-	probes := []struct {
-		name, method, path string
-		body               kube.Object
-	}{
-		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}},
-		{"quota change", "PATCH", "/api/v1/namespaces/" + database + "/resourcequotas/stego-allocation?dryRun=All", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}},
-		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}},
-	}
-	for _, probe := range probes {
-		_, code, err := allocatorClient.Request(ctx, probe.method, probe.path, probe.body)
-		if err == nil || code != 403 {
-			w.t.Fatal("allocation admission did not deny change", probe.name, code)
-		}
-	}
-	w.t.Log("Three server dry-run checks denied a foreign namespace, quota change, and allocation identity change")
+	w.checkAdmission(ctx, database, allocatorToken)
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
 		data, err := json.MarshalIndent(checks, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(dir, "allocation-permissions.json"), data, 0600) != nil {
