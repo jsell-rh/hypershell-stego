@@ -78,7 +78,7 @@ workflow. Deployment runtime removal and conversion of the older application
 fixtures remain open. The cleanup summary also needs a check that combines
 provider and cluster filters. Generated SDK type names need review because the
 new OpenAPI source paths changed some names. Keep this work on the working
-branch until the supported-provider workflow passes.
+branch until the remaining workflow fixtures and contract checks pass.
 
 ## CNPG namespace allocation
 
@@ -100,9 +100,9 @@ and default-release checks listed above. Both generation runs and the checks
 had identical hashes for 230 generated files and build records. Evidence is in
 `/tmp/hypershell-cnpg-allocation-bktshuoq`.
 
-These checks use a Kubernetes test server for provider effects. A live CNPG
-operator with the generated namespace permissions remains a required check.
-The older workflow fixtures still need conversion.
+These checks use a Kubernetes test server for provider effects. The later live CNPG gate below
+checks the operator with generated namespace permissions. The older workflow
+fixtures still need conversion.
 
 ## Gateway cleanup and runtime evidence
 
@@ -140,8 +140,30 @@ assertion had not consumed the earlier creation event. The corrected test reads
 creation and deletion in order. That failed Job and its namespace were removed
 before the final run. Do not treat the first attempt as a pass.
 
-The next application gate is a live CNPG operator with generated allocation and
-worker permissions, actual per-Gateway SQL state, and database access checks.
+## Live CNPG Gateway workflow
+
+The complete browser workflow passed on 2026-09-14 with application revision
+`7f46379f382de6e2f0f2d262e1f880f65ba8af0a` and STEGO
+`158f448545f253cd582035aff3ec51c1302ef6ac`. Two Gateways used one local CNPG
+server. Their restricted SQL logins passed verified TLS and cross-database
+access denial. Gateway data survived Pod replacement. Worker replacement
+preserved database and credential identities, access restrictions, metrics,
+logs, and traces.
+
+REST deletion removed one Gateway's SQL database, login, keys, namespace, and
+cluster bindings. The other Gateway and shared server remained available.
+Browser creation, grants, REST and gRPC access, event delivery, API and console
+restart, session behavior, and service credentials also passed.
+
+The test took 409.01 seconds. The Job completed with exit zero. Both generation
+passes and post-test output matched all 230 generated and build-record hashes.
+All 818 tracked source files matched the frozen copy. Cleanup verified removal
+of the test namespaces, CNPG resources, cluster permissions, admission policies,
+database volumes, and private launch files. See the
+[browser workflow evidence](browser-gateway-workload.md) for details.
+
 External PostgreSQL provisioning, legacy deployment code removal, and conversion
-of the full workflow suite remain open. Keep these changes on the working branch
-until that application gate passes.
+of the full CI suite remain open. The cleanup summary still needs combined
+provider and cluster filtering. Normal deletion of a shared database server also
+needs a check that its provider finalizers complete before namespace removal.
+Keep these changes on the working branch until the remaining checks pass.

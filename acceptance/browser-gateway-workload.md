@@ -2,6 +2,44 @@
 
 ## Current CNPG gate
 
+The complete CNPG browser Gateway workflow passed on 2026-09-14 UTC. The test
+passed in 409.01 seconds; the race-enabled acceptance package passed in
+410.057 seconds. The Job reached `Complete`, and the test wrapper exited zero.
+
+The tested application revision is
+`7f46379f382de6e2f0f2d262e1f880f65ba8af0a`. It uses STEGO
+`158f448545f253cd582035aff3ec51c1302ef6ac`. STEGO's full checks passed in
+[CI run 34852254025](https://github.com/jsell-rh/stego/actions/runs/34852254025).
+
+The live workflow proved:
+
+- Browser Gateway creation, grants, REST and gRPC access, and event delivery.
+- Two healthy Gateways on one local CNPG server, with separate restricted SQL
+  logins, verified TLS, and denied access to other and system databases.
+- Gateway provider data recovery after Pod replacement. All four generated
+  workers were then replaced; SQL isolation and credential identities persisted.
+- Eighteen worker access checks and three denials from the expected generated
+  admission rules. Public dry-run requests did not change stored objects.
+- Worker metrics and correlated logs and traces before and after replacement.
+- API, console, and provisioner replacement; service credential issuance, use,
+  reload, revocation, and deletion; session renewal, key rotation, and sign-out.
+- REST Gateway deletion with actual removal of its SQL database, login, keys,
+  namespace, and cluster bindings. The other Gateway and shared server remained.
+
+All 818 tracked files matched the frozen source before this evidence update.
+All 230 generated and build-record hashes matched both generation passes,
+the post-test files, the collected archive, and the checkout. No generated
+file changed during the tests.
+
+Results are in `/tmp/stego-service-results.vgYuxDm1`; the frozen source is in
+`/tmp/hypershell-cnpg-browser-p4dcrnsk`. Cleanup checks found no remaining CNPG
+installation resources, allocated or test namespaces, test cluster roles,
+bindings, admission policies, database volumes, or private launch files.
+
+External PostgreSQL provisioning, removal of the old deployment runtime, and
+conversion of the older CI fixtures remain open. This gate does not establish
+production capacity or complete workload network isolation.
+
 The current test uses two Gateways and one local CNPG server. It starts seven
 generated Deployments, including the namespace allocator and three resource
 workers. The database worker has no Secret access. The Gateway worker reaches
@@ -17,7 +55,9 @@ host exits. The installer refuses existing resources and records UIDs for cleanu
 The SQL checks require two distinct restricted logins, verified TLS, denied
 access to other databases, stable object identities across worker replacement,
 and removal of one Gateway without removal of the other or the shared server.
-The full application result for this provider change is still pending.
+The current application result is recorded above.
+
+## Earlier CNPG attempts
 
 The first attempt stopped at the component schema. The next attempt passed
 repeat generation, controller race checks, image builds, and the local placement
