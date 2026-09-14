@@ -36,6 +36,10 @@ type fixture struct {
 func database(t testing.TB) *fixture { return databaseSetup(t, true) }
 
 func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
+	return databaseSetupWithID(t, seedPlacement, "")
+}
+
+func databaseSetupWithID(t testing.TB, seedPlacement bool, databaseID string) *fixture {
 	t.Helper()
 	dsn := os.Getenv("STEGO_TEST_POSTGRES_DSN")
 	if dsn == "" {
@@ -127,7 +131,14 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String(), database: ksuid.New().String()}
+	if databaseID == "" {
+		databaseID = ksuid.New().String()
+	}
+	parsed, err := ksuid.Parse(databaseID)
+	if err != nil || parsed == ksuid.Nil || parsed.String() != databaseID {
+		t.Fatal("invalid fixture database ID")
+	}
+	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String(), database: databaseID}
 	databaseNamespace, err := catalog.DatabaseNamespace(f.database)
 	if err != nil {
 		t.Fatal(err)

@@ -40,6 +40,11 @@ cleanup() {
       done
       "${oc_cmd[@]}" delete clusterrolebinding -l "stego.dev/allocator=$allocation_marker" --wait=false || true
       "${oc_cmd[@]}" delete namespace -l "stego.dev/allocator=$allocation_marker" --wait=false || true
+      if [[ -e $results/cnpg-plan.json ]]; then
+        database_namespace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database_namespace"])' "$results/cnpg-plan.json")
+        "${oc_cmd[@]}" wait --for=delete "namespace/$database_namespace" --timeout=60s || true
+        python3 "$project/scripts/cnpg-test-operator.py" remove --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results" || status=1
+      fi
       for role in database-worker database-keys gateway-worker gateway-runtime gateway-reviews proof; do
         "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation.$role" --ignore-not-found || true
       done
@@ -65,6 +70,7 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
 if [[ $workload == 1 ]]; then
+  python3 scripts/cnpg-test-operator.py prepare --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
 fi
@@ -124,7 +130,7 @@ if sys.argv[4]=='1':
     role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns).replace('@ALLOCATOR_MARKER@',marker))
     job['items'] += role['items']
     for item in job['items']:
-        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
+        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_CNPG_DATABASE_ID','value':json.loads((root/'cnpg-plan.json').read_text())['database_id']},{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
 password=secrets.token_hex(24)
 encode=lambda value:base64.b64encode(value.encode()).decode()
 for item in job['items']:
@@ -146,6 +152,9 @@ PY
 # Create the namespace first so cleanup also runs after a partial apply.
 "${oc_cmd[@]}" create namespace "$namespace" --save-config
 created=true
+if [[ $workload == 1 ]]; then
+  python3 scripts/cnpg-test-operator.py install --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
+fi
 "${oc_cmd[@]}" apply -f "$results/private-job.json"
 for file in "$results/private-job.json" "$results/server.key"; do
     [[ ! -e $file ]] || unlink -- "$file"

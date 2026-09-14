@@ -1,5 +1,37 @@
 # Browser Gateway workload acceptance
 
+## Current CNPG gate
+
+The current test uses two Gateways and one local CNPG server. It starts seven
+generated Deployments, including the namespace allocator and three resource
+workers. The database worker has no Secret access. The Gateway worker reaches
+PostgreSQL through a generated network peer for its database allocation profile.
+
+The host installs a checksum-pinned CNPG operator in a separate namespace. Its
+namespaced write permissions are bound by the generated allocator. Its watches
+and admission webhooks select the one test database namespace. A suspended Job
+starts after the allocation is ready and has a 30-minute execution limit. The
+installer refuses existing operator resources and records UIDs for cleanup.
+
+The SQL checks require two distinct restricted logins, verified TLS, denied
+access to other databases, stable object identities across worker replacement,
+and removal of one Gateway without removal of the other or the shared server.
+The full application result for this provider change is still pending.
+
+The first attempt stopped at the component schema. The next attempt passed
+repeat generation, controller race checks, image builds, and the local placement
+checks. Browser setup then stopped because the fixture tried to change an
+existing database ID. The fixture now supplies its final ID at creation.
+Both attempts and their CNPG resources were removed. Neither is a workflow pass.
+
+The current test needs Python with PyYAML on the host. Use the command below
+with the saved jshell context. The current wrapper installs the temporary CNPG
+operator; the operator details in the historical section do not apply.
+
+## Earlier deployment-provider evidence
+
+The result below is historical. It does not prove the current CNPG workflow.
+
 The complete browser Gateway workflow passed on 2026-09-12 UTC with STEGO
 `00b270db3934b88df1e451716d8547da1f7089e2`. The test passed in 304.14 seconds.
 The race-enabled acceptance package passed in 305.184 seconds. Contract checks
@@ -45,7 +77,7 @@ provider sign-out, event delivery, and correlated telemetry checks also pass.
 
 ## Test profile
 
-Run from a fixed source copy:
+Use a fixed source copy:
 
 ```sh
 STEGO_TEST_CONTEXT=default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell \

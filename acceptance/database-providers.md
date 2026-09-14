@@ -7,7 +7,10 @@ placement requirement; the code removal and replacement checks are not complete.
 
 ## Locality
 
-Place each Gateway's database with that Gateway. For CNPG, use the Gateway's
+The preferred placement puts each Gateway, its database, and its reconciler
+together. At minimum, the database and its reconciliation control plane must
+run together. The current implementation uses the preferred placement.
+For CNPG, use the Gateway's
 managed Kubernetes cluster. Run the database reconciler in that cluster. The
 central API does not need to run there.
 

@@ -53,9 +53,8 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				w.p.command(nil, "delete", "clusterrole/"+w.p.namespace+"."+name, "clusterrolebinding/"+w.p.namespace+"."+name, "--ignore-not-found")
 			})
 			if worker.name == "database" {
-				env["DATABASE_PROVIDER"] = "deployment"
+				env["DATABASE_PROVIDER"] = "cnpg"
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
-				env["HYPERSHELL_DATABASE_CLUSTER_ISSUER"] = w.options.ClusterIssuer
 			} else if worker.name == "gateway-workload" {
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_GATEWAY_CLUSTER_ISSUER"] = w.options.ClusterIssuer
@@ -70,6 +69,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			return w.p.start(name, "..", image, testIdentity{}, env, files, target...)
 		}
 		stop, logs := start()
+		if worker.name == "namespace-allocation" {
+			w.startCNPG()
+		}
 		previous := ""
 		w.stops = append(w.stops, func() { stop() })
 		w.outputs = append(w.outputs, func() string { return previous + logs() })

@@ -478,7 +478,14 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	audience := map[string]any{"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"}}
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
 	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
-	f := database(t)
+	databaseID := ""
+	if deployment != nil && os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
+		databaseID = os.Getenv("STEGO_TEST_CNPG_DATABASE_ID")
+		if databaseID == "" {
+			t.Fatal("CNPG workflow requires the declared database ID")
+		}
+	}
+	f := databaseSetupWithID(t, true, databaseID)
 	var workload *browserGatewayWorkload
 	if deployment != nil && os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		workload, settings = prepareBrowserGatewayWorkload(t, deployment, f, k, settings)
@@ -630,7 +637,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if response.StatusCode != expectedStatus || json.Unmarshal(response.Body, &gateway) != nil {
 		t.Fatal("browser Gateway creation failed", response.StatusCode)
 	}
-	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || (workload == nil && gateway.DatabaseID != f.database) {
+	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || gateway.DatabaseID != f.database {
 		t.Fatal("browser Gateway contract changed")
 	}
 	var grants int

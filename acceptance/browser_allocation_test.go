@@ -46,7 +46,9 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		Allowed                                  bool
 	}
 	checks := []check{
-		{"database", database, "", "secrets", "get", true},
+		{"database", database, "", "secrets", "get", false},
+		{"database", database, "postgresql.cnpg.io", "clusters", "create", true},
+		{"database", gateway, "postgresql.cnpg.io", "clusters", "create", false},
 		{"database", gateway, "", "secrets", "get", false},
 		{"database", w.p.namespace, "", "secrets", "get", false},
 		{"database", "", "", "namespaces", "create", false},
@@ -100,7 +102,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 	}{
 		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}},
 		{"quota change", "PATCH", "/api/v1/namespaces/" + database + "/resourcequotas/stego-allocation?dryRun=All", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}},
-		{"key identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/gateway-keys": "changed"}}}},
+		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}},
 	}
 	for _, probe := range probes {
 		_, code, err := allocatorClient.Request(ctx, probe.method, probe.path, probe.body)
@@ -108,14 +110,14 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("allocation admission did not deny change", probe.name, code)
 		}
 	}
-	w.t.Log("Three server dry-run checks denied a foreign namespace, quota change, and key identity change")
+	w.t.Log("Three server dry-run checks denied a foreign namespace, quota change, and allocation identity change")
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
 		data, err := json.MarshalIndent(checks, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(dir, "allocation-permissions.json"), data, 0600) != nil {
 			w.t.Fatal("cannot write allocation evidence")
 		}
 	}
-	w.t.Log("Allocated namespaces have fixed limits; fifteen live worker access checks passed")
+	w.t.Log("Allocated namespaces have fixed limits; live worker access checks passed")
 }
 
 // A normal REST deletion must drive allocation cleanup and controller records.
@@ -142,16 +144,16 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	}
 	for {
 		gatewayGone, gatewayErr := allocator.NamespaceGone(ctx, "gateway", gateway.Namespace, id)
-		databaseGone, databaseErr := allocator.NamespaceGone(ctx, "database", databaseNamespace, gateway.DatabaseID)
+		databaseErr := allocator.RequireNamespace(ctx, "database", databaseNamespace, gateway.DatabaseID)
 		if gatewayErr != nil || databaseErr != nil {
 			w.t.Fatal("allocation deletion observation failed", gatewayErr, databaseErr)
 		}
 		var complete bool
-		err := w.f.db.QueryRowContext(ctx, `SELECT COALESCE(g.deleted_at IS NOT NULL AND d.deleted_at IS NOT NULL AND g.stego_cleanup->>'identity'='true' AND g.stego_cleanup_targets->'workload'->>$2='true' AND d.stego_cleanup->>'provider'='true',false) FROM gateways g JOIN managed_databases d ON d.id=g.database_id WHERE g.id=$1`, id, w.f.cluster).Scan(&complete)
+		err := w.f.db.QueryRowContext(ctx, `SELECT COALESCE(g.deleted_at IS NOT NULL AND d.deleted_at IS NULL AND g.stego_cleanup->>'identity'='true' AND g.stego_cleanup_targets->'workload'->>$2='true',false) FROM gateways g JOIN managed_databases d ON d.id=g.database_id WHERE g.id=$1`, id, w.f.cluster).Scan(&complete)
 		if err != nil {
 			w.t.Fatal("cleanup record read failed", err)
 		}
-		if gatewayGone && databaseGone && complete {
+		if gatewayGone && complete {
 			break
 		}
 		select {
@@ -169,5 +171,11 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	if response = w.owner.api(w.t, "GET", "/gateways/"+id, nil); response.StatusCode != 404 {
 		w.t.Fatal("deleted Gateway remained readable", response.StatusCode)
 	}
-	w.t.Log("REST Gateway deletion removed both allocated namespaces and completed identity, workload, and database cleanup")
+	w.checkSQLDeletion(id)
+	for _, other := range w.gatewayIDs {
+		if other != id {
+			w.check(other)
+		}
+	}
+	w.t.Log("REST Gateway deletion removed its namespace, SQL database, role, and keys; the other Gateway and shared CNPG server remained available")
 }

@@ -199,6 +199,7 @@ overrides:
         bindings:
           - {role: database-worker, service_account: hypershell-database, namespace: control}
           - {role: database-keys, service_account: hypershell-gateway-workload, namespace: control}
+          - {external_role: cnpg-manager, service_account: cnpg-manager, namespace: external, external_namespace: cnpg-system}
     workers:
       - name: namespace-allocation
         namespace_allocator: true
@@ -227,6 +228,7 @@ overrides:
         function: Run
         external_endpoints: [kubernetes]
         network_peers:
+          - {direction: egress, allocation_profile: database, pod_label: cnpg.io/cluster, pod_value: openshell-db, port: 5432, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: sandbox-count

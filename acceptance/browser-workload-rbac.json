@@ -93,7 +93,8 @@
             "clusterroles"
           ],
           "resourceNames": [
-            "system:openshift:scc:nonroot-v2"
+            "system:openshift:scc:nonroot-v2",
+            "cnpg-manager"
           ],
           "verbs": [
             "bind"
@@ -205,6 +206,23 @@
           ],
           "verbs": [
             "create"
+          ]
+        },
+        {
+          "apiGroups": [
+            "postgresql.cnpg.io"
+          ],
+          "resources": [
+            "clusters",
+            "databases"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
           ]
         }
       ]

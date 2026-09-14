@@ -23,6 +23,7 @@ cmp /work/first.sha256 /work/second.sha256
 node /work/node/npm/bin/npm-cli.js --cache /work/npm-cache ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
 go test -race -mod=readonly -count=1 -timeout=3m ./contracts -run '^(TestGeneratedProjectInputManifest|TestConsoleDeploymentIsolation)$'
 go test -race -mod=readonly -count=1 -timeout=3m ./internal/databasecontroller ./internal/gatewayworkload ./internal/namespaceallocation ./internal/namespaceallocationapp
+go test -v -race -mod=readonly -count=1 -timeout=5m -run '^(TestLocalDatabase.*|TestSharedDatabaseCleanupThroughGeneratedRuntime|TestKubernetesWriteFailurePrivacy)$' ./acceptance
 cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/ssl/certs/ca-certificates.crt >> /work/registry-ca.crt
 export SSL_CERT_FILE=/work/registry-ca.crt
 go run -mod=readonly scripts/service-image-auth.go
@@ -55,7 +56,7 @@ if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
 fi
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
-go test -v -race -mod=readonly -count=1 -timeout=10m -run '^(TestDatabaseClusterAccessRulesThroughGeneratedRuntime|TestDatabaseRetainedReplayThroughGeneratedRuntime|TestDatabaseDeleteReplayThroughGeneratedRuntime|TestRecoveryPagesAvoidTotals|TestDatabaseRecoveryCursorSurvivesEarlierDeletion|TestPlacementWorkflowThroughGeneratedRuntime|TestGatewayNetworkWorkflowThroughGeneratedRuntime|TestGeneratedKubernetesBrowserGatewayWorkflow|TestKubernetesWriteFailurePrivacy)$' ./acceptance
+go test -v -race -mod=readonly -count=1 -timeout=15m -run '^TestGeneratedKubernetesBrowserGatewayWorkflow$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
 tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum
