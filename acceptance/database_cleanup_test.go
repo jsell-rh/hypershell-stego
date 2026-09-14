@@ -18,8 +18,7 @@ import (
 )
 
 func TestDatabaseCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
-	f := database(t)
-	assignTestDatabaseCluster(t, f)
+	f := databaseCatalogFixture(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
@@ -41,9 +40,9 @@ func TestDatabaseCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	}
 	controller := call(token(t, key, "controller"))
 	root := address + "/api/hypershell/v1/managed_databases"
-	code, data := requestJSON(t, "POST", root, admin, []byte(`{"name":"cleanup","provider":"deployment"}`))
+	code, data := requestJSON(t, "POST", root, admin, databaseCreateBody(t, "cleanup", "cnpg", f.cluster))
 	var row httpapi.ManagedDatabase
-	if code != 201 || json.Unmarshal(data, &row) != nil {
+	if code != 201 || json.Unmarshal(data, &row) != nil || row.Provider != "cnpg" || row.ClusterID == nil || *row.ClusterID != f.cluster {
 		t.Fatalf("create: %d %s", code, data)
 	}
 	readCatalogEvent(t, consumer, row.ID, "ManagedDatabases", "Create", "manageddatabase.created")

@@ -1,9 +1,15 @@
 package acceptance
 
 import (
+	"context"
+	"encoding/json"
 	"fmt"
-	"github.com/segmentio/ksuid"
 	"testing"
+	"time"
+
+	"github.com/jsell-rh/hypershell-stego/internal/catalog"
+	model "github.com/jsell-rh/hypershell-stego/out/storage"
+	"github.com/segmentio/ksuid"
 )
 
 // Old catalog transport tests create databases directly. Give only those test
@@ -21,4 +27,25 @@ func assignTestDatabaseCluster(t *testing.T, f *fixture) {
 	if _, err := f.db.Exec(sql); err != nil {
 		t.Fatal(err)
 	}
+}
+
+// Catalog tests register servers through the API. Seed only their cluster.
+func databaseCatalogFixture(t *testing.T) *fixture {
+	t.Helper()
+	f := databaseSetup(t, false)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "catalog-cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"}); err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+
+func databaseCreateBody(t *testing.T, name, provider, cluster string) []byte {
+	t.Helper()
+	body, err := json.Marshal(catalog.DatabaseCreate{Name: name, Provider: provider, ClusterID: cluster})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return body
 }

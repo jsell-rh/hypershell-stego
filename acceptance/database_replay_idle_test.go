@@ -49,8 +49,7 @@ func (s *idleReplayStream) Recv() (*pb.WatchManagedDatabasesResponse, error) {
 }
 
 func TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart(t *testing.T) {
-	f := database(t)
-	assignTestDatabaseCluster(t, f)
+	f := databaseCatalogFixture(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
@@ -63,9 +62,9 @@ func TestDatabaseReplayIdleLimitRestoresCleanupAfterRestart(t *testing.T) {
 	defer func() { stop() }()
 	admin := token(t, key, "admin", "platform:admin")
 	root := address + "/api/hypershell/v1/managed_databases"
-	code, data := requestJSON(t, "POST", root, admin, []byte(`{"name":"idle-replay","provider":"deployment"}`))
+	code, data := requestJSON(t, "POST", root, admin, databaseCreateBody(t, "idle-replay", "cnpg", f.cluster))
 	var row httpapi.ManagedDatabase
-	if code != 201 || json.Unmarshal(data, &row) != nil {
+	if code != 201 || json.Unmarshal(data, &row) != nil || row.Provider != "cnpg" || row.ClusterID == nil || *row.ClusterID != f.cluster {
 		t.Fatal("create database", code, string(data))
 	}
 	readCatalogEvent(t, consumer, row.ID, "ManagedDatabases", "Create", "manageddatabase.created")

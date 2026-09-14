@@ -70,8 +70,7 @@ func (p *retainedDatabaseProvider) Delete(_ context.Context, row *pb.ManagedData
 }
 
 func TestDatabaseRetainedReadAndCleanupAfterRestart(t *testing.T) {
-	f := database(t)
-	assignTestDatabaseCluster(t, f)
+	f := databaseCatalogFixture(t)
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
@@ -99,9 +98,9 @@ func TestDatabaseRetainedReadAndCleanupAfterRestart(t *testing.T) {
 		return result
 	}
 	root := address + "/api/hypershell/v1/managed_databases"
-	code, data := requestJSON(t, "POST", root, admin, []byte(`{"name":"retained","provider":"deployment"}`))
+	code, data := requestJSON(t, "POST", root, admin, databaseCreateBody(t, "retained", "cnpg", f.cluster))
 	var row httpapi.ManagedDatabase
-	if code != 201 || json.Unmarshal(data, &row) != nil {
+	if code != 201 || json.Unmarshal(data, &row) != nil || row.Provider != "cnpg" || row.ClusterID == nil || *row.ClusterID != f.cluster {
 		t.Fatalf("create: %d %s", code, data)
 	}
 	read := func(deleted bool, version int64, name string) {
@@ -182,7 +181,7 @@ func TestDatabaseRetainedReadAndCleanupAfterRestart(t *testing.T) {
 	}()
 	select {
 	case deleted := <-provider.deleted:
-		if deleted.GetMetadata().GetId() != row.ID || deleted.Provider != "deployment" || deleted.Namespace != row.Namespace || deleted.Name != "current-retained" {
+		if deleted.GetMetadata().GetId() != row.ID || deleted.Provider != "cnpg" || deleted.Namespace != row.Namespace || deleted.Name != "current-retained" {
 			t.Fatal("cleanup used event data", deleted)
 		}
 	case <-provider.ensured:

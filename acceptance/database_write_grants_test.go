@@ -12,16 +12,20 @@ import (
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
+	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
-func TestDatabaseControllerWriteGrantsAcrossProvidersAndRestart(t *testing.T) {
-	f := database(t)
-	assignTestDatabaseCluster(t, f)
+func TestDatabaseControllerWriteGrantsAcrossClustersAndRestart(t *testing.T) {
+	f := databaseCatalogFixture(t)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
+	second := ksuid.New().String()
+	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: second}, Name: "second", Provider: "kubernetes", KubeconfigSecret: "second-ref"}); err != nil {
+		t.Fatal(err)
+	}
 	if _, err := f.db.Exec(`CREATE TABLE database_event_audit(kind text NOT NULL);
 CREATE FUNCTION audit_database_event() RETURNS trigger LANGUAGE plpgsql AS $$
 BEGIN INSERT INTO database_event_audit VALUES (NEW.kind); RETURN NEW; END $$;
@@ -36,26 +40,26 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'manageddatabase.%') EXECUTE FUNCTION audit_dat
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["provider","other-provider","identity","ungranted","cleanup","wrong-operation"]`)
 	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "ManagedDatabase", "provider", f.cluster))
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("provider", f.cluster), databaseWriteGrant("other-provider", "cnpg"), databaseWriteGrant("ordinary", f.cluster), writeGrant("identity", "configure.identity", ""), cleanupGrant("wrong-operation", "ManagedDatabase", "provider", "deployment"))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("provider", f.cluster), databaseWriteGrant("other-provider", second), databaseWriteGrant("ordinary", f.cluster), writeGrant("identity", "configure.identity", ""), cleanupGrant("wrong-operation", "ManagedDatabase", "provider", f.cluster))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	_, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	client := pb.NewManagedDatabaseServiceClient(connection)
 	admin := token(t, key, "admin", "platform:admin")
-	create := func(provider string) string {
+	create := func(name, cluster string) string {
 		t.Helper()
-		body, _ := json.Marshal(map[string]string{"name": provider, "provider": provider})
+		body := databaseCreateBody(t, name, "cnpg", cluster)
 		code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/managed_databases", admin, body)
 		var row httpapi.ManagedDatabase
-		if code != 201 || json.Unmarshal(data, &row) != nil {
+		if code != 201 || json.Unmarshal(data, &row) != nil || row.Provider != "cnpg" || row.ClusterID == nil || *row.ClusterID != cluster {
 			t.Fatal("create database", code)
 		}
 		readCatalogEvent(t, consumer, row.ID, "ManagedDatabases", "Create", "manageddatabase.created")
 		awaitQueueEmpty(t, f)
 		return row.ID
 	}
-	id, otherID := create("deployment"), create("cnpg")
+	id, otherID := create("first", f.cluster), create("second", second)
 	state := func(id string) model.ManagedDatabase {
 		t.Helper()
 		value, err := f.storage.Get(ctx, "ManagedDatabase", id)
@@ -104,7 +108,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'manageddatabase.%') EXECUTE FUNCTION audit_dat
 	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{Name: pointer("changed")}, codes.PermissionDenied)
 	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{}, codes.PermissionDenied)
 	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{Status: pointer("ready"), EngineVersion: pointer("18.1")}, codes.InvalidArgument)
-	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{Status: pointer("ready"), Provider: pointer("cnpg")}, codes.InvalidArgument)
+	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{Status: pointer("ready"), Provider: pointer("external")}, codes.InvalidArgument)
 	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{Status: pointer("provisioning")}, codes.OK)
 	write(id, providerToken, &pb.UpdateManagedDatabaseRequest{ConnectionSecret: pointer("database-credentials")}, codes.OK)
 	write(id, providerToken, observation(), codes.OK)
@@ -119,7 +123,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'manageddatabase.%') EXECUTE FUNCTION audit_dat
 	}
 	connection.Close()
 	stop()
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("other-provider", "cnpg"))
+	settings = withControllerWriteGrants(t, settings, databaseWriteGrant("other-provider", second))
 	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	client = pb.NewManagedDatabaseServiceClient(connection)

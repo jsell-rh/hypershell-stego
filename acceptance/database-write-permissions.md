@@ -2,11 +2,11 @@
 
 Conditional database patches require STEGO's generated exact grant policy.
 The operation is `observe.provider`, the resource is `ManagedDatabase`, and the
-target is the current stored provider name. The supported provider names are
-`deployment` and `cnpg`. An example API setting is:
+target is the database's stored managed-cluster ID. The supported providers are
+`cnpg` and `external`. Use a canonical cluster ID in the grant. For example:
 
 ```sh
-HYPERSHELL_CONTROLLER_WRITE_GRANTS='[{"issuer":"https://issuer.example","subject":"database-controller","resource":"ManagedDatabase","operation":"observe.provider","target":"deployment"}]'
+HYPERSHELL_CONTROLLER_WRITE_GRANTS='[{"issuer":"https://issuer.example","subject":"database-controller","resource":"ManagedDatabase","operation":"observe.provider","target":"0ujsswThIGTUYm2K8FjOOfXtY1K"}]'
 ```
 
 The caller also needs a verified token, a subject in
@@ -17,31 +17,64 @@ Grant changes require restart of every API instance.
 
 The controller can update `status`, `connection_secret`, or both. Empty patches
 and patches with only desired settings are denied. A patch that mixes observation
-fields with other fields is invalid. The API checks the stored provider and the
-field set inside the mutation transaction, before applying changes. The request
-cannot change its provider to select another grant. The provider name is already
-immutable under the catalog contract.
+fields with other fields is invalid. The API checks stored placement and the
+field set inside the mutation transaction, before it applies changes. The request cannot change its provider
+or cluster to select another grant. The catalog contract makes both fields
+immutable after registration.
 
-The provider name scopes this grant within one API deployment. It does not
-identify a Kubernetes cluster, fence a provider process, or restrict the grant to
-one database ID. Provider credentials and stable provider identity still need a
-complete contract.
+The cluster ID limits this grant to that cluster's database records. It covers
+both supported providers in that cluster. It does not limit access to one
+database ID or prevent two provider processes from acting at the same time.
+The grant also does not prove the physical location of an external server.
 
 These API grants control stored observations. They do not revoke provider
 credentials or undo provider work that occurred before a denied status write.
 
-`TestDatabaseControllerWriteGrantsAcrossProvidersAndRestart` creates both provider
-types through REST. It checks wrong subjects, wrong providers, wrong operations,
-cleanup-only access, missing grants, unconfigured subjects with explicit grants,
+`TestDatabaseControllerWriteGrantsAcrossClustersAndRestart` registers CNPG
+servers in two clusters through REST. It checks wrong subjects, wrong clusters,
+wrong operations, cleanup-only access, missing grants, unconfigured subjects
+with explicit grants,
 administrator roles, and invalid field groups. Denied writes must leave the
-whole row and committed database event count unchanged. A test trigger records events
-after insertion, so outbox delivery cannot hide an extra committed event.
+whole row and committed database event count unchanged. A test trigger records
+events after insertion, so outbox delivery cannot hide an extra committed event.
 
 Successful observations must advance one revision, store the requested fields,
 commit one event, and deliver it through the generated runtime. A REST request
 cannot bypass the revision requirement. The test removes a grant, restarts the
-API, and requires denial with the same token. The other provider remains able
-to publish its authorized observation.
+API, and requires denial with the same token. The controller for the other
+cluster can still publish its authorized observation.
+
+## Current contract evidence
+
+On 2026-09-14, the bounded jshell Job `stego-placement-005aace4/check` passed
+all five updated database contract tests with the race detector. The acceptance
+package took 60.167 seconds. The tests checked:
+
+- Cluster-specific grants, denied writes with no stored changes or extra events,
+  and grant removal after API restart.
+- Stale and malformed revision rejection, transaction rollback, and REST and
+  gRPC behavior after restart.
+- Atomic cleanup observations, retained reads, and recovery after a replay
+  stream stopped responding.
+
+These tests create CNPG records through REST with explicit `cluster_id` values.
+They do not use the old SQL trigger to infer placement. The catalog fixture
+seeds a cluster without a database, so each test registers its own server.
+
+All 230 generated files and build records matched across two generation runs,
+the tests, and the checkout. The Job completed, and its namespace was removed.
+Local evidence is in `/tmp/hypershell-database-contracts-2ei31ep9`.
+
+This test group checks the control-plane contracts. It does not run PostgreSQL
+provisioning through CNPG. The separate live Gateway result and remaining work
+are recorded in [Database providers and locality](database-providers.md).
+Older workload fixtures and the console asset archive still prevent a full CI
+pass.
+
+## Earlier evidence
+
+The following results used the former deployment provider and provider-name
+grants. They do not validate the current placement contract.
 
 The baseline failed in 3.21 seconds: an identity controller without a database
 grant could publish database status. The focused permission check passed in
@@ -70,11 +103,10 @@ rejection, transaction rollback, event delivery, and restart. Module verificatio
 formatting, and `go vet` also passed.
 
 STEGO owns grant parsing and exact matching. Hypershell supplies the field set,
-operation name, provider target, and transaction call. No compiler change is
+operation name, cluster target, and transaction call. No compiler change is
 required for this policy.
 
-Public administrator access to status and the connection-secret reference is
-still part of the current API. The connection-secret ownership decision remains
-pending. This change does not complete database field ownership or generation
-tracking. Other catalog operations, private reads, controller creation and
-deletion, provider credentials, and cross-process fencing remain open work.
+The current provider requirements and remaining work are in
+[Database providers and locality](database-providers.md). A passing observation
+grant test does not prove SQL permissions, credential ownership, or protection
+against concurrent provider processes.

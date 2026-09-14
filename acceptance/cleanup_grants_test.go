@@ -21,8 +21,8 @@ func writeGrant(subject, operation, target string) auth.Grant {
 	return auth.Grant{Subject: subject, Resource: "Gateway", Operation: operation, Target: target}
 }
 
-func databaseWriteGrant(subject, provider string) auth.Grant {
-	return auth.Grant{Subject: subject, Resource: "ManagedDatabase", Operation: "observe.provider", Target: provider}
+func databaseWriteGrant(subject, cluster string) auth.Grant {
+	return auth.Grant{Subject: subject, Resource: "ManagedDatabase", Operation: "observe.provider", Target: cluster}
 }
 
 func withControllerWriteGrants(t testing.TB, settings []string, grants ...auth.Grant) []string {
