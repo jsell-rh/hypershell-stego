@@ -1,0 +1,59 @@
+{
+  "date": "2026-09-14",
+  "source_commit": "ca458e74efd7b16a519178845c7804083e9565df",
+  "source_files": 840,
+  "source_manifest_sha256": "6c71ff5b7383a957905f1b60fbb78cc91d65d4195221285ecec4eb9e4aadf9e7",
+  "job": "console-bundle-c9ab8f2dcf96",
+  "namespace": "stego-ci",
+  "context": "jshell-ci",
+  "job_complete": true,
+  "finished_at": "2026-09-14T19:22:23Z",
+  "archive_sha256": "596fd56787ac8a19eac450538a4f6c77d8a6ddc582f9c982bd37330b9c6e566d",
+  "archive_bytes": 852684,
+  "added_paths": [
+    "assets/application-8FRHj1Qo.js",
+    "assets/manifest-25392a11.js"
+  ],
+  "removed_paths": [
+    "assets/application-BD1BlONT.js",
+    "assets/manifest-77cf63a7.js"
+  ],
+  "changed_paths": [
+    "index.html"
+  ],
+  "checks": [
+    "Node 24.18.1 archive checksum",
+    "pnpm 11.15.1 frozen lockfile with install scripts disabled",
+    "TypeScript checks",
+    "Architecture check",
+    "ESLint with zero allowed warnings",
+    "Vitest with one worker and no file parallelism",
+    "Two builds with identical STEGO asset archives"
+  ],
+  "test_summaries": [
+    "Test Files  1 passed (1)",
+    "Tests  7 passed (7)",
+    "Test Files  14 passed (14)",
+    "Tests  164 passed (164)",
+    "Test Files  9 passed (9)",
+    "Tests  58 passed (58)"
+  ],
+  "react_act_warnings_present": true,
+  "cleanup": {
+    "job_absent": "console-bundle-c9ab8f2dcf96",
+    "pods_absent": true,
+    "fixture_resources_absent": true
+  },
+  "shared_lease_released": true,
+  "local_results": "/tmp/hypershell-console-bundle-v3",
+  "earlier_attempts": [
+    {
+      "results": "/tmp/hypershell-console-bundle-v1",
+      "result": "failed before build: xz was absent"
+    },
+    {
+      "results": "/tmp/hypershell-console-bundle-v2",
+      "result": "failed before build: npm cache path was not writable"
+    }
+  ]
+}
