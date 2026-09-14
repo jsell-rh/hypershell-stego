@@ -192,3 +192,79 @@ This test uses a TLS protocol fixture for Kubernetes. A live Kubernetes check
 must still verify the generated account's allowed and denied requests and run
 the count worker with real allocated namespaces and Pods. Earlier live sandbox
 results do not prove the new namespace permission boundary.
+
+## Live namespace count check
+
+Run the bounded OpenShift check with an explicit saved context:
+
+```sh
+python3 scripts/check-count-namespaces.py --context=YOUR_SAVED_CONTEXT
+```
+
+The runner freezes tracked source, generates twice, and builds the generated
+renderer and count worker in a test Job. It applies the generated allocator,
+workload, and count roles. Each client uses a separate, short-lived account
+token. The Job has no ambient Kubernetes API credential. No token is printed or
+kept in the result directory.
+
+The check creates Gateway records through the generated API and allocates their
+namespaces through the common allocator. Real Deployment Pods supply the count
+input. The count worker must publish changes through the API and event runtime.
+Checks cover REST and gRPC, an empty initial list, allowed and denied Kubernetes
+requests, loss and restoration of Pod read access, progress in another
+namespace during denial, a new namespace UID, and API and worker restart.
+
+For the denied-read check, the test waits for binding deletion and a denied
+authorization result. It then restarts the count worker to close its old watch
+connection. The new denied list must preserve the last count. This does not
+prove immediate revocation of an already open Kubernetes watch.
+
+The Job has a 20-minute deadline, one CPU for the test process, and 3 GiB of test
+memory. PostgreSQL has separate limits of half a CPU and 512 MiB. Each allocated
+Gateway namespace has the declared quota. Each idle Pod has limits of 10
+millicores and 16 MiB of memory. Cleanup stops the Job before any fallback
+removal. It checks allocator identity, removes only owned resources, and leaves
+the generated admission rules in place until namespace cleanup is complete.
+
+This check runs the generated worker as a process in the test Job. It does not
+prove worker Deployment rollout, projected token rotation, a complete Sandbox
+workflow, or production capacity. Those checks remain separate.
+
+The completed run on 2026-09-14 used compiler
+`ce29df073378340a21bdba31b99ca333fd829f98`. Full compiler CI passed in run
+`34875792405`. The live workflow passed with race detection in 102.81 seconds;
+the acceptance package took 103.858 seconds. The Job
+`stego-count-live-2906987b/check` completed. Results are in
+`/tmp/hypershell-count-live-cb4au61o`.
+
+Eleven live authorization reviews passed. Direct requests also confirmed denied
+cluster-wide Pod lists, denied Pod lists in the control namespace, and denied
+Secret reads. An owner could not write the controller's count field. Three real
+Gateway namespaces supplied Pods. A denied namespace kept its last count while
+another namespace advanced. Restored access produced the current count and an
+event. Namespace UID replacement, API and worker restart, and Gateway deletion
+also passed through the generated runtime, REST, and gRPC.
+
+All 231 generated and build-file hashes match both generation passes, the files
+after testing, and the checkout. The source copy contains 827 files. The database
+provider requirements and runner validation changed after that copy was made;
+the test code did not change. This result text was then added. The runner now
+requires the test source to be tracked and rejects a missing or skipped test.
+The Job, Gateway namespaces, and owned bindings were removed without fallback
+cleanup. The generated cluster permission objects were also verified absent.
+
+Failed runs are retained as evidence. The first setup run was stopped before
+the workflow because Deployment Pod templates cannot use `activeDeadlineSeconds`.
+The next run checked authorization before binding deletion completed. Waiting
+for deletion exposed the actual runtime fault: foreground deletion needed a
+finalizer update that the binding policy denied. Those runs are in
+`/tmp/hypershell-count-live-vxyp41oe`, `/tmp/hypershell-count-live-bqqzzdly`, and
+`/tmp/hypershell-count-live-7l940frn`. Their resources were removed. None is counted
+as a pass.
+
+`kubernetes-service` 1.8.1 fixes owned binding cleanup with conditional
+background deletion. It can also recover old foreground binding deletions while
+preserving custom cleanup finalizers. The generated admission policy remains
+unchanged. The application test uses the same deletion mode when it removes the
+count binding to test denied reads. Full application CI still has separate
+failures in older workflow fixtures and the console build archive.

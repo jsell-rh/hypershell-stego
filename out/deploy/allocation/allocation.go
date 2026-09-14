@@ -166,9 +166,23 @@ func (a *Allocator) bindings(ctx context.Context, collection, name string, owner
 }
 func (a *Allocator) removeBinding(ctx context.Context, collection string, old kube.Object) error {
 	if kube.String(old, "metadata", "deletionTimestamp") != "" {
-		return ErrPending
+		foreground := false
+		if values, ok := kube.Nested(old, "metadata", "finalizers").([]any); ok {
+			for _, value := range values {
+				if name, ok := value.(string); ok && name == "foregroundDeletion" {
+					foreground = true
+				}
+			}
+		}
+		if !foreground {
+			return ErrPending
+		}
 	}
-	_, code, err := a.client.Request(ctx, http.MethodDelete, collection+"/"+kube.String(old, "metadata", "name"), kube.Object{"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": kube.Object{"uid": kube.String(old, "metadata", "uid"), "resourceVersion": kube.String(old, "metadata", "resourceVersion")}, "propagationPolicy": "Foreground"})
+	// The admission policy protects bindings from other actors, including the
+	// garbage collector. Background deletion needs no collector finalizer edit.
+	// It also recovers an old foreground delete through the Kubernetes API. It
+	// does not patch finalizers or bypass application cleanup finalizers.
+	_, code, err := a.client.Request(ctx, http.MethodDelete, collection+"/"+kube.String(old, "metadata", "name"), kube.Object{"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": kube.Object{"uid": kube.String(old, "metadata", "uid"), "resourceVersion": kube.String(old, "metadata", "resourceVersion")}, "propagationPolicy": "Background"})
 	if err != nil {
 		return err
 	}
@@ -197,13 +211,13 @@ func (a *Allocator) prune(ctx context.Context, p profile, name string, owner kub
 	for i, collection := range collections {
 		for _, old := range snapshots[i] {
 			bindingName := kube.String(old, "metadata", "name")
-			if i == 0 && bindingName == "stego-"+a.marker+"-proof" {
+			if i == 0 && bindingName == "stego-"+a.marker+"-proof" && kube.String(old, "metadata", "deletionTimestamp") == "" {
 				continue
 			}
 			desired, exists := wanted[collection+"/"+bindingName]
 			// List entries can omit apiVersion and kind. Compare only the fields
 			// that define the binding. UID and version still guard a cleanup write.
-			if exists && kube.Contains(old, kube.Object{"metadata": desired["metadata"], "roleRef": desired["roleRef"], "subjects": desired["subjects"]}) {
+			if exists && kube.String(old, "metadata", "deletionTimestamp") == "" && kube.Contains(old, kube.Object{"metadata": desired["metadata"], "roleRef": desired["roleRef"], "subjects": desired["subjects"]}) {
 				continue
 			}
 			if err := a.removeBinding(ctx, collection, old); errors.Is(err, ErrPending) {
