@@ -1,17 +1,19 @@
 # Sandbox count workflow
 
 The count controller runs as `out/deploy/workers/sandbox-count`. It uses STEGO's
-HTTP stream client, Kubernetes list and watch client, gRPC client, transaction,
-row lock, storage, event runtime, and keyed controller scheduler. Hypershell owns the sandbox classification
-and cluster assignment rules. STEGO has no sandbox or Gateway types.
+HTTP stream client, Kubernetes watch sets, namespace identity checks, gRPC
+client, transaction, row lock, storage, event runtime, and keyed controller
+scheduler. Hypershell owns the active-Pod and cluster assignment rules.
+STEGO has no sandbox or Gateway types.
 
 A Pod is active when its phase is Pending or Running and its labels contain
-`agents.x-k8s.io/sandbox-name-hash`. The controller maps both the original
-Gateway namespace and the separate sandbox namespace to the Gateway count.
+`agents.x-k8s.io/sandbox-name-hash`. The shared-cluster profile watches each
+verified Gateway namespace. A separate sandbox namespace needs its own
+allocation profile; that mode remains unsupported in the shared-cluster profile.
 Pod UIDs prevent a replacement Pod from being confused with its predecessor.
 Duplicate events do not add to the count.
 
-The first list forms a complete baseline before any count writes. Ordinary
+Each namespace needs a complete baseline before its count can be written. Ordinary
 watch reconnects retain the last resource version. Expired history invalidates
 the cache and causes a new list. There is no periodic Pod list in steady state.
 A periodic Gateway catalog read also finds Gateways with no active Pods. The
@@ -35,21 +37,29 @@ when the requested value equals the stored value.
 Use one active count controller per managed cluster. Multiple independent
 controllers can overwrite a newer count with an older cache observation. The
 count remains advisory. It must not control access, billing, quotas, or deletion.
-Loss of Pod watch or API access stops the controller. Other API failures retry.
+Loss of a Pod watch invalidates that namespace's baseline. A later catalog scan
+can retry the watch after a new allocation check. Other namespaces continue.
+Denied API access or a failed allocation identity check stops the controller.
+Other API failures retry.
 The deployment must restart a failed process and report repeated failures.
 
 Required settings are `HYPERSHELL_MANAGED_CLUSTER_ID`, `HYPERSHELL_API_GRPC_ADDR`,
 `HYPERSHELL_API_CA_FILE`, `HYPERSHELL_API_TOKEN_FILE`, `HYPERSHELL_KUBERNETES_URL`,
-`HYPERSHELL_KUBERNETES_CA_FILE`, and `HYPERSHELL_KUBERNETES_TOKEN_FILE`.
-Use projected tokens and the separate
-[Pod read role](../deploy/sandbox-count-controller-rbac.yaml).
-That role currently has cluster-wide Pod access. The shared-cluster work must
-limit Pod watches to allocated Gateway and sandbox namespaces. The count API
-grant check covers API writes; Kubernetes read isolation remains open.
+`HYPERSHELL_KUBERNETES_CA_FILE`, `HYPERSHELL_KUBERNETES_TOKEN_FILE`, and
+`HYPERSHELL_CONTROL_NAMESPACE`. Use the generated worker's projected token.
+The allocator binds its declared `sandbox-count` Pod read role inside each
+Gateway namespace. The worker also has read-only Namespace access for identity
+checks. The old manifest with cluster-wide Pod access was removed.
 `HYPERSHELL_SANDBOX_COUNT_RESYNC` defaults to two minutes. Its range is one second
 to five minutes. It controls Gateway catalog refresh and cache-based repair.
+`HYPERSHELL_SANDBOX_COUNT_WATCH_LIMIT` defaults to 16 and accepts one through
+128. An assignment that exceeds the selected limit stops the worker. Select
+the limit with the worker's memory budget; it is not a production capacity claim.
 
-The cache and pending write queue each hold at most 10,000 entries. The Gateway
+The combined Pod caches and pending write queue each hold at most 10,000 entries.
+STEGO also limits encoded object data across all watches to 64 MiB and serializes
+complete baseline lists. These limits do not include all decoded-object and
+stream-buffer memory. The Gateway
 catalog scan also has a 10,000-entry limit. Each RPC has a five-second deadline.
 A Pod cache or event queue overflow stops the controller. An invalid Pod
 observation also stops it. A catalog overflow prevents a complete repair pass.
@@ -63,9 +73,11 @@ It restores old placement only while the API is stopped. Its fixture restores
 the current database constraints before API startup. The separate grant test
 checks all three count methods, foreign targets, unrelated controller grants,
 unchanged rows and committed events after denial, and revocation after restart.
-The real sandbox test uses a separate Pod read account. It checks zero, creation,
+The real sandbox test requires the generated count account and allocator bindings.
+Its intended checks include zero, creation,
 drift repair, controller restart with an existing Pod, Gateway and database
-restart, namespace replacement, and sandbox deletion.
+restart, namespace replacement, and sandbox deletion. The current namespace
+watch change still needs a new live Kubernetes permission and workload run.
 
 The following historical results predate exact count grants and local database
 placement. They do not prove the current permission changes.
@@ -130,8 +142,8 @@ controller-permission document, and the README changed after the source freeze.
 The Job completed, and its namespace and private launch files were removed.
 
 The check uses PostgreSQL, the generated API, and the generated event runtime.
-It does not run the Kubernetes Pod watcher. Restricting that watcher's read
-permissions to allocated namespaces remains a separate required change.
+It did not run the Kubernetes Pod watcher. At that revision, restricting the
+watcher's read permissions to allocated namespaces remained open.
 
 ## Separate HTTP stream limits
 
@@ -150,6 +162,33 @@ and restart. They are correctness checks, not production capacity measurements.
 
 Results are in `/tmp/hypershell-stream-limits-dc9z5wu_`. The Job completed, and
 its namespace and private launch files were removed. This document changed after
-the source freeze. The Pod watcher still needs watches and permissions limited
-to allocated namespaces. The transport change supplies request capacity for
-those ownership checks; it does not supply the watch assignment mechanism.
+the source freeze. At that revision, the Pod watcher still needed watches and
+permissions limited to allocated namespaces. The transport change supplied
+request capacity for those ownership checks.
+
+On 2026-09-14, compiler `889052f127fbb46d8a11ba0ce26c75d8976e4be9` supplied the
+common watch-set and allocation UID APIs. Full compiler CI passed in run
+`34872114845`. The count controller now supplies verified Gateway assignments
+to that runtime. The generated allocator supplies the Pod read bindings.
+
+The bounded jshell Job `stego-count-ns-ddc70ee8/check` passed all nine selected
+application checks. The six count-controller checks took 12.038 seconds. The
+three API workflows took 43.061 seconds. The new workflow started the generated
+count worker against a TLS Kubernetes protocol fixture and the generated API.
+It checked REST and gRPC counts, denied Pod lists, namespace UID replacement,
+event delivery, API and worker restart, and watch removal after Gateway deletion.
+The unit checks also covered progress in one namespace while another waits for
+a baseline, missing allocations, foreign clusters, and failed identity checks.
+
+All 231 generated and build-file hashes match both generation passes, the files
+after testing, and the checkout. The frozen source contains 824 files; only
+this document changed afterward. Results are in
+`/tmp/hypershell-namespace-count-5rjs06hf`. The Job completed, and its namespace
+and private launch files were removed. Inspection of the generated declarations
+confirmed that the count worker's cluster role only reads Namespace identity
+and that its Pod role is bound through the Gateway allocation profile.
+
+This test uses a TLS protocol fixture for Kubernetes. A live Kubernetes check
+must still verify the generated account's allowed and denied requests and run
+the count worker with real allocated namespaces and Pods. Earlier live sandbox
+results do not prove the new namespace permission boundary.

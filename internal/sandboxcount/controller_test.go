@@ -3,6 +3,7 @@ package sandboxcount
 import (
 	"context"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -64,21 +65,71 @@ func TestActiveTransitionsDuplicateDeliveryAndReset(t *testing.T) {
 
 type sourceFixture struct{ ready chan func(kube.Change) error }
 
+func (s *sourceFixture) WatchLimit() int { return 16 }
 func (s *sourceFixture) Observe(ctx context.Context, c kube.Collection, apply func(kube.Change) error) error {
-	if c.Path != "/api/v1/pods" || c.LabelSelector != SandboxLabel {
+	if !strings.HasPrefix(c.Path, "/api/v1/namespaces/openshell-") || !strings.HasSuffix(c.Path, "/pods") || c.LabelSelector != SandboxLabel {
 		return errors.New("invalid Pod watch")
 	}
-	s.ready <- apply
-	<-ctx.Done()
-	return ctx.Err()
+	return serveChanges(ctx, apply, func(send func(kube.Change) error) { s.ready <- send })
+}
+
+type fixtureChange struct {
+	change kube.Change
+	result chan error
+}
+
+func serveChanges(ctx context.Context, apply func(kube.Change) error, ready func(func(kube.Change) error)) error {
+	if err := apply(kube.Change{Type: "RESET"}); err != nil {
+		return err
+	}
+	changes := make(chan fixtureChange)
+	ready(func(change kube.Change) error {
+		request := fixtureChange{change: change, result: make(chan error, 1)}
+		select {
+		case changes <- request:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		select {
+		case err := <-request.result:
+			return err
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+	})
+	for {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case request := <-changes:
+			err := apply(request.change)
+			request.result <- err
+			if err != nil {
+				return err
+			}
+		}
+	}
+}
+
+type namespaceFixture struct{}
+
+func (namespaceFixture) NamespaceUID(_ context.Context, profile, name, id string) (string, error) {
+	expected, err := gatewayworkload.Namespace(id)
+	if err != nil || profile != "gateway" || name != expected {
+		return "", errors.New("wrong allocation request")
+	}
+	return "uid-" + name, nil
 }
 
 type apiFixture struct {
 	pb.GatewayServiceClient
+	mu   sync.Mutex
 	rows []*pb.Gateway
 }
 
 func (a *apiFixture) ListGateways(_ context.Context, r *pb.ListGatewaysRequest, _ ...grpc.CallOption) (*pb.ListGatewaysResponse, error) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
 	if r.Page != 1 || r.Size != 100 {
 		return nil, errors.New("unbounded catalog request")
 	}
@@ -157,7 +208,7 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 		mu.Unlock()
 		return nil
 	}}
-	c, err := New(source, api, writer, cluster, time.Second)
+	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -228,7 +279,7 @@ func TestCountAccessLossStopsWatch(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
 	source := &sourceFixture{make(chan func(kube.Change) error, 1)}
-	c, err := New(source, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, &writerFixture{write: func(*control.SetObservedSandboxCountRequest) error {
+	c, err := New(source, namespaceFixture{}, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, &writerFixture{write: func(*control.SetObservedSandboxCountRequest) error {
 		return status.Error(codes.PermissionDenied, "denied")
 	}}, cluster, time.Second)
 	if err != nil {
@@ -270,7 +321,7 @@ func TestCountWaitsForReplacementAfterReset(t *testing.T) {
 		}
 		return nil
 	}}
-	c, err := New(source, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, writer, cluster, time.Second)
+	c, err := New(source, namespaceFixture{}, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, writer, cluster, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}

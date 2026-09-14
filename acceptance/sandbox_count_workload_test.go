@@ -15,12 +15,12 @@ import (
 
 func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAddress string, tlsIdentity testIdentity, controller, owner, cluster string, gateway httpapi.Gateway) (func(int32), func()) {
 	t.Helper()
-	name := k.options.ClusterIssuer + "-counts"
-	ns := k.options.ClusterIssuer
-	k.apply(t, map[string]any{"apiVersion": "v1", "kind": "ServiceAccount", "metadata": map[string]any{"name": name, "namespace": ns}},
-		map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRole", "metadata": map[string]any{"name": name}, "rules": []any{map[string]any{"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get", "list", "watch"}}}},
-		map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRoleBinding", "metadata": map[string]any{"name": name}, "roleRef": map[string]any{"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": name}, "subjects": []any{map[string]any{"kind": "ServiceAccount", "name": name, "namespace": ns}}})
-	t.Cleanup(func() { k.must(t, "", "delete", "clusterrole,clusterrolebinding", name, "--ignore-not-found=true") })
+	name := "hypershell-sandbox-count"
+	ns := k.options.ControlNamespace
+	if ns == "" {
+		t.Fatal("count workflow requires an allocated control namespace")
+	}
+	// The namespace allocator supplies the generated Pod read binding.
 	copy := *k
 	copy.options.TokenFile = filepath.Join(t.TempDir(), "pod-reader-token")
 	if err := os.WriteFile(copy.options.TokenFile, k.must(t, "", "-n", ns, "create", "token", name, "--duration=1h"), 0600); err != nil {
@@ -31,7 +31,7 @@ func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAdd
 		t.Fatal("count account can change Pods", string(output), err)
 	}
 	binary := buildProgram(t, "./out/deploy/workers/sandbox-count")
-	settings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + cluster, "HYPERSHELL_SANDBOX_COUNT_RESYNC=1s"}
+	settings := []string{"HYPERSHELL_CONTROL_NAMESPACE=" + ns, "HYPERSHELL_MANAGED_CLUSTER_ID=" + cluster, "HYPERSHELL_SANDBOX_COUNT_RESYNC=1s"}
 	stop, logs := startDatabaseController(t, binary, &copy, rpcAddress, tlsIdentity.config.CAFile, controller, settings...)
 	t.Cleanup(func() { stop() })
 	client, connection := grpcClient(t, rpcAddress, tlsIdentity)

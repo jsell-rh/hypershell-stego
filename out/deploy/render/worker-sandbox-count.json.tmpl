@@ -2,6 +2,45 @@
   "apiVersion": "v1",
   "items": [
     {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-sandbox-count"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-sandbox-count"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "{{.Namespace}}.hypershell-sandbox-count"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-sandbox-count",
+          "namespace": "{{.Namespace}}"
+        }
+      ]
+    },
+    {
       "apiVersion": "v1",
       "automountServiceAccountToken": false,
       "kind": "ServiceAccount",
@@ -232,6 +271,11 @@
                   {
                     "mountPath": "/tmp",
                     "name": "tmp"
+                  },
+                  {
+                    "mountPath": "/var/run/stego-kubernetes",
+                    "name": "kubernetes-api",
+                    "readOnly": true
                   }
                 ]
               }
@@ -258,6 +302,31 @@
                   "sizeLimit": "64Mi"
                 },
                 "name": "tmp"
+              },
+              {
+                "name": "kubernetes-api",
+                "projected": {
+                  "defaultMode": 288,
+                  "sources": [
+                    {
+                      "serviceAccountToken": {
+                        "expirationSeconds": 3600,
+                        "path": "token"
+                      }
+                    },
+                    {
+                      "configMap": {
+                        "items": [
+                          {
+                            "key": "ca.crt",
+                            "path": "ca.crt"
+                          }
+                        ],
+                        "name": "kube-root-ca.crt"
+                      }
+                    }
+                  ]
+                }
               }
             ]
           }

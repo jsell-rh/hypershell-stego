@@ -138,6 +138,10 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     allocation_roles:
+      - name: sandbox-count
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [pods], verbs: [get, list, watch]}
       - name: database-worker
         scope: namespace
         rules:
@@ -185,6 +189,7 @@ overrides:
           - {role: gateway-runtime, service_account: openshell-gateway, namespace: allocated}
           - {role: gateway-reviews, service_account: openshell-gateway, namespace: allocated}
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
+          - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
       - name: database
         namespace_prefix: openshell-db-
         suffix_length: 16
@@ -232,6 +237,9 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: sandbox-count
+        kubernetes_api: true
+        kubernetes_permissions:
+          - {scope: cluster, api_group: "", resources: [namespaces], verbs: [get]}
         package: internal/sandboxcountapp
         function: Run
         external_endpoints: [kubernetes]

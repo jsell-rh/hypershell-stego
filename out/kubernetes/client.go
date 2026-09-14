@@ -19,7 +19,10 @@ import (
 )
 
 type Object map[string]any
-type Options struct{ ServerURL, CAFile, TokenFile string }
+type Options struct {
+	ServerURL, CAFile, TokenFile string
+	WatchLimit                   int
+}
 type Client struct {
 	client    *transport.Client
 	tokenFile string
@@ -29,13 +32,21 @@ func New(o Options) (*Client, error) {
 	if _, err := readToken(o.TokenFile); err != nil {
 		return nil, err
 	}
-	c, err := transport.New(transport.Options{BaseURL: o.ServerURL, CAFile: o.CAFile})
+	c, err := transport.New(transport.Options{BaseURL: o.ServerURL, CAFile: o.CAFile, StreamLimit: o.WatchLimit})
 	if err != nil {
 		return nil, err
 	}
 	return &Client{c, o.TokenFile}, nil
 }
 func (c *Client) Close() { c.client.Close() }
+
+// WatchLimit is the shared stream limit for this client.
+func (c *Client) WatchLimit() int {
+	if c == nil {
+		return 0
+	}
+	return c.client.StreamLimit()
+}
 func readToken(file string) (string, error) {
 	value, err := transport.ReadPrivateFile(file)
 	if err != nil {
