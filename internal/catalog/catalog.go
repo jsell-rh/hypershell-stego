@@ -205,6 +205,9 @@ func (r *Resource[T, C, P]) Create(ctx context.Context, p gateways.Principal, in
 		return zero, err
 	}
 	err = r.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		if err := validateDatabaseReference(ctx, tx, row); err != nil {
+			return err
+		}
 		if err := tx.Create(ctx, r.entity, row); err != nil {
 			return err
 		}
@@ -276,6 +279,9 @@ func (r *Resource[T, C, P]) update(ctx context.Context, p gateways.Principal, id
 			}
 		}
 		if err := r.patch(&row, input); err != nil {
+			return err
+		}
+		if err := validateDatabaseReference(ctx, tx, row); err != nil {
 			return err
 		}
 		if version > 0 {
@@ -535,6 +541,7 @@ func validateRelease(row model.GatewayRelease) error {
 }
 
 type DatabaseCreate struct {
+	ClusterID        string  `json:"cluster_id"`
 	Name             string  `json:"name,omitempty"`
 	Provider         string  `json:"provider,omitempty"`
 	Region           *string `json:"region,omitempty"`
@@ -545,7 +552,23 @@ type DatabaseCreate struct {
 	Status           *string `json:"status,omitempty"`
 }
 
+func validateDatabaseReference(ctx context.Context, tx store.Transaction, value any) error {
+	row, ok := value.(model.ManagedDatabase)
+	if !ok {
+		return nil
+	}
+	if row.ClusterID == nil || !validID(*row.ClusterID) {
+		return gateways.ErrInvalid
+	}
+	_, err := tx.Get(ctx, "ManagedCluster", *row.ClusterID)
+	if errors.Is(err, store.ErrNotFound) {
+		return gateways.ErrInvalid
+	}
+	return err
+}
+
 type DatabasePatch struct {
+	ClusterID        *string `json:"cluster_id,omitempty"`
 	Name             *string `json:"name,omitempty"`
 	Provider         *string `json:"provider,omitempty"`
 	Region           *string `json:"region,omitempty"`
@@ -557,7 +580,7 @@ type DatabasePatch struct {
 }
 
 func newDatabase(id string, input DatabaseCreate) (model.ManagedDatabase, error) {
-	row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: input.Name, Provider: input.Provider, Region: input.Region, Engine: input.Engine, EngineVersion: input.EngineVersion, InstanceClass: input.InstanceClass, ConnectionSecret: input.ConnectionSecret, Status: input.Status}
+	row := model.ManagedDatabase{Meta: model.Meta{ID: id}, Name: input.Name, Provider: input.Provider, ClusterID: &input.ClusterID, Region: input.Region, Engine: input.Engine, EngineVersion: input.EngineVersion, InstanceClass: input.InstanceClass, ConnectionSecret: input.ConnectionSecret, Status: input.Status}
 	var err error
 	row.Namespace, err = DatabaseNamespace(id)
 	if err != nil {
@@ -566,6 +589,13 @@ func newDatabase(id string, input DatabaseCreate) (model.ManagedDatabase, error)
 	return row, validateDatabase(row)
 }
 func patchDatabase(row *model.ManagedDatabase, input DatabasePatch) error {
+	if input.ClusterID != nil {
+		if !validID(*input.ClusterID) || (row.ClusterID != nil && *row.ClusterID != *input.ClusterID) {
+			return gateways.ErrInvalid
+		}
+		row.ClusterID = input.ClusterID
+	}
+
 	if input.Provider != nil && *input.Provider != row.Provider {
 		return gateways.ErrInvalid
 	}
@@ -599,7 +629,7 @@ func validateDatabase(row model.ManagedDatabase) error {
 	if !textField(row.Name, true, 261) {
 		return gateways.ErrInvalid
 	}
-	if row.Provider != "cnpg" && row.Provider != "deployment" {
+	if (row.Provider != gateways.ProviderCNPG && row.Provider != gateways.ProviderExternal) || row.ClusterID == nil || !validID(*row.ClusterID) {
 		return gateways.ErrInvalid
 	}
 	if !textField(row.Namespace, true, 29) {

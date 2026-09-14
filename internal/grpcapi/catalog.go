@@ -227,10 +227,10 @@ type databaseServer struct {
 }
 
 func presentManagedDatabase(row model.ManagedDatabase) *pb.ManagedDatabase {
-	return &pb.ManagedDatabase{Metadata: catalogMetadata(row.Meta, "ManagedDatabase", "/api/hypershell/v1/managed_databases"), Name: row.Name, Provider: row.Provider, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
+	return &pb.ManagedDatabase{Metadata: catalogMetadata(row.Meta, "ManagedDatabase", "/api/hypershell/v1/managed_databases"), Name: row.Name, Provider: row.Provider, ClusterId: row.ClusterID, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
 }
 func (s *databaseServer) CreateManagedDatabase(ctx context.Context, r *pb.CreateManagedDatabaseRequest) (*pb.CreateManagedDatabaseResponse, error) {
-	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.DatabaseCreate{Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status})
+	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.DatabaseCreate{ClusterID: r.ClusterId, Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status})
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -244,7 +244,7 @@ func (s *databaseServer) UpdateManagedDatabase(ctx context.Context, r *pb.Update
 	if err != nil {
 		return nil, err
 	}
-	input := catalog.DatabasePatch{Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status}
+	input := catalog.DatabasePatch{ClusterID: r.ClusterId, Name: r.Name, Provider: r.Provider, Region: r.Region, Engine: r.Engine, EngineVersion: r.EngineVersion, InstanceClass: r.InstanceClass, ConnectionSecret: r.ConnectionSecret, Status: r.Status}
 	var row model.ManagedDatabase
 	if present {
 		row, err = s.resource.UpdateIfVersion(ctx, gateways.PrincipalFromContext(ctx), r.Id, input, version)

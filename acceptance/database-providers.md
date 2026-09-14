@@ -45,3 +45,34 @@ Retain the Gateway creation, atomic owner grant, REST and gRPC access, filtered
 lists, denied requests, event delivery, restart, and regeneration checks. Add
 database isolation checks with actual PostgreSQL connections. CNPG allocation
 must preserve the shared-cluster namespace isolation requirement.
+
+## Database registration and selection checks
+
+The first implementation step requires `cluster_id` when an operator registers
+a CNPG or external PostgreSQL server. Gateway creation selects one server in
+that cluster. A missing or ambiguous server prevents creation. A Gateway cannot
+move to another cluster while it retains its database association. Existing
+deployment-backed records remain in storage; new registrations are rejected.
+
+On 2026-09-14, the bounded jshell Job `stego-placement-2478d539/check` passed:
+
+- Catalog, database placement, and Gateway unit checks with the race detector.
+- Local CNPG and external server selection, rejected remote selection, and
+  rollback after an ambiguous selection.
+- REST and gRPC registration, denied requests, and placement after API restart.
+- Repeated migration with preserved legacy rows.
+- Existing protobuf fields and the three explicit database placement additions.
+- The operator-set default release and atomic creation checks.
+
+Two generation runs and the checks produced identical hashes for all 230
+generated files and build records. The frozen source matched 812 checkout files.
+The Job completed. Its namespace and local private launch files were removed.
+Local evidence is in `/tmp/hypershell-local-database-final-a52ya99b`.
+
+This gate covers registration and selection. It does not prove SQL provisioning,
+physical network locality, cross-database access denial, or the complete Gateway
+workflow. Deployment runtime removal and conversion of the older application
+fixtures remain open. The cleanup summary also needs a check that combines
+provider and cluster filters. Generated SDK type names need review because the
+new OpenAPI source paths changed some names. Keep this work on the working
+branch until the supported-provider workflow passes.

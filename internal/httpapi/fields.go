@@ -12,7 +12,7 @@ func buildListFieldProjectors() (map[string]*transport.FieldProjector, error) {
 		"GatewayNetwork":  {"name", "topology", "tunnel_mode", "hub_gateway_id", "status"},
 		"ManagedCluster":  {"name", "provider", "region", "kubeconfig_secret", "status", "api_server_url"},
 		"GatewayRelease":  {"name", "image", "rollout_strategy", "canary_percent", "canary_duration", "status"},
-		"ManagedDatabase": {"name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"},
+		"ManagedDatabase": {"cluster_id", "name", "provider", "namespace", "region", "engine", "engine_version", "instance_class", "connection_secret", "status"},
 		"Role":            {"name", "display_name", "description", "permissions", "built_in"},
 		"RoleBinding":     {"role_id", "user_id", "gateway_id", "scope"},
 	}

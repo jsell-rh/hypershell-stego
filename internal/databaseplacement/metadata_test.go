@@ -39,8 +39,8 @@ func TestGrantTargetRejectsUnassignedAndMixedPlacement(t *testing.T) {
 		provider, cluster, want string
 		bad                     bool
 	}{
-		{"deployment", cluster, cluster, false}, {"cnpg", "", "cnpg", false},
-		{"deployment", "", "", true}, {"deployment", "deployment", "", true}, {"cnpg", cluster, "", true}, {"unknown", cluster, "", true},
+		{"external", cluster, cluster, false}, {"cnpg", cluster, cluster, false},
+		{"deployment", "", "", true}, {"deployment", "deployment", "", true}, {"cnpg", "", "", true}, {"external", "", "", true}, {"deployment", cluster, "", true}, {"unknown", cluster, "", true},
 	} {
 		got, err := Target(tc.provider, tc.cluster)
 		if (err != nil) != tc.bad || got != tc.want {

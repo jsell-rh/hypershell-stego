@@ -27,13 +27,13 @@ const OpenShellGatewayServiceAccountStatusRevoked = wire.OpenShellGatewayService
 const OpenShellGatewayServiceAccountStatusRevoking = wire.OpenShellGatewayServiceAccountStatusRevoking
 const RoleBindingScopeGateway = wire.RoleBindingScopeGateway
 const RoleBindingScopeGlobal = wire.RoleBindingScopeGlobal
-const OpenapiServiceAccountsOrderAsc = wire.OpenapiServiceAccountsOrderAsc
-const OpenapiServiceAccountsOrderDesc = wire.OpenapiServiceAccountsOrderDesc
-const OpenapiServiceAccountsSortCreatedAt = wire.OpenapiServiceAccountsSortCreatedAt
-const OpenapiServiceAccountsSortExpiresAt = wire.OpenapiServiceAccountsSortExpiresAt
-const OpenapiServiceAccountsSortName = wire.OpenapiServiceAccountsSortName
-const OpenapiServiceAccountsSortRole = wire.OpenapiServiceAccountsSortRole
-const OpenapiServiceAccountsSortStatus = wire.OpenapiServiceAccountsSortStatus
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrderAsc = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrderAsc
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrderDesc = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrderDesc
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortCreatedAt = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortCreatedAt
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortExpiresAt = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortExpiresAt
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortName = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortName
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortRole = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortRole
+const UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortStatus = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSortStatus
 const ListGatewayServiceAccountsParamsSortCreatedAt = wire.ListGatewayServiceAccountsParamsSortCreatedAt
 const ListGatewayServiceAccountsParamsSortExpiresAt = wire.ListGatewayServiceAccountsParamsSortExpiresAt
 const ListGatewayServiceAccountsParamsSortName = wire.ListGatewayServiceAccountsParamsSortName
@@ -82,69 +82,74 @@ type RoleBinding = wire.RoleBinding
 type RoleBindingScope = wire.RoleBindingScope
 type RoleBindingList = wire.RoleBindingList
 type RoleList = wire.RoleList
-type OpenapiGatewaysGatewayCreateRequest = wire.OpenapiGatewaysGatewayCreateRequest
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysGatewayCreateRequest = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysGatewayCreateRequest
+type UnderscoreContractsReferenceOpenapiOpenapiError = wire.UnderscoreContractsReferenceOpenapiOpenapiError
+type UnderscoreContractsReferenceOpenapiOpenapiList = wire.UnderscoreContractsReferenceOpenapiOpenapiList
+type UnderscoreContractsReferenceOpenapiOpenapiObjectReference = wire.UnderscoreContractsReferenceOpenapiOpenapiObjectReference
+type OpenapiManagedDatabasesManagedDatabaseCreateRequest = wire.OpenapiManagedDatabasesManagedDatabaseCreateRequest
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksFields = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksFields
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksId = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksId
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksPage = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksPage
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksSearch
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksSize = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksSize
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesFields = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesFields
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesId = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesId
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesPage = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesPage
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSearch
+type UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSize = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesSize
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysFields = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysFields
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysId = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysId
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysPage = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysPage
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysSearch
+type UnderscoreContractsReferenceOpenapiOpenapiGatewaysSize = wire.UnderscoreContractsReferenceOpenapiOpenapiGatewaysSize
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersFields = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersFields
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersId = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersId
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersPage = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersPage
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersSearch
+type UnderscoreContractsReferenceOpenapiOpenapiManagedClustersSize = wire.UnderscoreContractsReferenceOpenapiOpenapiManagedClustersSize
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsFields = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsFields
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsId = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsId
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsPage = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsPage
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsSearch
+type UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsSize = wire.UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsSize
+type UnderscoreContractsReferenceOpenapiOpenapiRolesFields = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesFields
+type UnderscoreContractsReferenceOpenapiOpenapiRolesId = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesId
+type UnderscoreContractsReferenceOpenapiOpenapiRolesOrderBy = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesOrderBy
+type UnderscoreContractsReferenceOpenapiOpenapiRolesPage = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesPage
+type UnderscoreContractsReferenceOpenapiOpenapiRolesSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesSearch
+type UnderscoreContractsReferenceOpenapiOpenapiRolesSize = wire.UnderscoreContractsReferenceOpenapiOpenapiRolesSize
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrder = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsOrder
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsPage = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsPage
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSearch = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSearch
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceAccountId = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceAccountId
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSize = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSize
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSort = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsSort
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsStatus = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsStatus
 type Fields = wire.Fields
 type Id = wire.Id
-type OpenapiGatewayNetworksFields = wire.OpenapiGatewayNetworksFields
-type OpenapiGatewayNetworksId = wire.OpenapiGatewayNetworksId
-type OpenapiGatewayNetworksOrderBy = wire.OpenapiGatewayNetworksOrderBy
-type OpenapiGatewayNetworksPage = wire.OpenapiGatewayNetworksPage
-type OpenapiGatewayNetworksSearch = wire.OpenapiGatewayNetworksSearch
-type OpenapiGatewayNetworksSize = wire.OpenapiGatewayNetworksSize
-type OpenapiGatewayReleasesFields = wire.OpenapiGatewayReleasesFields
-type OpenapiGatewayReleasesId = wire.OpenapiGatewayReleasesId
-type OpenapiGatewayReleasesOrderBy = wire.OpenapiGatewayReleasesOrderBy
-type OpenapiGatewayReleasesPage = wire.OpenapiGatewayReleasesPage
-type OpenapiGatewayReleasesSearch = wire.OpenapiGatewayReleasesSearch
-type OpenapiGatewayReleasesSize = wire.OpenapiGatewayReleasesSize
-type OpenapiGatewaysFields = wire.OpenapiGatewaysFields
-type OpenapiGatewaysId = wire.OpenapiGatewaysId
-type OpenapiGatewaysOrderBy = wire.OpenapiGatewaysOrderBy
-type OpenapiGatewaysPage = wire.OpenapiGatewaysPage
-type OpenapiGatewaysSearch = wire.OpenapiGatewaysSearch
-type OpenapiGatewaysSize = wire.OpenapiGatewaysSize
-type OpenapiManagedClustersFields = wire.OpenapiManagedClustersFields
-type OpenapiManagedClustersId = wire.OpenapiManagedClustersId
-type OpenapiManagedClustersOrderBy = wire.OpenapiManagedClustersOrderBy
-type OpenapiManagedClustersPage = wire.OpenapiManagedClustersPage
-type OpenapiManagedClustersSearch = wire.OpenapiManagedClustersSearch
-type OpenapiManagedClustersSize = wire.OpenapiManagedClustersSize
 type OpenapiManagedDatabasesFields = wire.OpenapiManagedDatabasesFields
 type OpenapiManagedDatabasesId = wire.OpenapiManagedDatabasesId
 type OpenapiManagedDatabasesOrderBy = wire.OpenapiManagedDatabasesOrderBy
 type OpenapiManagedDatabasesPage = wire.OpenapiManagedDatabasesPage
 type OpenapiManagedDatabasesSearch = wire.OpenapiManagedDatabasesSearch
 type OpenapiManagedDatabasesSize = wire.OpenapiManagedDatabasesSize
-type OpenapiRoleBindingsFields = wire.OpenapiRoleBindingsFields
-type OpenapiRoleBindingsId = wire.OpenapiRoleBindingsId
-type OpenapiRoleBindingsOrderBy = wire.OpenapiRoleBindingsOrderBy
-type OpenapiRoleBindingsPage = wire.OpenapiRoleBindingsPage
-type OpenapiRoleBindingsSearch = wire.OpenapiRoleBindingsSearch
-type OpenapiRoleBindingsSize = wire.OpenapiRoleBindingsSize
-type OpenapiRolesFields = wire.OpenapiRolesFields
-type OpenapiRolesId = wire.OpenapiRolesId
-type OpenapiRolesOrderBy = wire.OpenapiRolesOrderBy
-type OpenapiRolesPage = wire.OpenapiRolesPage
-type OpenapiRolesSearch = wire.OpenapiRolesSearch
-type OpenapiRolesSize = wire.OpenapiRolesSize
-type OpenapiServiceAccountsGatewayId = wire.OpenapiServiceAccountsGatewayId
-type OpenapiServiceAccountsOrder = wire.OpenapiServiceAccountsOrder
-type OpenapiServiceAccountsPage = wire.OpenapiServiceAccountsPage
-type OpenapiServiceAccountsSearch = wire.OpenapiServiceAccountsSearch
-type OpenapiServiceAccountsServiceAccountId = wire.OpenapiServiceAccountsServiceAccountId
-type OpenapiServiceAccountsSize = wire.OpenapiServiceAccountsSize
-type OpenapiServiceAccountsSort = wire.OpenapiServiceAccountsSort
-type OpenapiServiceAccountsStatus = wire.OpenapiServiceAccountsStatus
 type OrderBy = wire.OrderBy
 type Page = wire.Page
 type Search = wire.Search
 type Size = wire.Size
 type InternalServerError = wire.InternalServerError
-type OpenapiServiceAccountsBadRequestError = wire.OpenapiServiceAccountsBadRequestError
-type OpenapiServiceAccountsConflictError = wire.OpenapiServiceAccountsConflictError
-type OpenapiServiceAccountsNotFoundError = wire.OpenapiServiceAccountsNotFoundError
-type OpenapiServiceAccountsServiceUnavailableError = wire.OpenapiServiceAccountsServiceUnavailableError
-type OpenapiServiceAccountsTooManyRequestsError = wire.OpenapiServiceAccountsTooManyRequestsError
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsBadRequestError = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsBadRequestError
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsConflictError = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsConflictError
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsNotFoundError = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsNotFoundError
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceUnavailableError = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceUnavailableError
+type UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsTooManyRequestsError = wire.UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsTooManyRequestsError
+type UnderscoreContractsReferenceOpenapiOpenapiInternalServerError = wire.UnderscoreContractsReferenceOpenapiOpenapiInternalServerError
 type ListGatewayNetworksParams = wire.ListGatewayNetworksParams
 type ListGatewayReleasesParams = wire.ListGatewayReleasesParams
 type ListGatewaysParams = wire.ListGatewaysParams
@@ -240,7 +245,7 @@ func (c *Client) CreateGatewayNetworkWithResponse(ctx context.Context, arg1 Crea
 	}
 	return response, nil
 }
-func (c *Client) DeleteGatewayNetworkWithResponse(ctx context.Context, arg1 OpenapiGatewayNetworksId) (*DeleteGatewayNetworkResponse, error) {
+func (c *Client) DeleteGatewayNetworkWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksId) (*DeleteGatewayNetworkResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -257,7 +262,7 @@ func (c *Client) DeleteGatewayNetworkWithResponse(ctx context.Context, arg1 Open
 	}
 	return response, nil
 }
-func (c *Client) GetGatewayNetworkWithResponse(ctx context.Context, arg1 OpenapiGatewayNetworksId) (*GetGatewayNetworkResponse, error) {
+func (c *Client) GetGatewayNetworkWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksId) (*GetGatewayNetworkResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -274,7 +279,7 @@ func (c *Client) GetGatewayNetworkWithResponse(ctx context.Context, arg1 Openapi
 	}
 	return response, nil
 }
-func (c *Client) UpdateGatewayNetworkWithResponse(ctx context.Context, arg1 OpenapiGatewayNetworksId, arg2 UpdateGatewayNetworkJSONRequestBody) (*UpdateGatewayNetworkResponse, error) {
+func (c *Client) UpdateGatewayNetworkWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayNetworksId, arg2 UpdateGatewayNetworkJSONRequestBody) (*UpdateGatewayNetworkResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -325,7 +330,7 @@ func (c *Client) CreateGatewayReleaseWithResponse(ctx context.Context, arg1 Crea
 	}
 	return response, nil
 }
-func (c *Client) DeleteGatewayReleaseWithResponse(ctx context.Context, arg1 OpenapiGatewayReleasesId) (*DeleteGatewayReleaseResponse, error) {
+func (c *Client) DeleteGatewayReleaseWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesId) (*DeleteGatewayReleaseResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -342,7 +347,7 @@ func (c *Client) DeleteGatewayReleaseWithResponse(ctx context.Context, arg1 Open
 	}
 	return response, nil
 }
-func (c *Client) GetGatewayReleaseWithResponse(ctx context.Context, arg1 OpenapiGatewayReleasesId) (*GetGatewayReleaseResponse, error) {
+func (c *Client) GetGatewayReleaseWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesId) (*GetGatewayReleaseResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -359,7 +364,7 @@ func (c *Client) GetGatewayReleaseWithResponse(ctx context.Context, arg1 Openapi
 	}
 	return response, nil
 }
-func (c *Client) UpdateGatewayReleaseWithResponse(ctx context.Context, arg1 OpenapiGatewayReleasesId, arg2 UpdateGatewayReleaseJSONRequestBody) (*UpdateGatewayReleaseResponse, error) {
+func (c *Client) UpdateGatewayReleaseWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewayReleasesId, arg2 UpdateGatewayReleaseJSONRequestBody) (*UpdateGatewayReleaseResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -410,7 +415,7 @@ func (c *Client) CreateGatewayWithResponse(ctx context.Context, arg1 CreateGatew
 	}
 	return response, nil
 }
-func (c *Client) ListGatewayServiceAccountsWithResponse(ctx context.Context, arg1 OpenapiServiceAccountsGatewayId, arg2 *ListGatewayServiceAccountsParams) (*ListGatewayServiceAccountsResponse, error) {
+func (c *Client) ListGatewayServiceAccountsWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId, arg2 *ListGatewayServiceAccountsParams) (*ListGatewayServiceAccountsResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -427,7 +432,7 @@ func (c *Client) ListGatewayServiceAccountsWithResponse(ctx context.Context, arg
 	}
 	return response, nil
 }
-func (c *Client) CreateGatewayServiceAccountWithResponse(ctx context.Context, arg1 OpenapiServiceAccountsGatewayId, arg2 CreateGatewayServiceAccountJSONRequestBody) (*CreateGatewayServiceAccountResponse, error) {
+func (c *Client) CreateGatewayServiceAccountWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId, arg2 CreateGatewayServiceAccountJSONRequestBody) (*CreateGatewayServiceAccountResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -444,7 +449,7 @@ func (c *Client) CreateGatewayServiceAccountWithResponse(ctx context.Context, ar
 	}
 	return response, nil
 }
-func (c *Client) DeleteGatewayServiceAccountWithResponse(ctx context.Context, arg1 OpenapiServiceAccountsGatewayId, arg2 OpenapiServiceAccountsServiceAccountId) (*DeleteGatewayServiceAccountResponse, error) {
+func (c *Client) DeleteGatewayServiceAccountWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId, arg2 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceAccountId) (*DeleteGatewayServiceAccountResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -461,7 +466,7 @@ func (c *Client) DeleteGatewayServiceAccountWithResponse(ctx context.Context, ar
 	}
 	return response, nil
 }
-func (c *Client) GetGatewayServiceAccountWithResponse(ctx context.Context, arg1 OpenapiServiceAccountsGatewayId, arg2 OpenapiServiceAccountsServiceAccountId) (*GetGatewayServiceAccountResponse, error) {
+func (c *Client) GetGatewayServiceAccountWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId, arg2 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceAccountId) (*GetGatewayServiceAccountResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -478,7 +483,7 @@ func (c *Client) GetGatewayServiceAccountWithResponse(ctx context.Context, arg1 
 	}
 	return response, nil
 }
-func (c *Client) RevokeGatewayServiceAccountWithResponse(ctx context.Context, arg1 OpenapiServiceAccountsGatewayId, arg2 OpenapiServiceAccountsServiceAccountId) (*RevokeGatewayServiceAccountResponse, error) {
+func (c *Client) RevokeGatewayServiceAccountWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsGatewayId, arg2 UnderscoreContractsReferenceOpenapiOpenapiServiceAccountsServiceAccountId) (*RevokeGatewayServiceAccountResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -495,7 +500,7 @@ func (c *Client) RevokeGatewayServiceAccountWithResponse(ctx context.Context, ar
 	}
 	return response, nil
 }
-func (c *Client) DeleteGatewayWithResponse(ctx context.Context, arg1 OpenapiGatewaysId) (*DeleteGatewayResponse, error) {
+func (c *Client) DeleteGatewayWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewaysId) (*DeleteGatewayResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -512,7 +517,7 @@ func (c *Client) DeleteGatewayWithResponse(ctx context.Context, arg1 OpenapiGate
 	}
 	return response, nil
 }
-func (c *Client) GetGatewayWithResponse(ctx context.Context, arg1 OpenapiGatewaysId) (*GetGatewayResponse, error) {
+func (c *Client) GetGatewayWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewaysId) (*GetGatewayResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -529,7 +534,7 @@ func (c *Client) GetGatewayWithResponse(ctx context.Context, arg1 OpenapiGateway
 	}
 	return response, nil
 }
-func (c *Client) UpdateGatewayWithResponse(ctx context.Context, arg1 OpenapiGatewaysId, arg2 UpdateGatewayJSONRequestBody) (*UpdateGatewayResponse, error) {
+func (c *Client) UpdateGatewayWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiGatewaysId, arg2 UpdateGatewayJSONRequestBody) (*UpdateGatewayResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -580,7 +585,7 @@ func (c *Client) CreateManagedClusterWithResponse(ctx context.Context, arg1 Crea
 	}
 	return response, nil
 }
-func (c *Client) DeleteManagedClusterWithResponse(ctx context.Context, arg1 OpenapiManagedClustersId) (*DeleteManagedClusterResponse, error) {
+func (c *Client) DeleteManagedClusterWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiManagedClustersId) (*DeleteManagedClusterResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -597,7 +602,7 @@ func (c *Client) DeleteManagedClusterWithResponse(ctx context.Context, arg1 Open
 	}
 	return response, nil
 }
-func (c *Client) GetManagedClusterWithResponse(ctx context.Context, arg1 OpenapiManagedClustersId) (*GetManagedClusterResponse, error) {
+func (c *Client) GetManagedClusterWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiManagedClustersId) (*GetManagedClusterResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -614,7 +619,7 @@ func (c *Client) GetManagedClusterWithResponse(ctx context.Context, arg1 Openapi
 	}
 	return response, nil
 }
-func (c *Client) UpdateManagedClusterWithResponse(ctx context.Context, arg1 OpenapiManagedClustersId, arg2 UpdateManagedClusterJSONRequestBody) (*UpdateManagedClusterResponse, error) {
+func (c *Client) UpdateManagedClusterWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiManagedClustersId, arg2 UpdateManagedClusterJSONRequestBody) (*UpdateManagedClusterResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -767,7 +772,7 @@ func (c *Client) CreateRoleBindingWithResponse(ctx context.Context, arg1 CreateR
 	}
 	return response, nil
 }
-func (c *Client) DeleteRoleBindingWithResponse(ctx context.Context, arg1 OpenapiRoleBindingsId) (*DeleteRoleBindingResponse, error) {
+func (c *Client) DeleteRoleBindingWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsId) (*DeleteRoleBindingResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -784,7 +789,7 @@ func (c *Client) DeleteRoleBindingWithResponse(ctx context.Context, arg1 Openapi
 	}
 	return response, nil
 }
-func (c *Client) GetRoleBindingWithResponse(ctx context.Context, arg1 OpenapiRoleBindingsId) (*GetRoleBindingResponse, error) {
+func (c *Client) GetRoleBindingWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiRoleBindingsId) (*GetRoleBindingResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}
@@ -818,7 +823,7 @@ func (c *Client) ListRolesWithResponse(ctx context.Context, arg1 *ListRolesParam
 	}
 	return response, nil
 }
-func (c *Client) GetRoleWithResponse(ctx context.Context, arg1 OpenapiRolesId) (*GetRoleResponse, error) {
+func (c *Client) GetRoleWithResponse(ctx context.Context, arg1 UnderscoreContractsReferenceOpenapiOpenapiRolesId) (*GetRoleResponse, error) {
 	if err := c.acquire(ctx); err != nil {
 		return nil, err
 	}

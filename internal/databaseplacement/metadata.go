@@ -49,18 +49,11 @@ func Read(header metadata.MD) (string, error) {
 	return cluster[0], nil
 }
 
-// Target selects an exact grant scope. An unassigned deployment database has
-// no valid target. CNPG uses its separate shared-provider scope.
+// Target selects the exact registered cluster. Unassigned records and removed
+// providers have no valid controller grant target.
 func Target(provider, cluster string) (string, error) {
-	switch provider {
-	case "deployment":
-		if validID(cluster) {
-			return cluster, nil
-		}
-	case "cnpg":
-		if cluster == "" {
-			return "cnpg", nil
-		}
+	if (provider == "cnpg" || provider == "external") && validID(cluster) {
+		return cluster, nil
 	}
 	return "", ErrContract
 }

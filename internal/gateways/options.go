@@ -29,15 +29,16 @@ type Options struct {
 
 const ProviderDeployment = "deployment"
 const ProviderCNPG = "cnpg"
+const ProviderExternal = "external"
 
 func resolveDatabaseProvider(raw string) (string, error) {
 	switch raw {
-	case "", ProviderDeployment:
-		return ProviderDeployment, nil
-	case ProviderCNPG:
+	case "", ProviderCNPG:
 		return ProviderCNPG, nil
+	case ProviderExternal:
+		return ProviderExternal, nil
 	default:
-		return "", errors.New("DATABASE_PROVIDER must be deployment or cnpg")
+		return "", errors.New("DATABASE_PROVIDER must be cnpg or external")
 	}
 }
 

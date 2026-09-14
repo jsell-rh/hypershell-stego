@@ -112,6 +112,13 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
 		t.Fatal(err)
 	}
+	migration, err = os.ReadFile("../migrations/000011_local_database_providers.sql")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := db.ExecContext(ctx, string(migration)); err != nil {
+		t.Fatal(err)
+	}
 	s, err := model.NewStore(orm)
 	if err != nil {
 		t.Fatal(err)
@@ -126,10 +133,12 @@ func databaseSetup(t testing.TB, seedPlacement bool) *fixture {
 		t.Fatal(err)
 	}
 	if seedPlacement {
+		if err := s.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"}); err != nil {
+			t.Fatal(err)
+		}
 		for entity, value := range map[string]any{
-			"ManagedCluster":  model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"},
 			"GatewayRelease":  model.GatewayRelease{Meta: model.Meta{ID: f.release}, Name: "release", Image: "registry.example/gateway:v1"},
-			"ManagedDatabase": model.ManagedDatabase{Meta: model.Meta{ID: f.database}, Name: "database", Provider: "cnpg", Namespace: databaseNamespace},
+			"ManagedDatabase": model.ManagedDatabase{Meta: model.Meta{ID: f.database}, Name: "database", Provider: "cnpg", ClusterID: &f.cluster, Namespace: databaseNamespace},
 		} {
 			if err := s.Create(ctx, entity, value); err != nil {
 				t.Fatal(err)

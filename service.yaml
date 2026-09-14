@@ -41,7 +41,7 @@ entities:
     cleanup_owners: [provider]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 261 }
-      - { name: provider, type: enum, values: [cnpg, deployment] }
+      - { name: provider, type: enum, values: [cnpg, external] }
       - { name: namespace, type: string, min_length: 1, max_length: 29, unique: true }
       - { name: region, type: string, optional: true, max_length: 255 }
       - { name: engine, type: string, optional: true, max_length: 64 }
@@ -266,8 +266,10 @@ overrides:
     service_name: hypershell-web-console
   typescript-sdk:
     error_codes: [service_account_name_exists]
-    document: contracts/reference/openapi/openapi.yaml
+    document: contracts/extensions/openapi.yaml
     references:
+      - contracts/extensions/openapi.managedDatabases.yaml
+      - contracts/reference/openapi/openapi.yaml
       - contracts/reference/openapi/openapi.gatewayNetworks.yaml
       - contracts/reference/openapi/openapi.gatewayReleases.yaml
       - contracts/reference/openapi/openapi.gateways.yaml
@@ -277,8 +279,10 @@ overrides:
       - contracts/reference/openapi/openapi.roles.yaml
       - contracts/reference/openapi/openapi.serviceAccounts.yaml
   go-sdk:
-    document: contracts/reference/openapi/openapi.yaml
+    document: contracts/extensions/openapi.yaml
     references:
+      - contracts/extensions/openapi.managedDatabases.yaml
+      - contracts/reference/openapi/openapi.yaml
       - contracts/reference/openapi/openapi.gatewayNetworks.yaml
       - contracts/reference/openapi/openapi.gatewayReleases.yaml
       - contracts/reference/openapi/openapi.gateways.yaml
@@ -320,7 +324,7 @@ overrides:
         import_path: hypershell/v1/managed_clusters.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_releases.proto
         import_path: hypershell/v1/gateway_releases.proto
-      - path: contracts/reference/proto/hypershell/v1/managed_databases.proto
+      - path: contracts/extensions/managed_databases.proto
         import_path: hypershell/v1/managed_databases.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_networks.proto
         import_path: hypershell/v1/gateway_networks.proto

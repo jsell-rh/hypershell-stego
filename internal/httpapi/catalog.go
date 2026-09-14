@@ -144,6 +144,7 @@ func presentGatewayRelease(row model.GatewayRelease) GatewayRelease {
 }
 
 type ManagedDatabase struct {
+	ClusterID *string `json:"cluster_id,omitempty"`
 	Reference
 	Name             string  `json:"name"`
 	Provider         string  `json:"provider"`
@@ -157,7 +158,7 @@ type ManagedDatabase struct {
 }
 
 func presentManagedDatabase(row model.ManagedDatabase) ManagedDatabase {
-	return ManagedDatabase{Reference: Reference{ID: row.ID, Kind: "ManagedDatabase", Href: "/api/hypershell/v1/managed_databases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Provider: row.Provider, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
+	return ManagedDatabase{Reference: Reference{ID: row.ID, Kind: "ManagedDatabase", Href: "/api/hypershell/v1/managed_databases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Provider: row.Provider, ClusterID: row.ClusterID, Namespace: row.Namespace, Region: row.Region, Engine: row.Engine, EngineVersion: row.EngineVersion, InstanceClass: row.InstanceClass, ConnectionSecret: row.ConnectionSecret, Status: row.Status}
 }
 
 type GatewayNetwork struct {

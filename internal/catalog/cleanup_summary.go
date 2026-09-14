@@ -17,7 +17,7 @@ func (r *Resource[T, C, P]) CleanupSummary(ctx context.Context, p gateways.Princ
 	if err := r.authorize(p, false); err != nil {
 		return result, err
 	}
-	if r.entity != "ManagedDatabase" || owner != "provider" || (provider != "deployment" && provider != "cnpg") {
+	if r.entity != "ManagedDatabase" || owner != "provider" || (provider != "external" && provider != "cnpg") {
 		return result, gateways.ErrInvalid
 	}
 	target, err := databaseplacement.Target(provider, cluster)
@@ -33,10 +33,7 @@ func (r *Resource[T, C, P]) CleanupSummary(ctx context.Context, p gateways.Princ
 			return errors.New("catalog storage has no cleanup summary reader")
 		}
 		var err error
-		field, value := "provider", provider
-		if provider == "deployment" {
-			field, value = "cluster_id", cluster
-		}
+		field, value := "cluster_id", cluster
 		result, err = reader.ReadCleanupSummary(ctx, r.entity, owner, "", field, value)
 		return err
 	})

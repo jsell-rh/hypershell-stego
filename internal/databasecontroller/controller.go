@@ -52,7 +52,7 @@ func Source(api pb.ManagedDatabaseServiceClient) (runtime.Source[string], error)
 }
 
 func New(api pb.ManagedDatabaseServiceClient, cleanup control.DatabaseCleanupServiceClient, cluster string, provider Provider) (*Controller, error) {
-	return NewForProvider(api, cleanup, "deployment", cluster, provider)
+	return NewForProvider(api, cleanup, "cnpg", cluster, provider)
 }
 
 // NewForProvider binds this controller to one database provider.
@@ -237,9 +237,6 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			return err
 		}
 		patch := &pb.UpdateManagedDatabaseRequest{Id: id, Status: proto.String("ready")}
-		if c.providerName == "deployment" {
-			patch.ConnectionSecret = proto.String(CredentialsName)
-		}
 		if db.GetStatus() == "ready" && (patch.ConnectionSecret == nil || db.GetConnectionSecret() == *patch.ConnectionSecret) {
 			return nil
 		}

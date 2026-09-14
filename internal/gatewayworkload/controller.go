@@ -251,7 +251,7 @@ func (c *Controller) database(ctx context.Context, id, cluster string) (*pb.Mana
 	if _, err := databaseplacement.Target(row.GetProvider(), placement); err != nil {
 		return nil, false, err
 	}
-	if row.GetProvider() == gateways.ProviderDeployment && placement != cluster {
+	if placement != cluster {
 		return nil, false, errors.New("Gateway database belongs to a different cluster")
 	}
 	return row, deleted, nil

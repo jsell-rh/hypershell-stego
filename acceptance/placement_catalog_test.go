@@ -28,6 +28,7 @@ import (
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
+	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func TestPlacementDescriptorsMatchReference(t *testing.T) {
@@ -42,6 +43,36 @@ func TestPlacementDescriptorsMatchReference(t *testing.T) {
 		expected.Options.GoPackage = nil
 		actual.SourceCodeInfo = nil
 		expected.SourceCodeInfo = nil
+		// The application adds only the documented database locality fields.
+		if descriptor.Path() == "hypershell/v1/managed_databases.proto" {
+			fields := map[string]int32{"ManagedDatabase": 12, "CreateManagedDatabaseRequest": 10, "UpdateManagedDatabaseRequest": 11}
+			seen := 0
+			for _, message := range actual.MessageType {
+				number, extended := fields[message.GetName()]
+				if !extended {
+					continue
+				}
+				if len(message.Field) == 0 {
+					t.Fatal("database locality field missing")
+				}
+				field := message.Field[len(message.Field)-1]
+				optional := message.GetName() != "CreateManagedDatabaseRequest"
+				if field.GetName() != "cluster_id" || field.GetJsonName() != "clusterId" || field.GetNumber() != number || field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING || field.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL || field.GetProto3Optional() != optional {
+					t.Fatal("database locality wire extension changed")
+				}
+				if optional {
+					if field.OneofIndex == nil || int(field.GetOneofIndex()) != len(message.OneofDecl)-1 || message.OneofDecl[len(message.OneofDecl)-1].GetName() != "_cluster_id" {
+						t.Fatal("database locality presence changed")
+					}
+					message.OneofDecl = message.OneofDecl[:len(message.OneofDecl)-1]
+				}
+				message.Field = message.Field[:len(message.Field)-1]
+				seen++
+			}
+			if seen != 3 {
+				t.Fatal("database locality extension is incomplete")
+			}
+		}
 		if !proto.Equal(actual, expected) {
 			t.Fatal("catalog wire contract changed", descriptor.Path())
 		}

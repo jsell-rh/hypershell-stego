@@ -35,6 +35,7 @@ type ManagedDatabase struct {
 	ConnectionSecret *string                `protobuf:"bytes,9,opt,name=connection_secret,json=connectionSecret,proto3,oneof" json:"connection_secret,omitempty"`
 	Status           *string                `protobuf:"bytes,10,opt,name=status,proto3,oneof" json:"status,omitempty"`
 	Namespace        string                 `protobuf:"bytes,11,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	ClusterId        *string                `protobuf:"bytes,12,opt,name=cluster_id,json=clusterId,proto3,oneof" json:"cluster_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -139,6 +140,13 @@ func (x *ManagedDatabase) GetNamespace() string {
 	return ""
 }
 
+func (x *ManagedDatabase) GetClusterId() string {
+	if x != nil && x.ClusterId != nil {
+		return *x.ClusterId
+	}
+	return ""
+}
+
 type CreateManagedDatabaseRequest struct {
 	state            protoimpl.MessageState `protogen:"open.v1"`
 	Name             string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
@@ -149,6 +157,7 @@ type CreateManagedDatabaseRequest struct {
 	InstanceClass    *string                `protobuf:"bytes,7,opt,name=instance_class,json=instanceClass,proto3,oneof" json:"instance_class,omitempty"`
 	ConnectionSecret *string                `protobuf:"bytes,8,opt,name=connection_secret,json=connectionSecret,proto3,oneof" json:"connection_secret,omitempty"`
 	Status           *string                `protobuf:"bytes,9,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	ClusterId        string                 `protobuf:"bytes,10,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -235,6 +244,13 @@ func (x *CreateManagedDatabaseRequest) GetConnectionSecret() string {
 func (x *CreateManagedDatabaseRequest) GetStatus() string {
 	if x != nil && x.Status != nil {
 		return *x.Status
+	}
+	return ""
+}
+
+func (x *CreateManagedDatabaseRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
 	}
 	return ""
 }
@@ -382,6 +398,7 @@ type UpdateManagedDatabaseRequest struct {
 	InstanceClass    *string                `protobuf:"bytes,8,opt,name=instance_class,json=instanceClass,proto3,oneof" json:"instance_class,omitempty"`
 	ConnectionSecret *string                `protobuf:"bytes,9,opt,name=connection_secret,json=connectionSecret,proto3,oneof" json:"connection_secret,omitempty"`
 	Status           *string                `protobuf:"bytes,10,opt,name=status,proto3,oneof" json:"status,omitempty"`
+	ClusterId        *string                `protobuf:"bytes,11,opt,name=cluster_id,json=clusterId,proto3,oneof" json:"cluster_id,omitempty"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
@@ -475,6 +492,13 @@ func (x *UpdateManagedDatabaseRequest) GetConnectionSecret() string {
 func (x *UpdateManagedDatabaseRequest) GetStatus() string {
 	if x != nil && x.Status != nil {
 		return *x.Status
+	}
+	return ""
+}
+
+func (x *UpdateManagedDatabaseRequest) GetClusterId() string {
+	if x != nil && x.ClusterId != nil {
+		return *x.ClusterId
 	}
 	return ""
 }
@@ -807,7 +831,7 @@ var File_hypershell_v1_managed_databases_proto protoreflect.FileDescriptor
 
 const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\n" +
-	"%hypershell/v1/managed_databases.proto\x12\rhypershell.v1\x1a\x1ahypershell/v1/common.proto\"\xe9\x03\n" +
+	"%hypershell/v1/managed_databases.proto\x12\rhypershell.v1\x1a\x1ahypershell/v1/common.proto\"\x9c\x04\n" +
 	"\x0fManagedDatabase\x12:\n" +
 	"\bmetadata\x18\x01 \x01(\v2\x1e.hypershell.v1.ObjectReferenceR\bmetadata\x12\x12\n" +
 	"\x04name\x18\x02 \x01(\tR\x04name\x12\x1a\n" +
@@ -819,13 +843,16 @@ const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\x11connection_secret\x18\t \x01(\tH\x04R\x10connectionSecret\x88\x01\x01\x12\x1b\n" +
 	"\x06status\x18\n" +
 	" \x01(\tH\x05R\x06status\x88\x01\x01\x12\x1c\n" +
-	"\tnamespace\x18\v \x01(\tR\tnamespaceB\t\n" +
+	"\tnamespace\x18\v \x01(\tR\tnamespace\x12\"\n" +
+	"\n" +
+	"cluster_id\x18\f \x01(\tH\x06R\tclusterId\x88\x01\x01B\t\n" +
 	"\a_regionB\t\n" +
 	"\a_engineB\x11\n" +
 	"\x0f_engine_versionB\x11\n" +
 	"\x0f_instance_classB\x14\n" +
 	"\x12_connection_secretB\t\n" +
-	"\a_statusJ\x04\b\x03\x10\x04R\bfleet_id\"\x9c\x03\n" +
+	"\a_statusB\r\n" +
+	"\v_cluster_idJ\x04\b\x03\x10\x04R\bfleet_id\"\xbb\x03\n" +
 	"\x1cCreateManagedDatabaseRequest\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1a\n" +
 	"\bprovider\x18\x03 \x01(\tR\bprovider\x12\x1b\n" +
@@ -834,7 +861,10 @@ const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\x0eengine_version\x18\x06 \x01(\tH\x02R\rengineVersion\x88\x01\x01\x12*\n" +
 	"\x0einstance_class\x18\a \x01(\tH\x03R\rinstanceClass\x88\x01\x01\x120\n" +
 	"\x11connection_secret\x18\b \x01(\tH\x04R\x10connectionSecret\x88\x01\x01\x12\x1b\n" +
-	"\x06status\x18\t \x01(\tH\x05R\x06status\x88\x01\x01B\t\n" +
+	"\x06status\x18\t \x01(\tH\x05R\x06status\x88\x01\x01\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\n" +
+	" \x01(\tR\tclusterIdB\t\n" +
 	"\a_regionB\t\n" +
 	"\a_engineB\x11\n" +
 	"\x0f_engine_versionB\x11\n" +
@@ -846,7 +876,7 @@ const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\x19GetManagedDatabaseRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"g\n" +
 	"\x1aGetManagedDatabaseResponse\x12I\n" +
-	"\x10managed_database\x18\x01 \x01(\v2\x1e.hypershell.v1.ManagedDatabaseR\x0fmanagedDatabase\"\xcc\x03\n" +
+	"\x10managed_database\x18\x01 \x01(\v2\x1e.hypershell.v1.ManagedDatabaseR\x0fmanagedDatabase\"\xff\x03\n" +
 	"\x1cUpdateManagedDatabaseRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x17\n" +
 	"\x04name\x18\x02 \x01(\tH\x00R\x04name\x88\x01\x01\x12\x1f\n" +
@@ -857,7 +887,9 @@ const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\x0einstance_class\x18\b \x01(\tH\x05R\rinstanceClass\x88\x01\x01\x120\n" +
 	"\x11connection_secret\x18\t \x01(\tH\x06R\x10connectionSecret\x88\x01\x01\x12\x1b\n" +
 	"\x06status\x18\n" +
-	" \x01(\tH\aR\x06status\x88\x01\x01B\a\n" +
+	" \x01(\tH\aR\x06status\x88\x01\x01\x12\"\n" +
+	"\n" +
+	"cluster_id\x18\v \x01(\tH\bR\tclusterId\x88\x01\x01B\a\n" +
 	"\x05_nameB\v\n" +
 	"\t_providerB\t\n" +
 	"\a_regionB\t\n" +
@@ -865,7 +897,8 @@ const file_hypershell_v1_managed_databases_proto_rawDesc = "" +
 	"\x0f_engine_versionB\x11\n" +
 	"\x0f_instance_classB\x14\n" +
 	"\x12_connection_secretB\t\n" +
-	"\a_statusJ\x04\b\x03\x10\x04R\bfleet_id\"j\n" +
+	"\a_statusB\r\n" +
+	"\v_cluster_idJ\x04\b\x03\x10\x04R\bfleet_id\"j\n" +
 	"\x1dUpdateManagedDatabaseResponse\x12I\n" +
 	"\x10managed_database\x18\x01 \x01(\v2\x1e.hypershell.v1.ManagedDatabaseR\x0fmanagedDatabase\".\n" +
 	"\x1cDeleteManagedDatabaseRequest\x12\x0e\n" +

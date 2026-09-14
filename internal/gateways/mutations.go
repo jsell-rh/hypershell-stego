@@ -106,9 +106,9 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 			if !ok {
 				return errors.New("unexpected database storage result")
 			}
-			// Deployment credentials and data stay in their assigned cluster.
+			// Database credentials and data stay in their assigned cluster.
 			// A normal Gateway patch cannot perform a database migration.
-			if database.Provider == ProviderDeployment {
+			if database.ClusterID == nil || *database.ClusterID != current.ClusterID {
 				return store.ErrConflict
 			}
 		}

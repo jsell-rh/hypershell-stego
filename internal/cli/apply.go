@@ -12,7 +12,7 @@ func applyResources(commands []command.Command) []command.ApplyResource {
 		{"Gateway", "gateways", []string{"name", "cluster_id", "release_id", "database_id"}},
 		{"ManagedCluster", "managed_clusters", []string{"name", "provider", "kubeconfig_secret"}},
 		{"GatewayRelease", "gateway_releases", []string{"name", "image"}},
-		{"ManagedDatabase", "managed_databases", []string{"name", "provider"}},
+		{"ManagedDatabase", "managed_databases", []string{"name", "provider", "cluster_id"}},
 		{"GatewayNetwork", "gateway_networks", []string{"name"}},
 	}
 	var resources []command.ApplyResource
