@@ -1,0 +1,60 @@
+name: Gateway API on jshell
+
+on:
+  workflow_dispatch:
+  push:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jshell-live-tests
+  cancel-in-progress: false
+
+jobs:
+  gateway-api:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Install the pinned OpenShift client
+        timeout-minutes: 3
+        run: |
+          mkdir -p "$RUNNER_TEMP/oc"
+          curl --fail --silent --show-error --connect-timeout 15 --max-time 120 \
+            https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.22.12/openshift-client-linux-4.22.12.tar.gz \
+            --output "$RUNNER_TEMP/oc/client.tar.gz"
+          cd "$RUNNER_TEMP/oc"
+          echo '0234aed5f4f13fbd0ff693c9eb8011bbfd97f1829296157c39810494b98cf84c  client.tar.gz' | sha256sum --check
+          tar xf client.tar.gz oc
+          echo "$RUNNER_TEMP/oc" >> "$GITHUB_PATH"
+      - name: Write the private CI credential
+        env:
+          CI_KUBECONFIG: ${{ secrets.JSHELL_CI_KUBECONFIG }}
+        run: |
+          test -n "$CI_KUBECONFIG"
+          umask 077
+          printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Run the Gateway API gate
+        run: |
+          python3 scripts/check-jshell-gateway.py \
+            --kubeconfig="$RUNNER_TEMP/jshell.kubeconfig" --context=jshell-ci \
+            --results="$RUNNER_TEMP/gateway-api"
+      - name: Remove the local credential
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: gateway-api-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/gateway-api/*.json
+            ${{ runner.temp }}/gateway-api/*.jsonl
+            ${{ runner.temp }}/gateway-api/*.log
+            ${{ runner.temp }}/gateway-api/*.sha256
+            ${{ runner.temp }}/gateway-api/generated.tar
+          retention-days: 7
+          if-no-files-found: error

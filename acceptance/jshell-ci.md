@@ -72,14 +72,15 @@ The CNPG run then removed its resources and released the Lease.
 The service runner's lock and cleanup changes passed shell syntax checks and
 Python parsing. They have not had a new full service deployment run.
 
-The old GitHub Kubernetes jobs still use kind. Their standard Docker nodes
+The old GitHub Kubernetes jobs used kind. Their standard Docker nodes
 are privileged, which conflicts with this repository's container rule.
 See the [kind Docker provider](https://github.com/kubernetes-sigs/kind/blob/main/pkg/cluster/internal/providers/docker/provision.go).
 This is a restriction of the current test setup, not a claim that kind cannot
 support other setups.
 
-The replacement workflows, operator-owned fixture provisioning, automatic
-credential renewal, and the remaining workload fixture conversions are still
-open. Do not give the CI identity cluster-admin access to complete that work.
-Do not treat the old failed CI jobs as passed. The setup commits use
-`[skip ci]` to avoid starting the prohibited old kind jobs during conversion.
+The [Gateway API workflow](jshell-gateway-ci.md) now uses the restricted identity.
+Operator-owned workload fixture provisioning, automatic credential renewal,
+and the remaining workload fixture conversions are still open. Do not give the CI identity cluster-admin access to complete that work.
+Do not treat the old failed CI jobs as passed. The first setup commits used `[skip ci]` to avoid starting the prohibited old
+kind jobs. The old installer is now removed. Unconverted selectors fail
+explicitly, so a later push cannot start privileged kind nodes.
