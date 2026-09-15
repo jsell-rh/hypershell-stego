@@ -1,0 +1,189 @@
+{
+  "previous_application_commit": "09e941de4a959a9039892fa62141d8bf000a8388",
+  "compiler_revision": "2097bea6e155a889c48514e640507cae26bb3037",
+  "result": "success",
+  "targets": [
+    {
+      "target": "api",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 4,
+          "sha256": "4e33685eb5d42756c7916b41db4f954473736f7002d919e89b70ded067cd0125"
+        },
+        "cluster": {
+          "objects": 0,
+          "sha256": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806"
+        },
+        "namespace": {
+          "objects": 4,
+          "sha256": "4e33685eb5d42756c7916b41db4f954473736f7002d919e89b70ded067cd0125"
+        }
+      }
+    },
+    {
+      "target": "console",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 4,
+          "sha256": "84d84eb338cbb13e51a5edbc729871393252fe1ef6ae73852bdfcb55ac831833"
+        },
+        "cluster": {
+          "objects": 0,
+          "sha256": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806"
+        },
+        "namespace": {
+          "objects": 4,
+          "sha256": "84d84eb338cbb13e51a5edbc729871393252fe1ef6ae73852bdfcb55ac831833"
+        }
+      }
+    },
+    {
+      "target": "provisioner",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 4,
+          "sha256": "7b1ceb751c91c05fbe13f412fe8421a578f367782cd25ad5b0dd1d26c4572285"
+        },
+        "cluster": {
+          "objects": 0,
+          "sha256": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806"
+        },
+        "namespace": {
+          "objects": 4,
+          "sha256": "7b1ceb751c91c05fbe13f412fe8421a578f367782cd25ad5b0dd1d26c4572285"
+        }
+      }
+    },
+    {
+      "target": "namespace-allocation",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 17,
+          "sha256": "971211d3c6af1074cce467c80cdd846eafe460ed46122ab69ddd8072412e0cd5"
+        },
+        "cluster": {
+          "objects": 14,
+          "sha256": "294d17ba070a6a436cc926f9b11a1cf7c273eb59c8bac466b695b1089fc18906"
+        },
+        "namespace": {
+          "objects": 3,
+          "sha256": "8e1c763b9c815c073e889d49d84cb9f1219782c1cc8405fabbf858f2890bf01c"
+        }
+      }
+    },
+    {
+      "target": "gateway-workload",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 5,
+          "sha256": "b8eea987131c6e8956184e90f8df08dae45133fe7b774637b69b8899d89be740"
+        },
+        "cluster": {
+          "objects": 2,
+          "sha256": "1ffeb5a0418248358fbf80359d1c8b8b1eed77b9b194116dac218cb50aa5cccf"
+        },
+        "namespace": {
+          "objects": 3,
+          "sha256": "a5d903c1db45249dcd86aa7dbaacc6f9b8d471c7f9a0a05b3d3f9b609f9ddadc"
+        }
+      }
+    },
+    {
+      "target": "gateway-identity",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 3,
+          "sha256": "8eef9224c4e58e3d02efdff95dc121c971ca93ca3a1ce0cb6a48d6c98b5fb126"
+        },
+        "cluster": {
+          "objects": 0,
+          "sha256": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806"
+        },
+        "namespace": {
+          "objects": 3,
+          "sha256": "8eef9224c4e58e3d02efdff95dc121c971ca93ca3a1ce0cb6a48d6c98b5fb126"
+        }
+      }
+    },
+    {
+      "target": "sandbox-count",
+      "default_matches_previous": true,
+      "repeated_scopes_match": true,
+      "object_content_and_order_match": true,
+      "invalid_scope_emits_no_output": true,
+      "scopes": {
+        "all": {
+          "objects": 5,
+          "sha256": "01c34315a8baaba515653d2ef32d7f80b1a93c45b509bc7c97647207a4038f27"
+        },
+        "cluster": {
+          "objects": 2,
+          "sha256": "70b5e598d7d60030b62a2d567b5b444d21777ea375827ad79b4204e8b12e52fb"
+        },
+        "namespace": {
+          "objects": 3,
+          "sha256": "a188c027044bce1ae347b8baab51d22b953f37087fb9c4936a4dd911b86725f6"
+        }
+      }
+    }
+  ],
+  "missing_required_endpoints_rejected": true,
+  "limits": [
+    "This check only renders manifests. It does not install resources or prove restricted CI permissions."
+  ],
+  "compiler_build": {
+    "go_version": "go1.26.8",
+    "goos": "linux",
+    "goarch": "amd64",
+    "module_version": "v0.0.0-20260915040650-2097bea6e155",
+    "vcs": "git",
+    "revision": "2097bea6e155a889c48514e640507cae26bb3037",
+    "source_state": "clean"
+  },
+  "generation": {
+    "files": 228,
+    "first_sha256": "d03e2e1bede31634637273ca06205a06df6f78a56ea8048ee7cbd230c797b8b3",
+    "second_sha256": "d03e2e1bede31634637273ca06205a06df6f78a56ea8048ee7cbd230c797b8b3",
+    "drift": "No drift in API or console output."
+  },
+  "check_script_sha256": "515246329dd753dd13b979a2e9b228ee6d3e702e79fc05f7bcf3caf5ea3ddc78",
+  "output_source_sha256": {
+    "out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+    "console/out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+    "registry/components/kubernetes-service/component.yaml": "39750a3fb0aeca7e7d2e5eb35e2f7c0999fb5769f2ad1fcfb7f9c5db273c9f17"
+  },
+  "execution": {
+    "location": "Developer workstation",
+    "build_parallelism": 1,
+    "go_memory_target": "256MiB",
+    "maximum_compiler_build_seconds": 90,
+    "maximum_renderer_build_seconds": 30,
+    "maximum_render_seconds": 5,
+    "cluster_requests": 0,
+    "performance_or_stress_test": false
+  }
+}
