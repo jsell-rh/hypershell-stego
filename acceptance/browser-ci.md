@@ -68,3 +68,10 @@ are pending results. See the [verified evidence](browser-ci-evidence.json).
 The fixed namespace retains six test image streams. Registry retention is
 outside this cleanup proof. The browser fixture has no external connection
 endpoint; its screenshots do not prove external connectivity.
+
+Both jshell workflows use `queue: max` in the same concurrency group. New pushes
+must not replace a required pending API or browser run. One run remains active
+at a time, and the shared cluster Lease remains the second guard. GitHub documents
+a limit of 100 pending entries for this setting; a full queue rejects new runs.
+See [the queue contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
+An expired CI credential still stops a run. A queued run is not a passing check.
