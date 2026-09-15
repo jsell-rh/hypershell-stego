@@ -190,6 +190,11 @@ are not replayed. The regression first failed on the old reader. Twelve small
 installation checks and six workflow checks now pass. These changes affect the
 test installer; production controller permissions and runtime code are unchanged.
 
+The browser runner now allows 300 seconds for Pod startup after autoscaling.
+Its total Job deadline, CPU and memory limits, and CNPG lifetimes are unchanged.
+Shell syntax and six browser CI boundary checks passed. The next complete CNPG
+run must verify both fixture corrections before they are treated as proven.
+
 This source includes the verified viewer and account checks, the cleanup read
 retry, and the new credential check before installation. Eight credential
 checks, six CNPG workflow checks, six server fixture checks, and four operator

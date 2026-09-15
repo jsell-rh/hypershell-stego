@@ -181,7 +181,8 @@ for file in "$results/private-job.json" "$results/server.key"; do
     [[ ! -e $file ]] || unlink -- "$file"
   done
 "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for='jsonpath={.status.active}=1' job/service-check --timeout=180s
-"${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Ready pod -l job-name=service-check --timeout=180s
+# Allow node startup after autoscaling. The Job keeps its total time limit.
+"${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Ready pod -l job-name=service-check --timeout=300s
 pod=$("${oc_cmd[@]}" -n "$namespace" get pod -l job-name=service-check -o jsonpath='{.items[0].metadata.name}')
 # The test can restart only its own database sidecar and the identity fixture.
 # Bind exec permission to this exact Pod name before the frozen test starts.
