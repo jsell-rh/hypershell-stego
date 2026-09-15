@@ -165,11 +165,11 @@ def main():
         # Read absence after the inner runner returns. Do not tear down the
         # server if an application process or Gateway allocation remains.
         for kind in ['jobs', 'pods', 'deployments']:
-            active = installation.oc('-n', namespace, 'get', kind, '-o', 'json')
+            active = installation.oc('get', kind, '-n', namespace, '-o', 'json')
             if active['items']:
                 raise RuntimeError('Application resources remain; keep the CNPG server and Lease')
         for kind in ['secrets', 'services', 'networkpolicies', 'configmaps']:
-            remaining = installation.oc('-n', namespace, 'get', kind, '-l', 'stego.test/browser-run=' + namespace, '-o', 'json')
+            remaining = installation.oc('get', kind, '-n', namespace, '-l', 'stego.test/browser-run=' + namespace, '-o', 'json')
             if remaining['items']:
                 raise RuntimeError('Application test data remains; keep the CNPG server and Lease')
         marker = hashlib.sha256((namespace + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]

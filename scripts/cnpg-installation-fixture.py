@@ -106,7 +106,9 @@ class Installation:
 
     def oc(self, *words, data=None):
         # Secret contents and raw server errors must not enter public evidence.
-        read = bool(words) and words[0] == 'get'
+        if not words or words[0] not in {'get', 'create', 'patch', 'scale', 'delete'}:
+            raise ValueError('Require a supported CNPG installation operation first')
+        read = words[0] == 'get'
         attempts = 3 if read else 1
         for attempt in range(attempts):
             try:
@@ -131,8 +133,7 @@ class Installation:
             except (OSError, subprocess.SubprocessError, ValueError, RuntimeError):
                 if attempt + 1 == attempts:
                     budget = 'three attempts' if read else 'one attempt'
-                    operation = words[0] if words else 'empty command'
-                    raise RuntimeError('CNPG installation request failed after ' + budget + ': ' + operation) from None
+                    raise RuntimeError('CNPG installation request failed after ' + budget + ': ' + words[0]) from None
             time.sleep(attempt + 1)
 
     def get(self, kind, name, namespace=None):

@@ -84,6 +84,14 @@ class InstallationTests(unittest.TestCase):
                     installation.oc('get', 'pods', '-o', 'json')
                 self.assertEqual(calls.call_count, 3)
 
+    def test_operation_cannot_be_hidden_after_flags(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            with patch.object(fixture.subprocess, 'run') as call:
+                with self.assertRaisesRegex(ValueError, 'operation first'):
+                    installation.oc('-n', 'stego-service-ci', 'get', 'pods', '-o', 'json')
+                call.assert_not_called()
+
     def test_server_scope_limits_and_tls(self):
         items = fixture.definitions('stego-service-ci', 'stego-cnpg-database-ci', 'gp3-csi', [('192.0.2.1', 6443), ('192.0.2.2', 443)])
         self.assertFalse(any(o['kind'] in ['ClusterRole', 'ClusterRoleBinding'] for o in items))
