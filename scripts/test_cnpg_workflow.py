@@ -150,6 +150,11 @@ class CNPGWorkflowTests(unittest.TestCase):
             after = self.render(directory, '1')
         original = next(o for o in before['items'] if o['kind'] == 'Job')['spec']['template']['spec']
         changed = next(o for o in after['items'] if o['kind'] == 'Job')['spec']['template']['spec']
+        # The shared network profile does not select CNPG credentials. The
+        # external database test must keep its original SQL fixture.
+        self.assertFalse(any(v['name'] == 'cnpg-fixture' for v in original['volumes']))
+        self.assertFalse(any(v['name'] == 'STEGO_TEST_GATEWAY_SQL_FIXTURE_FILE'
+                             for v in original['containers'][0]['env']))
         self.assertEqual(changed['volumes'].pop(), {'name': 'cnpg-fixture', 'secret': {'secretName': 'cnpg-credentials', 'defaultMode': 0o440}})
         test = changed['containers'][0]
         self.assertEqual(test['volumeMounts'].pop(), {'name': 'cnpg-fixture', 'mountPath': '/cnpg-installation', 'readOnly': True})

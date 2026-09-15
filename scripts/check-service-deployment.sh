@@ -36,6 +36,9 @@ fi
 # Check lifetime before acquiring a Lease or changing the test installation.
 if [[ $preinstalled == 1 ]]; then
   python3 scripts/ci_credentials.py --context "$STEGO_TEST_CONTEXT" --gate browser
+  # Read the fixed profile before taking the shared Lease. Prepare checks it
+  # again under the Lease before any Role or workload change.
+  python3 scripts/browser-ci-installation.py inspect --context "$STEGO_TEST_CONTEXT" --results "$results"
 fi
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"

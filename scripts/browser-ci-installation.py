@@ -62,7 +62,7 @@ def fixture_document(root, directory, issuer):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['prepare', 'verify', 'cleanup'])
+    parser.add_argument('action', choices=['inspect', 'prepare', 'verify', 'cleanup'])
     parser.add_argument('--context', required=True)
     parser.add_argument('--results', required=True, type=Path)
     args = parser.parse_args()
@@ -100,7 +100,7 @@ def main():
             observed.add(key)
     if observed != set(ids) or len(ids) != 18:
         raise RuntimeError('The cluster installation inventory differs')
-    if args.action == 'prepare':
+    if args.action in {'inspect', 'prepare'}:
         for name in ['kubernetes-endpoints.json', 'kubernetes-service.json']:
             (args.results / name).write_text(data[name])
         (args.results / 'operator-cluster-installation.json').write_text(data['cluster-installation.json'])
@@ -117,6 +117,9 @@ def main():
         # checks limit the CI identity to permissions it already has here.
         fixture = fixture_document(root, args.results, data['issuer'])
         verify_fixture_network(fixture, get)
+        if args.action == 'inspect':
+            print('Browser CI installation inspected without cluster writes')
+            return
         desired = next(i for i in fixture['items'] if i['kind'] == 'Role' and i['metadata']['name'] == 'service-check')
         current = get('role', 'service-check', NAMESPACE)
         patch = [{'op': 'test', 'path': '/metadata/uid', 'value': current['metadata']['uid']}, {'op': 'test', 'path': '/metadata/resourceVersion', 'value': current['metadata']['resourceVersion']}, {'op': 'replace', 'path': '/rules', 'value': desired['rules']}]

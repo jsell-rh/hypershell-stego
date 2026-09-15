@@ -276,3 +276,30 @@ CI's clean generation. No compiler code or pin changed. Both applications report
 no generated drift. The failed Gateway Job and its Pods and fixture resources
 were removed; its two early passes do not count as the complete 32-test gate.
 The next CI run must execute the remaining workflow checks.
+
+## Shared CI network profile
+
+The corrected browser run `35035648970` passed source preparation, then rejected
+an external-database fixture that omitted the operator's installed CNPG network
+peer. The fixed installation already permits the fixture PostgreSQL service and
+one CNPG namespace, Cluster label, and SQL port. The external browser workflow
+now generates that exact installed network profile. It explicitly sets
+`STEGO_TEST_CNPG_FIXTURE=0`, so it still uses the external PostgreSQL fixture and
+does not mount CNPG credentials. No cluster policy or permission was changed.
+
+A new read-only installation inspection runs before the shared Lease is taken.
+Preparation repeats the check under the Lease before any Role or workload write.
+Eight CI boundary tests passed, including profile mismatch and no cluster writes
+or credential-file creation during inspection. Seven CNPG fixture tests passed;
+they confirm that a CNPG network profile alone does not select CNPG credentials.
+The changed shell script passed syntax validation.
+
+The failed preflight retained Lease UID
+`473d5b75-ff67-413c-8ae7-b22f70770c59`. The operator checked that Jobs, Pods,
+deployments, StatefulSets, claims, allocation namespaces, and allocation cluster
+bindings were absent, then released resource version `6505030` with UID, version,
+and holder checks. The audit is saved in
+`/home/jsell/.local/state/stego/runs/keycloak-hypershell-credential-20260915/read-browser-ci/operator-cleanup-audit.json`.
+Gateway API run `35035648971` had already stopped because that Lease was held;
+it did not execute the Gateway tests. The full CNPG and application checks at
+`fff749b` remain active. The profile correction still needs a live browser run.

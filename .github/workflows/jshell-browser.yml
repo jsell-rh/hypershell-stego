@@ -53,7 +53,8 @@ jobs:
           git -C "$RUNNER_TEMP/compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
           test "$(git -C "$RUNNER_TEMP/compiler" rev-parse HEAD)" = "$revision"
           (cd "$RUNNER_TEMP/compiler"; GOWORK=off go build -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/stego" ./cmd/stego)
-          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/stego" --destination "$RUNNER_TEMP/browser-source"
+          # Match the operator's fixed network profile for both database modes.
+          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/stego" --destination "$RUNNER_TEMP/browser-source" --cnpg-database-namespace stego-cnpg-database-ci
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
@@ -95,6 +96,7 @@ jobs:
           KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig
           STEGO_TEST_CONTEXT: jshell-ci
           STEGO_TEST_PREINSTALLED: '1'
+          STEGO_TEST_CNPG_FIXTURE: '0'
           STEGO_TEST_BROWSER_DEPLOYMENT: '1'
           STEGO_TEST_BROWSER_WORKLOAD: '1'
           STEGO_TEST_GATEWAY_CLUSTER_ISSUER: acp-hypershell-test-ca

@@ -5,6 +5,9 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+import subprocess
+import sys
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -18,6 +21,63 @@ setup = load('setup', 'prepare-browser-ci.py')
 installation = load('installation', 'browser-ci-installation.py')
 
 class BrowserCI(unittest.TestCase):
+    def test_inspection_checks_profile_without_cluster_writes(self):
+        for mismatch in (False, True):
+            with self.subTest(mismatch=mismatch), tempfile.TemporaryDirectory() as directory:
+                results = Path(directory)
+                resources, data, inventory = {}, {}, []
+                for name in installation.MANIFESTS:
+                    objects = []
+                    for index in range(3):
+                        identity = name + '-' + str(index)
+                        obj = {'apiVersion': 'rbac.authorization.k8s.io/v1', 'kind': 'ClusterRole',
+                               'metadata': {'name': identity, 'uid': identity}, 'rules': []}
+                        resources[('ClusterRole', identity)] = obj
+                        objects.append(obj)
+                        inventory.append({'kind': 'ClusterRole', 'name': identity, 'uid': identity})
+                    data[name + '.json'] = json.dumps({'items': objects})
+                data.update({'namespace-uid': 'namespace-uid', 'fs-group': '10001', 'issuer': 'test-ca',
+                             'kubernetes-endpoints.json': '{}', 'kubernetes-service.json': '{}',
+                             'cluster-installation.json': json.dumps({'resources': inventory})})
+                owner = {'app.kubernetes.io/managed-by': 'stego-browser-ci'}
+                resources[('configmap', 'browser-ci-installation')] = {
+                    'immutable': True, 'metadata': {'labels': owner}, 'data': data}
+                resources[('namespace', installation.NAMESPACE)] = {
+                    'metadata': {'uid': 'namespace-uid', 'labels': owner,
+                                 'annotations': {'openshift.io/sa.scc.supplemental-groups': '10001/10'}}}
+                network = {'kind': 'NetworkPolicy', 'metadata': {'name': 'test-network',
+                           'namespace': installation.NAMESPACE, 'labels': owner},
+                           'spec': {'policyTypes': ['Ingress', 'Egress'], 'ingress': [], 'egress': []}}
+                resources[('networkpolicy', 'test-network')] = network
+                observed = []
+                def run(command, **kwargs):
+                    if command[0] == 'oc':
+                        words = command[3:]
+                        observed.append(words[0])
+                        self.assertIn(words[0], ['config', 'get'])
+                        value = {} if words[0] == 'config' else resources[(words[1], words[2])]
+                        return subprocess.CompletedProcess(command, 0, json.dumps(value).encode())
+                    self.assertEqual(command[0], 'python3')
+                    self.assertTrue(command[1].endswith('/prepare-browser-cluster.py'))
+                    self.assertIn('--render-only', command)
+                    path = results / 'cluster-manifests'; path.mkdir()
+                    for name in installation.MANIFESTS:
+                        content = '{}' if mismatch else data[name + '.json']
+                        (path / (name + '.json')).write_text(content)
+                    return subprocess.CompletedProcess(command, 0, b'')
+                args = ['browser-ci-installation.py', 'inspect', '--context', 'explicit', '--results', directory]
+                with patch.object(sys, 'argv', args), patch.object(installation.subprocess, 'run', side_effect=run), \
+                     patch.object(installation, 'require_credentials', return_value=('private-test-token', {})), \
+                     patch.object(installation, 'fixture_document', return_value={'items': [network]}):
+                    if mismatch:
+                        with self.assertRaisesRegex(RuntimeError, 'Generated cluster policy differs'):
+                            installation.main()
+                    else:
+                        installation.main()
+                self.assertTrue(observed)
+                self.assertFalse((results / 'ci-token').exists())
+                self.assertFalse((results / 'allocation-cleanup').exists())
+
     def test_fixture_receiver_policy_must_match_the_current_source(self):
         body, objects = self.objects()
         policies = {o['metadata']['name']: o for o in objects if o['kind'] == 'NetworkPolicy'}
