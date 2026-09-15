@@ -41,7 +41,10 @@ The next complete console workflow must:
 3. Permit the correct owner and granted users. Deny anonymous, forged,
    wrong-audience, and ungranted requests. Preserve Gateway workspace rules.
 4. Keep OAuth tokens out of browser JavaScript and prevent direct access that
-   avoids browser authentication. Verify TLS on all service connections.
+   avoids browser authentication. Verify TLS between Pods and for external
+   services. The upstream dashboard has an HTTP listener. Keep that listener on
+   `127.0.0.1` in the same Pod as its generated proxy. Do not expose it through
+   a Service or a public listener.
 5. Recover from worker and console restart, identity changes, credential
    rotation, and namespace loss. Remove a stale address when service fails.
 6. Delete owned console resources and credentials without changes to another
@@ -59,3 +62,17 @@ and lifecycle support. Hypershell supplies Gateway-specific configuration and
 access rules. Do not port the upstream dashboard backend as part of this work.
 The dashboard terminal uses WebSockets; the generated integration must preserve
 that contract. The current buffered browser HTTP proxy does not provide it.
+
+STEGO now has an internal local application renderer that reuses its browser
+sessions and OAuth flow. The
+[session integration CI](https://github.com/jsell-rh/stego/actions/runs/35021067251)
+passed at `7d05c2d94f71f44cbee94b44fa9b1b125b8d71ab`, with required PostgreSQL
+and race detection. It covers HTTP authentication, header removal, CSRF checks,
+restart, refresh, upstream denial, and logout across backend instances. These
+checks use a test application server. No service YAML setting enables this
+mode yet, and it rejects WebSocket upgrades.
+
+The [STEGO integration record](https://github.com/jsell-rh/stego/blob/5c8299d/specs/upstream-dashboard-integration.md)
+lists the remaining work. Hypershell has not yet adopted this mode. Generated
+deployment, terminal behavior, and a live upstream dashboard result remain
+required. The management-console and Gateway results do not close this gate.
