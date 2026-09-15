@@ -35,6 +35,15 @@ that both test namespaces and owned resources were absent and released the share
 Lease. The existing supplied PostgreSQL server stayed available during Gateway
 deletion. The fixture later removed that server with its test namespace.
 
+The [address-change preparation](endpoint-change-preparation-20260915.json)
+passed generation, drift, and 19 focused checks at source `a39c81f`. It adds one
+test endpoint name to the Gateway allocation profile. The operator plan changes
+one address in the generated admission variable and preserves all other cluster
+fields. The listener fixture uses two distinct Pod addresses. The live workflow
+must still connect these inputs, change the policy, restart the workers, and
+prove new-address access and old-address denial through recovery. This work has
+not yet produced a live address-change result.
+
 The full network gate remains open:
 
 1. Check approved and retired endpoint addresses with fresh connections,
