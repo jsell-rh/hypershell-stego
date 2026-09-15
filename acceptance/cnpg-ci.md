@@ -17,9 +17,22 @@ fixtures, claims, and volumes and released the Lease.
 Source `38a1d76` validates and copies the supplied CA before cluster access.
 It builds its own allocation check before resource creation. Twenty-two focused
 checks passed, followed by generation and full frozen-source verification.
-The corrected run is active. Its initial live check found no allocations with
-no browser child files. Full application and automatic cleanup results remain
-required. See the [workflow record](gateway-network-workflow-20260915.json).
+The corrected run reached the application and failed at the telemetry network
+probe after 182.77 seconds. Both Gateways were ready, verified RPC and provider
+data recovery passed, and cross-database access was denied. The first probe
+could reach Kubernetes, PostgreSQL, and the identity provider. It could not
+reach the required telemetry port. [The failure record](cnpg-receiver-failure-20260915.json)
+retains those limits. Automatic cleanup removed four allocations, database
+runtime, claims, volumes, and the private fixture. The shared Lease was released.
+
+The installed receiver rule lacked the declared Gateway telemetry port 19093.
+The [operator update](ci-receiver-update-20260915.json) added only that port and
+preserved the policy UID and all other fields. Source `2d1d8ea` checks the fixture
+policies before a new Job starts. Seven focused checks passed. The restricted
+identity rejected the old receiver rule and accepted the corrected policies.
+Generation and full source verification passed. Its complete retry is active;
+the application and cleanup results remain required. See the
+[workflow record](gateway-network-workflow-20260915.json).
 
 # CNPG CI
 

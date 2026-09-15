@@ -39,21 +39,24 @@ The [address-change preparation](endpoint-change-preparation-20260915.json)
 passed generation, drift, and 19 focused checks at source `a39c81f`. It adds one
 test endpoint name to the Gateway allocation profile. The operator plan changes
 one address in the generated admission variable and preserves all other cluster
-fields. The listener fixture uses two distinct Pod addresses. The live workflow
-must still connect these inputs, change the policy, restart the workers, and
-prove new-address access and old-address denial through recovery. This work has
-not yet produced a live address-change result.
+fields. Source `aac4baf` connects the two listener addresses to the operator and
+generated workers. The operator update checks the policy UID, version, original
+specification, and admission type-check result. The test restarts both workers
+with the replacement binding and checks both addresses through recovery. It
+requires telemetry from each new instance. Fifty Python checks, 25 shell checks,
+and selected Go checks passed. The complete live address-change test is pending.
 
 The full network gate remains open:
 
 1. Check approved and retired endpoint addresses with fresh connections,
    controller restart, and regeneration.
 2. Complete the CNPG workflow with network isolation enabled. Source `38a1d76`
-   passed generation, full source verification, and 22 focused preflight and
-   workflow checks. Its live restricted workflow is active. The earlier run
-   stopped before browser setup and required manual cleanup. The
-   [CI policy update](network-ci-update-20260915.json) passed resource identity,
-   specification, and admission checks before this run.
+   failed after 182.77 seconds because the static receiver policy lacked the
+   Gateway telemetry port. [Automatic cleanup passed](cnpg-receiver-failure-20260915.json).
+   The [receiver update](ci-receiver-update-20260915.json) added only that port.
+   Source `2d1d8ea` checks fixture policies before a Job starts. The restricted
+   preflight, generation, and full source verification passed. Its retry is
+   active; the application and cleanup results remain pending.
 3. Declare and test external database destinations. The default SQL Pod peer
    does not permit an arbitrary external server, including RDS.
 4. Implement and prove a supported DNS-aware provider. The user approved the
