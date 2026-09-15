@@ -147,3 +147,13 @@ completed at source `ee79099`. Core acceptance passed in 1357.045 seconds after
 the count access-loss correction. Ordinary browser, console, and service-image
 jobs also passed. The overall run failed on the unfinished CNPG and Sandbox
 jobs. This result does not include the later availability or viewer changes.
+
+The shared Deployment availability change passed the
+[complete browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950339472)
+at `3f188b2` with compiler `5e9c89d`. The application took 387.32 seconds.
+Verification matched 886 source files, 230 generated files, three generation
+records, all access and admission checks, and automated cleanup. Namespace
+recovery, SQL isolation, encryption, and session checks passed. The screenshots
+still have no public connection command. The later viewer and live-account
+cleanup changes remain separate pending results. See
+[the verified record](workload-availability-evidence.json).

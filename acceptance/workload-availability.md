@@ -26,7 +26,18 @@ matched 886 source files, 229 generated files, and all four generation records.
 The Job, Pods, and fixtures are absent. See the
 [verified evidence](workload-availability-evidence.json).
 
-The complete supplied-server browser result remains required for this revision.
-The API gate does not exercise a live Deployment or prove an external endpoint.
+The [complete supplied PostgreSQL browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950339472)
+passed in 387.32 seconds at the same application revision. Verification matched
+886 source files, 230 generated files, and all three browser generation records.
+All 16 CI access probes, 57 application access checks, and six admission probes
+passed. Namespace replacement took 43.78 seconds and retained SQL identities,
+keys, credentials, and provider data. SQL fault recovery, credential encryption,
+session checks, deletion, and automated cleanup passed. The Job and Pods are
+absent; the operator installation remains.
+
+This result proves the availability check in the complete internal workflow.
+It does not cover the later viewer and live-account deletion checks. The
+screenshots still show no public connection command. Public connectivity is
+not established.
 The [external connection gate](https://github.com/jsell-rh/stego/blob/main/specs/hypershell-external-connection.md)
 remains open, including TLS and address-ownership decisions.
