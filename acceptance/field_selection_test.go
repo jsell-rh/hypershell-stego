@@ -105,7 +105,7 @@ func TestRESTFieldSelectionPreservesAccessAcrossRestart(t *testing.T) {
 	if code, _ := requestJSON(t, "POST", address+"/api/hypershell/v1/gateway_networks", admin, []byte(`{"name":"selected-network"}`)); code != 201 {
 		t.Fatal("create network", code)
 	}
-	for _, collection := range []string{"managed_clusters", "managed_databases", "gateway_releases", "gateway_networks", "roles", "role_bindings"} {
+	for _, collection := range []string{"managed_clusters", "gateway_releases", "gateway_networks", "roles", "role_bindings"} {
 		path := address + "/api/hypershell/v1/" + collection
 		code, data := requestJSON(t, "GET", path+"?fields=id", admin, nil)
 		var response struct{ Items []map[string]json.RawMessage }

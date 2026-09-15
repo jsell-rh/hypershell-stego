@@ -29,7 +29,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	foreign := ksuid.New().String()
-	settings = append(settings, "DATABASE_PROVIDER=cnpg", "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","second"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","second"]`)
 	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.sandbox-count", f.cluster), writeGrant("second", "observe.sandbox-count", foreign))
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
@@ -170,7 +170,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	readCount(3)
 	if _, err := client.UpdateGateway(call(owner), &pb.UpdateGatewayRequest{Id: id, ClusterId: &foreign}); status.Code(err) != codes.AlreadyExists {
-		t.Fatal("Gateway move bypassed database locality", err)
+		t.Fatal("Gateway move changed its assigned cluster", err)
 	}
 	readCount(3)
 	if count(t, f.db, "stego_outbox.messages") != 0 {
@@ -180,7 +180,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Helper()
 		connection.Close()
 		stop()
-		restoreLegacyGatewayPlacement(t, f, id, cluster)
+		restoreGatewayClusterHistory(t, f, id, cluster)
 		stop, httpAddress, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 		client, connection = grpcClient(t, grpcAddress, tlsIdentity)
 		observed = identitypb.NewGatewayIdentityServiceClient(connection)

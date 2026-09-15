@@ -19,20 +19,20 @@ import (
 // SQL effects use a controlled provider here. Real CNPG connection and cleanup
 // checks remain a separate required gate.
 type sharedCleanupProvider struct {
-	cluster, database, gateway string
-	complete                   atomic.Bool
-	calls                      atomic.Int32
+	cluster, gateway string
+	complete         atomic.Bool
+	calls            atomic.Int32
 }
 
 func (p *sharedCleanupProvider) Handles(gw *pb.Gateway) bool                  { return gw.GetClusterId() == p.cluster }
 func (p *sharedCleanupProvider) CleanupTarget() string                        { return p.cluster }
 func (p *sharedCleanupProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *sharedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
+func (p *sharedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *sharedCleanupProvider) Delete(_ context.Context, gw *pb.Gateway, db *pb.ManagedDatabase) error {
-	if gw.GetMetadata().GetId() != p.gateway || gw.GetDatabaseId() != p.database || db.GetMetadata().GetId() != p.database || db.GetProvider() != "cnpg" || db.GetClusterId() != p.cluster {
-		return errors.New("cleanup did not receive current local database state")
+func (p *sharedCleanupProvider) DeleteDatabase(_ context.Context, gw *pb.Gateway) error {
+	if gw.GetMetadata().GetId() != p.gateway || gw.GetClusterId() != p.cluster {
+		return errors.New("cleanup did not receive its assigned Gateway")
 	}
 	p.calls.Add(1)
 	if !p.complete.Load() {
@@ -40,7 +40,11 @@ func (p *sharedCleanupProvider) Delete(_ context.Context, gw *pb.Gateway, db *pb
 	}
 	return nil
 }
-func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
+func (p *sharedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
+	return p.DeleteDatabase(ctx, gw)
+}
+
+func TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime(t *testing.T) {
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
@@ -48,8 +52,8 @@ func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster), databaseWriteGrant("controller", f.cluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "Gateway", "sql", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -59,7 +63,7 @@ func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
 		input, _ := json.Marshal(f.request(name))
 		code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", bearer, input)
 		var row httpapi.Gateway
-		if code != 201 || json.Unmarshal(body, &row) != nil || row.DatabaseID != f.database {
+		if code != 201 || json.Unmarshal(body, &row) != nil {
 			t.Fatal("local shared Gateway creation failed", code)
 		}
 		return row
@@ -79,8 +83,8 @@ func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
 	state := control.NewGatewayIdentityServiceClient(connection)
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 45*time.Second)
 	defer cancel()
-	provider := &sharedCleanupProvider{cluster: f.cluster, database: f.database, gateway: first.ID}
-	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+	provider := &sharedCleanupProvider{cluster: f.cluster, gateway: first.ID}
+	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -106,7 +110,7 @@ func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if provider.calls.Load() > 0 && observed.GetCleanupTargets()["workload"].GetTargets()[f.cluster] == complete {
+			if provider.calls.Load() > 0 && observed.GetCleanupTargets()["workload"].GetTargets()[f.cluster] == complete && observed.GetCleanupTargets()["sql"].GetTargets()[f.cluster] == complete {
 				return
 			}
 			select {
@@ -124,9 +128,5 @@ func TestSharedDatabaseCleanupThroughGeneratedRuntime(t *testing.T) {
 	}
 	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+first.ID, bearer, nil); code != 404 {
 		t.Fatal("cleanup restored a deleted Gateway", code)
-	}
-	var live int
-	if err := f.db.QueryRowContext(ctx, `SELECT count(*) FROM managed_databases WHERE id=$1 AND deleted_at IS NULL`, f.database).Scan(&live); err != nil || live != 1 {
-		t.Fatal("cleanup removed the shared database server", err)
 	}
 }

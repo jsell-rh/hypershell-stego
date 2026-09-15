@@ -40,7 +40,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_count_scope
 	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "Gateway", "workload", f.cluster))
 	settings = withControllerWriteGrants(t, settings, writeGrant("first", "observe.sandbox-count", f.cluster), writeGrant("second", "observe.sandbox-count", second), writeGrant("workload", "observe.workload", f.cluster), writeGrant("identity", "configure.identity", ""), writeGrant("ordinary", "observe.sandbox-count", f.cluster))
 	binary := buildApplication(t)
-	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	stop, _, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	observed := control.NewGatewayIdentityServiceClient(connection)
@@ -51,9 +51,6 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_count_scope
 	tokens["owner"] = token(t, key, "owner", "gateway:creator")
 	call := func(subject string) context.Context {
 		return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+tokens[subject]))
-	}
-	if code, _ := requestJSON(t, "POST", address+"/api/hypershell/v1/managed_databases", tokens["admin"], databaseCreateBody(t, "second", "cnpg", second)); code != 201 {
-		t.Fatal("second database registration", code)
 	}
 	rows := map[string]*pb.Gateway{}
 	for subject, cluster := range map[string]string{"first": f.cluster, "second": second} {

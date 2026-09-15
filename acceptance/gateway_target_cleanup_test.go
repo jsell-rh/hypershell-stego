@@ -35,8 +35,8 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	// New Gateways use local CNPG placement. The fixture below restores an old move.
-	settings = append(settings, "DATABASE_PROVIDER=cnpg", "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","other-controller","identity-controller","ungranted"]`)
+	// The fixture records two cleanup targets; public moves remain denied.
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","other-controller","identity-controller","ungranted"]`)
 	settings = withCleanupGrants(t, settings, cleanupGrant("identity-controller", "Gateway", "identity", ""), cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "Gateway", "workload", unrecorded), cleanupGrant("other-controller", "Gateway", "workload", second))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
@@ -70,17 +70,17 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	patch, _ := json.Marshal(map[string]string{"cluster_id": second})
 	beforeEvents := count(t, f.db, "target_cleanup_events")
 	if code, _ := requestJSON(t, "PATCH", root+"/"+row.ID, owner, patch); code != 409 {
-		t.Fatal("Gateway move bypassed database locality", code)
+		t.Fatal("Gateway move changed its assigned cluster", code)
 	}
 	current, err := cleanup.GetGatewayIdentityState(controller, &control.GetGatewayIdentityStateRequest{Id: row.ID})
 	if err != nil || current.GetResourceVersion() != 1 || count(t, f.db, "target_cleanup_events") != beforeEvents {
 		t.Fatal("denied move changed Gateway state or events", current.GetResourceVersion(), beforeEvents, count(t, f.db, "target_cleanup_events"), err)
 	}
-	// Restore data from an old installation while the API is stopped. A shared,
-	// unassigned database must not hide the Gateway's former cluster reference.
+	// Record target history while the API is stopped. Cleanup and write grants
+	// must continue to distinguish the two assigned cluster identities.
 	stop()
 	connection.Close()
-	restoreLegacyGatewayPlacement(t, f, row.ID, second)
+	restoreGatewayClusterHistory(t, f, row.ID, second)
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	root = address + "/api/hypershell/v1/gateways"
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
@@ -204,7 +204,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	}
 	stop()
 	connection.Close()
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("other-controller", "Gateway", "workload", second))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("other-controller", "Gateway", "workload", second), cleanupGrant("controller", "Gateway", "sql", f.cluster), cleanupGrant("other-controller", "Gateway", "sql", second))
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	cleanup = control.NewGatewayIdentityServiceClient(connection)
@@ -213,6 +213,16 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	observe(otherController, 9, "workload", second, true, codes.OK)
 	event()
 	read(10, true, true, true, true)
+	blocked(f.cluster)
+	blocked(second)
+	observe(controller, 10, "sql", second, true, codes.PermissionDenied)
+	observe(otherController, 10, "sql", f.cluster, true, codes.PermissionDenied)
+	observe(controller, 10, "sql", f.cluster, true, codes.OK)
+	event()
+	blocked(second)
+	observe(otherController, 11, "sql", second, true, codes.OK)
+	event()
+	read(12, true, true, true, true)
 	for _, id := range []string{f.cluster, second} {
 		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/managed_clusters/"+id, admin, nil); code != 204 {
 			t.Fatal("finished target did not release cluster", code)

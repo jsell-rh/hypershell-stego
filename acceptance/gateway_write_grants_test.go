@@ -117,14 +117,14 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	patch, _ := json.Marshal(map[string]string{"cluster_id": second})
 	events := count(t, f.db, "gateway_event_audit")
 	if code, _ := requestJSON(t, "PATCH", root, token(t, key, "alice"), patch); code != 409 {
-		t.Fatal("Gateway move bypassed database locality", code)
+		t.Fatal("Gateway move changed its assigned cluster", code)
 	}
 	if !reflect.DeepEqual(before, state()) || count(t, f.db, "gateway_event_audit") != events {
 		t.Fatal("denied move changed Gateway state or events")
 	}
 	connection.Close()
 	stop()
-	restoreLegacyGatewayPlacement(t, f, row.ID, second)
+	restoreGatewayClusterHistory(t, f, row.ID, second)
 	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	client, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	write(workloadToken, statusPatch(), codes.PermissionDenied)
