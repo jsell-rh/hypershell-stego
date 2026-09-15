@@ -28,3 +28,10 @@ passing application result.
 [Full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34961995199)
 passed at `f2b09c0`, including race checks and PostgreSQL provisioning. The
 complete Hypershell API and browser results remain required for this change.
+
+The [API evidence](postgres-telemetry-api-evidence.json) now records a pass at
+`2af1b46` in run `34962176232`. All 31 required tests passed in 153.598 seconds.
+Verification matched 902 source files, 230 generated files, and all generation
+records. Automatic and independent cleanup checks passed. The complete browser
+SQL signal check remains required. The later worker startup change needs its
+own compiler and application results.
