@@ -28,8 +28,8 @@ does not prove that the plugin has applied it. The test must use fresh
 connections because policy changes need not close existing connections. These
 limits are described in the [Kubernetes NetworkPolicy documentation](https://kubernetes.io/docs/concepts/services-networking/network-policies/).
 
-The user has been asked whether Gateway server egress must use only
-operator-approved destinations. That decision is pending. Sandbox traffic has
+On 2026-09-15, the user selected only operator-approved destinations for
+Gateway server egress. Sandbox traffic has
 its own policy requirements. The separate Sandbox allocation and live Kata test
 remain open; the deferred Kata result must not be treated as a pass.
 
@@ -105,3 +105,29 @@ NetworkPolicy was third, after the Namespace and quota and before all bindings.
 The diagnostic returned status 0. This proves the declared option changes the
 Hypershell allocator through STEGO. It does not prove live admission, network
 enforcement, permitted service traffic, or complete application behavior.
+
+STEGO kubernetes-service 1.12.0 checks the complete policy set. Its compiler
+revision is `7ebd67831f3faf99b0e84a4962a80bf41e4cb9ac`. Full compiler CI passed
+in [run 34982147474](https://github.com/jsell-rh/stego/actions/runs/34982147474).
+Hypershell regeneration passed with no drift in both modules. The production
+network option remains off until permitted paths are implemented.
+
+The [policy-set record](network-policy-set.json) contains the before and after
+Hypershell fixture results. With an extra unlabelled allow-all policy, the old
+allocator still wrote all nine resources. The new allocator stops after three
+writes, before any binding. A valid set still completes all nine writes. The
+fixture now returns bounded, filtered list results instead of empty lists.
+Use `--additional-policy` to inject the extra policy in the frozen test copy.
+Its expected diagnostic status is 2; `go run` reports status 1 and prints the
+program's status 2. The production profile without isolation still reports
+the earlier gap. These cases are local TLS API tests.
+
+The jshell admission check passed 59 checks: 18 allowed operations and 41 denied
+operations. All three policies passed type checking before their bindings were
+installed. The test rejected an extra policy before and after regeneration.
+It also checked fixed-policy creation, invalid selectors and allow rules,
+foreign ownership, permission limits, changed bindings, and cleanup. No Pods
+were created. All 14 installed resources, both temporary allocation namespaces,
+and their cluster bindings were absent before the shared Lease was released.
+This is admission evidence. Permitted traffic and CNI enforcement still require
+the full Gateway workflow.

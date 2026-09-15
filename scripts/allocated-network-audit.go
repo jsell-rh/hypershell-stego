@@ -9,11 +9,14 @@ import (
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
+	"flag"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +27,12 @@ import (
 
 func main() { os.Exit(run()) }
 func run() int {
+	flags := flag.NewFlagSet("allocation-network-audit", flag.ContinueOnError)
+	extra := flags.Bool("additional-policy", false, "Add an unlabelled allow-all policy to the test fixture")
+	if flags.Parse(os.Args[1:]) != nil || flags.NArg() != 0 {
+		return 2
+	}
+	injected := false
 	directory, err := os.MkdirTemp("", "allocation-network-input-")
 	must(err)
 	defer os.RemoveAll(directory)
@@ -40,7 +49,41 @@ func run() int {
 		}
 		if r.Method == http.MethodGet {
 			if r.URL.Query().Get("limit") != "" {
-				json.NewEncoder(w).Encode(kube.Object{"apiVersion": "v1", "kind": "List", "metadata": kube.Object{"resourceVersion": "1"}, "items": []any{}})
+				limit, err := strconv.Atoi(r.URL.Query().Get("limit"))
+				if err != nil || limit < 1 || limit > 64 {
+					http.Error(w, "invalid limit", 400)
+					return
+				}
+				keys := []string{}
+				for key, value := range objects {
+					if !strings.HasPrefix(key, r.URL.Path+"/") || strings.Contains(strings.TrimPrefix(key, r.URL.Path+"/"), "/") {
+						continue
+					}
+					match := true
+					if selector := r.URL.Query().Get("labelSelector"); selector != "" {
+						for _, term := range strings.Split(selector, ",") {
+							label, want, ok := strings.Cut(term, "=")
+							if !ok || kube.String(value, "metadata", "labels", label) != want {
+								match = false
+								break
+							}
+						}
+					}
+					if match {
+						keys = append(keys, key)
+					}
+				}
+				sort.Strings(keys)
+				meta := kube.Object{"resourceVersion": "1"}
+				if len(keys) > limit {
+					keys = keys[:limit]
+					meta["continue"] = "remaining"
+				}
+				items := []any{}
+				for _, key := range keys {
+					items = append(items, objects[key])
+				}
+				json.NewEncoder(w).Encode(kube.Object{"apiVersion": "v1", "kind": "List", "metadata": meta, "items": items})
 				return
 			}
 			value, ok := objects[r.URL.Path]
@@ -80,6 +123,10 @@ func run() int {
 		writes = append(writes, kind+" "+r.URL.Path+"/"+name)
 		if kind == "NetworkPolicy" {
 			policies++
+			if *extra {
+				objects[r.URL.Path+"/allow-all"] = kube.Object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": kube.Object{"name": "allow-all", "namespace": meta["namespace"], "uid": "unexpected-policy", "resourceVersion": "1"}, "spec": kube.Object{"podSelector": kube.Object{}, "policyTypes": []string{"Ingress", "Egress"}, "ingress": []any{kube.Object{}}, "egress": []any{kube.Object{}}}}
+				injected = true
+			}
 		}
 		objects[r.URL.Path+"/"+name] = value
 		w.WriteHeader(201)
@@ -101,7 +148,7 @@ func run() int {
 	defer cancel()
 	err = allocator.Ensure(ctx, "gateway", "openshell-"+strings.Repeat("a", 16), "00000000-0000-4000-8000-000000000123")
 	mutex.Lock()
-	result := map[string]any{"scope": "Generated allocator against a TLS API fixture; no real cluster", "ensure_succeeded": err == nil, "network_policy_writes": policies, "writes": writes}
+	result := map[string]any{"scope": "Generated allocator against a TLS API fixture; no real cluster", "ensure_succeeded": err == nil, "network_policy_writes": policies, "additional_policy_injected": injected, "writes": writes}
 	if err != nil {
 		result["error_type"] = "allocator failure"
 	}
