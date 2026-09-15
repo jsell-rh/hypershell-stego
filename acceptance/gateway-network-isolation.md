@@ -1,4 +1,12 @@
-This candidate uses STEGO `e394ab5`, which adds declared namespace, Pod, port,
+The current candidate `5043608` uses STEGO `5516e48`. Regeneration passed in both
+modules. Its [application CI](https://github.com/jsell-rh/hypershell-stego/actions/runs/35001051267)
+is pending. The endpoint change passed 168 live admission checks, full compiler
+CI, and cleanup. See the [endpoint record](allocated-network-endpoints-20260915.json).
+Production Gateway isolation remains off. The next workflow change must bind
+actual operator addresses in both the admission setup and the generated workers.
+The existing setup uses placeholder addresses for cluster-scoped rendering.
+
+The earlier candidate `101f31d` uses STEGO `e394ab5`, which adds declared namespace, Pod, port,
 and protocol peers to the protected allocation policy. The [admission record](allocated-network-peers-admission-20260915.json)
 contains 89 passing live checks: 18 allowed and 71 denied. Regeneration and
 cleanup passed on jshell. No Pods ran in that check. Full compiler CI passed in
@@ -25,8 +33,8 @@ change is newer than candidate `101f31d` and is not covered by its browser resul
 STEGO `5516e48` adds operator-supplied IP endpoint bindings. The same checked
 addresses feed admission and the generated allocator. The [endpoint record](allocated-network-endpoints-20260915.json)
 contains focused runtime and renderer checks and three Kubernetes expression
-type checks. Full compiler CI passed. Full admission request and traffic checks remain required. This
-candidate does not use the endpoint change. The mechanism does not resolve or
+type checks. Full compiler CI and all 168 admission request checks passed.
+Traffic checks remain required. The current candidate uses the endpoint change. The mechanism does not resolve or
 track DNS names.
 
 The following record preserves the initial gap and the earlier checks.
