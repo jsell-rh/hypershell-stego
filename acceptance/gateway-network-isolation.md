@@ -1,3 +1,10 @@
+Candidate `ee3d41d` adds an unrelated listener to the direct cluster test.
+Its full workflow is running in `stego-service-20260915-734cfd`. The listener
+is ready in a separate namespace with no ingress NetworkPolicy or allocator
+labels. Direct runs require the listener and 28 connection checks. The fixed
+restricted CI installation has no listener and records `independent_egress`
+as false. The new denial check has not passed yet.
+
 The complete public Gateway workflow passed with generated Gateway and state
 network policies enabled. Source `56a5998` used STEGO `5516e48`. The bounded
 jshell run passed in 492.39 seconds under the race detector. The
