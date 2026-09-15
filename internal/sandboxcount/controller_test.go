@@ -290,7 +290,9 @@ func TestCountAccessLossStopsWatch(t *testing.T) {
 	defer cancel()
 	go func() { done <- c.Run(ctx) }()
 	apply := <-source.ready
-	if err := apply(kube.Change{Type: "REPLACE"}); err != nil {
+	// The denied write can stop the watch before it acknowledges this change.
+	// The final Run result must still report PermissionDenied below.
+	if err := apply(kube.Change{Type: "REPLACE"}); err != nil && !errors.Is(err, context.Canceled) {
 		t.Fatal(err)
 	}
 	select {
