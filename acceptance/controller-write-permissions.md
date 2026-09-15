@@ -95,4 +95,13 @@ The controller must verify the route before publication; that live route workflo
 remains an open acceptance requirement. The combined grant check failed before
 this change and now passes. The acceptance test adds a forced failure on the
 second SQL write, stale combined writes, endpoint failure and recovery, event
-counts, placement changes, and restart. It compiles; its CI result is required.
+counts, placement changes, and restart.
+
+The expanded test passed with race detection in 8.06 seconds at `7d6b6d2` in
+[CI 34975653596](https://github.com/jsell-rh/hypershell-stego/actions/runs/34975653596).
+The core acceptance package passed in 1314.355 seconds. The ordinary browser,
+console, and service image jobs passed. CNPG stopped before test creation
+because its credential had too little time left. Sandbox was skipped. The
+complete run therefore reports failure. The
+[transaction record](endpoint-transaction-ci.json) preserves source and log
+hashes. This result does not verify the live public Route or later source.
