@@ -110,3 +110,19 @@ both recorded persistent volumes. The shared Lease was released. See the
 OpenShift added a worker node. After that node became ready and cleanup was
 confirmed, the same frozen source started a second bounded attempt. No test
 limit or application permission changed.
+
+The second attempt created both Gateways and passed verified TLS, SQL isolation,
+and unsafe-grant recovery. Primary replacement then exposed an installation
+permission error: the test removed public `CONNECT` access from `postgres`
+without an explicit grant for CNPG's `streaming_replica` role. The promoted
+primary was ready, but the former primary could not connect for recovery
+(SQLSTATE `42501`). This is a failed recovery attempt, not a passing workflow.
+
+The corrected installation fixture grants only `CONNECT` on `postgres` to
+`streaming_replica`. It retains the public access revocation. Gateway accounts
+receive no maintenance grant. CNPG uses this connection for primary recovery
+and `pg_rewind`; see the [CNPG replication contract](https://cloudnative-pg.io/docs/devel/replication/).
+An installation that restricts public database access must preserve its server
+maintenance roles explicitly. This belongs to installation setup; Gateway
+controllers must not change unrelated database permissions. The complete
+restart and cross-database denial tests remain required for this correction.

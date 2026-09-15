@@ -110,6 +110,11 @@ func (w *browserGatewayWorkload) prepareDatabase(sessions *fixture) {
 			exec("REVOKE CONNECT,TEMPORARY ON DATABASE " + quote(name) + " FROM PUBLIC")
 		}
 	}
+	if w.cnpgFixture != nil {
+		// CNPG uses this database for primary recovery and pg_rewind. Keep
+		// its maintenance access explicit when removing the public grant.
+		exec("GRANT CONNECT ON DATABASE postgres TO streaming_replica")
+	}
 	var ca []byte
 	host, namespace, serviceName := w.p.host("fixture"), w.p.namespace, "fixture"
 	if w.cnpgFixture == nil {
