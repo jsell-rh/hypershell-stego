@@ -1,0 +1,41 @@
+{
+  "checked_at": "2026-09-15",
+  "source_revision": "7cb0e2f45c7912d98fe8d382d4a3c32da0066212",
+  "compiler_revision": "4f692d0c12c972a2d7a783ee6a33c17e82a0f932",
+  "workflow": {
+    "run_id": 34977883303,
+    "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34977883303",
+    "conclusion": "failure",
+    "core_job_id": 104411979987,
+    "core_conclusion": "success",
+    "ordinary_browser_conclusion": "success",
+    "console_conclusion": "success",
+    "service_image_conclusion": "success",
+    "cnpg_job_id": 104411980098,
+    "cnpg_conclusion": "failure",
+    "cnpg_failure": "Credential validation failed before a test Job was created.",
+    "sandbox_conclusion": "skipped"
+  },
+  "test": {
+    "name": "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+    "result": "pass",
+    "elapsed_seconds": 8.38,
+    "race_detection": true
+  },
+  "core_acceptance_elapsed_seconds": 1307.905,
+  "logs": [
+    {
+      "path": "/tmp/hypershell-core-34977883303.log",
+      "sha256": "1549dfcabba84ff0a01ce3a82602c06f9722600f3c30a7246f14d1c3a0659cbd"
+    },
+    {
+      "path": "/tmp/hypershell-cnpg-34977883303-failed.log",
+      "sha256": "03f5ba24ce09bd6aaa228525a6977c4477a5665bf5f018bf7cd7baafa69a476b"
+    }
+  ],
+  "limits": [
+    "This run precedes the production RPC lifecycle correction.",
+    "No public Route, network enforcement, or certificate renewal result is present.",
+    "The overall run failed. The skipped Sandbox check is not a pass."
+  ]
+}

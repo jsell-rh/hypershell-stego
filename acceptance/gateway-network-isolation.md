@@ -72,3 +72,24 @@ The two-Role public permission plan covers only the existing TLS and Route test.
 It does not add namespace network isolation. Recompute the plan after generated
 policy permissions change; do not widen its current allowlist without review.
 Public connectivity and complete shared-cluster isolation are separate results.
+
+STEGO commit `d709240557c91f7b415262b35de107c4d70f987e` adds the common
+profile option `network_isolation: true`. It creates and verifies a fixed
+`stego-allocation` deny-all policy before access bindings. The allocator cannot
+patch or delete it. Generated admission rules restrict creation and protect the
+reserved name. A read-only allocation check also requires the policy.
+
+Focused generated runtime tests passed for restart, policy loss, invalid policy
+contents, API errors, and cancellation. Manifest checks passed. Full compiler CI
+is pending in [run 34981210745](https://github.com/jsell-rh/stego/actions/runs/34981210745).
+Live admission and CNI tests have not run. The
+[common mechanism](https://github.com/jsell-rh/stego/blob/d709240557c91f7b415262b35de107c4d70f987e/specs/namespace-allocation.md#fixed-network-deny-policy)
+does not yet supply allowed destinations or protect the complete policy set.
+Hypershell has not enabled it. Enabling deny-all without the required allowed
+paths would stop Gateway service traffic. The full application gate above
+remains required.
+
+The earlier [core CI run](gateway-core-ci-20260915.json) passed core and ordinary
+browser acceptance. It used compiler `4f692d0`, before the production RPC
+lifecycle correction. Its CNPG job failed credential validation before test
+creation. It supplies no network isolation result.
