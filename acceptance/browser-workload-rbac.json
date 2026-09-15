@@ -93,8 +93,7 @@
             "clusterroles"
           ],
           "resourceNames": [
-            "system:openshift:scc:nonroot-v2",
-            "cnpg-manager"
+            "system:openshift:scc:nonroot-v2"
           ],
           "verbs": [
             "bind"
@@ -166,12 +165,12 @@
             "clusterroles"
           ],
           "resourceNames": [
-            "@NAMESPACE@.hypershell-namespace-allocation.database-worker",
-            "@NAMESPACE@.hypershell-namespace-allocation.database-keys",
             "@NAMESPACE@.hypershell-namespace-allocation.gateway-worker",
             "@NAMESPACE@.hypershell-namespace-allocation.gateway-runtime",
             "@NAMESPACE@.hypershell-namespace-allocation.gateway-reviews",
-            "@NAMESPACE@.hypershell-namespace-allocation.proof"
+            "@NAMESPACE@.hypershell-namespace-allocation.proof",
+            "@NAMESPACE@.hypershell-namespace-allocation.gateway-state",
+            "@NAMESPACE@.hypershell-namespace-allocation.sandbox-count"
           ],
           "verbs": [
             "bind"
@@ -200,29 +199,11 @@
           ],
           "resourceNames": [
             "hypershell-namespace-allocation",
-            "hypershell-database",
             "hypershell-gateway-workload",
             "hypershell-gateway-identity"
           ],
           "verbs": [
             "create"
-          ]
-        },
-        {
-          "apiGroups": [
-            "postgresql.cnpg.io"
-          ],
-          "resources": [
-            "clusters",
-            "databases"
-          ],
-          "verbs": [
-            "get",
-            "list",
-            "watch",
-            "create",
-            "patch",
-            "delete"
           ]
         }
       ]

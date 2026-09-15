@@ -15,7 +15,7 @@ import (
 // These dry-run bodies contain only public allocation data. Read their bounded
 // Status response to prove the expected policy denied them. Production clients
 // must continue to omit API response bodies from errors.
-func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, database, token string) {
+func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, token string) {
 	w.t.Helper()
 	if token == "" {
 		w.t.Fatal("allocator test identity is unavailable")
@@ -33,8 +33,8 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, database, t
 		harness            bool
 	}{
 		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}, false},
-		{"quota change", "PATCH", "/api/v1/namespaces/" + database + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}, false},
-		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + database + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, true},
+		{"quota change", "PATCH", "/api/v1/namespaces/" + state + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}, false},
+		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, true},
 	}
 	type result struct {
 		Name   string
@@ -93,12 +93,12 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, database, t
 	if _, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/stego-denied-namespace", nil); err != nil || code != 404 {
 		w.t.Fatal("dry-run created a foreign namespace", code)
 	}
-	quota, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+database+"/resourcequotas/stego-allocation", nil)
-	if err != nil || code != 200 || kube.String(quota, "spec", "hard", "pods") != "2" {
+	quota, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+state+"/resourcequotas/stego-allocation", nil)
+	if err != nil || code != 200 || kube.String(quota, "spec", "hard", "pods") != "0" {
 		w.t.Fatal("dry-run changed the allocation quota", code)
 	}
-	namespace, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+database, nil)
-	if err != nil || code != 200 || kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") != "database" {
+	namespace, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+state, nil)
+	if err != nil || code != 200 || kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") != "gateway-state" {
 		w.t.Fatal("dry-run changed allocation identity", code)
 	}
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {

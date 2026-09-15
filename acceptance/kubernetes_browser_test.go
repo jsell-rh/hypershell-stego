@@ -41,7 +41,7 @@ func TestGeneratedKubernetesBrowserGatewayWorkflow(t *testing.T) {
 	runBrowserGatewayWorkflow(t, p)
 	expected := 3
 	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
-		expected = 7
+		expected = 6
 	}
 	if len(p.pods) != expected {
 		t.Fatal("all generated Deployments must run")
@@ -167,7 +167,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 	if console {
 		grants = append(grants, "GRANT SELECT, INSERT, UPDATE, DELETE ON stego_browser_sessions TO "+id)
 	} else {
-		grants = append(grants, "GRANT USAGE ON SCHEMA stego_outbox TO "+id, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO "+id, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO "+id)
+		grants = append(grants, "GRANT USAGE ON SCHEMA stego_schema TO "+id, "GRANT SELECT ON stego_schema.generation TO "+id, "GRANT USAGE ON SCHEMA stego_outbox TO "+id, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO "+id, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO "+id)
 	}
 	for _, statement := range grants {
 		if _, err := f.db.ExecContext(ctx, statement); err != nil {
@@ -177,6 +177,12 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 	var canCreate bool
 	if err := f.db.QueryRowContext(ctx, "SELECT has_schema_privilege($1,'public','CREATE')", role).Scan(&canCreate); err != nil || canCreate {
 		p.t.Fatal("runtime role can change the schema", err)
+	}
+	if !console {
+		var canInspect, canChange bool
+		if err := f.db.QueryRowContext(ctx, "SELECT has_schema_privilege($1,'stego_schema','USAGE') AND has_table_privilege($1,'stego_schema.generation','SELECT'), has_schema_privilege($1,'stego_schema','CREATE') OR has_table_privilege($1,'stego_schema.generation','INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')", role).Scan(&canInspect, &canChange); err != nil || !canInspect || canChange {
+			p.t.Fatal("runtime role must have read-only schema-generation access", err)
+		}
 	}
 	if console {
 		var canReadDomain bool
@@ -212,7 +218,7 @@ func (p *kubernetesBrowser) settings(entries []string, environment map[string]st
 }
 func (p *kubernetesBrowser) startAPI(f *fixture, c Config, id testIdentity, settings []string) (func(), string, string) {
 	files := map[string][]byte{"database-url": []byte(p.database(f, false)), "database-ca.pem": p.read(os.Getenv("STEGO_TEST_POSTGRES_CA_FILE"))}
-	env := map[string]string{"DATABASE_URL_FILE": "/var/run/stego/database-url", "DATABASE_PROVIDER": "cnpg", "STEGO_KAFKA_BROKERS": strings.Join(c.Brokers, ","), "STEGO_KAFKA_TOPIC": c.Topic, "STEGO_KAFKA_AUTHENTICATION": c.Authentication}
+	env := map[string]string{"DATABASE_URL_FILE": "/var/run/stego/database-url", "STEGO_KAFKA_BROKERS": strings.Join(c.Brokers, ","), "STEGO_KAFKA_TOPIC": c.Topic, "STEGO_KAFKA_AUTHENTICATION": c.Authentication}
 	p.settings(append([]string{"STEGO_KAFKA_CA_FILE=" + c.CAFile, "STEGO_KAFKA_CLIENT_CERTIFICATE_FILE=" + c.ClientCertificateFile, "STEGO_KAFKA_CLIENT_KEY_FILE=" + c.ClientKeyFile}, settings...), env, files)
 	stop, _ := p.start("hypershell", "..", os.Getenv("STEGO_TEST_SERVICE_IMAGE"), id, env, files)
 	p.checkDatabaseTLS(f)

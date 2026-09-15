@@ -3,12 +3,10 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
-	"net/url"
 	"os"
 	"path/filepath"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -23,22 +21,26 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	database, gateway := "", ""
+	state, gateway := "", ""
 	for ns, target := range w.allocations {
-		if target.profile == "database" {
-			database = ns
+		if target.profile == "gateway-state" {
+			state = ns
 		} else {
 			gateway = ns
 		}
 		if err := allocator.RequireNamespace(ctx, target.profile, ns, target.id); err != nil {
 			w.t.Fatal("namespace was not allocated", err)
 		}
+		pods, storage := "2", "512Mi"
+		if target.profile == "gateway-state" {
+			pods, storage = "0", "64Mi"
+		}
 		quota, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+ns+"/resourcequotas/stego-allocation", nil)
-		if err != nil || code != 200 || kube.String(quota, "spec", "hard", "pods") != "2" || kube.String(quota, "spec", "hard", "limits.ephemeral-storage") != "512Mi" {
+		if err != nil || code != 200 || kube.String(quota, "spec", "hard", "pods") != pods || kube.String(quota, "spec", "hard", "limits.ephemeral-storage") != storage {
 			w.t.Fatal("allocation limits missing", code)
 		}
 	}
-	if database == "" || gateway == "" {
+	if state == "" || gateway == "" {
 		w.t.Fatal("allocation targets missing")
 	}
 	type check struct {
@@ -46,24 +48,21 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		Allowed                                  bool
 	}
 	checks := []check{
-		{"database", database, "", "secrets", "get", false},
-		{"database", database, "postgresql.cnpg.io", "clusters", "create", true},
-		{"database", gateway, "postgresql.cnpg.io", "clusters", "create", false},
-		{"database", gateway, "", "secrets", "get", false},
-		{"database", w.p.namespace, "", "secrets", "get", false},
-		{"database", "", "", "namespaces", "create", false},
-		{"database", "", "", "namespaces", "patch", false},
 		{"gateway-workload", gateway, "apps", "deployments", "create", true},
-		{"gateway-workload", database, "", "secrets", "get", true},
+		{"gateway-workload", state, "", "pods", "create", false},
+		{"gateway-workload", state, "", "persistentvolumeclaims", "create", false},
+		{"gateway-workload", state, "postgresql.cnpg.io", "clusters", "create", false},
+		{"gateway-workload", w.p.namespace, "postgresql.cnpg.io", "clusters", "delete", false},
+		{"gateway-workload", state, "", "secrets", "get", true},
 		{"gateway-workload", w.p.namespace, "", "secrets", "get", false},
 		{"gateway-workload", "", "", "namespaces", "delete", false},
 		{"gateway-workload", "", "rbac.authorization.k8s.io", "clusterroles", "create", false},
 		{"gateway-workload", gateway, "rbac.authorization.k8s.io", "rolebindings", "create", false},
 		{"namespace-allocation", "", "", "namespaces", "patch", false},
-		{"namespace-allocation", database, "", "secrets", "get", false},
+		{"namespace-allocation", state, "", "secrets", "get", false},
 		{"namespace-allocation", gateway, "", "secrets", "get", false},
 		{"namespace-allocation", w.p.namespace, "", "secrets", "get", false},
-		{"gateway-identity", database, "", "secrets", "get", false},
+		{"gateway-identity", state, "", "secrets", "get", false},
 	}
 	clients := map[string]*kube.Client{}
 	allocatorToken := ""
@@ -98,7 +97,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("worker access differs from allocation", test, code)
 		}
 	}
-	w.checkAdmission(ctx, database, allocatorToken)
+	w.checkAdmission(ctx, state, allocatorToken)
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
 		data, err := json.MarshalIndent(checks, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(dir, "allocation-permissions.json"), data, 0600) != nil {
@@ -116,10 +115,6 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("Gateway deletion setup failed")
 	}
-	databaseNamespace, err := gateways.DatabaseNamespace(gateway.DatabaseID)
-	if err != nil {
-		w.t.Fatal(err)
-	}
 	response = w.owner.api(w.t, "DELETE", "/gateways/"+id, nil)
 	if response.StatusCode != 204 {
 		w.t.Fatal("Gateway deletion failed", response.StatusCode)
@@ -130,32 +125,7 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	for {
-		gatewayGone, gatewayErr := allocator.NamespaceGone(ctx, "gateway", gateway.Namespace, id)
-		databaseErr := allocator.RequireNamespace(ctx, "database", databaseNamespace, gateway.DatabaseID)
-		if gatewayErr != nil || databaseErr != nil {
-			w.t.Fatal("allocation deletion observation failed", gatewayErr, databaseErr)
-		}
-		var complete bool
-		err := w.f.db.QueryRowContext(ctx, `SELECT COALESCE(g.deleted_at IS NOT NULL AND d.deleted_at IS NULL AND g.stego_cleanup->>'identity'='true' AND g.stego_cleanup_targets->'workload'->>$2='true',false) FROM gateways g JOIN managed_databases d ON d.id=g.database_id WHERE g.id=$1`, id, w.f.cluster).Scan(&complete)
-		if err != nil {
-			w.t.Fatal("cleanup record read failed", err)
-		}
-		if gatewayGone && complete {
-			break
-		}
-		select {
-		case <-ctx.Done():
-			w.t.Fatal("REST deletion did not complete allocation and provider cleanup")
-		case <-time.After(time.Second):
-		}
-	}
-	selector := "stego.dev/allocator=" + allocator.Marker() + ",hypershell.redhat.io/gateway-id=" + id
-	bindings, code, err := w.kubernetes.Request(ctx, "GET", "/apis/rbac.authorization.k8s.io/v1/clusterrolebindings?limit=64&labelSelector="+url.QueryEscape(selector), nil)
-	entries, ok := kube.Nested(bindings, "items").([]any)
-	if err != nil || code != 200 || !ok || len(entries) != 0 || kube.String(bindings, "metadata", "continue") != "" {
-		w.t.Fatal("Gateway cluster bindings remained after cleanup", code)
-	}
+	w.awaitGatewayCleanup(ctx, allocator, id)
 	if response = w.owner.api(w.t, "GET", "/gateways/"+id, nil); response.StatusCode != 404 {
 		w.t.Fatal("deleted Gateway remained readable", response.StatusCode)
 	}
@@ -165,5 +135,5 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 			w.check(other)
 		}
 	}
-	w.t.Log("REST Gateway deletion removed its namespace, SQL database, role, and keys; the other Gateway and shared CNPG server remained available")
+	w.t.Log("REST Gateway deletion removed its namespace, SQL state, role, and keys; the other Gateway and supplied PostgreSQL server remained available")
 }

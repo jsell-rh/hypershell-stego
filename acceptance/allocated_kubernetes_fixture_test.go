@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -97,7 +97,7 @@ func allocatedKubernetesFixture(t *testing.T, cluster string, workers ...string)
 		if err := os.WriteFile(tokenPath, token, 0600); err != nil {
 			t.Fatal(err)
 		}
-		result[worker] = &kubeFixture{config: config, options: databasecontroller.KubernetesOptions{ServerURL: server, CAFile: caPath, TokenFile: tokenPath, ControlNamespace: namespace, ClusterID: cluster}}
+		result[worker] = &kubeFixture{config: config, options: gatewayworkload.Options{ServerURL: server, CAFile: caPath, TokenFile: tokenPath, ControlNamespace: namespace, ClusterID: cluster}}
 	}
 	return result
 }
@@ -121,7 +121,7 @@ func suppliedAllocationFixture(t *testing.T, cluster string, workers ...string) 
 		if data, err := os.ReadFile(path); err != nil || len(strings.TrimSpace(string(data))) == 0 {
 			t.Fatal("bounded worker credential is missing")
 		}
-		result[worker] = &kubeFixture{config: k.config, context: contextName, options: databasecontroller.KubernetesOptions{
+		result[worker] = &kubeFixture{config: k.config, context: contextName, options: gatewayworkload.Options{
 			ServerURL: "https://kubernetes.default.svc", CAFile: "/cnpg-credentials/ca.crt", TokenFile: path,
 			ControlNamespace: namespace, ClusterID: cluster,
 		}}

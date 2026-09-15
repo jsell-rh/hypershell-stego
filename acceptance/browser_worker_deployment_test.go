@@ -22,7 +22,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 	if json.Unmarshal([]byte(os.Getenv("STEGO_TEST_KUBERNETES_EGRESS")), &endpoints) != nil || len(endpoints) == 0 || len(endpoints) > 16 {
 		w.t.Fatal("Kubernetes endpoint bindings missing")
 	}
-	for _, worker := range []struct{ name, token, image string }{{"namespace-allocation", "allocation", "STEGO_TEST_ALLOCATION_WORKER_IMAGE"}, {"database", "database", "STEGO_TEST_DATABASE_WORKER_IMAGE"}, {"gateway-identity", "identity", "STEGO_TEST_IDENTITY_WORKER_IMAGE"}, {"gateway-workload", "workload", "STEGO_TEST_GATEWAY_WORKER_IMAGE"}} {
+	for _, worker := range []struct{ name, token, image string }{{"namespace-allocation", "allocation", "STEGO_TEST_ALLOCATION_WORKER_IMAGE"}, {"gateway-identity", "identity", "STEGO_TEST_IDENTITY_WORKER_IMAGE"}, {"gateway-workload", "workload", "STEGO_TEST_GATEWAY_WORKER_IMAGE"}} {
 		name := "hypershell-" + worker.name
 		image := os.Getenv(worker.image)
 		if !strings.Contains(image, "@sha256:") {
@@ -52,10 +52,12 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			w.t.Cleanup(func() {
 				w.p.command(nil, "delete", "clusterrole/"+w.p.namespace+"."+name, "clusterrolebinding/"+w.p.namespace+"."+name, "--ignore-not-found")
 			})
-			if worker.name == "database" {
-				env["DATABASE_PROVIDER"] = "cnpg"
-				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
-			} else if worker.name == "gateway-workload" {
+			if worker.name == "gateway-workload" {
+				env["HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"] = "/var/run/stego/gateway-database.json"
+				files["gateway-database.json"] = w.databaseConfig
+				for _, endpoint := range w.databaseEndpoints {
+					target = append(target, "--egress", "gateway-postgres="+endpoint)
+				}
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_GATEWAY_CLUSTER_ISSUER"] = w.options.ClusterIssuer
 				env["HYPERSHELL_GATEWAY_OIDC_ISSUER"] = w.identity.options.ServerURL + "/realms/workflow"
@@ -69,9 +71,6 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			return w.p.start(name, "..", image, testIdentity{}, env, files, target...)
 		}
 		stop, logs := start()
-		if worker.name == "namespace-allocation" {
-			w.startCNPG()
-		}
 		previous := ""
 		w.stops = append(w.stops, func() { stop() })
 		w.outputs = append(w.outputs, func() string { return previous + logs() })

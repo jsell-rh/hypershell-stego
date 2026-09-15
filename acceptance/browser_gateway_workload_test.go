@@ -11,36 +11,38 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
-	"github.com/segmentio/ksuid"
+	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
 
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
-	t           *testing.T
-	p           *kubernetesBrowser
-	f           *fixture
-	identity    *keycloakFixture
-	owner       *consoleBrowser
-	kubernetes  *kube.Client
-	options     databasecontroller.KubernetesOptions
-	tokens      map[string]string
-	allocations map[string]allocationTarget
-	call        gatewayCall
-	stops       []func()
-	outputs     []func() string
-	telemetry   []string
-	restarts    []func()
-	gatewayIDs  []string
+	t                 *testing.T
+	p                 *kubernetesBrowser
+	f                 *fixture
+	identity          *keycloakFixture
+	owner             *consoleBrowser
+	kubernetes        *kube.Client
+	options           gatewayworkload.Options
+	tokens            map[string]string
+	allocations       map[string]allocationTarget
+	call              gatewayCall
+	stops             []func()
+	outputs           []func() string
+	telemetry         []string
+	restarts          []func()
+	gatewayIDs        []string
+	databaseOptions   postgres.Options
+	databaseConfig    []byte
+	databaseEndpoints []string
 }
 
-func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
+func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessions *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
 	t.Helper()
 	issuer := os.Getenv("STEGO_TEST_GATEWAY_CLUSTER_ISSUER")
 	if issuer == "" {
@@ -55,12 +57,13 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 		t.Fatal(err)
 	}
 	clear(data)
-	options := databasecontroller.KubernetesOptions{ServerURL: "https://kubernetes.default.svc", CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", TokenFile: tokenFile, ClusterIssuer: issuer}
+	options := gatewayworkload.Options{ServerURL: "https://kubernetes.default.svc", CAFile: "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt", TokenFile: tokenFile, ClusterIssuer: issuer}
 	client, err := kube.New(kube.Options{ServerURL: options.ServerURL, CAFile: options.CAFile, TokenFile: tokenFile})
 	if err != nil {
 		t.Fatal("Kubernetes client setup failed")
 	}
 	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
+	w.prepareDatabase(sessions)
 	t.Cleanup(func() {
 		defer client.Close()
 		for i := len(w.stops) - 1; i >= 0; i-- {
@@ -85,13 +88,6 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 		for _, ns := range names {
 			target := w.allocations[ns]
 			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-			if target.profile == "database" {
-				if err := w.cleanupCNPGFixture(ctx, allocator, ns, target.id); err != nil {
-					t.Error("CNPG fixture cleanup failed", err)
-					cancel()
-					return
-				}
-			}
 			for {
 				gone, err := allocator.Delete(ctx, target.profile, ns, target.id)
 				if err != nil {
@@ -119,24 +115,9 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 	if _, err := f.db.Exec("UPDATE gateway_releases SET image=$1 WHERE id=$2", gatewayImage, f.release); err != nil {
 		t.Fatal(err)
 	}
-	// The host restricts CNPG watches before this test starts. Use that one ID.
-	id := os.Getenv("STEGO_TEST_CNPG_DATABASE_ID")
-	parsed, err := ksuid.Parse(id)
-	if err != nil || parsed == ksuid.Nil || parsed.String() != id {
-		t.Fatal("CNPG test requires its declared database ID")
-	}
-	namespace, err := gateways.DatabaseNamespace(id)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if id != f.database {
-		t.Fatal("CNPG fixture differs from the declared database ID")
-	}
-	w.trackAllocation(namespace, id, "database")
-	settings = append(settings, "DATABASE_PROVIDER=cnpg")
 	var subjects []string
 	ids := map[string]string{}
-	for _, name := range []string{"database", "identity", "workload", "allocation"} {
+	for _, name := range []string{"identity", "workload", "allocation"} {
 		username := "browser-controller-" + name
 		subject := k.human(t, username)
 		subjects = append(subjects, subject)
@@ -144,8 +125,8 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f *fixtur
 		w.tokens[name] = k.browserLogin(t, "hypershell", username)
 
 	}
-	settings = withControllerWriteGrants(t, settings, databaseWriteGrant(ids["database"], f.cluster), writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster))
-	settings = withCleanupGrants(t, settings, cleanupGrant(ids["database"], "ManagedDatabase", "provider", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
 	encoded, _ := json.Marshal(subjects)
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(encoded))
 	return w, settings
@@ -159,15 +140,15 @@ func (w *browserGatewayWorkload) trackAllocation(name, id, profile string) {
 func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatewayID string) {
 	w.t.Helper()
 	w.owner = owner
-	rows, err := w.f.db.Query("SELECT g.id,g.namespace,d.id,d.namespace FROM gateways g JOIN managed_databases d ON d.id=g.database_id WHERE g.cluster_id=$1 AND g.deleted_at IS NULL", w.f.cluster)
+	rows, err := w.f.db.Query("SELECT id,namespace FROM gateways WHERE cluster_id=$1 AND deleted_at IS NULL", w.f.cluster)
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	type placement struct{ id, namespace, database, databaseNamespace string }
+	type placement struct{ id, namespace string }
 	var placements []placement
 	for rows.Next() {
 		var p placement
-		if err := rows.Scan(&p.id, &p.namespace, &p.database, &p.databaseNamespace); err != nil {
+		if err := rows.Scan(&p.id, &p.namespace); err != nil {
 			rows.Close()
 			w.t.Fatal(err)
 		}
@@ -179,11 +160,14 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 		w.t.Fatal("unexpected browser Gateway placement count")
 	}
 	for _, p := range placements {
-		w.trackAllocation(p.databaseNamespace, p.database, "database")
+		state, err := gatewayworkload.StateNamespace(p.id)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		w.trackAllocation(state, p.id, "gateway-state")
 		w.trackAllocation(p.namespace, p.id, "gateway")
 		w.gatewayIDs = append(w.gatewayIDs, p.id)
 	}
-	w.checkProviderWriteDenied(address, ca)
 	w.startWorkers(address, ca)
 	for _, id := range w.gatewayIDs {
 		w.check(id)
@@ -198,7 +182,7 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 		w.check(id)
 	}
 	if next := w.checkSQLIsolation(); !reflect.DeepEqual(identities, next) {
-		w.t.Fatal("CNPG restart changed a database or credential identity")
+		w.t.Fatal("worker restart changed a database or credential identity")
 	}
 }
 

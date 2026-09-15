@@ -1,6 +1,18 @@
 # Browser Gateway workload acceptance
 
-## Current CNPG gate
+## Current database contract
+
+The [controller-local database change](controller-local-database.md) removes
+database registration and application ownership of PostgreSQL servers. The
+converted browser fixture supplies a server before the workers start. Gateway
+deletion must preserve that server and installation data. The
+[conversion record](controller-local-test-transition.md) states the current
+test results and remaining work.
+
+The results below apply to the earlier database-catalog model. They do not
+prove the current workflow.
+
+## Earlier CNPG gate
 
 The complete CNPG browser Gateway workflow passed on 2026-09-14 UTC. The test
 passed in 464.73 seconds; the race-enabled acceptance package passed in

@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
@@ -127,7 +127,7 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	if _, err := client.SetActiveSandboxCount(call(owner), &pb.SetActiveSandboxCountRequest{Namespace: one.Namespace, Count: 0}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("owner count write was not denied", err)
 	}
-	k := &kubeFixture{options: databasecontroller.KubernetesOptions{ServerURL: options.ServerURL, CAFile: options.CAFile, TokenFile: "/count-credentials/count", ControlNamespace: control}}
+	k := &kubeFixture{options: gatewayworkload.Options{ServerURL: options.ServerURL, CAFile: options.CAFile, TokenFile: "/count-credentials/count", ControlNamespace: control}}
 	worker := buildProgram(t, "./out/deploy/workers/sandbox-count")
 	workerSettings := []string{"HYPERSHELL_CONTROL_NAMESPACE=" + control, "HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_SANDBOX_COUNT_RESYNC=1s", "HYPERSHELL_SANDBOX_COUNT_WATCH_LIMIT=4"}
 	stopWorker, logs := startDatabaseController(t, worker, k, rpcAddress, tlsIdentity.config.CAFile, controller, workerSettings...)

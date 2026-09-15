@@ -83,3 +83,55 @@ restart evidence remains a separate result.
 The jshell API gate now requires this real SQL check before generation and
 the application tests. It still requires the full acceptance package. A pass
 in the SQL check cannot hide a later build or application test failure.
+
+## Browser fixture conversion
+
+The browser fixture now supplies PostgreSQL before it starts the generated
+workers. Its installation account creates a separate, non-superuser SQL
+provisioning account. The Gateway worker receives that account through its
+declared file Secret. The fixture checks the existing component database names
+before it removes default PUBLIC connection access. It refuses a foreign
+database. Gateway reconciliation does not change that installation policy.
+
+The workflow has three workers: namespace allocation, Gateway identity, and
+Gateway workload. Gateway deletion must remove its SQL database, both SQL
+roles, workload namespace, and retained state namespace. It must preserve the
+other Gateway and the installation data. Parent cluster deletion must wait for
+both cleanup owners. The fixture no longer starts a server-resource controller
+or expects application deletion to remove CNPG storage.
+
+The removed `TestDatabaseWorkloadAndOfflineDeletion` and
+`TestCNPGDatabaseWorkloadAndOfflineDeletion` tested the retired server controller.
+Their requirement to create, repair, and delete PostgreSQL server resources
+conflicts with the current installation contract. Their old source remains in
+Git history. CNPG as an installation-supplied server remains required.
+
+`controller-local-browser.files` lists the converted test files for bounded
+transition checks. It includes the race-enabled fixture and excludes its
+non-race alternative. Three live files still require conversion:
+
+| File | Remaining work |
+| --- | --- |
+| `gateway_workload_test.go` | Move the remaining fault and recovery checks from the old kind and server-controller fixture into the supplied-server workflow. |
+| `cnpg_gateway_test.go` | Convert Gateway SQL fault checks that use the retired CNPG resource names and server controller. |
+| `gateway_recovery_test.go` | Handle deletion before the first worker run. The current controller can wait for durable state that was never created. |
+
+The complete generation dependency check and acceptance package remain required.
+The file list does not replace them. Fixture conversion alone is not evidence
+that the browser workflow passes.
+
+The [browser preflight evidence](controller-local-browser-preflight-evidence.json)
+records 13 passing API checks and two equal direct-generation hash records.
+The API test package took 81.400 seconds. The subsequent browser test failed
+because the runtime SQL role lacked read access to `stego_schema.generation`.
+The fixture now grants schema usage and SELECT only. It checks that schema and
+record writes remain denied.
+
+The next run started the API, console, provisioner, and three workers. Both
+Gateway allocations succeeded, but Gateway startup failed. The SQL egress rule
+included the Service address without the backing fixture Pod address. The
+fixture now supplies both observed addresses, on port 5432 only. Kubernetes
+can process address translation before or after the network rule; see the
+[NetworkPolicy contract](https://kubernetes.io/docs/concepts/services-networking/network-policies/#behavior-of-to-and-from-selectors).
+Both failed Jobs and their owned resources were removed. Neither failure is a
+complete browser workflow pass.

@@ -17,8 +17,8 @@ if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
 fi
-# Keep the lock and operator helpers fixed for this run.
-cp scripts/jshell_live_lock.py scripts/cnpg-test-operator.py "$results/"
+# Keep the lock helper fixed for this run.
+cp scripts/jshell_live_lock.py "$results/"
 python3 "$results/jshell_live_lock.py" acquire --context "$STEGO_TEST_CONTEXT" \
   --holder "$namespace" --namespace "$namespace" --job service-check
 created=false
@@ -41,17 +41,12 @@ cleanup_resources() {
           "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "hypershell.redhat.io/gateway-id=$gateway_id,app.kubernetes.io/managed-by=hypershell-gateway-controller" --wait=false || true
         fi
       done < "$results/owned-namespaces.txt"
-      for worker in database gateway-workload; do
+      for worker in gateway-workload; do
         "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-$worker" "clusterrolebinding/$namespace.hypershell-$worker" --ignore-not-found || true
       done
       "${oc_cmd[@]}" delete clusterrolebinding -l "stego.dev/allocator=$allocation_marker" --wait=false || true
       "${oc_cmd[@]}" delete namespace -l "stego.dev/allocator=$allocation_marker" --wait=false || true
-      if [[ -e $results/cnpg-plan.json ]]; then
-        database_namespace=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["database_namespace"])' "$results/cnpg-plan.json")
-        "${oc_cmd[@]}" wait --for=delete "namespace/$database_namespace" --timeout=60s || true
-        python3 "$results/cnpg-test-operator.py" remove --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results" || status=1
-      fi
-      for role in database-worker database-keys gateway-worker gateway-runtime gateway-reviews sandbox-count proof; do
+      for role in gateway-state gateway-worker gateway-runtime gateway-reviews sandbox-count proof; do
         "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation.$role" --ignore-not-found || true
       done
       "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation" "clusterrolebinding/$namespace.hypershell-namespace-allocation" --ignore-not-found || true
@@ -75,7 +70,6 @@ command = ['oc', '--context', context, '--request-timeout=20s']
 def get(*words):
     result = subprocess.run(command + ['get', *words, '-o', 'json'], check=True, capture_output=True, text=True, timeout=30)
     return json.loads(result.stdout) if result.stdout.strip() else None
-journal = json.loads((root / 'cnpg-created.json').read_text()) if (root / 'cnpg-created.json').exists() else []
 for attempt in range(12):
     remaining = []
     for kind in ['namespaces', 'clusterroles', 'clusterrolebindings', 'validatingadmissionpolicies', 'validatingadmissionpolicybindings']:
@@ -84,15 +78,8 @@ for attempt in range(12):
             labels = meta.get('labels', {})
             if meta['name'] == namespace or meta['name'].startswith(namespace + '.') or labels.get('stego.test/browser-run') == namespace or labels.get('stego.dev/allocator') == marker:
                 remaining.append(kind + '/' + meta['name'])
-    for obj in journal:
-        meta = obj['metadata']
-        words = [obj['kind'], meta['name'], '--ignore-not-found']
-        if 'namespace' in meta:
-            words += ['-n', meta['namespace']]
-        if get(*words):
-            remaining.append(obj['kind'] + '/' + meta['name'])
     if not remaining:
-        (root / 'cleanup.json').write_text(json.dumps({'namespace_absent': namespace, 'owned_resources_absent': True, 'cnpg_resources_absent': len(journal)}) + '\n')
+        (root / 'cleanup.json').write_text(json.dumps({'namespace_absent': namespace, 'owned_resources_absent': True}) + '\n')
         break
     if attempt == 11:
         raise RuntimeError('Resources remain; keep the live-test Lease: ' + ', '.join(remaining))
@@ -121,7 +108,6 @@ openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
   -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
 if [[ $workload == 1 ]]; then
-  python3 "$results/cnpg-test-operator.py" prepare --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
 fi
@@ -171,24 +157,28 @@ if sys.argv[4]=='1':
         if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'11Gi','limits.cpu':'12','pods':'10'})
         if item['kind']=='Role' and item['metadata']['name']=='service-check':
             for rule in item['rules']:
-                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-namespace-allocation','hypershell-database','hypershell-gateway-identity','hypershell-gateway-workload']
+                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-namespace-allocation','hypershell-gateway-identity','hypershell-gateway-workload']
         if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
-            for worker in ['namespace-allocation','database','gateway-identity','gateway-workload']:
+            for worker in ['namespace-allocation','gateway-identity','gateway-workload']:
                 item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
         if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'].append({'name':'STEGO_TEST_KUBERNETES_EGRESS','value':json.dumps(sorted(endpoints))})
     import hashlib
     marker=hashlib.sha256((ns+'.hypershell-namespace-allocation').encode()).hexdigest()[:32]
+    for item in job['items']:
+        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
+            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-gateway-workload'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
+            item['spec']['ingress'].append({'from':[{'namespaceSelector':{'matchLabels':{'stego.dev/allocator':marker,'stego.dev/allocation-profile':'gateway'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
     role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns).replace('@ALLOCATOR_MARKER@',marker))
     job['items'] += role['items']
     for item in job['items']:
-        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_CNPG_DATABASE_ID','value':json.loads((root/'cnpg-plan.json').read_text())['database_id']},{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
+        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
 password=secrets.token_hex(24)
 encode=lambda value:base64.b64encode(value.encode()).decode()
 for item in job['items']:
     if item['kind']=='Secret' and item['metadata']['name']=='cli-test-postgres':
         item['data']={key:encode(value) for key,value in {
           'password':password,
-          'dsn':f'postgres://postgres:{password}@127.0.0.1:5432/postgres?sslmode=disable',
+          'dsn':f'postgres://postgres:{password}@127.0.0.1:5432/postgres?sslmode=verify-full&sslrootcert=/tls/server.crt',
           'url':f'postgres://postgres:{password}@127.0.0.1:5432/postgres?sslmode=verify-full&sslrootcert=/tls/server.crt'
         }.items()}
     if item['kind']=='Secret' and item['metadata']['name']=='database-tls':
@@ -203,9 +193,6 @@ PY
 # Create the namespace first so cleanup also runs after a partial apply.
 "${oc_cmd[@]}" create namespace "$namespace" --save-config
 created=true
-if [[ $workload == 1 ]]; then
-  python3 "$results/cnpg-test-operator.py" install --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --evidence "$results"
-fi
 "${oc_cmd[@]}" apply -f "$results/private-job.json"
 for file in "$results/private-job.json" "$results/server.key"; do
     [[ ! -e $file ]] || unlink -- "$file"
@@ -229,7 +216,7 @@ source "$project/scripts/wait-service-result.sh"
 wait_service_result
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json database-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
+  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s
@@ -237,7 +224,4 @@ else
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Failed job/service-check --timeout=60s || true
 fi
 tail -30 "$results/deployment.log"
-if [[ $result == 0 && $workload == 1 ]]; then
-  python3 "$project/scripts/check-database-volume-deletion.py" --context "$STEGO_TEST_CONTEXT" --evidence "$results"
-fi
 exit "$result"

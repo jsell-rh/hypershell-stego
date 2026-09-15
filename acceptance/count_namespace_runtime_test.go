@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
@@ -161,7 +161,7 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	if err := os.WriteFile(tokenFile, []byte("count-fixture"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	k := &kubeFixture{options: databasecontroller.KubernetesOptions{ServerURL: server.URL, CAFile: ca, TokenFile: tokenFile, ControlNamespace: "count-control"}}
+	k := &kubeFixture{options: gatewayworkload.Options{ServerURL: server.URL, CAFile: ca, TokenFile: tokenFile, ControlNamespace: "count-control"}}
 	proofClient, err := kube.New(kube.Options{ServerURL: server.URL, CAFile: ca, TokenFile: tokenFile})
 	if err != nil {
 		t.Fatal(err)

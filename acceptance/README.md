@@ -228,11 +228,11 @@ gRPC, access checks, atomic events, watches, restart, and migration checks cover
 this path. Catalog writes require a platform admin or configured controller.
 Gateway workload deployment remains open.
 
-The [deployment placement workflow](deployment-placement.md) now makes a separate
-database record for each Gateway by default. The database, Gateway, owner grant,
-and three events commit together. Set `DATABASE_PROVIDER=cnpg` explicitly to use
-the shared CNPG path. REST requires a `database_id` property but accepts an empty
-string. Apply migration 000007 before the new API starts. The database workload and cleanup now have a separate acceptance gate.
+The [deployment placement workflow](deployment-placement.md) records the retired
+database-catalog model. Its empty `database_id` input, `DATABASE_PROVIDER` switch,
+and migration instructions do not apply to the current source. The current API
+rejects `database_id`, including empty and null values. See the
+[current database contract](controller-local-database.md).
 
 The [database workload workflow](database-workflow.md) now provisions PostgreSQL on Kubernetes
 from a Gateway creation event. It checks verified TLS, limited database roles,
