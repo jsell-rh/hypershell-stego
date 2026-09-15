@@ -207,8 +207,10 @@ the console, and the service image. The overall result remains failure because
 the CNPG and Sandbox jobs failed. See [the verified API record](api-route-composition-evidence.json).
 
 The [PostgreSQL client telemetry change](postgres-client-observability.md) at
-`2af1b46` has separate queued checks: API `34962176232`, browser `34962176339`,
-and full CI `34962176260`. Its compiler is `f2b09c0`. The earlier pool-metric
+`2af1b46` has verified passes for API `34962176232` and browser `34962176339`.
+The [browser record](postgres-telemetry-browser-evidence.json) includes complete
+SQL signal checks across worker restart and cleanup denial and recovery.
+Full CI `34962176260` remains active. Its compiler is `f2b09c0`. The earlier pool-metric
 runs remain in the queue or active; no required live test was canceled.
 
 The [complete browser pool run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34961014607)

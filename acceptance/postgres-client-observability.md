@@ -21,17 +21,24 @@ correlation and that an undeclared SQL field fails the check.
 The shared contract is
 [PostgreSQL client observability](https://github.com/jsell-rh/stego/blob/main/specs/postgres-client-observability.md).
 Repeated generation and drift checks passed with compiler `f2b09c0`. Bounded
-acceptance compilation and the collector regression passed. The full browser
-and API workflows remain required for this source. A compiled test is not a
-passing application result.
+acceptance compilation and the collector regression passed. The verified browser and API results follow.
 
 [Full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34961995199)
 passed at `f2b09c0`, including race checks and PostgreSQL provisioning. The
-complete Hypershell API and browser results remain required for this change.
+application results below apply to their recorded source.
 
 The [API evidence](postgres-telemetry-api-evidence.json) now records a pass at
 `2af1b46` in run `34962176232`. All 31 required tests passed in 153.598 seconds.
 Verification matched 902 source files, 230 generated files, and all generation
-records. Automatic and independent cleanup checks passed. The complete browser
-SQL signal check remains required. The later worker startup change needs its
-own compiler and application results.
+records. Automatic and independent cleanup checks passed.
+
+The [browser evidence](postgres-telemetry-browser-evidence.json) records a pass
+at the same source in run `34962176339`, in 354.91 seconds. Verification matched
+902 source files, 231 generated files, and all three generation records. Both
+Gateway worker instances exported correlated SQL logs, traces, and metrics.
+The run included successful creation, denied SQL cleanup, retained state, and
+cleanup recovery. It also passed the complete Gateway, account, access,
+namespace recovery, encryption, and console pool workflow. Independent reads
+confirmed test resource removal. The saved images show a healthy Gateway and
+zero service accounts after deletion. Public Gateway connectivity remains open.
+The later worker startup change needs its own application results.
