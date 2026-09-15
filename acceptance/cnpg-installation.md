@@ -99,3 +99,14 @@ The local boundary, projection, lock, evidence, and inspection checks pass.
 No CNPG server has been installed or tested yet for this implementation. The
 GitHub CNPG gate remains unsuccessful until its installation and CI execution
 path has passed. A manual operator-assisted pass will be recorded separately.
+
+The first live installation attempt used source `90b6ca5`. Both CNPG instances
+became ready. The application Pod then failed to obtain CPU and memory within
+its 180-second startup limit. No application test ran. Cleanup removed the
+application Job, database namespace, private fixture, operator resources, and
+both recorded persistent volumes. The shared Lease was released. See the
+[failed attempt record](cnpg-installation-attempts.json).
+
+OpenShift added a worker node. After that node became ready and cleanup was
+confirmed, the same frozen source started a second bounded attempt. No test
+limit or application permission changed.
