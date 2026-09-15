@@ -184,3 +184,16 @@ did not change. The Job and Pods are absent. See the
 [verified result](browser-environment-credential-evidence.json). This closes the
 live browser check for the CI environment credential change. It does not close
 the public endpoint, CNPG, RDS, or Sandbox requirements.
+
+The [route-composition browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34960101315)
+passed at `8551ad3` with compiler `1edd407` in 407.18 seconds. Verification matched
+897 source files, 230 generated files, all generation records, 16 CI access
+checks, 57 application access checks, six admission probes, and 18 operator
+resources. Namespace recovery took 54.37 seconds and retained controller Pods,
+SQL identities, credentials, and keys. Viewer access, denied requests, account
+cleanup, SQL cleanup denial and recovery, encryption, and session checks passed.
+Automatic cleanup passed. Independent reads found no browser Job, Pods, or
+private test fixtures. The next serialized API Job holds the Lease. The images
+show a healthy Gateway and an empty account list; they do not verify a public
+connection command. See [the verified record](browser-route-composition-evidence.json).
+The API run and later pool-metric source have separate acceptance results.

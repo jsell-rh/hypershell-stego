@@ -65,11 +65,13 @@ requests, event delivery, restart, and regeneration. The
 including SQL isolation, namespace recovery, credential retention, deletion,
 and automated cleanup. Each result applies to its recorded source revision.
 
-The [supplied CNPG application workflow](cnpg-installation.md) passed, including
-failover and retained data. Its runner failed during a final cleanup read.
-Separate checks verified cleanup. This result does not establish unattended
-CNPG CI. Actual RDS checks and a public Gateway connection remain open. Earlier
-registration and deployment-backed database tests are historical evidence.
+The [complete supplied CNPG workflow](cnpg-complete-evidence.json) passed at
+`ccfa4a9`, including failover, retained data, and automatic cleanup. Independent
+reads confirmed that test resources were absent. Earlier cleanup failures remain
+recorded in [the CNPG installation history](cnpg-installation.md). This result
+does not establish unattended CNPG CI. Actual RDS checks and a public Gateway
+connection remain open. Earlier registration and deployment-backed database
+tests are historical evidence.
 
 The [shared RDS acceptance gate](https://github.com/jsell-rh/stego/blob/main/specs/rds-acceptance.md)
 requires the complete Gateway workflow on an identified disposable RDS server.
@@ -163,7 +165,7 @@ The initial conversion used `controller-local-api.files` to select tests while
 older provider fixtures still imported removed packages. That temporary list is
 retired and remains in Git history. The complete acceptance package now builds.
 Use the workflows in the [acceptance index](README.md). The current restricted
-API gate requires 30 named checks and compiles the complete acceptance package.
+API gate requires 31 named checks and compiles the complete acceptance package.
 Its separate browser workflow proves the real Gateway workload and SQL lifecycle.
 See [the current CI evidence](browser-ci.md) for source revisions and limits.
 
