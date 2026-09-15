@@ -25,7 +25,7 @@ func TestEndpointOwnerWritesStopBeforeStorage(t *testing.T) {
 	}
 }
 
-func TestEndpointControllerRequiresExactGrantAndOneFieldGroup(t *testing.T) {
+func TestEndpointControllerRequiresExactGrant(t *testing.T) {
 	caller := Principal{Issuer: "https://issuer.example", Subject: "worker", Username: "worker"}
 	policy, err := auth.NewGrantPolicy([]auth.Grant{{Issuer: caller.Issuer, Subject: caller.Subject, Resource: "Gateway", Operation: "observe.endpoint", Target: "cluster-a"}})
 	if err != nil {
@@ -44,7 +44,8 @@ func TestEndpointControllerRequiresExactGrantAndOneFieldGroup(t *testing.T) {
 	}
 	for _, patch := range []PatchRequest{
 		{Name: &endpoint},
-		{Phase: &phase, Status: &workload},
+		{Phase: &phase},
+		{Status: &workload},
 		{OIDC: &endpoint},
 	} {
 		if err := service.authorizeControllerWrite(caller, "cluster-a", patch, nil, &endpoint); !errors.Is(err, ErrInvalid) {
@@ -56,5 +57,32 @@ func TestEndpointControllerRequiresExactGrantAndOneFieldGroup(t *testing.T) {
 	}
 	if err := service.authorizeControllerWrite(caller, "cluster-a", PatchRequest{Phase: &phase, Status: &workload}, nil, nil); !errors.Is(err, ErrForbidden) {
 		t.Fatal("endpoint grant permitted workload observations", err)
+	}
+}
+
+func TestCombinedEndpointObservationRequiresBothGrants(t *testing.T) {
+	caller := Principal{Issuer: "https://issuer.example", Subject: "worker", Username: "worker"}
+	endpoint, phase, state := "https://gateway.example", "Running", "Healthy"
+	for _, operations := range [][]string{{"observe.endpoint"}, {"observe.workload"}, {"observe.endpoint", "observe.workload"}} {
+		grants := []auth.Grant{}
+		for _, operation := range operations {
+			grants = append(grants, auth.Grant{Issuer: caller.Issuer, Subject: caller.Subject, Resource: "Gateway", Operation: operation, Target: "cluster-a"})
+		}
+		policy, err := auth.NewGrantPolicy(grants)
+		if err != nil {
+			t.Fatal(err)
+		}
+		service := &Service{controlPlaneSubjects: map[string]bool{caller.Subject: true}, controllerWritePolicy: policy}
+		err = service.authorizeControllerWrite(caller, "cluster-a", PatchRequest{Phase: &phase, Status: &state}, nil, &endpoint)
+		if len(operations) == 2 {
+			if err != nil {
+				t.Fatal("complete observation with both grants was denied", err)
+			}
+		} else if !errors.Is(err, ErrForbidden) {
+			t.Fatal("combined observation did not require both grants", err)
+		}
+		if err := service.authorizeControllerWrite(caller, "cluster-b", PatchRequest{Phase: &phase, Status: &state}, nil, &endpoint); !errors.Is(err, ErrForbidden) {
+			t.Fatal("combined observation crossed clusters", err)
+		}
 	}
 }

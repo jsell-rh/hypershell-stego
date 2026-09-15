@@ -43,9 +43,9 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["workload","identity","second","ungranted","console","cleanup"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["workload","identity","second","ungranted","console","cleanup","endpoint-only","workload-only"]`)
 	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant("workload", "observe.workload", f.cluster), writeGrant("identity", "configure.identity", ""), writeGrant("second", "observe.workload", second), writeGrant("console", "configure.console", f.cluster), writeGrant("ordinary", "observe.workload", f.cluster), writeGrant("workload", "observe.endpoint", f.cluster), writeGrant("second", "observe.endpoint", second))
+	settings = withControllerWriteGrants(t, settings, writeGrant("workload", "observe.workload", f.cluster), writeGrant("identity", "configure.identity", ""), writeGrant("second", "observe.workload", second), writeGrant("console", "configure.console", f.cluster), writeGrant("ordinary", "observe.workload", f.cluster), writeGrant("workload", "observe.endpoint", f.cluster), writeGrant("second", "observe.endpoint", second), writeGrant("endpoint-only", "observe.endpoint", f.cluster), writeGrant("workload-only", "observe.workload", f.cluster))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -114,14 +114,28 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	for _, subject := range []string{"identity", "second", "ungranted", "ordinary", "cleanup", "console", "alice"} {
 		write(token(t, key, subject, "platform:admin"), endpointPatch(endpoint), codes.PermissionDenied)
 	}
-	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, Phase: pointer("Running"), Status: pointer("Healthy")}, codes.InvalidArgument)
+	combinedPatch := func(address, phase, state string) *pb.UpdateGatewayRequest {
+		return &pb.UpdateGatewayRequest{RouteAddress: &address, Phase: &phase, Status: &state}
+	}
+	for _, subject := range []string{"endpoint-only", "workload-only", "second", "identity", "alice"} {
+		write(token(t, key, subject, "platform:admin"), combinedPatch(endpoint, "Running", "Healthy"), codes.PermissionDenied)
+	}
 	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, ConsoleAddress: pointer(endpoint)}, codes.InvalidArgument)
 	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, ClusterId: &second}, codes.InvalidArgument)
 	write(workloadToken, endpointPatch("invalid\x00"), codes.InvalidArgument)
 	beforeEndpoint := state()
-	write(workloadToken, endpointPatch(endpoint), codes.OK)
+	// Reject the second observation after the first SQL update. Both groups
+	// and the event must roll back in the generated transaction.
+	if _, err := f.db.Exec(`ALTER TABLE gateways ADD CONSTRAINT reject_test_endpoint CHECK (route_address IS NULL OR route_address <> 'https://rejected.example.test')`); err != nil {
+		t.Fatal(err)
+	}
+	write(workloadToken, combinedPatch("https://rejected.example.test", "Degraded", "RouteNotReady"), codes.Internal)
+	if _, err := f.db.Exec(`ALTER TABLE gateways DROP CONSTRAINT reject_test_endpoint`); err != nil {
+		t.Fatal(err)
+	}
+	write(workloadToken, combinedPatch(endpoint, "Running", "Healthy"), codes.OK)
 	published := state()
-	if published.ResourceGeneration != beforeEndpoint.ResourceGeneration || published.ObservedGeneration("endpoint") != published.ResourceGeneration || published.CurrentObservations().RouteAddress == nil || *published.CurrentObservations().RouteAddress != endpoint {
+	if published.ResourceGeneration != beforeEndpoint.ResourceGeneration || published.ObservedGeneration("endpoint") != published.ResourceGeneration || published.ObservedGeneration("workload") != published.ResourceGeneration || published.CurrentObservations().Phase == nil || *published.CurrentObservations().Phase != "Running" || published.CurrentObservations().Status == nil || *published.CurrentObservations().Status != "Healthy" || published.CurrentObservations().RouteAddress == nil || *published.CurrentObservations().RouteAddress != endpoint {
 		t.Fatal("endpoint observation changed desired generation or was not published")
 	}
 	stale, err := rpc.WithResourceVersion(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+workloadToken)), beforeEndpoint.ResourceVersion)
@@ -129,7 +143,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 		t.Fatal(err)
 	}
 	staleEvents := count(t, f.db, "gateway_event_audit")
-	if _, err := client.UpdateGateway(stale, &pb.UpdateGatewayRequest{Id: row.ID, RouteAddress: pointer("")}); status.Code(err) != codes.Aborted {
+	if _, err := client.UpdateGateway(stale, &pb.UpdateGatewayRequest{Id: row.ID, RouteAddress: pointer(""), Phase: pointer("Degraded"), Status: pointer("RouteNotReady")}); status.Code(err) != codes.Aborted {
 		t.Fatal("stale endpoint observation was accepted", err)
 	}
 	if !reflect.DeepEqual(published, state()) || count(t, f.db, "gateway_event_audit") != staleEvents {
@@ -163,11 +177,14 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 			t.Fatal("REST read lost the controller endpoint", code)
 		}
 	}
-	write(workloadToken, endpointPatch(""), codes.OK)
+	write(workloadToken, combinedPatch("", "Degraded", "RouteNotReady"), codes.OK)
 	if value := state().CurrentObservations().RouteAddress; value == nil || *value != "" {
 		t.Fatal("controller could not clear the endpoint")
 	}
-	write(workloadToken, endpointPatch(endpoint), codes.OK)
+	if current := state().CurrentObservations(); current.Status == nil || *current.Status != "RouteNotReady" || current.Phase == nil || *current.Phase != "Degraded" {
+		t.Fatal("endpoint failure did not clear workload readiness")
+	}
+	write(workloadToken, combinedPatch(endpoint, "Running", "Healthy"), codes.OK)
 	before := state()
 	if code, _ := requestJSON(t, "PATCH", root, workloadToken, []byte(`{"oidc":"wrong"}`)); code != 428 {
 		t.Fatal("REST controller bypass", code)
@@ -195,8 +212,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	}
 	write(token(t, key, "console"), &pb.UpdateGatewayRequest{ConsoleAddress: pointer("https://wrong.example")}, codes.PermissionDenied)
 	secondToken := token(t, key, "second")
-	write(secondToken, statusPatch(), codes.OK)
-	write(secondToken, endpointPatch(endpoint), codes.OK)
+	write(secondToken, combinedPatch(endpoint, "Running", "Healthy"), codes.OK)
 	connection.Close()
 	stop()
 	settings = withControllerWriteGrants(t, settings, writeGrant("identity", "configure.identity", ""))
@@ -204,5 +220,6 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	client, _ = grpcClient(t, grpcAddress, tlsIdentity)
 	write(secondToken, statusPatch(), codes.PermissionDenied)
 	write(secondToken, endpointPatch(""), codes.PermissionDenied)
+	write(secondToken, combinedPatch("", "Degraded", "RouteNotReady"), codes.PermissionDenied)
 	write(token(t, key, "identity"), &pb.UpdateGatewayRequest{Oidc: pointer(`{"issuer":"updated"}`)}, codes.OK)
 }

@@ -7,9 +7,11 @@ import (
 )
 
 // authorizeControllerWrite uses the stored placement before any field changes.
-// Each request writes one field group. Other controller patches are denied.
+// A public workload observation can include its endpoint. Both grants are
+// required. Configuration fields cannot be mixed with observations.
 func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch PatchRequest, console, route *string) error {
 	operation, target := "", ""
+	workloadWithEndpoint := false
 	rest := patch
 	switch {
 	case route != nil:
@@ -17,6 +19,13 @@ func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch Pa
 			return ErrInvalid
 		}
 		operation, target = "observe.endpoint", cluster
+		if patch.Phase != nil || patch.Status != nil {
+			if patch.Phase == nil || patch.Status == nil {
+				return ErrInvalid
+			}
+			workloadWithEndpoint = true
+			rest.Phase, rest.Status = nil, nil
+		}
 	case patch.Phase != nil || patch.Status != nil:
 		if patch.Phase == nil || patch.Status == nil || console != nil {
 			return ErrInvalid
@@ -38,7 +47,13 @@ func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch Pa
 	if err != nil || string(data) != "{}" {
 		return ErrInvalid
 	}
-	return s.AuthorizeControllerWrite(p, "Gateway", operation, target)
+	if err := s.AuthorizeControllerWrite(p, "Gateway", operation, target); err != nil {
+		return err
+	}
+	if workloadWithEndpoint {
+		return s.AuthorizeControllerWrite(p, "Gateway", "observe.workload", cluster)
+	}
+	return nil
 }
 
 // AuthorizeControllerWrite checks the verified caller against an exact grant.

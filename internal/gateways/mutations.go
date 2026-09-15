@@ -97,18 +97,34 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 		if current.ClusterID != previousClusterID {
 			return store.ErrConflict
 		}
-		if patch.Phase != nil || patch.Status != nil {
+		if patch.Phase != nil || routeAddress != nil {
 			writer, ok := tx.(store.ObservationWriter)
 			if !ok {
 				return errors.New("Gateway storage does not support observations")
 			}
-			err = writer.ObserveIfVersion(ctx, "Gateway", id, version, "workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status})
-		} else if routeAddress != nil {
-			writer, ok := tx.(store.ObservationWriter)
-			if !ok {
-				return errors.New("Gateway storage does not support observations")
+			observationVersion := version
+			if patch.Phase != nil {
+				if err := writer.ObserveIfVersion(ctx, "Gateway", id, version, "workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status}); err != nil {
+					return err
+				}
+				if routeAddress != nil {
+					// This is our own write in the same serializable transaction.
+					// The first write checked the original external observation
+					// revision and retains the row lock until both groups commit.
+					value, err := tx.Get(ctx, "Gateway", id)
+					if err != nil {
+						return err
+					}
+					written, ok := value.(model.Gateway)
+					if !ok || written.ResourceVersion <= version {
+						return errors.New("Gateway observation revision is invalid")
+					}
+					observationVersion = written.ResourceVersion
+				}
 			}
-			err = writer.ObserveIfVersion(ctx, "Gateway", id, version, "endpoint", map[string]any{"route_address": *routeAddress})
+			if routeAddress != nil {
+				err = writer.ObserveIfVersion(ctx, "Gateway", id, observationVersion, "endpoint", map[string]any{"route_address": *routeAddress})
+			}
 		} else if version > 0 {
 			writer, ok := tx.(store.VersionedWriter)
 			if !ok {
