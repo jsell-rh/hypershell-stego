@@ -1,5 +1,19 @@
 # CNPG CI
 
+The complete unattended workflow passed in
+[run 34993409789](https://github.com/jsell-rh/hypershell-stego/actions/runs/34993409789)
+on source `8e942ac` with compiler `0b0c932`. The rendered application test passed
+in 470.24 seconds with race detection. CNPG primary replacement took 69.34
+seconds and preserved database object IDs, credentials, keys, and provider data.
+Normal Gateway deletion left no allocations for fallback cleanup.
+
+Automatic cleanup removed application and database runtime, private fixtures,
+claims, and volumes. The static installation remained, and the shared Lease was
+released. Independent cluster reads confirmed the recorded cleanup. See the
+[complete evidence](cnpg-ci-complete-20260915.json). This internal TLS workflow
+does not prove public routing, allocated namespace network isolation, or all
+production installation and upgrade behavior. Earlier failed runs remain below.
+
 The CI workflow must create a local PostgreSQL server, run the complete Gateway
 browser workflow, replace the primary PostgreSQL Pod, verify retained data and
 credentials, and remove all test runtime resources and volumes. A build or a

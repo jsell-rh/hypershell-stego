@@ -21,8 +21,11 @@ explicit teardown and recreation; the application does not perform that action.
 
 The [complete CNPG workflow](acceptance/cnpg-complete-evidence.json) also passes
 with database primary replacement, namespace recovery, access checks, account
-cleanup, and automatic test cleanup. The operator installed the test server;
-unattended CNPG CI remains open.
+cleanup, and automatic test cleanup. The later
+[unattended CNPG workflow](acceptance/cnpg-ci-complete-20260915.json) also passed.
+Restricted CI created the disposable server, ran the complete application test,
+and removed runtime resources, private fixtures, claims, and volumes. The static
+operator installation remained.
 
 STEGO must provide common service infrastructure and generated contracts.
 Hypershell must supply its unique business rules and application workflows
@@ -32,7 +35,8 @@ entity name or application rule.
 The browser workload test uses STEGO's existing allocation model for
 [restricted inspection](acceptance/browser-inspection.md). Its complete workflow
 passes with named Secret reads and namespace permissions. The fixture adds no
-production worker rights. Unattended workload CI conversion remains open.
+production worker rights. The public and unattended CNPG records above contain
+the later complete workload results and their limits.
 
 The variant now has a Gateway domain service over STEGO-generated storage and
 event delivery. Its generated process now serves Gateway creation, retrieval,
