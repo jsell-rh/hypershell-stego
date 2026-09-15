@@ -81,3 +81,11 @@ resources remain unchanged. All eighteen identities and specifications passed
 verification before the immutable record was replaced. The new record passed
 verification before the Lease was released. A fresh complete public run remains
 required. No public connection result is claimed from the failed run.
+
+The first retry stopped in a stale-credential fixture before cluster access.
+Commit `3a50db7` supplies the required CA path to that fixture. All eight
+credential tests and the other browser boundary checks pass. Public retry
+`34985980374` uses the corrected source. A duplicate internal-only run was
+canceled before its cluster step, while the Lease and test namespace were empty.
+Push checks now require the public profile and its operator configuration.
+A manual dispatch can select `public_gateway=false` for an internal-only check.

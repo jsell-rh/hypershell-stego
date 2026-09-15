@@ -6,7 +6,7 @@ on:
       public_gateway:
         description: Test the public Gateway with the operator configuration
         type: boolean
-        default: false
+        default: true
   push:
 
 permissions:
@@ -77,7 +77,7 @@ jobs:
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
       - name: Write the public test configuration
-        if: inputs.public_gateway
+        if: github.event_name == 'push' || inputs.public_gateway
         env:
           PUBLIC_CONFIG: ${{ vars.JSHELL_GATEWAY_PUBLIC_CONFIG }}
         run: |
