@@ -131,9 +131,11 @@ The workflow now uses that identity for this one public dry-run probe. A separat
 access check still requires namespace patch denial for the allocator. The fifth
 attempt is not a full workflow pass.
 
-The current test needs Python with PyYAML on the host. Use the command below
-with the saved jshell context. The current wrapper installs the temporary CNPG
-operator; the operator details in the historical section do not apply.
+The current test needs Python 3, Go 1.26.8 for the small deployment renderer,
+and the OpenShift client on the host. Use the saved jshell context. The current
+fixture supplies PostgreSQL through its bounded sidecar. It does not install
+CNPG. See [operator installation](operator-cluster-installation.md) for the
+current permission boundary and complete live result.
 
 ## Earlier deployment-provider evidence
 

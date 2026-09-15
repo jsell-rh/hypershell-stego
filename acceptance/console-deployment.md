@@ -105,7 +105,9 @@ Run this command from a frozen checkout when source changes must continue.
 The wrapper uses the named context and a new namespace. The Job builds the
 pinned compiler and static API and console images, then publishes them to the
 test namespace's registry. It checks both image configurations before use.
-The published image references use digests. No local Go build or browser runs.
+The published image references use digests. The operator compiles the small
+standard-library deployment renderer on the host. Application builds and the
+browser run in the cluster. See [operator installation](operator-cluster-installation.md).
 
 The session-key rotation test starts with the existing single-key file. After
 Gateway creation, it replaces the console with `[old, new]`, then with

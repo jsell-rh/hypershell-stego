@@ -7,14 +7,12 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"sort"
 	"testing"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
-	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
@@ -69,47 +67,8 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		for i := len(w.stops) - 1; i >= 0; i-- {
 			w.stops[i]()
 		}
-		allocator, err := allocation.New(client, p.namespace)
-		if err != nil {
-			t.Error(err)
-			return
-		}
-		names := make([]string, 0, len(w.allocations))
-		for ns := range w.allocations {
-			names = append(names, ns)
-		}
-		sort.Slice(names, func(i, j int) bool {
-			left, right := w.allocations[names[i]].profile, w.allocations[names[j]].profile
-			if left != right {
-				return left == "gateway"
-			}
-			return names[i] < names[j]
-		})
-		for _, ns := range names {
-			target := w.allocations[ns]
-			ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
-			for {
-				gone, err := allocator.Delete(ctx, target.profile, ns, target.id)
-				if err != nil {
-					t.Error("allocation cleanup failed", ns, err)
-					cancel()
-					return
-				}
-				if gone {
-					break
-				}
-				select {
-				case <-ctx.Done():
-					t.Error("allocation cleanup timed out", ns)
-					cancel()
-					return
-				case <-time.After(time.Second):
-					continue
-				}
-				break
-			}
-			cancel()
-		}
+		// Normal REST deletion must already have removed the allocations. The
+		// outer operator process owns fallback cleanup if the test fails early.
 	})
 	// These are declared placement inputs. Controllers must supply observations.
 	if _, err := f.db.Exec("UPDATE gateway_releases SET image=$1 WHERE id=$2", gatewayImage, f.release); err != nil {

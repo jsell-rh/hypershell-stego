@@ -98,6 +98,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("worker access differs from allocation", test, code)
 		}
 	}
+	w.checkInstallationAccess()
 	w.checkAdmission(ctx, state, allocatorToken)
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
 		data, err := json.MarshalIndent(checks, "", "  ")

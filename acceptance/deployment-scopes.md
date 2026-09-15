@@ -19,12 +19,13 @@ The bounded local check rendered manifests only. It made no cluster request
 and ran no workload, performance test, or stress test. See
 [the recorded results](deployment-scopes.json).
 
-The existing browser workload runner still applies full manifests and uses a
-broad test identity. It must not be used as the restricted CI identity. The next
-installation change must move cluster apply and cleanup to the operator, then
-limit the test process to its control namespace and assigned test namespaces.
-Do not infer a completed installation or access boundary from this renderer
-check. The separate Gateway API CI identity retains its existing restrictions.
+The browser workload runner now uses the separate scopes. The operator installs
+cluster resources, and the test Pod checks them before it deploys namespace
+resources. The complete live workflow passed. See
+[the operator installation evidence](operator-cluster-installation.md).
+The test identity still needs its namespace and Secret access restricted before
+it can serve as the workload CI identity. The separate Gateway API CI identity
+retains its existing restrictions.
 
 STEGO owns scope selection and validation. Hypershell supplies its deployment
 and namespace allocation declarations. No Hypershell resource name or role was

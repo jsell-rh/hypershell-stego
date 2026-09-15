@@ -49,9 +49,6 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			for _, endpoint := range endpoints {
 				target = append(target, "--egress", "kubernetes="+endpoint)
 			}
-			w.t.Cleanup(func() {
-				w.p.command(nil, "delete", "clusterrole/"+w.p.namespace+"."+name, "clusterrolebinding/"+w.p.namespace+"."+name, "--ignore-not-found")
-			})
 			if worker.name == "gateway-workload" {
 				env["HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"] = "/var/run/stego/gateway-database.json"
 				files["gateway-database.json"] = w.databaseConfig

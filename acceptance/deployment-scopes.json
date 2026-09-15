@@ -185,5 +185,13 @@
     "maximum_render_seconds": 5,
     "cluster_requests": 0,
     "performance_or_stress_test": false
+  },
+  "operator_workflow": {
+    "result": "success",
+    "evidence": "operator-cluster-installation-evidence.json",
+    "workflow_seconds": 330.01,
+    "installation_access_checks": 17,
+    "owned_resources_removed": true,
+    "remaining": "Restrict namespace and Secret access before workload CI use."
   }
 }

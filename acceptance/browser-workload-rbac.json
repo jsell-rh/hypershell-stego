@@ -79,24 +79,7 @@
           ],
           "verbs": [
             "get",
-            "list",
-            "create",
-            "patch",
-            "delete"
-          ]
-        },
-        {
-          "apiGroups": [
-            "rbac.authorization.k8s.io"
-          ],
-          "resources": [
-            "clusterroles"
-          ],
-          "resourceNames": [
-            "system:openshift:scc:nonroot-v2"
-          ],
-          "verbs": [
-            "bind"
+            "list"
           ]
         },
         {
@@ -143,41 +126,6 @@
         },
         {
           "apiGroups": [
-            "admissionregistration.k8s.io"
-          ],
-          "resources": [
-            "validatingadmissionpolicies",
-            "validatingadmissionpolicybindings"
-          ],
-          "verbs": [
-            "get",
-            "list",
-            "create",
-            "patch",
-            "delete"
-          ]
-        },
-        {
-          "apiGroups": [
-            "rbac.authorization.k8s.io"
-          ],
-          "resources": [
-            "clusterroles"
-          ],
-          "resourceNames": [
-            "@NAMESPACE@.hypershell-namespace-allocation.gateway-worker",
-            "@NAMESPACE@.hypershell-namespace-allocation.gateway-runtime",
-            "@NAMESPACE@.hypershell-namespace-allocation.gateway-reviews",
-            "@NAMESPACE@.hypershell-namespace-allocation.proof",
-            "@NAMESPACE@.hypershell-namespace-allocation.gateway-state",
-            "@NAMESPACE@.hypershell-namespace-allocation.sandbox-count"
-          ],
-          "verbs": [
-            "bind"
-          ]
-        },
-        {
-          "apiGroups": [
             "coordination.k8s.io"
           ],
           "resources": [
@@ -188,22 +136,6 @@
           ],
           "verbs": [
             "get"
-          ]
-        },
-        {
-          "apiGroups": [
-            ""
-          ],
-          "resources": [
-            "serviceaccounts/token"
-          ],
-          "resourceNames": [
-            "hypershell-namespace-allocation",
-            "hypershell-gateway-workload",
-            "hypershell-gateway-identity"
-          ],
-          "verbs": [
-            "create"
           ]
         }
       ]

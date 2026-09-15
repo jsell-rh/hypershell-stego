@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build and test in a dedicated OpenShift namespace. No local Go build is used.
+# Build application images and test in a dedicated OpenShift namespace.
+# The operator compiles only the small deployment renderer on the host.
 set -euo pipefail
 : "${STEGO_TEST_CONTEXT:?Set the saved oc context for the test cluster}"
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
@@ -41,21 +42,12 @@ cleanup_resources() {
           "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "hypershell.redhat.io/gateway-id=$gateway_id,app.kubernetes.io/managed-by=hypershell-gateway-controller" --wait=false || true
         fi
       done < "$results/owned-namespaces.txt"
-      for worker in gateway-workload; do
-        "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-$worker" "clusterrolebinding/$namespace.hypershell-$worker" --ignore-not-found || true
-      done
       "${oc_cmd[@]}" delete clusterrolebinding -l "stego.dev/allocator=$allocation_marker" --wait=false || true
       "${oc_cmd[@]}" delete namespace -l "stego.dev/allocator=$allocation_marker" --wait=false || true
-      for role in gateway-state gateway-worker gateway-runtime gateway-reviews sandbox-count proof; do
-        "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation.$role" --ignore-not-found || true
-      done
-      "${oc_cmd[@]}" delete "clusterrole/$namespace.hypershell-namespace-allocation" "clusterrolebinding/$namespace.hypershell-namespace-allocation" --ignore-not-found || true
-      for policy in allocation ownership resources; do
-        "${oc_cmd[@]}" delete "validatingadmissionpolicy/$namespace.hypershell-namespace-allocation.$policy" "validatingadmissionpolicybinding/$namespace.hypershell-namespace-allocation.$policy" --ignore-not-found || true
-      done
       "${oc_cmd[@]}" delete namespace -l "stego.test/browser-run=$namespace" --wait=false || true
       "${oc_cmd[@]}" delete clusterrole,clusterrolebinding -l "stego.test/browser-run=$namespace" --wait=false || true
     fi
+    python3 scripts/prepare-browser-cluster.py --cleanup --context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --results "$results" || return 1
     "${oc_cmd[@]}" delete namespace "$namespace" --wait=false || true
     "${oc_cmd[@]}" --request-timeout=0 wait --for=delete namespace "$namespace" --timeout=60s || true
   fi
@@ -176,6 +168,7 @@ if sys.argv[4]=='1':
         if item['kind']=='Role' and item['metadata']['name']=='service-check':
             for rule in item['rules']:
                 if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-namespace-allocation','hypershell-gateway-identity','hypershell-gateway-workload']
+            item['rules'].append({'apiGroups':[''],'resources':['serviceaccounts/token'],'resourceNames':['hypershell-namespace-allocation','hypershell-gateway-identity','hypershell-gateway-workload'],'verbs':['create']})
         if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
             for worker in ['namespace-allocation','gateway-identity','gateway-workload']:
                 item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
@@ -245,6 +238,13 @@ EXEC_PERMISSION
 group=$("${oc_cmd[@]}" get namespace "$namespace" -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}')
 group=${group%%/*}
 [[ $group =~ ^[1-9][0-9]*$ ]]
+if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
+  cluster_args=(--context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --fs-group "$group" --results "$results")
+  if [[ $workload == 1 ]]; then cluster_args+=(--workload); fi
+  python3 scripts/prepare-browser-cluster.py "${cluster_args[@]}"
+  tar -cf "$results/cluster-manifests.tar" -C "$results" cluster-manifests
+  "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- tar xf - -C /work < "$results/cluster-manifests.tar"
+fi
 "${oc_cmd[@]}" -n "$namespace" get configmap openshift-service-ca.crt -o jsonpath='{.data.service-ca\.crt}' > "$results/registry-ca.crt"
 test -s "$results/registry-ca.crt"
 tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd console

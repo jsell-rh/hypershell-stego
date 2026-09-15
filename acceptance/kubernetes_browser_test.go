@@ -247,13 +247,26 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 	p.apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]string{"name": name + "-files", "namespace": p.namespace}, "data": files})
 	p.apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]string{"name": name + "-runtime", "namespace": p.namespace}, "stringData": env})
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	render := exec.CommandContext(ctx, "go", "run", "-mod=readonly", "./out/deploy/render", "--image", image, "--namespace", p.namespace, "--fs-group", p.group)
+	render := exec.CommandContext(ctx, "go", "run", "-mod=readonly", "./out/deploy/render", "--image", image, "--namespace", p.namespace, "--fs-group", p.group, "--scope", "cluster")
+	render.Args = append(render.Args, target...)
+	render.Dir = module
+	cluster, err := render.Output()
+	cancel()
+	if err != nil {
+		p.t.Fatal("browser cluster renderer failed", err)
+	}
+	installed := p.read(filepath.Join("/work/cluster-manifests", name+".json"))
+	if !bytes.Equal(installed, cluster) {
+		p.t.Fatal("requested cluster resources differ from the operator installation")
+	}
+	ctx, cancel = context.WithTimeout(context.Background(), 30*time.Second)
+	render = exec.CommandContext(ctx, "go", "run", "-mod=readonly", "./out/deploy/render", "--image", image, "--namespace", p.namespace, "--fs-group", p.group, "--scope", "namespace")
 	render.Args = append(render.Args, target...)
 	render.Dir = module
 	manifest, err := render.Output()
 	cancel()
 	if err != nil {
-		p.t.Fatal("browser deployment renderer failed", err)
+		p.t.Fatal("browser namespace renderer failed", err)
 	}
 	p.command(manifest, "apply", "-f", "-")
 	p.command(nil, "rollout", "status", "deployment/"+name, "--timeout=180s")
