@@ -112,9 +112,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915131115-74d9a707f4bc
+        module_version: v0.0.0-20260915131315-0953fcc245a7
         vcs: git
-        revision: 74d9a707f4bcd229a4649a8a92cd1b99879c79c7
+        revision: 0953fcc245a74c5a1711c7dd18a96d0e07398454
         source_state: clean
     service_hash: 8bbbbc2d438968893985350b419dabe4b4468501a37b8dfbc4693b5111142213
     registry_sha: gateway-workflow
@@ -422,7 +422,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 2a673617f4b66d53c4aeea125742822d165a8711f7c02ce839f37ef6eaf09ec5
+        cli/command/version.go: f6e5bf31e12d017994407200fd503d783f0a8d380887416c3c6bbdd6d305cd73
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -494,7 +494,7 @@ last_applied:
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         kubernetes/readiness.go: 043ecec9b020829f9be504df2e229c935a340083d76e39b22a1c35e1488ddd41
         kubernetes/route.go: 2fffd9919d9e5263b068ce453bfb15af9ef8717b1e5c3da5ad4f897a8606cc0c
-        kubernetes/tls_secret.go: 90c96069590950c53fb3c35d0c55623549f56f48da7a4e63fec180d1069b94f3
+        kubernetes/tls_secret.go: 0b031df97a943ff8cf5fcd6508bdc1719ae7ad59ad627626eefbfd028004886d
         kubernetes/watch_set.go: 8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47
         main.go: 0024d9f5ab6fffa2e4b5451509a11ba0a3c972d3a96bdadfc09014409cc9d61f
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437

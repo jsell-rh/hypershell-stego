@@ -20,7 +20,7 @@ The workload controller accepts these installation settings:
 
 A public host is `gw-<assigned-namespace>.<public-domain>`. The controller creates
 `openshell-public-tls` with that hostname and the selected issuer. STEGO's
-`kubernetes-client` 1.8.0 verifies the Secret type, namespace, name, owner,
+`kubernetes-client` 1.8.1 verifies the Secret type, namespace, name, owner,
 certificate chain, hostname, server use, expiry, and private key against the
 configured trust. It does not take public trust from the workload Secret's
 `ca.crt` field. The certificate mounts separately from the
@@ -37,8 +37,12 @@ application still needs Route creation, network permissions, a verified public
 TLS and RPC probe, and address publication. This change does not prove public
 connectivity or certificate rotation in a live Gateway.
 
-Compiler `74d9a70` supplies the shared check. Its generated runtime checks pass
+Compiler `0953fcc` supplies the shared check. Its generated runtime checks pass
 for an independent widget service. Hypershell uses that check directly; it has
 no separate public certificate verifier. Focused application checks and repeated
 generation pass. Full compiler and application CI results remain required for
 this revision.
+
+The 1.8.1 runtime also rejects private-key blocks and extra text in `tls.crt`.
+A regression check reproduced this defect in 1.8.0 before the correction.
+Hypershell tests this rejection through its real Kubernetes client fixture.

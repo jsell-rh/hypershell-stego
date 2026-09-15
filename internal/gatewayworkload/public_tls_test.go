@@ -112,7 +112,7 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 }
 
 func TestPublicTLSSecretCannotSupplyItsOwnTrust(t *testing.T) {
-	for _, scenario := range []string{"valid", "foreign issuer", "foreign owner", "missing", "deleting"} {
+	for _, scenario := range []string{"valid", "foreign issuer", "foreign owner", "private key in certificate", "missing", "deleting"} {
 		t.Run(scenario, func(t *testing.T) {
 			gw, _ := records(t)
 			host := publicHostname(gw.Namespace, "example.test")
@@ -121,6 +121,9 @@ func TestPublicTLSSecretCannotSupplyItsOwnTrust(t *testing.T) {
 			roots.AppendCertsFromPEM(root)
 			if scenario == "foreign issuer" {
 				root, cert, key = publicTestCertificate(t, host, time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
+			}
+			if scenario == "private key in certificate" {
+				cert = append(cert, key...)
 			}
 			secret := definition("v1", "Secret", "openshell-public-tls", gw.Metadata.Id)
 			secret["type"] = "kubernetes.io/tls"

@@ -4,9 +4,11 @@
 package kubernetes
 
 import (
+	"bytes"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 )
 
 // ServerTLSSecretTarget comes from trusted installation configuration.
@@ -47,6 +49,24 @@ func VerifyServerTLSSecret(current Object, owner Owner, target ServerTLSSecretTa
 	key, err := read("tls.key", 64<<10)
 	if err != nil {
 		return nil, err
+	}
+	// tls.X509KeyPair skips non-certificate PEM blocks. Do not return such
+	// blocks to callers that can publish the certificate data.
+	rest, count := bytes.TrimSpace(certificate), 0
+	for len(rest) > 0 {
+		if !bytes.HasPrefix(rest, []byte("-----BEGIN CERTIFICATE-----")) || count >= 16 {
+			return nil, ErrResourceObservation
+		}
+		block, next := pem.Decode(rest)
+		if block == nil || block.Type != "CERTIFICATE" || len(block.Headers) != 0 {
+			return nil, ErrResourceObservation
+		}
+		// pem.Decode can skip a malformed block before a valid one.
+		if bytes.Count(rest[:len(rest)-len(next)], []byte("-----BEGIN ")) != 1 {
+			return nil, ErrResourceObservation
+		}
+		rest = bytes.TrimSpace(next)
+		count++
 	}
 	pair, err := tls.X509KeyPair(certificate, key)
 	if err != nil || len(pair.Certificate) == 0 || len(pair.Certificate) > 16 {
