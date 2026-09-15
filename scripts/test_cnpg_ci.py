@@ -3,7 +3,7 @@ import unittest
 import tempfile
 import json
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import patch, Mock
 from types import SimpleNamespace
 
 import cnpg_ci as ci
@@ -94,6 +94,21 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_deletion_uses_api_resource_names_and_identity_preconditions(self):
+        runner = ci.module('cnpg_ci_delete_boundary', 'check-cnpg-ci.py')
+        for version, kind, resource, prefix, api_resource in [('postgresql.cnpg.io/v1', 'Cluster', 'clusters.postgresql.cnpg.io', '/apis/postgresql.cnpg.io/v1', 'clusters'),
+                                                ('v1', 'PersistentVolumeClaim', 'persistentvolumeclaims', '/api/v1', 'persistentvolumeclaims')]:
+            value = {'apiVersion': version, 'kind': kind, 'metadata': {'name': 'owned', 'namespace': 'database',
+                'uid': 'same-uid', 'resourceVersion': 'fresh-version', 'annotations': {'stego.test/cnpg-holder': 'held'}}}
+            client = Mock()
+            runner.delete_owned(client, value, resource, 'held', 'cluster-uid')
+            client.oc.assert_called_once_with('delete', '--raw=' + prefix + '/namespaces/database/' + api_resource + '/owned', '-f', '-',
+                data={'apiVersion': 'v1', 'kind': 'DeleteOptions', 'preconditions': {'uid': 'same-uid', 'resourceVersion': 'fresh-version'}, 'propagationPolicy': 'Foreground'})
+            client.reset_mock()
+            with self.assertRaisesRegex(RuntimeError, 'unowned'):
+                runner.delete_owned(client, value, resource, 'different-holder', 'cluster-uid')
+            client.oc.assert_not_called()
+
     def test_final_allocation_check_uses_the_scoped_client_and_new_evidence(self):
         runner = ci.module('cnpg_ci_allocation_boundary', 'check-cnpg-ci.py')
         with tempfile.TemporaryDirectory() as directory:

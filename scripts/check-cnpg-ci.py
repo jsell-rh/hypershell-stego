@@ -26,6 +26,18 @@ def resource_owned(value, holder, cluster_uid):
     return bool(cluster_uid) and any(o.get('uid') == cluster_uid and o.get('kind') == 'Cluster' and o.get('apiVersion') == 'postgresql.cnpg.io/v1' for o in metadata.get('ownerReferences', []))
 
 
+def delete_owned(client, value, plural, holder, cluster_uid):
+    if not resource_owned(value, holder, cluster_uid):
+        raise RuntimeError('CNPG cleanup refuses an unowned object')
+    metadata = value['metadata']
+    prefix = '/api/v1' if value['apiVersion'] == 'v1' else '/apis/' + value['apiVersion']
+    # oc accepts a qualified resource name. The raw API path requires its plural.
+    target = prefix + '/namespaces/' + metadata['namespace'] + '/' + plural.split('.', 1)[0] + '/' + metadata['name']
+    client.oc('delete', '--raw=' + target, '-f', '-', data={'apiVersion': 'v1', 'kind': 'DeleteOptions',
+              'preconditions': {'uid': metadata['uid'], 'resourceVersion': metadata['resourceVersion']},
+              'propagationPolicy': 'Foreground'})
+
+
 def database_pods(pods):
     # The independent lifetime Pod must remain until SQL Pod cleanup finishes.
     return [pod for pod in pods if pod['metadata'].get('labels', {}).get('cnpg.io/cluster') == 'gateway-database']
@@ -187,13 +199,7 @@ def main():
     def owned(value):
         return resource_owned(value, holder, cluster_uid)
     def delete(value, plural):
-        if not owned(value):
-            raise RuntimeError('CNPG cleanup refuses an unowned object')
-        metadata = value['metadata']
-        prefix = '/api/v1' if value['apiVersion'] == 'v1' else '/apis/' + value['apiVersion']
-        target = prefix + '/namespaces/' + metadata['namespace'] + '/' + plural + '/' + metadata['name']
-        client.oc('delete', '--raw=' + target, '-f', '-', data={'apiVersion': 'v1', 'kind': 'DeleteOptions',
-                  'preconditions': {'uid': metadata['uid'], 'resourceVersion': metadata['resourceVersion']}, 'propagationPolicy': 'Foreground'})
+        delete_owned(client, value, plural, holder, cluster_uid)
     def delete_record(entry, plural):
         metadata = entry['metadata']
         current = client.get(plural, metadata['name'], metadata['namespace'])
