@@ -1,11 +1,24 @@
 # Sandbox execution gate
 
+The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
+cluster is available. CI marks this job as skipped. It is not a passing isolation
+test. The ordinary code, protocol, authorization, and count-controller checks
+remain active. Resume this live gate when a cluster with a verified Kata runtime
+and a restricted test identity is available.
+
+VM isolation, hostile-workload behavior, and runtime capacity remain unverified
+on the current deployment. The earlier results below apply only to their
+recorded fixture and source. They do not establish current OpenShift support.
+
+## Historical fixture, now withdrawn
+
 This gate extends the Gateway application workflow with sandbox creation and
 command execution. It uses the same generated API, database, identity, events,
 and controller clients. Sandbox placement and OpenShell policy stay in the
 Hypershell layer. This change does not add a Hypershell rule to STEGO.
 
-Run the gate on Linux amd64 with Docker, usable KVM, Python 3, and `zstd`:
+The earlier gate used Linux amd64, Docker, usable KVM, Python 3, and `zstd`.
+The following command is historical. Do not run the withdrawn kind fixture:
 
 ```sh
 export STEGO_TEST_POSTGRES_DSN='postgres://...'

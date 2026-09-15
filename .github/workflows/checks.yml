@@ -127,6 +127,9 @@ jobs:
     secrets: inherit
 
   sandbox-workload:
+    # Deferred by the user on 2026-09-15. No Kata test cluster is available.
+    # Keep this gate visibly skipped until its restricted live runner is ready.
+    if: ${{ false }}
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     services:
