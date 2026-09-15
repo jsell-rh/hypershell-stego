@@ -65,7 +65,7 @@ jobs:
           docker run --detach --name "stego-browser-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT" \
             --cpus=1 --memory=1536m --pids-limit=256 --network=host \
             --read-only --cap-drop=ALL --security-opt=no-new-privileges \
-            --tmpfs /tmp:rw,nosuid,nodev,size=268435456 \
+            --tmpfs /tmp:rw,nosuid,nodev,size=536870912 \
             --mount "type=bind,source=$GITHUB_WORKSPACE/scripts/sample-browser-resources.sh,target=/opt/stego-sample-browser-resources.sh,readonly" \
             --env XDG_CONFIG_HOME=/tmp/config --env XDG_CACHE_HOME=/tmp/cache \
             --entrypoint chromedriver \

@@ -1,0 +1,32 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34927200274",
+  "application_commit": "4f0767f878355b66a21f40eae70ed9396f2f53c6",
+  "job": "acceptance (browser)",
+  "result": "failure",
+  "test": "TestGeneratedBrowserGatewayWorkflow",
+  "error": "WebDriver reported tab crashed.",
+  "test_seconds": 61.68,
+  "observed": {
+    "temporary_limit_kib": 262144,
+    "sampled_temporary_peak_kib": 262004,
+    "memory_limit_bytes": 1610612736,
+    "memory_peak_bytes": 522768384,
+    "memory_oom_events": 0,
+    "memory_oom_kill_events": 0,
+    "process_limit_events": 0,
+    "samples": 88,
+    "sample_interval_seconds": 1
+  },
+  "diagnosis": "Temporary-storage exhaustion is an inference from the near-full filesystem. The driver reported a tab crash.",
+  "change": {
+    "docker_tmpfs_bytes": 536870912,
+    "kubernetes_browser_emptydir": "512Mi",
+    "memory_limit": "1536Mi",
+    "process_limit": 256
+  },
+  "artifact_sha256": {
+    "browser_log": "e9df9cfd0d794e4f6fae889cdef1daf0d5234af25a403514162fc1e96eb072ea",
+    "browser_resource_counters": "4f88010241a98a9e93ab65337bbcaf17592b38aa09d3bce75248e5cb2b138076"
+  },
+  "retest": "Pending. CI must run the complete browser workflow and retain new resource counters."
+}
