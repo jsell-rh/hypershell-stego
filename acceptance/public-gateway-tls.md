@@ -196,3 +196,9 @@ profiles, failed transfers, truncated archives, missing required files, and
 partial evidence from a failed test. Archive collection does not establish the
 validity of each assertion; source, runtime results, generation, and cleanup
 still require verification.
+
+The [allocated namespace network audit](gateway-network-isolation.md) found a
+separate isolation gap. Current public tests exercise the worker's egress policy;
+they do not prove isolation of the Gateway Pod's namespace. Keep the full
+shared-cluster network gate open and update the permission plan when that
+policy support is generated.
