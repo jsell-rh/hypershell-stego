@@ -90,8 +90,13 @@ def main():
         raise RuntimeError("Require the dedicated fixture namespace and file group")
 
     def oc(*words, data=None):
-        return subprocess.run(["oc", "--context=" + args.context, "--request-timeout=20s", *words],
-                              input=data, capture_output=True, check=True, timeout=30).stdout
+        result = subprocess.run(["oc", "--context=" + args.context, "--request-timeout=20s", *words],
+                                input=data, capture_output=True, timeout=30)
+        if result.returncode:
+            # These requests contain only public cluster policy and roles.
+            # Preserve the actual server error, which check=True would hide.
+            raise RuntimeError("Cluster installation request failed: " + result.stderr[:8192].decode(errors="replace"))
+        return result.stdout
 
     journal = args.results / "cluster-installation.json"
     if args.cleanup:
@@ -147,8 +152,11 @@ def main():
         require_absent(resources, oc)
         save()
         for item in resources:
+            record["pending_resource"] = {"kind": item["kind"], "name": item["metadata"]["name"]}
+            save()
             created = json.loads(oc("create", "-f", "-", "-o", "json", data=json.dumps(item).encode()))
             record["resources"].append({"kind": created["kind"], "name": created["metadata"]["name"], "uid": created["metadata"]["uid"]})
+            record.pop("pending_resource")
             save()
         for item in resources:
             if item["kind"] != "ValidatingAdmissionPolicy":
