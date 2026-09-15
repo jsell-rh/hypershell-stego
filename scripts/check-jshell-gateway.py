@@ -20,6 +20,7 @@ import uuid
 from ci_credentials import API_SECONDS, require_credentials
 
 REQUIRED = [
+    "TestGatewayProviderStateAcrossGRPCAndRestart",
     "TestGatewayDatabasePoolWaitCancellationAndRestart",
     "TestConcurrentGlobalRoleProjection",
     "TestCleanupSummaryScopeAndTimestampChecks",

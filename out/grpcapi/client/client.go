@@ -400,6 +400,8 @@ func clientMethod(method string) string {
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCycle":
 		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayProviderState":
+		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewaySQLState":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup":
@@ -409,6 +411,8 @@ func clientMethod(method string) string {
 	case "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCycle":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayProviderState":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers":
 		return method[1:]

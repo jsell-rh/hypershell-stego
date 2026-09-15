@@ -21,6 +21,8 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
+	GatewayIdentityService_LoadGatewayProviderState_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayProviderState"
+	GatewayIdentityService_SaveGatewayProviderState_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayProviderState"
 	GatewayIdentityService_LoadGatewaySQLState_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewaySQLState"
 	GatewayIdentityService_BindGatewaySQLState_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewaySQLState"
 	GatewayIdentityService_CloseGatewaySQLState_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewaySQLState"
@@ -46,6 +48,8 @@ const (
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceClient interface {
+	LoadGatewayProviderState(ctx context.Context, in *LoadGatewayProviderStateRequest, opts ...grpc.CallOption) (*GatewayProviderState, error)
+	SaveGatewayProviderState(ctx context.Context, in *SaveGatewayProviderStateRequest, opts ...grpc.CallOption) (*GatewayProviderState, error)
 	LoadGatewaySQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
 	BindGatewaySQLState(ctx context.Context, in *BindGatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
 	CloseGatewaySQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
@@ -70,6 +74,26 @@ type gatewayIdentityServiceClient struct {
 
 func NewGatewayIdentityServiceClient(cc grpc.ClientConnInterface) GatewayIdentityServiceClient {
 	return &gatewayIdentityServiceClient{cc}
+}
+
+func (c *gatewayIdentityServiceClient) LoadGatewayProviderState(ctx context.Context, in *LoadGatewayProviderStateRequest, opts ...grpc.CallOption) (*GatewayProviderState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewayProviderState)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_LoadGatewayProviderState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) SaveGatewayProviderState(ctx context.Context, in *SaveGatewayProviderStateRequest, opts ...grpc.CallOption) (*GatewayProviderState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewayProviderState)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_SaveGatewayProviderState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *gatewayIdentityServiceClient) LoadGatewaySQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error) {
@@ -239,6 +263,8 @@ func (c *gatewayIdentityServiceClient) GetGatewayIdentityState(ctx context.Conte
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 type GatewayIdentityServiceServer interface {
+	LoadGatewayProviderState(context.Context, *LoadGatewayProviderStateRequest) (*GatewayProviderState, error)
+	SaveGatewayProviderState(context.Context, *SaveGatewayProviderStateRequest) (*GatewayProviderState, error)
 	LoadGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
 	BindGatewaySQLState(context.Context, *BindGatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
 	CloseGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
@@ -265,6 +291,12 @@ type GatewayIdentityServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedGatewayIdentityServiceServer struct{}
 
+func (UnimplementedGatewayIdentityServiceServer) LoadGatewayProviderState(context.Context, *LoadGatewayProviderStateRequest) (*GatewayProviderState, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoadGatewayProviderState not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) SaveGatewayProviderState(context.Context, *SaveGatewayProviderStateRequest) (*GatewayProviderState, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveGatewayProviderState not implemented")
+}
 func (UnimplementedGatewayIdentityServiceServer) LoadGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
 	return nil, status.Error(codes.Unimplemented, "method LoadGatewaySQLState not implemented")
 }
@@ -333,6 +365,42 @@ func RegisterGatewayIdentityServiceServer(s grpc.ServiceRegistrar, srv GatewayId
 		t.testEmbeddedByValue()
 	}
 	s.RegisterService(&GatewayIdentityService_ServiceDesc, srv)
+}
+
+func _GatewayIdentityService_LoadGatewayProviderState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadGatewayProviderStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayProviderState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_LoadGatewayProviderState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayProviderState(ctx, req.(*LoadGatewayProviderStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_SaveGatewayProviderState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveGatewayProviderStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).SaveGatewayProviderState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_SaveGatewayProviderState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).SaveGatewayProviderState(ctx, req.(*SaveGatewayProviderStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
 }
 
 func _GatewayIdentityService_LoadGatewaySQLState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -630,6 +698,14 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 	ServiceName: "hypershell.controlplane.v1.GatewayIdentityService",
 	HandlerType: (*GatewayIdentityServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "LoadGatewayProviderState",
+			Handler:    _GatewayIdentityService_LoadGatewayProviderState_Handler,
+		},
+		{
+			MethodName: "SaveGatewayProviderState",
+			Handler:    _GatewayIdentityService_SaveGatewayProviderState_Handler,
+		},
 		{
 			MethodName: "LoadGatewaySQLState",
 			Handler:    _GatewayIdentityService_LoadGatewaySQLState_Handler,

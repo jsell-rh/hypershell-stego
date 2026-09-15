@@ -6,6 +6,8 @@ import "google/protobuf/timestamp.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc LoadGatewayProviderState(LoadGatewayProviderStateRequest) returns (GatewayProviderState);
+ rpc SaveGatewayProviderState(SaveGatewayProviderStateRequest) returns (GatewayProviderState);
  rpc LoadGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc BindGatewaySQLState(BindGatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc CloseGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
@@ -133,4 +135,22 @@ message CleanupSummary {
  int64 pending = 4;
  google.protobuf.Timestamp oldest_pending = 5;
  google.protobuf.Timestamp observed_at = 6;
+}
+
+// Provider recovery data is encrypted by the controller. The API has no key.
+// The scope is fixed by the application. These methods grant no provider access.
+message LoadGatewayProviderStateRequest { string gateway_id = 1; }
+message SaveGatewayProviderStateRequest {
+ string gateway_id = 1;
+ int64 expected_version = 2;
+ bytes sealed_state = 3;
+ // Cleanup writes require a deleted Gateway and the identity cleanup grant.
+ bool cleanup = 4;
+}
+message GatewayProviderState {
+ string gateway_id = 1;
+ int64 version = 2;
+ bytes sealed_state = 3;
+ int64 resource_version = 4;
+ bool deleted = 5;
 }
