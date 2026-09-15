@@ -3,7 +3,10 @@ network policies enabled. Source `ee3d41d` used STEGO `5516e48`. The bounded
 jshell run passed in 512.91 seconds under the race detector. All 28 fresh
 connection checks passed before and after recovery. The
 [workflow record](gateway-network-workflow-20260915.json) retains the source,
-results, artifact hashes, earlier failures, and cleanup evidence.
+results, artifact hashes, earlier failures, and cleanup evidence. Ordinary CI
+[35005977361](https://github.com/jsell-rh/hypershell-stego/actions/runs/35005977361)
+also passed core acceptance in 1357.772 seconds, plus browser, console, and
+image checks. CNPG and Sandbox skipped in that run.
 
 The Gateway declaration permits the selected OpenShift router, DNS Pods, test
 PostgreSQL server, identity provider, and telemetry receiver. It also permits
