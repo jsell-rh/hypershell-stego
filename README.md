@@ -1,5 +1,12 @@
 This repository is the test bed for a STEGO-based Hypershell variant.
 
+The required [Gateway namespace network isolation](acceptance/gateway-network-isolation.md)
+is not enabled in the application. STEGO supplies an optional deny-all policy
+and admission protection. Allowed Gateway traffic and live network enforcement
+remain open. A passing API or browser test does not prove this requirement.
+The [public Gateway record](acceptance/public-route-host.json) tracks the separate
+public TLS and RPC gate. It has no complete passing result yet.
+
 The [controller-local database change](acceptance/controller-local-database.md)
 removes `database_id`, `ManagedDatabase`, and database registration from the
 application. Controllers use an installation-supplied PostgreSQL server.
