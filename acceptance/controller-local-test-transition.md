@@ -165,3 +165,13 @@ failures, generation hashes, and cleanup results. Every failed Job and its
 owned resources are gone. Normal Gateway deletion and the final event and
 telemetry checks were not reached in the fifth run. The complete browser gate
 remains open.
+
+The sixth run used STEGO browser backend 1.6.1. Its common session runtime
+rolls back an incomplete refresh claim. The rendered renewal and collector
+outage checks passed. Worker telemetry, service-account actions, and Gateway
+SQL deletion also passed. The final installation-data read failed because the
+test omitted the `public` schema. The generated SQL reader uses the fixed
+`pg_catalog` search path. The fixture now uses `public.installation_data` and
+makes the same read before it starts the workflow. No runtime SQL permission
+or search path changed. The sixth Job and its resources are gone, and the
+shared Lease is free. A new complete browser result remains required.

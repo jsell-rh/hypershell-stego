@@ -1,6 +1,6 @@
 {
-  "scope": "Five failed attempts to complete the controller-local PostgreSQL browser workflow.",
-  "source_commit": "75b9332",
+  "scope": "Six failed attempts to complete the controller-local PostgreSQL browser workflow.",
+  "source_commit": "ff081d1",
   "result": "The complete browser workflow remains open.",
   "latest_passed_stages": [
     "Two Gateways with verified PostgreSQL TLS and separate restricted logins.",
@@ -8,18 +8,22 @@
     "Verified Gateway RPC, denied calls, and stored provider recovery after Gateway Pod replacement.",
     "Fifteen worker RBAC checks and five generated admission denials.",
     "Stable SQL and credential identities after all three worker Pods were replaced.",
-    "REST and gRPC access checks after API and console replacement, before the rendered collector-outage step."
+    "REST and gRPC access checks after API and console replacement, before the rendered collector-outage step.",
+    "Rendered collector-outage handling and session renewal.",
+    "All three workers exported metrics and correlated logs and traces before and after replacement.",
+    "Rendered service-account creation, token handoff, reload, revocation, and deletion.",
+    "Gateway deletion removed SQL, roles, keys, and both namespaces; the other Gateway remained ready.",
+    "Deletion of the remaining Gateway removed its SQL, roles, namespaces, and allocation bindings."
   ],
   "latest_failure_observation": {
-    "page": "Gateway could not load",
-    "session_and_api_http_status": 503,
-    "session_state": "refreshing",
-    "observed_refresh_age_seconds": 20.32
+    "query": "SELECT value FROM installation_data",
+    "failure": "The test omitted the public schema. The generated reader uses search_path=pg_catalog.",
+    "correction": "Use public.installation_data and check the same read before Gateway creation. No runtime permission or search path changed."
   },
   "limits": [
     "The tests use the explicit 126-file transition list. Three old live files still block the complete acceptance build.",
     "Direct apply and drift ran twice. Full dependency checks remain required.",
-    "Normal Gateway deletion and final event/telemetry checks were not reached in the latest attempt.",
+    "The final installation-data read and parent deletion event were not proved in the sixth attempt.",
     "CNPG and RDS deployment, server restart, and early deletion remain open."
   ],
   "attempts": [
@@ -136,6 +140,31 @@
         "job-status.json": "7957054feb73e4e4e21e239c2fe97c53f6ab357be959b44ee3ff2eeadb8e900a",
         "cleanup.json": "c0ae96db495a65d737022f1311c1d5a1fd94894f92e09f54f73e1a83c8348b99",
         "evidence.tar": "9caea11306d96e64b41b988bbf65cbc8e4f900c3c4fa0b0d0f3265a4cede1121"
+      }
+    },
+    {
+      "directory": "/tmp/stego-service-results.LcGfBeqh",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (287.54s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "The test omitted the public schema. The generated reader uses search_path=pg_catalog.",
+      "compiler_revision": "421ce6b53a40850a3241cd1582843e65d6709fc9",
+      "freeze_record_sha256": "0e0c5623375a502451452936b5dedbb1e60c62df12053fa41ac9965a53fb1e5b",
+      "generation_records_sha256": {
+        "first.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e",
+        "second.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-b29d65",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "908771c69a366272bbe72852f6d497035dcb7d813034c5433ad706586cf4e908",
+        "deployment.log": "4817083c4df928f5496fb515f8df12695cb3eb90f30dc23c7c22bf7456a4ad86",
+        "job-status.json": "3750524bdc06158c79cc09e1407ba5f1162bdb6c0fd8627210aaf1b47acb356e",
+        "cleanup.json": "301d07de6cf63ed92a1c1aa1f479c6fb8daa15e72331f78aabf984a35d2e8919",
+        "evidence.tar": "b71273d2fcbdb914700d13a9d4e9458e0d9abcb744ef6e3079cd5dd4f2f9b79f"
       }
     }
   ]
