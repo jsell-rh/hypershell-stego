@@ -69,17 +69,26 @@ The [complete supplied CNPG workflow](cnpg-complete-evidence.json) passed at
 `ccfa4a9`, including failover, retained data, and automatic cleanup. Independent
 reads confirmed that test resources were absent. Earlier cleanup failures remain
 recorded in [the CNPG installation history](cnpg-installation.md). This result
-does not establish unattended CNPG CI. Actual RDS checks and a public Gateway
-connection remain open. Earlier registration and deployment-backed database
+does not establish unattended CNPG CI. A public Gateway connection remains open.
+Actual RDS operation remains unverified; the user approved a container substitute
+for the external database acceptance test. Earlier registration and deployment-backed database
 tests are historical evidence.
 
-The [shared RDS acceptance gate](https://github.com/jsell-rh/stego/blob/main/specs/rds-acceptance.md)
-requires the complete Gateway workflow on an identified disposable RDS server.
-It includes restricted password management, maintenance-database isolation,
-failover through the generated network policy, and retained installation data.
-RDS server settings and password-management grants belong to installation
-setup. The controller must not disable those settings or increase its own
-permissions. No RDS target has been selected for this gate yet.
+On 2026-09-15, the user confirmed that no RDS test instance exists and approved
+a PostgreSQL Docker or Podman container as the substitute. RDS infrastructure
+creation is outside Hypershell; Terraform supplies it before installation. Use
+the existing bounded CI or jshell fixtures for the complete workflow. See the
+[shared external PostgreSQL gate](https://github.com/jsell-rh/stego/blob/main/specs/rds-acceptance.md).
+
+The fixture in `browser_supplied_database_test.go` supplies verified TLS and a
+non-superuser account with `CREATEDB` and `CREATEROLE`. The complete browser gate
+checks separate Gateway databases, isolation, permission failure and recovery,
+retained credentials, and deletion with installation data unchanged. The
+[shared JWT browser evidence](shared-jwt-browser-evidence.json) records the latest
+verified application revision. Container results do not prove RDS maintenance
+catalog compatibility, managed password permissions, or AWS failover. Do not
+report them as an RDS test pass. No AWS resource creation is required or authorized
+by this test decision.
 
 The schema gate must cover fresh bootstrap, concurrent starts, interrupted
 bootstrap, empty and populated legacy schemas, unknown generations, and an old
