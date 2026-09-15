@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net"
 	"os"
 	"testing"
@@ -145,8 +146,25 @@ func (w *browserGatewayWorkload) prepareDatabase(sessions *fixture) {
 		w.t.Fatal("provisioning fixture login failed")
 	}
 	defer sentinel.Close(ctx)
-	if _, err = sentinel.Exec(ctx, "CREATE TABLE installation_data(value text NOT NULL); INSERT INTO installation_data VALUES ('preserve')"); err != nil {
+	if _, err = sentinel.Exec(ctx, "CREATE TABLE public.installation_data(value text NOT NULL); INSERT INTO public.installation_data VALUES ('preserve')"); err != nil {
 		w.t.Fatal("installation data setup failed")
+	}
+	w.requireInstallationData(ctx)
+}
+
+func (w *browserGatewayWorkload) requireInstallationData(ctx context.Context) {
+	w.t.Helper()
+	var preserved string
+	err := postgres.ReadRow(ctx, w.databaseOptions, "SELECT value FROM public.installation_data", nil, &preserved)
+	if err != nil {
+		var failure *postgres.Error
+		if errors.As(err, &failure) {
+			w.t.Fatal("installation data read failed", failure.Stage, failure.SQLState)
+		}
+		w.t.Fatal("installation data read failed", err)
+	}
+	if preserved != "preserve" {
+		w.t.Fatal("Gateway deletion changed installation data")
 	}
 }
 

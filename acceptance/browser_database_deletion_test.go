@@ -8,7 +8,6 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
-	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
@@ -40,10 +39,7 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 		w.awaitGatewayCleanup(ctx, allocator, id)
 		w.requireSQLAbsent(ctx, w.databaseOptions, id)
 	}
-	var preserved string
-	if err := postgres.ReadRow(ctx, w.databaseOptions, "SELECT value FROM installation_data", nil, &preserved); err != nil || preserved != "preserve" {
-		w.t.Fatal("Gateway deletion changed installation data", err)
-	}
+	w.requireInstallationData(ctx)
 	if response := operator.api(w.t, "DELETE", "/managed_clusters/"+w.f.cluster, nil); response.StatusCode != 204 {
 		w.t.Fatal("finished Gateway cleanup did not release its cluster", response.StatusCode)
 	}
