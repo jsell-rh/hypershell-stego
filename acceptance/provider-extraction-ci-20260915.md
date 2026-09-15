@@ -35,5 +35,12 @@ Results, manifests, the policy difference, and the recovery record are stored in
 
 These results do not prove adoption of the common Keycloak provider. The
 application still uses its handwritten client. The
-[provider boundary](https://github.com/jsell-rh/stego/blob/180da87/specs/keycloak-provider-boundary.md)
+[provider boundary](https://github.com/jsell-rh/stego/blob/f5d35b9/specs/keycloak-provider-boundary.md)
 defines the remaining adoption gate.
+
+The core and browser acceptance jobs in run `35027389182` later completed
+successfully. The service-image and web-console jobs also passed. The CNPG job
+remains a credential preflight failure, and the Sandbox job remains deferred.
+These results use the existing compiler pin and handwritten Keycloak client.
+The final job metadata is stored at
+`/home/jsell/.local/state/stego/runs/keycloak-provider-native-20260915/application-baseline-ci.json`.

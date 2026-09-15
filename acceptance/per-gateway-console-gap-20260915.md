@@ -141,9 +141,18 @@ detector, with and without telemetry. The real Keycloak test passed at
 The test checked exact signed token audiences and roles, identity, lifetime,
 optional metadata, mapper repair, preserved shared scope definitions, and
 permission denial. It took 45.75 seconds, and container cleanup passed.
-Four STEGO CI jobs passed; the compiler job was still running when this result
-was recorded. Earlier attempts exposed the assigned-scope response shape and
+All five STEGO CI jobs passed. Earlier attempts exposed the assigned-scope response shape and
 the separate realm-role scope permission. Those results are retained in the
 STEGO provider record. Production permissions did not change.
 This application still uses its existing compiler pin and handwritten provider.
 No new application result or source reduction is claimed for this change.
+
+STEGO now also has a native client profile at `f5d35b9`. It requires PKCE S256,
+explicit loopback callbacks, disabled setup and repair, and declared device-flow
+policy. Native and service-account profiles share their checked base lifecycle.
+They reject client authentication-flow overrides and unexpected management or
+logout targets. Small generated tests passed. The live native login test is
+pending in [run 35032114627](https://github.com/jsell-rh/stego/actions/runs/35032114627).
+Earlier attempts found a Keycloak creation default and a test-driver redirect
+restriction. Their failures and cleanup records are retained. This application
+has not yet adopted the native provider methods.
