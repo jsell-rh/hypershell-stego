@@ -7,8 +7,7 @@ cleanup passed on jshell. No Pods ran in that check. Full compiler CI passed in
 Candidate source `101f31d` passed regeneration in both modules. Its application
 checks are tracked in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
 The rendered browser workflow passed in 97 seconds. Its 229 console tests,
-bundle reproduction, regeneration, and image checks passed. Core tests remain
-active. The manual run skips CNPG and Sandbox.
+bundle reproduction, regeneration, and image checks passed. Core acceptance passed in 1360.499 seconds. The manual run skips CNPG and Sandbox.
 
 The inspected Gateway screenshot shows Provisioning. The service-account screen
 uses a separate Healthy fixture. This run does not create a Gateway Pod or
@@ -22,6 +21,13 @@ The [update admission record](allocated-network-update-admission-20260915.json)
 contains 93 passing checks, including approved rule changes, retired-rule denial,
 and stale-version rejection. Cleanup and [full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34998601541) passed. This
 change is newer than candidate `101f31d` and is not covered by its browser result.
+
+STEGO `5516e48` adds operator-supplied IP endpoint bindings. The same checked
+addresses feed admission and the generated allocator. The [endpoint record](allocated-network-endpoints-20260915.json)
+contains focused runtime and renderer checks and three Kubernetes expression
+type checks. Full compiler CI passed. Full admission request and traffic checks remain required. This
+candidate does not use the endpoint change. The mechanism does not resolve or
+track DNS names.
 
 The following record preserves the initial gap and the earlier checks.
 
