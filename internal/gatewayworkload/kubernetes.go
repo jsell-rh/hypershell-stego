@@ -22,6 +22,7 @@ import (
 
 type object = kube.Object
 type Options struct {
+	PublicDomain, PublicIssuer, PublicCAFile               string
 	SQLBindings                                            SQLBindings
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
@@ -31,10 +32,11 @@ type Options struct {
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
 }
 type Kubernetes struct {
-	client     *kube.Client
-	options    Options
-	trust      string
-	allocation *allocation.Allocator
+	client      *kube.Client
+	options     Options
+	trust       string
+	publicRoots *x509.CertPool
+	allocation  *allocation.Allocator
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
@@ -60,6 +62,10 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
+	publicRoots, err := publicTrust(o)
+	if err != nil {
+		return nil, err
+	}
 	c, err := kube.New(kube.Options{ServerURL: o.ServerURL, CAFile: o.CAFile, TokenFile: o.TokenFile})
 	if err != nil {
 		return nil, err
@@ -76,7 +82,7 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 			return nil, err
 		}
 	}
-	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator}, nil
+	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator, publicRoots: publicRoots}, nil
 }
 
 // Only certificates can enter the public ConfigMap. Never copy a private key
@@ -220,6 +226,10 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if _, err = leaf.Verify(x509.VerifyOptions{Roots: roots, Intermediates: intermediates, DNSName: host}); err != nil {
 		return errors.New("Gateway TLS certificate is not valid for its Service")
 	}
+	publicCertificate, err := k.ensurePublicTLS(ctx, gw)
+	if err != nil {
+		return err
+	}
 	sandboxNS := ns
 	if k.options.SandboxRuntimeClass != "" {
 		sandboxNS, _ = SandboxNamespace(id)
@@ -232,7 +242,7 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if _, err = k.ensure(ctx, core+"/configmaps", config, id); err != nil {
 		return err
 	}
-	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(crt))) {
+	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(append(append([]byte(nil), crt...), publicCertificate...))), k.options.PublicDomain != "") {
 		if k.allocation != nil && entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" {
 			continue
 		}

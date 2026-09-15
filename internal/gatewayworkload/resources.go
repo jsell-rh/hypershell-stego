@@ -13,6 +13,13 @@ func configuration(ns, sandboxNS string, o Options) string {
 	if o.SandboxRuntimeClass != "" {
 		topology = "sidecar"
 	}
+	publicTLS := ""
+	if o.PublicDomain != "" {
+		publicTLS = fmt.Sprintf(`external_cert_path = "/etc/openshell-public-tls/tls.crt"
+external_key_path = "/etc/openshell-public-tls/tls.key"
+external_server_names = [%q]
+`, publicHostname(ns, o.PublicDomain))
+	}
 	return fmt.Sprintf(`[openshell]
 version = 1
 [openshell.gateway]
@@ -30,7 +37,7 @@ server_sans = ["openshell-gateway.%s.svc.cluster.local"]
 [openshell.gateway.tls]
 cert_path = "/etc/openshell-tls/tls.crt"
 key_path = "/etc/openshell-tls/tls.key"
-[openshell.gateway.auth]
+%s[openshell.gateway.auth]
 allow_unauthenticated_users = false
 [openshell.gateway.credential_storage]
 key_encryption_key_env = "OPENSHELL_GATEWAY_CREDENTIAL_KEY_ENCRYPTION_KEY"
@@ -51,7 +58,7 @@ topology = %q
 [openshell.drivers.kubernetes.sidecar]
 proxy_uid = 1337
 process_binary_aware_network_policy = true
-`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, ns, o.SandboxRuntimeClass, topology)
+`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, publicTLS, ns, o.SandboxRuntimeClass, topology)
 }
 
 type resource struct {
@@ -59,7 +66,7 @@ type resource struct {
 	object object
 }
 
-func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string) []resource {
+func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string, publicTLS bool) []resource {
 	id, ns := gw.Metadata.Id, gw.Namespace
 	core := "/api/v1/namespaces/" + ns
 	rbac := "/apis/rbac.authorization.k8s.io/v1"
@@ -93,7 +100,11 @@ func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oid
 	}
 	volumes := []object{{"name": "tmp", "emptyDir": object{"sizeLimit": "64Mi"}}, {"name": "config", "configMap": object{"name": Name + "-config"}}}
 	mounts := []object{{"name": "tmp", "mountPath": "/tmp"}, {"name": "config", "mountPath": "/etc/openshell-config", "readOnly": true}}
-	for _, item := range [][3]string{{"tls", "openshell-server-tls", "/etc/openshell-tls"}, {"keys", keysName, "/etc/openshell-jwt"}, {"database", "openshell-gateway-db-credentials", "/etc/openshell-db"}} {
+	mountsFromSecrets := [][3]string{{"tls", "openshell-server-tls", "/etc/openshell-tls"}, {"keys", keysName, "/etc/openshell-jwt"}, {"database", "openshell-gateway-db-credentials", "/etc/openshell-db"}}
+	if publicTLS {
+		mountsFromSecrets = append(mountsFromSecrets, [3]string{"public-tls", "openshell-public-tls", "/etc/openshell-public-tls"})
+	}
+	for _, item := range mountsFromSecrets {
 		volumes = append(volumes, object{"name": item[0], "secret": object{"secretName": item[1], "defaultMode": int32(0440)}})
 		mounts = append(mounts, object{"name": item[0], "mountPath": item[2], "readOnly": true})
 	}

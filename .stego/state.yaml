@@ -89,7 +89,7 @@ last_applied:
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: 50ac6c9d15c0fb5b8eebcb9d1ce21c32bbccc50b3d5d0d7b7ec5acac5d95cce4
+                sha256: 947dd24bb05b49fb91384224da2c5180416d3ad6081bdbff10514690434845a0
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -107,7 +107,7 @@ last_applied:
                 exists: true
                 sha256: 8bbbbc2d438968893985350b419dabe4b4468501a37b8dfbc4693b5111142213
                 mode: 420
-        sha256: fcccf540af5a1e90933468d5ede55a306dd028ada1b4eee2a33a82e9454c4337
+        sha256: 8a0786d529383485cf15215a7e3d6d46949ab753af4c1ef52844fb814b56bbb4
     compiler_build:
         go_version: go1.26.8
         goos: linux
