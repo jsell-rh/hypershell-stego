@@ -32,16 +32,16 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260914233100-c71878eebe67
+        module_version: v0.0.0-20260915014140-421ce6b53a40
         vcs: git
-        revision: c71878eebe67e488dea9dd199815df023d11ffb5
+        revision: 421ce6b53a40850a3241cd1582843e65d6709fc9
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 97a7a6ee989b5936218ad507a3a4d570c8e1a2c0a719dac6766b5b3078759f91
+    registry_content_sha256: 9fb71042e5ddde01e74ed7a762fbe13b7ccc4662748bbfe84e2ecdb5a121dc43
     components:
         browser-backend:
-            version: 1.5.0
+            version: 1.6.1
             sha: browser-workflow
         health-check:
             version: 1.0.0
@@ -116,7 +116,7 @@ last_applied:
         browser/public/assets/src-DWb-85VG.js: a0f72f835ff99c7072d0f5ad60cdfadd9644dbad90168bcbe96a495d06d38e02
         browser/public/index.html: 63e1fc4d324cb0177103f98ff48503a42260dc7674163566dde82a5e4b5073e0
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
-        browser/store.go: 44a23268b3344b56cb12b8b2741e4efd2017deca873c6a5110d6d1c783633b23
+        browser/store.go: 3474166e404b286c891402ae4d71c319f27ab52d410b7ce526d4172c5d088d7a
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
