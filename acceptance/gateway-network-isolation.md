@@ -1,27 +1,27 @@
-STEGO `e394ab5` adds declared namespace, Pod, port, and protocol peers to its
-protected allocation policy. The [admission record](allocated-network-peers-admission-20260915.json)
-contains 89 passing live checks: 18 allowed and 71 denied. Runtime tests cover
-policy creation before bindings, restart, and rejected permission changes.
-Regeneration and cleanup passed on jshell. No Pods ran in that check.
-
-This candidate uses compiler `e394ab5`. Its production allocation isolation
-setting remains off. Full compiler CI passed in
+This candidate uses STEGO `e394ab5`, which adds declared namespace, Pod, port,
+and protocol peers to the protected allocation policy. The [admission record](allocated-network-peers-admission-20260915.json)
+contains 89 passing live checks: 18 allowed and 71 denied. Regeneration and
+cleanup passed on jshell. No Pods ran in that check. Full compiler CI passed in
 [run 34997668449](https://github.com/jsell-rh/stego/actions/runs/34997668449).
-The candidate passed regeneration in both modules. Application CI remains required.
-The next application change must supply all required paths and prove fresh
-allowed and denied connections in the complete Gateway workflow. The external
-DNS provider choice remains open. These results do not establish traffic isolation.
 
-Candidate `101f31d` uses compiler `e394ab5` and passed regeneration in both
-modules. Its core, rendered browser, console, image, and regeneration checks
-are tracked in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
-The manual run skips CNPG and Sandbox. Production isolation remains off.
-
+Candidate source `101f31d` passed regeneration in both modules. Its application
+checks are tracked in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
 The rendered browser workflow passed in 97 seconds. Its 229 console tests,
 bundle reproduction, regeneration, and image checks passed. Core tests remain
-active. The inspected Gateway screenshot shows Provisioning. The service-account
-screen uses a separate Healthy fixture. This run does not create a Gateway Pod
-or prove its network isolation.
+active. The manual run skips CNPG and Sandbox.
+
+The inspected Gateway screenshot shows Provisioning. The service-account screen
+uses a separate Healthy fixture. This run does not create a Gateway Pod or
+prove its network isolation. Production allocation isolation remains off. The
+next application change must supply all required paths and prove fresh allowed
+and denied connections in the complete Gateway workflow. The external DNS
+provider choice remains open.
+
+STEGO `8aedc54` adds controlled updates for intact, owned allocation policies.
+The [update admission record](allocated-network-update-admission-20260915.json)
+contains 93 passing checks, including approved rule changes, retired-rule denial,
+and stale-version rejection. Cleanup passed. Full compiler CI is running. This
+change is newer than candidate `101f31d` and is not covered by its browser result.
 
 The following record preserves the initial gap and the earlier checks.
 
