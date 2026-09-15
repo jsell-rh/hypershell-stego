@@ -85,7 +85,12 @@ required. No public connection result is claimed from the failed run.
 The first retry stopped in a stale-credential fixture before cluster access.
 Commit `3a50db7` supplies the required CA path to that fixture. All eight
 credential tests and the other browser boundary checks pass. Public retry
-`34985980374` uses the corrected source. A duplicate internal-only run was
-canceled before its cluster step, while the Lease and test namespace were empty.
+`34985980374` used the corrected source, but stopped before Job creation on a
+held Lease. Duplicate run `34985981945` started its cluster step after the last
+status check and before cancellation completed. It retained the Lease during
+preparation. The earlier snapshot did not prove that cancellation would prevent
+cluster access. A later audit found no test workloads, data, or allocations and
+verified all eighteen installation resources. The Lease was then released.
+Public run `34986369202` is queued after this cleanup.
 Push checks now require the public profile and its operator configuration.
 A manual dispatch can select `public_gateway=false` for an internal-only check.
