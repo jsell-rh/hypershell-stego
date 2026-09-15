@@ -38,7 +38,7 @@ results. A concurrent test checks creation against deletion under the generated
 row lock. A real Keycloak test removes two stored clients and one orphan after
 an outage and restart, while another Gateway credential continues to work.
 
-The actual Gateway workflow creates three automation accounts, uses each token
+The earlier Gateway workflow created three automation accounts, used each token
 to read Gateway provider data, then deletes the Gateway. It checks that token
 issuance fails for all three accounts before workload teardown. This test found
 a readiness mismatch: the controller reported `ready`, while account creation
@@ -61,3 +61,20 @@ One local cleanup of two stored clients and one orphan took 412.8 ms through
 REST, the generated RPC client, and real Keycloak. This is one observation,
 including connection setup after restart. It does not establish production
 capacity or latency percentiles.
+
+The current browser workflow now calls the account cleanup helper. Before this
+change, that helper had no caller after the controller-local database conversion.
+The rendered account test created, revoked, and deleted its own account before
+Gateway deletion. It did not prove cleanup of live accounts on Gateway deletion.
+
+The added check creates three accounts through the generated browser backend.
+Each account must obtain a token and read provider data from the actual Gateway.
+After the Gateway DELETE response, all three credentials must fail token
+issuance, and their Keycloak clients must be absent. Each account must have a
+closed metadata row and exactly one successful Gateway cleanup audit. The check
+runs before the existing SQL cleanup denial and recovery checks. Evidence
+contains account IDs and counts, with no credentials. It does not claim that
+previously issued access tokens are erased.
+
+The complete acceptance package compiles. A new live browser result is required
+for this source; the historical results above do not cover the added checks.

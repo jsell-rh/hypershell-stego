@@ -117,11 +117,13 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("Gateway deletion setup failed")
 	}
+	checkAccounts := w.startAccountDeletionWorkflow(id)
 	checkDeniedCleanup := w.beginSQLCleanupDenial(id)
 	response = w.owner.api(w.t, "DELETE", "/gateways/"+id, nil)
 	if response.StatusCode != 204 {
 		w.t.Fatal("Gateway deletion failed", response.StatusCode)
 	}
+	checkAccounts()
 	checkDeniedCleanup()
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
