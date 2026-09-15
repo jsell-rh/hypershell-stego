@@ -112,13 +112,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915105328-e8f16c79a8b9
+        module_version: v0.0.0-20260915105951-e5b9931b54ae
         vcs: git
-        revision: e8f16c79a8b9d7d4d7b393c87da22e6c50f5f5b5
+        revision: e5b9931b54aef309f721554c761fe4163edeec24
         source_state: clean
     service_hash: eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a
     registry_sha: gateway-workflow
-    registry_content_sha256: acd569b1907573200cfe53ae11a96883e9039538b0a53dc3b4b2609943a13937
+    registry_content_sha256: 8518f633ab97d50de8edaacde0e97714934b270cdab869e8de94e7f07d551d1c
     components:
         browser-telemetry:
             version: 1.0.0
@@ -160,7 +160,7 @@ last_applied:
             version: 1.1.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 4.4.0
+            version: 4.4.1
             sha: gateway-workflow
         postgres-client:
             version: 1.2.1
@@ -421,7 +421,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: acf4f41de1dcc91c7892256a931e4d47b30fee8e3f6688356ac2cbd9d05374c6
+        cli/command/version.go: e631cb0cfac78b2a4b1943540e9979c995e27df8f53969b4ce3359b2c0cc430a
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1

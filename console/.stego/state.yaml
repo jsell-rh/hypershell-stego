@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915105328-e8f16c79a8b9
+        module_version: v0.0.0-20260915105951-e5b9931b54ae
         vcs: git
-        revision: e8f16c79a8b9d7d4d7b393c87da22e6c50f5f5b5
+        revision: e5b9931b54aef309f721554c761fe4163edeec24
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: acd569b1907573200cfe53ae11a96883e9039538b0a53dc3b4b2609943a13937
+    registry_content_sha256: 8518f633ab97d50de8edaacde0e97714934b270cdab869e8de94e7f07d551d1c
     components:
         browser-backend:
             version: 1.6.1
@@ -53,7 +53,7 @@ last_applied:
             version: 1.13.0
             sha: browser-workflow
         postgres-adapter:
-            version: 4.4.0
+            version: 4.4.1
             sha: browser-workflow
     files:
         browser/backend.go: c014c4113ce229739c5a2eddf7ae44f4412edffaee8916f6f81e7ed72430242b
@@ -125,7 +125,8 @@ last_applied:
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2
-        main.go: 5e4075adc81e2fd96af3078495a467e251c7d2735c52a1d08261dd83305abdfc
+        main.go: 5388c5f5191785b984c0260ab8ed4dcb94251e1c5e6c362ef9985d2a44098238
+        storage/database.go: 7a1eb66e467952681193a485ebeeb71ad0d1a306d2375a2398f62ab4fedd0f5f
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812

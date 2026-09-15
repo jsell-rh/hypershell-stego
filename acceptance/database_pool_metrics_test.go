@@ -19,12 +19,20 @@ type gatewayPoolSnapshot struct {
 
 func awaitGatewayPoolMetrics(t *testing.T, collector *httpDiagnosticCollector, private []string, accept func(gatewayPoolSnapshot) bool) gatewayPoolSnapshot {
 	t.Helper()
+	return awaitServicePoolMetrics(t, collector, "hypershell-pool-api", 2, private, accept)
+}
+
+func awaitServicePoolMetrics(t *testing.T, collector *httpDiagnosticCollector, service string, limitValue int64, private []string, accept func(gatewayPoolSnapshot) bool) gatewayPoolSnapshot {
+	t.Helper()
 	deadline := time.NewTimer(4 * time.Second)
 	defer deadline.Stop()
 	for {
 		select {
 		case batch := <-collector.metrics.received:
 			for _, resource := range batch.ResourceMetrics {
+				if signalAttribute(resource.Resource.Attributes, "service.name").GetStringValue() != service {
+					continue
+				}
 				for _, scope := range resource.ScopeMetrics {
 					if scope.Scope.Name != "stego/database" {
 						continue
@@ -54,7 +62,7 @@ func awaitGatewayPoolMetrics(t *testing.T, collector *httpDiagnosticCollector, p
 					if len(metrics) != 5 {
 						t.Fatal("pool metric set differs")
 					}
-					snapshot := gatewayPoolSnapshot{Instance: telemetryInstance(t, resource.Resource.Attributes, "hypershell-pool-api")}
+					snapshot := gatewayPoolSnapshot{Instance: telemetryInstance(t, resource.Resource.Attributes, service)}
 					connections := metrics["stego.db.pool.connections"]
 					if connections == nil || connections.Unit != "{connection}" || len(connections.GetGauge().GetDataPoints()) != 2 {
 						t.Fatal("connection gauges differ")
@@ -84,7 +92,7 @@ func awaitGatewayPoolMetrics(t *testing.T, collector *httpDiagnosticCollector, p
 					if snapshot.Collected == 0 {
 						t.Fatal("pool metric has no collection time")
 					}
-					if snapshot.Limit != 2 || snapshot.Used+snapshot.Idle > snapshot.Limit {
+					if snapshot.Limit != limitValue || snapshot.Used+snapshot.Idle > snapshot.Limit {
 						t.Fatal("pool metrics exceed the configured budget")
 					}
 					for name, unit := range map[string]string{"stego.db.pool.waits": "{wait}", "stego.db.pool.wait.duration": "s", "stego.db.pool.connections.closed": "{connection}"} {

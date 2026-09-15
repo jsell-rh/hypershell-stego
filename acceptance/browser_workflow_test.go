@@ -551,11 +551,12 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if deployment == nil {
 		binary = consoleProgram(t)
 	}
+	consoleTelemetry := append(append([]string{}, telemetry...), "STEGO_DATABASE_MAX_OPEN_CONNECTIONS=3", "STEGO_DATABASE_MAX_IDLE_CONNECTIONS=3")
 	startBrowser := func() (func(), func() string) {
 		if deployment == nil {
-			return startConsole(t, binary, address, sessions.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry...)
+			return startConsole(t, binary, address, sessions.dsn, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, consoleTelemetry...)
 		}
-		return deployment.startConsole(sessions, address, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, telemetry)
+		return deployment.startConsole(sessions, address, api, apiIdentity.config.CAFile, k, consoleIdentity, secretFile, keyFile, consoleTelemetry)
 	}
 	stop, logs := startBrowser()
 	alice := newConsoleBrowser(t, address, consoleIdentity.config.CAFile, k.options.CAFile)
@@ -572,6 +573,19 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	bob.login(t, k, "console-bob")
 	sdkID := browserSDKWorkflow(t, alice, bob, consoleIdentity.config.CAFile, f.request("browser-sdk-workflow"))
 	checkBrowserTraceChain(t, signals)
+	poolSnapshots := map[string]gatewayPoolSnapshot{}
+	checkConsolePool := func(phase string) {
+		t.Helper()
+		after := uint64(time.Now().UnixNano())
+		snapshot := awaitServicePoolMetrics(t, signals, "hypershell-console", 3, []string{sessions.dsn, "acceptance-only-console-secret"}, func(s gatewayPoolSnapshot) bool { return s.Collected >= after && s.Idle > 0 })
+		for _, prior := range poolSnapshots {
+			if prior.Instance == snapshot.Instance {
+				t.Fatal("console restart retained its pool metric identity")
+			}
+		}
+		poolSnapshots[phase] = snapshot
+	}
+	checkConsolePool("initial")
 	var sdkGrants int
 	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings b JOIN roles r ON r.id=b.role_id JOIN users u ON u.id=b.user_id WHERE b.gateway_id=$1 AND b.scope='gateway' AND r.name='gateway:owner' AND u.subject=$2", sdkID, aliceID).Scan(&sdkGrants); err != nil || sdkGrants != 1 {
 		t.Fatal("SDK Gateway owner grant missing", err)
@@ -700,6 +714,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	assertGRPC()
 	alice.session(t)
 	assertAccess()
+	checkConsolePool("restarted")
 	if rendered != nil {
 		rendered.run(t, "reload")
 	}
@@ -717,6 +732,14 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	}
 	alice.session(t)
 	assertAccess()
+	checkConsolePool("after_key_rotation")
+	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
+		data, err := json.MarshalIndent(poolSnapshots, "", "  ")
+		if err != nil || os.WriteFile(filepath.Join(directory, "browser-pool.json"), append(data, '\n'), 0600) != nil {
+			t.Fatal("cannot write browser pool evidence")
+		}
+	}
+	t.Log("Generated browser pool retained its three-connection limit and distinct runtime identities across process restart, key rotation, and collector recovery")
 	// A completed renewal changes the stored encrypted session without login.
 	var beforeRefresh []byte
 	originURL, _ := url.Parse(address)

@@ -78,3 +78,17 @@ The restricted API gate now requires this test, for a total of 31 named tests.
 Local compilation and repeated generation passed. The new live API, browser,
 and full CI results remain required. This change does not establish production
 capacity or close the separate worker and PostgreSQL client telemetry gaps.
+
+The console review then found two compiler gaps: a service without entities
+received no adapter pool factory, and assembly could ignore a declared factory
+when the adapter's storage constructor was unused. Compiler `e5b9931` and adapter
+4.4.1 correct both cases. Regeneration now emits `storage.OpenDatabase(dsn)` in
+the separate console process. The API continues to use its existing factory.
+
+The complete browser workflow now sets a three-connection console limit and
+checks its pool metrics after login, process restart, and session-key rotation.
+Each process must have a distinct runtime identity. The final check requires
+a new collection after collector recovery. The `browser-pool.json` artifact
+records these three snapshots. The earlier queued runs at `fabad99` were canceled
+before execution because they lacked the complete console factory correction.
+Their canceled results are not passes. The new application results are pending.

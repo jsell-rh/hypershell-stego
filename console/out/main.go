@@ -5,7 +5,6 @@ package main
 import (
 	"context"
 	"crypto/tls"
-	"database/sql"
 	"encoding/json"
 	"errors"
 	"io"
@@ -22,9 +21,9 @@ import (
 	"syscall"
 	"time"
 
-	_ "github.com/jackc/pgx/v5/stdlib"
 	browser "github.com/jsell-rh/hypershell-stego/console/out/browser"
 	health "github.com/jsell-rh/hypershell-stego/console/out/health"
+	storage "github.com/jsell-rh/hypershell-stego/console/out/storage"
 	tracing "github.com/jsell-rh/hypershell-stego/console/out/tracing"
 )
 
@@ -50,7 +49,7 @@ func run() (stegoErr error) {
 		return err
 	}
 	stegoStage = "database.open"
-	db, err := sql.Open("pgx", dsn)
+	db, err := storage.OpenDatabase(dsn)
 	if err != nil {
 		return err
 	}
