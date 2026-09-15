@@ -92,7 +92,15 @@ cover these contracts, including the editor and terminal.
 
 Common Keycloak client management must also come from STEGO. Use the existing
 service-account and Gateway identity workflows to prove the
-[provider extraction](https://github.com/jsell-rh/stego/blob/5386609/specs/keycloak-provider-boundary.md)
+[provider extraction](https://github.com/jsell-rh/stego/blob/0ebc3cf/specs/keycloak-provider-boundary.md)
 before adding per-Gateway dashboard client policy. Hypershell keeps Gateway
-roles, grants, audiences, and ownership identifiers. This extraction is not yet
-implemented; moving the current client without this separation is insufficient.
+roles, grants, audiences, and ownership identifiers.
+
+STEGO now has initial typed client operations. Its real-Keycloak job passed at
+`b6f814165df869797d1418ff1269814f35426924`, including ownership checks,
+credential reads, disablement, confirmed deletion, and trace privacy. That test
+reconstructs a provider client within one process; it does not restart this
+application or Keycloak. Client creation, roles, scopes, and mappers remain
+open. Hypershell has not adopted the provider, and its handwritten client has
+not been reduced. Moving that client without the policy separation would be
+insufficient.
