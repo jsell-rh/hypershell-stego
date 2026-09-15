@@ -67,12 +67,20 @@ All 18 Job admission probes passed, including denial of the four regressions.
 The initial 45-object installation record remains unchanged; the repair record
 identifies the added object and the changed policy generation.
 
-The complete corrected CNPG workflow is active in
-[CI 34969545259](https://github.com/jsell-rh/hypershell-stego/actions/runs/34969545259).
-The operator started and both database instances became healthy. Application
-Job `ee349c94-b415-4f67-8021-809fb0117feb` is pending because Kubernetes reports
-insufficient CPU and memory. No application result is available. The run still
-must verify complete application behavior, primary replacement, and cleanup.
+The first complete restricted CNPG job in
+[CI 34969545259](https://github.com/jsell-rh/hypershell-stego/actions/runs/34969545259)
+failed. The operator started and both database instances became healthy. The
+application Pod could not schedule until more cluster capacity was available.
+It then exceeded the bounded Pod readiness wait. No application test ran.
+Application Job `ee349c94-b415-4f67-8021-809fb0117feb` and its fixtures were removed.
+
+CNPG cleanup then failed because it tried to list namespaces with the CI
+identity. That identity cannot list namespaces. The corrected runner uses the
+existing allocator client in its read-only mode and requires fresh evidence
+that no allocations remain. It retains direct CI checks for cluster roles and
+bindings. Ten focused Python checks passed. The correction does not increase
+CI permissions or change the application startup deadline. Full application,
+primary replacement, and automatic cleanup evidence remain required.
 The ordinary API and browser runs `34969544850` and `34969544751` were canceled
 before execution because this change affects only the CNPG test fixture.
 The application output remains the verified `752d92e` output. Canceled and

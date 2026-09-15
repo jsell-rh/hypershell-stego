@@ -1,5 +1,8 @@
 """Check the fixed CNPG CI authority and lifetime boundaries."""
 import unittest
+import tempfile
+import json
+from pathlib import Path
 from unittest.mock import patch
 from types import SimpleNamespace
 
@@ -91,6 +94,25 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_final_allocation_check_uses_the_scoped_client_and_new_evidence(self):
+        runner = ci.module('cnpg_ci_allocation_boundary', 'check-cnpg-ci.py')
+        with tempfile.TemporaryDirectory() as directory:
+            browser = Path(directory)
+            (browser / 'ci-server').write_text('https://api.example')
+            (browser / 'ci-ca.pem').write_text('')
+            result = browser / 'allocation-final.json'
+            result.write_text('{"allocations_absent":true,"allocations_before":0}')
+            with patch.object(runner.subprocess, 'run'):
+                with self.assertRaises(FileNotFoundError):
+                    runner.verify_allocations(browser)
+            def complete(words, **options):
+                self.assertNotIn('--remove', words)
+                self.assertEqual(words[0], str(browser / 'allocation-cleanup'))
+                self.assertEqual(options, {'check': True, 'timeout': 195})
+                result.write_text(json.dumps({'allocations_absent': True, 'allocations_before': 0}))
+            with patch.object(runner.subprocess, 'run', side_effect=complete):
+                runner.verify_allocations(browser)
+
     def test_exec_probe_uses_the_subresource_flag(self):
         runner = ci.module('cnpg_ci_exec_boundary', 'check-cnpg-ci.py')
         with patch.object(runner.subprocess, 'run') as run:

@@ -53,6 +53,23 @@ def access_probe(context, verb, resource, namespace):
     return subprocess.run(words, text=True, capture_output=True, timeout=25)
 
 
+
+def verify_allocations(browser):
+    # The fixed allocator identity can list namespaces. The CI identity cannot.
+    # Reuse the browser runner's bounded client in its read-only mode.
+    ca = browser / 'ci-ca.pem'
+    result = browser / 'allocation-final.json'
+    result.unlink(missing_ok=True)
+    subprocess.run([str(browser / 'allocation-cleanup'), '--namespace', ci.APP_NS,
+                    '--server', (browser / 'ci-server').read_text().strip(),
+                    '--ca-file', str(ca) if ca.stat().st_size else '',
+                    '--token-file', str(browser / 'ci-token'), '--result', str(result)],
+                   check=True, timeout=195)
+    evidence = json.loads(result.read_text())
+    if evidence.get('allocations_absent') is not True or evidence.get('allocations_before') != 0:
+        raise RuntimeError('Gateway allocation absence is not confirmed; retain the SQL server and Lease')
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -182,9 +199,10 @@ def main():
             if client.oc('get', kind, '-n', ci.APP_NS, '-l', 'stego.test/browser-run=' + ci.APP_NS, '-o', 'json')['items']:
                 raise RuntimeError('Application test data remains; retain its SQL server and Lease')
         marker = hashlib.sha256((ci.APP_NS + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]
-        for kind in ['namespaces', 'clusterroles', 'clusterrolebindings']:
+        for kind in ['clusterroles', 'clusterrolebindings']:
             if client.oc('get', kind, '-l', 'stego.dev/allocator=' + marker, '-o', 'json')['items']:
                 raise RuntimeError('Gateway allocations remain; retain the SQL server and Lease')
+        verify_allocations(args.results / 'browser')
     try:
         require_empty()
         if client.get('secret', 'cnpg-credentials', ci.APP_NS):
