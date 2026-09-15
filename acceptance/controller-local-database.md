@@ -71,6 +71,14 @@ Separate checks verified cleanup. This result does not establish unattended
 CNPG CI. Actual RDS checks and a public Gateway connection remain open. Earlier
 registration and deployment-backed database tests are historical evidence.
 
+The [shared RDS acceptance gate](https://github.com/jsell-rh/stego/blob/main/specs/rds-acceptance.md)
+requires the complete Gateway workflow on an identified disposable RDS server.
+It includes restricted password management, maintenance-database isolation,
+failover through the generated network policy, and retained installation data.
+RDS server settings and password-management grants belong to installation
+setup. The controller must not disable those settings or increase its own
+permissions. No RDS target has been selected for this gate yet.
+
 The schema gate must cover fresh bootstrap, concurrent starts, interrupted
 bootstrap, empty and populated legacy schemas, unknown generations, and an old
 process that can still use its schema after a new process rejects it. No test
