@@ -58,6 +58,8 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				target = w.publicWorkerSettings(env, files, target)
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_GATEWAY_CLUSTER_ISSUER"] = w.options.ClusterIssuer
+				env["HYPERSHELL_GATEWAY_INTERNAL_CA_FILE"] = "/var/run/stego/gateway-internal-ca.pem"
+				files["gateway-internal-ca.pem"] = w.internalCA
 				env["HYPERSHELL_GATEWAY_OIDC_ISSUER"] = w.identity.options.ServerURL + "/realms/workflow"
 				env["HYPERSHELL_GATEWAY_TRUST_BUNDLE"] = "/var/run/stego/issuer-ca.pem"
 				files["issuer-ca.pem"] = w.p.read(w.identity.options.CAFile)

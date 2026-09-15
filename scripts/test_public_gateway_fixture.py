@@ -10,6 +10,7 @@ import unittest
 from unittest.mock import patch
 
 from public_gateway_fixture import apply_public_fixture, read_config
+from internal_gateway_fixture import apply_internal_fixture
 
 
 class PublicGatewayFixture(unittest.TestCase):
@@ -71,12 +72,14 @@ class PublicGatewayFixture(unittest.TestCase):
         (root / 'server.key').write_bytes((root / 'key.pem').read_bytes())
         script = Path(__file__).parent / 'render-service-fixture.py'
         environment = dict(os.environ, STEGO_TEST_GATEWAY_PUBLIC_CONFIG=config_path,
+                           STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(root / 'ca.pem'),
                            STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='1', STEGO_TEST_CNPG_FIXTURE='0')
         subprocess.run([sys.executable, str(script), 'stego-service-ci', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())
         config = next(item for item in document['items'] if item['kind'] == 'ConfigMap' and item['metadata']['name'] == 'database-ca')
-        self.assertEqual(set(config['data']), {'server.crt', 'gateway-public.json'})
+        self.assertEqual(set(config['data']), {'server.crt', 'gateway-public.json', 'gateway-internal-ca.pem'})
+        self.assertEqual(config['data']['gateway-internal-ca.pem'], (root / 'ca.pem').read_text())
         self.assertEqual(json.loads(config['data']['gateway-public.json']), self.config)
         self.assertEqual(config['metadata']['labels']['stego.test/browser-run'], 'stego-service-ci')
         job = next(item for item in document['items'] if item['kind'] == 'Job')
@@ -86,6 +89,22 @@ class PublicGatewayFixture(unittest.TestCase):
             self.assertFalse(container['securityContext']['allowPrivilegeEscalation'])
             self.assertIn('cpu', container['resources']['limits'])
             self.assertIn('memory', container['resources']['limits'])
+
+    def test_internal_trust_rejects_invalid_input_before_changes(self):
+        document = {'items': []}
+        path = self.root / 'internal-invalid.pem'
+        for value in ['', 'invalid', self.config['ca_pem'] + (self.root / 'key.pem').read_text(),
+                      'unexpected\n' + self.config['ca_pem'], self.config['ca_pem'] + 'unexpected',
+                      self.config['ca_pem'] * 257, ' ' * ((512 << 10) + 1)]:
+            path.write_text(value)
+            with patch.dict(os.environ, {'STEGO_TEST_GATEWAY_INTERNAL_CA_FILE': str(path)}):
+                with self.assertRaises(ValueError):
+                    apply_internal_fixture(document, '1', '1')
+            self.assertEqual(document, {'items': []})
+        with patch.dict(os.environ, {'STEGO_TEST_GATEWAY_INTERNAL_CA_FILE': str(self.root / 'ca.pem')}):
+            for workload, browser in [('0', '1'), ('1', '0')]:
+                with self.assertRaises(ValueError):
+                    apply_internal_fixture(document, workload, browser)
 
     def test_required_and_scoped_mount(self):
         job = {'items': [{'kind': 'Job', 'metadata': {'name': 'service-check'}, 'spec': {'template': {'spec': {

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
-	"crypto/tls"
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
@@ -22,6 +21,7 @@ import (
 
 type object = kube.Object
 type Options struct {
+	InternalCAFile                                         string
 	PublicDomain, PublicIssuer, PublicCAFile, PublicRouter string
 	SQLBindings                                            SQLBindings
 	SandboxRuntimeClass                                    string
@@ -32,11 +32,12 @@ type Options struct {
 	Issuer, TrustBundleFile, SandboxImage, SupervisorImage string
 }
 type Kubernetes struct {
-	client      *kube.Client
-	options     Options
-	trust       string
-	publicRoots *x509.CertPool
-	allocation  *allocation.Allocator
+	client        *kube.Client
+	options       Options
+	trust         string
+	publicRoots   *x509.CertPool
+	internalRoots *x509.CertPool
+	allocation    *allocation.Allocator
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
@@ -66,6 +67,10 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
+	internalRoots, err := gatewayTrustFile(o.InternalCAFile)
+	if err != nil {
+		return nil, errors.New("Gateway internal TLS requires an explicit CA file")
+	}
 	c, err := kube.New(kube.Options{ServerURL: o.ServerURL, CAFile: o.CAFile, TokenFile: o.TokenFile})
 	if err != nil {
 		return nil, err
@@ -82,7 +87,7 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 			return nil, err
 		}
 	}
-	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator, publicRoots: publicRoots}, nil
+	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator, publicRoots: publicRoots, internalRoots: internalRoots}, nil
 }
 
 // Only certificates can enter the public ConfigMap. Never copy a private key
@@ -188,43 +193,9 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if code == 404 {
 		return ErrPending
 	}
-	if !owner(id).Matches(server) {
-		return errors.New("Gateway TLS Secret has a different owner")
-	}
-	crt, err := data(server, "tls.crt")
+	crt, err := k.verifyInternalTLS(server, id, ns, host)
 	if err != nil {
 		return err
-	}
-	key, err := data(server, "tls.key")
-	if err != nil {
-		return err
-	}
-	pair, err := tls.X509KeyPair(crt, key)
-	if err != nil {
-		return errors.New("Gateway TLS key does not match its certificate")
-	}
-	leaf, err := x509.ParseCertificate(pair.Certificate[0])
-	if err != nil {
-		return err
-	}
-	root, err := data(server, "ca.crt")
-	if err != nil {
-		return err
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(root) {
-		return errors.New("Gateway TLS CA is invalid")
-	}
-	intermediates := x509.NewCertPool()
-	for _, raw := range pair.Certificate[1:] {
-		c, err := x509.ParseCertificate(raw)
-		if err != nil {
-			return err
-		}
-		intermediates.AddCert(c)
-	}
-	if _, err = leaf.Verify(x509.VerifyOptions{Roots: roots, Intermediates: intermediates, DNSName: host}); err != nil {
-		return errors.New("Gateway TLS certificate is not valid for its Service")
 	}
 	publicCertificate, err := k.ensurePublicTLS(ctx, gw)
 	if err != nil {
@@ -233,7 +204,7 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	sandboxNS := ns
 	if k.options.SandboxRuntimeClass != "" {
 		sandboxNS, _ = SandboxNamespace(id)
-		if err := k.ensureSandbox(ctx, id, sandboxNS, core, roots); err != nil {
+		if err := k.ensureSandbox(ctx, id, sandboxNS, core, k.internalRoots); err != nil {
 			return err
 		}
 	}

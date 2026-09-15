@@ -90,6 +90,8 @@ def fixture(ns, directory, browser, workload, issuer):
                 test['env'].append({'name': 'STEGO_TEST_GATEWAY_SQL_FIXTURE_FILE', 'value': '/cnpg-installation/fixture.json'})
     from public_gateway_fixture import apply_public_fixture
     apply_public_fixture(job, ns, workload, browser)
+    from internal_gateway_fixture import apply_internal_fixture
+    apply_internal_fixture(job, workload, browser)
     for item in job['items']:
         if item['kind'] == 'Role' and item['metadata']['name'] == 'service-check':
             for rule in list(item['rules']):

@@ -105,7 +105,7 @@ last_applied:
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: cef74f79e09547a2c1c56f8a9b1af3f5b69fca24e849b0ddebf8bba41a6f5c0b
+                sha256: acf53db06d973d72b32ce156c096cfb2d542c370c15b4ccae25ffa92acbd9ba7
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -123,18 +123,18 @@ last_applied:
                 exists: true
                 sha256: 4bd64f1a0ef1e1f5054273bbe8f4372cd466a1b7ae7fc75cb828eb0eed5a09a0
                 mode: 420
-        sha256: 8863ce8fefc110fdc1c63dc466d5a0883586c9616aea077c576c28a236530be9
+        sha256: 99d3a4024a229be868266f1fc71f348ec01459c4ee1cf19b0a5c0052ddc7fda1
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915143045-7ebd67831f3f
+        module_version: v0.0.0-20260915145056-0b0c932716f0
         vcs: git
-        revision: 7ebd67831f3faf99b0e84a4962a80bf41e4cb9ac
+        revision: 0b0c932716f09d492cdc31e0c00a9849c13d1fc8
         source_state: clean
     service_hash: 4bd64f1a0ef1e1f5054273bbe8f4372cd466a1b7ae7fc75cb828eb0eed5a09a0
     registry_sha: gateway-workflow
-    registry_content_sha256: 36cc4ee40ec67c75d0635deaa573aa82477a206af5091b640e0ddd484f86c103
+    registry_content_sha256: fa54cffc74867324cc0255ae5640f4c3a8fd4f12be769c7a28400ab00ce479a9
     components:
         browser-telemetry:
             version: 1.0.0
@@ -164,7 +164,7 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         kubernetes-client:
-            version: 1.6.0
+            version: 1.9.0
             sha: gateway-workflow
         kubernetes-service:
             version: 1.12.0
@@ -438,7 +438,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: f89c941ee23bb21bf1f9ba8cb6b686fe1f6ca7be1b027e9b55e36c2b1c79862b
+        cli/command/version.go: cfb5f2ec8000ad294d8061a05e84a7026f462cf5f62f0a17260ff8d57bf39490
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -515,7 +515,7 @@ last_applied:
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
         kubernetes/readiness.go: 043ecec9b020829f9be504df2e229c935a340083d76e39b22a1c35e1488ddd41
         kubernetes/route.go: 2fffd9919d9e5263b068ce453bfb15af9ef8717b1e5c3da5ad4f897a8606cc0c
-        kubernetes/tls_secret.go: 0b031df97a943ff8cf5fcd6508bdc1719ae7ad59ad627626eefbfd028004886d
+        kubernetes/tls_secret.go: 3b5efa36271cb9c6f66fa6794a5ac9fc59b36b4c61c3da3b3979ae543f028f07
         kubernetes/watch_set.go: 8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47
         main.go: 0024d9f5ab6fffa2e4b5451509a11ba0a3c972d3a96bdadfc09014409cc9d61f
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437

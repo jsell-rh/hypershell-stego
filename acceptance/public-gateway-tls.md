@@ -202,3 +202,7 @@ separate isolation gap. Current public tests exercise the worker's egress policy
 they do not prove isolation of the Gateway Pod's namespace. Keep the full
 shared-cluster network gate open and update the permission plan when that
 policy support is generated.
+
+Internal Gateway TLS now requires a separate operator-supplied CA file. See
+[the internal trust contract](internal-tls-trust.md). Public trust settings do
+not replace that requirement.

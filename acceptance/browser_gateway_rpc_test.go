@@ -3,10 +3,7 @@ package acceptance
 import (
 	"context"
 	"crypto/tls"
-	"crypto/x509"
-	"encoding/base64"
 	"encoding/json"
-	"net/http"
 	"time"
 
 	protocol "github.com/jsell-rh/hypershell-stego/contracts/gateway"
@@ -30,30 +27,13 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 		w.t.Fatal("Gateway read failed")
 	}
 	address := "openshell-gateway." + gateway.Namespace + ".svc.cluster.local:8080"
-	roots := x509.NewCertPool()
+	roots := w.internalRoots
 	if w.public != nil {
 		address = w.publicRPCAddress(gateway)
 		roots = w.public.roots
-	} else {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		secret, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+gateway.Namespace+"/secrets/openshell-server-tls", nil)
-		cancel()
-		if err != nil || code != 200 {
-			w.t.Fatal("Gateway CA unavailable")
-		}
-		encoded, ok := secret["data"].(map[string]any)
-		if !ok {
-			w.t.Fatal("Gateway CA document invalid")
-		}
-		text, ok := encoded["ca.crt"].(string)
-		if !ok {
-			w.t.Fatal("Gateway CA absent")
-		}
-		ca, err := base64.StdEncoding.DecodeString(text)
-		if err != nil || !roots.AppendCertsFromPEM(ca) {
-			w.t.Fatal("Gateway CA invalid")
-		}
-
+	}
+	if roots == nil {
+		w.t.Fatal("operator-supplied Gateway trust is missing")
 	}
 	connection, err := grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
 	if err != nil {

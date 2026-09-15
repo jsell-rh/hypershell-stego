@@ -33,6 +33,7 @@ jobs:
           python3 scripts/test_ci_credentials.py
           python3 scripts/test_browser_cluster_installation.py
           python3 scripts/test_browser_inspection.py
+          python3 scripts/test_public_gateway_fixture.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go
       - name: Prepare the frozen inspection source
         timeout-minutes: 5
@@ -57,6 +58,14 @@ jobs:
           echo '0234aed5f4f13fbd0ff693c9eb8011bbfd97f1829296157c39810494b98cf84c  client.tar.gz' | sha256sum --check
           tar xf client.tar.gz oc
           echo "$RUNNER_TEMP/oc" >> "$GITHUB_PATH"
+      - name: Write the internal Gateway trust
+        env:
+          INTERNAL_CA: ${{ vars.JSHELL_GATEWAY_INTERNAL_CA_PEM }}
+        run: |
+          test -n "$INTERNAL_CA"
+          umask 077
+          printf '%s' "$INTERNAL_CA" > "$RUNNER_TEMP/gateway-internal-ca.pem"
+          echo "STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=$RUNNER_TEMP/gateway-internal-ca.pem" >> "$GITHUB_ENV"
       - name: Write the private CI credential
         env:
           CI_KUBECONFIG: ${{ secrets.JSHELL_CI_KUBECONFIG }}

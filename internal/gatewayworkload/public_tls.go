@@ -39,25 +39,25 @@ func publicTrust(o Options) (*x509.CertPool, error) {
 		}
 		return roots, nil
 	}
-	if !filepath.IsAbs(o.PublicCAFile) {
-		return nil, errors.New("public Gateway CA file must be absolute")
+	return gatewayTrustFile(o.PublicCAFile)
+}
+
+func gatewayTrustFile(name string) (*x509.CertPool, error) {
+	if !filepath.IsAbs(name) {
+		return nil, errors.New("Gateway CA file must be absolute")
 	}
-	file, err := os.Open(o.PublicCAFile)
+	file, err := os.Open(name)
 	if err != nil {
-		return nil, errors.New("public Gateway CA file is unavailable")
+		return nil, errors.New("Gateway CA file is unavailable")
 	}
 	defer file.Close()
 	raw, err := io.ReadAll(io.LimitReader(file, (512<<10)+1))
 	if err != nil || len(raw) > 512<<10 {
-		return nil, errors.New("public Gateway CA file is invalid")
+		return nil, errors.New("Gateway CA file is invalid")
 	}
-	bundle, err := certificateBundle(raw)
+	roots, err := kube.ParseServerTLSRoots(raw)
 	if err != nil {
-		return nil, errors.New("public Gateway CA file must contain certificates")
-	}
-	roots := x509.NewCertPool()
-	if !roots.AppendCertsFromPEM(bundle) {
-		return nil, errors.New("public Gateway CA file is invalid")
+		return nil, errors.New("Gateway CA file is invalid")
 	}
 	return roots, nil
 }

@@ -26,6 +26,7 @@ if [[ $preinstalled == 1 ]]; then [[ $workload == 1 ]]; fi
 if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
+  : "${STEGO_TEST_GATEWAY_INTERNAL_CA_FILE:?Set the operator-supplied internal Gateway CA file}"
   test -s acceptance/browser-inspection-source.json
 fi
 # Check lifetime before acquiring a Lease or changing the test installation.

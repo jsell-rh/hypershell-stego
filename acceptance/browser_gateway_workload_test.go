@@ -2,7 +2,9 @@ package acceptance
 
 import (
 	"context"
+	"crypto/x509"
 	"encoding/json"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -22,6 +24,8 @@ import (
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
+	internalCA          []byte
+	internalRoots       *x509.CertPool
 	publicEgressFailure func(string)
 	public              *browserPublicGateway
 	t                   *testing.T
@@ -67,6 +71,19 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		t.Fatal("Kubernetes client setup failed")
 	}
 	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
+	file, err := os.Open(os.Getenv("STEGO_TEST_GATEWAY_INTERNAL_CA_FILE"))
+	if err != nil {
+		t.Fatal("operator-supplied internal Gateway CA is unavailable")
+	}
+	w.internalCA, err = io.ReadAll(io.LimitReader(file, (512<<10)+1))
+	closeErr := file.Close()
+	if err != nil || closeErr != nil {
+		t.Fatal("internal Gateway CA read failed")
+	}
+	w.internalRoots, err = kube.ParseServerTLSRoots(w.internalCA)
+	if err != nil {
+		t.Fatal("internal Gateway CA is invalid")
+	}
 	w.preparePublicGateway()
 	w.prepareDatabase(sessions)
 	t.Cleanup(func() {
