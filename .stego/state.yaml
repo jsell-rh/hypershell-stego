@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915231904-cae56de17fa6
+        module_version: v0.0.0-20260915233955-fdd5efefd8e0
         vcs: git
-        revision: cae56de17fa6e8298e1de08a3523ba23c2689f4c
+        revision: fdd5efefd8e0631005c890bd1c44fe01680f2804
         source_state: clean
     service_hash: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
     registry_sha: gateway-workflow
-    registry_content_sha256: dd6d3005bf56d7b0c7d9c5ce874b195db3b5015bd8ca21c13927e9fdd95a0ffe
+    registry_content_sha256: 1d61fb6e7e6849bdf1ad5e1ca90a8b9e77a48d2d169c2bc7047a88e4aeb121eb
     components:
         browser-telemetry:
             version: 1.0.0
@@ -164,7 +164,7 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         keycloak-provider:
-            version: 0.10.1
+            version: 0.10.2
             sha: gateway-workflow
         kubernetes-client:
             version: 1.9.0
@@ -441,7 +441,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 92a03893fe3008b1852c45f3a331f48d6199135ecb39ae74e568c8e0f1bf88a3
+        cli/command/version.go: 128289c59ebb463ce8c29acd85a21713127f0a4d89a4c842f44c44d0dc530693
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -522,7 +522,7 @@ last_applied:
         keycloak/native_access.go: f178dbcd2d37f3c09c23107bee1ca242dd41af25637c88e1b8c0a0100f0935b7
         keycloak/native_clients.go: dbd28e1d32c36dc250b9626e6147b4b58e98ec7bd748f9550a209a6121005fc3
         keycloak/ownership_migration.go: 84f88e93bfe5250c4164106cff1112968a0bd70a48f06f7bcd21749e342fa717
-        keycloak/roles.go: 3a4b48421346167701319e20752634c8f9ba38af9d0fac2d8cc61a1427158658
+        keycloak/roles.go: 292d4f57db72f0cc831d8842a6bdb48bc20e99f2291d215eac3f9d91a955efc3
         keycloak/scopes.go: 7d12d8455d93facac6f157effd4dfba2dffd72d396cb2357bc85035bcba6c275
         keycloak/service_account_access.go: 0794842a6a637488dad37e54a62535b21f91e4e149860e423aa05a0a5f78773d
         keycloak/service_account_tokens.go: 8b272f9f9dc0a0d671c8022d34531a41774d4f71d64bca3bedd12231d1ec069d

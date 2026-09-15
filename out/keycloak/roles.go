@@ -563,11 +563,14 @@ func (c *Client) serviceAccountGroups(ctx context.Context, subject string) ([]st
 	return ids, nil
 }
 func (c *Client) boundServiceAccount(ctx context.Context, b ClientBinding, subject string) error {
+	return c.boundServiceAccountState(ctx, b, subject, true)
+}
+func (c *Client) boundServiceAccountState(ctx context.Context, b ClientBinding, subject string, disabled bool) error {
 	value, raw, err := c.boundClient(ctx, b)
 	if err != nil {
 		return err
 	}
-	if value.Protocol != "openid-connect" || !explicitFlag(raw, "enabled", false) || !explicitFlag(raw, "publicClient", false) || !explicitFlag(raw, "serviceAccountsEnabled", true) {
+	if value.Protocol != "openid-connect" || (!explicitFlag(raw, "enabled", false) && (disabled || !explicitFlag(raw, "enabled", true))) || !explicitFlag(raw, "publicClient", false) || !explicitFlag(raw, "serviceAccountsEnabled", true) {
 		return ErrRolePolicy
 	}
 	user, err := c.serviceAccountUser(ctx, b)
@@ -596,6 +599,34 @@ func (c *Client) readEffectiveRoles(ctx context.Context, path string, clientIDs 
 		}
 	}
 	return result, nil
+}
+
+// InspectServiceAccountRoles checks the saved dedicated subject, exact direct
+// and effective roles, and absence of group membership. It accepts an enabled
+// or disabled client and performs no administrative writes. It does not check
+// scopes, mappers, or tokens. The caller retains exclusive control of writes.
+func (c *Client) InspectServiceAccountRoles(ctx context.Context, b ClientBinding, subject string, p ServiceAccountRolePolicy) error {
+	if err := b.validate(); err != nil {
+		return err
+	}
+	if !identifier.MatchString(subject) {
+		return errors.New("invalid Keycloak service-account subject")
+	}
+	if err := validateServiceAccountRoles(p); err != nil {
+		return err
+	}
+	work, done, err := c.begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer done()
+	if err = c.boundServiceAccountState(work, b, subject, false); err != nil {
+		return err
+	}
+	if err = c.inspectServiceAccountRolePolicy(work, subject, p); err != nil {
+		return err
+	}
+	return c.boundServiceAccountState(work, b, subject, false)
 }
 
 // ReconcileServiceAccountRoles controls all direct roles and removes all group

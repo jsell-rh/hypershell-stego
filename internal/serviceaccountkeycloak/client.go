@@ -174,7 +174,7 @@ func (c *Client) ProvisionServiceAccount(ctx context.Context, spec ServiceAccoun
 	if err != nil {
 		return nil, fmt.Errorf("resolve service-account subject: %w", err)
 	}
-	if err := c.replaceRoleMappings(ctx, clientUUID, subject, gatewayUUID, roles); err != nil {
+	if err := c.replaceRoleMappings(ctx, spec, clientUUID, subject, gatewayUUID, roles); err != nil {
 		return nil, fmt.Errorf("set gateway role mappings: %w", err)
 	}
 	if err := c.replaceProtocolMappers(ctx, clientUUID, spec.GatewayClientID); err != nil {
@@ -234,7 +234,7 @@ func (c *Client) ReconcileServiceAccount(ctx context.Context, spec ServiceAccoun
 	if err := c.updateRepresentation(ctx, clientUUID, spec, false); err != nil {
 		return err
 	}
-	if err := c.replaceRoleMappings(ctx, clientUUID, subject, gatewayUUID, roles); err != nil {
+	if err := c.replaceRoleMappings(ctx, spec, clientUUID, subject, gatewayUUID, roles); err != nil {
 		return err
 	}
 	if err := c.replaceProtocolMappers(ctx, clientUUID, spec.GatewayClientID); err != nil {
@@ -277,7 +277,7 @@ func (c *Client) reconcileConverged(ctx context.Context, spec ServiceAccountSpec
 			return false, nil
 		}
 	}
-	userConverged, err := c.userRoleMappingsConverged(ctx, subject, gatewayUUID, roles)
+	userConverged, err := c.userRoleMappingsConverged(ctx, spec, client.ID, subject, gatewayUUID)
 	if err != nil || !userConverged {
 		return false, err
 	}
@@ -320,19 +320,12 @@ func mappingsConverged(mappings roleMappingSet, gatewayUUID string, roles []kcRo
 	return foundGateway
 }
 
-func (c *Client) userRoleMappingsConverged(ctx context.Context, subject, gatewayUUID string, roles []kcRole) (bool, error) {
-	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/users/%s/role-mappings", c.realm, url.PathEscape(subject)), nil)
-	if err != nil {
-		return false, err
+func (c *Client) userRoleMappingsConverged(ctx context.Context, spec ServiceAccountSpec, clientUUID, subject, gatewayUUID string) (bool, error) {
+	err := c.keycloak.InspectServiceAccountRoles(ctx, serviceAccountBinding(spec, clientUUID), subject, serviceAccountRoles(spec, gatewayUUID))
+	if errors.Is(err, provider.ErrRolePolicy) {
+		return false, nil
 	}
-	if status != http.StatusOK {
-		return false, statusError("list service-account role mappings", status)
-	}
-	var current roleMappingSet
-	if err := json.Unmarshal(body, &current); err != nil {
-		return false, errors.New("parse service-account role mappings")
-	}
-	return mappingsConverged(current, gatewayUUID, roles), nil
+	return err == nil, err
 }
 
 func (c *Client) scopeMappingsConverged(ctx context.Context, clientUUID, gatewayUUID string, roles []kcRole) (bool, error) {
@@ -761,56 +754,14 @@ func (c *Client) serviceAccountUserID(ctx context.Context, clientUUID string) (s
 	return user.ID, nil
 }
 
-func (c *Client) replaceRoleMappings(ctx context.Context, clientUUID, subject, gatewayUUID string, roles []kcRole) error {
-	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/users/%s/role-mappings", c.realm, url.PathEscape(subject)), nil)
-	if err != nil {
+func (c *Client) replaceRoleMappings(ctx context.Context, spec ServiceAccountSpec, clientUUID, subject, gatewayUUID string, roles []kcRole) error {
+	binding, policy := serviceAccountBinding(spec, clientUUID), serviceAccountRoles(spec, gatewayUUID)
+	if err := c.keycloak.ReconcileServiceAccountRoles(ctx, binding, subject, policy); err != nil {
 		return err
 	}
-	if status != http.StatusOK {
-		return statusError("list service-account role mappings", status)
+	if err := c.keycloak.InspectServiceAccountRoles(ctx, binding, subject, policy); err != nil {
+		return err
 	}
-	var current struct {
-		RealmMappings  []kcRole `json:"realmMappings"`
-		ClientMappings map[string]struct {
-			ID       string   `json:"id"`
-			Mappings []kcRole `json:"mappings"`
-		} `json:"clientMappings"`
-	}
-	if err := json.Unmarshal(body, &current); err != nil {
-		return errors.New("parse service-account role mappings")
-	}
-	if len(current.RealmMappings) > 0 {
-		payload, _ := json.Marshal(current.RealmMappings)
-		_, deleteStatus, deleteErr := c.admin(ctx, http.MethodDelete, fmt.Sprintf("/admin/realms/%s/users/%s/role-mappings/realm", c.realm, url.PathEscape(subject)), payload)
-		if deleteErr != nil {
-			return deleteErr
-		}
-		if deleteStatus >= 300 {
-			return statusError("remove unexpected service-account realm roles", deleteStatus)
-		}
-	}
-	for _, mapping := range current.ClientMappings {
-		if mapping.ID == "" || len(mapping.Mappings) == 0 {
-			continue
-		}
-		payload, _ := json.Marshal(mapping.Mappings)
-		_, deleteStatus, deleteErr := c.admin(ctx, http.MethodDelete, fmt.Sprintf("/admin/realms/%s/users/%s/role-mappings/clients/%s", c.realm, url.PathEscape(subject), url.PathEscape(mapping.ID)), payload)
-		if deleteErr != nil {
-			return deleteErr
-		}
-		if deleteStatus >= 300 {
-			return statusError("remove unexpected service-account roles", deleteStatus)
-		}
-	}
-	payload, _ := json.Marshal(roles)
-	userPath := fmt.Sprintf("/admin/realms/%s/users/%s/role-mappings/clients/%s", c.realm, url.PathEscape(subject), url.PathEscape(gatewayUUID))
-	if _, status, err = c.admin(ctx, http.MethodPost, userPath, payload); err != nil || status >= 300 {
-		if err != nil {
-			return err
-		}
-		return statusError("assign service-account roles", status)
-	}
-
 	return c.replaceScopeMappings(ctx, clientUUID, gatewayUUID, roles)
 }
 
@@ -931,6 +882,13 @@ func serviceAccountBinding(spec ServiceAccountSpec, id string) provider.ClientBi
 	return provider.ClientBinding{ID: id, ClientID: spec.ClientID, Attributes: map[string]string{
 		managedAttribute: "true", gatewayIDAttribute: spec.GatewayID, serviceAccountIDAttribute: spec.ServiceAccountID, creatorUserIDAttribute: spec.CreatorUserID,
 	}}
+}
+func serviceAccountRoles(spec ServiceAccountSpec, gatewayUUID string) provider.RolePolicy {
+	return provider.RolePolicy{Clients: []provider.ClientRoleGrant{{
+		Client: provider.ClientBinding{ID: gatewayUUID, ClientID: spec.GatewayClientID,
+			Attributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: spec.GatewayID}},
+		Names: desiredRoleNames(spec.Role),
+	}}}
 }
 func serviceAccountTokenPolicy(spec ServiceAccountSpec, subject string) provider.ServiceAccountTokenPolicy {
 	lifetime := spec.AccessTokenLifetimeSeconds

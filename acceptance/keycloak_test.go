@@ -351,6 +351,27 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 	if json.Unmarshal(repaired.Body, &representation) != nil || representation["fullScopeAllowed"] != false || representation["standardFlowEnabled"] != false {
 		t.Fatal("provider drift survived repair")
 	}
+	// Group membership alone is drift, even if direct roles remain unchanged.
+	// Removing it prevents later group-role changes from expanding this account.
+	group := k.adminRequest(t, "POST", "/groups", map[string]string{"name": "account-drift-" + row.ID})
+	groupLocation, err := url.Parse(group.Header.Get("Location"))
+	if err != nil {
+		t.Fatal("invalid drift group location")
+	}
+	groupParts := strings.Split(strings.TrimRight(groupLocation.Path, "/"), "/")
+	groupID := groupParts[len(groupParts)-1]
+	if groupID == "" {
+		t.Fatal("drift group has no ID")
+	}
+	k.adminRequest(t, "PUT", "/users/"+row.Subject+"/groups/"+groupID, nil)
+	if err := actualProvider.ReconcileServiceAccount(context.Background(), spec, row.ClientUuid, row.Subject, true); err != nil {
+		t.Fatal("repair group-only service-account drift", err)
+	}
+	remainingGroups := k.adminRequest(t, "GET", "/users/"+row.Subject+"/groups?first=0&max=2", nil)
+	var groupRecords []json.RawMessage
+	if json.Unmarshal(remainingGroups.Body, &groupRecords) != nil || groupRecords == nil || len(groupRecords) != 0 {
+		t.Fatal("service-account retained group membership")
+	}
 	// An actual creator downgrade must change future provider tokens.
 	if _, err := f.db.Exec("UPDATE role_bindings SET role_id=(SELECT id FROM roles WHERE name='gateway:viewer') WHERE gateway_id=$1 AND user_id=$2", gateway.ID, row.CreatedByUserID); err != nil {
 		t.Fatal(err)

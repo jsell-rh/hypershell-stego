@@ -193,3 +193,30 @@ variant CI run checks the complete application gate with both compiler fixes.
 The real Keycloak audience and role workflow passed in 38.247 seconds with both
 fixes. Final regeneration had no output changes or drift. The final compiler
 revision also rejects entity names that collide with its schema helper.
+
+## Common service-account role operations
+
+The adapter uses STEGO's `InspectServiceAccountRoles` and
+`ReconcileServiceAccountRoles`. Hypershell supplies the trusted account and
+Gateway bindings and selects the OpenShell roles. STEGO checks the saved
+service-account subject, exact direct and effective roles, and group membership.
+Role changes require a disabled client. Excess realm, client, and group access
+must be removed before additions. A final role inspection also requires the
+provider user to be enabled before the application continues.
+
+This replaces the previous direct-role-only convergence check. The real
+service-account workflow now adds a group without changing direct roles or
+client configuration, then requires reconciliation to remove that group.
+The test must pass in CI before this application change is qualified.
+
+The handwritten main adapter fell from 1,014 to 972 lines. The three main
+adapter files now total 1,314 lines. The small adapter suite passed with the
+race detector in 1.311 seconds. API and console generation used the clean
+compiler pin `fdd5efefd8e0631005c890bd1c44fe01680f2804`; both drift checks passed.
+
+Scope and mapper adoption remains tied to the complete client lifecycle.
+A full client update can restore Keycloak's shared `service_account` scope.
+STEGO's complete access operation uses a minimal enable update and checks the
+full policy afterwards. The application still needs durable legacy bindings,
+ownership migration, and adoption of that complete operation. The role check
+alone does not prove token or client configuration security.
