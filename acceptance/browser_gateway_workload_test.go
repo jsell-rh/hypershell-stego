@@ -145,6 +145,7 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 	if next := w.checkSQLIsolation(); !reflect.DeepEqual(identities, next) {
 		w.t.Fatal("worker restart changed a database or credential identity")
 	}
+	w.checkNamespaceReplacement(gatewayID)
 }
 
 func (w *browserGatewayWorkload) check(id string) {
