@@ -41,3 +41,8 @@ screenshots still show no public connection command. Public connectivity is
 not established.
 The [external connection gate](https://github.com/jsell-rh/stego/blob/main/specs/hypershell-external-connection.md)
 remains open, including TLS and address-ownership decisions.
+
+The [full CI run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950339394)
+also finished at `3f188b2`. Core acceptance passed in 1301.692 seconds. Ordinary
+browser, console, and service-image jobs passed. The overall run failed on the
+unfinished CNPG and Sandbox jobs; this is not a complete release result.

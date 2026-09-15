@@ -59,3 +59,11 @@ its presence did not establish this behavior in the current workflow.
 The complete acceptance package compiled with these checks. The new live
 browser result remains required. Earlier results above do not cover the added
 viewer checks.
+
+The [viewer-source API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950955027)
+passed all 30 required tests at `5dc5742`. Verification matched 886 source files,
+229 generated files, all generation records, and cleanup. This API run compiles
+the viewer helper but does not execute it against a live Gateway. Browser run
+`34950955188` was cancelled while pending and requeued on the same commit after
+credential rotation. Its second attempt remains required. See
+[the partial evidence](browser-viewer-recovery-evidence.json).
