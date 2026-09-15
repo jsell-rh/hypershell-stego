@@ -92,3 +92,15 @@ a new collection after collector recovery. The `browser-pool.json` artifact
 records these three snapshots. The earlier queued runs at `fabad99` were canceled
 before execution because they lacked the complete console factory correction.
 Their canceled results are not passes. The new application results are pending.
+
+The [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34961014687)
+passed all 31 required tests at `916f3a7`. The acceptance package took 159.881
+seconds; the pool test took 9.83 seconds. Verification matched 899 source files,
+230 generated files, and all four generation records. Cumulative waits increased
+from 9 to 13 and total wait duration increased from 0.095924 to 3.971334 seconds.
+The same test passed cancellation, allowed and denied reads, API restart, and
+collector failure and recovery. These values are test observations, not capacity
+estimates. Independent reads confirmed that the Job, Pods, and private fixtures
+were absent and that the Lease was free. See [the evidence](database-pool-api-evidence.json).
+The complete browser pool result remains required; run `34961014607` is active.
+The later PostgreSQL client telemetry change has separate application checks.

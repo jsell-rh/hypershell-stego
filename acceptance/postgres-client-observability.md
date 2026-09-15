@@ -24,3 +24,7 @@ Repeated generation and drift checks passed with compiler `f2b09c0`. Bounded
 acceptance compilation and the collector regression passed. The full browser
 and API workflows remain required for this source. A compiled test is not a
 passing application result.
+
+[Full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34961995199)
+passed at `f2b09c0`, including race checks and PostgreSQL provisioning. The
+complete Hypershell API and browser results remain required for this change.
