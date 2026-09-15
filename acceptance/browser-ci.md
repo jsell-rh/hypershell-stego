@@ -210,7 +210,10 @@ The [PostgreSQL client telemetry change](postgres-client-observability.md) at
 `2af1b46` has verified passes for API `34962176232` and browser `34962176339`.
 The [browser record](postgres-telemetry-browser-evidence.json) includes complete
 SQL signal checks across worker restart and cleanup denial and recovery.
-Full CI `34962176260` remains active. Its compiler is `f2b09c0`. The earlier pool-metric
+Full CI `34962176260` passed core acceptance, ordinary browser checks, console,
+and the service image. Its overall result is failure because the Sandbox and
+CNPG jobs still need installation fixtures and restricted runners. Its compiler
+is `f2b09c0`. The earlier pool-metric
 runs remain in the queue or active; no required live test was canceled.
 
 The [complete browser pool run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34961014607)
