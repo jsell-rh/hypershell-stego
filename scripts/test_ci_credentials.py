@@ -40,7 +40,9 @@ class Credentials(unittest.TestCase):
     def test_context_read_uses_selected_file_and_keeps_failures_private(self):
         reply = subprocess.CompletedProcess([], 0, stdout=json.dumps(config()).encode())
         with mock.patch('ci_credentials.time.time', return_value=10000), mock.patch.object(subprocess, 'run', return_value=reply) as run:
-            require_context_credentials('selected', CNPG_SECONDS, '/private/config')
+            token, cluster = require_context_credentials('selected', CNPG_SECONDS, '/private/config')
+            self.assertEqual(token, config()['users'][0]['user']['token'])
+            self.assertEqual(cluster['server'], 'https://cluster.example')
         run.assert_called_once_with(['oc', '--context=selected', '--kubeconfig=/private/config',
                                      'config', 'view', '--raw', '--minify', '-o', 'json'],
                                     capture_output=True, check=True, timeout=30)

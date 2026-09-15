@@ -60,7 +60,7 @@ def require_context_credentials(context, minimum_seconds, kubeconfig=None):
         config = json.loads(result.stdout)
     except (OSError, subprocess.SubprocessError, ValueError):
         raise RuntimeError('CI credential inspection failed') from None
-    require_credentials(config, minimum_seconds)
+    return require_credentials(config, minimum_seconds)
 
 
 def main(argv=None):

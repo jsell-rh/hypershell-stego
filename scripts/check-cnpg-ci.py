@@ -11,6 +11,7 @@ import os
 from pathlib import Path
 import secrets
 import subprocess
+import tempfile
 import time
 from types import SimpleNamespace
 
@@ -55,16 +56,25 @@ def access_probe(context, verb, resource, namespace):
 
 
 def verify_allocations(browser):
-    # The fixed allocator identity can list namespaces. The CI identity cannot.
-    # Reuse the browser runner's bounded client in its read-only mode.
-    ca = browser / 'ci-ca.pem'
+    # The browser child removes its private token before it returns. Use the
+    # outer runner's restricted context for this independent allocation check.
     result = browser / 'allocation-final.json'
     result.unlink(missing_ok=True)
-    subprocess.run([str(browser / 'allocation-cleanup'), '--namespace', ci.APP_NS,
-                    '--server', (browser / 'ci-server').read_text().strip(),
-                    '--ca-file', str(ca) if ca.stat().st_size else '',
-                    '--token-file', str(browser / 'ci-token'), '--result', str(result)],
-                   check=True, timeout=195)
+    token, cluster = require_context_credentials('jshell-ci', 0)
+    with tempfile.TemporaryDirectory(prefix='stego-cnpg-cleanup-') as directory:
+        private = Path(directory) / 'token'
+        with private.open('x') as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(token)
+        ca = Path(directory) / 'ca.pem'
+        if cluster.get('certificate-authority-data'):
+            ca.write_bytes(base64.b64decode(cluster['certificate-authority-data'], validate=True))
+        elif cluster.get('certificate-authority'):
+            ca.write_bytes(Path(cluster['certificate-authority']).read_bytes())
+        subprocess.run([str(browser / 'allocation-cleanup'), '--namespace', ci.APP_NS,
+                        '--server', cluster['server'], '--ca-file', str(ca) if ca.exists() else '',
+                        '--token-file', str(private), '--result', str(result)],
+                       check=True, timeout=195)
     evidence = json.loads(result.read_text())
     if evidence.get('allocations_absent') is not True or evidence.get('allocations_before') != 0:
         raise RuntimeError('Gateway allocation absence is not confirmed; retain the SQL server and Lease')

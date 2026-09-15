@@ -102,16 +102,29 @@ class RuntimeCleanupBoundary(unittest.TestCase):
             (browser / 'ci-ca.pem').write_text('')
             result = browser / 'allocation-final.json'
             result.write_text('{"allocations_absent":true,"allocations_before":0}')
-            with patch.object(runner.subprocess, 'run'):
+            with patch.object(runner, 'require_context_credentials', return_value=('private-cleanup-token', {'server': 'https://api.example'})), \
+                 patch.object(runner.subprocess, 'run'):
                 with self.assertRaises(FileNotFoundError):
                     runner.verify_allocations(browser)
             def complete(words, **options):
                 self.assertNotIn('--remove', words)
                 self.assertEqual(words[0], str(browser / 'allocation-cleanup'))
                 self.assertEqual(options, {'check': True, 'timeout': 195})
+                token_file = Path(words[words.index('--token-file') + 1])
+                self.assertEqual(token_file.read_text(), 'private-cleanup-token')
+                self.assertEqual(token_file.stat().st_mode & 0o777, 0o600)
+                self.assertNotIn('private-cleanup-token', words)
+                self.assertNotEqual(token_file, browser / 'ci-token')
+                seen.append(token_file)
                 result.write_text(json.dumps({'allocations_absent': True, 'allocations_before': 0}))
-            with patch.object(runner.subprocess, 'run', side_effect=complete):
+            seen = []
+            # The browser child removed its token. The outer check must use its
+            # own restricted credential and remove its temporary copy afterward.
+            with patch.object(runner, 'require_context_credentials', return_value=('private-cleanup-token', {'server': 'https://api.example'})), \
+                 patch.object(runner.subprocess, 'run', side_effect=complete):
                 runner.verify_allocations(browser)
+            self.assertEqual(len(seen), 1)
+            self.assertFalse(seen[0].exists())
 
     def test_exec_probe_uses_the_subresource_flag(self):
         runner = ci.module('cnpg_ci_exec_boundary', 'check-cnpg-ci.py')
