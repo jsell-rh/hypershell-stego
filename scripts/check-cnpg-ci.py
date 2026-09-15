@@ -41,6 +41,18 @@ def admission_probe(context, value, policy, expected):
         raise RuntimeError('CNPG admission denial was not confirmed by its policy')
 
 
+
+def access_probe(context, verb, resource, namespace):
+    words = ['oc', '--context=' + context, '--request-timeout=15s', 'auth', 'can-i', verb]
+    if resource == 'pods/exec':
+        words += ['pods', '--subresource=exec']
+    else:
+        words.append(resource)
+    if namespace:
+        words += ['-n', namespace]
+    return subprocess.run(words, text=True, capture_output=True, timeout=25)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -105,10 +117,7 @@ def main():
     ]
     access = []
     for expected, verb, resource, namespace in probes:
-        words = ['oc', '--context=' + context, '--request-timeout=15s', 'auth', 'can-i', verb, resource]
-        if namespace:
-            words += ['-n', namespace]
-        response = subprocess.run(words, text=True, capture_output=True, timeout=25)
+        response = access_probe(context, verb, resource, namespace)
         value = response.stdout.strip()
         if value not in {'yes', 'no'} or (value == 'yes') != expected or response.returncode != (0 if expected else 1):
             raise RuntimeError('CNPG CI access boundary differs: ' + verb + ' ' + resource)

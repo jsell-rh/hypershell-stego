@@ -67,10 +67,12 @@ All 18 Job admission probes passed, including denial of the four regressions.
 The initial 45-object installation record remains unchanged; the repair record
 identifies the added object and the changed policy generation.
 
-The complete corrected CNPG workflow is queued in
+The complete corrected CNPG workflow is active in
 [CI 34969545259](https://github.com/jsell-rh/hypershell-stego/actions/runs/34969545259).
-This job still must verify Cluster admission, operator and database startup,
-complete application behavior, primary replacement, and volume cleanup.
+The operator started and both database instances became healthy. Application
+Job `ee349c94-b415-4f67-8021-809fb0117feb` is pending because Kubernetes reports
+insufficient CPU and memory. No application result is available. The run still
+must verify complete application behavior, primary replacement, and cleanup.
 The ordinary API and browser runs `34969544850` and `34969544751` were canceled
 before execution because this change affects only the CNPG test fixture.
 The application output remains the verified `752d92e` output. Canceled and
@@ -81,3 +83,12 @@ The same push also queued ordinary API run `34968718133` and browser run
 this change adds CI support and does not change application runtime output.
 The existing JWT application runs and the complete new CNPG job remain required.
 Canceled runs are not passes.
+
+A later source review found an incorrect permission probe: `oc auth can-i create
+pods/exec` checks a named Pod, not the exec subresource. The runner now uses
+`oc auth can-i create pods --subresource=exec`. The explicit command returned
+`no` with exit status 1 for the restricted CI identity in the operator namespace
+on 2026-09-15. All nine focused Python checks passed. Named ConfigMap checks
+retain their resource names. The active run uses its earlier frozen source;
+its old exec probe is not evidence of subresource denial. This correction changes
+only the permission check and does not start another live test.

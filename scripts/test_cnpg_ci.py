@@ -91,6 +91,22 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_exec_probe_uses_the_subresource_flag(self):
+        runner = ci.module('cnpg_ci_exec_boundary', 'check-cnpg-ci.py')
+        with patch.object(runner.subprocess, 'run') as run:
+            runner.access_probe('jshell-ci', 'create', 'pods/exec', ci.OPERATOR_NS)
+        words = run.call_args.args[0]
+        self.assertEqual(words[words.index('can-i') + 1:],
+                         ['create', 'pods', '--subresource=exec', '-n', ci.OPERATOR_NS])
+
+    def test_named_config_probe_retains_the_resource_name(self):
+        runner = ci.module('cnpg_ci_config_boundary', 'check-cnpg-ci.py')
+        with patch.object(runner.subprocess, 'run') as run:
+            runner.access_probe('jshell-ci', 'delete', 'configmaps/' + ci.CONFIG, ci.APP_NS)
+        words = run.call_args.args[0]
+        self.assertEqual(words[words.index('can-i') + 1:],
+                         ['delete', 'configmaps/' + ci.CONFIG, '-n', ci.APP_NS])
+
     def test_a_failed_request_is_not_an_admission_denial(self):
         runner = ci.module('cnpg_ci_admission_boundary', 'check-cnpg-ci.py')
         value = {'kind': 'Job'}
