@@ -1,3 +1,21 @@
+The [complete CNPG workflow](cnpg-complete-evidence.json) passed at source
+`ccfa4a9` with compiler `5e9c89d`. The application took 450.92 seconds. The runner
+then completed automatic cleanup and returned zero. Independent verification
+matched 895 source files, 230 generated files, and all three generation records.
+It also checked 16 CI access rules, 57 application access rules, six admission
+probes, and the 18 permanent operator resources.
+
+CNPG changed its primary and restored two ready instances in 65.28 seconds.
+Namespace recovery took 44.15 seconds without controller restarts. SQL object
+IDs, credentials, keys, provider data, and installation data were preserved.
+Viewer access, filtered lists, denied writes, both access-removal paths, three
+live account cleanups, SQL cleanup denial, encryption, and session checks passed.
+
+The operator installed the test server. The application ran with the restricted
+CI identity. This proves the complete installation workflow with automatic
+cleanup; unattended CNPG CI and the public Gateway endpoint remain open. The
+earlier failed attempts below retain their original results.
+
 The CNPG test installation must supply PostgreSQL before any Gateway controller
 starts. It must use a dedicated namespace that is not a Gateway allocation.
 The API has no database catalog, database ID, or server registration call.
@@ -58,9 +76,10 @@ keys, provider data, and installation data. The evidence records whether the
 primary name changed; a Pod replacement is not assumed to be a failover.
 The normal sidecar restart now checks SQL object IDs as well.
 
-These source paths have not yet passed a live CNPG run. The remaining installer
-must create the bounded server, supply the private fixture file and namespace
-permissions, run the complete browser workflow, and verify final cleanup.
+At this stage of implementation, these source paths had no live CNPG result.
+The installer still had to create the bounded server, supply the private fixture
+file and namespace permissions, run the complete browser workflow, and verify
+final cleanup. The result at the start of this document closes that manual gate.
 
 The installation runner is `scripts/check-cnpg-installation.py`. Prepare a new
 frozen source directory with the CNPG namespace option, then run that frozen
@@ -102,9 +121,9 @@ server resource remains. Missing or failed application and restart evidence
 cannot produce a passing result.
 
 The local boundary, projection, lock, evidence, and inspection checks pass.
-No CNPG server has been installed or tested yet for this implementation. The
-GitHub CNPG gate remains unsuccessful until its installation and CI execution
-path has passed. A manual operator-assisted pass will be recorded separately.
+At that point, no CNPG server had been installed for this implementation. The
+GitHub CNPG gate remains unsuccessful until its CI execution path passes.
+The manual operator-assisted result is recorded separately.
 
 The first live installation attempt used source `90b6ca5`. Both CNPG instances
 became ready. The application Pod then failed to obtain CPU and memory within
@@ -203,13 +222,15 @@ cannot bypass read validation. Thirteen installation checks pass. The
 `/tmp/hypershell-cnpg-installation-source-v7`, database namespace
 `stego-cnpg-database-20260915-v7`, and result directory
 `/tmp/hypershell-cnpg-installation-run-v7`. It started after final cleanup
-verification. The complete application and automated cleanup results remain
-required. The earlier v6 preparation was not run.
+verification. Its complete result is recorded at the start of this document.
+The earlier v6 preparation was not run.
 
 This source includes the verified viewer and account checks, the cleanup read
 retry, and the new credential check before installation. Eight credential
 checks, six CNPG workflow checks, six server fixture checks, and four operator
 checks passed. The frozen runner import also leaves the source inventory
-unchanged. No server has been installed for this run. Wait for the active
-browser and queued API runs to finish, verify cleanup, and renew the CI
-credential before acquiring the shared Lease.
+unchanged. Before this run, the earlier browser and API Jobs were removed,
+cleanup was verified, and the CI credential was renewed. The shared Lease
+remained held until the runner completed application, database, and operator
+cleanup. Independent reads then confirmed that all test resources and database
+volumes were absent and that the Lease was free. No manual cleanup was needed.

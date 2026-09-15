@@ -10,6 +10,11 @@ do not prove this model. The full application gate remains open. This transition
 requires matching releases and a fresh schema. Existing installations require
 explicit teardown and recreation; the application does not perform that action.
 
+The [complete CNPG workflow](acceptance/cnpg-complete-evidence.json) also passes
+with database primary replacement, namespace recovery, access checks, account
+cleanup, and automatic test cleanup. The operator installed the test server;
+unattended CNPG CI and the public Gateway endpoint remain open.
+
 STEGO must provide common service infrastructure and generated contracts.
 Hypershell must supply its unique business rules and application workflows
 through explicit extension points. No STEGO component may depend on a Hypershell
