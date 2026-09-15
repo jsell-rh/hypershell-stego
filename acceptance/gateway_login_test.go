@@ -395,7 +395,99 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if err != nil || !equalStringSet(current.Roles, []string{"gateway:creator"}) {
 		t.Fatal("Gateway synchronization changed API roles", err)
 	}
+	// A registered API identity can receive the same explicit Gateway grants.
+	// Its API token does not receive a Gateway audience or global roles.
+	createdAutomation := k.adminRequest(t, "POST", "/clients", map[string]any{
+		"clientId": "gateway-api-automation", "protocol": "openid-connect", "enabled": true,
+		"publicClient": false, "clientAuthenticatorType": "client-secret",
+		"secret": "acceptance-only-automation-secret", "serviceAccountsEnabled": true,
+		"standardFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": false,
+		"defaultClientScopes": []string{"basic", "profile"}, "optionalClientScopes": []string{},
+		"protocolMappers": []any{map[string]any{
+			"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper",
+			"config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"},
+		}},
+	})
+	automationLocation, err := url.Parse(createdAutomation.Header.Get("Location"))
+	if err != nil {
+		t.Fatal("invalid automation client location")
+	}
+	automationPath := strings.TrimPrefix(automationLocation.Path, "/admin/realms/workflow")
+	automationSubjectResponse := k.adminRequest(t, "GET", automationPath+"/service-account-user", nil)
+	var automationSubject struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(automationSubjectResponse.Body, &automationSubject) != nil || automationSubject.ID == "" {
+		t.Fatal("automation has no provider subject")
+	}
+	automationResponse, automationGrant := k.issue(t, "gateway-api-automation", "acceptance-only-automation-secret")
+	automationToken, ok := automationGrant["access_token"].(string)
+	if automationResponse.StatusCode != 200 || !ok || automationToken == "" {
+		t.Fatal("automation API login failed")
+	}
+	automation := currentUser(t, root, automationToken)
+	if automation.Subject != automationSubject.ID || automation.Issuer != k.options.ServerURL+"/realms/workflow" {
+		t.Fatal("automation registration changed its provider identity")
+	}
+	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, automationToken, nil); code != 404 {
+		t.Fatal("ungranted automation can read the Gateway", code)
+	}
+	gatewayLookup := k.adminRequest(t, "GET", "/clients?clientId="+gatewayClient, nil)
+	var gatewayClients []struct {
+		ID string `json:"id"`
+	}
+	if json.Unmarshal(gatewayLookup.Body, &gatewayClients) != nil || len(gatewayClients) != 1 || gatewayClients[0].ID == "" {
+		t.Fatal("Gateway has no unique provider client")
+	}
+	checkAutomationRoles := func(want []string) {
+		t.Helper()
+		waitSync()
+		for _, suffix := range []string{"", "/composite"} {
+			response := k.adminRequest(t, "GET", "/users/"+automationSubject.ID+"/role-mappings/clients/"+gatewayClients[0].ID+suffix, nil)
+			var roles []struct {
+				Name string `json:"name"`
+			}
+			if json.Unmarshal(response.Body, &roles) != nil {
+				t.Fatal("invalid automation roles")
+			}
+			names := make([]string, 0, len(roles))
+			for _, role := range roles {
+				names = append(names, role.Name)
+			}
+			if !equalStringSet(names, want) {
+				t.Fatalf("automation roles %v; want %v", names, want)
+			}
+		}
+	}
+	automationBindings := make([]string, 0, 2)
+	for _, role := range []string{"gateway:viewer", "gateway:owner"} {
+		encoded, _ := json.Marshal(gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: automation.ID, RoleID: discoverRole(t, root, alice, role).ID})
+		if code, _ := requestJSON(t, "POST", root+"/role_bindings", automationToken, encoded); code != 404 {
+			t.Fatal("automation added its own owner or viewer grant", code)
+		}
+		code, body := requestJSON(t, "POST", root+"/role_bindings", alice, encoded)
+		var granted struct {
+			ID string `json:"id"`
+		}
+		if code != 201 || json.Unmarshal(body, &granted) != nil || granted.ID == "" {
+			t.Fatal("owner could not grant automation access", code)
+		}
+		automationBindings = append(automationBindings, granted.ID)
+		want := []string{keycloak.RoleUser}
+		if role == "gateway:owner" {
+			want = append(want, keycloak.RoleAdmin)
+		}
+		checkAutomationRoles(want)
+		if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, automationToken, nil); code != 200 {
+			t.Fatal("authorized automation cannot read the Gateway", code)
+		}
+	}
 	stopController()
+	for _, id := range automationBindings {
+		if code, _ := requestJSON(t, "DELETE", root+"/role_bindings/"+id, alice, nil); code != 204 {
+			t.Fatal("remove automation grant while controller is stopped", code)
+		}
+	}
 
 	if code, _ := requestJSON(t, "DELETE", root+"/role_bindings/"+binding.ID, alice, nil); code != 204 {
 		t.Fatal("remove viewer grant", code)
@@ -422,6 +514,10 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	defer stopController()
 	waitRoles("renamed-bob", bobID, nil)
 	waitRoles("bob", replacementID, nil)
+	checkAutomationRoles(nil)
+	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, automationToken, nil); code != 404 {
+		t.Fatal("API retained removed automation access after restart", code)
+	}
 	// Signature verification alone cannot invalidate an already issued token.
 	if !equalStringSet(verify(oldToken).Roles, []string{keycloak.RoleUser}) {
 		t.Fatal("test token unexpectedly changed")

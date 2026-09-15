@@ -11,9 +11,11 @@ before it adds roles, then checks effective roles through the provider API.
 
 The provider subject is the stored, verified subject. The issuer must match the
 configured Keycloak realm exactly. Profile names and email addresses are not
-identity keys. A service-account user cannot enter this human role update path.
-An unbound legacy user needs a trusted migration; the controller does not infer
-the identity from a profile.
+identity keys. People and registered API automation can receive explicit Gateway
+grants. The controller does not require proof of an interactive login or use
+the Keycloak `serviceAccountClientId` field to classify the identity. An unbound
+legacy user needs a trusted migration; the controller does not infer the identity
+from a profile.
 
 The real login test exposed a missing subject mapper. The managed Gateway client
 had audience and role mappers, but browser access tokens had no usable subject.
@@ -99,3 +101,30 @@ a new global record with the same user ID.
 The browser workflow now uses default deployment placement. It checks that the
 created Gateway has a separate deployment database with the expected namespace.
 The same workflow still checks login, sharing, role removal, and restart.
+
+## Common provider adoption
+
+The Gateway grant adapter now calls STEGO's `ReconcileUserClientRoles`.
+Hypershell supplies the trusted issuer, stored subject, Gateway binding, and
+owner or viewer role names. STEGO checks client ownership, resolves exact leaf
+roles, removes excess direct roles, and checks inherited access before an
+addition. It confirms direct and effective roles after the update. It preserves
+realm roles, groups, and roles for other clients. Inherited excess Gateway access
+causes failure; this operation does not change group membership.
+
+The adapter fell from 137 to 51 lines. The three main handwritten adapter files
+now total 1,356 lines. Client lifecycle, scopes, and mapper operations still have
+application code that needs common provider adoption. Durable legacy bindings
+and checked client enablement also remain open.
+
+The adapter tests passed with the race detector in 1.326 seconds. The grant test
+has 19 cases. They include people, API automation, owner and viewer policy,
+revocation, disabled identities, absent identities, foreign issuers, changed
+ownership, inherited excess access, and failed removal before additions.
+
+The real login workflow now also registers an API automation identity with a
+client-credentials token. An owner grants viewer and owner access through REST.
+The test checks direct and effective provider roles, denied access before a
+grant, allowed access after a grant, and removal across API and controller
+restart. This extension requires CI qualification. It does not claim that an API
+token can be used as a Gateway token.

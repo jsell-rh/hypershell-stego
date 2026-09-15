@@ -5,8 +5,10 @@ grant changes. A configured control-plane subject can manage Gateway grants.
 
 The application accepts only Gateway owner and viewer roles for this workflow.
 The target user must already have a stored, verified issuer and subject. Profile
-names do not select the identity. Global role assignment remains outside this
-API workflow.
+names do not select the identity. People and registered API automation use the
+same explicit Gateway grant policy. Neither registration nor a service-account
+classification grants access. Global role assignment remains outside this API
+workflow.
 
 Each grant change locks its Gateway row. Creation writes the grant and two events
 in one transaction. Removal checks the number of live owner grants under that
