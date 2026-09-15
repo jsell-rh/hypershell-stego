@@ -232,3 +232,8 @@ acceptance in 1223.434 seconds, ordinary browser tests, console checks, and the
 service image. Its overall result remains failure because the CNPG and Sandbox
 jobs failed. See [the verified pool record](database-pool-browser-evidence.json).
 The later SQL client telemetry API run is active; its browser run remains queued.
+
+The public Gateway profile needs a bounded update to two existing ClusterRoles.
+Use the [public permission plan](browser-ci-public-permissions.md) to compare
+saved installation state with a fresh frozen render. The live operator update
+and complete public workflow remain required.
