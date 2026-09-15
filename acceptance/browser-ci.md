@@ -116,3 +116,8 @@ covered all 872 source files and 228 generated files. Generation records match;
 the Job, Pods, and private fixtures are absent. Both the API and full supplied
 PostgreSQL browser gates now pass for the SQL denial and encryption source.
 The installation CNPG test remains a separate required check.
+
+Full CI run [34942025954](https://github.com/jsell-rh/hypershell-stego/actions/runs/34942025954)
+for `3757c27` completed. The core suite, ordinary browser suite, web console, and
+service image jobs passed. The overall result is failure because the CNPG and
+Sandbox jobs failed. The operator-assisted CNPG run is separate evidence.
