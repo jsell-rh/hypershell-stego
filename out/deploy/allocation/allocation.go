@@ -11,8 +11,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
+	"net/netip"
 	"net/url"
+	"os"
 	"regexp"
 	"sort"
 	"strings"
@@ -28,6 +31,7 @@ type networkPeer struct {
 	Port                                                                  int
 }
 type profile struct {
+	NetworkEndpoints                    []string
 	NetworkPeers                        []networkPeer
 	NetworkIsolation                    bool
 	IdentityConfigMap                   string
@@ -50,6 +54,7 @@ type Allocator struct {
 	client            *kube.Client
 	namespace, marker string
 	config            configuration
+	networkEndpoints  map[string][]netip.AddrPort
 }
 
 var ErrPending = errors.New("allocation change is pending")
@@ -70,8 +75,75 @@ func New(client *kube.Client, controlNamespace string) (*Allocator, error) {
 	if err := json.Unmarshal([]byte("{\"Service\":\"hypershell\",\"Allocator\":\"hypershell-namespace-allocation\",\"Roles\":[{\"Name\":\"sandbox-count\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\",\"list\",\"watch\"]}]},{\"Name\":\"gateway-state\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\"],\"verbs\":[\"create\",\"get\"]}]},{\"Name\":\"gateway-worker\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\",\"serviceaccounts\",\"services\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"apps\"],\"resources\":[\"deployments\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"cert-manager.io\"],\"resources\":[\"certificates\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes\"],\"verbs\":[\"create\",\"delete\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes/custom-host\"],\"verbs\":[\"create\"]}]},{\"Name\":\"gateway-runtime\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"agents.x-k8s.io\"],\"resources\":[\"sandboxes\",\"sandboxes/status\"],\"verbs\":[\"create\",\"delete\",\"get\",\"list\",\"patch\",\"update\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"events\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\"]}]},{\"Name\":\"gateway-reviews\",\"Scope\":\"cluster\",\"Rules\":[{\"apiGroups\":[\"authentication.k8s.io\"],\"resources\":[\"tokenreviews\"],\"verbs\":[\"create\"]},{\"apiGroups\":[\"\"],\"resources\":[\"nodes\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"namespaces\"],\"verbs\":[\"get\"]}]}],\"Profiles\":[{\"IdentityConfigMap\":\"\",\"IdentityLabels\":null,\"IdentityAnnotations\":null,\"Name\":\"gateway\",\"Prefix\":\"openshell-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":16,\"Bindings\":[{\"Role\":\"gateway-worker\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"},{\"Role\":\"gateway-runtime\",\"ExternalRole\":\"\",\"ServiceAccount\":\"openshell-gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"gateway-reviews\",\"ExternalRole\":\"\",\"ServiceAccount\":\"openshell-gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"\",\"ExternalRole\":\"system:openshift:scc:nonroot-v2\",\"ServiceAccount\":\"openshell-gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"sandbox-count\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-sandbox-count\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"512Mi\",\"limits.memory\":\"1Gi\",\"pods\":\"2\",\"requests.storage\":\"2Gi\"}},{\"IdentityConfigMap\":\"openshell-state-identity\",\"IdentityLabels\":null,\"IdentityAnnotations\":[{\"Field\":\"sha256\",\"Key\":\"hypershell.redhat.io/state-identity\"}],\"Name\":\"gateway-state\",\"Prefix\":\"openshell-state-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":40,\"Bindings\":[{\"Role\":\"gateway-state\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"64Mi\",\"limits.memory\":\"64Mi\",\"pods\":\"0\",\"requests.storage\":\"0\"}}]}"), &config); err != nil {
 		return nil, errors.New("invalid generated allocation configuration")
 	}
+	endpoints, err := allocationEndpointBindings(config, os.Getenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS"))
+	if err != nil {
+		return nil, err
+	}
 	digest := sha256.Sum256([]byte(controlNamespace + "." + config.Allocator))
-	return &Allocator{client: client, namespace: controlNamespace, marker: hex.EncodeToString(digest[:16]), config: config}, nil
+	return &Allocator{client: client, namespace: controlNamespace, marker: hex.EncodeToString(digest[:16]), config: config, networkEndpoints: endpoints}, nil
+}
+
+// allocationEndpointBindings reads only the endpoint names declared by this
+// service. The generated deployment supplies these non-secret operator values.
+func allocationEndpointBindings(config configuration, input string) (map[string][]netip.AddrPort, error) {
+	required := map[string]bool{}
+	for _, p := range config.Profiles {
+		for _, name := range p.NetworkEndpoints {
+			required[name] = true
+		}
+	}
+	if len(required) == 0 {
+		if input != "" {
+			return nil, errors.New("allocation network endpoints were not declared")
+		}
+		return nil, nil
+	}
+	if len(input) == 0 || len(input) > 8192 {
+		return nil, errors.New("allocation network endpoints are missing or exceed their limit")
+	}
+	decoder := json.NewDecoder(strings.NewReader(input))
+	token, err := decoder.Token()
+	if err != nil || token != json.Delim('{') {
+		return nil, errors.New("invalid allocation network endpoint object")
+	}
+	result := map[string][]netip.AddrPort{}
+	total := 0
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			return nil, errors.New("invalid allocation network endpoint name")
+		}
+		name, ok := token.(string)
+		if !ok || !required[name] || result[name] != nil {
+			return nil, errors.New("unknown or duplicate allocation network endpoint name")
+		}
+		var values []string
+		if err = decoder.Decode(&values); err != nil || len(values) == 0 {
+			return nil, errors.New("allocation network endpoint requires addresses")
+		}
+		total += len(values)
+		if total > 32 {
+			return nil, errors.New("allocation network endpoint limit exceeded")
+		}
+		seen := map[netip.AddrPort]bool{}
+		for _, value := range values {
+			endpoint, err := netip.ParseAddrPort(value)
+			ip := endpoint.Addr()
+			if err != nil || endpoint.Port() == 0 || !ip.IsGlobalUnicast() || ip.IsLoopback() || ip.IsLinkLocalUnicast() || ip.Is4In6() || ip.Zone() != "" || seen[endpoint] {
+				return nil, errors.New("allocation network endpoint requires a distinct unicast IP and port")
+			}
+			seen[endpoint] = true
+			result[name] = append(result[name], endpoint)
+		}
+	}
+	if token, err = decoder.Token(); err != nil || token != json.Delim('}') {
+		return nil, errors.New("invalid allocation network endpoint object")
+	}
+	var extra any
+	if err = decoder.Decode(&extra); err != io.EOF || len(result) != len(required) {
+		return nil, errors.New("allocation network endpoints are incomplete or have trailing data")
+	}
+	return result, nil
 }
 
 // Marker identifies this allocator installation. It contains no credential.
@@ -283,7 +355,12 @@ type networkSelector struct {
 	MatchLabels      map[string]string `json:"matchLabels,omitempty"`
 	MatchExpressions []json.RawMessage `json:"matchExpressions,omitempty"`
 }
+type networkIPBlock struct {
+	CIDR   string   `json:"cidr"`
+	Except []string `json:"except,omitempty"`
+}
 type networkTarget struct {
+	IPBlock           *networkIPBlock  `json:"ipBlock,omitempty"`
 	NamespaceSelector *networkSelector `json:"namespaceSelector,omitempty"`
 	PodSelector       *networkSelector `json:"podSelector,omitempty"`
 }
@@ -323,12 +400,50 @@ func (a *Allocator) networkSpec(p profile, name string) networkSpec {
 			spec.Egress = append(spec.Egress, rule)
 		}
 	}
+	endpoints := map[string]netip.AddrPort{}
+	for _, name := range p.NetworkEndpoints {
+		for _, endpoint := range a.networkEndpoints[name] {
+			endpoints[endpoint.String()] = endpoint
+		}
+	}
+	keys := make([]string, 0, len(endpoints))
+	for key := range endpoints {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		endpoint := endpoints[key]
+		target := networkTarget{IPBlock: &networkIPBlock{CIDR: netip.PrefixFrom(endpoint.Addr(), endpoint.Addr().BitLen()).String()}}
+		rule := networkRule{To: []networkTarget{target}, Ports: []networkPort{{Protocol: "TCP", Port: int(endpoint.Port())}}}
+		spec.Egress = append(spec.Egress, rule)
+	}
 	return spec
 }
 
+const networkHashAnnotation = "stego.dev/network-spec-sha256"
+
+// networkBytes normalizes API defaults and policy type order for comparisons.
+// Object keys use a stable order. The hash contains no credential and does not
+// replace ownership or admission checks.
+func networkBytes(spec networkSpec) ([]byte, error) {
+	spec.PolicyTypes = nil
+	data, err := json.Marshal(spec)
+	if err != nil {
+		return nil, err
+	}
+	var canonical map[string]any
+	if err = json.Unmarshal(data, &canonical); err != nil {
+		return nil, err
+	}
+	return json.Marshal(canonical)
+}
+func networkHash(data []byte) string { sum := sha256.Sum256(data); return hex.EncodeToString(sum[:]) }
+
 // requireNetwork verifies the complete declared policy before access is granted.
 // It does not prove that the cluster network plugin has applied the policy.
-// A changed policy is rejected. It is not patched or adopted.
+// Ensure can update an intact owned policy to the current declaration. It
+// returns ErrPending after a write so that the caller observes the result again.
+// RequireNamespace is read-only. Foreign or changed stored content is rejected.
 func (a *Allocator) requireNetwork(ctx context.Context, p profile, name string, owner kube.Owner, create bool) error {
 	collection := "/apis/networking.k8s.io/v1/namespaces/" + name + "/networkpolicies"
 	current, code, err := a.client.Request(ctx, http.MethodGet, collection+"/stego-allocation", nil)
@@ -341,6 +456,11 @@ func (a *Allocator) requireNetwork(ctx context.Context, p profile, name string, 
 		}
 		meta := metadata("stego-allocation", owner)
 		meta["namespace"] = name
+		encoded, err := networkBytes(a.networkSpec(p, name))
+		if err != nil {
+			return err
+		}
+		meta["annotations"] = kube.Object{networkHashAnnotation: networkHash(encoded)}
 		desired := kube.Object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": a.networkSpec(p, name)}
 		if _, _, err = a.client.Request(ctx, http.MethodPost, collection, desired); err != nil {
 			return err
@@ -384,19 +504,38 @@ func (a *Allocator) requireNetwork(ctx context.Context, p profile, name string, 
 		return errors.New("allocation network policy must restrict both directions")
 	}
 	expected := a.networkSpec(p, name)
-	// Policy type order and omitted empty fields do not change permissions.
-	spec.PolicyTypes = nil
-	expected.PolicyTypes = nil
-	actualJSON, err := json.Marshal(spec)
+	actualJSON, err := networkBytes(spec)
 	if err != nil {
 		return err
 	}
-	expectedJSON, err := json.Marshal(expected)
+	expectedJSON, err := networkBytes(expected)
 	if err != nil {
 		return err
 	}
-	if !bytes.Equal(actualJSON, expectedJSON) {
+	storedHash := kube.Nested(current, "metadata", "annotations", networkHashAnnotation)
+	intact := storedHash == networkHash(actualJSON)
+	if storedHash != nil && !intact {
+		return errors.New("allocation network policy content differs from its recorded hash")
+	}
+	matches := bytes.Equal(actualJSON, expectedJSON)
+	if !matches && (!create || !intact) {
 		return errors.New("allocation network policy differs from its declared peers")
+	}
+	if create && (!matches || !intact) {
+		// A legacy policy without a hash can be sealed only when it already matches
+		// the current declaration. No changed policy is adopted through this path.
+		patchSpec := kube.Object{"podSelector": kube.Object{"matchLabels": nil, "matchExpressions": nil}, "policyTypes": []string{"Ingress", "Egress"}, "ingress": nil, "egress": nil}
+		if len(expected.Ingress) > 0 {
+			patchSpec["ingress"] = expected.Ingress
+		}
+		if len(expected.Egress) > 0 {
+			patchSpec["egress"] = expected.Egress
+		}
+		patch := kube.Object{"metadata": kube.Object{"uid": kube.String(current, "metadata", "uid"), "resourceVersion": kube.String(current, "metadata", "resourceVersion"), "annotations": kube.Object{networkHashAnnotation: networkHash(expectedJSON)}}, "spec": patchSpec}
+		if _, _, err = a.client.Request(ctx, http.MethodPatch, collection+"/stego-allocation", patch); err != nil {
+			return err
+		}
+		return ErrPending
 	}
 
 	return nil

@@ -32,9 +32,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915165152-e394ab57c7b2
+        module_version: v0.0.0-20260915171609-5516e4812ed6
         vcs: git
-        revision: e394ab57c7b26412789d58429554334371d3d2db
+        revision: 5516e4812ed6fd0ee03b521ecea20f7e9fc37860
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
@@ -120,7 +120,7 @@ last_applied:
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
-        deploy/render/main.go: c78fe91b08e09db38aa39beb40eb85a351dc1cb691840e85d64219520971ecef
+        deploy/render/main.go: 41268f1ff494e1632184841b1b607320e0404c03ca5b2fcd943427bcf7736551
         deploy/render/manifest.json.tmpl: 0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
