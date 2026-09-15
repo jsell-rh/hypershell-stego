@@ -55,6 +55,14 @@ func (w *browserGatewayWorkload) checkGatewayNetworkIsolation(stage string) {
 	if len(w.gatewayIDs) != 2 {
 		w.t.Fatal("network isolation requires two Gateways")
 	}
+	unrelated := os.Getenv("STEGO_TEST_UNRELATED_NETWORK_HOST")
+	if w.p.namespace != "stego-service-ci" {
+		if unrelated != "peer."+w.p.namespace+"-peer.svc.cluster.local" {
+			w.t.Fatal("direct network check requires its unrelated listener")
+		}
+	} else if unrelated != "" {
+		w.t.Fatal("the fixed CI installation has no unrelated listener")
+	}
 	issuer, err := url.Parse(w.identity.options.ServerURL)
 	if err != nil {
 		w.t.Fatal(err)
@@ -81,6 +89,9 @@ func (w *browserGatewayWorkload) checkGatewayNetworkIsolation(stage string) {
 			{"other-gateway", "openshell-gateway." + other + ".svc.cluster.local", 8080, false},
 			{"control-api", "hypershell." + w.p.namespace + ".svc.cluster.local", 9090, false},
 		}
+		if unrelated != "" {
+			targets = append(targets, gatewayNetworkTarget{"unrelated-namespace", unrelated, 8080, false})
+		}
 		// Confirm denied targets are live from the permitted fixture before the
 		// probe runs. Refused connections or DNS failures do not count as isolation.
 		for _, target := range targets {
@@ -99,7 +110,7 @@ func (w *browserGatewayWorkload) checkGatewayNetworkIsolation(stage string) {
 		records = append(records, map[string]any{"gateway_id": id, "namespace": namespace, "result": result})
 	}
 	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-		data, err := json.MarshalIndent(map[string]any{"stage": stage, "fresh_connections": true, "token_mounted": false, "gateways": records}, "", "  ")
+		data, err := json.MarshalIndent(map[string]any{"stage": stage, "fresh_connections": true, "token_mounted": false, "independent_egress": unrelated != "", "gateways": records}, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(directory, "gateway-network-"+stage+".json"), append(data, '\n'), 0600) != nil {
 			w.t.Fatal("cannot save Gateway network evidence")
 		}

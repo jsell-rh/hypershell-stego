@@ -96,6 +96,15 @@ class PublicGatewayFixture(unittest.TestCase):
             self.assertFalse(container['securityContext']['allowPrivilegeEscalation'])
             self.assertIn('cpu', container['resources']['limits'])
             self.assertIn('memory', container['resources']['limits'])
+        settings = {row['name']: row.get('value') for row in job['spec']['template']['spec']['containers'][0]['env']}
+        self.assertNotIn('STEGO_TEST_UNRELATED_NETWORK_HOST', settings)
+        subprocess.run([sys.executable, str(script), 'stego-service-20260915-123abc', str(root), '1', '1', 'test-ca'],
+                       check=True, capture_output=True, timeout=5, env=environment)
+        document = json.loads((root / 'job.json').read_text())
+        job = next(item for item in document['items'] if item['kind'] == 'Job')
+        settings = {row['name']: row.get('value') for row in job['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(settings['STEGO_TEST_UNRELATED_NETWORK_HOST'],
+                         'peer.stego-service-20260915-123abc-peer.svc.cluster.local')
 
     def test_internal_trust_rejects_invalid_input_before_changes(self):
         document = {'items': []}

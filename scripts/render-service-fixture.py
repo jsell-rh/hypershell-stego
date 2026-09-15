@@ -59,6 +59,12 @@ def fixture(ns, directory, browser, workload, issuer):
         job['items'] += role['items']
         for item in job['items']:
             if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':issuer}]
+        if ns != 'stego-service-ci':
+            from network_peer_fixture import peer_namespace
+            host = 'peer.' + peer_namespace(ns) + '.svc.cluster.local'
+            for item in job['items']:
+                if item['kind'] == 'Job':
+                    item['spec']['template']['spec']['containers'][0]['env'].append({'name': 'STEGO_TEST_UNRELATED_NETWORK_HOST', 'value': host})
     cnpg = os.environ.get('STEGO_TEST_CNPG_FIXTURE', '0')
     if cnpg not in ('0', '1'):
         raise ValueError('Invalid CNPG fixture flag')

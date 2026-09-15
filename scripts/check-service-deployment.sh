@@ -59,6 +59,11 @@ cleanup_resources() {
       --cascade=foreground --wait=true --timeout=90s || return 1
 
     if [[ $workload == 1 ]]; then
+      python3 scripts/network_peer_fixture.py cleanup --context "$STEGO_TEST_CONTEXT" \
+        --namespace "$namespace" --results "$results" || return 1
+    fi
+
+    if [[ $workload == 1 ]]; then
       "${oc_cmd[@]}" -n "$namespace" delete deployment --all --cascade=foreground --wait=true --timeout=90s || return 1
       allocation_marker=$(python3 -c 'import hashlib,sys; print(hashlib.sha256((sys.argv[1]+".hypershell-namespace-allocation").encode()).hexdigest()[:32])' "$namespace")
       "${oc_cmd[@]}" get namespace -l "stego.test/browser-run=$namespace" -o name > "$results/owned-namespaces.txt" || true
@@ -177,6 +182,10 @@ else
   "${oc_cmd[@]}" create namespace "$namespace" --save-config
 fi
 created=true
+if [[ $workload == 1 && $preinstalled == 0 ]]; then
+  python3 scripts/network_peer_fixture.py create --context "$STEGO_TEST_CONTEXT" \
+    --namespace "$namespace" --results "$results"
+fi
 "${oc_cmd[@]}" apply -f "$results/private-job.json"
 for file in "$results/private-job.json" "$results/server.key"; do
     [[ ! -e $file ]] || unlink -- "$file"
