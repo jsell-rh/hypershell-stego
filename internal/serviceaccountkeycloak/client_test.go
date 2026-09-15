@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -129,5 +130,24 @@ func TestAdministratorTokenCancellationAndFailure(t *testing.T) {
 	cancel()
 	if _, err := c.adminToken(ctx); !errors.Is(err, context.Canceled) {
 		t.Fatal("token refresh ignored cancellation")
+	}
+}
+
+func TestCredentialFormattingUsesEveryVerb(t *testing.T) {
+	for _, tc := range []struct {
+		value any
+		want  string
+	}{
+		{ProvisionedServiceAccount{ClientSecret: "private-test-credential"}, "ProvisionedServiceAccount{credential redacted}"},
+		{&Client{token: "private-admin-token"}, "KeycloakClient{credentials redacted}"},
+	} {
+		for _, verb := range []string{"%v", "%+v", "%#v", "%d", "%x", "%s", "%q"} {
+			if fmt.Sprintf(verb, tc.value) != tc.want {
+				t.Fatalf("protected formatting failed for %T with %s", tc.value, verb)
+			}
+		}
+		if _, err := json.Marshal(tc.value); err == nil {
+			t.Fatal("implicit credential export accepted")
+		}
 	}
 }

@@ -220,3 +220,13 @@ STEGO's complete access operation uses a minimal enable update and checks the
 full policy afterwards. The application still needs durable legacy bindings,
 ownership migration, and adoption of that complete operation. The role check
 alone does not prove token or client configuration security.
+
+## Credential formatting
+
+The provider, migration checkpoint, credential response, and client wrapper use
+`fmt.Formatter` for redaction. Numeric formatting verbs can bypass `String` and
+`GoString`; the regression test reproduced disclosure with `%d` before the fix.
+Seven formatting forms and implicit JSON export are now checked. The small
+adapter suite passed with the race detector in 1.327 seconds. The application
+uses clean compiler pin `436e43dfe57e52e4c3396d5b633e4645fd3d2841`.
+The new resource-state migration is not part of this pin.

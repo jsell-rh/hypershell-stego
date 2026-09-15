@@ -57,7 +57,8 @@ type ProvisionedServiceAccount struct {
 func (ProvisionedServiceAccount) String() string {
 	return "ProvisionedServiceAccount{credential redacted}"
 }
-func (p ProvisionedServiceAccount) GoString() string { return p.String() }
+func (p ProvisionedServiceAccount) GoString() string           { return p.String() }
+func (p ProvisionedServiceAccount) Format(s fmt.State, _ rune) { _, _ = s.Write([]byte(p.String())) }
 func (ProvisionedServiceAccount) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("credential serialization requires an explicit response")
 }
@@ -83,6 +84,13 @@ type Client struct {
 }
 
 type Options struct{ ServerURL, Realm, ClientID, SecretFile, CAFile string }
+
+func (c *Client) String() string             { return "KeycloakClient{credentials redacted}" }
+func (c *Client) GoString() string           { return c.String() }
+func (c *Client) Format(s fmt.State, _ rune) { _, _ = s.Write([]byte(c.String())) }
+func (c *Client) MarshalJSON() ([]byte, error) {
+	return nil, errors.New("Keycloak client cannot be serialized")
+}
 
 func NewClient(options Options) (*Client, error) {
 	if !regexp.MustCompile(`^[A-Za-z0-9_-]{1,128}$`).MatchString(options.Realm) || options.ClientID == "" || len(options.ClientID) > 255 {

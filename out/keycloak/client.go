@@ -52,8 +52,9 @@ type Client struct {
 	secretHash                          [32]byte
 }
 
-func (c *Client) String() string   { return "KeycloakClient{credentials redacted}" }
-func (c *Client) GoString() string { return c.String() }
+func (c *Client) String() string             { return "KeycloakClient{credentials redacted}" }
+func (c *Client) GoString() string           { return c.String() }
+func (c *Client) Format(s fmt.State, _ rune) { _, _ = s.Write([]byte(c.String())) }
 func (c *Client) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("Keycloak provider cannot be serialized")
 }
@@ -123,9 +124,10 @@ func credentialValue(s string) bool { return textValue(s, 16384) && !strings.Con
 // Secret requires an explicit Reveal call at a credential boundary.
 type Secret struct{ value string }
 
-func (s Secret) Reveal() string   { return s.value }
-func (s Secret) String() string   { return "[credential redacted]" }
-func (s Secret) GoString() string { return s.String() }
+func (s Secret) Reveal() string             { return s.value }
+func (s Secret) String() string             { return "[credential redacted]" }
+func (s Secret) GoString() string           { return s.String() }
+func (v Secret) Format(s fmt.State, _ rune) { _, _ = s.Write([]byte(v.String())) }
 func (s Secret) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("credential serialization requires an explicit response")
 }

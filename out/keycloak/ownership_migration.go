@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"reflect"
 	"strings"
@@ -131,7 +132,8 @@ func migrationRecordHash(raw []byte, m ClientOwnershipMigration) (string, error)
 func (m ClientOwnershipMigration) String() string {
 	return "ClientOwnershipMigration{checkpoint redacted}"
 }
-func (m ClientOwnershipMigration) GoString() string { return m.String() }
+func (m ClientOwnershipMigration) GoString() string           { return m.String() }
+func (m ClientOwnershipMigration) Format(s fmt.State, _ rune) { _, _ = s.Write([]byte(m.String())) }
 func (m ClientOwnershipMigration) MarshalJSON() ([]byte, error) {
 	return nil, errors.New("migration serialization requires an explicit checkpoint")
 }
