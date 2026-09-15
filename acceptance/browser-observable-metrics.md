@@ -23,6 +23,8 @@ compiler. Full compiler CI passed. Candidate `0c2e7fe` then passed the rendered
 browser test in 99.67 seconds with race detection. The console job passed 229
 tests, types, architecture checks, lint, bundle reproduction, and generation.
 The [rendered record](browser-observable-metrics-rendered.json) retains these
-results and their limits. The parent workflow's core result remains required.
+results and their limits. The full parent workflow passed, including core
+acceptance with race detection in 1330.563 seconds and all generated image checks.
+The manual workflow skipped CNPG and Sandbox; those skips are not passes.
 The earlier complete public workflow used compiler `0b0c932` and does not prove
 this change.
