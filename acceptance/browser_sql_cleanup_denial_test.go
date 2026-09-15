@@ -16,23 +16,94 @@ import (
 	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
 
-// Remove one permission on the target login. The other Gateway's permissions
-// stay in place. Restore the original grant before normal cleanup continues.
+// Remove database-owner access for one Gateway. Keep administrator grants
+// and the other Gateway's permissions. Restore access before cleanup continues.
 func (w *browserGatewayWorkload) beginSQLCleanupDenial(id string) func() {
 	w.t.Helper()
 	admin := w.fixtureSQL()
 	names := databaseNames(w.t, w.f.cluster, id)
 	quote := func(s string) string { return pgx.Identifier{s}.Sanitize() }
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	var grantor string
-	var inherit, set, allowed bool
-	err := admin.QueryRow(ctx, `SELECT g.rolname,m.inherit_option,m.set_option,m.admin_option
+	type membership struct {
+		Grantor             string
+		Inherit, Set, Admin bool
+	}
+	readMemberships := func() []membership {
+		w.t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		rows, err := admin.Query(ctx, `SELECT g.rolname,m.inherit_option,m.set_option,m.admin_option
 FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r ON r.oid=m.roleid
 JOIN pg_catalog.pg_roles u ON u.oid=m.member JOIN pg_catalog.pg_roles g ON g.oid=m.grantor
-WHERE r.rolname=$1 AND u.rolname=$2`, names.User, w.databaseOptions.User).Scan(&grantor, &inherit, &set, &allowed)
-	cancel()
-	if err != nil || grantor == "" || !allowed {
-		w.t.Fatal("SQL cleanup denial needs the original administrator grant")
+WHERE r.rolname=$1 AND u.rolname=$2 ORDER BY g.rolname LIMIT 9`, names.Owner, w.databaseOptions.User)
+		if err != nil {
+			w.t.Fatal("SQL cleanup membership read failed")
+		}
+		defer rows.Close()
+		var result []membership
+		for rows.Next() {
+			var value membership
+			if rows.Scan(&value.Grantor, &value.Inherit, &value.Set, &value.Admin) != nil || value.Grantor == "" {
+				w.t.Fatal("SQL cleanup membership scan failed")
+			}
+			result = append(result, value)
+		}
+		if rows.Err() != nil || len(result) == 0 || len(result) > 8 {
+			w.t.Fatal("SQL cleanup needs a bounded set of owner grants")
+		}
+		return result
+	}
+	original := readMemberships()
+	fault := append([]membership(nil), original...)
+	var hasAccess, hasAdmin bool
+	for i := range fault {
+		hasAccess = hasAccess || fault[i].Inherit || fault[i].Set
+		hasAdmin = hasAdmin || fault[i].Admin
+		fault[i].Inherit, fault[i].Set = false, false
+	}
+	if !hasAccess || !hasAdmin {
+		w.t.Fatal("SQL cleanup needs original owner access and administrator grants")
+	}
+	// Apply both option changes in one transaction. Keep ADMIN OPTION, so no
+	// dependent administrator grant needs removal. Each grant keeps its grantor.
+	changeAccess := func(restore bool) error {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		tx, err := admin.Begin(ctx)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = tx.Rollback(ctx) }()
+		for _, grant := range original {
+			for _, option := range []struct {
+				name    string
+				enabled bool
+			}{{"INHERIT", grant.Inherit}, {"SET", grant.Set}} {
+				if !option.enabled {
+					continue
+				}
+				statement := "REVOKE " + option.name + " OPTION FOR " + quote(names.Owner) + " FROM " + quote(w.databaseOptions.User) + " GRANTED BY " + quote(grant.Grantor) + " RESTRICT"
+				if restore {
+					statement = "GRANT " + quote(names.Owner) + " TO " + quote(w.databaseOptions.User) + " WITH " + option.name + " TRUE GRANTED BY " + quote(grant.Grantor)
+				}
+				if _, err = tx.Exec(ctx, statement); err != nil {
+					return err
+				}
+			}
+		}
+		return tx.Commit(ctx)
+	}
+	// Do not put server messages, statements, or credentials in test logs.
+	sqlState := func(err error) string {
+		var failure *pgconn.PgError
+		if errors.As(err, &failure) && len(failure.Code) == 5 {
+			for _, c := range failure.Code {
+				if !(c >= '0' && c <= '9' || c >= 'A' && c <= 'Z') {
+					return "unknown"
+				}
+			}
+			return failure.Code
+		}
+		return "unknown"
 	}
 	state, err := gatewayworkload.StateNamespace(id)
 	if err != nil {
@@ -67,31 +138,28 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 		if restored {
 			return
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		defer cancel()
-		_, err := admin.Exec(ctx, "GRANT "+quote(names.User)+" TO "+quote(w.databaseOptions.User)+" WITH ADMIN TRUE GRANTED BY "+quote(grantor))
-		if err != nil {
-			w.t.Error("SQL cleanup administrator grant restore failed")
+		if err := changeAccess(true); err != nil {
+			w.t.Error("SQL cleanup owner access restore failed", sqlState(err))
 			return
 		}
 		restored = true
 	}
 	w.t.Cleanup(restore)
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-	_, err = admin.Exec(ctx, "REVOKE ADMIN OPTION FOR "+quote(names.User)+" FROM "+quote(w.databaseOptions.User)+" GRANTED BY "+quote(grantor)+" RESTRICT")
-	cancel()
-	if err != nil {
-		w.t.Fatal("SQL cleanup permission fault failed")
+	if err := changeAccess(false); err != nil {
+		w.t.Fatal("SQL cleanup permission fault failed", sqlState(err))
 	}
-	// Prove the server denies the same role operation. Roll back even if an
-	// unexpected grant permits it, so this probe cannot change the login.
+	if !reflect.DeepEqual(readMemberships(), fault) {
+		w.t.Fatal("SQL cleanup did not remove only owner access")
+	}
+	// Prove that the server denies the same database operation. Roll back even
+	// if an unexpected grant permits it, so this probe cannot change access.
 	config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
 	if err != nil || config.TLSConfig == nil || config.TLSConfig.InsecureSkipVerify || config.TLSConfig.RootCAs == nil || config.Host != "127.0.0.1" {
 		w.t.Fatal("SQL cleanup denial requires the verified loopback fixture")
 	}
 	config.Database, config.User, config.Password = w.databaseOptions.Database, w.databaseOptions.User, w.databaseOptions.Password
 	config.ConnectTimeout = 5 * time.Second
-	ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	connection, err := pgx.ConnectConfig(ctx, config)
 	if err != nil {
 		cancel()
@@ -99,14 +167,14 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 	}
 	tx, err := connection.Begin(ctx)
 	if err == nil {
-		_, err = tx.Exec(ctx, "ALTER ROLE "+quote(names.User)+" NOLOGIN")
+		_, err = tx.Exec(ctx, "ALTER DATABASE "+quote(names.Database)+" ALLOW_CONNECTIONS false")
 		_ = tx.Rollback(ctx)
 	}
 	_ = connection.Close(ctx)
 	cancel()
 	var denied *pgconn.PgError
 	if !errors.As(err, &denied) || denied.Code != "42501" {
-		w.t.Fatal("SQL cleanup role operation was not denied by PostgreSQL")
+		w.t.Fatal("SQL cleanup database operation was not denied by PostgreSQL")
 	}
 	return func() {
 		w.t.Helper()
@@ -141,11 +209,7 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 		if err != nil || !pending {
 			w.t.Fatal("denied SQL cleanup was recorded as complete")
 		}
-		ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
-		var currentInherit, currentSet, currentAdmin bool
-		err = admin.QueryRow(ctx, `SELECT m.inherit_option,m.set_option,m.admin_option FROM pg_catalog.pg_auth_members m JOIN pg_catalog.pg_roles r ON r.oid=m.roleid JOIN pg_catalog.pg_roles u ON u.oid=m.member JOIN pg_catalog.pg_roles g ON g.oid=m.grantor WHERE r.rolname=$1 AND u.rolname=$2 AND g.rolname=$3`, names.User, w.databaseOptions.User, grantor).Scan(&currentInherit, &currentSet, &currentAdmin)
-		cancel()
-		if err != nil || currentInherit != inherit || currentSet != set || currentAdmin {
+		if !reflect.DeepEqual(readMemberships(), fault) {
 			w.t.Fatal("SQL cleanup changed the operator's permission fault")
 		}
 		for _, other := range w.gatewayIDs {

@@ -1,19 +1,20 @@
-The browser Gateway deletion check now removes the provisioning account's
-`ADMIN OPTION` on one Gateway login. It preserves the grant's other options
-and the other Gateway's permissions. PostgreSQL requires this option to change
-that login. See [ALTER ROLE](https://www.postgresql.org/docs/18/sql-alterrole.html)
+The browser Gateway deletion check removes `INHERIT` and `SET` access to one
+Gateway's database-owner role from the provisioning account. It records each
+original grant and grantor, then removes only these options in one transaction.
+It keeps `ADMIN OPTION` and the other Gateway's permissions. Database changes
+require owner access. See [ALTER DATABASE](https://www.postgresql.org/docs/18/sql-alterdatabase.html)
 and [REVOKE](https://www.postgresql.org/docs/18/sql-revoke.html).
 
 A bounded connection as the provisioning account must receive SQLSTATE `42501`
-for the role operation. That probe always rolls back. The normal REST deletion
+for `ALTER DATABASE ... ALLOW_CONNECTIONS false`. That probe always rolls back. The normal REST deletion
 then drives the generated controller and PostgreSQL cleanup path. The ledger
 must reach `deleting`, while the API retains both cleanup obligations. Source
 Secret data and UID, database OID, login OID, and owner OID must stay unchanged.
 The other Gateway must stay ready. The controller must not restore the removed
 operator permission.
 
-The fixture restores only the original administrator option, including its
-original grantor. Normal controller cleanup must then remove the Gateway's SQL
+The fixture restores only the original owner-access options and grantors in
+one transaction. Normal controller cleanup must then remove the Gateway's SQL
 and namespaces before the existing workflow can pass. A cleanup handler also
 restores the permission if the test stops early.
 
@@ -28,4 +29,7 @@ The [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937319
 passed all 30 required tests with matching source and generation records and
 complete cleanup. It does not execute this new live denial case. The
 [browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937319194)
-is active. No denied-cleanup recovery result is claimed yet.
+failed during permission setup, before the denial assertion. The old setup
+tried to remove `ADMIN OPTION`; PostgreSQL rejected it because dependent grants
+exist. The Job failed and host cleanup passed. The revised setup avoids that
+grant dependency. No denied-cleanup recovery result is claimed yet.
