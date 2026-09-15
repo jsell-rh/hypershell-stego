@@ -7,8 +7,11 @@ credential, install cluster resources, or start kind.
 
 The required tests cover Gateway IDs and shapes, the atomic owner grant and
 events, filtered lists and denied requests, event delivery, REST, gRPC, API
-restart, watch events, local database selection, registration, and migration.
-The catalog workflow also checks cluster placement and cleanup dependencies.
+restart, watch events, rejection of retired database fields, and rejection of
+legacy schemas before writes. The catalog workflow checks the remaining cluster
+and release resources and their cleanup dependencies. The active API has no
+database selection or registration. See the
+[current database contract](controller-local-database.md).
 Each required test must have an explicit pass event in the Go JSON output.
 A missing or skipped test is a failure. The complete application suite remains
 separate and required.
@@ -32,13 +35,14 @@ The CI kubeconfig expires after one hour. An operator must renew it before a
 later run. Automatic credential renewal remains open. An absent or expired
 credential fails the gate; it does not skip the tests.
 
-## Fixture corrections
+## Historical fixture corrections
 
 The watch fixture now gives its controller an exact `observe.sandbox-count`
 grant for its own cluster. It also proves that a Gateway owner cannot change
 that count. Production access checks are unchanged.
 
-The catalog fixture supplies the required cluster ID for CNPG registration.
+The old catalog fixture supplied the required cluster ID for CNPG registration.
+That registration API is removed. The following result describes the old model.
 It checks that a deleted Gateway still blocks parent deletion while workload
 cleanup is pending. It then records a versioned cleanup observation with an
 exact grant. The same check applies to database cleanup before cluster

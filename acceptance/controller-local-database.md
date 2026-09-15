@@ -52,21 +52,24 @@ component may depend on a Hypershell entity name.
 
 ## Acceptance and current state
 
-The source now removes the field from requests, responses, storage, SDK inputs,
-and the console. The database catalog and server resource controller are removed.
-The replacement workload controller uses STEGO's SQL lifecycle. The
-[real browser workflow](controller-local-test-transition.md#supplied-server-browser-result)
-now passes with a supplied PostgreSQL server. The full application gate has not
-passed on this model. The earlier registration and CNPG resource
-tests are historical evidence; they do not establish this new contract.
+The current source has no database field in requests, responses, storage, SDK
+inputs, or the console. It has no database catalog or server resource controller.
+REST create and patch requests reject `database_id` with empty, null, or nonempty
+values. gRPC rejects the retired wire fields. The captured reference files keep
+the old contract for provenance; they do not define the active API.
 
-The next application gate must create a Gateway without a database field or
-database seed. It must prove atomic ownership, REST and gRPC reads, filtered
-lists, denied requests, generated event delivery, restart, and regeneration.
-The assigned controller must then prove real SQL creation, isolated logins,
-partial-creation recovery, stable destination checks, and durable deletion.
-Run the same controller behavior with installation-supplied PostgreSQL and CNPG.
-Actual RDS checks remain required for RDS permission and connection claims.
+The [restricted API gate](jshell-gateway-ci.md) has passed creation without a
+database catalog, atomic ownership, REST and gRPC reads, filtered lists, denied
+requests, event delivery, restart, and regeneration. The
+[complete supplied PostgreSQL browser workflow](browser-ci.md) has also passed,
+including SQL isolation, namespace recovery, credential retention, deletion,
+and automated cleanup. Each result applies to its recorded source revision.
+
+The [supplied CNPG application workflow](cnpg-installation.md) passed, including
+failover and retained data. Its runner failed during a final cleanup read.
+Separate checks verified cleanup. This result does not establish unattended
+CNPG CI. Actual RDS checks and a public Gateway connection remain open. Earlier
+registration and deployment-backed database tests are historical evidence.
 
 The schema gate must cover fresh bootstrap, concurrent starts, interrupted
 bootstrap, empty and populated legacy schemas, unknown generations, and an old
@@ -80,7 +83,7 @@ Pods, Secrets, and ConfigMap were removed, and the shared Lease was released.
 The failed evidence remains in `/tmp/hypershell-registered-placement-v1`.
 It is not a passing gate and will not be used to justify the retired model.
 
-## Request contract removal
+## Historical request-only result
 
 The first code change removes `database_id` from Gateway create and patch
 requests. The Go and TypeScript SDKs, CLI, and console use the new request
@@ -136,19 +139,15 @@ the draft PR's lowercased Gateway names. The controller publishes only the
 Gateway login, encoded URI, and TLS trust to the Gateway workload. It never
 publishes the SQL administrator's credentials.
 
-The fresh schema generation is `controller-local-v1`. The generated API startup
+The fresh schema generation is `controller-local-v2`. The generated API startup
 runs entity, outbox, and role setup in the same guarded bootstrap transaction.
 A recognized generation does not repeat setup. Old or unknown schema state is
 rejected before application writes. Historical migration files remain unchanged.
 
-The application test conversion is incomplete. Three old live workload and
-recovery files still refer to removed types. The full
-`generate.sh` dependency check and acceptance suite remain required. A limited
-production build or state unit test is not the application gate. The real
-supplied-server browser workflow now checks SQL isolation, generated worker
-access, restart, and normal deletion. Cleanup before initial state creation,
-the remaining state-loss and SQL fault cases, database-server restart,
-installation CNPG, and actual RDS checks remain required before release.
+The complete acceptance package builds. The API and browser gates compile it
+and require selected application tests to pass. These gates do not replace the
+full suite. See the current CI evidence above for verified results and remaining
+release requirements.
 
 ## Focused application check
 
@@ -160,7 +159,7 @@ API gate requires 30 named checks and compiles the complete acceptance package.
 Its separate browser workflow proves the real Gateway workload and SQL lifecycle.
 See [the current CI evidence](browser-ci.md) for source revisions and limits.
 
-## Verified API result
+## Historical API conversion result
 
 The bounded jshell Job `controller-local-c22019941c11` passed all 21 selected
 application tests and 59 top-level tests in total under the race detector. It
@@ -179,12 +178,13 @@ prepared SQL statement. They do not run an old API binary.
 [Recorded evidence](controller-local-api-evidence.json) includes test names,
 frozen input hashes, generated output hashes, limits, prior failure scope, and
 cleanup results. The Job, Pods, and private fixtures are absent. The shared test
-Lease was released. The full acceptance conversion and live SQL/workload gate
-remain open. In particular, cleanup before initial source state exists still
-needs a complete application test and implementation review.
+Lease was released. At this revision, the full acceptance conversion and live
+SQL/workload gate remained open. Cleanup before initial source state creation
+still needed a complete application test and implementation review.
 
 The [expanded test result](controller-local-test-transition.md) adds passing
 SDK, CLI, catalog, identity, telemetry, cleanup deadline, cleanup backlog, and
 parent-deletion checks. All 81 selected application tests have passing results
-across the full run and its bounded correction run. The full acceptance build
-and live SQL/workload gate remain open.
+across the full run and its bounded correction run. At that revision, the full
+acceptance build and live SQL/workload gate remained open. Use the current
+results above to assess the later implementation.
