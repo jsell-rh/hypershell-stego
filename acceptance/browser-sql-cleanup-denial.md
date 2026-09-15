@@ -23,5 +23,9 @@ denial code, pending state, one Secret UID, and comparison results. It contains
 no credentials or Secret contents. The evidence file describes the blocked
 phase; a complete workflow pass is also required to prove later cleanup.
 
-Formatting and source checks passed. The check has not yet compiled or run in
-CI. No denied-cleanup recovery result is claimed.
+Formatting, source checks, and the complete acceptance package build passed.
+The [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937319123)
+passed all 30 required tests with matching source and generation records and
+complete cleanup. It does not execute this new live denial case. The
+[browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937319194)
+is active. No denied-cleanup recovery result is claimed yet.

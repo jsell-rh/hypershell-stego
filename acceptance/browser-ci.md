@@ -90,5 +90,6 @@ Do not treat this transition as proof that the new queue preserves all runs.
 After the older API run finished, the namespace recovery browser run started
 and passed. Its separate API run also passed all 30 required checks. All 870
 source files and 228 generated files match that commit, and its Job, Pods, and
-fixtures are absent. The SQL cleanup denial candidate now has an active API run
-and a queued browser run. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
+fixtures are absent. The SQL cleanup denial candidate passed its API run with all 30 required
+checks, matching source and generated files, and complete cleanup. Its browser
+run is active. The stored-credential encryption candidate remains queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
