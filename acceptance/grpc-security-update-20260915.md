@@ -11,7 +11,7 @@ Both example modules use that version. Regeneration and drift checks passed.
 The generated gRPC runtime test sends a request without either host header.
 It requires HTTP 400 and gRPC status Internal. Normal authenticated requests
 must still succeed. The focused generated runtime check passed in 24.254
-seconds, with race detection. Full compiler and consumer CI remain required.
+seconds, with race detection. Full consumer CI remains required.
 
 The CNPG test that was active when CI reported the issue retains its frozen
 source and v1.83.1. Its functional results do not qualify the old dependency
@@ -27,3 +27,11 @@ The candidate uses compiler `b0bd9a49722b0c2c8a0a1142a59e91c46bc2d6b6`.
 The API and console modules select gRPC v1.83.2. Repeated generation and
 drift checks passed in both modules. The endpoint input check passed.
 The compiler binary records that commit and a clean source tree.
+
+[Full compiler CI 35012238080](https://github.com/jsell-rh/stego/actions/runs/35012238080)
+passed at `b0bd9a4`: compiler race tests, both generated examples, dependency
+scans, and SQL provisioning.
+[Hypershell CI 35012420380](https://github.com/jsell-rh/hypershell-stego/actions/runs/35012420380)
+passed the API and console vulnerability scans at `1df3d36`. Its complete
+application result is still pending. The duplicate manual run 35012427295
+was canceled before any job started.
