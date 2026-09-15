@@ -33,7 +33,7 @@ func TestGatewayBindingBeforeRoleLookupOrCreation(t *testing.T) {
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				switch {
 				case r.URL.Path == "/realms/test/protocol/openid-connect/token":
-					w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300}`))
+					w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300,"token_type":"Bearer"}`))
 				case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients":
 					w.Write([]byte(`[{"id":"gateway-uuid","clientId":"audience"}]`))
 				case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients/gateway-uuid":
@@ -76,7 +76,7 @@ func TestOwnershipChecksBeforeMutation(t *testing.T) {
 	var writes atomic.Int32
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/realms/test/protocol/openid-connect/token" {
-			w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300}`))
+			w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300,"token_type":"Bearer"}`))
 			return
 		}
 		if r.Method != "GET" {

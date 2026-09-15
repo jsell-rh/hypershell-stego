@@ -31,7 +31,7 @@ const (
 	defaultAccessTokenLifetimeSecs = 300
 )
 
-var ErrNotFound = errors.New("keycloak client not found")
+var ErrNotFound = provider.ErrNotFound
 
 var ErrNotManaged = errors.New("keycloak client is not a HyperShell-managed service account")
 
@@ -246,7 +246,7 @@ func (c *Client) ReconcileServiceAccount(ctx context.Context, spec ServiceAccoun
 	return nil
 }
 
-func (c *Client) reconcileConverged(ctx context.Context, spec ServiceAccountSpec, client *kcClient, subject, gatewayUUID string, roles []kcRole, enabled bool) (bool, error) {
+func (c *Client) reconcileConverged(ctx context.Context, spec ServiceAccountSpec, client *provider.ClientRepresentation, subject, gatewayUUID string, roles []kcRole, enabled bool) (bool, error) {
 	if client.ClientID != spec.ClientID || client.Name != spec.DisplayName || client.Enabled != enabled {
 		return false, nil
 	}
@@ -465,7 +465,7 @@ func (c *Client) DeleteServiceAccount(ctx context.Context, clientUUID, gatewayID
 	return c.deleteClient(ctx, clientUUID)
 }
 
-func (c *Client) requireManagedClient(ctx context.Context, clientUUID, gatewayID, serviceAccountID string) (*kcClient, error) {
+func (c *Client) requireManagedClient(ctx context.Context, clientUUID, gatewayID, serviceAccountID string) (*provider.ClientRepresentation, error) {
 	client, err := c.getClient(ctx, clientUUID)
 	if err != nil {
 		return nil, err
@@ -518,41 +518,32 @@ func (c *Client) DeleteGatewayServiceAccounts(ctx context.Context, gatewayID str
 }
 
 func (c *Client) ListManagedClients(ctx context.Context, gatewayID string) ([]ManagedClient, error) {
-	const pageSize = 100
-	clients := make([]kcClient, 0)
-	for first := 0; ; first += pageSize {
-		if first >= 10000 {
-			return nil, errors.New("managed client scan exceeds limit")
-		}
-		path := fmt.Sprintf("/admin/realms/%s/clients?first=%d&max=%d", c.realm, first, pageSize)
-		body, status, err := c.admin(ctx, http.MethodGet, path, nil)
+	out := []ManagedClient{}
+	seen := map[string]bool{}
+	for first := 0; first < provider.MaxInventory; first += provider.MaxPageSize {
+		page, err := c.keycloak.ListClients(ctx, provider.Page{First: first, Size: provider.MaxPageSize})
 		if err != nil {
 			return nil, err
 		}
-		if status != http.StatusOK {
-			return nil, statusError("list managed clients", status)
+		for _, listed := range page {
+			if seen[listed.ID] {
+				return nil, errors.New("managed client inventory repeats an ID")
+			}
+			seen[listed.ID] = true
+			client, err := c.getClient(ctx, listed.ID)
+			if err != nil {
+				return nil, err
+			}
+			if client.Attributes[managedAttribute] != "true" || (gatewayID != "" && client.Attributes[gatewayIDAttribute] != gatewayID) {
+				continue
+			}
+			out = append(out, ManagedClient{UUID: client.ID, ClientID: client.ClientID, GatewayID: client.Attributes[gatewayIDAttribute], ServiceAccountID: client.Attributes[serviceAccountIDAttribute]})
 		}
-		var page []kcClient
-		if err := json.Unmarshal(body, &page); err != nil {
-			return nil, errors.New("parse Keycloak client list")
-		}
-		clients = append(clients, page...)
-		if len(page) < pageSize {
-			break
+		if len(page) < provider.MaxPageSize {
+			return out, nil
 		}
 	}
-	out := make([]ManagedClient, 0)
-	for _, listed := range clients {
-		client, getErr := c.getClient(ctx, listed.ID)
-		if getErr != nil {
-			return nil, getErr
-		}
-		if client.Attributes[managedAttribute] != "true" || (gatewayID != "" && client.Attributes[gatewayIDAttribute] != gatewayID) {
-			continue
-		}
-		out = append(out, ManagedClient{UUID: client.ID, ClientID: client.ClientID, GatewayID: client.Attributes[gatewayIDAttribute], ServiceAccountID: client.Attributes[serviceAccountIDAttribute]})
-	}
-	return out, nil
+	return nil, errors.New("managed client scan exceeds limit")
 }
 
 func (c *Client) validateSpec(spec ServiceAccountSpec) error {
@@ -736,42 +727,23 @@ func (c *Client) setEnabled(ctx context.Context, uuid string, enabled bool) erro
 	return nil
 }
 
-func (c *Client) getClient(ctx context.Context, uuid string) (*kcClient, error) {
-	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s", c.realm, url.PathEscape(uuid)), nil)
+func (c *Client) getClient(ctx context.Context, uuid string) (*provider.ClientRepresentation, error) {
+	value, err := c.keycloak.GetClient(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
-	if status == http.StatusNotFound {
-		return nil, ErrNotFound
-	}
-	if status != http.StatusOK {
-		return nil, statusError("get service-account client", status)
-	}
-	var client kcClient
-	if err := json.Unmarshal(body, &client); err != nil {
-		return nil, errors.New("parse Keycloak client")
-	}
-	return &client, nil
+	return &value, nil
 }
 
 func (c *Client) clientUUID(ctx context.Context, clientID string) (string, error) {
-	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients?clientId=%s", c.realm, url.QueryEscape(clientID)), nil)
+	value, err := c.keycloak.FindClient(ctx, clientID)
+	if errors.Is(err, provider.ErrNotFound) {
+		return "", nil
+	}
 	if err != nil {
 		return "", err
 	}
-	if status != http.StatusOK {
-		return "", statusError("resolve Keycloak client", status)
-	}
-	var clients []kcClient
-	if err := json.Unmarshal(body, &clients); err != nil {
-		return "", errors.New("parse Keycloak client lookup")
-	}
-	for _, client := range clients {
-		if client.ClientID == clientID {
-			return client.ID, nil
-		}
-	}
-	return "", nil
+	return value.ID, nil
 }
 
 func (c *Client) serviceAccountUserID(ctx context.Context, clientUUID string) (string, error) {

@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"reflect"
 
+	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 	"github.com/segmentio/ksuid"
 )
 
@@ -141,12 +142,12 @@ func (c *Client) EnsureGateway(ctx context.Context, id, name string) (string, er
 	return string(body), nil
 }
 
-func gatewayConfigurationEqual(live, desired *kcClient) bool {
+func gatewayConfigurationEqual(live *provider.ClientRepresentation, desired *kcClient) bool {
 	return live.ClientID == desired.ClientID && live.Name == desired.Name && live.Protocol == desired.Protocol && live.PublicClient && live.StandardFlowEnabled &&
 		!live.ServiceAccountsEnabled && !live.ImplicitFlowEnabled && !live.DirectAccessGrantsEnabled && !live.AuthorizationServicesEnabled && !live.FullScopeAllowed &&
 		equalStrings(live.RedirectURIs, desired.RedirectURIs) && len(live.WebOrigins) == 0 && len(live.DefaultClientScopes) == 0 && len(live.OptionalClientScopes) == 0 && reflect.DeepEqual(live.Attributes, desired.Attributes)
 }
-func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*kcClient, error) {
+func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider.ClientRepresentation, error) {
 	clientID, err := GatewayClientID(id)
 	if err != nil {
 		return nil, err
@@ -231,20 +232,17 @@ func (c *Client) DeleteGateway(ctx context.Context, id string) error {
 // GatewayIDs supplies a bounded inventory for recovery after an offline deletion.
 func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 	ids := []string{}
-	for first := 0; first < 10000; first += 100 {
-		path := fmt.Sprintf("/admin/realms/%s/clients?first=%d&max=100", c.realm, first)
-		body, code, err := c.admin(ctx, http.MethodGet, path, nil)
+	seen := map[string]bool{}
+	for first := 0; first < provider.MaxInventory; first += provider.MaxPageSize {
+		clients, err := c.keycloak.ListClients(ctx, provider.Page{First: first, Size: provider.MaxPageSize})
 		if err != nil {
 			return nil, err
 		}
-		if code != http.StatusOK {
-			return nil, statusError("list Gateway clients", code)
-		}
-		var clients []kcClient
-		if json.Unmarshal(body, &clients) != nil || len(clients) > 100 {
-			return nil, errors.New("invalid Gateway client inventory")
-		}
 		for _, client := range clients {
+			if seen[client.ID] {
+				return nil, errors.New("Gateway client inventory repeats an ID")
+			}
+			seen[client.ID] = true
 			if client.Attributes[gatewayAttribute] != "true" {
 				continue
 			}
@@ -254,7 +252,7 @@ func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 				ids = append(ids, id)
 			}
 		}
-		if len(clients) < 100 {
+		if len(clients) < provider.MaxPageSize {
 			return ids, nil
 		}
 	}

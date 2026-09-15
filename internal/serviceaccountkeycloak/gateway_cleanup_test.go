@@ -34,7 +34,7 @@ func TestGatewayCleanupRetriesAfterPartialDisable(t *testing.T) {
 		mu.Lock()
 		defer mu.Unlock()
 		if r.URL.Path == "/realms/test/protocol/openid-connect/token" {
-			_, _ = w.Write([]byte(`{"access_token":"admin-token","expires_in":300}`))
+			_, _ = w.Write([]byte(`{"access_token":"admin-token","expires_in":300,"token_type":"Bearer"}`))
 			return
 		}
 		if r.URL.Path == "/admin/realms/test/clients" {

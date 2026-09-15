@@ -22,7 +22,7 @@ func TestGatewayClientCannotAdoptForeignIdentity(t *testing.T) {
 		server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			switch {
 			case r.URL.Path == "/realms/test/protocol/openid-connect/token":
-				w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300}`))
+				w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300,"token_type":"Bearer"}`))
 			case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients":
 				json.NewEncoder(w).Encode([]kcClient{{ID: "uuid", ClientID: clientID}})
 			case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients/uuid":
@@ -69,7 +69,7 @@ func TestGatewayDeletionRequiresConfirmedAbsence(t *testing.T) {
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case r.URL.Path == "/realms/test/protocol/openid-connect/token":
-			w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300}`))
+			w.Write([]byte(`{"access_token":"test-admin-token","expires_in":300,"token_type":"Bearer"}`))
 		case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients":
 			clients := []kcClient{}
 			if present.Load() {

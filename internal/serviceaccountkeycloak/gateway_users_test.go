@@ -26,7 +26,7 @@ func TestGatewayUserMappingUsesSubjectAndOnlyTargetClient(t *testing.T) {
 		requests++
 		switch {
 		case r.URL.Path == "/realms/test/protocol/openid-connect/token":
-			w.Write([]byte(`{"access_token":"fixture-admin","expires_in":300}`))
+			w.Write([]byte(`{"access_token":"fixture-admin","expires_in":300,"token_type":"Bearer"}`))
 		case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients":
 			json.NewEncoder(w).Encode([]kcClient{{ID: "client-uuid", ClientID: clientID}})
 		case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients/client-uuid":

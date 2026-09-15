@@ -245,3 +245,19 @@ provider replacement.
 Small adapter tests passed with the race detector in 1.122 seconds. The complete
 application workflow, restart, and regeneration checks are pending in CI. No
 local performance or stress test was run.
+
+## Common client reads
+
+Hypershell now uses the generated provider for exact client lookup, client
+reads, and bounded inventory pages. The common reader rejects ambiguous
+matches, duplicate JSON fields, missing public IDs, and mismatched provider
+IDs. Gateway selection and ownership rules remain in Hypershell. Inventory
+scans reject repeated provider IDs. The service-account scan retains selected
+IDs instead of all full client records. Legacy write representations retain
+their existing shape.
+
+The handwritten client is 1,014 lines, the Gateway adapter is 291 lines, and
+the user-role adapter is 137 lines. These total 1,442 lines, compared with the
+initial 1,588. The new read checks and existing ownership, user-role, deletion,
+and partial cleanup tests passed with the race detector in 1.189 seconds.
+Full application qualification remains pending.
