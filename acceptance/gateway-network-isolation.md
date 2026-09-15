@@ -20,7 +20,7 @@ provider choice remains open.
 STEGO `8aedc54` adds controlled updates for intact, owned allocation policies.
 The [update admission record](allocated-network-update-admission-20260915.json)
 contains 93 passing checks, including approved rule changes, retired-rule denial,
-and stale-version rejection. Cleanup passed. Full compiler CI is running. This
+and stale-version rejection. Cleanup and [full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34998601541) passed. This
 change is newer than candidate `101f31d` and is not covered by its browser result.
 
 The following record preserves the initial gap and the earlier checks.
