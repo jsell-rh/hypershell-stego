@@ -102,3 +102,11 @@ required tests. All 872 source files and 228 generated files match the commit.
 Generation and cleanup passed. This compiles the encryption test but does not
 execute its storage assertions. The corrected `70b2dd7` browser run is active;
 its API run is queued. The earlier encryption browser run remains cancelled.
+
+The corrected `70b2dd7` [complete browser workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/34941181554)
+passed in 384.8 seconds. It proves the SQL denial and recovery path and stored
+credential encryption after namespace recovery. All 872 source files, 229
+generated files, 16 CI access checks, 57 application access checks, six admission
+probes, and 18 operator resources were verified. Cleanup passed. The screenshot
+shows the healthy Gateway; its loading connection panel does not prove an
+external endpoint. The API run for this source remains active.

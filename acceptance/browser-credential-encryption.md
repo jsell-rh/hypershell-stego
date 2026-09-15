@@ -26,4 +26,8 @@ It does not contain keys, key hashes, credentials, nonces, or ciphertext.
 
 This check does not prove disk, volume, backup, or RDS encryption. It does not
 replace the complete workflow, source, generation, and cleanup checks.
-Formatting and source checks passed. No live encryption result is claimed yet.
+The [complete browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34941181554)
+passed at `70b2dd7` in 384.8 seconds. The test inspected one encrypted envelope
+among four object rows after namespace recovery. All 872 source files and 229
+generated files match, and cleanup passed. See the
+[verified record](browser-sql-recovery-encryption-evidence.json).

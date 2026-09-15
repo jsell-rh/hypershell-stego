@@ -32,4 +32,12 @@ complete cleanup. It does not execute this new live denial case. The
 failed during permission setup, before the denial assertion. The old setup
 tried to remove `ADMIN OPTION`; PostgreSQL rejected it because dependent grants
 exist. The Job failed and host cleanup passed. The revised setup avoids that
-grant dependency. No denied-cleanup recovery result is claimed yet.
+grant dependency.
+
+The [corrected complete workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/34941181554)
+passed at `70b2dd7` in 384.8 seconds. PostgreSQL denied the database operation
+with SQLSTATE `42501`. The controller retained source keys and SQL object IDs
+with cleanup pending. After permission restoration, normal REST deletion
+removed SQL state and keys. The other Gateway and installation data remained.
+All source and generation records match, and host cleanup passed. See the
+[verified record](browser-sql-recovery-encryption-evidence.json).
