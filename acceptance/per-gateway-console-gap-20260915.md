@@ -261,3 +261,18 @@ the user-role adapter is 137 lines. These total 1,442 lines, compared with the
 initial 1,588. The new read checks and existing ownership, user-role, deletion,
 and partial cleanup tests passed with the race detector in 1.189 seconds.
 Full application qualification remains pending.
+
+## Clean compiler generation correction
+
+The first application CI gate at `d031143` failed regeneration before the main
+Gateway tests ran. The locally built compiler included an untracked directory
+and reported modified source. CI built the same revision from a clean checkout.
+This changed the generated compiler build record and both saved input records.
+The browser preparation gate rejected the same compiler record difference.
+
+The application was regenerated with a compiler built from a clean, shallow
+checkout of the exact pin. All three corrected files now match the hashes from
+CI's clean generation. No compiler code or pin changed. Both applications report
+no generated drift. The failed Gateway Job and its Pods and fixture resources
+were removed; its two early passes do not count as the complete 32-test gate.
+The next CI run must execute the remaining workflow checks.
