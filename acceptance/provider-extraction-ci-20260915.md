@@ -23,10 +23,17 @@ the exact Lease with UID, resource-version, and holder checks. The installed
 policy was retained. A later browser run needs the matching operator fixture;
 do not remove the policy check or treat the failed run as a pass.
 
+The CNPG job in [run 35027389182](https://github.com/jsell-rh/hypershell-stego/actions/runs/35027389182)
+also stopped before setup. After queueing, its credential had less than the
+required 45 minutes left. The credential check refused to start. The shared
+Lease was free after this preflight failure. Renew the short-lived environment
+credential before a new CNPG attempt; this failure is not a test result for
+CNPG behavior.
+
 Results, manifests, the policy difference, and the recovery record are stored in
 `/home/jsell/.local/state/stego/runs/keycloak-provider-roles-20260915`.
 
 These results do not prove adoption of the common Keycloak provider. The
 application still uses its handwritten client. The
-[provider boundary](https://github.com/jsell-rh/stego/blob/9484015/specs/keycloak-provider-boundary.md)
+[provider boundary](https://github.com/jsell-rh/stego/blob/180da87/specs/keycloak-provider-boundary.md)
 defines the remaining adoption gate.

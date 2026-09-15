@@ -92,7 +92,7 @@ cover these contracts, including the editor and terminal.
 
 Common Keycloak client management must also come from STEGO. Use the existing
 service-account and Gateway identity workflows to prove the
-[provider extraction](https://github.com/jsell-rh/stego/blob/9484015/specs/keycloak-provider-boundary.md)
+[provider extraction](https://github.com/jsell-rh/stego/blob/180da87/specs/keycloak-provider-boundary.md)
 before adding per-Gateway dashboard client policy. Hypershell keeps Gateway
 roles, grants, audiences, and ownership identifiers.
 
@@ -122,7 +122,7 @@ then pass with the common provider. This provider test does not close that gate.
 STEGO's role mechanisms also passed their real-Keycloak gate at
 `96386e526db236aedf3b5dd9503ec66a11d4d9ff` in
 [run 35028368052](https://github.com/jsell-rh/stego/actions/runs/35028368052).
-The tests use two application policies. Client-scoped updates preserve other
+All five STEGO CI jobs passed. The tests use two application policies. Client-scoped updates preserve other
 roles and groups. Full service-account updates require the owned, disabled
 client and its saved subject, and remove excess realm, client, and group access.
 Both operations confirm removal before addition and verify the resulting roles.
