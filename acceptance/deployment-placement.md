@@ -1,9 +1,16 @@
-The deployment-backed database provider is removed. Current installations
-support registered external PostgreSQL or CNPG servers in the selected cluster.
-The older evidence below describes the previous scope. Its dedicated
-server-per-Gateway API tests still need conversion; they are not current
-passing evidence. See [local database placement](database-providers.md) and
-[the jshell API gate](jshell-gateway-ci.md).
+This page retains evidence for the retired deployment-backed database model.
+It does not define the current API or installation procedure. Do not use its
+migration or test commands for the current release.
+
+The current application has no `database_id`, `ManagedDatabase`, or database
+registration API. Gateway create and patch requests reject `database_id`,
+including empty and null values. Controllers use an installation-supplied
+PostgreSQL server and create a separate logical database and login for each
+Gateway. See [the current database contract](controller-local-database.md),
+[the jshell API gate](jshell-gateway-ci.md), and
+[the complete browser workflow](operator-cluster-installation.md).
+
+## Historical deployment placement
 
 The generated application now uses the reference deployment placement path by
 default. Each Gateway creation makes a new ManagedDatabase with provider
