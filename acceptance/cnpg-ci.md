@@ -58,8 +58,23 @@ PostgreSQL policy supplies only the required database traffic permissions.
 
 [CI 34968718717](https://github.com/jsell-rh/hypershell-stego/actions/runs/34968718717)
 was canceled before execution because this correction needs its own source and
-admission checks. The corrected live policy and complete CNPG workflow remain
-unverified. The initial static result does not establish an unattended CI pass.
+admission checks. The corrected policy was applied from frozen source `b6e0434` after the browser
+run released its Lease. The repair added one network policy and changed the
+lifetime Job policy. It used the recorded owner and object UIDs. Independent
+reads verified the full policy specification, its completed type check, the
+network deny rule, absence of runtime resources, and the released Lease.
+All 18 Job admission probes passed, including denial of the four regressions.
+The initial 45-object installation record remains unchanged; the repair record
+identifies the added object and the changed policy generation.
+
+The complete corrected CNPG workflow is queued in
+[CI 34969545259](https://github.com/jsell-rh/hypershell-stego/actions/runs/34969545259).
+This job still must verify Cluster admission, operator and database startup,
+complete application behavior, primary replacement, and volume cleanup.
+The ordinary API and browser runs `34969544850` and `34969544751` were canceled
+before execution because this change affects only the CNPG test fixture.
+The application output remains the verified `752d92e` output. Canceled and
+queued runs are not passes.
 
 The same push also queued ordinary API run `34968718133` and browser run
 `34968718081`. Both were canceled before execution to avoid duplicate tests:

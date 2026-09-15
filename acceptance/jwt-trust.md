@@ -24,6 +24,16 @@ and four generation records. The retired database request test, worker startup
 signals, and pool wait, restart, and recovery checks passed. Automatic cleanup
 and independent reads found no test resources.
 
-Browser run `34967271404` is active; full CI `34967271365` is also active.
-Their results remain required. Do not restart an active run because an
-observation times out or a result is not yet available.
+The [complete browser evidence](shared-jwt-browser-evidence.json) records a pass
+in run `34967271404` at the same source. The workflow took 377.04 seconds. It
+verified 911 source files, 232 generated files, and three matching generation
+records. It passed real Keycloak login, Gateway creation, access checks, event
+delivery, worker and API restart, namespace recovery, SQL isolation and cleanup
+recovery, credential encryption, account deletion, session renewal, and logout.
+Worker and SQL telemetry checks passed. Automatic cleanup and independent reads
+found no test resources, and the shared Lease was free.
+
+The reviewed Gateway page shows Healthy and no accounts after deletion. Its
+connection panel still shows loading placeholders. Public Gateway connectivity
+remains unverified. Full CI `34967271365` is still active; its final result
+remains required.
