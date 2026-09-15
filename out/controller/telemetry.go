@@ -54,7 +54,26 @@ func startControllerTelemetry(ctx context.Context) (context.Context, func(), err
 			}
 		})
 	}
-	return context.WithValue(ctx, controllerTelemetryKey{}, owner.telemetry), close, nil
+	return context.WithValue(owner.runtime.Context(ctx), controllerTelemetryKey{}, owner.telemetry), close, nil
+}
+
+// Hold one owner before application setup, through nested controllers and cleanup.
+// The fixed failure event never formats the callback error or a panic value.
+func startControllerProcessTelemetry(ctx context.Context) (context.Context, func(error), error) {
+	ctx, close, err := startControllerTelemetry(ctx)
+	if err != nil {
+		return ctx, nil, err
+	}
+	owner := &controllerTelemetryOwner
+	owner.Lock()
+	runtime := owner.runtime
+	owner.Unlock()
+	return ctx, func(err error) {
+		if err != nil && !errors.Is(err, context.Canceled) {
+			runtime.LogServiceEvent(ctx, tracing.ServiceFailed)
+		}
+		close()
+	}, nil
 }
 func attachControllerQueue(ctx context.Context, read func() QueueMetrics) (func(), error) {
 	telemetry := ctx.Value(controllerTelemetryKey{}).(*tracing.ControllerTelemetry)

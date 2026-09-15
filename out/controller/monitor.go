@@ -23,6 +23,8 @@ var ErrRunAborted = errors.New("controller run callback aborted before return")
 // Both HTTP serving and the controller stop and join before Monitor returns.
 // The controller callback must stop when its context ends. A callback abort
 // returns ErrRunAborted after its defers finish. Other goroutines are not covered.
+// With telemetry, setup, nested controllers, and cleanup share a private runtime.
+// Telemetry closes after the callback returns and before Monitor returns.
 func Monitor(parent context.Context, address string, run func(context.Context, *Metrics) error) error {
 	if parent == nil || run == nil {
 		return errors.New("controller monitoring requires context and action")
@@ -92,13 +94,22 @@ func monitorListener(parent context.Context, listener net.Listener, run func(con
 func completeControllerRun(ctx context.Context, metrics *Metrics, run func(context.Context, *Metrics) error, completed chan<- error) {
 	returned := false
 	var err error
+	var closeTelemetry func(error)
 	defer func() {
 		if !returned {
 			recover()
 			err = ErrRunAborted
 		}
+		if closeTelemetry != nil {
+			closeTelemetry(err)
+		}
 		completed <- err
 	}()
+	ctx, closeTelemetry, err = startControllerProcessTelemetry(ctx)
+	if err != nil {
+		returned = true
+		return
+	}
 	err = run(ctx, metrics)
 	returned = true
 }

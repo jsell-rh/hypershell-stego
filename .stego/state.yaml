@@ -112,13 +112,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915111158-f2b09c076240
+        module_version: v0.0.0-20260915114142-f97b3155c10a
         vcs: git
-        revision: f2b09c0762405cabb5e7f9404abbf2be4d57a1b2
+        revision: f97b3155c10a194082337905939b582814722e98
         source_state: clean
     service_hash: eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a
     registry_sha: gateway-workflow
-    registry_content_sha256: 8df3db0760fd89a3d0d1f71e8d783fbeac0cb702da487a957d4ddc485249abe4
+    registry_content_sha256: 9f932f4f03f92dee513a04a733e63301dce0b596cd6637ee566ab2ef01d808da
     components:
         browser-telemetry:
             version: 1.0.0
@@ -127,7 +127,7 @@ last_applied:
             version: 1.6.2
             sha: gateway-workflow
         controller:
-            version: 1.16.0
+            version: 1.17.0
             sha: gateway-workflow
         go-sdk:
             version: 2.0.2
@@ -421,21 +421,21 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: e0a21e656658a2aacd299b208464276983c7c78ec3800475da601faac23161b3
+        cli/command/version.go: 31d400d4b6a83490d199c07e0c2dd8222dbfbb232f46a688f2b7c1ef40d5fc09
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75
         controller/keyed.go: 53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b
         controller/metrics.go: cac2c7cac4629e878ae0151e222a992df8142cc0c20b00acfc31a34894cec050
-        controller/monitor.go: ded50dc9af9754cf53d7519a118f115b65279d0d91d9f68d37b66062eeb1cf95
+        controller/monitor.go: cd982adccb996fef9b563be54637b4779e7df46c1ee35eb554e4f92e3c459f84
         controller/observation.go: f6496e96e7b20dc48f1060bff1e026fa10a2045b2accc02b65ad3bf2fb9f30d2
         controller/process.go: 5df4fc55ba076d0a6e27300c160d1332687b055680e9f89daaa74551e145b7a9
         controller/runtime.go: 6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f
         controller/scan.go: c4b325a67497b7290e7c4c0cf934cba230cd0e79bd5ee4a8a444b60408087932
         controller/stream.go: 4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff
         controller/sweep.go: a29c158b90022219fd81317249c0cf70607fdd370687a9b25987d074cffd8cce
-        controller/telemetry.go: d36b871fc097b5270bb49e383f6c50c653ddadb9b0db5c344b1b68a3aba58e2e
+        controller/telemetry.go: 5a593056c1a675f8eaf2c487d004d7975d832137caaa748c27579880d836baa9
         controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
