@@ -387,7 +387,25 @@
   "runner_sha256": "f7213d0b9e9c08f321f2ff95c212b7d4d3b738f7d25b4ca519cbe636d4561c99",
   "limits": [
     "This is a correctness check with eight callers and a 15-second projection deadline, not a capacity test.",
-    "The transaction runtime still invokes each callback once. Callers retry complete requests after reported conflicts.",
-    "The complete core CI suite must run against the committed correction."
-  ]
+    "The transaction runtime still invokes each callback once. Callers retry complete requests after reported conflicts."
+  ],
+  "full_core_ci": {
+    "application_commit": "09e941de4a959a9039892fa62141d8bf000a8388",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34929091178",
+    "job_id": 104253336636,
+    "result": "success",
+    "package_seconds": 1318.27,
+    "log_sha256": "f7f67538278d07af7cd68e3130d8811d93001131a1764ee45690572f7bbbf59c",
+    "conflict_retries": {
+      "creation": 7,
+      "removal": 7
+    },
+    "scope": "Complete core suite with the forced-conflict test. This run precedes the operator-owned cluster installation fixture change.",
+    "workflow_result": "failure",
+    "remaining_failed_jobs": [
+      "gateway-workload",
+      "cnpg-gateway-workflow",
+      "sandbox-workload"
+    ]
+  }
 }

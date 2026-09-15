@@ -59,5 +59,24 @@
       "The core job was still running when this browser result was recorded. The three workload CI jobs still fail because their restricted installation fixtures are missing.",
       "This result covers the browser with generated API and console processes. The separate Kubernetes browser test supplies live Gateway workload evidence."
     ]
+  },
+  "later_core_result": {
+    "application_commit": "09e941de4a959a9039892fa62141d8bf000a8388",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34929091178",
+    "job_id": 104253336636,
+    "result": "success",
+    "package_seconds": 1318.27,
+    "log_sha256": "f7f67538278d07af7cd68e3130d8811d93001131a1764ee45690572f7bbbf59c",
+    "conflict_retries": {
+      "creation": 7,
+      "removal": 7
+    },
+    "scope": "Complete core suite with the forced-conflict test. This run precedes the operator-owned cluster installation fixture change.",
+    "workflow_result": "failure",
+    "remaining_failed_jobs": [
+      "gateway-workload",
+      "cnpg-gateway-workflow",
+      "sandbox-workload"
+    ]
   }
 }
