@@ -1,9 +1,16 @@
-The network isolation candidate `7e23873` passes saved Kubernetes endpoint
-bindings to the final allocation check. Missing or empty endpoint input cannot
-produce a cleanup success result. Twelve boundary checks passed. Its frozen
-CNPG source passed generation and comparison checks. This source has not run
-the complete CNPG isolation workflow. See the
-[active workflow record](gateway-network-workflow-20260915.json).
+The network isolation source `6062269` passed generation, complete frozen-source
+verification, and 17 focused source and inspection checks. The prior source
+`7e23873` failed final source verification because that verifier did not account
+for the exact declared CNPG database peer. The corrected verifier accepts that
+peer together with the fixed inspection roles. It rejects altered or extra
+peers, broader roles, and changed runtime code.
+
+The [fixed CI policy update](network-ci-update-20260915.json) passed. Admission
+policies were checked before permission changes. All 18 cluster resource
+identities and specifications, the CNPG receiver rule, and the new immutable
+record were verified. The complete restricted CNPG workflow is now active.
+There is no CNPG isolation or cleanup pass yet. See the
+[workflow record](gateway-network-workflow-20260915.json).
 
 # CNPG CI
 
