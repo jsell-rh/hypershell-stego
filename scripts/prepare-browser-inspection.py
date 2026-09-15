@@ -17,10 +17,12 @@ import tempfile
 ROLES = '''      - name: fixture-gateway-inspector
         scope: namespace
         rules:
-          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-server-tls], verbs: [get]}
+          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: "", resources: [pods], verbs: [get, list, watch, delete]}
           - {api_group: apps, resources: [deployments], resource_names: [openshell-gateway], verbs: [get, list, watch]}
+          - {api_group: cert-manager.io, resources: [certificates], resource_names: [openshell-public-tls], verbs: [get]}
+          - {api_group: cert-manager.io, resources: [certificates/status], resource_names: [openshell-public-tls], verbs: [update]}
       - name: fixture-state-inspector
         scope: namespace
         rules:
@@ -109,9 +111,11 @@ def inspection_roles():
     quota = rule('', 'resourcequotas', ['get'], ['stego-allocation'])
     return [
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-server-tls']),
+            rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
             quota, rule('', 'pods', ['delete', 'get', 'list', 'watch']),
-            rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway'])]},
+            rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway']),
+            rule('cert-manager.io', 'certificates', ['get'], ['openshell-public-tls']),
+            rule('cert-manager.io', 'certificates/status', ['update'], ['openshell-public-tls'])]},
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota]},
     ]

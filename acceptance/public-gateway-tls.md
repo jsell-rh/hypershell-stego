@@ -124,7 +124,7 @@ the expected endpoint after API and console restart.
 evidence until the complete Job, regeneration, and cleanup checks pass.
 Focused fixture input and manifest tests pass, the acceptance package compiles,
 and the WebDriver script passes its syntax check. No live public result exists
-for this source. Certificate rotation still needs an explicit test in this profile.
+for this source. The public profile includes the explicit renewal test below. Its live result is still required.
 
 The public profile also restarts the worker with its optional router egress
 binding removed. Required Kubernetes and PostgreSQL bindings remain. Every
@@ -134,3 +134,39 @@ SQL credential identities and provider data through public RPC. The partial
 result is `gateway-public-network-recovery.json`. The input check passes and
 the acceptance package compiles. Live network denial and recovery remain
 unverified until this profile completes on the cluster.
+
+
+## Public certificate renewal
+
+The public profile requests renewal through the Certificate status operation
+used by [cmctl at `7376e810`](https://github.com/cert-manager/cmctl/blob/7376e810c4e9d748dcc71d1522df7723739f6b4f/pkg/renew/renew.go).
+The test requires an owned, ready Certificate with the expected issuer, DNS
+name, and `rotationPolicy: Always`. It submits one status update with the
+observed UID and resource version. A conflict fails the test. It does not
+retry that write against newer state. This follows the
+[cert-manager renewal contract](https://cert-manager.io/docs/usage/certificate/).
+
+The fixture adds read access to `openshell-public-tls` and update access only
+to that Certificate's status in an assigned Gateway namespace. It grants no
+Certificate specification writes or Secret deletion. The existing namespace
+allocator generates and bounds these permissions. Live access reviews check
+the named status grant and denied writes to the internal certificate, the
+Certificate specification, the retained state namespace, and another namespace.
+The fixed operator installation must be updated to these generated inspection
+rules before this test can run.
+
+The test requires a newer certificate revision, a different certificate and
+public key, a complete Deployment rollout, and a fresh TLS connection pinned
+to the new certificate. A connection pinned to the old certificate must fail,
+and a second connection with the new pin must pass. It checks anonymous denial
+and a fresh authenticated owner read. SQL database and role OIDs, SQL credentials,
+provider data, and internal TLS material must remain unchanged. Certificate,
+Secret, and Deployment UIDs must remain stable. The generated client handles
+TLS validation, bounds, deadlines, and token file reads.
+
+The stage record is `gateway-public-certificate-rotation.json`. It contains
+public certificate hashes and resource identities. It contains no private keys
+or credentials. It proves nothing until the live stage and complete workflow
+pass. The test permits a controlled Gateway restart; it does not establish
+uninterrupted service. Focused renewal request checks and the generated fixture
+permission checks pass. A live renewal result remains required.

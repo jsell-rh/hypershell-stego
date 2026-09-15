@@ -74,6 +74,16 @@ func (w *browserGatewayWorkload) checkInstallationAccess(state, gateway string) 
 		check{Namespace: state, Resource: "pods", Verb: "create"},
 		check{Namespace: state, Resource: "pods", Verb: "delete"})
 
+	checks = append(checks,
+		check{Namespace: gateway, Group: "cert-manager.io", Resource: "certificates", Verb: "get", Name: publicCertificateName, Allowed: true},
+		check{Namespace: gateway, Group: "cert-manager.io", Resource: "certificates/status", Verb: "update", Name: publicCertificateName, Allowed: true},
+		check{Namespace: gateway, Group: "cert-manager.io", Resource: "certificates", Verb: "update", Name: publicCertificateName},
+		check{Namespace: gateway, Group: "cert-manager.io", Resource: "certificates/status", Verb: "update", Name: "openshell-server-tls"},
+		check{Namespace: state, Group: "cert-manager.io", Resource: "certificates/status", Verb: "update", Name: publicCertificateName},
+		check{Namespace: "default", Group: "cert-manager.io", Resource: "certificates/status", Verb: "update", Name: publicCertificateName},
+		check{Namespace: gateway, Resource: "secrets", Verb: "get", Name: publicCertificateName, Allowed: true},
+		check{Namespace: gateway, Resource: "secrets", Verb: "delete", Name: publicCertificateName})
+
 	for _, test := range checks {
 		attributes := kube.Object{"namespace": test.Namespace, "group": test.Group, "resource": test.Resource, "verb": test.Verb}
 		if resource, subresource, found := strings.Cut(test.Resource, "/"); found {

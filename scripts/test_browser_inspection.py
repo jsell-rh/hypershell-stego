@@ -45,6 +45,25 @@ class InspectionBoundary(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 inspection.verify_runtime(go(self.original), go(config))
 
+    def test_public_renewal_is_limited_to_one_status_resource(self):
+        role = inspection.inspection_roles()[0]
+        rules = [rule for rule in role['Rules'] if rule['apiGroups'] == ['cert-manager.io']]
+        self.assertEqual(rules, [
+            {'apiGroups': ['cert-manager.io'], 'resources': ['certificates'], 'verbs': ['get'], 'resourceNames': ['openshell-public-tls']},
+            {'apiGroups': ['cert-manager.io'], 'resources': ['certificates/status'], 'verbs': ['update'], 'resourceNames': ['openshell-public-tls']},
+        ])
+        for change in [
+            lambda r: r.pop('resourceNames'),
+            lambda r: r['resourceNames'].append('openshell-server-tls'),
+            lambda r: r.update(resources=['certificates']),
+            lambda r: r['verbs'].append('delete'),
+        ]:
+            config = copy.deepcopy(self.fixture)
+            target = next(rule for rule in config['Roles'][0]['Rules'] if rule['resources'] == ['certificates/status'])
+            change(target)
+            with self.assertRaises(ValueError):
+                inspection.verify_runtime(go(self.original), go(config))
+
     def test_runtime_code_change_is_rejected(self):
         with self.assertRaises(ValueError):
             inspection.verify_runtime(go(self.original), go(self.fixture) + '; extra code')

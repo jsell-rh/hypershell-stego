@@ -145,6 +145,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 			w.t.Fatal("public egress failure check is missing")
 		}
 		w.publicEgressFailure(gatewayID)
+		w.checkPublicCertificateRotation(gatewayID)
 	}
 	w.checkAllocationAccess()
 	w.checkSQLFaultRecovery(gatewayID)
