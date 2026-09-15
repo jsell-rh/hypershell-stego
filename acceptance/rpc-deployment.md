@@ -66,3 +66,16 @@ This test still supplies Gateway readiness as a fixture. Full Gateway workload
 provisioning through the console, production certificate rotation, and capacity
 testing remain open. The prior [process assembly record](rpc-process.md)
 contains evidence for the earlier test-Job process stage.
+
+On 2026-09-15, the application adopted STEGO
+`805a1522dd86e4e87e3ea94f32f9a60d2ce5039c`. The generated RPC process now passes
+its telemetry runtime through the bounded `Open` context. It also emits the
+fixed failure event and flushes telemetry after application cleanup error,
+panic, or `runtime.Goexit`. These mechanisms are in STEGO.
+
+Generation used a clean checkout of the pinned compiler. Repeated apply and
+drift checks passed for the API and console. The account provider, generated
+process runtime, and provisioner entry point compiled. The compiler's bounded
+lifecycle regression passed against a TLS OTLP collector. A new deployed
+application result is still required; the earlier deployment result does not
+verify this source.

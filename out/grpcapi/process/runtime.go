@@ -119,12 +119,30 @@ func run(ctx context.Context, open Open, startup time.Duration, ready, stopping 
 	var cleanup []func()
 	var telemetry *tracing.Runtime
 	defer func() {
+		if telemetry != nil {
+			if code != 0 {
+				telemetry.LogServiceEvent(ctx, tracing.ServiceFailed)
+			}
+			telemetry.Close()
+		}
+	}()
+	defer func() {
 		close(stopping)
 		if telemetry != nil {
-			telemetry.LogServiceEvent(context.Background(), tracing.ServiceStopping)
+			telemetry.LogServiceEvent(ctx, tracing.ServiceStopping)
 		}
-		for i := len(cleanup) - 1; i >= 0; i-- {
-			cleanup[i]()
+		// Separate defers preserve reverse cleanup order after panic or Goexit.
+		for _, release := range cleanup {
+			defer func() {
+				completed := false
+				defer func() {
+					if !completed {
+						code = 1
+					}
+				}()
+				release()
+				completed = true
+			}()
 		}
 	}()
 	var err error
@@ -132,7 +150,7 @@ func run(ctx context.Context, open Open, startup time.Duration, ready, stopping 
 	if err != nil {
 		return 1
 	}
-	cleanup = append(cleanup, telemetry.Close)
+	ctx = telemetry.Context(ctx)
 	verifier, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return 1

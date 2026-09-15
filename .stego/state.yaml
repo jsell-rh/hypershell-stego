@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915133525-4f692d0c12c9
+        module_version: v0.0.0-20260915135656-805a1522dd86
         vcs: git
-        revision: 4f692d0c12c972a2d7a783ee6a33c17e82a0f932
+        revision: 805a1522dd86e4e87e3ea94f32f9a60d2ce5039c
         source_state: clean
     service_hash: 4bd64f1a0ef1e1f5054273bbe8f4372cd466a1b7ae7fc75cb828eb0eed5a09a0
     registry_sha: gateway-workflow
-    registry_content_sha256: d717df6ff40dd6510a79845918d24ea67be3dfee8ed686159bda3e61f2772a05
+    registry_content_sha256: 5e9da3c306396c0b2c70b9581ebee51e8da54d66266b955192298f00e6f485f6
     components:
         browser-telemetry:
             version: 1.0.0
@@ -149,7 +149,7 @@ last_applied:
             version: 2.0.2
             sha: gateway-workflow
         grpc-application:
-            version: 1.11.0
+            version: 1.12.1
             sha: gateway-workflow
         health-check:
             version: 1.0.0
@@ -438,7 +438,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 62bdfb772e613b72fc402318738f2cf7e9a93903a5af952bfdc76d49757dea81
+        cli/command/version.go: 0c3a70088d69259a5c641bb149b5a4e16f7da1bacfa449112e384ecc20b39acb
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -504,7 +504,7 @@ last_applied:
         grpcapi/pb/options.pb.go: 8ac06d8dc39c1be0ed04552571a1e1372945a70946db19d20c3fef799f3f7ad0
         grpcapi/pb/sandbox.pb.go: ae795160aa6fe04ec4963c33f499ea67a8b28dbb478909e44fd4186afdeb7caf
         grpcapi/process/health.go: 993deafa82b3695780ab3b0a923db9b80cb5038165997f97d9b57c4ca99eba86
-        grpcapi/process/runtime.go: b247adeb0c511a174fd23d5001f22b8ce4583f39663d8d5cb92b902d6b433368
+        grpcapi/process/runtime.go: df2a9afc61ea401656e126068376b473cf404b1ad2682ce5bc7c1d72bb4d74c0
         grpcapi/processes/provisioner/main.go: 8fac17d292aa3389b6dc64e52be0591170b4799493fd7c7621085a313b2631b4
         grpcapi/transport/runtime.go: 66e1193b5c106fed712bd0dd0363484933e8b59e8a57aa0b57fe64165530e32f
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
