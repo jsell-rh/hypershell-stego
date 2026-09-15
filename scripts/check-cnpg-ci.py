@@ -17,6 +17,7 @@ from types import SimpleNamespace
 
 import cnpg_ci as ci
 from ci_credentials import CNPG_SECONDS, require_context_credentials
+from kubernetes_endpoint_bindings import kubernetes_endpoints
 
 
 def resource_owned(value, holder, cluster_uid):
@@ -72,6 +73,7 @@ def verify_allocations(browser):
     # outer runner's restricted context for this independent allocation check.
     result = browser / 'allocation-final.json'
     result.unlink(missing_ok=True)
+    environment = dict(os.environ, STEGO_ALLOCATION_NETWORK_ENDPOINTS=json.dumps({'kubernetes': kubernetes_endpoints(browser)}))
     token, cluster = require_context_credentials('jshell-ci', 0)
     with tempfile.TemporaryDirectory(prefix='stego-cnpg-cleanup-') as directory:
         private = Path(directory) / 'token'
@@ -86,7 +88,7 @@ def verify_allocations(browser):
         subprocess.run([str(browser / 'allocation-cleanup'), '--namespace', ci.APP_NS,
                         '--server', cluster['server'], '--ca-file', str(ca) if ca.exists() else '',
                         '--token-file', str(private), '--result', str(result)],
-                       check=True, timeout=195)
+                       check=True, timeout=195, env=environment)
     evidence = json.loads(result.read_text())
     if evidence.get('allocations_absent') is not True or evidence.get('allocations_before') != 0:
         raise RuntimeError('Gateway allocation absence is not confirmed; retain the SQL server and Lease')

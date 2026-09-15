@@ -2,6 +2,7 @@
 import unittest
 import tempfile
 import json
+import os
 from pathlib import Path
 from unittest.mock import patch, Mock
 from types import SimpleNamespace
@@ -115,6 +116,10 @@ class RuntimeCleanupBoundary(unittest.TestCase):
             browser = Path(directory)
             (browser / 'ci-server').write_text('https://api.example')
             (browser / 'ci-ca.pem').write_text('')
+            (browser / 'kubernetes-endpoints.json').write_text(json.dumps({'items': [{
+                'endpoints': [{'conditions': {'ready': True}, 'addresses': ['192.0.2.1']}],
+                'ports': [{'protocol': 'TCP', 'name': 'https', 'port': 6443}]}]}))
+            (browser / 'kubernetes-service.json').write_text(json.dumps({'spec': {'clusterIP': '10.0.0.1'}}))
             result = browser / 'allocation-final.json'
             result.write_text('{"allocations_absent":true,"allocations_before":0}')
             with patch.object(runner, 'require_context_credentials', return_value=('private-cleanup-token', {'server': 'https://api.example'})), \
@@ -124,7 +129,10 @@ class RuntimeCleanupBoundary(unittest.TestCase):
             def complete(words, **options):
                 self.assertNotIn('--remove', words)
                 self.assertEqual(words[0], str(browser / 'allocation-cleanup'))
+                environment = options.pop('env')
                 self.assertEqual(options, {'check': True, 'timeout': 195})
+                self.assertEqual(json.loads(environment['STEGO_ALLOCATION_NETWORK_ENDPOINTS']),
+                                 {'kubernetes': ['10.0.0.1:443', '192.0.2.1:6443']})
                 token_file = Path(words[words.index('--token-file') + 1])
                 self.assertEqual(token_file.read_text(), 'private-cleanup-token')
                 self.assertEqual(token_file.stat().st_mode & 0o777, 0o600)
@@ -135,11 +143,29 @@ class RuntimeCleanupBoundary(unittest.TestCase):
             seen = []
             # The browser child removed its token. The outer check must use its
             # own restricted credential and remove its temporary copy afterward.
-            with patch.object(runner, 'require_context_credentials', return_value=('private-cleanup-token', {'server': 'https://api.example'})), \
+            with patch.dict(os.environ, {'STEGO_ALLOCATION_NETWORK_ENDPOINTS': '{"kubernetes":["192.0.2.99:443"]}'}), \
+                 patch.object(runner, 'require_context_credentials', return_value=('private-cleanup-token', {'server': 'https://api.example'})), \
                  patch.object(runner.subprocess, 'run', side_effect=complete):
                 runner.verify_allocations(browser)
             self.assertEqual(len(seen), 1)
             self.assertFalse(seen[0].exists())
+
+    def test_final_allocation_check_requires_the_saved_endpoint_set(self):
+        runner = ci.module('cnpg_ci_allocation_endpoints', 'check-cnpg-ci.py')
+        with tempfile.TemporaryDirectory() as directory:
+            browser = Path(directory)
+            result = browser / 'allocation-final.json'
+            for snapshot in [None, {'items': []}]:
+                result.write_text('{"allocations_absent":true,"allocations_before":0}')
+                if snapshot is not None:
+                    (browser / 'kubernetes-endpoints.json').write_text(json.dumps(snapshot))
+                with patch.object(runner, 'require_context_credentials') as credentials, \
+                     patch.object(runner.subprocess, 'run') as run:
+                    with self.assertRaises((FileNotFoundError, ValueError)):
+                        runner.verify_allocations(browser)
+                credentials.assert_not_called()
+                run.assert_not_called()
+                self.assertFalse(result.exists())
 
     def test_exec_probe_uses_the_subresource_flag(self):
         runner = ci.module('cnpg_ci_exec_boundary', 'check-cnpg-ci.py')
