@@ -128,9 +128,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915145056-0b0c932716f0
+        module_version: v0.0.0-20260915161526-fe07b0a85f9c
         vcs: git
-        revision: 0b0c932716f09d492cdc31e0c00a9849c13d1fc8
+        revision: fe07b0a85f9cc3136b73c296ce7221e0380eecce
         source_state: clean
     service_hash: 3535d77fac3420e9492949d7aa02bf618765c380df3a0b675a847fb50a91f062
     registry_sha: gateway-workflow
@@ -423,7 +423,7 @@ last_applied:
         auth/key_source.go: c445bf904bf9e1f039b324d78f6476cbc59028ca482096db009e4a6d5f5495c6
         auth/middleware.go: 51f3373da7f51c6909fd7b5ce43c26419d86d223aa3cf6721fb9bb151b30d5ae
         browsertelemetry/index.d.ts: 7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8
-        browsertelemetry/index.js: 72d4776927a5e8b87208ec71b500a588bcec69a10ac47cee02d7848748480d93
+        browsertelemetry/index.js: 4970c3eef898c9996b4e56f6340dcfbefd8f2756411daca9870ab741e8b8eca1
         browsertelemetry/package.json: 6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90
         cli/buildidentity/runtime.go: 5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911
         cli/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
@@ -438,7 +438,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: cfb5f2ec8000ad294d8061a05e84a7026f462cf5f62f0a17260ff8d57bf39490
+        cli/command/version.go: 6ce41dc019133f5a8ae9fb693ab642d94c47a74135d8b97c3eb691b48f9b269a
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
