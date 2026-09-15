@@ -1,0 +1,1694 @@
+{
+  "scope": "Complete browser Gateway workflow with declared namespace inspection roles, operator-owned cluster installation, and namespace-only deployment by the test Pod.",
+  "reference_contract": {
+    "url": "https://github.com/openshift-online/hypershell/pull/272",
+    "reviewed_head": "d61f1dffe639f1de6e67cd82d89282fedb0d15e6"
+  },
+  "source_base_commit": "5c4326d6a742cf495b9ce159c6a56cb83689dd7f",
+  "compiler_revision": "2097bea6e155a889c48514e640507cae26bb3037",
+  "frozen_source": "/tmp/hypershell-inspection-browser-v4",
+  "freeze_record_sha256": "ff8b290bd4ce9f808581830b6c3430c1ea371ce9ec85dc21475a0f980077a98b",
+  "test_selection": "Compile the complete acceptance package. Run the named preflight checks and TestGeneratedKubernetesBrowserGatewayWorkflow. No file exclusions.",
+  "source_changes_after_freeze": [],
+  "passed": [
+    "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion (7.44s)",
+    "TestControllerLocalSchemaHasNoDatabaseCatalog (0.17s)",
+    "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites (0.33s)",
+    "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration (0.15s)",
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart (10.08s)",
+    "TestGatewayDeletionBeforeWorkloadStartup (5.57s)",
+    "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart (6.17s)",
+    "TestKubernetesWriteFailurePrivacy (0.00s)",
+    "TestGeneratedWorkloadWorkerStartupPrivacy (4.52s)",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow (342.91s)"
+  ],
+  "failed": [],
+  "package_results": [
+    "ok  \tgithub.com/jsell-rh/hypershell-stego/contracts\t1.056s",
+    "ok  \tgithub.com/jsell-rh/hypershell-stego/internal/gatewayworkload\t11.232s",
+    "ok  \tgithub.com/jsell-rh/hypershell-stego/internal/namespaceallocation\t1.013s",
+    "ok  \tgithub.com/jsell-rh/hypershell-stego/acceptance\t35.485s",
+    "ok  \tgithub.com/jsell-rh/hypershell-stego/acceptance\t343.964s"
+  ],
+  "exit_code": 0,
+  "generation_record_sha256": {
+    "first.sha256": "48308d3100d1dfcff58f4b7f99988bb4c082eca9ca36dce6a8a26d905bba058c",
+    "second.sha256": "48308d3100d1dfcff58f4b7f99988bb4c082eca9ca36dce6a8a26d905bba058c",
+    "after-tests.sha256": "48308d3100d1dfcff58f4b7f99988bb4c082eca9ca36dce6a8a26d905bba058c"
+  },
+  "generated_file_count": 229,
+  "generated_sha256": {
+    ".stego/state.yaml": "ba70083e4cdb799c5cee9c44c85ab48ca94f52b066f9aa568f39893983998381",
+    "console/.stego/state.yaml": "c44e24dfb35cfb4467a9f4231ba8f9625ff78335c3ac597b2cb0a78d567bc78e",
+    "console/go.mod": "f6bc46becd9d5291c9745bfd605a79a8c910c4ddd3a4f131572f98a34bc6c3f2",
+    "console/go.sum": "2c259b964601d37f4a35f2b309f87e9fc4474b2b2f11fe467ab108eae6ab576f",
+    "console/out/browser/backend.go": "c014c4113ce229739c5a2eddf7ae44f4412edffaee8916f6f81e7ed72430242b",
+    "console/out/browser/client/client.go": "137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a",
+    "console/out/browser/handlers.go": "64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673",
+    "console/out/browser/keys.go": "91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1",
+    "console/out/browser/oauth.go": "f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e",
+    "console/out/browser/public/assets/Content-CpNAp6mm.css": "38295849f8a970eb54d020a0e314620023450f94364a90d28b1d2b0baee76d14",
+    "console/out/browser/public/assets/Content-Dx8XFJ6y.js": "555730231ad64983730c73ee0501e97ce1f882b704418ac6f79e9d71efc5c7db",
+    "console/out/browser/public/assets/EmptyStateBody-C5dtHS0H.css": "d831b7cbcce4dd405cb11cf043ac53b0dcc772a22915254d1a8c4231e01fb252",
+    "console/out/browser/public/assets/EmptyStateBody-DLNRXedD.js": "10a551bc645dc1513e09e684fb67d1bd1acf32807bd7d6cda0a3e0506d7c6543",
+    "console/out/browser/public/assets/Felt-Bkg-Generic-Dark-C47rH4Qs.svg": "a738f3d9b2717f4e4eba8f61f250dc0fd633e02e199047175ce3496c1b7cc10d",
+    "console/out/browser/public/assets/Felt-Bkg-Generic-Light-CLIWo2pl.svg": "74faba5b186f4da7a48c97585ec71cd31488ba07602415d818f612aef4d072f9",
+    "console/out/browser/public/assets/PF-Bkg-Generic-Dark-BXzEO4HC.svg": "07b9c2803dfaed92bceccef71fac48314e11ca7eb0cbfc8e61abf2566df05362",
+    "console/out/browser/public/assets/PF-Bkg-Generic-Light-BCQFATCY.svg": "e0ae2cdd852850958ae6b19e4f24f213a9ed66471bba75d8b2251bc8775da13c",
+    "console/out/browser/public/assets/PageSection-BbMO9adS.js": "94001d60cb2b62be8bfd8898beb495f7c8be2de95ae1d43321c20eb8e787966b",
+    "console/out/browser/public/assets/PageSection-DKvxQMi_.css": "c0bf6d11136596574a00067a1609046311a43611aa7e38849f094b012f1020e2",
+    "console/out/browser/public/assets/QueryClientProvider-DYyBBBKc.js": "31fe92637b2a4c8baa5bb86fdd53bbd076a8e6dc9183485ff07aad0b869f65c4",
+    "console/out/browser/public/assets/QueryClientProvider-pkwjb01n.css": "060e2a7d4a38360cb3313322f77c536ac1fc218fe7d6c8baa1765e307dbadc87",
+    "console/out/browser/public/assets/RedHatDisplayVF-D7m-OdR-.woff2": "69dca56dda2a2b067dee3e910323c97e54b8544f90f3d1c2192b5a37c0eb1ec3",
+    "console/out/browser/public/assets/RedHatDisplayVF-Italic-DWi3aqlN.woff2": "ad58f7fcae1bb271807d629e3d7bf370be17b13436c1753720db1f389d8cc114",
+    "console/out/browser/public/assets/RedHatMonoVF-DR_keSsW.woff2": "54145e1e268b1c5359966336a6b6b12a5dfa046e493d3b4f2dc620c5edd12b62",
+    "console/out/browser/public/assets/RedHatMonoVF-Italic-DxqvCP8M.woff2": "d5d585590a2439bbb5429863b2c11bc76512bfb37e60fc5696462e1866bfc2c1",
+    "console/out/browser/public/assets/RedHatTextVF-DNKNjMr3.woff2": "1a5c9a8a88447c5b171ae99dab5daa4c1d49e3502db0fdc0da65d59fc5603feb",
+    "console/out/browser/public/assets/RedHatTextVF-Italic-Bw8r3dX4.woff2": "97b89f470394820fd11c803b65c7272fe193e179adea956e0ac3495e290c6dd4",
+    "console/out/browser/public/assets/SkipToContent-Bxl5CWDh.css": "45f243549d2e9885f839960f40d99aa5857417353f92ff538c0f58e5e267dda9",
+    "console/out/browser/public/assets/SkipToContent-DD3FH02A.js": "20b7ad8759dedd6537655a8c763ead09842c6d34c107a358329a008787e0e9b5",
+    "console/out/browser/public/assets/Tooltip-BLSuDaSq.css": "94a1a40f9f51c6b50795df67c6862d83eb6937f7a3cd0f683fb806700292dfd3",
+    "console/out/browser/public/assets/Tooltip-FxqhyjOa.js": "205ff547c3156ec1dfe25c2deabfb496ff6a262caf42ba0308c11db39bf93859",
+    "console/out/browser/public/assets/application-BzJqysbd.js": "59d4bfccd28c058a31bad987c58697243d963fed901b9179da911108f590624e",
+    "console/out/browser/public/assets/application-khmxz-hr.css": "e60d63111b9df73c6a83ce84ca49127dba7ba2e14ad9b24a7f6848a35c05fa21",
+    "console/out/browser/public/assets/catalog-HSSKH2S1.js": "e05fe8348ff9ac276672cfdbc6b86871eb6e58af39277a49b0b0bd8e3ee4911e",
+    "console/out/browser/public/assets/components-DQsZKrfN.js": "81862ccc1a09e335427c67f5b4b867162a8b1f33318a4fd562352a87533989c9",
+    "console/out/browser/public/assets/entry.client-BWQLzSHL.js": "810d796b8949e5deea5016708e4162f86f514e2a01d8f140fb0ca53ab1b68b05",
+    "console/out/browser/public/assets/errorBoundaries-B5jWqE5V.js": "d95100c3b64ca892a6f176ec52fbeb174b0f577ca2b6b37a73ea86cffcd1f1a1",
+    "console/out/browser/public/assets/favicon-16-B9BHdMeY.png": "e92c51e21c36560cf5dd9a5e0d1c37520c31050847d9dc9124d8a226fe7fd8fa",
+    "console/out/browser/public/assets/favicon-180-jcq6LAU0.png": "a4ec2cf4e2b927d91f1d5b7f3d01926e08cc5a749b1c82a5dd406cff1ee86279",
+    "console/out/browser/public/assets/favicon-32-BqX1IrQb.png": "c7538ac17a62d1592737dd82b5a211174499663c0914ec358c8a4f2550f8fe98",
+    "console/out/browser/public/assets/favicon-48-BsT24p2l.png": "d5e0eb0660eaf252f0516614cf0ca47ef5528ebd12362f939c93eafd83a0caef",
+    "console/out/browser/public/assets/gateway-mFBt4QmD.js": "736a4336726f05d552a9f34384ca2bd8bb7f95eb30557fa14989901bf1a5daad",
+    "console/out/browser/public/assets/gateway-new-D1VOhHIl.js": "d83c06f81dbf9068c8e6704f25cb28cbe855a29973171bb50b2eb1ae13ebd04a",
+    "console/out/browser/public/assets/home-Bcfh-xrn.js": "e458da7a607c4773e1ca90a581e0d72328f38cde854bdeed69edcd41404d1d52",
+    "console/out/browser/public/assets/jsx-runtime-KJkY8l8U.js": "cf2bfab16c630d00f84b59033ead66408c3ab1818aa89406cf27cc3cb1e0bf89",
+    "console/out/browser/public/assets/lib-s8g9F_k7.js": "76e8f02ef93b761048b5e1aa7681996d153b775ae3b94b431dd27a06f507fca8",
+    "console/out/browser/public/assets/login-BEKlfXt0.js": "8f16329bc05fb2cfb1f375539f0c7646c0f25d0ebffee4e8f128c0e44ec4768d",
+    "console/out/browser/public/assets/login-D24d52nV.css": "69edc4ce9f967f814abf63a6da46f9fb084751fdecb967b2bc9919c1e3ea28fd",
+    "console/out/browser/public/assets/logo-D5Bfz3pC.png": "6bb861be2b9a114404927f6f355310aff6352aba1a191d9e1d87036a365e8a6c",
+    "console/out/browser/public/assets/manifest-8dc15155.js": "cbef8f00f2f7b9448077a9c0fa06be07406d12dc65ba15ddc0c51642d9dac19f",
+    "console/out/browser/public/assets/messages-DNSn_P3a.js": "fbfd9e749e089b046613f5089792fd14f1cb5f6ce6c80c1940ab924ebd86dc1c",
+    "console/out/browser/public/assets/metrics-BsMiEaIf.js": "0e055a90f5be47ad6d21ab983a783f3c733d9371e2f22371e40dbe263f592dc3",
+    "console/out/browser/public/assets/not-found-2mWujS_f.js": "7cf656e0bb77188e4dcc63b95d74b604bf4e4ec4416e56fb2f4673afff37bb41",
+    "console/out/browser/public/assets/page-meta-DAEWVLyo.js": "1682258dc51376f3885790ae49e0ca5578dd89bcd96f8247245ad950aa66edc7",
+    "console/out/browser/public/assets/pf-v6-pficon-Dy6oiu9u.woff2": "322295638da2105dffff0eb18ee10ccffcac38888778b7b1b4624772d513e65d",
+    "console/out/browser/public/assets/react-dom-BsrxZfdi.js": "779b0d59e397a6fd092b5d423bb422dfcf84ccfbb9be5db8f16fa9853de35662",
+    "console/out/browser/public/assets/react-intl-BZyrBZ2Q.css": "b03dad36dd3cd46372470034dcb03f962365022cbd2cc6c6f35f5ba6d6cd79cb",
+    "console/out/browser/public/assets/react-intl-CXbPgFEk.js": "512212e0905e336c176e9cb7e1cf99923ee3727117576a6c041f40dd5201451c",
+    "console/out/browser/public/assets/root-BJvDT2Lb.css": "88558b26d77507b3c8ad2bcfd5a1db12bce56230c6dc91c164b322bfc45a07ee",
+    "console/out/browser/public/assets/root-CTWVupYe.js": "208c90736769d2d756884370561aefc4f9e9149462e81930ad0a0e9c3edae306",
+    "console/out/browser/public/assets/src-BSfgdRCl.css": "2d8e47cf64b10b83b8957a492050da2cde099278c8560e23f7093e0438536942",
+    "console/out/browser/public/assets/src-DWb-85VG.js": "a0f72f835ff99c7072d0f5ad60cdfadd9644dbad90168bcbe96a495d06d38e02",
+    "console/out/browser/public/index.html": "63e1fc4d324cb0177103f98ff48503a42260dc7674163566dde82a5e4b5073e0",
+    "console/out/browser/schema.sql": "b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139",
+    "console/out/browser/store.go": "3474166e404b286c891402ae4d71c319f27ab52d410b7ce526d4172c5d088d7a",
+    "console/out/browser/telemetry.go": "79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881",
+    "console/out/deploy/Containerfile": "5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe",
+    "console/out/deploy/Containerfile.dockerignore": "c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e",
+    "console/out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+    "console/out/deploy/render/manifest.json.tmpl": "0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d",
+    "console/out/health/health.go": "303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb",
+    "console/out/http_tls_open_other.go": "76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d",
+    "console/out/http_tls_open_unix.go": "52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2",
+    "console/out/main.go": "5c6e5623dc3c5470240a2b956e6c743fe795ff58a71b7a39189c26deaa882ec3",
+    "console/out/tracing/browser.go": "4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e",
+    "console/out/tracing/client.go": "37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67",
+    "console/out/tracing/command.go": "e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812",
+    "console/out/tracing/controller.go": "330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222",
+    "console/out/tracing/database.go": "c07154500eda0fc54b65419534375c7fca9bb215bffc34f1ddbb92d784ce173b",
+    "console/out/tracing/http_client.go": "ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683",
+    "console/out/tracing/identity.go": "2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6",
+    "console/out/tracing/runtime.go": "e6812415e104bc0d3af884e857ca8b5739484471923d28606e1c1706fb9638e8",
+    "console/out/tracing/service.go": "59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38",
+    "console/out/tracing/signals.go": "3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2",
+    "go.mod": "408c43f04d8f29b5a8d65396b2546bc1f60b122ef3055ab59057cdd7af8580f5",
+    "go.sum": "48b39c7119c0bb0b91837e1890214af98635ee3c67e4f96ffd518df00fc03535",
+    "out/application/bridge.go": "8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749",
+    "out/application/client/client.go": "3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1",
+    "out/application/transport/endpoint.go": "49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168",
+    "out/application/transport/fields.go": "7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4",
+    "out/auth/grants.go": "91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8",
+    "out/auth/jwks.go": "51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de",
+    "out/auth/middleware.go": "cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21",
+    "out/browsertelemetry/index.d.ts": "7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8",
+    "out/browsertelemetry/index.js": "72d4776927a5e8b87208ec71b500a588bcec69a10ac47cee02d7848748480d93",
+    "out/browsertelemetry/package.json": "6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90",
+    "out/cli/buildidentity/runtime.go": "5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911",
+    "out/cli/client/client.go": "3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1",
+    "out/cli/cmd/main.go": "28174ab7e7443ef442cc2c708d10c901ea19e2e68afb8f60ac42270e862eb424",
+    "out/cli/command/apply.go": "bcd632e752e05e53ffc517dee9d1479485dc0cce2cd60e1f4effd7d0770d6007",
+    "out/cli/command/apply_immutable.go": "a1954d710b1821ae3d1a2375f4d0a9dd143cb33257bfe21d147b7056aa6c05dc",
+    "out/cli/command/apply_input.go": "b4a69f31724d5a08afb1194e76e17ba7b7e86fcdad3022fa116e84e79b0409d9",
+    "out/cli/command/browser.go": "1b7622b0ac0b7d577604aa14fe5d81d4045a9112d49bcf954a656c165e15063c",
+    "out/cli/command/config.go": "8283163266206ded95bf226228d4605bbef625c11d419b2979255b5b918f97c0",
+    "out/cli/command/identity.go": "d7d23fcc6347897099d25797196c1602d323ea53f19a94713d06198b879422f2",
+    "out/cli/command/oauth.go": "a2aefcb0a3550424f475df17ffc2388c6ed7495e4a72fa60fc431f18448be459",
+    "out/cli/command/output.go": "12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09",
+    "out/cli/command/runtime.go": "b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761",
+    "out/cli/command/session.go": "a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46",
+    "out/cli/command/version.go": "19bbe416695f6bb695ad6b5df6d033a64ab039a2be9e0aa104a26709f4036661",
+    "out/contracts/events/events.go": "db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97",
+    "out/contracts/storage/storage.go": "b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a",
+    "out/controller/checkpoint.go": "699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1",
+    "out/controller/cycle.go": "7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75",
+    "out/controller/keyed.go": "53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b",
+    "out/controller/metrics.go": "cac2c7cac4629e878ae0151e222a992df8142cc0c20b00acfc31a34894cec050",
+    "out/controller/monitor.go": "ded50dc9af9754cf53d7519a118f115b65279d0d91d9f68d37b66062eeb1cf95",
+    "out/controller/observation.go": "f6496e96e7b20dc48f1060bff1e026fa10a2045b2accc02b65ad3bf2fb9f30d2",
+    "out/controller/process.go": "5df4fc55ba076d0a6e27300c160d1332687b055680e9f89daaa74551e145b7a9",
+    "out/controller/runtime.go": "6e1b787ffaa64eaca192c3a4a847a3c6a9833ec81c49bdcc9b205ec0b4d4097f",
+    "out/controller/scan.go": "c4b325a67497b7290e7c4c0cf934cba230cd0e79bd5ee4a8a444b60408087932",
+    "out/controller/stream.go": "4b05209332fbd7e41b9b3a52fb10c85ba412d2b5d7a652797858003058db75ff",
+    "out/controller/sweep.go": "a29c158b90022219fd81317249c0cf70607fdd370687a9b25987d074cffd8cce",
+    "out/controller/telemetry.go": "d36b871fc097b5270bb49e383f6c50c653ddadb9b0db5c344b1b68a3aba58e2e",
+    "out/controller/watch_keyed.go": "9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d",
+    "out/deploy/Containerfile": "f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1",
+    "out/deploy/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/allocation/allocation.go": "95d98fcf8853a540cc3b0939379b99ab2fd93eb350002d464a6522ed9b0336d8",
+    "out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+    "out/deploy/render/manifest.json.tmpl": "460eeec60b8155e9c62828142ba55a829ef3f24b594f581ba33d56fcd52ad60f",
+    "out/deploy/render/rpc-provisioner.json.tmpl": "971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b",
+    "out/deploy/render/worker-gateway-identity.json.tmpl": "a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5",
+    "out/deploy/render/worker-gateway-workload.json.tmpl": "eb45d144303edd7f90dc0cc926590fa01dbc9e877b08772e44e5d1cf5a418992",
+    "out/deploy/render/worker-namespace-allocation.json.tmpl": "9bfe42aea0d6f5813d2c58385fcf632b3973234ead822ffe04748294ed70760d",
+    "out/deploy/render/worker-sandbox-count.json.tmpl": "962635b1d71def1bdc3503322cc4e8e4a2279be43649a4767a73d5631c40a454",
+    "out/deploy/rpc/provisioner/Containerfile": "6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7",
+    "out/deploy/rpc/provisioner/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/workers/gateway-identity/Containerfile": "5f7395f954d74b6f2596b369c38a026e8c3c34213f7cadc9e51b20c09d1d2da9",
+    "out/deploy/workers/gateway-identity/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/workers/gateway-identity/main.go": "c805af057be7fd418e6566e283981579b6c237f88b9936e1c50729fc71456151",
+    "out/deploy/workers/gateway-workload/Containerfile": "16b5cdee1f5f026f0a3e3c40280afc805c90673d76e7a40ce33640445e395771",
+    "out/deploy/workers/gateway-workload/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/workers/gateway-workload/main.go": "ba62049494568e348f348f69fd69ed67e13621d72160200b6aee031aae0bf92b",
+    "out/deploy/workers/namespace-allocation/Containerfile": "4731db191181e103faeaee4ab5b9772012c07a306f7c227b90601c581c373c2e",
+    "out/deploy/workers/namespace-allocation/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/workers/namespace-allocation/main.go": "bcbf5bfb7be585d9b30ab8961ca569514534b2915cf77da1c2f4764627151cb7",
+    "out/deploy/workers/sandbox-count/Containerfile": "bb7d2d867c7ec732c2468b22e2c0a4b9c2d4e77dd73627cdd949623eed1b76b7",
+    "out/deploy/workers/sandbox-count/Containerfile.dockerignore": "c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613",
+    "out/deploy/workers/sandbox-count/main.go": "7e25daab1f25d18801c24f1c4fc7a458f08f7e65632632e78238a08ccc012535",
+    "out/events/publisher.go": "509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb",
+    "out/events/runtime.go": "38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d",
+    "out/grpcapi/bridge.go": "0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369",
+    "out/grpcapi/client/client.go": "0923e0ff845924d68b2c32c7518bd3af55e3f04ada20fa5eb159454da0032d74",
+    "out/grpcapi/client/stream_headers.go": "d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d",
+    "out/grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go": "4ab36c844cc94e4b85cfe902714f4a58d6a90b9b50933f83ca39f851cd15cdee",
+    "out/grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go": "69c0f7aadb5da3b2247ac6ec457d34725e6e22d8c73d9ba59895f876719123f0",
+    "out/grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go": "b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66",
+    "out/grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go": "e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b",
+    "out/grpcapi/pb/hypershell/v1/common.pb.go": "6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e",
+    "out/grpcapi/pb/hypershell/v1/gateway_networks.pb.go": "df7d8c71b6f08b11218b38d087902ba8075b623c686bdefdba72cb7bfea48327",
+    "out/grpcapi/pb/hypershell/v1/gateway_networks_grpc.pb.go": "a17a74dfdb0bb5df5645f5a363c76044c040573ccfe5e36d8ec6ac037d53af6c",
+    "out/grpcapi/pb/hypershell/v1/gateway_releases.pb.go": "fa323b2558aca9f9c3b38059102bae3836f12afecae40e158c80f9aaa8f42dd6",
+    "out/grpcapi/pb/hypershell/v1/gateway_releases_grpc.pb.go": "f36e68264492625508c714e182c33ff3e1c7b42df7b56a3b1f0152db06847156",
+    "out/grpcapi/pb/hypershell/v1/gateways.pb.go": "c940cdf741c6129b8794acb2319295cca83faa1301cfc82c69c8957938a81a5f",
+    "out/grpcapi/pb/hypershell/v1/gateways_grpc.pb.go": "6d411eda6ccc28bbd25bec742a3d096d27fa041489c44c1dc3b36a45fcd7c722",
+    "out/grpcapi/pb/hypershell/v1/managed_clusters.pb.go": "d23a61cecd3af2a4ca6295cc6d7b030c08a2665bbe077794232b66bbddcd7ebd",
+    "out/grpcapi/pb/hypershell/v1/managed_clusters_grpc.pb.go": "aa087866ba13e2a773645b22753cef3ae236746d962f720b0c19cd02b364cc93",
+    "out/grpcapi/pb/hypershell/v1/role_bindings.pb.go": "006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8",
+    "out/grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go": "21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355",
+    "out/grpcapi/process/health.go": "993deafa82b3695780ab3b0a923db9b80cb5038165997f97d9b57c4ca99eba86",
+    "out/grpcapi/process/runtime.go": "b247adeb0c511a174fd23d5001f22b8ce4583f39663d8d5cb92b902d6b433368",
+    "out/grpcapi/processes/provisioner/main.go": "8fac17d292aa3389b6dc64e52be0591170b4799493fd7c7621085a313b2631b4",
+    "out/grpcapi/transport/runtime.go": "66e1193b5c106fed712bd0dd0363484933e8b59e8a57aa0b57fe64165530e32f",
+    "out/health/health.go": "303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb",
+    "out/http_tls_open_other.go": "76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d",
+    "out/http_tls_open_unix.go": "52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2",
+    "out/kubernetes/client.go": "71dadddfbdf51c689d7631f49242f74f7d374fef5f97f36266ce87f85d97613a",
+    "out/kubernetes/discovery.go": "d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15",
+    "out/kubernetes/observe.go": "d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80",
+    "out/kubernetes/watch_set.go": "8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47",
+    "out/main.go": "b97743f310382b253e9960e1963592d7e8059b69d7a9cb1e81f19dbbd38bb403",
+    "out/outbox/migrations/000001_outbox.sql": "dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437",
+    "out/outbox/queue.go": "a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f",
+    "out/outbox/schema.go": "b8fc87fd5109f5f7ba99383d51785a90f2468755b8f49b56951d138f5f9f5c45",
+    "out/outbox/source.go": "ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b",
+    "out/outbox/worker.go": "aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122",
+    "out/postgres/client.go": "dde40af3259df8263c647c912cbe7119442b70982007a1e6298d0041cd34f5b8",
+    "out/postgres/provision.go": "df9147fdd71b869106bf330fe22eef180f8ef97adc63914b20f6f67233a4630e",
+    "out/sdk/api.go": "1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468",
+    "out/sdk/client.go": "f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07",
+    "out/sdk/internal/transport/client.go": "44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877",
+    "out/sdk/internal/wire/api.go": "479a8e76dbb0c6e7f93f4b9a31bafce2eabcebe05b6ad582c7fb741fd72f30d2",
+    "out/search/field_map.go": "58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7",
+    "out/search/search.go": "659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b",
+    "out/storage/checkpoints.go": "75df704470c3ddc5dd4ba29ff9b73acedf4a3fde7885600b52db656af03206fd",
+    "out/storage/cleanup_summary.go": "4b18dc9750db136dcecd65990ea9efc4e4727c608c555ed7ffcf0bf9178e56ee",
+    "out/storage/conditions.go": "52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd",
+    "out/storage/cursor.go": "2a8499a29f1b616a8358212e47da5aefef9c1240166615f404395fec7d96d109",
+    "out/storage/database.go": "280f46b5c6e04748a3d4c284545bcc46a0c3d0b966d9019469e60030b0e12e24",
+    "out/storage/effects.go": "0b5f33ca973f779fed4c28c19af62a6fd079e3b3daacf211ec7344e24944fb37",
+    "out/storage/generic_dao.go": "c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c",
+    "out/storage/migrate.go": "752a082bf74ffbcbe2ef740849cccbf3e4eb044fe40d19a368841974fa0d2ff3",
+    "out/storage/migrations/000002_resource_versions.sql": "8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304",
+    "out/storage/migrations/000003_resource_generations.sql": "8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304",
+    "out/storage/migrations/000004_resource_cleanup.sql": "8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304",
+    "out/storage/migrations/000005_cleanup_targets.sql": "8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304",
+    "out/storage/migrations/000006_scan_checkpoints.sql": "148a9b3aa6ac989ce458b5d878e6f5b250ecc1f10762331dd1df0adcc82e9f95",
+    "out/storage/migrations/000007_resource_conditions.sql": "8a509e45012bf59743af9a25bf71fa4db830a510665731f7bba5e5ded864d304",
+    "out/storage/migrations/000008_effect_bindings.sql": "aa6ed402091e352159c9cf88401d7287ba9ebd18236ff11eb0ac7721a8191564",
+    "out/storage/models.go": "335a6c44188cdccdee083278af825e4c165ad53fa32c181a2cf33471da67fb6b",
+    "out/storage/schema_generation.go": "4be234fe105213de75d7c0f30a6ade93587f6f12e40fabd7dc2d457c2be96b8c",
+    "out/storage/session_factory.go": "e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc",
+    "out/storage/store.go": "9dd7ba1bc179c1f85fc8966d38db1489921d81de464d86cbc4365211a2d410f1",
+    "out/storage/transaction.go": "a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721",
+    "out/storage/versions.go": "42d36a362826e411786ee08d56c51a39948ae901fa632a802f01fd4caa6d128c",
+    "out/tracing/browser.go": "4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e",
+    "out/tracing/client.go": "37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67",
+    "out/tracing/command.go": "e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812",
+    "out/tracing/controller.go": "330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222",
+    "out/tracing/database.go": "c07154500eda0fc54b65419534375c7fca9bb215bffc34f1ddbb92d784ce173b",
+    "out/tracing/http_client.go": "ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683",
+    "out/tracing/identity.go": "2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6",
+    "out/tracing/runtime.go": "eec2c4b3f54d4dc9b9a4955c963e8fce80370d9fc2107b53a2f15d31135dbb92",
+    "out/tracing/service.go": "59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38",
+    "out/tracing/signals.go": "3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2",
+    "out/tssdk/index.d.ts": "316c2a67341f9afcded25f44e60cd1249cd6ab2473ee47bc575b6a77503aa1f6",
+    "out/tssdk/index.js": "33e4b98ac44883eeee4114517c351489b6808a7563762e5ee3285b830d3f71fc",
+    "out/tssdk/package.json": "476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080"
+  },
+  "cleanup": {
+    "namespace_absent": "stego-service-20260915-2fdc7e",
+    "owned_resources_absent": true
+  },
+  "job": {
+    "namespace": "stego-service-20260915-2fdc7e",
+    "name": "service-check",
+    "uid": "fe37f32b-9076-4dbe-bbc6-51c89358eec9",
+    "activeDeadlineSeconds": 1800,
+    "backoffLimit": 0,
+    "status": {
+      "completionTime": "2026-09-15T05:28:40Z",
+      "conditions": [
+        {
+          "lastProbeTime": "2026-09-15T05:28:40Z",
+          "lastTransitionTime": "2026-09-15T05:28:40Z",
+          "message": "Reached expected number of succeeded pods",
+          "reason": "CompletionsReached",
+          "status": "True",
+          "type": "SuccessCriteriaMet"
+        },
+        {
+          "lastProbeTime": "2026-09-15T05:28:40Z",
+          "lastTransitionTime": "2026-09-15T05:28:40Z",
+          "message": "Reached expected number of succeeded pods",
+          "reason": "CompletionsReached",
+          "status": "True",
+          "type": "Complete"
+        }
+      ],
+      "ready": 0,
+      "startTime": "2026-09-15T05:15:58Z",
+      "succeeded": 1,
+      "terminating": 0,
+      "uncountedTerminatedPods": {}
+    }
+  },
+  "artifact_sha256": {
+    "application.tar": "b95af8672d384cddd9115316629e7e6b02247925170ea7c0da46077abd78aa60",
+    "deployment.log": "f4fc492bf2fcbc1ed90dc98d83ee11f5fa9b1a35e97fbe7d2af130803282b162",
+    "job-status.json": "e2c60d41d0e31491c5b2b055192dc40e4dfb3b864054523fbd0d58c9966349eb",
+    "cleanup.json": "4e257286e8d9f2961f64bbf5142efd074abf81a8f87dbcc23ab7814650cdc4c5",
+    "evidence.tar": "7ee282e9fee67a2c8420f74adfca6b6c6fbfdb9559517fd2217e25636d430ce2",
+    "fixture-exec-patch.json": "18c21c308ff13bcf373f66a5cc27081f794060a8b0ff4318f72788524a7b2f2e",
+    "cluster-installation.json": "7e46ce1956ff66cb83540a00cdfa866f93f6907c58f51feaf43d642c7027cb01"
+  },
+  "images": {
+    "image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell:acceptance",
+      "digest": "sha256:307d8a7e6623183d271b5a61a748ab89e262f8277464d557c155897142f3cf65",
+      "contentDigest": "sha256:307d8a7e6623183d271b5a61a748ab89e262f8277464d557c155897142f3cf65",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:18109141d4338a8a106fa7e5476011e10af111f15329afd16dc9539d6d10763a",
+          "size": 21318830
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/service"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 21318830,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:bd978b58b33b4baaaaeb73b3c34dc4a21fbff30865db308ff51d47a2747bb4a4"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    },
+    "console-image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell-console:acceptance",
+      "digest": "sha256:a001ba22f6ebf0a568b1cb6b2bdc9965a2ef3148c74bb4b09f50fe9bce7605af",
+      "contentDigest": "sha256:a001ba22f6ebf0a568b1cb6b2bdc9965a2ef3148c74bb4b09f50fe9bce7605af",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:7917770ad399d96a2f778059e0c38978a6c6aa010e41f4a9c60806e091b8d8ab",
+          "size": 15825565
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/service"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 15825565,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:08389cde6f6abeb0105fb6009ac6d664e49e686a76de7310b939d3638a876c77"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    },
+    "provisioner-image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell-provisioner:acceptance",
+      "digest": "sha256:583a96da6a8361e9205d7d3f7d429c0b664d68f02d701bf68b5a9fced1f826ff",
+      "contentDigest": "sha256:583a96da6a8361e9205d7d3f7d429c0b664d68f02d701bf68b5a9fced1f826ff",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:9a21b3f8198a31f3f9c3b40be47432379fee956c1485e8f75bbce045c8d40a9e",
+          "size": 12447534
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/rpc"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 12447534,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:7ddd5458d3df5f48d31fb592417a8518bfad364d838e17bebe27ee31cae2c1fb"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    },
+    "namespace-allocation-image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell-namespace-allocation:acceptance",
+      "digest": "sha256:ffb5c7efaab9b8fb748ae16055a07b299f0672494c5999129799ac172c52d81f",
+      "contentDigest": "sha256:ffb5c7efaab9b8fb748ae16055a07b299f0672494c5999129799ac172c52d81f",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:239f7ef9925751de3827a41ea96526f3e0596c5a350012f0841bb047370b38f3",
+          "size": 12866671
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/worker"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 12866671,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:3194412383da4c7884eab4c4175963c9a5df84a7a28eb99c1cc6cd6d5a1daa21"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    },
+    "gateway-identity-image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell-gateway-identity:acceptance",
+      "digest": "sha256:5a2c8e615eddffd98cb901ecaf8aa10fceff0d403c0defb6dccdfd81e4b9f434",
+      "contentDigest": "sha256:5a2c8e615eddffd98cb901ecaf8aa10fceff0d403c0defb6dccdfd81e4b9f434",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:6c5a2c649c1ef17a2172bd081ea1872a74c8e5fe1bfe597409cedc3657e7d8d3",
+          "size": 12601352
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/worker"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 12601352,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:5f2c39e936968b9137cc9712ddd75c07aafcb5fb1a33673644a139319f2d1e8d"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    },
+    "gateway-workload-image.json": {
+      "name": "image-registry.openshift-image-registry.svc:5000/stego-service-20260915-2fdc7e/hypershell-gateway-workload:acceptance",
+      "digest": "sha256:ce9cbe87bef9d3dfa45cda4c312fc5f3ffb442f573ee5a6a9cf1b4795d091f4f",
+      "contentDigest": "sha256:ce9cbe87bef9d3dfa45cda4c312fc5f3ffb442f573ee5a6a9cf1b4795d091f4f",
+      "listDigest": "",
+      "mediaType": "application/vnd.docker.distribution.manifest.v2+json",
+      "layers": [
+        {
+          "mediaType": "application/vnd.docker.image.rootfs.diff.tar.gzip",
+          "digest": "sha256:23a8295644f6bfb7245951c45a8709b8f6b8d8d44ea9822e868a0c4219a2da21",
+          "size": 14967470
+        }
+      ],
+      "config": {
+        "id": "",
+        "created": "2026-09-11T00:00:00Z",
+        "container_config": {},
+        "config": {
+          "User": "65532:65532",
+          "WorkingDir": "/",
+          "Entrypoint": [
+            "/worker"
+          ]
+        },
+        "architecture": "amd64",
+        "size": 14967470,
+        "rootfs": {
+          "type": "layers",
+          "diff_ids": [
+            "sha256:d5131674f00e4daba74187afde61b989b38e251453c0333cb04ccc20710a4b31"
+          ]
+        },
+        "history": [
+          {
+            "created": "2026-09-11T00:00:00Z"
+          }
+        ],
+        "os": "linux"
+      }
+    }
+  },
+  "source_sha256": {
+    "service.yaml": "1fe16c25f099bdc469a9ab9e747655de0f273b55c0eda182664126ccfe56f2f7",
+    "scripts/wait-service-result.sh": "cb385de128ec551f3dc1e03b70a5c03c2a9ef6d885548ac6de49302879179b3f",
+    "scripts/verify-jshell-ci.py": "edd85ddbd9813b31f36c8d9786706297075b1b58b480798d14aa18fde4ff4b7b",
+    "scripts/test_jshell_job_observation.py": "3ae8f890371c26d62fb69b4b4bae6cd218b0187feca2c06641d8e99a8b5dcfbf",
+    "scripts/test_browser_inspection.py": "f13d80b6b023ead6852c84e750072c2f964826aa3e27aad83cb0f9c9e459b0c6",
+    "scripts/test_browser_cluster_installation.py": "e21008cc3c8a69475c4bcace139a701b5dd7c714f9fa481506011f0d55051ad6",
+    "scripts/test-wait-service-result.sh": "7c4799e01827da388ed6a1ff96f97f760050be98f2cfe39fb0e16b56cd17da9f",
+    "scripts/service-image-digest.go": "b3de6bd1adb319af9713729ea1d48e406b4ad62b36a4e46ed80c73fdf5cfc589",
+    "scripts/service-image-auth.go": "393ccd7000f8b09000b258517dd9cb4ce7b8a06766b6d2ac5e519b08b9b53b46",
+    "scripts/sample-browser-resources.sh": "03799446e57e632206cf6cfa64570c73a322be6031cee2a4cb49e7f14930b6b1",
+    "scripts/run-service-deployment-pod.sh": "b146f84c0d219cd8bacab20b61928272440289e9a7591c6dd00ac138cd7001cb",
+    "scripts/run-browser-deployment-pod.sh": "c19c0a60f28d6949ad6099ad041e513c788d70efd203089604df533ef9c01a5c",
+    "scripts/publish-service-image.sh": "002051ab74d8ab6fe917fa560629134183cfc24fdb0db7c113aa78c417ad503b",
+    "scripts/prepare-kata-test.sh": "b9a32af61349507a285cd9ff9f9fafd2246f1a7b318d98671a1d7450aafc1206",
+    "scripts/prepare-jshell-ci.py": "95e1c102461b8bd89e9456c47e0708b4226a578995beb319b38af481ff30681e",
+    "scripts/prepare-browser-inspection.py": "f0cf8d96ca7c0ed82b02e8485dc64a7c777f43b9de887777464546ba7ea0e13e",
+    "scripts/prepare-browser-cluster.py": "f78498424e1f915095e330ab8eecaa070f1a12f84d568ba573c3bd249d7dfe62",
+    "scripts/jshell_live_lock.py": "6f248be29df0135ac6141e6b93f9751d6d470b8f866a9bc66cf17fe60fe08bf7",
+    "scripts/jshell_job_observation.py": "2137dacc0f9bd7a4de51613e480341f29d481ca8b22df98045f60fcce2fb9548",
+    "scripts/generate.sh": "58a72e9017fb223120be60d9487cc05429dc15a08ba6536c05bdcad29468ed90",
+    "scripts/enable-test-postgres-tls.sh": "830ef030d93494bafa82337215d6281a7129ba8223a03ca03175a69d5dfdc79b",
+    "scripts/cnpg-test-operator.py": "73c96604bd132701d8e54fa582946319c173aadef2a39093da2241060ef16676",
+    "scripts/check-workload.sh": "b74b840d691fd3712a13afca36700f58e4e2644cf52e83d58191ccd0f9da9f99",
+    "scripts/check-web-console.sh": "15a597a50703402baf0fda9fe0fdc18a7cc3da6b3070abe976a21ce00ebf9232",
+    "scripts/check-service-deployment.sh": "13db9c51472d78dcfb6b411bb2a5b9e7070db90f5b62dc6a00ed4fdf5b8da1c7",
+    "scripts/check-sandbox-workload.sh": "4d86a8207fcb407741934300c1cf9af65183045d48150798999fe7a4bc86f88c",
+    "scripts/check-jshell-gateway.py": "5a7950526f3a67198c0eb7b5e4b4c38a5f9b3325e684906e90090323b26dc78e",
+    "scripts/check-gateway.sh": "5a7bd088a10d6eb19b48a094fe818b337d65b82a786ea8a7ae477eda0bf61826",
+    "scripts/check-gateway-workload.sh": "cb8e698134316588e59c6d608b242dfbfc5b5f4cc983abb2261e692a59d7e342",
+    "scripts/check-external-egress.sh": "fbf9ae3711cf93fe03779c192bc0b713e8eaa864f599488ccfd1f9059d2b33e1",
+    "scripts/check-database-workflow.sh": "1ca34dac1e1dee4f68beda7dfcebfd674befd1379d3f0d130f5f8d2dd0f50b2d",
+    "scripts/check-database-volume-deletion.py": "1acb92e04fa01a58818e3bd5336e9a1c9876f2442637094e1794393817d5377e",
+    "scripts/check-count-namespaces.py": "17992aa1c78e0f06e1058099996edbb0fed00e709ea4d9ffd9112ea610a1011e",
+    "scripts/check-console-assets.sh": "370c74cd8b4a6711e0d21e48cf78ec38927a125d7f10ae9b4a6b2b7e7da23bce",
+    "scripts/check-cnpg-database.py": "7ff681ddf8691313eb511125a9a84e8b8873cd26357d380d551c8a40d4dfe672",
+    "contracts/upstream.json": "98fbab10e618c46255fe45f0c83532b1894070d2b6fad463a8f778d51f50d150",
+    "contracts/reference_test.go": "0eeccc347d15482ba3718ac507b0c31ac6a18534a78621cbeea09fe35d33c471",
+    "contracts/reference.go": "ab6a032941af233262b265041dbacc42c43e45495d75ee739402d31b029b4dd0",
+    "contracts/input_manifest_test.go": "e2ac6a5fd8f8dd91822d8ebd8daf56562c551b4d92305932ba77fe2c9283f1e9",
+    "contracts/console_deployment_test.go": "c17bd37d36cd88c460474081b32228b4298f13dca33f7bc9496cd9fdeae4ec42",
+    "contracts/active_test.go": "6e9f9ee99707479429e1ffbf2206f8805a0d3d5c74021e5911ac0b639b2085ff",
+    "contracts/active.go": "4c19363d238151f30b8e34dc8856aac9c498a7ce694065d5add7f2f1e65f7667",
+    "acceptance/workload_worker_test.go": "ef8ae61a8e8b495fab86178481f7e8324d2b4cb3d27b037dd513b02493a549c2",
+    "acceptance/worker_run_abort_test.go": "f75c7b115fd4ea59aa2b1f06715469a432e44477b9796087a2714398f9c85965",
+    "acceptance/watch_test.go": "5a50c839c70c8dc8eaf5dcfe2ba3db7e429f3532f99d7c723974e96714e147e2",
+    "acceptance/user_identity_test.go": "d21c1f788374c288cee25eb4ef2687f8ecb958dc18b4b21771a6a4bd5306728e",
+    "acceptance/tracing_test.go": "b458e2560a034f7638766ef652abd89211c88caa8ae6214b85a1f53fac2190fd",
+    "acceptance/telemetry_identity_test.go": "e6e50ddfc6168d1aea7cf7c3290e6489feb31b4b0f1e711c6bd179d3255c8f52",
+    "acceptance/task_abort_test.go": "45b144ac35e120f1bbfce8519bbe0762efa1f5a61190a6147f775a68ae280589",
+    "acceptance/sweep_observability_test.go": "efc74d9bea6ae88e61251b62a67d0600b75143f5bb3fca8935bd33c4717a0ec0",
+    "acceptance/shared_database_cleanup_test.go": "6f5c8c0e4b7a0167678af99bc080732a82a0792315c8fa27bdb047d3992b7d5b",
+    "acceptance/service_logging_test.go": "f921ff2ff87ce35e8a764b2f1130f9684ac7c36b23b6e88dc22ab2fe759bc488",
+    "acceptance/service_accounts_test.go": "2ef597773731dc5faf4e02edd201f6f20cfcf835abd7b5fe32c43ff565eb9168",
+    "acceptance/service_account_runtime_test.go": "ae593c77294cfa9c420aa54ee5d701fa25f7b75de6c05f8dca1e74d1c6c4fe04",
+    "acceptance/service_account_downgrade_test.go": "3e9819ee7e43a7bc36593813d1c93acafdd9927c4ecb44f574b269979b8e681b",
+    "acceptance/service_account_discovery_test.go": "ef0e941aaebd290c35e24e42c03264cb8f6cb8ef87cb547c44709283c828e7a1",
+    "acceptance/service_account_cli_test.go": "d7667670c0c36d7dfd22e5e184fa88251f8ac90e1c0ea150fe5febdc8c5234ae",
+    "acceptance/service_account_cleanup_test.go": "ce67811d093888daef47e58fbcc097f2ab92778f91f149912fe551d78d80554a",
+    "acceptance/search_test.go": "ee713c938031452e107f242bbd2d49302fced853c8f82d5269f1e9aa8fa2a392",
+    "acceptance/sdk_workflow_test.go": "e5fba1a291de10c86541247abf81db2f41124b7128795492e71cd8257b4cf688",
+    "acceptance/sdk_nullable_test.go": "f5a4195e53a4373b93af180994e023422212c99315b0dc519559d56da0a1d2e9",
+    "acceptance/sandbox_count_workload_test.go": "c7b096d0e659e8126a212082b7ccafe87e01a2cf35f5fc1af9c29bb03351f2e4",
+    "acceptance/runtime_test.go": "9005959db3220c7267d92a3511b373ce8fbe129632db4fedbc0f1834f483a134",
+    "acceptance/roles_test.go": "d4f674872b71b8564aaebe1f8b9d7843e5a279ff4e7d29d18448584ed0b94dda",
+    "acceptance/recovery_cursor_test.go": "ffb0d420ec7b2bd28f748ef8a904b9e0bc215646c8039359cb4cb388925b2066",
+    "acceptance/race_enabled_test.go": "d56fe8c2069662ea5afce6f04a7e517b735dfe9cbef8fcf24df0f7260c186b95",
+    "acceptance/race_disabled_test.go": "63eaf9a992e41e0b268bcdd8e52414b4e03deaf32a003dfa61eba2b53c17499e",
+    "acceptance/process_privacy_test.go": "4e282de6fbf0f074291deee73864449e24010683ca4f63a5ed21c52fbfaf4ada",
+    "acceptance/placement_catalog_test.go": "08cd791346ed44502854fcea67884b1a5e382e395f20eb6213a379234a2a2d49",
+    "acceptance/observability_test.go": "1e5fb9db58f80978fac4c83046f40311872d55478d734951b0cce68352c5b9cc",
+    "acceptance/network_test.go": "dc5c47835a5d75314d26ce1edd2df773861272de627788250cc66b523781d57c",
+    "acceptance/mutations_test.go": "730b5b7c05da65908f00062cef13e5abf659e6e3d9bd5999c9295c59359f0504",
+    "acceptance/mutation_transport_test.go": "53bd1e15c7e86b91f95961c8fd2f6369509ebe79e1f21416ac98f0bdd428d8e6",
+    "acceptance/kubernetes_service_test.go": "df55ddfc805f74a51a8ba1cda77696bf9a20ac74c52a0ff56b9cdd08ec79a6d0",
+    "acceptance/kubernetes_provisioner_test.go": "eea0e23bbdb01da310b45c1abe118b10071d4824d52ea6f71a147d14bcce5f24",
+    "acceptance/kubernetes_identity_test.go": "972640a76fb49545cfafbf58b62d76385e404aabe4f19ee629cebb99c6d3ce76",
+    "acceptance/kubernetes_browser_test.go": "f5fa915e43c6c410728ffc2f88b7672f21f928ec384bf7980da05925a6cfe39f",
+    "acceptance/keycloak_test.go": "8ab1cd58c94ce01a73d5ce3489c90e91a2fa339fcfd2985594a853793ba6e982",
+    "acceptance/keycloak_ordering_test.go": "a52d4170439923886910a321a79230a12e3380c7610af85fc99235548b9f0a08",
+    "acceptance/keycloak_late_create_test.go": "6caa2fb478b410b8ca8a6341f8128c6841336c619bccbf26d2877515ba574421",
+    "acceptance/keycloak_binding_test.go": "ab554542f5088bc46d4d5dd19277c06c6da6676b9ac51cf30e335f2a0b931dc4",
+    "acceptance/kafka_fixture_test.go": "cb8343dac82cb76075789ecdc227bc83a07e6c790b489eadedbd8e55474a0870",
+    "acceptance/identity_users_test.go": "3ef39a64b2213de0be477a3956ca98941acefb9b27c151f99aaec7e13474b40f",
+    "acceptance/identity_user_benchmark_test.go": "aada1fac6355d7a2edf0c02867ea318873b30ee914b087ecaf665fa0fc656cfc",
+    "acceptance/identity_test.go": "b5c38672ecb375a289ad13cac460d7d7c7daa18c627040bdec8c9ce1a8f8d4e3",
+    "acceptance/identity_retry_test.go": "610a06d32398312df5e7fc82191718f85dfb8595cf7f0b5fb655c2b3bb1784f0",
+    "acceptance/identity_query_test.go": "4905e17556afa4e1e54876fd008edfade60b2a36aaa91f6698971c4828d1aefe",
+    "acceptance/identity_cycle_test.go": "459df06e8c6d18e01257bee4af470b17413ffcffd503d6ac774d240bfd0579f1",
+    "acceptance/identity_cursor_test.go": "e7f916fdcffe0d2664fa8ed3b388f73dc81c5708d77220888e9085fd85a63429",
+    "acceptance/identity_condition_test.go": "299b1f39ac620b812723ce9bc9991c8e74797515f6aeab2b062f76597e35a39e",
+    "acceptance/identity_condition_race_test.go": "7d6406a4a7332d0e1f8969a9080195f41c1f71b308c2869b6226f200ea5e0770",
+    "acceptance/identity_checkpoint_test.go": "3b972a7c5520e2f7274f18b108e6bf0ea337ed0a7dfc792ca6b91d4802aad892",
+    "acceptance/http_test.go": "0fb3b375dd9f6e4ee59d7067f034329f9bb7407b710de6fe51e0e895fb96ee1d",
+    "acceptance/http_diagnostics_test.go": "951a06cb9cb36354f214d68faf00a5088c9f232b5087ce97ed1601ca6ddfd5ba",
+    "acceptance/http_client_observability_test.go": "97b125ad93ce0899e25deea1e01f4a33732505d97ad7caf00c29ea572efd2b60",
+    "acceptance/http_benchmark_test.go": "59d395e321c35a7789079263b6c8ec22378bc3e65ce32d1758fda30b8cdb4a8f",
+    "acceptance/health_test.go": "9c69edfe442220e792f166c7479369fa7b170ded91e3cd1886c66dc128225bbe",
+    "acceptance/grpc_tracing_test.go": "6aaebf45db272ac93c153bff71c98c297e50746fb07a03d598de010962e876ee",
+    "acceptance/grpc_test.go": "d15fce80834b6c1aacd91828d4a902fdc6d82c14ee309ccd3e187b28c8751b19",
+    "acceptance/grpc_benchmark_test.go": "db0d52dd323b7f1588802f7f399ea10e3c745416a3e71647bd94006ae585f9de",
+    "acceptance/grants_test.go": "eb59e2f91ed7a898114fecc1cf76212273d08f5f918b7f47efb01fbadb33478a",
+    "acceptance/grant_transport_test.go": "7c78eaaa5df1a570c5ff44139c642f8e0579b359cdeb436d8038ee6b311290ee",
+    "acceptance/grant_discovery_test.go": "9447287e5f7f9ebc55f64c696bd24318fd1a3ab9f0e387bf202acbc125cd57b7",
+    "acceptance/grant_discovery_limits_test.go": "da4748cdd1df985dd1a4b1d868fcaa5b67127b037dc36616fca851452384f4df",
+    "acceptance/grant_cli_test.go": "610a935aa3a056fd1170f75a35d0226e8c42b9e75c2cdbae7ddd59d2ef372393",
+    "acceptance/grant_benchmark_test.go": "2f6df9383cef4f3b6bf57a8a87b3ac79234bbf9cff14b416a4693d01d5b9d254",
+    "acceptance/global_roles_test.go": "3cf42bd5f8108bfc4edeb58885409af12d0477bfd0e8ff1fbe67524305295346",
+    "acceptance/global_role_concurrency_test.go": "046e05da9fe9f9faf025b9ce81a67c234b3c50ee3cd37f0c563bc57a9a5a7f64",
+    "acceptance/gateway_write_grants_test.go": "16f5c202882abb7f160a3e1b35f85a7b9fee3765e82a38fc4b976e753dc972df",
+    "acceptance/gateway_viewer_workload_test.go": "f3ebf524660bad362d64f09796c1eebc90e7406ddfe7a03f298b7650c0dd1e2a",
+    "acceptance/gateway_test.go": "c9879db7e54789a7f6271b25fc936c41c06a867ec6ee7714358f7fd740a7bc7c",
+    "acceptance/gateway_target_cleanup_test.go": "78760403623ec42cf163da2258e9bb6c9bce7cb54f0163ee96f5b244f4f9c2ca",
+    "acceptance/gateway_sql_cleanup_test.go": "7d79117fa074031510171d74723d49b4411bde8e6bffbb3195443635dcb5e758",
+    "acceptance/gateway_scheduling_test.go": "8194aad84ba7fb30199f265d4df4f64b36b7c0e53348ee24e909dcec2d8bfe28",
+    "acceptance/gateway_sandbox_workload_test.go": "641de42ad8842ce556f5373bc2ce6bb59f55fd504b0237c5d0c29f0d94d8ffbb",
+    "acceptance/gateway_revision_test.go": "ee4ab1796391df3a9063b1144ade22f46cdcc31250fad303ba502f02e0bab48e",
+    "acceptance/gateway_request_contract_test.go": "a20c5b8f4677dc1c6f3072d8c347032630fceec6a19b4758afae9c6820c8ffb2",
+    "acceptance/gateway_recovery_test.go": "2fa934600c03a7fa839898a328daaff1b1f02242af344b3fb49d7b4e5bcbe888",
+    "acceptance/gateway_reconcile_ids_test.go": "a6738223dcd7862fa2265ccd99559e553699773053c3745ee119213a099d091b",
+    "acceptance/gateway_parent_cleanup_test.go": "8a63a5d4224941dc71200573a5fbb24e0d7464dde7159c4e6c8ecba33c92c6d0",
+    "acceptance/gateway_observation_readiness_test.go": "94f3548c45dfc147190cb3af1e74f97405b6f37fcfbb127b9d9b6dcc6a58b25c",
+    "acceptance/gateway_observation_deadline_test.go": "5791690ea5b805d98c89078ecc14f6875fb5f2eb6ecab5460f8599275c71105d",
+    "acceptance/gateway_login_test.go": "e807a7fec87e976e9387f002744a97d1d5dffed084540eba35dadd599c233302",
+    "acceptance/gateway_kubernetes_fixture_test.go": "fde9b5259c0aff2f1cf6cbd99ff0b31722aec8622515472abba4f3469a0e7744",
+    "acceptance/gateway_identity_test.go": "beb0e404295eaa17ed8d16822c2223b596a74df76f8cf30c29401d177d5a4758",
+    "acceptance/gateway_identity_cleanup_test.go": "9ea937d3c3f8879f007f00fddfc0eb0a48a081b5307a0645b69660ecfdf82f84",
+    "acceptance/gateway_defaults_test.go": "0e5203dc9a4b50e6076d5b88a1ec13f35974a2e980b04779818c2bb9363507cb",
+    "acceptance/gateway_backlog_test.go": "f6f46a052f11a100fced59b2b05e1c1ed6587afef26e1762714d2abf1af6ab1d",
+    "acceptance/gateway_account_workload_test.go": "670146ab70c2223ad60ddd0f5d4184f688b9441762576831e644f45b69ecdd81",
+    "acceptance/gateway_account_keycloak_test.go": "a539377b7cc2eeb7e32e4669cb2edce8bcbd151cf3d494a36d420c947c640449",
+    "acceptance/gateway_account_deletion_test.go": "074d3c27c9666a8e47c73343f9cb3d60c05ca3bc48b71b1363595030a95c4555",
+    "acceptance/field_selection_test.go": "918ee7934b707080a7f4647654bd1c63b4d5859d01424ff0704d0f1bab15fcda",
+    "acceptance/database_tls_test.go": "142fdf900ea8f2eaa423b87b93fe30fc6bb26dc33f184a30ad5123fd69861142",
+    "acceptance/database_startup_test.go": "fd23ac2234489a171b046adeac2d203cdc6f284c20a4cc9033026d44a545888a",
+    "acceptance/database_secret_test.go": "6b1d08234205465345d3add530faa0f6b7f71b7a8071f5fab49f707083aa94cf",
+    "acceptance/database_pool_test.go": "dbc849f6597aa26d86ce921db4f79a09fb5f942c2d4adcf7d9ed9ba280301996",
+    "acceptance/database_placement_fixture_test.go": "9ec444ce8124fed031138fe529f23ef10350d9129c826d00a3a4b900c52b6d40",
+    "acceptance/database_observability_test.go": "3a572f9fb1f9e1e8e04f1825e42e78a5f93798a15d685b17e351b543e3976078",
+    "acceptance/database_kubernetes_test.go": "a117be7f0dbe3aaee549b3dd332f794c2269e29554349b71aab29788fb96f3f3",
+    "acceptance/current_user_test.go": "04034ba643364251e48af12185ee55a3cb2de0051bf8c56c34004a1c6b22c5c6",
+    "acceptance/current_user_concurrency_test.go": "4912d910a762e04df68b1caaa981f000b89a5396772d41fd8cf770a27d81bdeb",
+    "acceptance/counts_test.go": "e784133e36f06ff56227b26f62329cc1fd3089497cfb3aa013e8f69bf6a63cea",
+    "acceptance/count_transport_test.go": "1ecb04f1c91636e04698e2f0b646ecf68fadc97f81cf8edefae8568c0b0da9c7",
+    "acceptance/count_namespace_runtime_test.go": "cb1d457907029428586debff3da6b23901e87976c7b84734ee362c9a2697091e",
+    "acceptance/count_namespace_live_test.go": "abd7b9345e340e7fd51a79192db6c85c7232b168b92a04422e1b72ac71c65494",
+    "acceptance/count_grants_test.go": "f6e048c3b662ca5823228b78a3b35d305c714833cbeb0823752bf1a99eed59f6",
+    "acceptance/controller_observability_test.go": "b7a021309fed6b770f211a0dc3c895a843c2da75e50355c19e07e5d5842a1c6d",
+    "acceptance/controller_local_schema_test.go": "dbe2a6bef7ee916ef4ff0905aa51e5455b70e27218f07b4abfd96efa628f7214",
+    "acceptance/controller_local_cleanup_test.go": "fc6f0f35bda0588c0118808b46390c3e4b8febfd09555d7fa70ca5bae79ce291",
+    "acceptance/cli_workflow_test.go": "946be4650ebed95f9a843c94d8e28103944d5f55a8917217f113c64f1eff6d8a",
+    "acceptance/cli_version_test.go": "dcf4e13e4d9ade8b2b534548a2c596adfd2497a5abb1b80c8de4c37dca6d740a",
+    "acceptance/cli_oidc_test.go": "e3f602a5d397fbeee3d28d5ff43223e39db827c85bfab2bc46ebe317b3a5b50f",
+    "acceptance/cli_observability_test.go": "72d042b966f576beca0880634770a2327624f2ec9e9687bd51c5224bc35ab59e",
+    "acceptance/cli_cleanup_test.go": "e814ca826ba0b59d4e7cecf964f74edd6418e11076fec5acaedc0b518d0bf38d",
+    "acceptance/cli_apply_test.go": "635e81b1a437c3bd252b579a8e53a9a83f3ad856aa3a20a4307487ce4e87e35b",
+    "acceptance/cleanup_grants_test.go": "a9f817b35c534602a4f29c33f93fd8bc21aadca03f60cb6a3ab5056dd9c9380b",
+    "acceptance/catalog_event_fixture_test.go": "533f8199903f909c8ac5cc81a661c38d6925cc049ee24195b433041a19cbf6d0",
+    "acceptance/catalog_cli_test.go": "404ae74597477652f990632590231317c8df41f23b0a1bc60702ebdbf01cf8a0",
+    "acceptance/browser_workflow_test.go": "91de3cc14e4036ecaa8e3d992471fa00a14f5ebb460b2438ba77b0d067cff1a7",
+    "acceptance/browser_worker_signals_test.go": "ec5315d25eb98211fbb1be13c70d731e96eecc03b9ca690c75a218353007843a",
+    "acceptance/browser_worker_deployment_test.go": "9d9b4988716e8607db89f3cf6c4ece824d1c4dc0cf5b071284b58d1e54cc4b53",
+    "acceptance/browser_supplied_database_test.go": "7d1fa46e34ad8f3e14d4ca72e5937a3192299b0f59f2d6a7b9680222414f5659",
+    "acceptance/browser_sql_test.go": "d0de1f0d6ca07fac6b3c49f3eb7676b4dbab9db987e3b637ae343c53a639ac33",
+    "acceptance/browser_sql_fault_test.go": "a1aa26fb61f7100182d26d11de3da17e9e8c63674bcf04108d0b97377568ac85",
+    "acceptance/browser_installation_access_test.go": "13e4896dd8cba029b214d5fcd0ce195d9bcafc2e512df71859bff29508e249dc",
+    "acceptance/browser_gateway_workload_test.go": "8dbd9646a09b1549633da180f1321f5586a5abba097f0f29a43acf15eb7c603f",
+    "acceptance/browser_gateway_rpc_test.go": "4724d27fc80e0a82804f0280916f40d22f2b5f702506684c4462386abf9d85de",
+    "acceptance/browser_early_deletion_test.go": "1a4efb2c462d441e3aa2c5ff48588211c07f4c86a4ca8acbcf733f15a955aaf7",
+    "acceptance/browser_database_restart_test.go": "2a43330f927d7ca41d9acd1d0bc2561ff413da86b1abe5399a9e0be40dc74e40",
+    "acceptance/browser_database_deletion_test.go": "ccec754ebfb27389da1487e03b79c764e140863521b82961f40434bdd6edea73",
+    "acceptance/browser_allocation_test.go": "b4a95b44655fe4992057bf1b71ebd08a4f7e9814ce94b7a8a291ae496d85fa72",
+    "acceptance/browser_admission_test.go": "80925ef3e054e8857dc8a7b5ad39de7cc77858833e980628fd15c366e666323e",
+    "acceptance/browser_accounts_test.go": "0f1540476dd4606a7f9c0ae4e5c1ba95fa8475276d008b467873fd29ccbc3d56",
+    "acceptance/allocated_kubernetes_fixture_test.go": "b790f7ea2ad014d4282e28a7ac23743a6231511eacc938f59cb64b8e7d00ca04",
+    "contracts/gateway/source.json": "3222e892d6df033d8d5fe954bb77df3d1a78e422b27e31ec4422035093e801e4",
+    "contracts/gateway/sandbox.proto": "b2f05ac1a74790a335541b810ae17eb6cbe2372e78188954bb630d29b266d4ec",
+    "contracts/gateway/reference.go": "ec15be0dac1dffa6b1da0fabb5650d9eb68b45f98b085150e8dc546f0d7f57f4",
+    "contracts/gateway/options.proto": "10c8a99b505047f759951285fdae6068afd267ef672d00a65385a91ee8d027ee",
+    "contracts/gateway/openshell.proto": "467239fc7c0d740d2916dbdc0d7d2f4ff9abbabce10b92641a3add9fb1814e14",
+    "contracts/gateway/datamodel.proto": "48a071f5e61c975938999a0d7a41855a0a7bd82d611d22f21f353cacd55e5b51",
+    "contracts/gateway/LICENSE": "b967d1c87b93b7d61ebcf4f8737e6ad79e5433e743e49dff395a36fb3c327047",
+    "contracts/extensions/openapi.yaml": "642cce071b45694102fe959cf7bd81118767a306fad09dd8f4e3b1cbdc1fda1a",
+    "contracts/extensions/openapi.serviceAccounts.yaml": "8227acdc6912e1408e2dff81c17cfb67a229073b8c86abf31742adfad62bc6ca",
+    "contracts/extensions/openapi.roles.yaml": "7e80d4c5d090ecde1755b9c651c6ba87464d2a78b6b31a104961a53b9d82f8e8",
+    "contracts/extensions/openapi.roleBindings.yaml": "7bb7416d3a507dc868b09ea06575f3a697a6e7c0f54d00af395a67f8bacea273",
+    "contracts/extensions/openapi.managedClusters.yaml": "af6dd6dc32d1b52f543343faee5da6a7eae42b02b7d23525d4a76d4b529013c7",
+    "contracts/extensions/openapi.gateways.yaml": "8ddf6437f6c6c069f94461d80388c69db17664267dd813621d26c7dc9b54b9c6",
+    "contracts/extensions/openapi.gatewayReleases.yaml": "d664b5c2cf58fc3690c4cd41e3fd6bb5ee82551d7e32cef658738aa0995db135",
+    "contracts/extensions/openapi.gatewayNetworks.yaml": "bbe191a86efe586659d2d3fcc2078ec3e52c55c16cec5ff276f51317bc8a11e1",
+    "contracts/extensions/gateways.proto": "84ce8aac2404fb3200e149e07d2e3b4fa3349748b3cb6cf0eaa8ca66dc88d3f5",
+    "contracts/extensions/current-user.openapi.yaml": "3ce9a1ec4a9fe7f7ab8355d215a990bd8562bbf1bcf33acb8a280dcce249a9e2",
+    "contracts/controlplane/gateway_identity.proto": "ec8f369dc597ed69cdebf40dc476e424806ac18e4a312f9da6c0406f76ff3f44",
+    "contracts/reference/openapi/openapi.yaml": "a9815d0b0ad761770035ada57903491d410a9df1e1e3a543ca1b2f235b483da7",
+    "contracts/reference/openapi/openapi.serviceAccounts.yaml": "8227acdc6912e1408e2dff81c17cfb67a229073b8c86abf31742adfad62bc6ca",
+    "contracts/reference/openapi/openapi.roles.yaml": "7e80d4c5d090ecde1755b9c651c6ba87464d2a78b6b31a104961a53b9d82f8e8",
+    "contracts/reference/openapi/openapi.roleBindings.yaml": "7bb7416d3a507dc868b09ea06575f3a697a6e7c0f54d00af395a67f8bacea273",
+    "contracts/reference/openapi/openapi.managedDatabases.yaml": "498ff69362816341d4dd1fec184fbae63907cf5a4890f6b376b0a665fe4d7e74",
+    "contracts/reference/openapi/openapi.managedClusters.yaml": "af6dd6dc32d1b52f543343faee5da6a7eae42b02b7d23525d4a76d4b529013c7",
+    "contracts/reference/openapi/openapi.gateways.yaml": "b7758843defe17d4f3df3dd9ccbc59afc4a4ee92bc9f27f6f3169f24d5e4274a",
+    "contracts/reference/openapi/openapi.gatewayReleases.yaml": "d664b5c2cf58fc3690c4cd41e3fd6bb5ee82551d7e32cef658738aa0995db135",
+    "contracts/reference/openapi/openapi.gatewayNetworks.yaml": "bbe191a86efe586659d2d3fcc2078ec3e52c55c16cec5ff276f51317bc8a11e1",
+    "contracts/reference/proto/hypershell/v1/role_bindings.proto": "8b95aa1707a0fa8b129fa030d72fa3cb4bc56e5c7d5b7744f916fc08be92e843",
+    "contracts/reference/proto/hypershell/v1/managed_databases.proto": "111da14b826b09078af23eb241729a23a4d5cb0b9026189f5eba1a00bf5183f8",
+    "contracts/reference/proto/hypershell/v1/managed_clusters.proto": "d6faf0c02a37a167b1fada90746ace4c95874504fc20344a94ab3b8a30941db4",
+    "contracts/reference/proto/hypershell/v1/gateways.proto": "0e914cb960518a908971f55ee5f60ffa4dc2efcfc3767ecae617f26306344ae5",
+    "contracts/reference/proto/hypershell/v1/gateway_releases.proto": "02d77553d3b4c02e209edd71fe470065343236f7bf75f33be6ec397331f67a86",
+    "contracts/reference/proto/hypershell/v1/gateway_networks.proto": "61de59fe632ff9bf02978f03612de333522c34c4a2ff29b3542fe8ec5c046d26",
+    "contracts/reference/proto/hypershell/v1/common.proto": "c53d0bd311a8c066ae4b16ce102b274ecf988579b414365afb26fc38c5a52d07",
+    "contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto": "3045710da55d46d93687d4e52524e07cb5998a4bdc558168bba975e90cde2c15",
+    "internal/users/service.go": "2b71253b90bf6c02c1a86367ae65bb4e9e1831d73580a2b221ee5956882c8c0e",
+    "internal/serviceaccounts/service.go": "f59ffaf063769efaaa59d30f981334b953bf6816854af4a0d0ebf7c84dcfbfbc",
+    "internal/serviceaccounts/recovery.go": "ab82c195780b3d813d1806b74d97dde8798a80d86de69f4d050d0007ddb4c519",
+    "internal/serviceaccounts/queries.go": "630d82047b3ad1c1e4f9e62b0ec2be58fbbcc09bee72d6c5fe5b12963df19d2f",
+    "internal/serviceaccounts/provisioner.go": "fb833a5c74807404f5b653dd0a111c89c6145e46d7c8d1fff8360db271189b29",
+    "internal/serviceaccounts/oidc.go": "287511eeada247b2c940e789a7cca0d7efa3dcfbead5666c5dd6d685b45ddf52",
+    "internal/serviceaccounts/gateway_cleanup.go": "dee67d36927e0e0b4fe8d78e0ceb5bdeefcb75cbc92c7f7f6a57c50660b208ea",
+    "internal/serviceaccountprovisioner/server.go": "98ebffdc390852ee75ccc9c963934dad09d0c422e3d7a89c3ab5efae697937da",
+    "internal/serviceaccountprovisioner/rpc.go": "18900a065888f3b902a77947a46b80400d4562f2743b1455f1574695f4c3035a",
+    "internal/serviceaccountkeycloak/gateway_users_test.go": "9e310dc723381e0b3689f2a69dc0a095e58c254b1da47cfd98f1ebb47cf41e3f",
+    "internal/serviceaccountkeycloak/gateway_users.go": "b62fefd4697360cc3acad8f923ab72b015a88ebd937b9bf2a2e02a8b27ff8d4f",
+    "internal/serviceaccountkeycloak/gateway_test.go": "08d9f2d5b36d3b8c072201c99666c7cfd81bb87dba6ec3691fe92ca263df9aac",
+    "internal/serviceaccountkeycloak/gateway_cleanup_test.go": "17d8b46a495874d280a4e0119276f7c9ba19e295c0e0fd632008bd430d9fe714",
+    "internal/serviceaccountkeycloak/gateway.go": "04fdb5638ebf9f8bbbb657c6bdc2beeeb6025e413a1c512c255f8b1b69816aa2",
+    "internal/serviceaccountkeycloak/client_test.go": "2e15695aae63e0a6931136f3440e42e4a12a1c66a70b84b8fde281bb8728622e",
+    "internal/serviceaccountkeycloak/client.go": "5ca153d3138d72909414376694e1aed0016d0dde01616454f4ea6b324ca0a1eb",
+    "internal/schema/schema.go": "9ddd491d0a2e8ea90fe86c12d7be55e1801b224ba8abeedaf2b67d5c7d6f2b9e",
+    "internal/schema/bootstrap.sql": "a3296f87b379fd4a04684bc7ee930664720c76ca7b4da90265fc5af0716f60da",
+    "internal/sandboxcountapp/worker.go": "26fa53dd620a4c3b72d16c712e1f83e8a0d0b06c79b3f69e4e386a68bca5c369",
+    "internal/sandboxcount/state.go": "a1c136388d1e4ccb727c61dc7d62d6189cee78aeb74f69eb995cb959d2b45c2e",
+    "internal/sandboxcount/namespaces_test.go": "12b76302218e8b7c8079e4ae4c99a897898091fb7819aea5f7ea4482aaef7e28",
+    "internal/sandboxcount/controller_test.go": "fe19891a788d19c491e0cd0812859b4a82630b868a22f8d9564e644ebd155a97",
+    "internal/sandboxcount/controller.go": "11cd9c81e3b2c4a215d6040636dfaf8c05a08114449c4f56a0213eb8d0f24708",
+    "internal/roles/service.go": "f725598aa54e2af8cf41b6b9616e9c192c74d6c94ab68c6c89da9bfd76e34026",
+    "internal/resourceevents/events.go": "94c199d6530743c6d8e92da4238c07d1c3c80b86d62072fdd193606227c8a131",
+    "internal/namespaceallocationapp/worker.go": "3f11982b5129f36097c86d07b92658845df86b626d283700190f7f4173566e2f",
+    "internal/namespaceallocation/controller_test.go": "951212a2e4bf2b9bc6f12c724d490f1dc72286d94d98d3c08719cc5871890cde",
+    "internal/namespaceallocation/controller.go": "4e85226ad1ada603f21dd7377a166b5d798bae6baaa93e981afa20db8994a3e9",
+    "internal/httpapi/users.go": "fe7e40f73f3355b02c5bdea79d5e722930b2d3794a2d8029054b88d284b45e0b",
+    "internal/httpapi/service_accounts.go": "d0ea292351502d0d4c634f70fe66baa8991c6c81bdbd68eefcc31df43840c12d",
+    "internal/httpapi/roles.go": "507682108709d5f815c067f03c31ba05264abe403cc3589d3004d2fb45e39268",
+    "internal/httpapi/requests.go": "65acac3afad23b68a9f18c93d95b01d7edd57c272b75d2cefc92102fe2ba3faf",
+    "internal/httpapi/http.go": "fc3ab4f6ab35728f8845f8300d08776485c8c464c15ee267cbec02fb3f384804",
+    "internal/httpapi/grants.go": "a4bfb633d060b10cd5347484cccc1a60d239d35c0d604aa767c033ef31a82b18",
+    "internal/httpapi/fields_test.go": "c213cc2a56b5ffa13cff1c690c8208476e43fdae653198df5a7e29d8bffde72a",
+    "internal/httpapi/fields.go": "54e8e4559f0a2999d482b7a8e01e50c9d666a754d5c737c567568c7a5ab1e9fa",
+    "internal/httpapi/catalog.go": "f9d5b3d7edd826779b546ccf18cd98697c35f082bea707908a53e00f7e0ce542",
+    "internal/grpcapi/watch.go": "4d92ebd4f2b1f5b4150ebdb3e20b9d4820d39ca31167c41efb31771775061258",
+    "internal/grpcapi/sql_state.go": "8880bfe0bcd96b420a23dacef55b06dfe292503ea46ff5d21b7bca68b770a036",
+    "internal/grpcapi/networks.go": "8934202f9dd251c7f0d82071e15f8ff7b6360cdbe31366dda3eb6a6f991ed408",
+    "internal/grpcapi/identity.go": "cd4192482c1e5a4dbb8e0dacff4d24ac8912c483d7ba8c35d32439c8435fb80a",
+    "internal/grpcapi/grants.go": "f94e671b2341d62edf2396ea1ed2926f581c172b165df71c0927059aaf4a5e8b",
+    "internal/grpcapi/gateways.go": "9659cc0ed611d3d60a8d55f776c4542dde7b62ae3160e93470cfbab0a2a32aad",
+    "internal/grpcapi/cleanup_summary.go": "009258eecb48400ef7164685b0cd29845a3ceb6f6b93bc235af7106e88644b68",
+    "internal/grpcapi/catalog.go": "ba9d4c56c4cb06009cf7e67ed15439dd9797689f0808f8b05b6b97fac545eebd",
+    "internal/gatewayworkloadapp/worker.go": "50ac6c9d15c0fb5b8eebcb9d1ce21c32bbccc50b3d5d0d7b7ec5acac5d95cce4",
+    "internal/gatewayworkload/sql_state_test.go": "82178687a915448a66509cdd56d1212e699d445f395982a49dbcf975d3bd513b",
+    "internal/gatewayworkload/sql_state.go": "f4e80d1bab22bb80d4965294af41b24158046a520b7c46e6b8335256a7272f61",
+    "internal/gatewayworkload/sandbox.go": "2c98846c39651d707d91335183b15a6b4e3b954820cec6bc270954c1bc773056",
+    "internal/gatewayworkload/resources.go": "a88c168b03240cdaa25b219f90bbee1ae75729742e84c0becf3c1660dde94eb1",
+    "internal/gatewayworkload/kubernetes_test.go": "aea8c50a67f098cebd692825e982e0e475831e7f9644b9ef90b7492b837482c9",
+    "internal/gatewayworkload/kubernetes.go": "f271555ef81c0a31dee031951be83b95e4c79f399a5dbaff48ba938607bb96af",
+    "internal/gatewayworkload/keys.go": "8eef44a60eb3a022fa228d5b7cc0de8788327c053e572fbcd3a12930fc4e1225",
+    "internal/gatewayworkload/database_test.go": "f4bc9ea8aec8371afe2645a7dbc695c9eccc08208584dc556d8f44e8cfc8d42a",
+    "internal/gatewayworkload/database_live_test.go": "753e14cea1079aa6d45ba6e0a9159bee562c661959e001cc1952f68768b59022",
+    "internal/gatewayworkload/database.go": "cb40f499d64008798e27b2408574905d476a45d13d4fb49f98b134161994894c",
+    "internal/gatewayworkload/controller_test.go": "7c52cdadec69000c82ecc52e0165e83ea8140f93b88e44957c9fc589fd194daa",
+    "internal/gatewayworkload/controller.go": "bb196e39e9ec008e107917213aa8dd70206d305c88b9ee05bbbafb6196009394",
+    "internal/gatewayworkload/config.go": "db5840d5ae5a4d4f758a16a1fab7f03c7c55f4a046b303795021e939d0dc46d0",
+    "internal/gateways/watch.go": "9d5ad1cb60b356886f5e9fcccb334cdf49b3e99c8529d825c270e866878dc626",
+    "internal/gateways/sql_state.go": "d5801d2d32236eb2f06b7c634ca88936a8f20db11e01ddf4bedd85311eba1d58",
+    "internal/gateways/service.go": "6c58ee840e6291bfee76048140fe534716476f393ce06c0e78de50380c19cf17",
+    "internal/gateways/options_test.go": "7811e12e7fb44cfd40d08c7dc702c7105b13922684a1ea47bebeeb63109e5c47",
+    "internal/gateways/options.go": "053876d66b4eab7b17d2ff8d790e39b6efd9a8036b26006d6a7241246094e296",
+    "internal/gateways/mutations.go": "2990f016140847549f7c2197e67114405359c5269d7ba97be32b7f2b7171b1e3",
+    "internal/gateways/identity_users.go": "e60667c5d3e501a75874366f79d6b26051630318bba8a56e0f70fb2d7c8cbef0",
+    "internal/gateways/identity_state.go": "aa7a1ac17a97a3eedca9950cad17c4e3047f23b3c01e2b8ef7a3c56134b6c9ef",
+    "internal/gateways/identity_cycle.go": "106d2967cdc02cf128f98d4a2e6ee8f6fe4930ae89c99cfe446ac2f45382a529",
+    "internal/gateways/identity_condition.go": "0cce4e22f5bd0af8336b19eddc03ce59cfbae31a5eaf0868b6353240fb97f89d",
+    "internal/gateways/identity_checkpoint.go": "92d55a5b2f6b536a3d2625fccc219e125cc7a940f140609fb1ad832fc72615bb",
+    "internal/gateways/identity.go": "749d229ba68ab7eba16d98152ed32736b1b0b3d772bf6be651f075f006c4d1da",
+    "internal/gateways/grants.go": "34571f54fab6ddf7bfe9a0d4450840aa69e768ed3169c47a6ffeb9bdb888260b",
+    "internal/gateways/grant_queries.go": "f4c414fb7d838cc4e903ecc30cb569b9e14e04ee3d083e6afeb03a28cdb2aff5",
+    "internal/gateways/global_roles.go": "f502b71bf87f87479963e1b5c686626d4af32894a0a1cf57199fd5af200d7ac5",
+    "internal/gateways/counts.go": "f04bae7f9c09279b3961d30f15feb298ac414c546d907cc6c69ac558bcd81359",
+    "internal/gateways/controller_writes.go": "f10721b0988ea3fc7f39bf7081492a31cf7687015b0a347c8dafa45a3b7e1fa5",
+    "internal/gateways/cleanup_summary.go": "d6e6e3442a960fda3caac6e95be585ba87c42c4e33fa4bdfe6b571089d89bd48",
+    "internal/gateways/catalog_policy.go": "9e028dabedf0fd153580574e896f753314405178b37b750c2bcab8204d91b2ae",
+    "internal/gatewayrecovery/source.go": "53b9ec63c360cb59c7f85174cb8f34cd0a4a7f3fedb3ac588cdb9f8341e22f6e",
+    "internal/gatewayidentityapp/worker.go": "1e9eba83e181d6dc1a5c19d1717ceaed8f89ce03b16a54ab5ea12242b87ee3fe",
+    "internal/gatewayidentity/watch_retry_test.go": "2da24a990178273ee6166a8b9642813d2d479a078e1e13b226f79b7e4721d75e",
+    "internal/gatewayidentity/user_cursor_contract_test.go": "29322018f708dae0bac26b6d66770f23288391556e9178ed0b2ef4cf1224ba88",
+    "internal/gatewayidentity/user_backlog_test.go": "e0dd395b998125743cb25f7f5aa222cae871de806aba246b532c93bc63059efe",
+    "internal/gatewayidentity/inventory_retry_test.go": "43a6991c6b11451416753ca252eadacb8f77e26b381daec40cd72e3f116b4105",
+    "internal/gatewayidentity/controller_test.go": "b882e4a0ea13bdf3ca80580ef1c532b0d7bcd3a393c57f95b278fa7fe70d71c3",
+    "internal/gatewayidentity/controller.go": "c077e595a1dc029f6c7b4378c4c1e95a8d6318e9a4705703103b9b1d5e2dc4e6",
+    "internal/gatewayidentity/concurrent_users_test.go": "227b2e27e51fd32ca8975a0966d769560babaa5a33955116949f4f510cd3c748",
+    "internal/gatewayidentity/checkpoint_fixture_test.go": "1e3b77043da00e78b3a485ba963ff79fe7dcfbd433b203faa99ee21d67dc0268",
+    "internal/cli/grants.go": "a340e095f68e6519294171b6c26e172cdbb544417357ecc5c63a61da62c9e78c",
+    "internal/cli/commands_test.go": "afc76e8118a8926c9f4003291cf149ec8e0a96c5ac56e6459c12d7a714d1c61a",
+    "internal/cli/commands.go": "500ca559277d978e4ec9aa6a765a70a41d447a53bb13cd6434dbfe9908c42e6e",
+    "internal/cli/catalog.go": "d4a82a26417a2d3445962274c7c1d5ea5b4932a10308a50ecafaa6f3514cd6f6",
+    "internal/cli/apply.go": "1db56f32bf189ebc099019122fb7f3044e8df71baa5b99c5e664c2b1a894c4c4",
+    "internal/cleanupmetrics/source_test.go": "bb5f32c5f7bdf3928c526996493aaff07f666126e267775028ec70a740f96933",
+    "internal/cleanupmetrics/source.go": "592691edf03dfc4142d11067b85369daa77dc1774b4990b151cc50767a6ad237",
+    "internal/catalog/networks.go": "c75f929b6f87f5f83dbc32b6265b7fd9a2488b9ee6733c7bbce09b76ecaf824b",
+    "internal/catalog/catalog.go": "08c8fa6d0612215cf08fa68662c7f6e3a45df0d9dec1a267da279deeb9734732"
+  },
+  "limits": [
+    "The PostgreSQL restart uses the bounded test sidecar. Installation CNPG and RDS failover remain unproven.",
+    "Workload namespace replacement, denied SQL cleanup with retained keys, encrypted data at rest, viewer recovery, and Sandbox/Kata execution remain required.",
+    "The old Kubernetes CI runners still require conversion. This result is not a full CI or production-readiness claim.",
+    "The fixed test control namespace remains trusted. An operator installs cluster policy. Unattended workload CI conversion remains open."
+  ],
+  "session_checks": [
+    "terminated its existing session; the other Gateway session remained open",
+    "preserved credentials, keys, and provider data"
+  ],
+  "compiler_ci": "https://github.com/jsell-rh/stego/actions/runs/34927554750",
+  "fixture_exec_patch": [
+    {
+      "op": "test",
+      "path": "/metadata/uid",
+      "value": "82d81e74-ba4a-4204-ad29-7026c54c302d"
+    },
+    {
+      "op": "test",
+      "path": "/metadata/resourceVersion",
+      "value": "6110021"
+    },
+    {
+      "op": "add",
+      "path": "/rules/3/resourceNames/-",
+      "value": "service-check-s829q"
+    }
+  ],
+  "admission_probes": [
+    {
+      "Name": "foreign namespace",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.allocation"
+    },
+    {
+      "Name": "quota change",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.allocation"
+    },
+    {
+      "Name": "allocation identity change",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.ownership"
+    },
+    {
+      "Name": "retained fingerprint change",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.ownership"
+    },
+    {
+      "Name": "retained fingerprint removal",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.ownership"
+    },
+    {
+      "Name": "foreign inspection subject",
+      "Code": 422,
+      "Policy": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.allocation"
+    }
+  ],
+  "installation_access": [
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "bind",
+      "Name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.gateway-worker",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "bind",
+      "Name": "system:openshift:scc:nonroot-v2",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterroles",
+      "Verb": "escalate",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterrolebindings",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterrolebindings",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "rbac.authorization.k8s.io",
+      "Resource": "clusterrolebindings",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicies",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicies",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicies",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicybindings",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicybindings",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "admissionregistration.k8s.io",
+      "Resource": "validatingadmissionpolicybindings",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "serviceaccounts/token",
+      "Verb": "create",
+      "Name": "hypershell-namespace-allocation",
+      "Allowed": false
+    },
+    {
+      "Namespace": "stego-service-20260915-2fdc7e",
+      "Group": "",
+      "Resource": "serviceaccounts/token",
+      "Verb": "create",
+      "Name": "hypershell-namespace-allocation",
+      "Allowed": true
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "list",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "watch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "",
+      "Resource": "pods/exec",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "default",
+      "Group": "apps",
+      "Resource": "deployments",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "list",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "watch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "",
+      "Resource": "pods/exec",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "kube-system",
+      "Group": "apps",
+      "Resource": "deployments",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "",
+      "Resource": "namespaces",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "",
+      "Resource": "namespaces",
+      "Verb": "patch",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "",
+      "Resource": "namespaces",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "authentication.k8s.io",
+      "Resource": "tokenreviews",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "",
+      "Group": "",
+      "Resource": "nodes",
+      "Verb": "list",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "agents.x-k8s.io",
+      "Resource": "sandboxes",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "openshell-gateway-db-credentials",
+      "Allowed": true
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "unrelated",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "list",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "patch",
+      "Name": "openshell-gateway-db-credentials",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": true
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "",
+      "Resource": "pods/exec",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-ea85119b177fbb17",
+      "Group": "apps",
+      "Resource": "deployments",
+      "Verb": "patch",
+      "Name": "openshell-gateway",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "openshell-gateway-state",
+      "Allowed": true
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "get",
+      "Name": "unrelated",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "list",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "secrets",
+      "Verb": "patch",
+      "Name": "openshell-gateway-state",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "get",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "create",
+      "Name": "",
+      "Allowed": false
+    },
+    {
+      "Namespace": "openshell-state-17368866ea85119b177fbb1734bfa3baa86c5958",
+      "Group": "",
+      "Resource": "pods",
+      "Verb": "delete",
+      "Name": "",
+      "Allowed": false
+    }
+  ],
+  "operator_installation": {
+    "namespace": "stego-service-20260915-2fdc7e",
+    "source_sha256": {
+      "out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+      "out/deploy/render/manifest.json.tmpl": "460eeec60b8155e9c62828142ba55a829ef3f24b594f581ba33d56fcd52ad60f",
+      "out/deploy/render/rpc-provisioner.json.tmpl": "971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b",
+      "out/deploy/render/worker-gateway-identity.json.tmpl": "a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5",
+      "out/deploy/render/worker-gateway-workload.json.tmpl": "eb45d144303edd7f90dc0cc926590fa01dbc9e877b08772e44e5d1cf5a418992",
+      "out/deploy/render/worker-namespace-allocation.json.tmpl": "9bfe42aea0d6f5813d2c58385fcf632b3973234ead822ffe04748294ed70760d",
+      "out/deploy/render/worker-sandbox-count.json.tmpl": "962635b1d71def1bdc3503322cc4e8e4a2279be43649a4767a73d5631c40a454",
+      "console/out/deploy/render/main.go": "d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b",
+      "console/out/deploy/render/manifest.json.tmpl": "0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d"
+    },
+    "manifests": {
+      "hypershell": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806",
+      "hypershell-console": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806",
+      "hypershell-provisioner": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806",
+      "hypershell-namespace-allocation": "706e97f3555232a5a1971b72cb7c7d249d32c3da7fbd5da6475bd13150c981a8",
+      "hypershell-gateway-identity": "74c3dc52dcfbf3e174c9c302d56c8093a810d92cee817f8b9766f11e1fe14806",
+      "hypershell-gateway-workload": "bfbef150d8fe28ab3bd4e8cd8f4b42c38b7686933cc0d3c3545b889a18142f7d"
+    },
+    "resources": [
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.allocation",
+        "uid": "60dec513-7c76-46b3-914b-f97b78f356ed"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.allocation",
+        "uid": "3c455319-6a32-47b4-9c1e-2f6ae2cb9d25"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.ownership",
+        "uid": "9b83cf97-e4d5-4553-af98-40b6d589c208"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.ownership",
+        "uid": "0e3a6bd5-fefc-4c71-92d1-8b745ea55aa5"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.resources",
+        "uid": "e0d7a138-452f-4499-9324-05e7b7b3e28c"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.resources",
+        "uid": "01ae8747-60d3-4e1b-9fb5-56d34e92dd26"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.fixture-gateway-inspector",
+        "uid": "5b45bb7e-4e22-42a9-866f-ecbd209d99eb"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.fixture-state-inspector",
+        "uid": "8a15e0e8-b5a2-4a3f-992d-c2228595cb14"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.sandbox-count",
+        "uid": "a0eb57d8-58c4-4432-9b03-6a6ade16552d"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.gateway-state",
+        "uid": "eaba333a-6a91-4088-93aa-77b17d1101bf"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.gateway-worker",
+        "uid": "4e9b351a-cfe6-4638-8240-e4bb625c47a1"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.gateway-runtime",
+        "uid": "6c092a4e-0306-4a91-a8b3-8cf65704c1ed"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.gateway-reviews",
+        "uid": "e9dc718d-ef87-4101-b2e0-cbf530473776"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation.proof",
+        "uid": "c9ef76ae-5784-4e08-826b-b8b95d9e7e81"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation",
+        "uid": "d2134e29-4db8-4cb1-bb63-e05ee43f668a"
+      },
+      {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-service-20260915-2fdc7e.hypershell-namespace-allocation",
+        "uid": "e01f7211-8e78-448e-8304-1c9a2deecaba"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-20260915-2fdc7e.hypershell-gateway-workload",
+        "uid": "3d70a68d-02e3-4f2d-98e1-85cb2f01208f"
+      },
+      {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-service-20260915-2fdc7e.hypershell-gateway-workload",
+        "uid": "2770ffbd-20fb-42ad-8dd8-79a37addbf03"
+      }
+    ],
+    "policy_type_checks": "success"
+  },
+  "unit_checks": [
+    {
+      "command": "python3 scripts/test_browser_cluster_installation.py",
+      "passed": 7,
+      "cluster_requests": 0
+    },
+    {
+      "command": "python3 scripts/test_browser_inspection.py",
+      "passed": 6,
+      "cluster_requests": 0
+    }
+  ],
+  "fixture_declaration": {
+    "source_sha256": "4415c6f95661d7cd7fdf0f8837f43c064974b3496f1b3c8ee3c5fb22dd761fae",
+    "changed_files": [
+      ".stego/state.yaml",
+      "out/deploy/allocation/allocation.go",
+      "out/deploy/render/worker-namespace-allocation.json.tmpl",
+      "service.yaml"
+    ],
+    "inspection_roles": [
+      {
+        "Name": "fixture-gateway-inspector",
+        "Scope": "namespace",
+        "Rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resourceNames": [
+              "openshell-gateway-db-credentials",
+              "openshell-gateway-keys",
+              "openshell-server-tls"
+            ],
+            "resources": [
+              "secrets"
+            ],
+            "verbs": [
+              "get"
+            ]
+          },
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resourceNames": [
+              "stego-allocation"
+            ],
+            "resources": [
+              "resourcequotas"
+            ],
+            "verbs": [
+              "get"
+            ]
+          },
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resources": [
+              "pods"
+            ],
+            "verbs": [
+              "delete",
+              "get",
+              "list",
+              "watch"
+            ]
+          },
+          {
+            "apiGroups": [
+              "apps"
+            ],
+            "resourceNames": [
+              "openshell-gateway"
+            ],
+            "resources": [
+              "deployments"
+            ],
+            "verbs": [
+              "get",
+              "list",
+              "watch"
+            ]
+          }
+        ]
+      },
+      {
+        "Name": "fixture-state-inspector",
+        "Scope": "namespace",
+        "Rules": [
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resourceNames": [
+              "openshell-gateway-state"
+            ],
+            "resources": [
+              "secrets"
+            ],
+            "verbs": [
+              "get"
+            ]
+          },
+          {
+            "apiGroups": [
+              ""
+            ],
+            "resourceNames": [
+              "stego-allocation"
+            ],
+            "resources": [
+              "resourcequotas"
+            ],
+            "verbs": [
+              "get"
+            ]
+          }
+        ]
+      }
+    ],
+    "render": {
+      "production_sha256": "e9257bda93d9250fa2ceb3e1147f810757f05937203085e12a7666b933a02f8f",
+      "fixture_sha256": "b7c76eab780ad125b63c6757427a670338c7b106ffe1d3054b6e0c828c421086",
+      "scope": "Two namespace roles, allocator bind names, and declared namespace binding cases only."
+    },
+    "production_source_matches": true,
+    "fixture_source_matches": true,
+    "production_source_inventory_sha256": "e9fb20b1e88aacc6116436fff601473545e9cf9c7fb7f0ebcb808eeb5e323598"
+  },
+  "earlier_attempts": [
+    {
+      "result": "failure",
+      "scope": "The full workflow failed at an admission message expectation. No full workflow pass.",
+      "namespace": "stego-service-20260915-d5ebb2",
+      "workflow_seconds": 156.74,
+      "access_checks_completed": 57,
+      "failure": "allocation dry-run was not denied by the expected policy allocation identity change 422",
+      "public_reproduction": "The allocator identity receives ValidatingAdmissionPolicy allocation: Allocator cannot change resource ownership.",
+      "correction": "Expect the allocator ownership validation message. No permission change.",
+      "first_second_generation_equal": true,
+      "post_test_generation_present": false,
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-d5ebb2",
+        "owned_resources_absent": true
+      },
+      "job_status": {
+        "conditions": [
+          {
+            "lastProbeTime": "2026-09-15T05:15:17Z",
+            "lastTransitionTime": "2026-09-15T05:15:17Z",
+            "message": "Job has reached the specified backoff limit",
+            "reason": "BackoffLimitExceeded",
+            "status": "True",
+            "type": "FailureTarget"
+          },
+          {
+            "lastProbeTime": "2026-09-15T05:15:17Z",
+            "lastTransitionTime": "2026-09-15T05:15:17Z",
+            "message": "Job has reached the specified backoff limit",
+            "reason": "BackoffLimitExceeded",
+            "status": "True",
+            "type": "Failed"
+          }
+        ],
+        "failed": 1,
+        "ready": 0,
+        "startTime": "2026-09-15T05:05:46Z",
+        "terminating": 0,
+        "uncountedTerminatedPods": {}
+      },
+      "artifact_sha256": {
+        "deployment.log": "cf30ebaafb0dd61952e7f92c28c729674ee6ee3f1077a545acaa203bd7109c61",
+        "evidence.tar": "993d032e903906d991878b7eb4064697933e8b41d8d47ddb2010df1c50688c33",
+        "cleanup.json": "fe0eb4aaeca53e3a35474b27903266764e9fe17eda526b3b1873d9fb139b88cd",
+        "job-status.json": "763b844759f4aee609f278573f3f2615e46d178e5215df24fade1264b8a1c434"
+      }
+    }
+  ],
+  "visual_review": {
+    "verify.json.png": "The Gateway is Healthy. Connection commands remain pending because this fixture does not publish an external endpoint. This image does not prove external connection-command delivery.",
+    "accounts-delete.json.png": "The Gateway is Healthy and its service-account list is empty after deletion."
+  },
+  "image_reproducibility": {
+    "images": {
+      "hypershell": "sha256:307d8a7e6623183d271b5a61a748ab89e262f8277464d557c155897142f3cf65",
+      "hypershell-console": "sha256:a001ba22f6ebf0a568b1cb6b2bdc9965a2ef3148c74bb4b09f50fe9bce7605af",
+      "hypershell-provisioner": "sha256:583a96da6a8361e9205d7d3f7d429c0b664d68f02d701bf68b5a9fced1f826ff",
+      "hypershell-namespace-allocation": "sha256:ffb5c7efaab9b8fb748ae16055a07b299f0672494c5999129799ac172c52d81f",
+      "hypershell-gateway-identity": "sha256:5a2c8e615eddffd98cb901ecaf8aa10fceff0d403c0defb6dccdfd81e4b9f434",
+      "hypershell-gateway-workload": "sha256:ce9cbe87bef9d3dfa45cda4c312fc5f3ffb442f573ee5a6a9cf1b4795d091f4f"
+    },
+    "failed_and_corrected_images_equal": true
+  }
+}

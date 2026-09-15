@@ -15,7 +15,7 @@ import (
 // These dry-run bodies contain only public allocation data. Read their bounded
 // Status response to prove the expected policy denied them. Production clients
 // must continue to omit API response bodies from errors.
-func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, token string) {
+func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, gateway, marker, token string) {
 	w.t.Helper()
 	if token == "" {
 		w.t.Fatal("allocator test identity is unavailable")
@@ -35,13 +35,13 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 		name, method, path string
 		body               kube.Object
 		rules              []rule
-		harness            bool
 	}{
-		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}, false},
-		{"quota change", "PATCH", "/api/v1/namespaces/" + state + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}, false},
-		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, true},
-		{"retained fingerprint change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": "changed-public-fingerprint"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, false},
-		{"retained fingerprint removal", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": nil}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, false},
+		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}},
+		{"quota change", "PATCH", "/api/v1/namespaces/" + state + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}},
+		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}, {"allocation", "Allocator cannot change resource ownership"}}},
+		{"retained fingerprint change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": "changed-public-fingerprint"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}},
+		{"retained fingerprint removal", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": nil}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}},
+		{"foreign inspection subject", "PATCH", "/apis/rbac.authorization.k8s.io/v1/namespaces/" + gateway + "/rolebindings/stego-" + marker + "-5?dryRun=All&fieldValidation=Strict", kube.Object{"subjects": []any{kube.Object{"kind": "ServiceAccount", "name": "service-check", "namespace": "default"}}}, []rule{{"allocation", "Binding must match its allocated namespace"}}},
 	}
 	type result struct {
 		Name   string
@@ -58,20 +58,7 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 		if probe.method == "PATCH" {
 			contentType = "application/merge-patch+json"
 		}
-		bearer := token
-		if probe.harness {
-			// Also prove that ownership protection applies to the test actor.
-			value, err := transport.ReadPrivateFile(w.options.TokenFile)
-			if err != nil {
-				w.t.Fatal("admission test identity is unavailable")
-			}
-			bearer = strings.TrimSpace(string(value))
-			clear(value)
-			if bearer == "" {
-				w.t.Fatal("admission test identity is empty")
-			}
-		}
-		response, err := client.Do(ctx, probe.method, probe.path, http.Header{"Authorization": {"Bearer " + bearer}, "Content-Type": {contentType}, "Accept": {"application/json"}}, body)
+		response, err := client.Do(ctx, probe.method, probe.path, http.Header{"Authorization": {"Bearer " + token}, "Content-Type": {contentType}, "Accept": {"application/json"}}, body)
 		if err != nil {
 			w.t.Fatal("admission dry-run transport failed")
 		}
@@ -113,5 +100,5 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 			w.t.Fatal("cannot write admission evidence")
 		}
 	}
-	w.t.Log("Five server dry-runs were denied by the expected generated admission rules; stored namespace, quota, and fingerprint remained unchanged")
+	w.t.Log("Six server dry-runs were denied by the expected generated admission rules; stored namespace, quota, and fingerprint remained unchanged")
 }

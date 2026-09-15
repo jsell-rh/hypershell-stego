@@ -31,11 +31,12 @@ the DeleteOptions body through its
 Normal REST Gateway deletion must still finish before fixture cleanup. The
 outer operator process owns fallback cleanup after a test failure.
 
-This is not yet the restricted workload CI fixture. The test identity still has
-broad namespace and Secret access for workload inspection. That access must be
-limited to the control namespace and namespaces assigned by the test allocator.
-The Gateway, CNPG, and Sandbox CI checks remain required and must not be reported
-as passed until their installation fixtures work with the restricted identity.
+The result below used broad namespace and Secret access for workload inspection.
+The current fixture removes those rights and uses
+[declared namespace inspection](browser-inspection.md). Its complete live check
+passed in 342.91 seconds. The Gateway, CNPG, and Sandbox CI checks remain open and must
+not be reported as passed until their installation fixtures work with the
+restricted identity.
 
 The complete Kubernetes browser workflow passed in 330.01 seconds. All 17 live
 installation-access checks passed. The six deployments matched the operator's

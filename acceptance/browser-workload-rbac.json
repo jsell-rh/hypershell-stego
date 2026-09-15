@@ -17,54 +17,10 @@
             ""
           ],
           "resources": [
-            "namespaces",
-            "secrets",
-            "configmaps",
-            "persistentvolumeclaims",
-            "services",
-            "serviceaccounts",
-            "pods",
-            "pods/log",
-            "events",
-            "resourcequotas",
-            "limitranges"
+            "namespaces"
           ],
           "verbs": [
-            "get",
-            "list",
-            "watch",
-            "create",
-            "patch",
-            "delete"
-          ]
-        },
-        {
-          "apiGroups": [
-            "apps"
-          ],
-          "resources": [
-            "deployments"
-          ],
-          "verbs": [
-            "get",
-            "list",
-            "watch",
-            "create",
-            "patch",
-            "delete"
-          ]
-        },
-        {
-          "apiGroups": [
-            "cert-manager.io"
-          ],
-          "resources": [
-            "certificates"
-          ],
-          "verbs": [
-            "get",
-            "create",
-            "patch"
+            "get"
           ]
         },
         {
@@ -72,70 +28,22 @@
             "rbac.authorization.k8s.io"
           ],
           "resources": [
-            "roles",
-            "rolebindings",
-            "clusterroles",
+            "clusterroles"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
             "clusterrolebindings"
           ],
           "verbs": [
             "get",
             "list"
-          ]
-        },
-        {
-          "apiGroups": [
-            "authentication.k8s.io"
-          ],
-          "resources": [
-            "tokenreviews"
-          ],
-          "verbs": [
-            "create"
-          ]
-        },
-        {
-          "apiGroups": [
-            ""
-          ],
-          "resources": [
-            "nodes"
-          ],
-          "verbs": [
-            "get",
-            "list",
-            "watch"
-          ]
-        },
-        {
-          "apiGroups": [
-            "agents.x-k8s.io"
-          ],
-          "resources": [
-            "sandboxes",
-            "sandboxes/status"
-          ],
-          "verbs": [
-            "get",
-            "list",
-            "watch",
-            "create",
-            "update",
-            "patch",
-            "delete"
-          ]
-        },
-        {
-          "apiGroups": [
-            "coordination.k8s.io"
-          ],
-          "resources": [
-            "leases"
-          ],
-          "resourceNames": [
-            "@ALLOCATOR_MARKER@"
-          ],
-          "verbs": [
-            "get"
           ]
         }
       ]

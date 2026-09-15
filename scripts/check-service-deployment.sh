@@ -17,6 +17,7 @@ workload=${STEGO_TEST_BROWSER_WORKLOAD:-0}
 if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
+  test -s acceptance/browser-inspection-source.json
 fi
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"

@@ -15,6 +15,11 @@ Hypershell must supply its unique business rules and application workflows
 through explicit extension points. No STEGO component may depend on a Hypershell
 entity name or application rule.
 
+The browser workload test uses STEGO's existing allocation model for
+[restricted inspection](acceptance/browser-inspection.md). Its complete workflow
+passes with named Secret reads and namespace permissions. The fixture adds no
+production worker rights. Unattended workload CI conversion remains open.
+
 The variant now has a Gateway domain service over STEGO-generated storage and
 event delivery. Its generated process now serves Gateway creation, retrieval,
 patches, deletion, and filtered lists over REST and gRPC. Gateway watch streams
