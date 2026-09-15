@@ -54,8 +54,10 @@ component may depend on a Hypershell entity name.
 
 The source now removes the field from requests, responses, storage, SDK inputs,
 and the console. The database catalog and server resource controller are removed.
-The replacement workload controller uses STEGO's SQL lifecycle. The full
-application gate has not passed on this model. The earlier registration and CNPG resource
+The replacement workload controller uses STEGO's SQL lifecycle. The
+[real browser workflow](controller-local-test-transition.md#supplied-server-browser-result)
+now passes with a supplied PostgreSQL server. The full application gate has not
+passed on this model. The earlier registration and CNPG resource
 tests are historical evidence; they do not establish this new contract.
 
 The next application gate must create a Gateway without a database field or
@@ -139,12 +141,14 @@ runs entity, outbox, and role setup in the same guarded bootstrap transaction.
 A recognized generation does not repeat setup. Old or unknown schema state is
 rejected before application writes. Historical migration files remain unchanged.
 
-The application test conversion is incomplete. In particular, the old catalog,
-CNPG resource, and live workload fixtures still refer to removed types. The full
+The application test conversion is incomplete. Three old live workload and
+recovery files still refer to removed types. The full
 `generate.sh` dependency check and acceptance suite remain required. A limited
-production build or state unit test is not the application gate. Cleanup before
-initial state creation, loss of local state, installation network policy, and
-real controller-local SQL behavior require end-to-end checks before release.
+production build or state unit test is not the application gate. The real
+supplied-server browser workflow now checks SQL isolation, generated worker
+access, restart, and normal deletion. Cleanup before initial state creation,
+the remaining state-loss and SQL fault cases, database-server restart,
+installation CNPG, and actual RDS checks remain required before release.
 
 ## Focused application check
 

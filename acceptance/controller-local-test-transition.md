@@ -4,6 +4,11 @@ The `ManagedDatabase` API and its server-resource controller are retired.
 Their CRUD, provider-selection, observation, and replay tests no longer describe
 an application interface. Git history retains those tests and their old evidence.
 
+The real browser workflow now passes with installation-supplied PostgreSQL.
+The [recorded result](controller-local-browser-evidence.json) includes the six
+failed attempts and the remaining full-package limits. This result does not
+make the full application CI gate pass.
+
 The conversion keeps tests for behavior that remains required:
 
 | Retired test area | Current check or remaining work |
@@ -175,3 +180,42 @@ test omitted the `public` schema. The generated SQL reader uses the fixed
 makes the same read before it starts the workflow. No runtime SQL permission
 or search path changed. The sixth Job and its resources are gone, and the
 shared Lease is free. A new complete browser result remains required.
+
+## Supplied-server browser result
+
+The seventh run passed `TestGeneratedKubernetesBrowserGatewayWorkflow` with race
+detection in 301.84 seconds. It used compiler
+`421ce6b53a40850a3241cd1582843e65d6709fc9` and frozen application source
+`ef538c4`. The generated API, console, provisioner, and three workers ran in a
+bounded jshell namespace. The test used the actual OpenShell Gateway and
+Keycloak. It did not use Playwright.
+
+The workflow created Gateways without a database field or database catalog.
+It checked owner grants, filtered access, denied calls, REST and gRPC, and
+generated event delivery. Both Gateways had separate SQL databases and logins
+with verified TLS. Cross-database access failed. The generated admission rules
+rejected all five forbidden changes, and all 15 worker access checks passed.
+
+Gateway and worker replacement preserved keys, SQL credentials, and stored
+provider data. API and console replacement, session-key rotation, renewal,
+collector loss, and provider logout passed. All three workers emitted metrics
+and correlated logs and traces before and after replacement. Browser service
+accounts completed creation, token handoff, use, reload, revocation, and deletion.
+
+Normal deletion removed Gateway SQL, roles, credentials, workload and state
+namespaces, and allocation bindings. The other Gateway stayed available after
+the first deletion. The supplied PostgreSQL server and its installation data
+remained after both deletions. Parent deletion then succeeded and delivered its
+event through the generated runtime.
+
+Both direct generation runs and the post-test check produced the same hashes.
+All 227 archived output, state, dependency, and compiler-reference files match
+the checkout. The Job completed with exit zero. All owned resources are absent,
+and the shared Lease was released. The rendered Gateway page was inspected.
+
+The run used the explicit 126-file transition list. Three old live test files
+still prevent the full acceptance build and dependency check. The recorded
+full CI run confirms that failure; its SQL adapter test passed before generation
+stopped on the old import. Deletion before the first worker run, the remaining
+SQL fault tests, database-server restart, installation CNPG, and actual RDS
+remain required. This browser result does not establish production readiness.

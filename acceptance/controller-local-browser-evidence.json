@@ -1,0 +1,542 @@
+{
+  "scope": "Real browser Gateway workflow with an installation-supplied PostgreSQL server and three generated workers.",
+  "source_base_commit": "ef538c4425de94941e49a0f6930505e29c4d72f6",
+  "compiler_revision": "421ce6b53a40850a3241cd1582843e65d6709fc9",
+  "frozen_source": "/tmp/hypershell-browser-live-source-v7",
+  "freeze_record_sha256": "133a5ebf4a6fe7bf631e442f5777e522d95620bac0a70a747e84ef0b9c4cabda",
+  "documentation_changes_after_freeze": [
+    "README.md"
+  ],
+  "limits": [
+    "The run uses the explicit 126-file transition list. Three old live test files still block the full acceptance build.",
+    "Direct apply and drift ran twice. Full dependency checks remain required.",
+    "The server is the bounded PostgreSQL fixture. This does not prove installation-managed CNPG or Amazon RDS.",
+    "Deletion before the first worker run and the remaining SQL fault/recovery checks remain open."
+  ],
+  "final": {
+    "directory": "/tmp/stego-service-results.ra2V2CPx",
+    "passed": [
+      "TestGeneratedKubernetesBrowserGatewayWorkflow (301.84s)"
+    ],
+    "failed": [],
+    "exit": "0",
+    "generation_record_sha256": {
+      "first.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e",
+      "second.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e",
+      "after-tests.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e"
+    },
+    "cleanup": {
+      "namespace_absent": "stego-service-20260915-6ef700",
+      "owned_resources_absent": true
+    },
+    "artifact_sha256": {
+      "application.tar": "8ce17ac35b90157b4736adfc1e05c2f727690150488f63279ab43fbae1367f38",
+      "deployment.log": "7fad52272140559b7b7424a55d42006083c6ce59da58b272f54bb622635b95c4",
+      "job-status.json": "d55bfcdc189cab40f852c40fc550b72899b78a0c070c51fd1c61a7b46eb90667",
+      "cleanup.json": "8a22a665b0905b335d1f2c61e4f2666bae3fc697aabac27485a71e8124f542ad",
+      "evidence.tar": "ba40e06bf0181be0743b0b4bb5ee3f060f1c4a77862ec3277a54c1641caa1eab"
+    },
+    "artifact_names": [
+      "deployment.exit",
+      "image.json",
+      "console-image.json",
+      "provisioner-image.json",
+      "namespace-allocation-image.json",
+      "gateway-identity-image.json",
+      "gateway-workload-image.json",
+      "first.sha256",
+      "second.sha256",
+      "after-tests.sha256",
+      "generated.tar",
+      "browser-artifacts",
+      "browser-artifacts/input.json",
+      "browser-artifacts/create.json",
+      "browser-artifacts/reload.json",
+      "browser-artifacts/allocation-admission.json",
+      "browser-artifacts/allocation-permissions.json",
+      "browser-artifacts/verify.json.png",
+      "browser-artifacts/verify.json",
+      "browser-artifacts/accounts-input.json",
+      "browser-artifacts/accounts-create.json",
+      "browser-artifacts/accounts-revoke.json",
+      "browser-artifacts/accounts-delete.json.png",
+      "browser-artifacts/accounts-delete.json"
+    ]
+  },
+  "job": {
+    "namespace": "stego-service-20260915-6ef700",
+    "name": "service-check",
+    "activeDeadlineSeconds": 1800,
+    "backoffLimit": 0,
+    "securityContext": {
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "containers": [
+      {
+        "name": "node-tools",
+        "image": "docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393",
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "128Mi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "256Mi"
+          }
+        },
+        "securityContext": {
+          "runAsNonRoot": true,
+          "readOnlyRootFilesystem": true,
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      },
+      {
+        "name": "postgres",
+        "image": "docker.io/library/postgres@sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7",
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "256Mi",
+            "ephemeral-storage": "1Gi"
+          },
+          "limits": {
+            "cpu": "500m",
+            "memory": "512Mi",
+            "ephemeral-storage": "2Gi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      },
+      {
+        "name": "chromium",
+        "image": "docker.io/selenium/standalone-chromium@sha256:81c80050126f610675e40eeac529a821dc5a0d38acf26c6d44f792a6e7ea8ac5",
+        "resources": {
+          "requests": {
+            "cpu": "100m",
+            "memory": "256Mi"
+          },
+          "limits": {
+            "cpu": "1",
+            "memory": "1536Mi"
+          }
+        },
+        "securityContext": {
+          "runAsNonRoot": true,
+          "readOnlyRootFilesystem": true,
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      },
+      {
+        "name": "test",
+        "image": "docker.io/library/golang@sha256:2d54f6c8c6ea532a321e0b4c69553b2ed3637608d4f4357dbed37939fe2620cc",
+        "resources": {
+          "requests": {
+            "cpu": "500m",
+            "memory": "1Gi",
+            "ephemeral-storage": "2Gi"
+          },
+          "limits": {
+            "cpu": "1",
+            "memory": "3Gi",
+            "ephemeral-storage": "8Gi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          }
+        }
+      }
+    ]
+  },
+  "failed_attempts": [
+    {
+      "directory": "/tmp/stego-service-results.WMQNUC0p",
+      "passed": [
+        "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion (7.53s)",
+        "TestControllerLocalSchemaHasNoDatabaseCatalog (0.27s)",
+        "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites (0.32s)",
+        "TestSandboxCountGrantsAcrossClustersAndRestart (8.08s)",
+        "TestSandboxCountWorkflowThroughGeneratedRuntime (10.39s)",
+        "TestRESTFieldSelectionPreservesAccessAcrossRestart (6.11s)",
+        "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart (9.80s)",
+        "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart (6.12s)",
+        "TestGatewayCleanupKeepsBothClusterTargetsAfterRestart (12.51s)",
+        "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart (7.50s)",
+        "TestKubernetesWriteFailurePrivacy (0.00s)",
+        "TestRoleDiscoveryThroughGeneratedRuntime (5.23s)",
+        "TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime (6.51s)"
+      ],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (272.25s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-eed9e0",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "980a1f6c6fac4bed2147dbfa5c7d446b5796e579c367ced26f6ccd3626d56441",
+        "deployment.log": "cbf42ca11c4e3c5a55477353927ccdcd73ca69154f2fce19298e7cfbf09323e7",
+        "job-status.json": "8f4da91d7659afbf229fd5e5865586026b05e97293daf0b685f12aee14d5c038",
+        "cleanup.json": "cb572120d1c12b94d0992ec114b5bd5628b641d95345b6839c5345dd66894d70",
+        "evidence.tar": "c76550ce3b75fe04e38fd6013dc5233f15f1034a9f73d490dea578d106fbddab"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256"
+      ]
+    },
+    {
+      "directory": "/tmp/stego-service-results.C6QF1Xrg",
+      "passed": [],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (350.14s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-edd07a",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "7a6fbe9c23cbddab7c5d6e15a4bd712c01df66e5d8edfed3b1c9c68224a1b952",
+        "deployment.log": "16c1a705f9bf8cbcddf4fedfdfed845b533c95caf70f355bdb091fd8569cbcf2",
+        "job-status.json": "81e62a3e15e95338d410ffc43b139b4bcd473a1e743aa5efa35250ff9db4d438",
+        "cleanup.json": "4f28a48556b320a0194c49bfab83f7748cbf209541629eb93f76545caebe1966",
+        "evidence.tar": "b8b08d9ac272c803a8d7a106699da0f35bfdd46a1634945908860517ec80243a"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256",
+        "browser-artifacts",
+        "browser-artifacts/input.json",
+        "browser-artifacts/create.json",
+        "browser-artifacts/reload.json"
+      ]
+    },
+    {
+      "directory": "/tmp/stego-service-results.VyH1T6dt",
+      "passed": [],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (355.56s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-df6c78",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "d801ff615a4651f3140eba0a6f748319acbd72c7780b926e741c46c4f24dc346",
+        "deployment.log": "62976b9be6bb1cd0d8e3ad6d3ea70d81fed14c58ea042d0a2ea8dbd041f38aa1",
+        "job-status.json": "ee986c935f756932e40e2bcfcb152df526f3c220a3b8fc3ccc732a9ce211f895",
+        "cleanup.json": "ab8454d8e207321bc5a7f19a059cb1f4cab39efdca87a584a2fd908a0295adc0",
+        "evidence.tar": "e70744a32246fd44bcfd935d9f2e919f4a215a81a1dbb3ad912659af659dd5c1"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256",
+        "browser-artifacts",
+        "browser-artifacts/input.json",
+        "browser-artifacts/create.json",
+        "browser-artifacts/reload.json"
+      ]
+    },
+    {
+      "directory": "/tmp/stego-service-results.ZfDTu6jj",
+      "passed": [],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (193.60s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-45c099",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "3896616e832c96c87668166b2e58ac240f2411fb22427904020460d5afde34aa",
+        "deployment.log": "0ff7013e6e072f1d16aab4011614e6b192cd1f3458824bb0e0393e24e096f11a",
+        "job-status.json": "341f2b615c9f099dffc9b38d0ac9c033fc801227a32d97c35c7e5a743b6117e1",
+        "cleanup.json": "bec70b8dc9dcf5960e12817e08d5d2472256b81a3fe5c6e5013256c594c19ec6",
+        "evidence.tar": "5ec99e02925de47af733905ffd5602e783f485b7d36bcdaf59147421d4642d30"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256",
+        "browser-artifacts",
+        "browser-artifacts/input.json",
+        "browser-artifacts/create.json",
+        "browser-artifacts/reload.json"
+      ]
+    },
+    {
+      "directory": "/tmp/stego-service-results.olFYGvrR",
+      "passed": [],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (251.20s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-5fdb0b",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "7ee0cada1464d3e3212f2770bab2aa596b93a0cc6c6b5a22580fa9e3019c850c",
+        "deployment.log": "28c53f252c9710053659f355b147f2dc5f3a406226bcb03b3f2da1aaad044bf4",
+        "job-status.json": "7957054feb73e4e4e21e239c2fe97c53f6ab357be959b44ee3ff2eeadb8e900a",
+        "cleanup.json": "c0ae96db495a65d737022f1311c1d5a1fd94894f92e09f54f73e1a83c8348b99",
+        "evidence.tar": "9caea11306d96e64b41b988bbf65cbc8e4f900c3c4fa0b0d0f3265a4cede1121"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256",
+        "browser-artifacts",
+        "browser-artifacts/input.json",
+        "browser-artifacts/create.json",
+        "browser-artifacts/reload.json",
+        "browser-artifacts/allocation-admission.json",
+        "browser-artifacts/allocation-permissions.json",
+        "browser-artifacts/verify.json.network.json",
+        "browser-artifacts/verify.json.txt",
+        "browser-artifacts/verify.json.png"
+      ]
+    },
+    {
+      "directory": "/tmp/stego-service-results.LcGfBeqh",
+      "passed": [],
+      "failed": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (287.54s)"
+      ],
+      "exit": "123",
+      "generation_record_sha256": {
+        "first.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e",
+        "second.sha256": "5cd1d8e076c36f321f765a1ee92a89a9c4ee121ebedd277ccbbd24083c35857e"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-b29d65",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "908771c69a366272bbe72852f6d497035dcb7d813034c5433ad706586cf4e908",
+        "deployment.log": "4817083c4df928f5496fb515f8df12695cb3eb90f30dc23c7c22bf7456a4ad86",
+        "job-status.json": "3750524bdc06158c79cc09e1407ba5f1162bdb6c0fd8627210aaf1b47acb356e",
+        "cleanup.json": "301d07de6cf63ed92a1c1aa1f479c6fb8daa15e72331f78aabf984a35d2e8919",
+        "evidence.tar": "b71273d2fcbdb914700d13a9d4e9458e0d9abcb744ef6e3079cd5dd4f2f9b79f"
+      },
+      "artifact_names": [
+        "deployment.exit",
+        "image.json",
+        "console-image.json",
+        "provisioner-image.json",
+        "namespace-allocation-image.json",
+        "gateway-identity-image.json",
+        "gateway-workload-image.json",
+        "first.sha256",
+        "second.sha256",
+        "generated.tar",
+        "browser-artifacts",
+        "browser-artifacts/input.json",
+        "browser-artifacts/create.json",
+        "browser-artifacts/reload.json",
+        "browser-artifacts/allocation-admission.json",
+        "browser-artifacts/allocation-permissions.json",
+        "browser-artifacts/verify.json.png",
+        "browser-artifacts/verify.json",
+        "browser-artifacts/accounts-input.json",
+        "browser-artifacts/accounts-create.json",
+        "browser-artifacts/accounts-revoke.json",
+        "browser-artifacts/accounts-delete.json.png",
+        "browser-artifacts/accounts-delete.json"
+      ]
+    }
+  ],
+  "failure_corrections": [
+    "Grant only schema usage and generation-record SELECT to the runtime SQL role.",
+    "Bind SQL egress to the test Service and backing Pod addresses on port 5432.",
+    "Use a separate test CA and server certificate; retain verified TLS.",
+    "Expect the allocator patch grant and prove immutable fingerprints through admission denials.",
+    "Use STEGO browser backend 1.6.1 to roll back an incomplete SQL refresh claim.",
+    "Qualify the installation-data table and verify its read before Gateway creation."
+  ],
+  "runner_changes": [
+    "Use direct apply and drift twice; full dependency checks remain blocked by three old live files.",
+    "Run the browser workflow with the explicit 126-file transition list.",
+    "Do not repeat prior API preflight tests. The STEGO generated browser runtime suite separately passed with the refresh fix.",
+    "Save generated output before tests, and compare hashes again after a successful test."
+  ],
+  "runner_sha256": {
+    "scripts/run-browser-deployment-pod.sh": "0b0d41fab678b3d353aa12d2f9bd6fd58828f4a1d92d3877772122e1a209dd90"
+  },
+  "test_selection": {
+    "file": "acceptance/controller-local-browser.files",
+    "sha256": "657d2cad88e6e250452b07bb9833d99779d8e75ebe53e2366187543ddf430c86",
+    "test": "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "race": true,
+    "package_timeout": "15m"
+  },
+  "full_ci": {
+    "source_commit": "ff081d1da3a63779ac3ac886c0420f4648b4b05b",
+    "application_checks_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34919030083",
+    "cluster_gate_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34919030022",
+    "result": "Failed. The SQL adapter test passed, then generation failed because old live tests import the removed database controller.",
+    "verification": {
+      "required": [
+        "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+        "TestGatewayCreationCommitsOwnerAndEvent",
+        "TestGatewayRequestsRejectRetiredDatabaseField",
+        "TestGeneratedGoSDKGatewayWorkflow",
+        "TestGeneratedCLIWorkflow",
+        "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+        "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+        "TestEventFailureRollsBackGatewayAndOwner",
+        "TestAccessFiltersRunBeforeCountAndPagination",
+        "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestGatewayWatchThroughGeneratedRuntime",
+        "TestPlacementWorkflowThroughGeneratedRuntime",
+        "TestControllerLocalSchemaHasNoDatabaseCatalog",
+        "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+        "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+        "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+        "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+        "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+        "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+        "TestGeneratedCLICatalogWorkflow",
+        "TestGeneratedCLIApplyWorkflow"
+      ],
+      "passed": [
+        "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+      ],
+      "failed": [],
+      "missing": [
+        "TestAccessFiltersRunBeforeCountAndPagination",
+        "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+        "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+        "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+        "TestControllerLocalSchemaHasNoDatabaseCatalog",
+        "TestEventFailureRollsBackGatewayAndOwner",
+        "TestGatewayCreationCommitsOwnerAndEvent",
+        "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+        "TestGatewayRequestsRejectRetiredDatabaseField",
+        "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+        "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+        "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+        "TestGatewayWatchThroughGeneratedRuntime",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGeneratedCLIApplyWorkflow",
+        "TestGeneratedCLICatalogWorkflow",
+        "TestGeneratedCLIWorkflow",
+        "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+        "TestGeneratedGoSDKGatewayWorkflow",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+        "TestPlacementWorkflowThroughGeneratedRuntime"
+      ],
+      "exit_code": 1
+    },
+    "cleanup": {
+      "job_absent": "gateway-api-1d9d2f56a374",
+      "pods_absent": true,
+      "fixture_resources_absent": true
+    },
+    "artifact_sha256": {
+      "verification.json": "3390379123a2c3cf1c825c031217a6fd9c80c00550033022df5d4faebc3685ed",
+      "cleanup.json": "56245fe9c57a30b98615d3198cdd0ee8a9dd353cbf561eef4b8f08f4a602fcb6",
+      "test.log": "6c5ca11e63b149e6f2536e060e3ff03ad912c86ff6da79902d41656c4c8fd8e7",
+      "tests.jsonl": "082865802f4b68168e28b39e6b1493fa37a60342bd5e98840236378016aee7de"
+    }
+  },
+  "archive_verification": {
+    "file_count": 227,
+    "all_recorded_file_hashes_match_archive": true,
+    "all_archive_files_match_checkout": true,
+    "equal_generation_records": 3,
+    "compiler_revision": "421ce6b53a40850a3241cd1582843e65d6709fc9",
+    "rendered_page_inspected": true,
+    "rendered_page_sha256": "110e1cf029b020acf9853cecbac4b17ab3b62f738fe0300cdc3fb3ff9c84fb1e"
+  }
+}

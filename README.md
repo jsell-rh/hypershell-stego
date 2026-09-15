@@ -3,7 +3,9 @@ This repository is the test bed for a STEGO-based Hypershell variant.
 The [controller-local database change](acceptance/controller-local-database.md)
 removes `database_id`, `ManagedDatabase`, and database registration from the
 application. Controllers use an installation-supplied PostgreSQL server.
-The new source is under test. Earlier database registration and provider results
+The [supplied-server browser workflow](acceptance/controller-local-test-transition.md)
+now passes with real Gateways, isolated SQL logins, REST and gRPC, events,
+restart, and deletion. Earlier database registration and provider results
 do not prove this model. The full application gate remains open. This transition
 requires matching releases and a fresh schema. Existing installations require
 explicit teardown and recreation; the application does not perform that action.
@@ -65,7 +67,7 @@ The compatibility target includes:
 | Storage | PostgreSQL constraints, atomic owner grants, concurrency, and explicit migrations |
 | Events | Committed resource events, delete events, reconnect, and bounded delivery |
 | Service accounts | Creator ownership, role limits, lifecycle, secret handling, and provisioning |
-| Control plane | Gateway, cluster, database, network, and release reconciliation |
+| Control plane | Gateway identity, workload, and SQL lifecycle; cluster, network, and release operations |
 | Clients | SDKs, CLI commands, web workflows, and authentication |
 | Operations | Health, readiness, metrics, tracing, limits, shutdown, and deployment checks |
 
@@ -307,11 +309,12 @@ Their tests and setup scripts still need conversion to the controller-local
 contract. They do not prove the new workflow. Do not use their database seed,
 `DATABASE_PROVIDER`, or legacy migration instructions for this release.
 
-The [Gateway workload gate](acceptance/gateway-workload.md) runs the actual
-OpenShell Gateway with PostgreSQL and Keycloak. It checks owner and viewer
-access, provider data, database and Gateway restart, namespace replacement,
-stable keys, and recovery after offline deletion. Run
-`scripts/check-gateway-workload.sh` with the test PostgreSQL connection set.
+The historical [Gateway workload gate](acceptance/gateway-workload.md) used the
+retired server controller. Its setup script does not support this release.
+The [converted browser workflow](acceptance/controller-local-test-transition.md)
+uses the actual OpenShell Gateway, Keycloak, and an installation-supplied
+PostgreSQL server. The transition record separates current results from checks
+that still need conversion.
 
 The experimental [sandbox gate](acceptance/sandbox-workflow.md) adds sandbox
 creation and command execution under Kata. It checks admission denials, client
@@ -327,9 +330,10 @@ The [grant CLI workflow](acceptance/grant-cli.md) now changes Gateway access
 through generated commands. See the [CLI port status](acceptance/cli-port.md)
 for the remaining reference behavior.
 
-The [catalog CLI workflow](acceptance/catalog-cli.md) creates placement records
-and Gateways under CNPG and default deployment modes. It also tests protected
-deletion and event rollback.
+The historical [catalog CLI workflow](acceptance/catalog-cli.md) used database
+provider selection. The converted CLI tests create clusters, releases, networks,
+and Gateways without a database catalog. They check protected deletion and event
+rollback. Their current results are in the transition record.
 
 The [Gateway-network workflow](acceptance/gateway-networks.md) now checks network
 record CRUD, access, CLI commands, watch events, rollback, restart, and database
