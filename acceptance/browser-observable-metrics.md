@@ -19,6 +19,10 @@ The bundle contains 54 entries and 852,525 bytes. The
 
 The candidate now includes that bundle and its generated backend assets. Both
 applications passed repeated generation and drift checks with the pinned
-compiler. Full compiler CI and rendered application checks remain required.
+compiler. Full compiler CI passed. Candidate `0c2e7fe` then passed the rendered
+browser test in 99.67 seconds with race detection. The console job passed 229
+tests, types, architecture checks, lint, bundle reproduction, and generation.
+The [rendered record](browser-observable-metrics-rendered.json) retains these
+results and their limits. The parent workflow's core result remains required.
 The earlier complete public workflow used compiler `0b0c932` and does not prove
 this change.
