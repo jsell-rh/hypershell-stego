@@ -178,7 +178,7 @@ STEGO now provides checked native enablement through `NativeAccessPolicy` and
 [run 35033171244](https://github.com/jsell-rh/stego/actions/runs/35033171244).
 Both policies used that operation for setup and drift repair, then completed
 login and the signed-claim checks. The runtime took 47.01 seconds, and container
-cleanup passed. Full compiler CI was still running when this record was written.
+cleanup passed. All five STEGO CI jobs passed.
 Small generated tests also cover uncertain enablement, failed checks, cleanup,
 caller cancellation, unchanged state, and changed ownership.
 
@@ -186,3 +186,19 @@ The first extraction still requires the service-account token check and checked
 enablement. Existing service-account rows hold provider IDs; Gateway state does
 not. Adoption must preserve or explicitly migrate those bindings. This record
 does not change the application compiler pin or its provider implementation.
+
+The common service-account token check passed at STEGO revision
+`c85fd8c9f6916a43120d050fcb121aa0dbe4ff49` in
+[run 35033615735](https://github.com/jsell-rh/stego/actions/runs/35033615735).
+`VerifyServiceAccountToken` uses the shared JWT verifier and fixed issuer. It
+checks a fresh token against the saved subject, client ID, exact audiences,
+role arrays, and lifetime. The real test covered both policies and denied wrong
+subjects and audiences. The runtime took 47.52 seconds, and container cleanup
+passed. Full compiler CI was still running when this record was written.
+
+The provider requires the saved subject to exist and be enabled before it
+requests a token. It does not return credentials or tokens to the caller.
+Small tests cover signature and claim failures, extra credentials, missing
+subjects, and ownership changes. Checked service-account enablement must use
+this proof and handle its failure before this application adopts the provider.
+No application source reduction is claimed yet.
