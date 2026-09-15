@@ -35,6 +35,8 @@ See the [verified result](browser-namespace-replacement-evidence.json).
 The first push runs were cancelled before a Job started. The passing browser
 run is the replacement dispatch on the same pushed commit. Its separate
 [API check](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937105018)
-is still running. The complete core, ordinary browser, console, and service-image
+passed all 30 required tests. Its 870 source files and 228 generated files
+match the commit; its Job, Pods, and fixtures are absent. The complete core,
+ordinary browser, console, and service-image
 jobs passed; full CI still fails on the unfinished CNPG and Sandbox checks.
 The later SQL cleanup denial test is not part of this passing browser source.

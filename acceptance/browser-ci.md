@@ -88,5 +88,7 @@ dispatches. The old run uses the default queue setting; new runs use `queue: max
 Do not treat this transition as proof that the new queue preserves all runs.
 
 After the older API run finished, the namespace recovery browser run started
-and passed. Its separate API run is now active. Both runs for the SQL cleanup
-denial candidate remain queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
+and passed. Its separate API run also passed all 30 required checks. All 870
+source files and 228 generated files match that commit, and its Job, Pods, and
+fixtures are absent. The SQL cleanup denial candidate now has an active API run
+and a queued browser run. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
