@@ -1,0 +1,100 @@
+name: CNPG Gateway workflow on jshell
+
+on:
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: jshell-live-tests
+  queue: max
+  cancel-in-progress: false
+
+jobs:
+  cnpg-gateway:
+    environment: jshell-ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check the CI boundary
+        run: |
+          python3 scripts/test_cnpg_ci.py
+          python3 scripts/test_cnpg_installation_fixture.py
+          python3 scripts/test_browser_ci.py
+          python3 scripts/test_ci_credentials.py
+          python3 scripts/test_browser_cluster_installation.py
+          python3 scripts/test_browser_inspection.py
+          go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go
+      - name: Prepare the frozen inspection source
+        timeout-minutes: 5
+        run: |
+          revision=$(cat .stego/compiler-revision)
+          [[ $revision =~ ^[0-9a-f]{40}$ ]]
+          git init -q "$RUNNER_TEMP/compiler"
+          git -C "$RUNNER_TEMP/compiler" remote add origin https://github.com/jsell-rh/stego.git
+          git -C "$RUNNER_TEMP/compiler" fetch -q --depth=1 origin "$revision"
+          git -C "$RUNNER_TEMP/compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/compiler" rev-parse HEAD)" = "$revision"
+          (cd "$RUNNER_TEMP/compiler"; GOWORK=off go build -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/stego" ./cmd/stego)
+          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/stego" --destination "$RUNNER_TEMP/browser-source" --cnpg-database-namespace stego-cnpg-database-ci
+      - name: Install the pinned OpenShift client
+        timeout-minutes: 3
+        run: |
+          mkdir -p "$RUNNER_TEMP/oc"
+          curl --fail --silent --show-error --connect-timeout 15 --max-time 120 \
+            https://mirror.openshift.com/pub/openshift-v4/x86_64/clients/ocp/4.22.12/openshift-client-linux-4.22.12.tar.gz \
+            --output "$RUNNER_TEMP/oc/client.tar.gz"
+          cd "$RUNNER_TEMP/oc"
+          echo '0234aed5f4f13fbd0ff693c9eb8011bbfd97f1829296157c39810494b98cf84c  client.tar.gz' | sha256sum --check
+          tar xf client.tar.gz oc
+          echo "$RUNNER_TEMP/oc" >> "$GITHUB_PATH"
+      - name: Write the private CI credential
+        env:
+          CI_KUBECONFIG: ${{ secrets.JSHELL_CI_KUBECONFIG }}
+        run: |
+          test -n "$CI_KUBECONFIG"
+          umask 077
+          printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Run the complete CNPG Gateway workflow
+        run: |
+          python3 scripts/check-cnpg-ci.py \
+            --source "$RUNNER_TEMP/browser-source" \
+            --repository "$GITHUB_WORKSPACE" \
+            --kubeconfig "$RUNNER_TEMP/jshell.kubeconfig" \
+            --results "$RUNNER_TEMP/cnpg-gateway"
+      - name: Remove local credentials
+        if: always()
+        run: rm -f -- "$RUNNER_TEMP/jshell.kubeconfig" "$RUNNER_TEMP/cnpg-gateway/browser/ci-token" "$RUNNER_TEMP/cnpg-gateway/browser/private-job.json" "$RUNNER_TEMP/cnpg-gateway/browser/server.key" "$RUNNER_TEMP/cnpg-gateway/browser/ca.key"
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: cnpg-gateway-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/cnpg-gateway/cnpg-ci-*.json
+            ${{ runner.temp }}/cnpg-gateway/cnpg-server-created.json
+            ${{ runner.temp }}/cnpg-gateway/cnpg-server-ready.json
+            ${{ runner.temp }}/cnpg-gateway/browser-run.log
+            ${{ runner.temp }}/cnpg-gateway/browser/cleanup.json
+            ${{ runner.temp }}/cnpg-gateway/browser/allocation-*.json
+            ${{ runner.temp }}/cnpg-gateway/browser/installation.json
+            ${{ runner.temp }}/cnpg-gateway/browser/cluster-installation.json
+            ${{ runner.temp }}/cnpg-gateway/browser/cluster-manifests/*.json
+            ${{ runner.temp }}/cnpg-gateway/browser/job.json
+            ${{ runner.temp }}/cnpg-gateway/browser/job-status.json
+            ${{ runner.temp }}/cnpg-gateway/browser/ci-access.json
+            ${{ runner.temp }}/cnpg-gateway/browser/*.log
+            ${{ runner.temp }}/cnpg-gateway/browser/application.sha256
+            ${{ runner.temp }}/cnpg-gateway/browser/evidence.tar
+            ${{ runner.temp }}/browser-source/acceptance/browser-inspection-source.json

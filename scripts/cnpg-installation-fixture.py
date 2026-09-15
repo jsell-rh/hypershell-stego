@@ -30,7 +30,7 @@ def validate(namespace, database_namespace, storage_class):
         raise ValueError('Use an explicit storage class')
 
 
-def definitions(namespace, database_namespace, storage_class, endpoints):
+def definitions(namespace, database_namespace, storage_class, endpoints, operator_namespace="cnpg-system"):
     validate(namespace, database_namespace, storage_class)
     if not 1 <= len(endpoints) <= 16:
         raise ValueError('Require bounded Kubernetes endpoint addresses')
@@ -60,7 +60,7 @@ def definitions(namespace, database_namespace, storage_class, endpoints):
         'podSelector': {'matchLabels': {'cnpg.io/cluster': CLUSTER}}, 'policyTypes': ['Ingress', 'Egress'],
         'ingress': [
             {'from': [cluster_peer], 'ports': sql + [{'port': 8000, 'protocol': 'TCP'}]},
-            {'from': [peer('cnpg-system', {'app.kubernetes.io/name': 'cloudnative-pg'})], 'ports': [{'port': 8000, 'protocol': 'TCP'}]},
+            {'from': [peer(operator_namespace, {'app.kubernetes.io/name': 'cloudnative-pg'})], 'ports': [{'port': 8000, 'protocol': 'TCP'}]},
             {'from': [peer(namespace, {'app': 'stego-fixture'}), peer(namespace, {'app.kubernetes.io/name': 'hypershell-gateway-workload'}), gateway_peer], 'ports': sql}],
         'egress': [
             {'to': [cluster_peer], 'ports': sql + [{'port': 8000, 'protocol': 'TCP'}]},
@@ -69,7 +69,7 @@ def definitions(namespace, database_namespace, storage_class, endpoints):
     return [
         {'apiVersion': 'v1', 'kind': 'Namespace', 'metadata': {'name': database_namespace, 'labels': {LABEL: namespace, 'pod-security.kubernetes.io/enforce': 'restricted'}}},
         item('ResourceQuota', 'installation', spec={'hard': {'pods': '6', 'limits.cpu': '3100m', 'limits.memory': '3200Mi', 'limits.ephemeral-storage': '2Gi', 'persistentvolumeclaims': '4', 'requests.storage': '4Gi'}}),
-        binding('cnpg-manager', 'cnpg-manager', 'cnpg-manager', 'cnpg-system'),
+        binding('cnpg-manager', 'cnpg-manager', 'cnpg-manager', operator_namespace),
         binding('database-nonroot', 'system:openshift:scc:nonroot-v2', CLUSTER, database_namespace),
         item('Role', 'fixture-observer', 'rbac.authorization.k8s.io/v1', rules=[
             {'apiGroups': ['postgresql.cnpg.io'], 'resources': ['clusters'], 'resourceNames': [CLUSTER], 'verbs': ['get']},
