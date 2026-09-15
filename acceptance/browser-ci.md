@@ -92,4 +92,7 @@ and passed. Its separate API run also passed all 30 required checks. All 870
 source files and 228 generated files match that commit, and its Job, Pods, and
 fixtures are absent. The SQL cleanup denial candidate passed its API run with all 30 required
 checks, matching source and generated files, and complete cleanup. Its browser
-run is active. The stored-credential encryption candidate remains queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
+run failed in the permission fixture before the denial assertion. Host cleanup
+passed. The pending encryption browser run was cancelled before it started
+because it had the same fixture error. Commit `70b2dd7` corrects the fixture and
+includes the encryption test. Its complete browser and API checks are queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
