@@ -66,8 +66,9 @@ passed the complete workflow in 331.54 seconds and passed host cleanup. All
 867 source files and 229 generated files match the committed source and frozen
 records. All 16 CI probes, 57 application access checks, and six admission probes
 passed. The operator installation remains; test data and allocations are absent.
-The earlier [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017005)
-is still active. See the [verified evidence](browser-ci-evidence.json).
+The [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017005)
+also passed all 30 required tests. Its full inventory of 867 source files and
+228 generated files matches the commit. The Job, Pods, and fixtures are absent. See the [verified evidence](browser-ci-evidence.json).
 
 The fixed namespace retains six test image streams. Registry retention is
 outside this cleanup proof. The browser fixture has no external connection
@@ -85,3 +86,7 @@ started, when the older API workflow became active. The API provides no reason
 for the cancellation. The same pushed commit now has new browser and API
 dispatches. The old run uses the default queue setting; new runs use `queue: max`.
 Do not treat this transition as proof that the new queue preserves all runs.
+
+After the older API run finished, the namespace recovery browser run started.
+The API run for that commit and both runs for the SQL cleanup denial candidate
+remain queued. Neither new live recovery result is available yet.

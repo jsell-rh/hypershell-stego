@@ -18,9 +18,9 @@ The test uses the generated Kubernetes client and the declared allocator token.
 It adds no production permission. Evidence records public UIDs and comparison
 results. It does not record credentials, Secret contents, or hashes of secrets.
 
-The new check has passed formatting and source checks. It has not yet compiled
-or run in CI. The active CI run uses the earlier frozen source. No namespace
-recovery result is claimed until the complete new browser workflow passes.
+The new check passed formatting, source checks, and the complete acceptance
+package build in the ordinary browser CI job. The live recovery workflow is
+now running. No namespace recovery result is claimed until that workflow passes.
 
 The pushed candidate is `48eae25`. Its first push runs were cancelled before
 a Job started. The replacement [browser check](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937103556)
