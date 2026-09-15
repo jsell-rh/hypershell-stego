@@ -1,0 +1,67 @@
+name: Build console asset candidate
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/console-assets.yml
+      - components/web-console/**
+      - packages/gateway-management-ui/**
+      - out/browsertelemetry/**
+      - out/typescriptsdk/**
+      - pnpm-lock.yaml
+      - pnpm-workspace.yaml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: console-assets-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      NODE_OPTIONS: --max-old-space-size=1536
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 512MiB
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
+        with:
+          node-version: '24.18.1'
+      - name: Install the selected dependencies
+        run: |
+          npm install --prefix "$RUNNER_TEMP/pnpm" --ignore-scripts --no-audit --no-fund pnpm@11.15.1
+          echo "$RUNNER_TEMP/pnpm/node_modules/.bin" >> "$GITHUB_PATH"
+          "$RUNNER_TEMP/pnpm/node_modules/.bin/pnpm" install --frozen-lockfile --ignore-scripts
+      - name: Build the candidate from committed source
+        run: |
+          pnpm --filter @openshift-online/hypershell-domain-probes build
+          pnpm --filter @openshift-online/hypershell-gateway-management-ui build
+          pnpm --filter @openshift-online/hypershell-web-console build
+          revision=$(cat .stego/compiler-revision)
+          [[ $revision =~ ^[0-9a-f]{40}$ ]]
+          mkdir -p "$RUNNER_TEMP/console-assets"
+          GOWORK=off go run "github.com/jsell-rh/stego/cmd/stego@$revision" assets \
+            --directory components/web-console/build/client --output "$RUNNER_TEMP/console-assets/build.zip"
+          git diff --exit-code
+          git rev-parse HEAD > "$RUNNER_TEMP/console-assets/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/console-assets/source-archive.sha256"
+          cp .stego/compiler-revision "$RUNNER_TEMP/console-assets/compiler-revision"
+          cd "$RUNNER_TEMP/console-assets"
+          sha256sum build.zip > build.sha256
+      - name: Save the candidate for review
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: console-assets-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/console-assets
+          if-no-files-found: error
+          retention-days: 7

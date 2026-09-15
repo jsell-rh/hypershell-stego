@@ -10,6 +10,13 @@ Run `scripts/generate.sh` from the repository root to generate both services
 with the same pinned compiler. The console has its own Go module. Build its
 process with `cd console && go build ./out` in CI or the test cluster.
 
+The `Build console asset candidate` workflow produces an archive from committed
+source without changing the repository. It records the source commit, source
+archive hash, compiler revision, and output hash. Verify those records before
+replacing `ui/build.zip`, then regenerate both services. The ordinary console
+gate must still compare a fresh build with the committed archive. A candidate
+build does not replace the console tests or the rendered application gate.
+
 Apply `out/browser/schema.sql` to the console session database before startup.
 Use the generated backend's documented environment settings for database TLS,
 service TLS, API trust, OIDC, the client secret file, and the session key file.
