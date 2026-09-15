@@ -233,15 +233,24 @@ func completeExternalPeers(input []byte, values endpointFlags) ([]byte, error) {
 			if json.Unmarshal(rule["to"], &peers) != nil {
 				return nil, fmt.Errorf("invalid generated network peer")
 			}
-			if len(peers) != 1 || !strings.HasPrefix(peers[0].IPBlock.CIDR, "stego-external:") {
+			if len(peers) != 1 {
 				expanded = append(expanded, rule)
 				continue
 			}
-			name := strings.TrimPrefix(peers[0].IPBlock.CIDR, "stego-external:")
-			if len(bindings[name]) == 0 {
-				return nil, fmt.Errorf("missing declared external endpoint")
+			cidr := peers[0].IPBlock.CIDR
+			name, required := strings.CutPrefix(cidr, "stego-external:")
+			if !required {
+				var optional bool
+				name, optional = strings.CutPrefix(cidr, "stego-external-optional:")
+				if !optional {
+					expanded = append(expanded, rule)
+					continue
+				}
 			}
 			used[name] = true
+			if len(bindings[name]) == 0 && required {
+				return nil, fmt.Errorf("missing declared external endpoint")
+			}
 			for _, endpoint := range bindings[name] {
 				cidr := netip.PrefixFrom(endpoint.Addr(), endpoint.Addr().BitLen()).String()
 				target, _ := json.Marshal([]any{map[string]any{"ipBlock": map[string]any{"cidr": cidr}}})

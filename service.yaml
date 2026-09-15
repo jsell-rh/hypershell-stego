@@ -202,6 +202,7 @@ overrides:
         package: internal/gatewayworkloadapp
         function: Run
         external_endpoints: [kubernetes, gateway-postgres]
+        optional_external_endpoints: [gateway-public]
         files_secret: hypershell-gateway-workload-files
         network_peers:
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}

@@ -66,6 +66,7 @@ def cnpg_declaration(source, namespace):
     if not re.fullmatch(r'stego-cnpg-database-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', namespace) or len(namespace) > 63:
         raise ValueError('Use a dedicated CNPG installation namespace')
     anchor = ('        external_endpoints: [kubernetes, gateway-postgres]\n'
+              '        optional_external_endpoints: [gateway-public]\n'
               '        files_secret: hypershell-gateway-workload-files\n'
               '        network_peers:\n')
     peer = ('          - {direction: egress, namespace: ' + namespace +

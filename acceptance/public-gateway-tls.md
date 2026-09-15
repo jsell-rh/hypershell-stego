@@ -65,10 +65,17 @@ The 1.8.1 runtime also rejects private-key blocks and extra text in `tls.crt`.
 A regression check reproduced this defect in 1.8.0 before the correction.
 Hypershell tests this rejection through its real Kubernetes client fixture.
 
-The next installation gap is the worker's public router egress binding. A render
-with `--egress gateway-public=192.0.2.3:443` fails because that destination is not
-declared for the worker. The address was test input; no connection was made.
-The public path must stay unready until a generated network policy permits the
-operator-selected router. Optional public exposure must retain a closed network
-policy when no binding is supplied. The complete live gate must also configure
-the issuer, trust, router, worker grants, and the test actor's access.
+STEGO `kubernetes-service` 1.10.0 supplies optional external destinations.
+The worker declares `gateway-public`. The operator supplies each router IP and
+port at render time, for example `--egress gateway-public=192.0.2.3:443`.
+This produces one `/32` rule for that address and TCP port. Without the binding,
+the renderer adds no public egress rule. Required Kubernetes and PostgreSQL
+bindings remain required. A direct render check verifies that this one rule
+is the only difference between the enabled and disabled policies. No network
+connection was made by that check.
+
+The complete live gate must configure the issuer, trust, router, worker grants,
+and the test actor's access. It must verify network enforcement, public RPC,
+certificate rotation, restart, and cleanup. API run `34975653347` and browser
+run `34975653307` stopped before test creation because the CI credential had
+too little time left. They provide no application result for these changes.

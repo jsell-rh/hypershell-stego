@@ -135,6 +135,21 @@
           {
             "ports": [
               {
+                "port": 0,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "ipBlock": {
+                  "cidr": "stego-external-optional:gateway-public"
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
                 "port": 5353,
                 "protocol": "UDP"
               },

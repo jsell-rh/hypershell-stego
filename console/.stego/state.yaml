@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915132340-3f757e32fd2d
+        module_version: v0.0.0-20260915133525-4f692d0c12c9
         vcs: git
-        revision: 3f757e32fd2d4b4b2f9fbc1b116915efa08da937
+        revision: 4f692d0c12c972a2d7a783ee6a33c17e82a0f932
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 9f932f4f03f92dee513a04a733e63301dce0b596cd6637ee566ab2ef01d808da
+    registry_content_sha256: d717df6ff40dd6510a79845918d24ea67be3dfee8ed686159bda3e61f2772a05
     components:
         browser-backend:
             version: 1.6.1
@@ -47,7 +47,7 @@ last_applied:
             version: 1.0.0
             sha: browser-workflow
         kubernetes-service:
-            version: 1.9.0
+            version: 1.10.0
             sha: browser-workflow
         otel-tracing:
             version: 1.14.0
@@ -120,7 +120,7 @@ last_applied:
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
-        deploy/render/main.go: d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b
+        deploy/render/main.go: c78fe91b08e09db38aa39beb40eb85a351dc1cb691840e85d64219520971ecef
         deploy/render/manifest.json.tmpl: 0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
