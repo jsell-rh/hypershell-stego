@@ -84,3 +84,7 @@ The pin then advanced to `635f5dad071323f579dee32e0f89beddb55f6959`, which
 corrects the compiler's command-test telemetry import. Regeneration and drift
 passed again. This update changes compiler identity records and CLI version
 output; the generated RPC runtime is unchanged.
+
+[Full STEGO CI](https://github.com/jsell-rh/stego/actions/runs/34978866375) passed
+at the corrected compiler pin, including SQL provisioning and both example
+services. The new deployed application result remains required.
