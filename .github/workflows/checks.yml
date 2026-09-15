@@ -4,6 +4,11 @@ on:
   push:
   pull_request:
   workflow_dispatch:
+    inputs:
+      cnpg_only:
+        description: Run only the complete CNPG Gateway workflow
+        type: boolean
+        default: false
 
 env:
   # CI uses the runner's loopback address for its database fixture.
@@ -19,6 +24,7 @@ concurrency:
 
 jobs:
   acceptance:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     name: acceptance (${{ matrix.suite }})
     strategy:
       fail-fast: false
@@ -123,7 +129,7 @@ jobs:
             ${{ runner.temp }}/rendered-browser/*.network.json
 
   cnpg-gateway-workflow:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.cnpg_only)
     uses: ./.github/workflows/jshell-cnpg.yml
     secrets: inherit
 
@@ -158,6 +164,7 @@ jobs:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
 
   service-image:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -198,6 +205,7 @@ jobs:
           done
 
   web-console:
+    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

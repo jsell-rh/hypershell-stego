@@ -38,6 +38,17 @@ Pull requests do not receive cluster credentials. Artifact selection excludes
 credentials and private fixture contents. Static installation objects remain
 between runs; application and database runtime resources must not remain.
 
+If GitHub has not registered the reusable workflow for manual dispatch, use the
+registered contract workflow with `cnpg_only=true`:
+
+```sh
+gh workflow run checks.yml --ref codex/namespace-allocation-20260912 -f cnpg_only=true
+```
+
+This selection runs the same bounded CNPG workflow and skips the ordinary checks.
+It retains the shared live-test concurrency group, Lease, and restricted identity.
+Without this selection, manual contract checks keep their existing behavior.
+
 The [static installation evidence](cnpg-ci-installation-evidence.json) records
 45 operator-owned objects from source `dab02cf`. Independent reads verified
 their selected identities, all three admission policies with no type errors,
