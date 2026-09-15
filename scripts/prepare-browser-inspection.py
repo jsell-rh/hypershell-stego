@@ -80,7 +80,12 @@ def cnpg_declaration(source, namespace):
             ', pod_label: cnpg.io/cluster, pod_value: gateway-database, port: 5432, protocol: TCP}\n')
     if source.count(anchor) != 1 or peer in source:
         raise ValueError('The CNPG fixture network boundary differs')
-    return source.replace(anchor, anchor + peer, 1)
+    allocation_anchor = '        network_endpoints: [kubernetes]\n        network_peers:\n'
+    allocation_peer = ('          - {direction: egress, namespace: external, external_namespace: ' + namespace +
+                       ', pod_label: cnpg.io/cluster, pod_value: gateway-database, port: 5432, protocol: TCP}\n')
+    if source.count(allocation_anchor) != 1 or allocation_peer in source:
+        raise ValueError('The CNPG allocation network boundary differs')
+    return source.replace(anchor, anchor + peer, 1).replace(allocation_anchor, allocation_anchor + allocation_peer, 1)
 
 
 def verify_cnpg_manifests(before, after, namespace):
@@ -125,6 +130,18 @@ def inspection_roles():
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota, *network]},
     ]
+
+
+def verify_cnpg_runtime(before, after, namespace):
+    original, fixture = allocation_config(before), allocation_config(after)
+    profiles = [p for p in fixture['Profiles'] if p['Name'] == 'gateway']
+    expected = {'Direction': 'egress', 'Namespace': 'external', 'ExternalNamespace': namespace,
+                'PodLabel': 'cnpg.io/cluster', 'PodValue': 'gateway-database', 'Protocol': 'TCP', 'Port': 5432}
+    if len(profiles) != 1 or profiles[0]['NetworkPeers'].pop(0) != expected or original != fixture:
+        raise ValueError('The CNPG allocation must add one exact database Pod peer')
+    pattern = r'json.Unmarshal\(\[\]byte\(("(?:[^"\\]|\\.)*")\), &config\)'
+    if re.sub(pattern, 'CONFIG', before) != re.sub(pattern, 'CONFIG', after):
+        raise ValueError('The CNPG fixture changed the allocation runtime')
 
 
 def verify_runtime(before, after):
@@ -187,11 +204,11 @@ def verify_manifests(before, after):
         raise ValueError('The fixture changed unrelated deployment or admission rules')
 
 
-def check_render(source, destination, env, cnpg_namespace=None):
+def check_render(source, destination, env, cnpg_namespace=None, network_baseline=None):
     with tempfile.TemporaryDirectory(prefix='stego-inspection-render-') as directory:
         renders = []
         binaries = []
-        for index, root in enumerate((source, destination)):
+        for index, root in enumerate((network_baseline or source, destination)):
             binary = str(Path(directory) / str(index))
             binaries.append(binary)
             subprocess.run(['go', 'build', '-p=1', '-mod=readonly', '-trimpath', '-o', binary, './out/deploy/render'],
@@ -201,6 +218,10 @@ def check_render(source, destination, env, cnpg_namespace=None):
                 '--egress', 'kubernetes=192.0.2.1:443'], env=env, timeout=5))
         verify_manifests(*renders)
         if cnpg_namespace:
+            original_binary = str(Path(directory) / 'original')
+            subprocess.run(['go', 'build', '-p=1', '-mod=readonly', '-trimpath', '-o', original_binary, './out/deploy/render'],
+                           cwd=source, env=env, check=True, timeout=45)
+            binaries[0] = original_binary
             cnpg_renders = [subprocess.check_output([binary, '--namespace', 'stego-service-inspection', '--fs-group', '10001',
                 '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64, '--worker', 'gateway-workload',
                 '--egress', 'kubernetes=192.0.2.1:443', '--egress', 'gateway-postgres=192.0.2.2:5432'], env=env, timeout=5) for binary in binaries]
@@ -254,8 +275,22 @@ def main():
     if changed != allowed:
         raise ValueError('Unexpected fixture output changes: ' + ', '.join(sorted(changed)))
     runtime = 'out/deploy/allocation/allocation.go'
-    roles = verify_runtime((source / runtime).read_text(), (destination / runtime).read_text())
-    render = check_render(source, destination, env, args.cnpg_database_namespace)
+    with tempfile.TemporaryDirectory(prefix='stego-cnpg-network-baseline-') as directory:
+        baseline = source
+        if args.cnpg_database_namespace:
+            # Generate the network-only baseline with the pinned compiler.
+            # Then compare the inspection roles against that exact baseline.
+            baseline = Path(directory)
+            for name in hashes:
+                target = baseline / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copy2(source / name, target)
+            (baseline / 'service.yaml').write_text(cnpg_declaration((source / 'service.yaml').read_text(), args.cnpg_database_namespace))
+            subprocess.run([str(compiler), 'apply'], cwd=baseline, env=env, check=True, timeout=60)
+            verify_cnpg_runtime((source / runtime).read_text(), (baseline / runtime).read_text(), args.cnpg_database_namespace)
+        roles = verify_runtime((baseline / runtime).read_text(), (destination / runtime).read_text())
+        render = check_render(source, destination, env, args.cnpg_database_namespace, baseline)
+
     # Files that appear during generation also need an explicit review.
     observed = {str(p.relative_to(destination)) for p in destination.rglob('*') if p.is_file()}
     if observed - {'.stego/apply.lock'} != set(hashes):
@@ -265,7 +300,7 @@ def main():
               'changed_files': sorted(changed), 'inspection_roles': roles, 'render': render,
               'scope': 'Production source with two namespace inspection roles and two appended bindings. Production binding indices and runtime code are unchanged.'}
     if args.cnpg_database_namespace:
-        record['cnpg_installation'] = {'namespace': args.cnpg_database_namespace, 'cluster': 'gateway-database', 'scope': 'One namespace and Pod selector on TCP port 5432; no added Kubernetes permission.'}
+        record['cnpg_installation'] = {'namespace': args.cnpg_database_namespace, 'cluster': 'gateway-database', 'scope': 'One database namespace and Pod selector on TCP port 5432 for the worker and allocated Gateways; no added Kubernetes permission.'}
     (destination / 'acceptance/browser-inspection-source.json').write_text(json.dumps(record, indent=2) + '\n')
     print('Prepared frozen inspection fixture: ' + str(destination))
 

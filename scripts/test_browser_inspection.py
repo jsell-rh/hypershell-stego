@@ -114,14 +114,32 @@ class InspectionBoundary(unittest.TestCase):
         original = inspection.declaration((ROOT / 'service.yaml').read_text())
         fixture = inspection.cnpg_declaration(original, 'stego-cnpg-database-ci')
         extra = [line for line in fixture.splitlines(keepends=True) if line not in original.splitlines(keepends=True)]
-        self.assertEqual(len(extra), 1)
-        self.assertIn('namespace: stego-cnpg-database-ci', extra[0])
-        self.assertEqual(fixture.replace(extra[0], '', 1), original)
+        self.assertEqual(len(extra), 2)
+        self.assertTrue(all('namespace: stego-cnpg-database-ci' in line for line in extra))
+        restored = fixture
+        for line in extra:
+            restored = restored.replace(line, '', 1)
+        self.assertEqual(restored, original)
         with self.assertRaises(ValueError):
             inspection.cnpg_declaration(fixture, 'stego-cnpg-database-ci')
         for namespace in ['default', '', 'stego-cnpg-database-', 'stego-cnpg-database-x/' , 'stego-cnpg-database-' + 'x' * 64]:
             with self.subTest(namespace=namespace), self.assertRaises(ValueError):
                 inspection.cnpg_declaration(original, namespace)
+
+    def test_cnpg_runtime_preserves_all_other_allocation_fields(self):
+        original = inspection.allocation_config((ROOT / 'out/deploy/allocation/allocation.go').read_text())
+        fixture = copy.deepcopy(original)
+        gateway = next(p for p in fixture['Profiles'] if p['Name'] == 'gateway')
+        peer = {'Direction': 'egress', 'Namespace': 'external', 'ExternalNamespace': 'stego-cnpg-database-ci', 'PodLabel': 'cnpg.io/cluster', 'PodValue': 'gateway-database', 'Protocol': 'TCP', 'Port': 5432}
+        gateway['NetworkPeers'].insert(0, peer)
+        inspection.verify_cnpg_runtime(go(original), go(fixture), 'stego-cnpg-database-ci')
+        for key, value in [('Namespace', 'control'), ('ExternalNamespace', 'default'), ('Port', 0), ('PodValue', 'other')]:
+            changed = copy.deepcopy(fixture)
+            next(p for p in changed['Profiles'] if p['Name'] == 'gateway')['NetworkPeers'][0][key] = value
+            with self.assertRaises(ValueError):
+                inspection.verify_cnpg_runtime(go(original), go(changed), 'stego-cnpg-database-ci')
+        with self.assertRaises(ValueError):
+            inspection.verify_cnpg_runtime(go(original), go(fixture) + '; changed code', 'stego-cnpg-database-ci')
 
     def test_cnpg_render_cannot_broaden_network_or_worker_permissions(self):
         original = {'items': [

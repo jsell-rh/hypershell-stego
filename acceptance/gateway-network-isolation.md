@@ -12,8 +12,9 @@ or Secrets and have a 90-second deadline. The inspection fixture supplies Pod
 creation, log reading, and policy observation rights only in its bound namespaces.
 These probes have not run on the cluster yet. They do not establish complete
 network isolation. An unrelated namespace and live endpoint changes still need
-checks. The CNPG fixture needs its selected database Pod peer in the allocation
-profile. External RDS deployments need explicit operator endpoint declarations;
+checks. The CNPG fixture now adds its selected database Pod peer to the allocation
+profile and the worker. A generated baseline keeps its inspection-role check
+separate. Its live isolation workflow remains required. External RDS deployments need explicit operator endpoint declarations;
 the default test SQL peer does not permit an arbitrary external server.
 
 The current candidate `5043608` uses STEGO `5516e48`. Regeneration passed in both
