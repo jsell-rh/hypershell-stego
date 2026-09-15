@@ -4,8 +4,10 @@ The required [Gateway namespace network isolation](acceptance/gateway-network-is
 is not enabled in the application. STEGO supplies an optional deny-all policy
 and admission protection. Allowed Gateway traffic and live network enforcement
 remain open. A passing API or browser test does not prove this requirement.
-The [public Gateway record](acceptance/public-route-host.json) tracks the separate
-public TLS and RPC gate. It has no complete passing result yet.
+The [complete public Gateway workflow](acceptance/public-gateway-complete-20260915.json)
+passed through the generated browser backend, REST, gRPC, restart, regeneration,
+public TLS, certificate rotation, service accounts, telemetry, and normal cleanup.
+This result does not prove the separate namespace network isolation requirement.
 
 The [controller-local database change](acceptance/controller-local-database.md)
 removes `database_id`, `ManagedDatabase`, and database registration from the
@@ -20,7 +22,7 @@ explicit teardown and recreation; the application does not perform that action.
 The [complete CNPG workflow](acceptance/cnpg-complete-evidence.json) also passes
 with database primary replacement, namespace recovery, access checks, account
 cleanup, and automatic test cleanup. The operator installed the test server;
-unattended CNPG CI and the public Gateway endpoint remain open.
+unattended CNPG CI remains open.
 
 STEGO must provide common service infrastructure and generated contracts.
 Hypershell must supply its unique business rules and application workflows

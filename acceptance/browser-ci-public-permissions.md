@@ -61,8 +61,8 @@ receipts and recovery journal hashes. The earlier
 [offline plan](browser-public-permission-plan.json) remains a historical record.
 The public workflow started in run `34983965151` with the existing jshell router,
 its current address, and the public certificate from the selected test issuer.
-The complete public Gateway result remains pending. These installation checks do
-not prove application behavior or Gateway network isolation.
+These installation checks do not prove application behavior or Gateway network
+isolation. The later complete application result is recorded below.
 
 The first complete public run, `34983965151`, failed. Its Gateway Pod and
 certificates were ready, but OpenShift denied the Route's explicit host under
@@ -112,5 +112,10 @@ retains these results without claiming a complete workflow pass.
 
 Commit `842a71c` requires the exact count for each profile and retains the signal
 checks for every instance. Nine focused cases passed. Public run `34991226917`
-and core/browser run `34991229447` check the corrected source. Their complete
-results remain required.
+passed the complete workflow in 457.75 seconds with race detection. Each of the
+eight worker instances supplied metrics and correlated logs and traces. Rendered
+service-account use, confirmed provider logout, normal Gateway deletion, and
+automatic test cleanup passed. No allocations remained for fallback cleanup.
+The [complete record](public-gateway-complete-20260915.json) retains reports,
+source identity, generation hashes, and the result's limits. Allocated namespace
+network isolation remains open.
