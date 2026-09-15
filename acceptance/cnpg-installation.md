@@ -156,3 +156,18 @@ confirmed absence of application data, allocations, the database namespace, all
 26 operator resources, and both recorded volumes. The shared Lease is free.
 See the [verified application and cleanup record](cnpg-installation-evidence.json).
 The original nonzero runner result is retained; unattended CI remains open.
+
+The next run uses frozen source `eb53ea7` and compiler `5e9c89d`. Preparation
+verified all 891 source files against the commit, generation and drift, and the
+five allowed fixture changes. The source is
+`/tmp/hypershell-cnpg-installation-source-v5`; its dedicated database namespace
+is `stego-cnpg-database-20260915-v5`. See the
+[preflight evidence](cnpg-installation-preflight-evidence.json).
+
+This source includes the verified viewer and account checks, the cleanup read
+retry, and the new credential check before installation. Eight credential
+checks, six CNPG workflow checks, six server fixture checks, and four operator
+checks passed. The frozen runner import also leaves the source inventory
+unchanged. No server has been installed for this run. Wait for the active
+browser and queued API runs to finish, verify cleanup, and renew the CI
+credential before acquiring the shared Lease.

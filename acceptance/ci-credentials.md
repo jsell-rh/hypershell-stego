@@ -61,3 +61,13 @@ check was added. Near-expiry credentials stop each runner after only the local
 kubeconfig read. The renewed private credential also
 passed the browser lifetime check. A live run of the environment-backed
 workflow remains required.
+
+Full application CI at `f900d5a`
+[completed](https://github.com/jsell-rh/hypershell-stego/actions/runs/34952975998).
+Core acceptance passed in 1316.744 seconds. Ordinary browser, console, and
+service-image jobs passed. The overall run failed on the unfinished CNPG and
+Sandbox jobs. The environment-backed live browser run `34952975989` remains
+active. Its older queued API run was cancelled in favor of the newer API run
+`34955320269` at `eb53ea7`. The newer duplicate browser run was cancelled while
+pending; the next CNPG run will also exercise its credential reader. Neither
+cancellation is a passing result.
