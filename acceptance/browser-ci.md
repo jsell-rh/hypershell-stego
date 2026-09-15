@@ -197,3 +197,16 @@ private test fixtures. The next serialized API Job holds the Lease. The images
 show a healthy Gateway and an empty account list; they do not verify a public
 connection command. See [the verified record](browser-route-composition-evidence.json).
 The API run and later pool-metric source have separate acceptance results.
+
+The separate [route-composition API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34960101313)
+passed all 30 required tests at `8551ad3`. Verification matched 897 source files,
+229 generated files, and all generation records. Its Job, Pods, and private
+fixtures are absent. The next serialized API Job holds the Lease. Full CI
+`34960101322` passed core acceptance in 1269.092 seconds, ordinary browser tests,
+the console, and the service image. The overall result remains failure because
+the CNPG and Sandbox jobs failed. See [the verified API record](api-route-composition-evidence.json).
+
+The [PostgreSQL client telemetry change](postgres-client-observability.md) at
+`2af1b46` has separate queued checks: API `34962176232`, browser `34962176339`,
+and full CI `34962176260`. Its compiler is `f2b09c0`. The earlier pool-metric
+runs remain in the queue or active; no required live test was canceled.
