@@ -75,12 +75,12 @@ BEGIN
   NEW.stego_generation := 1; NEW.stego_observations := ''{}''::jsonb;
  ELSE
   NEW.stego_generation := OLD.stego_generation;
-  IF to_jsonb(NEW."name") IS DISTINCT FROM to_jsonb(OLD."name") OR to_jsonb(NEW."cluster_id") IS DISTINCT FROM to_jsonb(OLD."cluster_id") OR to_jsonb(NEW."release_id") IS DISTINCT FROM to_jsonb(OLD."release_id") OR to_jsonb(NEW."namespace") IS DISTINCT FROM to_jsonb(OLD."namespace") OR to_jsonb(NEW."external_dns") IS DISTINCT FROM to_jsonb(OLD."external_dns") OR to_jsonb(NEW."tls_mode") IS DISTINCT FROM to_jsonb(OLD."tls_mode") OR to_jsonb(NEW."service_type") IS DISTINCT FROM to_jsonb(OLD."service_type") OR to_jsonb(NEW."image") IS DISTINCT FROM to_jsonb(OLD."image") OR to_jsonb(NEW."supervisor_image") IS DISTINCT FROM to_jsonb(OLD."supervisor_image") OR to_jsonb(NEW."server_dns_names") IS DISTINCT FROM to_jsonb(OLD."server_dns_names") OR to_jsonb(NEW."route_address") IS DISTINCT FROM to_jsonb(OLD."route_address") OR to_jsonb(NEW."oidc") IS DISTINCT FROM to_jsonb(OLD."oidc") OR to_jsonb(NEW."route") IS DISTINCT FROM to_jsonb(OLD."route") OR to_jsonb(NEW."credential_driver") IS DISTINCT FROM to_jsonb(OLD."credential_driver") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
+  IF to_jsonb(NEW."name") IS DISTINCT FROM to_jsonb(OLD."name") OR to_jsonb(NEW."cluster_id") IS DISTINCT FROM to_jsonb(OLD."cluster_id") OR to_jsonb(NEW."release_id") IS DISTINCT FROM to_jsonb(OLD."release_id") OR to_jsonb(NEW."namespace") IS DISTINCT FROM to_jsonb(OLD."namespace") OR to_jsonb(NEW."external_dns") IS DISTINCT FROM to_jsonb(OLD."external_dns") OR to_jsonb(NEW."tls_mode") IS DISTINCT FROM to_jsonb(OLD."tls_mode") OR to_jsonb(NEW."service_type") IS DISTINCT FROM to_jsonb(OLD."service_type") OR to_jsonb(NEW."image") IS DISTINCT FROM to_jsonb(OLD."image") OR to_jsonb(NEW."supervisor_image") IS DISTINCT FROM to_jsonb(OLD."supervisor_image") OR to_jsonb(NEW."server_dns_names") IS DISTINCT FROM to_jsonb(OLD."server_dns_names") OR to_jsonb(NEW."oidc") IS DISTINCT FROM to_jsonb(OLD."oidc") OR to_jsonb(NEW."route") IS DISTINCT FROM to_jsonb(OLD."route") OR to_jsonb(NEW."credential_driver") IS DISTINCT FROM to_jsonb(OLD."credential_driver") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
    NEW.stego_generation := OLD.stego_generation + 1;
    NEW.stego_observations := OLD.stego_observations;
   END IF;
  END IF;
- -- generation contract 3262e534a62fbefd2da0668df655816de2636b5a831feef09779eb84f7789b77
+ -- generation contract 8b63a55071c7df845d98f96544d5aff67971c5e40969312fd8b6d19bf199ae8d
  IF TG_OP = ''INSERT'' THEN NEW.stego_conditions := ''{}''::jsonb; END IF;
  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM ''object'' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E''identity'',E''identity_users'']::text[] <> ''{}''::jsonb THEN
  RAISE EXCEPTION ''invalid resource conditions'' USING ERRCODE=''23514''; END IF;
@@ -124,7 +124,7 @@ BEGIN
    END IF;
   END IF;
  END IF;
- -- cleanup fields 1871e40cacb22dff3918212a2349e79db0f5af2bc971439be6db73a046ffdff4
+ -- cleanup fields 713b9d3161965a44b7418b5a90b96af7f54d36bb01d0be722c4d88136b8712f3
 
  target_reset := TG_OP = ''INSERT'';
  IF TG_OP = ''INSERT'' THEN
@@ -202,12 +202,12 @@ BEGIN
   NEW.stego_generation := 1; NEW.stego_observations := '{}'::jsonb;
  ELSE
   NEW.stego_generation := OLD.stego_generation;
-  IF to_jsonb(NEW."name") IS DISTINCT FROM to_jsonb(OLD."name") OR to_jsonb(NEW."cluster_id") IS DISTINCT FROM to_jsonb(OLD."cluster_id") OR to_jsonb(NEW."release_id") IS DISTINCT FROM to_jsonb(OLD."release_id") OR to_jsonb(NEW."namespace") IS DISTINCT FROM to_jsonb(OLD."namespace") OR to_jsonb(NEW."external_dns") IS DISTINCT FROM to_jsonb(OLD."external_dns") OR to_jsonb(NEW."tls_mode") IS DISTINCT FROM to_jsonb(OLD."tls_mode") OR to_jsonb(NEW."service_type") IS DISTINCT FROM to_jsonb(OLD."service_type") OR to_jsonb(NEW."image") IS DISTINCT FROM to_jsonb(OLD."image") OR to_jsonb(NEW."supervisor_image") IS DISTINCT FROM to_jsonb(OLD."supervisor_image") OR to_jsonb(NEW."server_dns_names") IS DISTINCT FROM to_jsonb(OLD."server_dns_names") OR to_jsonb(NEW."route_address") IS DISTINCT FROM to_jsonb(OLD."route_address") OR to_jsonb(NEW."oidc") IS DISTINCT FROM to_jsonb(OLD."oidc") OR to_jsonb(NEW."route") IS DISTINCT FROM to_jsonb(OLD."route") OR to_jsonb(NEW."credential_driver") IS DISTINCT FROM to_jsonb(OLD."credential_driver") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
+  IF to_jsonb(NEW."name") IS DISTINCT FROM to_jsonb(OLD."name") OR to_jsonb(NEW."cluster_id") IS DISTINCT FROM to_jsonb(OLD."cluster_id") OR to_jsonb(NEW."release_id") IS DISTINCT FROM to_jsonb(OLD."release_id") OR to_jsonb(NEW."namespace") IS DISTINCT FROM to_jsonb(OLD."namespace") OR to_jsonb(NEW."external_dns") IS DISTINCT FROM to_jsonb(OLD."external_dns") OR to_jsonb(NEW."tls_mode") IS DISTINCT FROM to_jsonb(OLD."tls_mode") OR to_jsonb(NEW."service_type") IS DISTINCT FROM to_jsonb(OLD."service_type") OR to_jsonb(NEW."image") IS DISTINCT FROM to_jsonb(OLD."image") OR to_jsonb(NEW."supervisor_image") IS DISTINCT FROM to_jsonb(OLD."supervisor_image") OR to_jsonb(NEW."server_dns_names") IS DISTINCT FROM to_jsonb(OLD."server_dns_names") OR to_jsonb(NEW."oidc") IS DISTINCT FROM to_jsonb(OLD."oidc") OR to_jsonb(NEW."route") IS DISTINCT FROM to_jsonb(OLD."route") OR to_jsonb(NEW."credential_driver") IS DISTINCT FROM to_jsonb(OLD."credential_driver") OR NEW.deleted_at IS DISTINCT FROM OLD.deleted_at THEN
    NEW.stego_generation := OLD.stego_generation + 1;
    NEW.stego_observations := OLD.stego_observations;
   END IF;
  END IF;
- -- generation contract 3262e534a62fbefd2da0668df655816de2636b5a831feef09779eb84f7789b77
+ -- generation contract 8b63a55071c7df845d98f96544d5aff67971c5e40969312fd8b6d19bf199ae8d
  IF TG_OP = 'INSERT' THEN NEW.stego_conditions := '{}'::jsonb; END IF;
  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity',E'identity_users']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
@@ -251,7 +251,7 @@ BEGIN
    END IF;
   END IF;
  END IF;
- -- cleanup fields 1871e40cacb22dff3918212a2349e79db0f5af2bc971439be6db73a046ffdff4
+ -- cleanup fields 713b9d3161965a44b7418b5a90b96af7f54d36bb01d0be722c4d88136b8712f3
 
  target_reset := TG_OP = 'INSERT';
  IF TG_OP = 'INSERT' THEN

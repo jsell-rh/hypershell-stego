@@ -47,7 +47,7 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 	}
 	for _, patch := range []gateways.PatchRequest{
 		{Name: pointer("")}, {Name: pointer("invalid\x00")}, {ClusterID: pointer("bad")}, {ReleaseID: pointer(ksuid.New().String())},
-		{RouteAddress: pointer("invalid\x00")}, {ServerDNSNames: make([]string, 129)},
+		{ServerDNSNames: make([]string, 129)},
 	} {
 		if _, err := f.service.Update(ctx, owner, created.ID, patch); !errors.Is(err, gateways.ErrInvalid) {
 			t.Fatalf("invalid patch: %v", err)
@@ -216,15 +216,15 @@ func TestControlPlaneSubjectDoesNotUseUsernameOrRoles(t *testing.T) {
 	}
 	console := pointer("https://console.example.test")
 	for _, p := range []gateways.Principal{principal("alice"), principal("admin", "platform:admin"), {Issuer: "https://issuer.example", Subject: "ordinary", Username: "controller-subject", Roles: []string{"control-plane"}}} {
-		if _, err := service.UpdateControlPlane(ctx, p, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
+		if _, err := service.UpdateControlPlane(ctx, p, row.ID, gateways.PatchRequest{}, console, nil, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
 			t.Fatalf("control-plane identity accepted: %v", err)
 		}
 	}
 	controller := gateways.Principal{Issuer: "https://issuer.example", Subject: "controller-subject", Username: "controller"}
-	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
+	if _, err := f.service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, nil, row.ResourceVersion); !errors.Is(err, gateways.ErrForbidden) {
 		t.Fatalf("missing allowlist accepted: %v", err)
 	}
-	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, row.ResourceVersion)
+	got, err := service.UpdateControlPlane(ctx, controller, row.ID, gateways.PatchRequest{}, console, nil, row.ResourceVersion)
 	if err != nil || got.ConsoleAddress == nil || *got.ConsoleAddress != *console {
 		t.Fatalf("controller update: %+v %v", got, err)
 	}

@@ -12,7 +12,7 @@ import (
 )
 
 const SchemaGeneration = "controller-local-v2"
-const SchemaDefinition = "eb60dc7871f86bc21ffd682d3fa1637ed08860286070c0669622fca71df327d1"
+const SchemaDefinition = "e24a6a12be259d782565844debdb397d68490f9dbc2d2c043313f8f340a66bbe"
 
 var ErrSchemaGeneration = errors.New("database schema generation is not supported")
 

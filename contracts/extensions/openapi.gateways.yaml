@@ -372,8 +372,6 @@ components:
           type: array
           items:
             type: string
-        route_address:
-          type: string
         oidc:
           type: string
         route:

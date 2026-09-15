@@ -57,7 +57,7 @@ func (s *Store) ReadScopedCleanupSummary(ctx context.Context, entity, owner, tar
 		table = "gateways"
 		owners = map[string]bool{"identity": true, "sql": true, "workload": true}
 		targets = map[string]bool{"sql": true, "workload": true}
-		scopes = map[string]bool{"cluster_id": true, "console_address": true, "credential_driver": true, "external_dns": true, "id": true, "image": true, "name": true, "namespace": true, "oidc": true, "release_id": true, "route": true, "route_address": true, "service_type": true, "supervisor_image": true, "tls_mode": true}
+		scopes = map[string]bool{"cluster_id": true, "console_address": true, "credential_driver": true, "external_dns": true, "id": true, "image": true, "name": true, "namespace": true, "oidc": true, "release_id": true, "route": true, "service_type": true, "supervisor_image": true, "tls_mode": true}
 	default:
 		return zero, contract.ErrCleanupSummary
 	}

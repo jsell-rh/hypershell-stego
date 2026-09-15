@@ -33,9 +33,6 @@ func applyResources(commands []command.Command) []command.ApplyResource {
 				patch[i].Required = false
 				patch[i].Nullable = true
 			}
-			if resource.kind == "Gateway" {
-				patch = append(patch, command.Field{Flag: "route-address", Key: "route_address", Type: "string", Nullable: true})
-			}
 			resources = append(resources, command.ApplyResource{Kind: resource.kind, APIVersion: "hypershell/v1", Path: path, CreateFields: create, PatchFields: patch})
 			break
 		}

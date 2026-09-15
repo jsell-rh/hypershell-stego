@@ -27,7 +27,6 @@ type PatchRequest struct {
 	Image            *string  `json:"image,omitempty"`
 	SupervisorImage  *string  `json:"supervisor_image,omitempty"`
 	ServerDNSNames   []string `json:"server_dns_names,omitempty"`
-	RouteAddress     *string  `json:"route_address,omitempty"`
 	OIDC             *string  `json:"oidc,omitempty"`
 	Route            *string  `json:"route,omitempty"`
 	CredentialDriver *string  `json:"credential_driver,omitempty"`
@@ -43,14 +42,14 @@ func (s *Service) Update(ctx context.Context, p Principal, id string, patch Patc
 	if patch.Phase != nil || patch.Status != nil {
 		return model.Gateway{}, ErrObservationOwned
 	}
-	return s.update(ctx, p, id, patch, nil, 0)
+	return s.update(ctx, p, id, patch, nil, nil, 0)
 }
 
 var ErrObservationRequired = errors.New("controller write requires an observed resource version")
-var ErrObservationOwned = errors.New("phase and status are controller-owned fields")
+var ErrObservationOwned = errors.New("phase, status, and route_address are controller-owned fields")
 
 // UpdateControlPlane requires the revision read before external work.
-func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string, version int64) (model.Gateway, error) {
+func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress, routeAddress *string, version int64) (model.Gateway, error) {
 	if err := validatePrincipal(p); err != nil {
 		return model.Gateway{}, err
 	}
@@ -60,10 +59,10 @@ func (s *Service) UpdateControlPlane(ctx context.Context, p Principal, id string
 	if version < 1 {
 		return model.Gateway{}, ErrObservationRequired
 	}
-	return s.update(ctx, p, id, patch, consoleAddress, version)
+	return s.update(ctx, p, id, patch, consoleAddress, routeAddress, version)
 }
 
-func (s *Service) update(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress *string, version int64) (model.Gateway, error) {
+func (s *Service) update(ctx context.Context, p Principal, id string, patch PatchRequest, consoleAddress, routeAddress *string, version int64) (model.Gateway, error) {
 	var row model.Gateway
 	if err := validatePrincipal(p); err != nil {
 		return row, err
@@ -77,12 +76,12 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 			return err
 		}
 		if version > 0 {
-			if err := s.authorizeControllerWrite(p, current.ClusterID, patch, consoleAddress); err != nil {
+			if err := s.authorizeControllerWrite(p, current.ClusterID, patch, consoleAddress, routeAddress); err != nil {
 				return err
 			}
 		}
 		previousClusterID := current.ClusterID
-		if err := applyPatch(&current, patch, consoleAddress); err != nil {
+		if err := applyPatch(&current, patch, consoleAddress, routeAddress); err != nil {
 			return err
 		}
 		for entity, reference := range map[string]*string{"ManagedCluster": patch.ClusterID, "GatewayRelease": patch.ReleaseID} {
@@ -104,6 +103,12 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 				return errors.New("Gateway storage does not support observations")
 			}
 			err = writer.ObserveIfVersion(ctx, "Gateway", id, version, "workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status})
+		} else if routeAddress != nil {
+			writer, ok := tx.(store.ObservationWriter)
+			if !ok {
+				return errors.New("Gateway storage does not support observations")
+			}
+			err = writer.ObserveIfVersion(ctx, "Gateway", id, version, "endpoint", map[string]any{"route_address": *routeAddress})
 		} else if version > 0 {
 			writer, ok := tx.(store.VersionedWriter)
 			if !ok {
@@ -199,7 +204,7 @@ func (s *Service) mutationTarget(ctx context.Context, tx store.Transaction, p Pr
 	return rows[0], nil
 }
 
-func applyPatch(row *model.Gateway, p PatchRequest, consoleAddress *string) error {
+func applyPatch(row *model.Gateway, p PatchRequest, consoleAddress, routeAddress *string) error {
 	if p.CredentialDriver != nil && row.CredentialDriver != nil && *row.CredentialDriver != "" && *row.CredentialDriver != *p.CredentialDriver {
 		return store.ErrConflict
 	}
@@ -218,7 +223,7 @@ func applyPatch(row *model.Gateway, p PatchRequest, consoleAddress *string) erro
 	}{
 		{p.ExternalDNS, &row.ExternalDns}, {p.TLSMode, &row.TlsMode}, {p.ServiceType, &row.ServiceType},
 		{p.Status, &row.Status}, {p.Phase, &row.Phase}, {p.Image, &row.Image}, {p.SupervisorImage, &row.SupervisorImage},
-		{p.RouteAddress, &row.RouteAddress}, {p.OIDC, &row.Oidc}, {p.Route, &row.Route}, {p.CredentialDriver, &row.CredentialDriver}, {consoleAddress, &row.ConsoleAddress},
+		{routeAddress, &row.RouteAddress}, {p.OIDC, &row.Oidc}, {p.Route, &row.Route}, {p.CredentialDriver, &row.CredentialDriver}, {consoleAddress, &row.ConsoleAddress},
 	}
 	for _, field := range fields {
 		if field.source == nil {

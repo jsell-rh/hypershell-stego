@@ -118,7 +118,7 @@ func (s *server) UpdateGateway(ctx context.Context, request *pb.UpdateGatewayReq
 	patch := gateways.PatchRequest{
 		Name: request.Name, ClusterID: request.ClusterId, ReleaseID: request.ReleaseId,
 		ExternalDNS: request.ExternalDns, TLSMode: request.TlsMode, ServiceType: request.ServiceType, Status: request.Status, Phase: request.Phase,
-		Image: request.Image, SupervisorImage: request.SupervisorImage, ServerDNSNames: request.ServerDnsNames, RouteAddress: request.RouteAddress,
+		Image: request.Image, SupervisorImage: request.SupervisorImage, ServerDNSNames: request.ServerDnsNames,
 		OIDC: request.Oidc, Route: request.Route, CredentialDriver: request.CredentialDriver,
 	}
 	var row model.Gateway
@@ -126,8 +126,8 @@ func (s *server) UpdateGateway(ctx context.Context, request *pb.UpdateGatewayReq
 	if err != nil {
 		return nil, err
 	}
-	if request.ConsoleAddress != nil || conditional {
-		row, err = s.service.UpdateControlPlane(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch, request.ConsoleAddress, version)
+	if request.ConsoleAddress != nil || request.RouteAddress != nil || conditional {
+		row, err = s.service.UpdateControlPlane(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch, request.ConsoleAddress, request.RouteAddress, version)
 	} else {
 		row, err = s.service.Update(ctx, gateways.PrincipalFromContext(ctx), request.Id, patch)
 	}

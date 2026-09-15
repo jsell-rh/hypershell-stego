@@ -6,6 +6,7 @@ patches and sandbox count calls. Hypershell maps its fields to these operations:
 | Operation | Fields | Target |
 | --- | --- | --- |
 | `observe.workload` | Both `phase` and `status` | Stored ManagedCluster ID |
+| `observe.endpoint` | `route_address` | Stored ManagedCluster ID |
 | `configure.identity` | `oidc` | Empty string |
 | `configure.console` | `console_address` | Stored ManagedCluster ID |
 | `observe.sandbox-count` | `active_sandbox_count`, through count RPCs | Stored ManagedCluster ID |
@@ -76,3 +77,11 @@ controller paths, including creation, deletion, grants, catalog writes, and priv
 still need a complete permission model. Conditional database patches now have
 their own [provider grant contract](database-write-permissions.md). Provider
 credentials and cross-process fencing remain separate open work.
+
+The public REST patch, generated REST SDK inputs, and CLI apply fields exclude
+`route_address`. The gRPC update field remains for assigned controllers. Its
+write requires the same revision check as other observations. The generated
+`endpoint` observation group hides the old address after a desired generation
+change. Publishing or clearing an address does not change the desired generation.
+The controller must verify the route before publication; that live route workflow
+remains an open acceptance requirement.

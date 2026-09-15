@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"reflect"
 	"testing"
@@ -44,7 +45,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["workload","identity","second","ungranted","console","cleanup"]`)
 	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant("workload", "observe.workload", f.cluster), writeGrant("identity", "configure.identity", ""), writeGrant("second", "observe.workload", second), writeGrant("console", "configure.console", f.cluster), writeGrant("ordinary", "observe.workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant("workload", "observe.workload", f.cluster), writeGrant("identity", "configure.identity", ""), writeGrant("second", "observe.workload", second), writeGrant("console", "configure.console", f.cluster), writeGrant("ordinary", "observe.workload", f.cluster), writeGrant("workload", "observe.endpoint", f.cluster), writeGrant("second", "observe.endpoint", second))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -106,7 +107,67 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	write(workloadToken, statusPatch(), codes.OK)
 	write(token(t, key, "identity"), &pb.UpdateGatewayRequest{Oidc: pointer("{}")}, codes.OK)
 	write(token(t, key, "console"), &pb.UpdateGatewayRequest{ConsoleAddress: pointer("https://console.example")}, codes.OK)
+	endpointPatch := func(value string) *pb.UpdateGatewayRequest {
+		return &pb.UpdateGatewayRequest{RouteAddress: &value}
+	}
+	endpoint := "https://gateway.example.test"
+	for _, subject := range []string{"identity", "second", "ungranted", "ordinary", "cleanup", "console", "alice"} {
+		write(token(t, key, subject, "platform:admin"), endpointPatch(endpoint), codes.PermissionDenied)
+	}
+	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, Phase: pointer("Running"), Status: pointer("Healthy")}, codes.InvalidArgument)
+	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, ConsoleAddress: pointer(endpoint)}, codes.InvalidArgument)
+	write(workloadToken, &pb.UpdateGatewayRequest{RouteAddress: &endpoint, ClusterId: &second}, codes.InvalidArgument)
+	write(workloadToken, endpointPatch("invalid\x00"), codes.InvalidArgument)
+	beforeEndpoint := state()
+	write(workloadToken, endpointPatch(endpoint), codes.OK)
+	published := state()
+	if published.ResourceGeneration != beforeEndpoint.ResourceGeneration || published.ObservedGeneration("endpoint") != published.ResourceGeneration || published.CurrentObservations().RouteAddress == nil || *published.CurrentObservations().RouteAddress != endpoint {
+		t.Fatal("endpoint observation changed desired generation or was not published")
+	}
+	stale, err := rpc.WithResourceVersion(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+workloadToken)), beforeEndpoint.ResourceVersion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	staleEvents := count(t, f.db, "gateway_event_audit")
+	if _, err := client.UpdateGateway(stale, &pb.UpdateGatewayRequest{Id: row.ID, RouteAddress: pointer("")}); status.Code(err) != codes.Aborted {
+		t.Fatal("stale endpoint observation was accepted", err)
+	}
+	if !reflect.DeepEqual(published, state()) || count(t, f.db, "gateway_event_audit") != staleEvents {
+		t.Fatal("stale endpoint observation changed state or events")
+	}
 	root := address + "/api/hypershell/v1/gateways/" + row.ID
+	owner := token(t, key, "alice")
+	for _, value := range []string{`null`, `""`, `"https://untrusted.example"`} {
+		if code, _ := requestJSON(t, "PATCH", root, owner, []byte(`{"name":"must-not-change","route_address":`+value+`}`)); code != 400 {
+			t.Fatal("owner REST patch accepted route_address", code)
+		}
+		body := []byte(fmt.Sprintf(`{"name":"must-not-create","cluster_id":%q,"release_id":%q,"route_address":%s}`, f.cluster, f.release, value))
+		if code, _ := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", token(t, key, "alice", "gateway:creator"), body); code != 400 {
+			t.Fatal("REST creation accepted route_address", code)
+		}
+	}
+	for _, value := range []string{"", endpoint} {
+		if _, err := client.UpdateGateway(metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+owner)), &pb.UpdateGatewayRequest{Id: row.ID, RouteAddress: &value}); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("owner gRPC update accepted route_address", err)
+		}
+	}
+	if !reflect.DeepEqual(published, state()) || count(t, f.db, "gateway_event_audit") != staleEvents || count(t, f.db, "gateways") != 1 {
+		t.Fatal("rejected owner endpoint write changed state or events")
+	}
+	for _, bearer := range []string{owner, workloadToken} {
+		code, body := requestJSON(t, "GET", root, bearer, nil)
+		var response struct {
+			RouteAddress string `json:"route_address"`
+		}
+		if code != 200 || json.Unmarshal(body, &response) != nil || response.RouteAddress != endpoint {
+			t.Fatal("REST read lost the controller endpoint", code)
+		}
+	}
+	write(workloadToken, endpointPatch(""), codes.OK)
+	if value := state().CurrentObservations().RouteAddress; value == nil || *value != "" {
+		t.Fatal("controller could not clear the endpoint")
+	}
+	write(workloadToken, endpointPatch(endpoint), codes.OK)
 	before := state()
 	if code, _ := requestJSON(t, "PATCH", root, workloadToken, []byte(`{"oidc":"wrong"}`)); code != 428 {
 		t.Fatal("REST controller bypass", code)
@@ -128,14 +189,20 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_eve
 	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	client, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	write(workloadToken, statusPatch(), codes.PermissionDenied)
+	write(workloadToken, endpointPatch(endpoint), codes.PermissionDenied)
+	if value := state().CurrentObservations().RouteAddress; value == nil || *value != "" {
+		t.Fatal("placement change retained an old public endpoint")
+	}
 	write(token(t, key, "console"), &pb.UpdateGatewayRequest{ConsoleAddress: pointer("https://wrong.example")}, codes.PermissionDenied)
 	secondToken := token(t, key, "second")
 	write(secondToken, statusPatch(), codes.OK)
+	write(secondToken, endpointPatch(endpoint), codes.OK)
 	connection.Close()
 	stop()
 	settings = withControllerWriteGrants(t, settings, writeGrant("identity", "configure.identity", ""))
 	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	client, _ = grpcClient(t, grpcAddress, tlsIdentity)
 	write(secondToken, statusPatch(), codes.PermissionDenied)
+	write(secondToken, endpointPatch(""), codes.PermissionDenied)
 	write(token(t, key, "identity"), &pb.UpdateGatewayRequest{Oidc: pointer(`{"issuer":"updated"}`)}, codes.OK)
 }

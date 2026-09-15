@@ -48,9 +48,10 @@ entities:
     conditions: {identity: [ClientReady], identity_users: [GrantsSynchronized]}
     cleanup_owners: [identity, workload, sql]
     cleanup_targets: {workload: cluster_id, sql: cluster_id}
-    generation_fields: [name, cluster_id, release_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, route_address, oidc, route, credential_driver]
+    generation_fields: [name, cluster_id, release_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, oidc, route, credential_driver]
     observations:
       workload: [phase, status]
+      endpoint: [route_address]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
       - { name: cluster_id, type: ref, to: ManagedCluster }
@@ -64,7 +65,7 @@ entities:
       - { name: image, type: string, optional: true }
       - { name: supervisor_image, type: string, optional: true }
       - { name: server_dns_names, type: jsonb, optional: true }
-      - { name: route_address, type: string, optional: true }
+      - { name: route_address, type: string, optional: true, unobserved: "" }
       - { name: console_address, type: string, optional: true }
       - { name: oidc, type: string, optional: true }
       - { name: route, type: string, optional: true }

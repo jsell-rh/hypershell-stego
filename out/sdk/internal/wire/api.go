@@ -393,7 +393,6 @@ type GatewayPatchRequest struct {
 	Phase            *string   `json:"phase,omitempty"`
 	ReleaseId        *string   `json:"release_id,omitempty"`
 	Route            *string   `json:"route,omitempty"`
-	RouteAddress     *string   `json:"route_address,omitempty"`
 	ServerDnsNames   *[]string `json:"server_dns_names,omitempty"`
 	ServiceType      *string   `json:"service_type,omitempty"`
 	Status           *string   `json:"status,omitempty"`

@@ -547,7 +547,15 @@ func TestServiceAccountRejectsUnsafeConnectionMetadata(t *testing.T) {
 	} {
 		config, _ := json.Marshal(map[string]string{"issuer": test.issuer, "client_id": test.clientID, "audience": test.audience})
 		value := string(config)
-		if _, err := f.service.Update(ctx, principal("alice"), gateway.ID, gateways.PatchRequest{OIDC: &value, RouteAddress: &test.endpoint}); err != nil {
+		if _, err := f.service.Update(ctx, principal("alice"), gateway.ID, gateways.PatchRequest{OIDC: &value}); err != nil {
+			t.Fatal(err)
+		}
+		// Inject invalid observed state to check the connection reader's defense.
+		stored, err := f.storage.Get(ctx, "Gateway", gateway.ID)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := f.storage.ObserveIfVersion(ctx, "Gateway", gateway.ID, stored.(model.Gateway).ResourceVersion, "endpoint", map[string]any{"route_address": test.endpoint}); err != nil {
 			t.Fatal(err)
 		}
 		observeGatewayFixture(t, f, gateway.ID)
@@ -617,7 +625,7 @@ func observeGatewayFixture(t testing.TB, f *fixture, id string) model.Gateway {
 	if err != nil {
 		t.Fatal(err)
 	}
-	row, err = service.UpdateControlPlane(ctx, controller, id, gateways.PatchRequest{Phase: pointer("Running"), Status: pointer("Healthy")}, nil, row.ResourceVersion)
+	row, err = service.UpdateControlPlane(ctx, controller, id, gateways.PatchRequest{Phase: pointer("Running"), Status: pointer("Healthy")}, nil, nil, row.ResourceVersion)
 	if err != nil {
 		t.Fatal(err)
 	}

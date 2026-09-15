@@ -10,10 +10,16 @@ requests must reject this field, including an empty value. Responses retain it.
 Only the assigned controller can publish or clear the observed address. It must
 verify route ownership, workload state, and the current resource revision.
 
-The current implementation and browser evidence do not yet meet this contract.
-The browser checks use an internal Service endpoint, and the API still permits
-owner writes to `route_address`. The connection panel still shows loading
-placeholders. These are open implementation and acceptance requirements.
+The API now excludes `route_address` from owner REST and CLI inputs. A gRPC
+controller write requires an exact `observe.endpoint` grant for the stored
+cluster and the current revision. STEGO's generated observation group hides an
+address from an older desired generation. Focused policy and request-decoder
+checks pass. The complete acceptance package compiles; live transport checks
+still need CI results.
+
+The full public workflow remains incomplete. The browser checks use an internal
+Service endpoint. The connection panel still shows loading placeholders. Route
+verification, certificate selection, and public connection evidence remain open.
 
 The complete public workflow must create a Gateway through the console, publish
 a verified address, show a usable command, and execute an authenticated RPC

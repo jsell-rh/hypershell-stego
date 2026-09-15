@@ -8,10 +8,15 @@ import (
 
 // authorizeControllerWrite uses the stored placement before any field changes.
 // Each request writes one field group. Other controller patches are denied.
-func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch PatchRequest, console *string) error {
+func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch PatchRequest, console, route *string) error {
 	operation, target := "", ""
 	rest := patch
 	switch {
+	case route != nil:
+		if console != nil {
+			return ErrInvalid
+		}
+		operation, target = "observe.endpoint", cluster
 	case patch.Phase != nil || patch.Status != nil:
 		if patch.Phase == nil || patch.Status == nil || console != nil {
 			return ErrInvalid
