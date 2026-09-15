@@ -10,8 +10,15 @@ The compiler correction reproduced two failures before the fix. Five focused
 checks and strict TypeScript checks passed after the fix. Full compiler CI is
 [run 34993843977](https://github.com/jsell-rh/stego/actions/runs/34993843977).
 
-This candidate updates the compiler pin and generated package. The served console
-bundle still needs a CI rebuild from this committed source. Bundle adoption,
-matching generation, and rendered application checks are required before this
-candidate establishes an application pass. The earlier complete public workflow
-used compiler `0b0c932` and does not prove this change.
+The candidate updates the compiler pin and generated package. Console asset
+[run 34994065945](https://github.com/jsell-rh/hypershell-stego/actions/runs/34994065945)
+built the bundle from candidate `13363e3`. Its recorded source commit, source
+archive hash, compiler pin, and bundle checksum match independent local checks.
+The bundle contains 54 entries and 852,525 bytes. The
+[build record](browser-observable-metrics-build.json) retains its identity.
+
+The candidate now includes that bundle and its generated backend assets. Both
+applications passed repeated generation and drift checks with the pinned
+compiler. Full compiler CI and rendered application checks remain required.
+The earlier complete public workflow used compiler `0b0c932` and does not prove
+this change.

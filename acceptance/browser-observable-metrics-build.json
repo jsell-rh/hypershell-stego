@@ -1,0 +1,13 @@
+{
+  "run": 34994065945,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34994065945",
+  "source": "13363e3b37fa285db43669b6224bf9eb130d4b5b",
+  "compiler": "fe07b0a85f9cc3136b73c296ce7221e0380eecce",
+  "bundle_sha256": "f784d94afe4959b7a6b1db4ec4fc106be2e5c81d59f021a50babd3c1d0c23130",
+  "bundle_bytes": 852525,
+  "bundle_entries": 54,
+  "source_archive_sha256": "70e7b269af4ba51348075f8f03f954d6aba1228889eaf83abd68d75024f9a83f",
+  "workflow_conclusion": "success",
+  "source_identity_and_bundle_checksum_verified": true,
+  "application_checks": "required after bundle adoption"
+}
