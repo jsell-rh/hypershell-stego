@@ -125,8 +125,54 @@ func (p *kubernetesBrowser) apply(value any) {
 	if err != nil {
 		p.t.Fatal(err)
 	}
-	p.command(data, "apply", "-f", "-")
+	p.command(p.labelFixture(data), "apply", "-f", "-")
 }
+
+// Mark mutable fixture data so repeated CI runs preserve operator resources.
+func (p *kubernetesBrowser) labelFixture(data []byte) []byte {
+	p.t.Helper()
+	var document map[string]any
+	if json.Unmarshal(data, &document) != nil {
+		p.t.Fatal("invalid fixture object")
+	}
+	var mark func(map[string]any)
+	mark = func(object map[string]any) {
+		if object["kind"] == "List" {
+			items, ok := object["items"].([]any)
+			if !ok {
+				p.t.Fatal("invalid fixture list")
+			}
+			for _, item := range items {
+				child, ok := item.(map[string]any)
+				if !ok {
+					p.t.Fatal("invalid fixture list item")
+				}
+				mark(child)
+			}
+			return
+		}
+		switch object["kind"] {
+		case "Secret", "ConfigMap", "Service", "Deployment", "NetworkPolicy", "Pod":
+			meta, ok := object["metadata"].(map[string]any)
+			if !ok || meta["namespace"] != p.namespace {
+				p.t.Fatal("fixture object is outside the control namespace")
+			}
+			labels, ok := meta["labels"].(map[string]any)
+			if !ok {
+				labels = map[string]any{}
+				meta["labels"] = labels
+			}
+			labels["stego.test/browser-run"] = p.namespace
+		}
+	}
+	mark(document)
+	result, err := json.Marshal(document)
+	if err != nil {
+		p.t.Fatal("cannot encode fixture labels")
+	}
+	return result
+}
+
 func (p *kubernetesBrowser) read(path string) []byte {
 	p.t.Helper()
 	data, err := os.ReadFile(path)
@@ -268,7 +314,7 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 	if err != nil {
 		p.t.Fatal("browser namespace renderer failed", err)
 	}
-	p.command(manifest, "apply", "-f", "-")
+	p.command(p.labelFixture(manifest), "apply", "-f", "-")
 	p.command(nil, "rollout", "status", "deployment/"+name, "--timeout=180s")
 	var list struct {
 		Items []struct {

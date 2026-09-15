@@ -8,12 +8,21 @@ cd "$project"
 test "$(uname -s)/$(uname -m)" = Linux/x86_64
 revision=$(cat .stego/compiler-revision)
 [[ $revision =~ ^[0-9a-f]{40}$ ]]
+preinstalled=${STEGO_TEST_PREINSTALLED:-0}
+[[ $preinstalled == 0 || $preinstalled == 1 ]]
 namespace="stego-service-$(date -u +%Y%m%d)-$(openssl rand -hex 3)"
-results=$(mktemp -d "${TMPDIR:-/tmp}/stego-service-results.XXXXXXXX")
+if [[ $preinstalled == 1 ]]; then namespace=stego-service-ci; fi
+if [[ -n ${STEGO_TEST_RESULTS:-} ]]; then
+  results=$STEGO_TEST_RESULTS
+  mkdir -m 700 -- "$results"
+else
+  results=$(mktemp -d "${TMPDIR:-/tmp}/stego-service-results.XXXXXXXX")
+fi
 chmod 700 "$results"
 oc_cmd=(oc --context "$STEGO_TEST_CONTEXT" --request-timeout=30s)
 workload=${STEGO_TEST_BROWSER_WORKLOAD:-0}
 [[ $workload == 0 || $workload == 1 ]]
+if [[ $preinstalled == 1 ]]; then [[ $workload == 1 ]]; fi
 if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
@@ -25,6 +34,11 @@ python3 "$results/jshell_live_lock.py" acquire --context "$STEGO_TEST_CONTEXT" \
   --holder "$namespace" --namespace "$namespace" --job service-check
 created=false
 cleanup_resources() {
+  if [[ $preinstalled == 1 ]]; then
+    source "$project/scripts/cleanup-browser-ci.sh"
+    cleanup_browser_ci
+    return $?
+  fi
   if [[ $created == true ]]; then
     "${oc_cmd[@]}" -n "$namespace" get job service-check -o json > "$results/job-status.json" || true
     # Stop test processes before namespace or permission cleanup.
@@ -89,7 +103,7 @@ cleanup() {
     status=1
     echo "Cleanup failed. Keep the shared live-test Lease for inspection." >&2
   fi
-  for file in "$results/private-job.json" "$results/server.key" "$results/ca.key"; do
+  for file in "$results/private-job.json" "$results/server.key" "$results/ca.key" "$results/ci-token"; do
     [[ ! -e $file ]] || unlink -- "$file"
   done
   echo "Service deployment results: $results"
@@ -97,6 +111,12 @@ cleanup() {
 }
 trap cleanup EXIT
 umask 077
+if [[ $preinstalled == 1 ]]; then
+  test -z "$("${oc_cmd[@]}" -n "$namespace" get job service-check --ignore-not-found -o name)"
+  python3 scripts/browser-ci-installation.py prepare --context "$STEGO_TEST_CONTEXT" --results "$results"
+  test "$(cat "$results/issuer")" = "$STEGO_TEST_GATEWAY_CLUSTER_ISSUER"
+  python3 scripts/verify-browser-ci.py --context "$STEGO_TEST_CONTEXT" --results "$results"
+fi
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
   -keyout "$results/ca.key" -out "$results/ca.crt" -days 2 \
   -subj /CN=fixture-ca -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
@@ -118,92 +138,25 @@ openssl verify -CAfile "$results/ca.crt" -purpose sslserver \
   -verify_hostname "fixture.$namespace.svc" "$results/server.crt" >/dev/null
 openssl verify -CAfile "$results/ca.crt" -purpose sslserver \
   -verify_ip 127.0.0.1 "$results/server.crt" >/dev/null
-if [[ $workload == 1 ]]; then
+if [[ $workload == 1 && $preinstalled == 0 ]]; then
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
 fi
-python3 - "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}" <<'PY'
-import base64,json,secrets,sys
+python3 scripts/render-service-fixture.py "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}"
+# Persistent CI keeps the operator installation and replaces only test data.
+if [[ $preinstalled == 1 ]]; then
+  python3 - "$results" <<'CI_OBJECTS'
+import json, sys
 from pathlib import Path
-ns,root=sys.argv[1],Path(sys.argv[2])
-job=json.loads(Path('acceptance/kubernetes-service-job.json').read_text().replace('@NAMESPACE@',ns))
-if sys.argv[3] not in ('0','1'): raise SystemExit('STEGO_TEST_BROWSER_DEPLOYMENT must be 0 or 1')
-if sys.argv[3]=='1':
-    security={'runAsNonRoot':True,'readOnlyRootFilesystem':True,'allowPrivilegeEscalation':False,'capabilities':{'drop':['ALL']}}
-    for item in job['items']:
-        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'8Gi','limits.cpu':'8','pods':'6'})
-        if item['kind']=='Role' and item['metadata']['name']=='service-check':
-            for rule in item['rules']:
-                if 'deployments/scale' in rule['resources']: rule['resourceNames']=['hypershell','hypershell-console','hypershell-provisioner']
-        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
-            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-console'}}}],'ports':[{'port':5432,'protocol':'TCP'},{'port':19093,'protocol':'TCP'}]})
-            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-provisioner'}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
-        if item['kind']=='Job':
-            spec=item['spec']['template']['spec']
-            spec['initContainers'].insert(0,{'name':'node-tools','image':'docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393','command':['sh','-c','mkdir -p /work/bin /work/node; cp /usr/local/bin/node /work/bin/node; cp -R /usr/local/lib/node_modules/npm /work/node/npm'],'securityContext':security,'resources':{'requests':{'cpu':'100m','memory':'128Mi'},'limits':{'cpu':'500m','memory':'256Mi'}},'volumeMounts':[{'name':'work','mountPath':'/work'}]})
-            spec['initContainers'].append({'name':'chromium','restartPolicy':'Always','image':'docker.io/selenium/standalone-chromium@sha256:81c80050126f610675e40eeac529a821dc5a0d38acf26c6d44f792a6e7ea8ac5','command':['sh','-c','mkdir -p /tmp/config /tmp/cache; exec chromedriver --port=9515 --allowed-ips=127.0.0.1'],'env':[{'name':'XDG_CONFIG_HOME','value':'/tmp/config'},{'name':'XDG_CACHE_HOME','value':'/tmp/cache'}],'securityContext':security,'resources':{'requests':{'cpu':'100m','memory':'256Mi'},'limits':{'cpu':'1','memory':'1536Mi'}},'startupProbe':{'tcpSocket':{'port':9515},'periodSeconds':2,'failureThreshold':30},'volumeMounts':[{'name':'chrometmp','mountPath':'/tmp'}]})
-            spec['volumes'].append({'name':'chrometmp','emptyDir':{'sizeLimit':'512Mi'}})
-            test=spec['containers'][0]
-            test['command'][-1]=test['command'][-1].replace('run-service-deployment-pod.sh','run-browser-deployment-pod.sh')
-            test['env'] += [{'name':'STEGO_TEST_KUBERNETES_BROWSER','value':'1'},{'name':'STEGO_REQUIRE_BROWSER','value':'1'},{'name':'PATH','value':'/work/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}]
-if sys.argv[4]=='1':
-    import re
-    if sys.argv[3]!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',sys.argv[5]): raise SystemExit('Invalid Gateway test profile')
-    import ipaddress
-    endpoints=set()
-    for item in json.loads((root/'kubernetes-endpoints.json').read_text())['items']:
-        for endpoint in item['endpoints']:
-            if endpoint.get('conditions',{}).get('ready') is not True: continue
-            for port in item['ports']:
-                if port.get('protocol')!='TCP' or port.get('name')!='https': continue
-                for address in endpoint['addresses']:
-                    ip=ipaddress.ip_address(address)
-                    endpoints.add(f'[{ip}]:{port["port"]}' if ip.version==6 else f'{ip}:{port["port"]}')
-    service=json.loads((root/'kubernetes-service.json').read_text())
-    for address in service['spec'].get('clusterIPs',[service['spec']['clusterIP']]):
-        ip=ipaddress.ip_address(address)
-        endpoints.add(f'[{ip}]:443' if ip.version==6 else f'{ip}:443')
-    if not 1<=len(endpoints)<=16: raise SystemExit('Invalid Kubernetes endpoint set')
-    for item in job['items']:
-        if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'11Gi','limits.cpu':'12','pods':'10'})
-        if item['kind']=='Role' and item['metadata']['name']=='service-check':
-            for rule in item['rules']:
-                if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell-namespace-allocation','hypershell-gateway-identity','hypershell-gateway-workload']
-            item['rules'].append({'apiGroups':[''],'resources':['serviceaccounts/token'],'resourceNames':['hypershell-namespace-allocation','hypershell-gateway-identity','hypershell-gateway-workload'],'verbs':['create']})
-        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
-            for worker in ['namespace-allocation','gateway-identity','gateway-workload']:
-                item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
-        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'].append({'name':'STEGO_TEST_KUBERNETES_EGRESS','value':json.dumps(sorted(endpoints))})
-    import hashlib
-    marker=hashlib.sha256((ns+'.hypershell-namespace-allocation').encode()).hexdigest()[:32]
-    for item in job['items']:
-        if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
-            item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-gateway-workload'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
-            item['spec']['ingress'].append({'from':[{'namespaceSelector':{'matchLabels':{'stego.dev/allocator':marker,'stego.dev/allocation-profile':'gateway'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
-    role=json.loads(Path('acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns).replace('@ALLOCATOR_MARKER@',marker))
-    job['items'] += role['items']
-    for item in job['items']:
-        if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':sys.argv[5]}]
-password=secrets.token_hex(24)
-encode=lambda value:base64.b64encode(value.encode()).decode()
-for item in job['items']:
-    if item['kind']=='Secret' and item['metadata']['name']=='cli-test-postgres':
-        item['data']={key:encode(value) for key,value in {
-          'password':password,
-          'dsn':f'postgres://postgres:{password}@127.0.0.1:5432/postgres?sslmode=verify-full&sslrootcert=/tls/server.crt',
-          'url':f'postgres://postgres:{password}@127.0.0.1:5432/postgres?sslmode=verify-full&sslrootcert=/tls/server.crt'
-        }.items()}
-    if item['kind']=='Secret' and item['metadata']['name']=='database-tls':
-        item['data']={name:encode((root/name).read_text()) for name in ['server.key','server.crt']}
-    if item['kind']=='ConfigMap' and item['metadata']['name']=='database-ca':
-        item['data']={'server.crt':(root/'ca.crt').read_text()}
-(root/'private-job.json').write_text(json.dumps(job))
-for item in job['items']:
-    if item['kind']=='Secret':item.pop('data',None)
-(root/'job.json').write_text(json.dumps(job,indent=2)+'\n')
-PY
-# Create the namespace first so cleanup also runs after a partial apply.
-"${oc_cmd[@]}" create namespace "$namespace" --save-config
+for name in ['private-job.json', 'job.json']:
+    path = Path(sys.argv[1]) / name
+    document = json.loads(path.read_text())
+    document['items'] = [item for item in document['items'] if item['kind'] in {'Secret', 'ConfigMap', 'Service', 'Job'}]
+    path.write_text(json.dumps(document, indent=2) + '\n')
+CI_OBJECTS
+else
+  "${oc_cmd[@]}" create namespace "$namespace" --save-config
+fi
 created=true
 "${oc_cmd[@]}" apply -f "$results/private-job.json"
 for file in "$results/private-job.json" "$results/server.key"; do
@@ -242,7 +195,11 @@ group=${group%%/*}
 if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
   cluster_args=(--context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --fs-group "$group" --results "$results")
   if [[ $workload == 1 ]]; then cluster_args+=(--workload); fi
-  python3 scripts/prepare-browser-cluster.py "${cluster_args[@]}"
+  if [[ $preinstalled == 1 ]]; then
+    python3 scripts/browser-ci-installation.py verify --context "$STEGO_TEST_CONTEXT" --results "$results"
+  else
+    python3 scripts/prepare-browser-cluster.py "${cluster_args[@]}"
+  fi
   tar -cf "$results/cluster-manifests.tar" -C "$results" cluster-manifests
   "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- tar xf - -C /work < "$results/cluster-manifests.tar"
 fi

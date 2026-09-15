@@ -72,7 +72,10 @@ def main():
     parser.add_argument("--results", required=True, type=Path)
     parser.add_argument("--workload", action="store_true")
     parser.add_argument("--cleanup", action="store_true")
+    parser.add_argument("--render-only", action="store_true", help="Render and record manifests without cluster requests")
     args = parser.parse_args()
+    if args.cleanup and args.render_only:
+        parser.error("Cleanup and render-only cannot be combined")
     if not re.fullmatch(r"stego-service-[a-z0-9-]{1,40}", args.namespace) or (not args.cleanup and (args.fs_group is None or not 0 < args.fs_group < 2**31)):
         raise RuntimeError("Require the dedicated fixture namespace and file group")
 
@@ -128,6 +131,10 @@ def main():
             record["manifests"][name] = hashlib.sha256(manifest).hexdigest()
         # Check all names before the first write. Never adopt or replace a
         # resource that already exists, even if it has the expected name.
+        if args.render_only:
+            record["mode"] = "render-only"
+            save()
+            return
         require_absent(resources, oc)
         save()
         for item in resources:

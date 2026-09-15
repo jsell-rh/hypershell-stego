@@ -1,0 +1,41 @@
+The browser CI workflow uses the restricted `hypershell-ci` identity and the
+fixed `stego-service-ci` namespace. The operator installs the namespace, quota,
+admission policy, and generated cluster resources before CI runs. CI cannot
+create cluster roles or change admission policy. The test source remains
+trusted: it can start workers and request their scoped tokens in this namespace.
+
+Prepare the inspection source with `scripts/prepare-browser-inspection.py`.
+From that frozen directory, run `scripts/prepare-browser-ci.py --context
+<operator-context> --issuer <existing-cluster-issuer> --results <new-directory>`.
+The installer refuses existing resources and records each created UID. A failed
+installation needs operator inspection; it is not replaced automatically.
+
+An immutable ConfigMap records the namespace UID, file group, and all six
+generated cluster manifests. Before a Job starts, CI checks all 18 live cluster
+resources against that record. It also renders the cluster scope from its own
+frozen source and requires identical bytes. A policy change needs a new operator
+installation. An operator credential cannot be used in this CI path.
+
+The CI identity can reset only the named `service-check` Role. Kubernetes RBAC
+checks prevent it from granting rights it does not have. The runner adds exec
+access for the exact test Pod name. The test Pod cannot change its own Role.
+The same Lease serializes browser and API tests. The Job has one Pod, no retry,
+a 30-minute deadline, a one-hour cleanup limit, and CPU, memory, and storage
+limits. Privileged containers and persistent volumes are not permitted.
+
+Cleanup stops the test Job and generated processes first. It uses the generated
+allocator to remove owned Gateway and retained-state namespaces, including
+orphan cluster bindings. Inventory must be complete, versioned, and bounded.
+Ownership conflicts, incomplete reads, and remaining resources keep the Lease.
+Cleanup then removes labelled test data and verifies that the operator's
+installation remains. It does not remove finalizers to force deletion.
+
+The first preflight passed the restricted identity and live manifest checks.
+Admission then rejected the test Job because its pod-level non-root setting
+was implicit. The fixture now sets it explicitly. The Job cleanup limit is also
+one hour. All 15 actual admission and access checks now pass. They include
+rejected parallel Jobs, excessive deadlines, foreign identities, privileged
+containers, lasting tokens, foreign Secret reads, and installation writes.
+No Job ran during these checks. The complete CI workflow and cleanup
+after failure still require live results. Installation CNPG, actual RDS, and
+Sandbox checks remain open.
