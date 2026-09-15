@@ -128,6 +128,10 @@ class InstallationTests(unittest.TestCase):
         gateway = policy['ingress'][-1]['from'][-1]
         self.assertEqual(gateway['namespaceSelector']['matchLabels']['stego.dev/allocation-profile'], 'gateway')
         self.assertTrue(gateway['podSelector']['matchExpressions'])
+        probe = policy['ingress'][-1]['from'][-2]
+        self.assertEqual(probe['namespaceSelector'], gateway['namespaceSelector'])
+        self.assertEqual(probe['podSelector'], {'matchExpressions': [{'key': 'stego.test/network-probe', 'operator': 'Exists'}]})
+        self.assertEqual(policy['ingress'][-1]['ports'], [{'port': 5432, 'protocol': 'TCP'}])
 
     def test_invalid_placement_and_endpoint_inputs_fail(self):
         for namespace, database, storage, endpoints in [

@@ -54,7 +54,7 @@ def fixture(ns, directory, browser, workload, issuer):
         for item in job['items']:
             if item['kind']=='NetworkPolicy' and item['metadata']['name']=='fixture-ingress':
                 item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-gateway-workload'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
-                item['spec']['ingress'].append({'from':[{'namespaceSelector':{'matchLabels':{'stego.dev/allocator':marker,'stego.dev/allocation-profile':'gateway'}}}],'ports':[{'port':5432,'protocol':'TCP'}]})
+                item['spec']['ingress'].append({'from':[{'namespaceSelector':{'matchLabels':{'stego.dev/allocator':marker,'stego.dev/allocation-profile':'gateway'}}}],'ports':[{'port':5432,'protocol':'TCP'},{'port':19093,'protocol':'TCP'}]})
         role=json.loads((PROJECT / 'acceptance/browser-workload-rbac.json').read_text().replace('@NAMESPACE@',ns).replace('@ALLOCATOR_MARKER@',marker))
         job['items'] += role['items']
         for item in job['items']:

@@ -1,5 +1,6 @@
 """Check explicit public test inputs without a cluster connection."""
 import copy
+import hashlib
 import json
 import os
 from pathlib import Path
@@ -82,6 +83,12 @@ class PublicGatewayFixture(unittest.TestCase):
         self.assertEqual(config['data']['gateway-internal-ca.pem'], (root / 'ca.pem').read_text())
         self.assertEqual(json.loads(config['data']['gateway-public.json']), self.config)
         self.assertEqual(config['metadata']['labels']['stego.test/browser-run'], 'stego-service-ci')
+        policy = next(item['spec'] for item in document['items'] if item['kind'] == 'NetworkPolicy' and item['metadata']['name'] == 'fixture-ingress')
+        gateway_rules = [rule for rule in policy['ingress'] if any('namespaceSelector' in peer for peer in rule['from'])]
+        marker = hashlib.sha256(b'stego-service-ci.hypershell-namespace-allocation').hexdigest()[:32]
+        self.assertEqual(gateway_rules, [{'from': [{'namespaceSelector': {'matchLabels': {
+            'stego.dev/allocator': marker, 'stego.dev/allocation-profile': 'gateway'}}}],
+            'ports': [{'port': 5432, 'protocol': 'TCP'}, {'port': 19093, 'protocol': 'TCP'}]}])
         job = next(item for item in document['items'] if item['kind'] == 'Job')
         self.assertLessEqual(job['spec']['activeDeadlineSeconds'], 1800)
         self.assertEqual(job['spec']['backoffLimit'], 0)
