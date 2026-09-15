@@ -16,6 +16,18 @@ modules. Its core, rendered browser, console, image, and regeneration checks
 are running in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
 The manual run skips CNPG and Sandbox. Production isolation remains off.
 
+The candidate's rendered browser workflow passed in 97 seconds. Its 229 console
+tests, bundle reproduction, regeneration, and image checks also passed. The core
+suite remains active. The browser screenshots were inspected. Gateway creation
+shows Provisioning; the service-account screen uses a separate Healthy fixture.
+This run does not create a Gateway Pod or prove its network isolation.
+
+STEGO `8aedc54` adds controlled updates for intact, owned allocation policies.
+The [update admission record](allocated-network-update-admission-20260915.json)
+contains 93 passing checks, including approved rule changes, retired-rule denial,
+and stale-version rejection. Cleanup passed. Full compiler CI is running. This
+change is newer than candidate `101f31d` and is not covered by its browser result.
+
 The following record preserves the initial gap and the earlier checks.
 
 The Gateway workflow does not yet prove network isolation in allocated
