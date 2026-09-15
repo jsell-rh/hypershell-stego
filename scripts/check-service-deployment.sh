@@ -187,8 +187,8 @@ startup_failed() {
   exit 1
 }
 "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for='jsonpath={.status.active}=1' job/service-check --timeout=180s || startup_failed
-# Allow node startup after autoscaling. The Job keeps its total time limit.
-"${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Ready pod -l job-name=service-check --timeout=300s || startup_failed
+# Allow a new node and its image downloads. The Job keeps its 30-minute limit.
+"${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Ready pod -l job-name=service-check --timeout=600s || startup_failed
 pod=$("${oc_cmd[@]}" -n "$namespace" get pod -l job-name=service-check -o jsonpath='{.items[0].metadata.name}')
 # The test can restart only its own database sidecar and the identity fixture.
 # Bind exec permission to this exact Pod name before the frozen test starts.
