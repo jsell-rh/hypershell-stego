@@ -48,48 +48,20 @@ func publicTestCertificate(t *testing.T, host string, expiry time.Time, usage x5
 	return pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: rootDER}), pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: leafDER}), pem.EncodeToMemory(&pem.Block{Type: "PRIVATE KEY", Bytes: key})
 }
 
-func TestPublicTLSUsesConfiguredTrustAndHostname(t *testing.T) {
-	host := "gw-openshell-0123456789abcdef.example.test"
-	ca, certificate, key := publicTestCertificate(t, host, time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
+func TestPublicTrustRequiresCertificateOnlyFile(t *testing.T) {
+	ca, _, key := publicTestCertificate(t, "gateway.example.test", time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
 	file := filepath.Join(t.TempDir(), "public-ca.pem")
 	if err := os.WriteFile(file, ca, 0644); err != nil {
 		t.Fatal(err)
 	}
-	roots, err := publicTrust(Options{PublicDomain: "example.test", PublicIssuer: "public-issuer", PublicCAFile: file})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := verifyPublicCertificate(certificate, key, host, roots); err != nil {
-		t.Fatal("valid public certificate rejected", err)
-	}
-	if err := verifyPublicCertificate(certificate, key, "other.example.test", roots); err == nil {
-		t.Fatal("wrong public hostname accepted")
-	}
-	if err := verifyPublicCertificate(certificate, key, "openshell-gateway.tenant.svc.cluster.local", roots); err == nil {
-		t.Fatal("public certificate accepted for internal Service")
-	}
-	_, foreign, foreignKey := publicTestCertificate(t, host, time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
-	if err := verifyPublicCertificate(foreign, foreignKey, host, roots); err == nil {
-		t.Fatal("foreign issuer accepted")
-	}
-	if err := verifyPublicCertificate(certificate, foreignKey, host, roots); err == nil {
-		t.Fatal("different private key accepted")
-	}
-	for _, tc := range []struct {
-		expiry time.Time
-		usage  x509.ExtKeyUsage
-	}{{time.Now().Add(-time.Minute), x509.ExtKeyUsageServerAuth}, {time.Now().Add(time.Hour), x509.ExtKeyUsageClientAuth}} {
-		root, leaf, private := publicTestCertificate(t, host, tc.expiry, tc.usage)
-		pool := x509.NewCertPool()
-		pool.AppendCertsFromPEM(root)
-		if err := verifyPublicCertificate(leaf, private, host, pool); err == nil {
-			t.Fatal("expired or client-only certificate accepted")
-		}
+	options := Options{PublicDomain: "example.test", PublicIssuer: "public-issuer", PublicCAFile: file}
+	if roots, err := publicTrust(options); err != nil || roots == nil {
+		t.Fatal("public CA file rejected", err)
 	}
 	if err := os.WriteFile(file, append(ca, key...), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := publicTrust(Options{PublicDomain: "example.test", PublicIssuer: "public-issuer", PublicCAFile: file}); err == nil {
+	if _, err := publicTrust(options); err == nil {
 		t.Fatal("private key entered public trust")
 	}
 }
@@ -151,6 +123,8 @@ func TestPublicTLSSecretCannotSupplyItsOwnTrust(t *testing.T) {
 				root, cert, key = publicTestCertificate(t, host, time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
 			}
 			secret := definition("v1", "Secret", "openshell-public-tls", gw.Metadata.Id)
+			secret["type"] = "kubernetes.io/tls"
+			secret["metadata"].(object)["namespace"] = gw.Namespace
 			secret["metadata"].(object)["uid"] = "secret-id"
 			secret["metadata"].(object)["resourceVersion"] = "1"
 			secret["data"] = object{"tls.crt": base64.StdEncoding.EncodeToString(cert), "tls.key": base64.StdEncoding.EncodeToString(key), "ca.crt": base64.StdEncoding.EncodeToString(root)}

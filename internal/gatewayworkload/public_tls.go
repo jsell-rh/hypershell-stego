@@ -2,7 +2,6 @@ package gatewayworkload
 
 import (
 	"context"
-	"crypto/tls"
 	"crypto/x509"
 	"errors"
 	"io"
@@ -86,48 +85,10 @@ func (k *Kubernetes) ensurePublicTLS(ctx context.Context, gw *pb.Gateway) ([]byt
 	if code == http.StatusNotFound {
 		return nil, ErrPending
 	}
-	if !owner(id).Matches(secret) || kube.String(secret, "metadata", "uid") == "" || kube.String(secret, "metadata", "resourceVersion") == "" {
-		return nil, errors.New("public Gateway TLS Secret identity differs")
-	}
 	if kube.String(secret, "metadata", "deletionTimestamp") != "" {
 		return nil, ErrPending
 	}
-	certificate, err := data(secret, "tls.crt")
-	if err != nil {
-		return nil, err
-	}
-	key, err := data(secret, "tls.key")
-	if err != nil {
-		return nil, err
-	}
-	if err := verifyPublicCertificate(certificate, key, host, k.publicRoots); err != nil {
-		return nil, err
-	}
-	return certificate, nil
-}
-
-func verifyPublicCertificate(certificate, key []byte, host string, roots *x509.CertPool) error {
-	if roots == nil {
-		return errors.New("public Gateway trust is unavailable")
-	}
-	pair, err := tls.X509KeyPair(certificate, key)
-	if err != nil {
-		return errors.New("public Gateway TLS key does not match its certificate")
-	}
-	leaf, err := x509.ParseCertificate(pair.Certificate[0])
-	if err != nil {
-		return errors.New("public Gateway certificate is invalid")
-	}
-	intermediates := x509.NewCertPool()
-	for _, raw := range pair.Certificate[1:] {
-		cert, err := x509.ParseCertificate(raw)
-		if err != nil {
-			return errors.New("public Gateway certificate chain is invalid")
-		}
-		intermediates.AddCert(cert)
-	}
-	if _, err := leaf.Verify(x509.VerifyOptions{Roots: roots, Intermediates: intermediates, DNSName: host, KeyUsages: []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth}}); err != nil {
-		return errors.New("public Gateway certificate does not match its hostname or configured trust")
-	}
-	return nil
+	return kube.VerifyServerTLSSecret(secret, owner(id), kube.ServerTLSSecretTarget{
+		Namespace: ns, Name: "openshell-public-tls", DNSName: host, Roots: k.publicRoots,
+	})
 }
