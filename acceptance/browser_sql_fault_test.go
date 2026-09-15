@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 	"reflect"
 	"time"
 
@@ -18,11 +17,7 @@ import (
 // installation account. Never put connection strings or SQL values in logs.
 func (w *browserGatewayWorkload) fixtureSQL() *pgx.Conn {
 	w.t.Helper()
-	config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
-	if err != nil || config.TLSConfig == nil || config.TLSConfig.InsecureSkipVerify || config.TLSConfig.RootCAs == nil || config.Host != "127.0.0.1" {
-		w.t.Fatal("SQL fault checks require the verified loopback fixture")
-	}
-	config.ConnectTimeout = 5 * time.Second
+	config := w.sqlFixtureConfig()
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 	connection, err := pgx.ConnectConfig(ctx, config)
@@ -59,10 +54,7 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 	}
 	open := func(gatewayID string) *pgx.Conn {
 		w.t.Helper()
-		config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
-		if err != nil || config.TLSConfig == nil || config.TLSConfig.InsecureSkipVerify || config.TLSConfig.RootCAs == nil || config.Host != "127.0.0.1" {
-			w.t.Fatal("SQL session checks require the verified loopback fixture")
-		}
+		config := w.sqlFixtureConfig()
 		options, _ := w.sqlOptions(gatewayID)
 		config.Database, config.User, config.Password = options.Database, options.User, options.Password
 		config.ConnectTimeout = 5 * time.Second
@@ -146,10 +138,7 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 	deadline := time.Now().Add(90 * time.Second)
 	for {
 		// A new connection is required. An old Gateway SQL session is not evidence.
-		config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
-		if err != nil {
-			w.t.Fatal("SQL fixture configuration failed")
-		}
+		config := w.sqlFixtureConfig()
 		options, _ := w.sqlOptions(id)
 		config.Database, config.User, config.Password = options.Database, options.User, options.Password
 		config.ConnectTimeout = 5 * time.Second

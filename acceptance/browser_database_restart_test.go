@@ -5,14 +5,15 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"reflect"
 	"time"
 
 	"google.golang.org/protobuf/proto"
 )
 
-// Restart only the PostgreSQL sidecar in this Job. Its data volume must survive.
-// This proves reconnect behavior, not an installation CNPG or RDS failover.
+// Restart the selected installation fixture and verify retained data. A Pod
+// replacement alone is not evidence of a primary change or RDS failover.
 func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 	w.t.Helper()
 	before := w.checkSQLIsolation()
@@ -21,6 +22,48 @@ func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 	if err != nil {
 		w.t.Fatal("database restart setup could not read provider")
 	}
+	beforeObjects := w.gatewaySQLObjectIDs()
+	var cnpgEvidence map[string]any
+	if w.cnpgFixture == nil {
+		w.restartSidecarDatabase()
+	} else {
+		cnpgEvidence = w.restartCNPGDatabase()
+	}
+	for _, gateway := range w.gatewayIDs {
+		w.check(gateway)
+	}
+	if after := w.checkSQLIsolation(); !reflect.DeepEqual(before, after) {
+		w.t.Fatal("database restart changed Gateway SQL identities")
+	}
+	after, err := w.call("GetProvider", owner, `{"name":"browser-provider"}`)
+	if err != nil || !proto.Equal(provider, after) {
+		w.t.Fatal("database restart lost Gateway provider data")
+	}
+	if !reflect.DeepEqual(beforeObjects, w.gatewaySQLObjectIDs()) {
+		w.t.Fatal("database restart changed database or role object IDs")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	w.requireInstallationData(ctx)
+	if cnpgEvidence == nil {
+		w.t.Log("PostgreSQL sidecar restart preserved Gateway keys, credentials, provider data, and installation data")
+	} else {
+		cnpgEvidence["sql_object_ids_unchanged"] = true
+		cnpgEvidence["gateway_credentials_and_keys_unchanged"] = true
+		cnpgEvidence["provider_data_unchanged"] = true
+		cnpgEvidence["installation_data_unchanged"] = true
+		if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
+			data, err := json.MarshalIndent(cnpgEvidence, "", "  ")
+			if err != nil || os.WriteFile(filepath.Join(directory, "cnpg-restart.json"), append(data, '\n'), 0600) != nil {
+				w.t.Fatal("cannot write CNPG restart evidence")
+			}
+		}
+		w.t.Log("CNPG database Pod replacement preserved SQL object IDs, Gateway keys, credentials, provider data, and installation data")
+	}
+}
+
+func (w *browserGatewayWorkload) restartSidecarDatabase() {
+	w.t.Helper()
 	pod := os.Getenv("HOSTNAME")
 	type podState struct {
 		Metadata struct {
@@ -83,18 +126,4 @@ func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 		}
 		time.Sleep(time.Second)
 	}
-	for _, gateway := range w.gatewayIDs {
-		w.check(gateway)
-	}
-	if after := w.checkSQLIsolation(); !reflect.DeepEqual(before, after) {
-		w.t.Fatal("database restart changed Gateway SQL identities")
-	}
-	after, err := w.call("GetProvider", owner, `{"name":"browser-provider"}`)
-	if err != nil || !proto.Equal(provider, after) {
-		w.t.Fatal("database restart lost Gateway provider data")
-	}
-	ctx, cancel = context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	w.requireInstallationData(ctx)
-	w.t.Log("PostgreSQL sidecar restart preserved Gateway keys, credentials, provider data, and installation data")
 }

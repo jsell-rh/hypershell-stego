@@ -30,3 +30,34 @@ Four small local tests passed for namespace validation, watch and webhook scope,
 resource and time limits, existing-resource refusal, and cleanup ordering.
 The helper change does not prove CNPG application behavior. The required CNPG
 CI gate remains unsuccessful until the full installation workflow passes.
+
+The complete browser test now has a CNPG fixture input:
+`STEGO_TEST_GATEWAY_SQL_FIXTURE_FILE`. The operator supplies this private file
+with the installation namespace and Cluster UIDs, the fixture administrator
+password, and its CA. The test checks file type, size, and access mode. It
+requires the dedicated namespace label and the same live Cluster UID before
+it connects. The file is not a Gateway API input or a controller file.
+The normal fixture still uses verified loopback PostgreSQL.
+
+The CNPG path uses the installation's `gateway-database-rw` service. The test
+creates the same limited provisioning account and runs the same Gateway SQL
+isolation, fault, encryption, and deletion checks. The API and console keep
+their separate fixture database. The worker receives no CNPG administrator
+password or CNPG object permissions.
+
+For this fixture, `prepare-browser-inspection.py` accepts
+`--cnpg-database-namespace stego-cnpg-database-<suffix>`. STEGO generates one
+additional worker egress rule for that namespace, the `cnpg.io/cluster` label,
+and TCP port 5432. The render check rejects changes to other worker resources
+or permissions. Eight local inspection tests and frozen generation passed.
+
+The CNPG restart check deletes one observed primary Pod with a UID precondition.
+It retains the Cluster and requires a different Pod UID, two ready instances,
+an unchanged Cluster specification, and preserved SQL object IDs, credentials,
+keys, provider data, and installation data. The evidence records whether the
+primary name changed; a Pod replacement is not assumed to be a failover.
+The normal sidecar restart now checks SQL object IDs as well.
+
+These source paths have not yet passed a live CNPG run. The remaining installer
+must create the bounded server, supply the private fixture file and namespace
+permissions, run the complete browser workflow, and verify final cleanup.

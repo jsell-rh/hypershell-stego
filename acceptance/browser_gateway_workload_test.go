@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
@@ -35,6 +37,8 @@ type browserGatewayWorkload struct {
 	telemetry         []string
 	restarts          []func()
 	gatewayIDs        []string
+	sqlFixture        *pgx.ConnConfig
+	cnpgFixture       *browserCNPGFixture
 	databaseOptions   postgres.Options
 	databaseConfig    []byte
 	databaseEndpoints []string

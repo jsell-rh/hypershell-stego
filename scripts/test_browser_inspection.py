@@ -91,6 +91,43 @@ class InspectionBoundary(unittest.TestCase):
             with self.subTest(change=change), self.assertRaises(ValueError):
                 inspection.verify_manifests(json.dumps(original), json.dumps(changed))
 
+    def test_cnpg_declaration_adds_one_private_namespace_peer(self):
+        original = inspection.declaration((ROOT / 'service.yaml').read_text())
+        fixture = inspection.cnpg_declaration(original, 'stego-cnpg-database-ci')
+        extra = [line for line in fixture.splitlines(keepends=True) if line not in original.splitlines(keepends=True)]
+        self.assertEqual(len(extra), 1)
+        self.assertIn('namespace: stego-cnpg-database-ci', extra[0])
+        self.assertEqual(fixture.replace(extra[0], '', 1), original)
+        with self.assertRaises(ValueError):
+            inspection.cnpg_declaration(fixture, 'stego-cnpg-database-ci')
+        for namespace in ['default', '', 'stego-cnpg-database-', 'stego-cnpg-database-x/' , 'stego-cnpg-database-' + 'x' * 64]:
+            with self.subTest(namespace=namespace), self.assertRaises(ValueError):
+                inspection.cnpg_declaration(original, namespace)
+
+    def test_cnpg_render_cannot_broaden_network_or_worker_permissions(self):
+        original = {'items': [
+            {'kind': 'NetworkPolicy', 'metadata': {'name': 'hypershell-gateway-workload'},
+             'spec': {'egress': [{'ports': [{'port': 9090, 'protocol': 'TCP'}]}]}},
+            {'kind': 'Role', 'metadata': {'name': 'worker'}, 'rules': []},
+        ]}
+        fixture = copy.deepcopy(original)
+        fixture['items'][0]['spec']['egress'].append({'ports': [{'port': 5432, 'protocol': 'TCP'}], 'to': [{
+            'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': 'stego-cnpg-database-ci'}},
+            'podSelector': {'matchLabels': {'cnpg.io/cluster': 'gateway-database'}}}]})
+        inspection.verify_cnpg_manifests(json.dumps(original), json.dumps(fixture), 'stego-cnpg-database-ci')
+        for change in [
+            lambda d: d['items'][0]['spec']['egress'][-1]['to'][0].pop('podSelector'),
+            lambda d: d['items'][0]['spec']['egress'][-1]['to'][0]['namespaceSelector'].update(matchLabels={}),
+            lambda d: d['items'][0]['spec']['egress'][-1]['ports'][0].update(port=0),
+            lambda d: d['items'][1]['rules'].append({'verbs': ['*'], 'resources': ['*']}),
+            lambda d: d['items'][0]['spec']['egress'].append({'to': [{'ipBlock': {'cidr': '0.0.0.0/0'}}]}),
+        ]:
+            changed = copy.deepcopy(fixture)
+            change(changed)
+            with self.subTest(change=change), self.assertRaises(ValueError):
+                inspection.verify_cnpg_manifests(json.dumps(original), json.dumps(changed), 'stego-cnpg-database-ci')
+
+
     def test_global_fixture_permissions_are_public_reads_only(self):
         document = json.loads((ROOT / 'acceptance/browser-workload-rbac.json').read_text())
         role, binding = document['items']

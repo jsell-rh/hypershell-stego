@@ -153,10 +153,7 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 	}
 	// Prove that the server denies the same database operation. Roll back even
 	// if an unexpected grant permits it, so this probe cannot change access.
-	config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
-	if err != nil || config.TLSConfig == nil || config.TLSConfig.InsecureSkipVerify || config.TLSConfig.RootCAs == nil || config.Host != "127.0.0.1" {
-		w.t.Fatal("SQL cleanup denial requires the verified loopback fixture")
-	}
+	config := w.sqlFixtureConfig()
 	config.Database, config.User, config.Password = w.databaseOptions.Database, w.databaseOptions.User, w.databaseOptions.Password
 	config.ConnectTimeout = 5 * time.Second
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
