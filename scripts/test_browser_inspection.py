@@ -16,6 +16,36 @@ def go(config):
 
 
 class InspectionBoundary(unittest.TestCase):
+    def test_endpoint_worker_change_is_limited_to_the_annotation(self):
+        before = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes"]}', 'replicas': 1})
+        after = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes","network-probe"]}', 'replicas': 1})
+        inspection.verify_endpoint_worker_template(before, after)
+        for invalid in [before, after.replace('"replicas": 1', '"replicas": 2'), after + after]:
+            with self.assertRaises(ValueError):
+                inspection.verify_endpoint_worker_template(before, invalid)
+
+    def test_endpoint_change_declaration_adds_only_one_gateway_binding(self):
+        original = (ROOT / 'service.yaml').read_text()
+        changed = inspection.endpoint_change_declaration(original)
+        self.assertEqual(changed.replace('[kubernetes, network-probe]', '[kubernetes]', 1), original)
+        with self.assertRaises(ValueError):
+            inspection.endpoint_change_declaration(changed)
+
+    def test_endpoint_change_preserves_runtime_and_other_configuration(self):
+        changed = copy.deepcopy(self.original)
+        gateway = next(p for p in changed['Profiles'] if p['Name'] == 'gateway')
+        gateway['NetworkEndpoints'].append('network-probe')
+        inspection.verify_endpoint_change_runtime(go(self.original), go(changed))
+        for alter in [lambda c: c['Profiles'][0]['NetworkEndpoints'].append('other'),
+                      lambda c: c['Profiles'][0].update(NetworkIsolation=False),
+                      lambda c: c['Profiles'][0]['Quota'].update(pods='50'),
+                      lambda c: c['Roles'][0]['Rules'][0]['verbs'].append('delete')]:
+            modified = copy.deepcopy(changed); alter(modified)
+            with self.assertRaises(ValueError):
+                inspection.verify_endpoint_change_runtime(go(self.original), go(modified))
+        with self.assertRaises(ValueError):
+            inspection.verify_endpoint_change_runtime(go(self.original), go(changed) + '; changed code')
+
     def setUp(self):
         self.original = inspection.allocation_config((ROOT / 'out/deploy/allocation/allocation.go').read_text())
         self.fixture = copy.deepcopy(self.original)
