@@ -164,13 +164,13 @@ func (s *postgresSignalState) metric(metric *metricpb.Metric) {
 		s.metrics[key] = true
 	}
 }
-func (w *workerSignalEvidence) checkPostgres(t *testing.T) {
+func (w *workerSignalEvidence) checkPostgres(t *testing.T, public bool) {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
 	for {
 		w.Lock()
 		states := w.instances["hypershell-gateway-workload"]
-		ready := len(states) == 2 && !w.invalid
+		ready := len(states) == expectedWorkerInstances("hypershell-gateway-workload", public) && !w.invalid
 		combined := map[string]bool{}
 		evidence := map[string]map[string]bool{}
 		invalid := w.invalid

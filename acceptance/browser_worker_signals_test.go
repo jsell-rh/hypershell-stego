@@ -96,7 +96,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 		}
 		states := w.instances[name]
 		if states[id] == nil {
-			if len(states) >= 2 {
+			// The public fault test starts the workload worker four times.
+			// Keep collection bounded; check the exact profile count below.
+			if len(states) >= 4 {
 				w.invalid = true
 				return &workerSignalState{}
 			}
@@ -152,26 +154,39 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 	}
 	return response, true
 }
-func (w *workerSignalEvidence) check(t *testing.T) {
+func expectedWorkerInstances(name string, public bool) int {
+	if name == "hypershell-gateway-workload" && public {
+		return 4
+	}
+	return 2
+}
+
+func (w *workerSignalEvidence) controllerStatus(public bool) (ready, invalid bool, counts map[string]int) {
+	w.Lock()
+	defer w.Unlock()
+	ready = !w.invalid && len(w.instances) == 3
+	counts = map[string]int{}
+	for name, states := range w.instances {
+		counts[name] = len(states)
+		ready = ready && len(states) == expectedWorkerInstances(name, public)
+		for _, s := range states {
+			ready = ready && s.metric && s.correlated
+		}
+	}
+	return ready, w.invalid, counts
+}
+
+func (w *workerSignalEvidence) check(t *testing.T, public bool) {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
 	for {
-		w.Lock()
-		ready := !w.invalid && len(w.instances) == 3
-		for _, states := range w.instances {
-			ready = ready && len(states) == 2
-			for _, s := range states {
-				ready = ready && s.metric && s.correlated
-			}
-		}
-		invalid := w.invalid
-		w.Unlock()
+		ready, invalid, counts := w.controllerStatus(public)
 		if ready {
-			t.Log("All three workers exported metrics and correlated logs and traces before and after Pod replacement")
+			t.Log("Each expected worker instance exported metrics and correlated logs and traces", counts)
 			return
 		}
 		if invalid || time.Now().After(deadline) {
-			t.Fatal("worker telemetry did not prove all six process instances")
+			t.Fatal("worker telemetry is incomplete; observed instances", counts, "public profile", public, "invalid signals", invalid)
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
