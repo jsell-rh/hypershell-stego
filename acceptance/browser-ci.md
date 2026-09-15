@@ -121,3 +121,14 @@ Full CI run [34942025954](https://github.com/jsell-rh/hypershell-stego/actions/r
 for `3757c27` completed. The core suite, ordinary browser suite, web console, and
 service image jobs passed. The overall result is failure because the CNPG and
 Sandbox jobs failed. The operator-assisted CNPG run is separate evidence.
+
+The later full CI run `34943002657` failed `TestCountAccessLossStopsWatch`: a
+denied count write could cancel the watch before its change acknowledgement
+returned. The test now permits that cancellation while it still requires the
+controller's final result to be `PermissionDenied`. The single focused test
+passed. Full CI for the correction remains required. No runtime changed.
+
+The supplied CNPG application workflow passed in 462.01 seconds. Its final
+cleanup read failed; separate read-only checks confirmed complete cleanup. The
+[evidence](cnpg-installation-evidence.json) preserves the nonzero runner result,
+the application pass, and the manual cleanup checks.

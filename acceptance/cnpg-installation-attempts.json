@@ -91,6 +91,13 @@
         "operator/cnpg-created.json": "4d8f6b6b09628f9ea2a9de58927d116b0121abc4bdbfc00d07fd65e06e3153ce",
         "operator/cnpg-cleanup-requested.json": "1e5d766e84fc3d467af1d1cf9dd8aa2f6adbd884ced81474b8a39f41aa191286"
       }
+    },
+    {
+      "source_commit": "327f24ca24466ef3a6a3b74370d4430e017af1b6",
+      "status": "application_passed_cleanup_read_failed_manual_cleanup_verified",
+      "workflow_seconds": 462.01,
+      "job_uid": "1a1b0d0a-b035-401c-acec-5056028dbfcc",
+      "evidence": "cnpg-installation-evidence.json"
     }
   ]
 }

@@ -141,3 +141,12 @@ labeled test data before it can release the Lease. Four small tests cover a
 single read failure, repeated timeouts, invalid replies, and remaining objects.
 The original failed run record is retained. A separate read-only check must
 confirm absence and verify the application evidence.
+
+Independent verification checked all 881 source files, all 229 generated files,
+three matching generation records, 16 CI access checks, 57 application access
+checks, and six admission probes. CNPG recovery took 69.44 seconds and namespace
+recovery took 44.15 seconds. Read-only checks with the CI and operator identities
+confirmed absence of application data, allocations, the database namespace, all
+26 operator resources, and both recorded volumes. The shared Lease is free.
+See the [verified application and cleanup record](cnpg-installation-evidence.json).
+The original nonzero runner result is retained; unattended CI remains open.
