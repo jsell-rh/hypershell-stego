@@ -55,5 +55,19 @@
       "verification.json": "e22309919d1fc576f03a7ca512cabb41743038edb6f698691921bd1ff7891879",
       "cleanup.json": "6afc854d450ed556e7d2d323ecaef70a14c5104230441f3532e1c5e1be5aff89"
     }
+  },
+  "complete_retest": {
+    "application_commit": "3bd9f63c5122f96265541d610fd90d199b64fb0b",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34925908102",
+    "result": "failure",
+    "log_sha256": "81281deee45ec3bc709c473a8c69fdda1034de013bdde57a11a7d95ae832e7e9",
+    "corrected_checks": [
+      "TestCleanupSummaryScopeAndTimestampChecks",
+      "TestGatewayDatabaseSecretFileAndCredentialRotation"
+    ],
+    "failed_test": "TestConcurrentGlobalRoleProjection",
+    "error": "PostgreSQL serialization failure 40001 after the test used 20 immediate retries.",
+    "package_seconds": 1099.215,
+    "assessment": "The generated transaction API deliberately calls its callback once and reports serialization failures. The concurrency test retries without delay. The failure needs a bounded concurrency review; it is not yet classified as a runtime or fixture defect."
   }
 }
