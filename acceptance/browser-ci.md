@@ -132,3 +132,12 @@ The supplied CNPG application workflow passed in 462.01 seconds. Its final
 cleanup read failed; separate read-only checks confirmed complete cleanup. The
 [evidence](cnpg-installation-evidence.json) preserves the nonzero runner result,
 the application pass, and the manual cleanup checks.
+
+The cleanup retry change in `2bc2b2c` passed the
+[complete supplied PostgreSQL browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34947486151)
+in 396.86 seconds. Verification covered 882 source files, 229 generated files,
+16 CI access checks, 57 application access checks, and six admission probes.
+All three generation records matched. SQL cleanup denial, namespace recovery,
+credential encryption, session isolation, and automated cleanup passed. The
+Job and test Pods are absent, and the shared Lease is free. This run used the
+supplied PostgreSQL fixture; it does not replace the separate CNPG result.
