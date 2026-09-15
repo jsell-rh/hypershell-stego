@@ -195,6 +195,17 @@ Its total Job deadline, CPU and memory limits, and CNPG lifetimes are unchanged.
 Shell syntax and six browser CI boundary checks passed. The next complete CNPG
 run must verify both fixture corrections before they are treated as proven.
 
+The final read review also corrected namespaced cleanup calls to put `get`
+before its flags. Unsupported command order now fails before execution, so it
+cannot bypass read validation. Thirteen installation checks pass. The
+[next frozen source](cnpg-retry-preflight-evidence.json) matches all 895 files at
+`ccfa4a9`, with compiler `5e9c89d`. The run uses
+`/tmp/hypershell-cnpg-installation-source-v7`, database namespace
+`stego-cnpg-database-20260915-v7`, and result directory
+`/tmp/hypershell-cnpg-installation-run-v7`. It started after final cleanup
+verification. The complete application and automated cleanup results remain
+required. The earlier v6 preparation was not run.
+
 This source includes the verified viewer and account checks, the cleanup read
 retry, and the new credential check before installation. Eight credential
 checks, six CNPG workflow checks, six server fixture checks, and four operator
