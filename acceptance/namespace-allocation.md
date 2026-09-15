@@ -1,9 +1,12 @@
 # Namespace allocation adoption
 
-The [database provider decision](database-providers.md) of 2026-09-14 supersedes
-the deployment-backed database target below. Earlier results remain evidence
-for their recorded source only. The next application gate must use CNPG or
-external PostgreSQL with the required locality and per-Gateway database access.
+The [current database contract](controller-local-database.md) replaces the
+database-catalog and deployment-backed targets below. `ManagedDatabase`,
+database selection, and server-resource controllers are retired. The common
+namespace allocator remains in STEGO. The assigned Gateway controller uses
+installation-supplied PostgreSQL and manages logical databases and logins.
+Earlier results remain evidence for their recorded source only. Use
+[the current browser evidence](browser-ci.md) for the complete workflow and limits.
 
 ## Required shared-cluster support
 

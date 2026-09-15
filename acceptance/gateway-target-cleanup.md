@@ -1,4 +1,11 @@
-Gateway workload cleanup now uses STEGO's target history. The service declares:
+This page records an earlier database-catalog release and its test results.
+Its `ManagedDatabase`, database placement, and migration instructions do not
+apply to the current release. Use the
+[current database contract](controller-local-database.md). The current API has
+no database selection field. Installation supplies the PostgreSQL server, and
+the assigned controller manages each Gateway's logical database and login.
+
+Gateway workload cleanup in that release used STEGO's target history. The service declared:
 
 ```yaml
 cleanup_owners: [identity, workload]

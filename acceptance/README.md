@@ -232,11 +232,10 @@ decision.
 claims through REST and gRPC. Removal preserves Gateway ownership. The workflow
 covers event delivery, old streams, failures, real provider changes, and restart.
 
-The [placement catalog workflow](placement-catalog.md) now creates cluster, release,
-and database records through the generated API before Gateway creation. REST,
-gRPC, access checks, atomic events, watches, restart, and migration checks cover
-this path. Catalog writes require a platform admin or configured controller.
-Gateway workload deployment remains open.
+The earlier [placement catalog workflow](placement-catalog.md) created cluster,
+release, and database records before Gateway creation. Its database registration
+and migration steps are retired. The current API retains managed clusters and
+releases, but has no database catalog or database selection field.
 
 The [deployment placement workflow](deployment-placement.md) records the retired
 database-catalog model. Its empty `database_id` input, `DATABASE_PROVIDER` switch,
@@ -244,13 +243,11 @@ and migration instructions do not apply to the current source. The current API
 rejects `database_id`, including empty and null values. See the
 [current database contract](controller-local-database.md).
 
-The [database workload workflow](database-workflow.md) now provisions PostgreSQL on Kubernetes
-from a Gateway creation event. It checks verified TLS, limited database roles,
-persistent data, stable credentials, foreign namespace denial, and cleanup after
-offline deletion. REST, generated gRPC, generated HTTPS, restart, and regeneration
-are part of this path. The cluster test has its own required CI job. Gateway
-workload deployment has a separate [actual-image gate](gateway-workload.md).
-Production database operations remain open.
+The earlier [database workload workflow](database-workflow.md) provisioned a
+PostgreSQL server from a Gateway creation event. That controller is retired.
+Installation now supplies RDS or CNPG. The Gateway controller creates one
+logical database and restricted login per Gateway through STEGO's common SQL
+runtime. See [the current workflow and open checks](controller-local-database.md).
 
 The Gateway workload gate also checks deletion before the workload controller
 first starts, followed by API restart and automatic database cleanup. The
