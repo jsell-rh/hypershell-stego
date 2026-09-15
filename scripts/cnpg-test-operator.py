@@ -3,13 +3,11 @@
 import argparse
 import hashlib
 import json
-import secrets
+import re
 import subprocess
 import time
 import urllib.request
 from pathlib import Path
-
-import yaml
 
 MANIFEST = 'https://github.com/cloudnative-pg/cloudnative-pg/releases/download/v1.30.0/cnpg-1.30.0.yaml'
 SHA256 = 'f8bede43fe4ee0d478c2355b204a36876b2ae4faac60f2a9452280b293da3b88'
@@ -54,7 +52,23 @@ def get(context, obj):
     return oc(context, *args)
 
 
+def validate_names(action, namespace, database_namespace):
+    if not re.fullmatch(r'stego-(?:service|cnpg-live)-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', namespace) or len(namespace) > 63:
+        raise ValueError('Use a dedicated service test namespace')
+    if action == 'prepare':
+        if not isinstance(database_namespace, str) or not re.fullmatch(r'stego-cnpg-database-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', database_namespace) or len(database_namespace) > 63:
+            raise ValueError('Use an explicit installation database test namespace')
+    elif database_namespace is not None:
+        raise ValueError('--database-namespace applies only to prepare')
+
+
+def manifest_documents(raw):
+    import yaml
+    return list(yaml.safe_load_all(raw))
+
+
 def prepare(args):
+    validate_names('prepare', args.namespace, args.database_namespace)
     path = args.evidence / 'cnpg-plan.json'
     if path.exists():
         raise RuntimeError('Use the existing CNPG plan; do not replace its ownership journal')
@@ -62,27 +76,8 @@ def prepare(args):
         raw = response.read(8 * 1024 * 1024 + 1)
     if hashlib.sha256(raw).hexdigest() != SHA256:
         raise RuntimeError('CNPG manifest checksum differs')
-    documents = list(yaml.safe_load_all(raw))
-    alphabet = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz'
-    database_id = args.database_id
-    if database_id is None:
-        payload = secrets.token_bytes(16)
-        value = int.from_bytes((int(time.time()) - 1400000000).to_bytes(4, 'big') + payload, 'big')
-        database_id = ''
-        while value:
-            value, digit = divmod(value, 62)
-            database_id = alphabet[digit] + database_id
-        database_id = database_id.rjust(27, '0')
-    else:
-        if len(database_id) != 27 or any(c not in alphabet for c in database_id):
-            raise RuntimeError('Invalid CNPG test database ID')
-        value = 0
-        for c in database_id:
-            value = value * 62 + alphabet.index(c)
-        if value == 0 or value >= 1 << 160:
-            raise RuntimeError('Invalid CNPG test database ID')
-        payload = value.to_bytes(20, 'big')[4:]
-    database_ns = 'openshell-db-' + payload[:8].hex()
+    documents = manifest_documents(raw)
+    database_ns = args.database_namespace
     items = []
     role = next(o for o in documents if o['kind'] == 'ClusterRole' and o['metadata']['name'] == 'cnpg-manager')
     local_rules, global_rules = [], []
@@ -162,7 +157,7 @@ def prepare(args):
     for obj in items:
         if get(args.context, obj):
             raise RuntimeError('CNPG test refuses an existing resource: ' + obj['kind'] + '/' + obj['metadata']['name'])
-    write(path, {'namespace': args.namespace, 'database_id': database_id, 'database_namespace': database_ns, 'manifest_sha256': SHA256, 'items': items})
+    write(path, {'namespace': args.namespace, 'database_namespace': database_ns, 'manifest_sha256': SHA256, 'items': items})
     write(args.evidence / 'cnpg-created.json', [])
 
 
@@ -188,7 +183,8 @@ def remove(args):
     if not path.exists():
         return
     created = json.loads(path.read_text())
-    # The caller removes allocated namespaces while this operator still runs.
+    # The caller removes the installation database namespace while this operator
+    # still runs. Gateway controllers never own this namespace.
     plan = json.loads((args.evidence / 'cnpg-plan.json').read_text())
     db = {'kind': 'Namespace', 'metadata': {'name': plan['database_namespace']}}
     if get(args.context, db):
@@ -219,10 +215,7 @@ if __name__ == '__main__':
     parser.add_argument('--context', required=True)
     parser.add_argument('--namespace', required=True)
     parser.add_argument('--evidence', required=True, type=Path)
-    parser.add_argument('--database-id', help='Existing test catalog ID; prepare only')
+    parser.add_argument('--database-namespace', help='Dedicated installation database namespace; prepare only')
     args = parser.parse_args()
-    if not args.namespace.startswith(('stego-service-', 'stego-cnpg-live-')):
-        raise SystemExit('Use a dedicated service test namespace')
-    if args.database_id is not None and args.action != 'prepare':
-        raise SystemExit('--database-id applies only to prepare')
+    validate_names(args.action, args.namespace, args.database_namespace)
     globals()[args.action](args)
