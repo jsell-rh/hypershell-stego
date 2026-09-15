@@ -299,3 +299,16 @@ observed restart. No runtime permission changed.
 This closes the selected-file transition and the new early-deletion, SQL fault,
 and database-restart application checks. It does not close the remaining
 installation, Sandbox, SQL session-termination, or full CI requirements above.
+
+
+The first full core CI run at `0489e07` found three remaining fixture defects.
+The cleanup metrics test still called the retired database source. The secret
+rotation test omitted schema-marker read access for its limited runtime role.
+The old grant-condition upgrade test tried to migrate a release with the retired
+database catalog. Its positive upgrade contract is unsupported in this fresh
+release and is now retained only in Git history. The existing legacy-rejection
+checks remain required. The jshell API gate now also requires the cleanup metrics
+unit test and the credential-file rotation workflow. Both passed in a focused
+jshell retest, with the SQL adapter contract. All four generated snapshots match,
+and test resources were removed. See `controller-local-core-ci.json`. The complete
+core suite still requires a passing CI run.

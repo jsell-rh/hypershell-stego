@@ -62,6 +62,8 @@ func TestGatewayDatabaseSecretFileAndCredentialRotation(t *testing.T) {
 	for _, statement := range []string{
 		"GRANT CONNECT ON DATABASE " + pgx.Identifier{cfg.Database}.Sanitize() + " TO " + identifier,
 		"GRANT USAGE ON SCHEMA public, stego_outbox TO " + identifier,
+		"GRANT USAGE ON SCHEMA stego_schema TO " + identifier,
+		"GRANT SELECT ON stego_schema.generation TO " + identifier,
 		"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO " + identifier,
 		"GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO " + identifier,
 	} {

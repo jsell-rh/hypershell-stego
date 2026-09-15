@@ -1,0 +1,59 @@
+{
+  "scope": "First complete core acceptance run after controller-local database conversion.",
+  "application_commit": "0489e074efe8b663429749c57bc870d85545b99e",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34923550815",
+  "job_id": 104236654515,
+  "result": "failure",
+  "log_sha256": "438875478b575ae7331ad5cb9667b8af351c8808aba3ca3249c33691aedd4a30",
+  "failed_tests": [
+    "TestGatewayDatabaseSecretFileAndCredentialRotation (2.31s)",
+    "TestGrantConditionUpgradePreservesClientHistory (0.25s)"
+  ],
+  "build_failure": "internal/cleanupmetrics/source_test.go calls the removed Database function.",
+  "corrections": [
+    "Use the Gateway sql cleanup source in its nil-client contract test.",
+    "Grant the limited credential-rotation role USAGE on stego_schema and SELECT on stego_schema.generation.",
+    "Retire the unsupported legacy grant-condition upgrade test and its database-catalog fixture. Keep the current legacy-rejection checks."
+  ],
+  "retest": {
+    "scope": "Focused retest of corrected fixtures, plus the SQL adapter contract. The complete core suite must still pass in CI.",
+    "result": "success",
+    "verification": {
+      "required": [
+        "TestCleanupSummaryScopeAndTimestampChecks",
+        "TestGatewayDatabaseSecretFileAndCredentialRotation"
+      ],
+      "passed": [
+        "TestCleanupSummaryScopeAndTimestampChecks",
+        "TestGatewayDatabaseSecretFileAndCredentialRotation",
+        "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+      ],
+      "failed": [],
+      "missing": [],
+      "exit_code": 0
+    },
+    "job": "gateway-api-c1da038e8bfb",
+    "cleanup": {
+      "job_absent": "gateway-api-c1da038e8bfb",
+      "pods_absent": true,
+      "fixture_resources_absent": true
+    },
+    "source_matches_checkout": true,
+    "source_sha256": "e004e05cbd4fd20dc13db489921ed1b0df017169fd5d9604eb27fc94aaee35df",
+    "source_inventory_sha256": "8a1401a9d35009d0515ccd3a9cbaaea0a9ad0cedd1ef7f728262478f117bbdc1",
+    "runner_sha256": "56102d7a1c49aae7d69ff1556f6aac905a5ec83cd2b7cc4b550686650a95bb41",
+    "generated_snapshots": {
+      "committed.sha256": "d7d18721e81f6d54b9ef1d155d843bc551af2a2f0b85f322e3201d37bbffe973",
+      "first.sha256": "d7d18721e81f6d54b9ef1d155d843bc551af2a2f0b85f322e3201d37bbffe973",
+      "second.sha256": "d7d18721e81f6d54b9ef1d155d843bc551af2a2f0b85f322e3201d37bbffe973",
+      "after.sha256": "d7d18721e81f6d54b9ef1d155d843bc551af2a2f0b85f322e3201d37bbffe973"
+    },
+    "artifacts": {
+      "test.log": "f58baed1d01e48e03cf83a7c1d8ef4f7630c06553c49c4200839176020ead4fb",
+      "tests.jsonl": "8ee83adb818716e7ea4c46f444e029c9561d22d0192eb29d1f3697cc567daf65",
+      "job-final.json": "bf24d2412364e8c8c0aa2854c90841b1c9d3adf38d43492c234e47c468f09142",
+      "verification.json": "e22309919d1fc576f03a7ca512cabb41743038edb6f698691921bd1ff7891879",
+      "cleanup.json": "6afc854d450ed556e7d2d323ecaef70a14c5104230441f3532e1c5e1be5aff89"
+    }
+  }
+}

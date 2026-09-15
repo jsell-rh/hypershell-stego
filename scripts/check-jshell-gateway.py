@@ -19,6 +19,8 @@ import time
 import uuid
 
 REQUIRED = [
+    "TestCleanupSummaryScopeAndTimestampChecks",
+    "TestGatewayDatabaseSecretFileAndCredentialRotation",
     "TestGatewayDeletionBeforeWorkloadStartup",
     "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
     "TestGeneratedWorkloadWorkerStartupPrivacy",
@@ -109,6 +111,7 @@ snapshot() {
 snapshot committed
 go mod verify
 STEGO_REQUIRE_GATEWAY_SQL=1 go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload -run '^TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer$' > /work/tests.jsonl
+go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/cleanupmetrics >> /work/tests.jsonl
 bash scripts/generate.sh
 snapshot first
 cmp /work/committed.sha256 /work/first.sha256

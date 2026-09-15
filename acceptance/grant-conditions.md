@@ -55,12 +55,19 @@ preserve that invalidation and transition time. The repaired provider roles and
 a new complete scan restore True. Existing token-validity checks remain explicit.
 These five application workflows passed in 95.137 seconds under race detection.
 
-The upgrade test uses the exact condition migration from application
-`0128ef569be258a92906cf6da0ab6d32625b54f4`, retained in
-`testdata/pre_grant_conditions.sql`. It publishes a client condition under that
-contract, rejects it at new-store startup, applies the new migration, and checks
-history, generation invalidation, the new Unknown condition, and repeated apply.
-The upgrade and transaction tests passed together in 6.514 seconds.
+The historical upgrade test used the exact condition migration from application
+`0128ef569be258a92906cf6da0ab6d32625b54f4`. Its
+[fixture](https://github.com/jsell-rh/hypershell-stego/blob/0489e07/acceptance/testdata/pre_grant_conditions.sql)
+and [test](https://github.com/jsell-rh/hypershell-stego/blob/0489e07/acceptance/grant_condition_upgrade_test.go)
+remain in Git history. They checked a legacy release that included the database
+catalog. The upgrade and transaction tests passed together in 6.514 seconds at
+that earlier revision.
+
+The controller-local release rejects that installation before writes. It does
+not supply an in-place upgrade. The old positive upgrade test and its fixture
+are therefore retired. The current schema-rejection tests check empty and
+populated legacy installations without changing them. Current grant-condition
+history, access, restart, and transaction checks remain required.
 
 The full `go test -race -count=1 -timeout=18m ./...` run passed with PostgreSQL
 and Keycloak required. The acceptance package completed in 923.127 seconds.
