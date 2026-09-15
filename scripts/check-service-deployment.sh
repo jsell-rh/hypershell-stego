@@ -233,14 +233,15 @@ printf '%s\n' "$group" | "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/start
 source "$project/scripts/wait-service-result.sh"
 wait_service_result
-"${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.log > "$results/deployment.log"
-"${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c \
-  'cd /work; set --; for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do if [ -e "$file" ]; then set -- "$@" "$file"; fi; done; tar cf - "$@"' > "$results/evidence.tar" || true
-"${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
+source "$project/scripts/collect-service-evidence.sh"
+evidence_status=0
+collect_service_evidence || evidence_status=$?
+timeout --signal=TERM --kill-after=5s 45s "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/collected
 if [[ $result == 0 ]]; then
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Complete job/service-check --timeout=60s
 else
   "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Failed job/service-check --timeout=60s || true
 fi
 tail -30 "$results/deployment.log"
+if [[ $result == 0 && $evidence_status != 0 ]]; then exit 1; fi
 exit "$result"

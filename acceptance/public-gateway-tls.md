@@ -177,3 +177,22 @@ or credentials. It proves nothing until the live stage and complete workflow
 pass. The test permits a controlled Gateway restart; it does not establish
 uninterrupted service. Focused renewal request checks and the generated fixture
 permission checks pass. A live renewal result remains required.
+
+
+## Required evidence collection
+
+A successful test exit is not sufficient if evidence collection fails. The
+service wrapper now fails the run when log or archive transfer fails, when the
+archive cannot be read, or when required records are missing. It requires the
+three generation records, generated output, images, and the rendered browser
+result and screenshot for the selected profile. The complete workload profile
+also requires the queried PostgreSQL server record. The public profile requires
+the RPC, network recovery, and certificate renewal records.
+
+Failed application runs can retain partial evidence for diagnosis. Evidence
+collection does not change their failed result. Collection and the completion
+acknowledgment have explicit time limits. Local command fixtures cover complete
+profiles, failed transfers, truncated archives, missing required files, and
+partial evidence from a failed test. Archive collection does not establish the
+validity of each assertion; source, runtime results, generation, and cleanup
+still require verification.
