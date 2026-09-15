@@ -1,3 +1,7 @@
+This page records the retired database-catalog model. It does not define the
+current API or installation procedure. `ManagedDatabase` and database selection
+are removed. Use the [current database contract](controller-local-database.md).
+
 # Durable database cleanup
 
 ManagedDatabase declares `cleanup_owners: [provider]`. STEGO supplies the storage

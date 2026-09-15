@@ -1,3 +1,7 @@
+This page records the retired database-catalog model. It does not define the
+current API or installation procedure. `ManagedDatabase` and database selection
+are removed. Use the [current database contract](controller-local-database.md).
+
 > Historical contract. This file describes the retired database catalog and
 > server-controller fixture. Use [the current transition record](controller-local-test-transition.md)
 > and the generated allocation manifests for this release.

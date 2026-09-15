@@ -1,3 +1,7 @@
+This page records the retired database-catalog model. It does not define the
+current API or installation procedure. `ManagedDatabase` and database selection
+are removed. Use the [current database contract](controller-local-database.md).
+
 # Database observations
 
 ManagedDatabase now uses STEGO's generated resource revision contract. Controller

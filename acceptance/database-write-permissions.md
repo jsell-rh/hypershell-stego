@@ -1,3 +1,7 @@
+This page records the retired database-catalog model. It does not define the
+current API or installation procedure. `ManagedDatabase` and database selection
+are removed. Use the [current database contract](controller-local-database.md).
+
 # Database controller write permissions
 
 Conditional database patches require STEGO's generated exact grant policy.

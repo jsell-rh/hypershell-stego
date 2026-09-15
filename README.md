@@ -172,11 +172,11 @@ Conditional Gateway patches also require [field-group and target grants](accepta
 in `HYPERSHELL_CONTROLLER_WRITE_GRANTS`. A configured subject alone cannot patch
 Gateway fields. Workload status, OIDC settings, and console address each require
 a separate operation grant. Other controller patch fields are denied.
-Conditional database patches require a
-[provider observation grant](acceptance/database-write-permissions.md) in the
-same setting. Only `status` and `connection_secret` are permitted, with the
-stored ManagedCluster ID as the grant target. A controller cannot change desired
-database settings through this path.
+The retired database catalog has no patch or observation API. Gateway SQL
+cleanup requires the `Gateway` / `cleanup.sql` grant for the assigned
+ManagedCluster ID. The workload controller uses its installation-supplied
+PostgreSQL credentials for SQL operations. Those credentials do not grant API
+access. See the [current database contract](acceptance/controller-local-database.md).
 
 Gateway deletion removes related provider clients before it commits the Gateway,
 account metadata, cleanup audits, and deletion event. The Gateway row lock
@@ -262,25 +262,23 @@ The [revision acceptance test](acceptance/gateway-revisions.md) rejects an older
 observation after a REST desired-state change and checks event rollback and
 restart. Gateway now uses generated desired generations and a workload
 observation group. Phase and status are controller-owned. Reads, status search,
-and credential readiness checks reject stale observations. The database
-controller now also requires [revision preconditions](acceptance/database-observations.md)
-for its writes. Database generations, field ownership, per-subject group
-authority, cleanup for other resources, and controller metrics remain open.
-Database provider actions now read current retained state. Failed reads and
-missing deletion evidence stop cleanup. Event data alone cannot permit deletion.
-The provider records [durable cleanup observations](acceptance/database-cleanup.md)
-and continues periodic checks after success. Late effects reopen pending cleanup.
-Gateway login identity now uses [the same cleanup contract](acceptance/gateway-identity-cleanup.md).
+and credential readiness checks reject stale observations. The former database
+catalog's [observation](acceptance/database-observations.md) and
+[cleanup](acceptance/database-cleanup.md) results are historical records.
+The current workload controller retains each Gateway's SQL destination and
+cleanup intent. A failed SQL cleanup preserves its source credentials and
+pending state. See the [supplied-server workflow](acceptance/controller-local-test-transition.md).
+Gateway login identity uses [durable cleanup observations](acceptance/gateway-identity-cleanup.md).
 The controller confirms provider absence and checks again after completion.
 Workload cleanup now [retains each cluster target](acceptance/gateway-target-cleanup.md).
 A former cluster can complete its own cleanup without completing another cluster.
-Database placement history and parent finalization remain open.
+Complete production acceptance remains open.
 These correctness requirements take priority over recovery-query optimization.
 
 [Persistent user identity](acceptance/user-identity.md) now uses the verified
 issuer and subject. Username changes preserve grants; username reuse cannot
-transfer them. Existing databases need the explicit identity migration and a
-trusted mapping for legacy users before access can be preserved.
+transfer them. This release requires a fresh schema. It does not migrate legacy
+users or preserve an old installation through an in-place upgrade.
 
 [Gateway user login](acceptance/gateway-user-login.md) now completes a real
 browser login and PKCE exchange. The controller maps current grants by verified
@@ -389,9 +387,9 @@ the digest to state. All 73 generated and dependency files remain unchanged.
 An independent digest calculation matched the saved value for all 11 local
 registry inputs.
 
-Database watch and replay now use [generated stream startup checks](acceptance/stream-startup.md).
-STEGO owns header validation and early RPC error handling. Hypershell supplies
-the capability names, replay scope, and controller error policy.
+The historical database watch test established [generated stream startup checks](acceptance/stream-startup.md).
+STEGO owns header validation and early RPC error handling. The database watch
+API is retired. Current Gateway controllers use the generated stream runtime.
 
 Service-account creation accepts [relative expiry](acceptance/service-account-cli.md),
 such as `--expires-in 30d`. STEGO converts the duration to an absolute timestamp.
@@ -441,8 +439,10 @@ reads as unavailable. Summary responses and metrics contain no resource IDs.
 The historical [CNPG database workflow](acceptance/cnpg-database.md) and
 [CNPG Gateway workflow](acceptance/cnpg-gateway.md) tested the retired server
 controller. The current installation owns CNPG or RDS infrastructure. Its
-Gateway controller manages logical SQL resources through STEGO. A new CNPG
-installation workflow remains required; the old results do not prove it.
+Gateway controller manages logical SQL resources through STEGO. The
+[supplied CNPG workflow](acceptance/cnpg-installation.md) passed its application
+checks. Its final cleanup read failed; separate checks confirmed cleanup.
+Unattended CNPG CI remains open.
 
 Generated [process failure records](acceptance/process-failure-privacy.md) report
 the failed step without private database or component error text. A Gateway

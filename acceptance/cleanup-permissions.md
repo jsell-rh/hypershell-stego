@@ -7,7 +7,7 @@ resource and operation names:
 | --- | --- | --- |
 | Gateway | cleanup.identity | Empty string |
 | Gateway | cleanup.workload | The configured ManagedCluster ID |
-| ManagedDatabase | cleanup.provider | Empty string |
+| Gateway | cleanup.sql | The configured ManagedCluster ID |
 
 Set `HYPERSHELL_CLEANUP_GRANTS` to a JSON array. Each entry must contain the exact
 `issuer`, verified token `subject`, `resource`, `operation`, and `target` strings.

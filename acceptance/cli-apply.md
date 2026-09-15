@@ -1,9 +1,9 @@
-The generated CLI can apply Gateway, managed cluster, Gateway release, managed
-database, and Gateway-network records. It accepts YAML or JSON files, directory
+The generated CLI can apply Gateway, managed cluster, Gateway release, and
+Gateway-network records. It accepts YAML or JSON files, directory
 trees, and stdin. Hypershell supplies the kinds, paths, and create/patch fields.
 STEGO supplies input loading, validation, target lookup, HTTPS requests, dry runs,
-and result reporting. The compiler pin is
-`2f3a2c06bff4a0a6811757e9a168eb810f57ce53`.
+and result reporting. The current compiler pin is recorded in
+[`.stego/compiler-revision`](../.stego/compiler-revision).
 
 The input uses the envelope from the current reference CLI:
 
@@ -18,17 +18,16 @@ spec:
   image: registry.example/gateway:v1
 ```
 
-Use returned catalog IDs for the cluster and release. The API selects database
-placement. It selects the sole live server of the configured provider in that
-managed cluster. The default provider is CNPG. A missing or ambiguous local
-server prevents creation. Gateway requests no longer accept `database_id`.
-The remaining server catalog is pending removal under the
-[controller-local target](controller-local-database.md).
+Use returned IDs for the cluster and release. The installation supplies the
+PostgreSQL server to the assigned controller. Gateway creation requires no
+database catalog, database registration, or provider selection. The controller
+creates a separate logical database and login for each Gateway.
 
-A ManagedDatabase document requires `spec.cluster_id`. First create or apply the
-ManagedCluster record, then use its returned ID in the database document. Apply
-does not resolve a new cluster's name into an ID for another document. An offline
-dry run cannot verify that the referenced cluster exists.
+Gateway requests reject `database_id`, including empty and null values.
+`ManagedDatabase` documents are not supported. See the
+[current database contract](controller-local-database.md). Apply does not resolve
+a new cluster's name into an ID for another document. An offline dry run cannot
+verify that the referenced cluster exists.
 
 ```sh
 hsctl apply -f gateway.yaml --dry-run
@@ -95,23 +94,17 @@ TLS. The CLI uses verified HTTPS. The workflow proves:
 - Partial results and a failure exit status after a domain reference error.
 - Ambiguous-name rejection and explicit ID selection.
 - State and owner access after restart, with further CLI patch requests.
-- Local CNPG selection under the default mode and stable placement on reapply.
-- Parent deletion denied until scoped provider cleanup, then deletion and queue drainage.
+- Gateway creation without a database catalog and stable placement on reapply.
+- Parent deletion denied until scoped cleanup, then deletion and queue drainage.
 
-The earlier deployment-based fixture no longer matches the supported providers.
-The updated workflow uses the returned cluster ID and controlled cleanup
-observations through authenticated TLS gRPC. The apply test passed with the
-race detector in 10.54 seconds on 2026-09-14 in bounded jshell Job
-`stego-placement-1a725083/check`. The catalog CLI test, API parent-cleanup test,
-and field-contract tests also passed. Both generation passes and post-test
-output matched all 230 generated and build-record hashes. The Job completed;
-its namespace and private launch files were removed. Evidence is in
-`/tmp/hypershell-cli-placement-ximht64v`. Full Hypershell CI remains incomplete.
-The [live browser gate](browser-gateway-workload.md) proves actual CNPG effects.
+The converted tests use no database catalog. Their results are in the
+[controller-local transition record](controller-local-test-transition.md).
+Earlier provider-selection test results do not prove this release. The separate
+[supplied CNPG workflow](cnpg-installation.md) checks actual SQL effects.
 
 The [role-binding apply mapping](cli-immutable-apply.md) now uses immutable
 identity fields and reports matching records as unchanged. The name and PATCH
-rules above apply to the five named resource kinds. The reference role API registers
+rules above apply to the four named resource kinds. The reference role API registers
 only reads, although its CLI has a role apply stub. Role mutation requires a new
 API and access policy. Kustomize rendering is also
 open; `-k` fails before any request. The port does not claim Kubernetes field

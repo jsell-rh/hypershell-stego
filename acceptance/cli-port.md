@@ -11,7 +11,7 @@ alone does not establish compatibility with all reference options.
 | Role binding | Create, get, list, delete, immutable apply, grant access and removal | Reference list output and automatic pagination |
 | Role | Get and list, as registered by the reference API | Reference list output; role mutation would require a new API and access policy |
 | Managed cluster | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
-| Managed database | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
+| Managed database | Removed by the controller-local release | No database catalog or registration API |
 | Gateway release | Create, get, list, delete, apply patch, placement workflow | Reference output options and interactive confirmation |
 | Gateway network | REST and gRPC CRUD and watch; CLI create, get, list, delete, apply patch | Reference output options and interactive confirmation |
 | Login and logout | Browser and device OIDC, private token files, refresh, provider token revocation | Legacy configuration migration and remaining reference options |
