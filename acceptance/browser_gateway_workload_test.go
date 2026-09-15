@@ -24,6 +24,9 @@ import (
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
+	endpointChange      *browserEndpointChange
+	endpointRestarts    []func(string)
+	endpointReplaced    bool
 	internalCA          []byte
 	internalRoots       *x509.CertPool
 	publicEgressFailure func(string)
@@ -56,7 +59,12 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 	if json.Unmarshal([]byte(os.Getenv("STEGO_TEST_KUBERNETES_EGRESS")), &endpoints) != nil || len(endpoints) == 0 {
 		t.Fatal("operator Kubernetes endpoints are missing")
 	}
-	bindings, err := json.Marshal(map[string][]string{"kubernetes": endpoints})
+	change := readEndpointChange(t, p.namespace)
+	selected := map[string][]string{"kubernetes": endpoints}
+	if change != nil {
+		selected["network-probe"] = []string{change.Initial}
+	}
+	bindings, err := json.Marshal(selected)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -80,6 +88,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		t.Fatal("Kubernetes client setup failed")
 	}
 	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
+	w.endpointChange = change
 	file, err := os.Open(os.Getenv("STEGO_TEST_GATEWAY_INTERNAL_CA_FILE"))
 	if err != nil {
 		t.Fatal("operator-supplied internal Gateway CA is unavailable")
@@ -175,6 +184,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 	}
 	w.checkAllocationAccess()
 	w.checkGatewayNetworkIsolation("initial")
+	w.checkEndpointReplacement()
 	w.checkSQLFaultRecovery(gatewayID)
 	w.checkDatabaseRestart(gatewayID)
 	for _, restart := range w.restarts {

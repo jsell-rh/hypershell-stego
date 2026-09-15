@@ -49,6 +49,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			for _, endpoint := range endpoints {
 				target = append(target, "--egress", "kubernetes="+endpoint)
 			}
+			if w.endpointChange != nil {
+				target = append(target, "--egress", "network-probe="+w.endpointChange.Initial)
+			}
 			if worker.name == "gateway-workload" {
 				env["HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"] = "/var/run/stego/gateway-database.json"
 				files["gateway-database.json"] = w.databaseConfig
@@ -72,6 +75,23 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 		}
 		stop, logs := start()
 		previous := ""
+		if w.endpointChange != nil && worker.name != "gateway-identity" {
+			w.endpointRestarts = append(w.endpointRestarts, func(address string) {
+				stop()
+				previous += logs()
+				found := 0
+				for i, value := range target {
+					if strings.HasPrefix(value, "network-probe=") {
+						target[i] = "network-probe=" + address
+						found++
+					}
+				}
+				if found != 1 {
+					w.t.Fatal("worker endpoint binding is missing or repeated")
+				}
+				stop, logs = start()
+			})
+		}
 		if worker.name == "gateway-workload" && w.public != nil {
 			w.publicEgressFailure = func(id string) {
 				original := append([]string{}, target...)

@@ -132,7 +132,11 @@ func (k *countKubernetes) pod(t *testing.T, ns, uid string) {
 // The Kubernetes endpoint is a TLS protocol fixture. This test proves the
 // generated process and API behavior; live Kubernetes RBAC needs its own gate.
 func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
-	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", `{"kubernetes":["192.0.2.1:443"]}`)
+	bindings := os.Getenv("STEGO_TEST_ALLOCATION_NETWORK_ENDPOINTS")
+	if bindings == "" {
+		bindings = `{"kubernetes":["192.0.2.1:443"]}`
+	}
+	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", bindings)
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)

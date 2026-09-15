@@ -96,9 +96,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 		}
 		states := w.instances[name]
 		if states[id] == nil {
-			// The public fault test starts the workload worker four times.
+			// Public faults and the endpoint change start at most five instances.
 			// Keep collection bounded; check the exact profile count below.
-			if len(states) >= 4 {
+			if len(states) >= 5 {
 				w.invalid = true
 				return &workerSignalState{}
 			}
@@ -154,21 +154,25 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 	}
 	return response, true
 }
-func expectedWorkerInstances(name string, public bool) int {
+func expectedWorkerInstances(name string, public bool, endpointChange ...bool) int {
+	count := 2
 	if name == "hypershell-gateway-workload" && public {
-		return 4
+		count += 2
 	}
-	return 2
+	if len(endpointChange) == 1 && endpointChange[0] && name != "hypershell-gateway-identity" {
+		count++
+	}
+	return count
 }
 
-func (w *workerSignalEvidence) controllerStatus(public bool) (ready, invalid bool, counts map[string]int) {
+func (w *workerSignalEvidence) controllerStatus(public bool, endpointChange ...bool) (ready, invalid bool, counts map[string]int) {
 	w.Lock()
 	defer w.Unlock()
 	ready = !w.invalid && len(w.instances) == 3
 	counts = map[string]int{}
 	for name, states := range w.instances {
 		counts[name] = len(states)
-		ready = ready && len(states) == expectedWorkerInstances(name, public)
+		ready = ready && len(states) == expectedWorkerInstances(name, public, endpointChange...)
 		for _, s := range states {
 			ready = ready && s.metric && s.correlated
 		}
@@ -176,11 +180,11 @@ func (w *workerSignalEvidence) controllerStatus(public bool) (ready, invalid boo
 	return ready, w.invalid, counts
 }
 
-func (w *workerSignalEvidence) check(t *testing.T, public bool) {
+func (w *workerSignalEvidence) check(t *testing.T, public bool, endpointChange ...bool) {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
 	for {
-		ready, invalid, counts := w.controllerStatus(public)
+		ready, invalid, counts := w.controllerStatus(public, endpointChange...)
 		if ready {
 			t.Log("Each expected worker instance exported metrics and correlated logs and traces", counts)
 			return

@@ -6,6 +6,16 @@ wait_service_result() {
 # terminal or missing Pod ends this wait. Empty or malformed observations are
 # not completion records. The Job has its own time limit.
 while :; do
+  if [[ ${endpoint_change:-0} == 1 ]]; then
+    if python3 "$project/scripts/change-gateway-endpoint.py" step --context "$STEGO_TEST_CONTEXT" \
+      --namespace "$namespace" --pod "$pod" --results "$results"; then
+      :
+    else
+      transition_status=$?
+      # An uncertain API response keeps the same transition and Job.
+      if [[ $transition_status != 75 ]]; then return "$transition_status"; fi
+    fi
+  fi
   # The oc request timeout does not bound an upgraded exec stream.
   if result=$(timeout --signal=TERM --kill-after=5s 45s "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- cat /work/deployment.exit 2>/dev/null); then
     if [[ $result =~ ^(0|[1-9][0-9]{0,2})$ ]] && ((result <= 255)); then

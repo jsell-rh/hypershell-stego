@@ -27,13 +27,22 @@ collect_service_evidence() {
           [ -s "$file" ] || exit 1
         done
       fi
+      if [ "$5" = 1 ]; then
+        for file in browser-artifacts/gateway-network-after-endpoint-replacement.json network-endpoint-change.request network-endpoint-change.ack; do
+          [ -s "$file" ] || exit 1
+        done
+      fi
     fi
     set --
-    for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts; do
+    for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts network-endpoint-change.request network-endpoint-change.ack; do
       if [ -e "$file" ]; then set -- "$@" "$file"; fi
     done
     tar cf - "$@"
-  ' stego-collect "$result" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "${workload:-0}" "$public" > "$results/evidence.tar" || status=1
+  ' stego-collect "$result" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "${workload:-0}" "$public" "${endpoint_change:-0}" > "$results/evidence.tar" || status=1
+  if [[ $result == 0 && ${endpoint_change:-0} == 1 ]]; then
+    python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); assert r["phase"]=="complete" and r["type_checks"]=="passed"' \
+      "$results/endpoint-change/journal.json" || status=1
+  fi
   if [[ ! -s $results/deployment.log || ! -s $results/evidence.tar ]]; then status=1; fi
   timeout --signal=TERM --kill-after=5s 45s tar tf "$results/evidence.tar" >/dev/null 2>&1 || status=1
   if ((status != 0)); then

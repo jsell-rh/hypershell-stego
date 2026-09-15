@@ -14,6 +14,17 @@ namespace=fixture
 pod=fixture
 oc_cmd=(bash "$fixture/oc-mock")
 sleep() { :; }
+python3() {
+  if [[ ${1:-} == "$project/scripts/change-gateway-endpoint.py" ]]; then
+    local count
+    count=$(cat "$results/transition-attempts")
+    count=$((count + 1))
+    printf '%s\n' "$count" > "$results/transition-attempts"
+    if ((count == 1)); then return 75; fi
+    return 0
+  fi
+  command python3 "$@"
+}
 cat > "$fixture/oc-mock" <<'SHEND'
 set -euo pipefail
   case "$*" in
@@ -27,7 +38,7 @@ set -euo pipefail
       if ((n == 1)); then
         case "$scenario" in
           empty) exit 0 ;;
-          transient) exit 1 ;;
+          transient|endpoint-retry) exit 1 ;;
           malformed) printf 'private-invalid-record'; exit 0 ;;
         esac
       fi
@@ -46,10 +57,16 @@ set -euo pipefail
   esac
 SHEND
 export results scenario
-for scenario in empty transient malformed failed missing; do
+for scenario in empty transient malformed failed missing endpoint-retry; do
   results="$fixture/$scenario"
   mkdir "$results"
   printf '0\n' > "$results/attempts"
+  endpoint_change=0
+  if [[ $scenario == endpoint-retry ]]; then
+    endpoint_change=1
+    STEGO_TEST_CONTEXT=unused-mock
+    printf '0\n' > "$results/transition-attempts"
+  fi
   result=
   status=0
   wait_service_result > "$results/observations" 2>&1 || status=$?
@@ -65,5 +82,6 @@ for scenario in empty transient malformed failed missing; do
       test ! -s "$results/observations"
       ;;
   esac
+  if [[ $scenario == endpoint-retry ]]; then test "$(cat "$results/transition-attempts")" = 2; fi
 done
-printf 'Service completion protocol passed five cases.\n'
+printf 'Service completion protocol passed six cases.\n'

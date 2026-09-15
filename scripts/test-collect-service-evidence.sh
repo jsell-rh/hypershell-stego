@@ -30,7 +30,7 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-regeneration missing-screen missing-sql missing-network missing-public failed-test; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-regeneration missing-screen missing-sql missing-network missing-public failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$results"
@@ -43,6 +43,17 @@ for scenario in service browser workload public configured-public log-failure ar
   STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=1
   STEGO_TEST_GATEWAY_PUBLIC_CONFIG=
   expected=0
+  endpoint_change=0
+  case "$scenario" in
+    endpoint|missing-endpoint|missing-endpoint-ack|unfinished-endpoint)
+      endpoint_change=1
+      mkdir "$results/endpoint-change"
+      printf '%s\n' '{"phase":"complete","type_checks":"passed"}' > "$results/endpoint-change/journal.json"
+      for file in browser-artifacts/gateway-network-after-endpoint-replacement.json network-endpoint-change.request network-endpoint-change.ack; do
+        printf 'record\n' > "$test_work/$file"
+      done
+      ;;
+  esac
   case "$scenario" in
     service) workload=0; STEGO_TEST_BROWSER_DEPLOYMENT=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm -rf -- "$test_work/browser-artifacts" ;;
     browser) workload=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/postgres-server.json" "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
@@ -55,6 +66,9 @@ for scenario in service browser workload public configured-public log-failure ar
     missing-sql) expected=1; rm "$test_work/browser-artifacts/postgres-server.json" ;;
     missing-network) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-recovery.json" ;;
     missing-public) expected=1; rm "$test_work/browser-artifacts/gateway-public-certificate-rotation.json" ;;
+    missing-endpoint) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-endpoint-replacement.json" ;;
+    missing-endpoint-ack) expected=1; rm "$test_work/network-endpoint-change.ack" ;;
+    unfinished-endpoint) expected=1; printf '%s\n' '{"phase":"checking","type_checks":"pending"}' > "$results/endpoint-change/journal.json" ;;
     failed-test) result=42; rm "$test_work/image.json" "$test_work/after-tests.sha256"; rm -rf -- "$test_work/browser-artifacts" ;;
   esac
   observed=0
@@ -65,4 +79,4 @@ for scenario in service browser workload public configured-public log-failure ar
   fi
   if [[ $observed == 0 ]]; then tar tf "$results/evidence.tar" >/dev/null; fi
 done
-printf 'Service evidence collection passed 15 cases.\n'
+printf 'Service evidence collection passed 19 cases.\n'

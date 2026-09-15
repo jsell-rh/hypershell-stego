@@ -43,6 +43,7 @@ func TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance(t *testing.T) {
 	for _, test := range []struct {
 		name                 string
 		public               bool
+		endpointChange       bool
 		allocation, identity int
 		workload             int
 		missingMetric        bool
@@ -57,7 +58,10 @@ func TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance(t *testing.T) {
 		{name: "missing worker", public: true, allocation: 2, workload: 4},
 		{name: "missing metric", public: true, allocation: 2, identity: 2, workload: 4, missingMetric: true},
 		{name: "missing correlation", public: true, allocation: 2, identity: 2, workload: 4, missingCorrelation: true},
-		{name: "collection bound", public: true, allocation: 2, identity: 2, workload: 5, invalid: true},
+		{name: "collection bound", public: true, allocation: 2, identity: 2, workload: 6, invalid: true},
+		{name: "endpoint change", public: true, endpointChange: true, allocation: 3, identity: 2, workload: 5, ready: true},
+		{name: "missing endpoint restart", public: true, endpointChange: true, allocation: 2, identity: 2, workload: 4},
+		{name: "endpoint instance missing metric", public: true, endpointChange: true, allocation: 3, identity: 2, workload: 5, missingMetric: true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			evidence := &workerSignalEvidence{}
@@ -70,12 +74,12 @@ func TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance(t *testing.T) {
 					collectWorkerInstance(t, evidence, worker.name, fmt.Sprintf("instance-%d", i), !last || !test.missingMetric, !last || !test.missingCorrelation)
 				}
 			}
-			ready, invalid, counts := evidence.controllerStatus(test.public)
+			ready, invalid, counts := evidence.controllerStatus(test.public, test.endpointChange)
 			if ready != test.ready || invalid != test.invalid {
 				t.Fatal("unexpected worker evidence result", ready, invalid, counts)
 			}
 			for _, count := range counts {
-				if count > 4 {
+				if count > 5 {
 					t.Fatal("worker collection exceeded its bound")
 				}
 			}

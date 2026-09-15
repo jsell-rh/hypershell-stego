@@ -7,6 +7,7 @@ import secrets
 import sys
 from pathlib import Path
 from kubernetes_endpoint_bindings import kubernetes_endpoints
+from gateway_endpoint_fixture import inputs as endpoint_inputs
 
 PROJECT = Path(__file__).resolve().parent.parent
 
@@ -39,6 +40,7 @@ def fixture(ns, directory, browser, workload, issuer):
         import re
         if browser!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',issuer): raise SystemExit('Invalid Gateway test profile')
         endpoints = kubernetes_endpoints(root)
+        change = endpoint_inputs(PROJECT, root, ns)
         for item in job['items']:
             if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'11Gi','limits.cpu':'12','pods':'10'})
             if item['kind']=='Role' and item['metadata']['name']=='service-check':
@@ -49,6 +51,10 @@ def fixture(ns, directory, browser, workload, issuer):
                 for worker in ['namespace-allocation','gateway-identity','gateway-workload']:
                     item['spec']['ingress'].append({'from':[{'podSelector':{'matchLabels':{'app.kubernetes.io/name':'hypershell-'+worker}}}],'ports':[{'port':19093,'protocol':'TCP'}]})
             if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'].append({'name':'STEGO_TEST_KUBERNETES_EGRESS','value':json.dumps(sorted(endpoints))})
+            if item['kind'] == 'Job' and change:
+                item['spec']['template']['spec']['containers'][0]['env'] += [
+                    {'name': 'STEGO_TEST_GATEWAY_ENDPOINT_CHANGE', 'value': json.dumps(change)},
+                    {'name': 'STEGO_TEST_ALLOCATION_NETWORK_ENDPOINTS', 'value': json.dumps({'kubernetes': sorted(endpoints), 'network-probe': [change['initial']]})}]
         import hashlib
         marker=hashlib.sha256((ns+'.hypershell-namespace-allocation').encode()).hexdigest()[:32]
         for item in job['items']:

@@ -16,6 +16,7 @@ import subprocess
 import time
 from urllib.parse import quote
 from kubernetes_endpoint_bindings import kubernetes_endpoints
+from gateway_endpoint_fixture import inputs as endpoint_inputs, policy_change
 
 
 def cluster_items(manifest, namespace):
@@ -65,10 +66,12 @@ def remove_resources(record, namespace, oc):
         oc("delete", "--raw=" + paths[item["kind"]] + quote(item["name"], safe=""), "-f", "-", data=json.dumps(options).encode())
 
 
-def workload_targets(directory):
+def workload_targets(directory, change=None):
     flags = []
     for endpoint in kubernetes_endpoints(directory):
         flags += ["--egress", "kubernetes=" + endpoint]
+    if change:
+        flags += ["--egress", "network-probe=" + change['initial']]
     return [("hypershell-namespace-allocation", "api", ["--worker", "namespace-allocation", *flags]),
             ("hypershell-gateway-identity", "api", ["--worker", "gateway-identity"]),
             ("hypershell-gateway-workload", "api", ["--worker", "gateway-workload", *flags, "--egress", "gateway-postgres=192.0.2.2:5432"])]
@@ -153,8 +156,11 @@ def main():
 
         targets = [("hypershell", "api", []), ("hypershell-console", "console", []),
                    ("hypershell-provisioner", "api", ["--rpc-process", "provisioner"])]
+        change = endpoint_inputs(source, args.results, args.namespace)
+        if change and not args.workload:
+            raise ValueError('The endpoint change requires the complete Gateway workflow')
         if args.workload:
-            targets += workload_targets(args.results)
+            targets += workload_targets(args.results, change)
         resources = []
         for name, module, target in targets:
             # Allocation admission can contain Kubernetes endpoint bindings.
@@ -167,6 +173,19 @@ def main():
             resources.extend(cluster_items(manifest, args.namespace))
             (destination / (name + ".json")).write_bytes(manifest)
             record["manifests"][name] = hashlib.sha256(manifest).hexdigest()
+            if change and module == 'api' and name in {'hypershell-namespace-allocation', 'hypershell-gateway-workload'}:
+                following = ['network-probe=' + change['replacement'] if word == 'network-probe=' + change['initial'] else word for word in command]
+                replacement = subprocess.check_output(following, env=environment, timeout=5)
+                if name == 'hypershell-namespace-allocation':
+                    before, after = policy_change(json.loads(manifest), json.loads(replacement), change['initial'], change['replacement'])
+                    transition = args.results / 'endpoint-change'
+                    transition.mkdir(mode=0o700)
+                    (transition / (name + '.json')).write_bytes(replacement)
+                    record['endpoint_change'] = dict(change, before=before, after=after,
+                        initial_manifest_sha256=hashlib.sha256(manifest).hexdigest(),
+                        replacement_manifest_sha256=hashlib.sha256(replacement).hexdigest())
+                elif replacement != manifest:
+                    raise ValueError('The endpoint replacement changed another cluster manifest')
         # Check all names before the first write. Never adopt or replace a
         # resource that already exists, even if it has the expected name.
         if args.render_only:

@@ -89,7 +89,11 @@ func allocationPolicyFixture(t *testing.T, control, profile, namespace, owner st
 }
 
 func TestAllocationPolicyFixtureCapturesGeneratedPolicy(t *testing.T) {
-	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", `{"kubernetes":["192.0.2.1:443"]}`)
+	bindings := os.Getenv("STEGO_TEST_ALLOCATION_NETWORK_ENDPOINTS")
+	if bindings == "" {
+		bindings = `{"kubernetes":["192.0.2.1:443"]}`
+	}
+	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", bindings)
 	policy := allocationPolicyFixture(t, "count-control", "gateway", "openshell-aaaaaaaaaaaaaaaa", "owner-1")
 	if kube.String(policy, "kind") != "NetworkPolicy" || kube.String(policy, "metadata", "uid") == "" || kube.String(policy, "metadata", "annotations", "stego.dev/network-spec-sha256") == "" {
 		t.Fatal("protocol fixture has no generated policy identity")

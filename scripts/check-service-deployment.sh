@@ -21,7 +21,11 @@ fi
 chmod 700 "$results"
 oc_cmd=(oc --context "$STEGO_TEST_CONTEXT" --request-timeout=30s)
 workload=${STEGO_TEST_BROWSER_WORKLOAD:-0}
+endpoint_change=$(PYTHONDONTWRITEBYTECODE=1 python3 -c 'import sys; from pathlib import Path; sys.path.insert(0,"scripts"); from gateway_endpoint_fixture import enabled; print(int(enabled(Path.cwd())))')
 [[ $workload == 0 || $workload == 1 ]]
+if [[ $endpoint_change == 1 ]]; then
+  [[ $workload == 1 && $preinstalled == 0 ]]
+fi
 if [[ $preinstalled == 1 ]]; then [[ $workload == 1 ]]; fi
 if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
@@ -166,6 +170,14 @@ if [[ $workload == 1 && $preinstalled == 0 ]]; then
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
 fi
+# The address test uses two separate listener Pod addresses. Obtain them before
+# rendering either the operator policy or the Job environment.
+if [[ $endpoint_change == 1 ]]; then
+  "${oc_cmd[@]}" create namespace "$namespace" --save-config
+  created=true
+  python3 scripts/network_peer_fixture.py create --context "$STEGO_TEST_CONTEXT" \
+    --namespace "$namespace" --results "$results" --endpoint-change
+fi
 python3 scripts/render-service-fixture.py "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}"
 # Persistent CI keeps the operator installation and replaces only test data.
 if [[ $preinstalled == 1 ]]; then
@@ -178,11 +190,11 @@ for name in ['private-job.json', 'job.json']:
     document['items'] = [item for item in document['items'] if item['kind'] in {'Secret', 'ConfigMap', 'Service', 'Job'}]
     path.write_text(json.dumps(document, indent=2) + '\n')
 CI_OBJECTS
-else
+elif [[ $created == false ]]; then
   "${oc_cmd[@]}" create namespace "$namespace" --save-config
 fi
 created=true
-if [[ $workload == 1 && $preinstalled == 0 ]]; then
+if [[ $workload == 1 && $preinstalled == 0 && $endpoint_change == 0 ]]; then
   python3 scripts/network_peer_fixture.py create --context "$STEGO_TEST_CONTEXT" \
     --namespace "$namespace" --results "$results"
 fi
@@ -245,6 +257,10 @@ sha256sum "$results/application.tar" > "$results/application.sha256"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/oc; chmod 755 /work/oc' < "$(command -v oc)"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/registry-ca.crt' < "$results/registry-ca.crt"
 printf '%s\n' "$group" | "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/fs-group'
+if [[ $endpoint_change == 1 ]]; then
+  python3 scripts/change-gateway-endpoint.py prepare --context "$STEGO_TEST_CONTEXT" \
+    --namespace "$namespace" --pod "$pod" --results "$results"
+fi
 "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- touch /work/start
 source "$project/scripts/wait-service-result.sh"
 wait_service_result

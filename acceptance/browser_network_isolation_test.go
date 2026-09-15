@@ -23,7 +23,11 @@ const dns = require('node:dns').promises;
 const targets = JSON.parse(process.argv[1]);
 async function check(target) {
  const address = await dns.lookup(target.host);
- const outcome = await new Promise(resolve => {
+ const deadline = target.name.startsWith('endpoint-') ? Date.now()+15000 : 0;
+ let outcome, attempts=0;
+ const outcomes={};
+ do {
+ outcome = await new Promise(resolve => {
   const socket = net.createConnection({host:address.address, port:target.port});
   let done = false;
   function end(value) { if (!done) { done=true; socket.destroy(); resolve(value); } }
@@ -31,7 +35,11 @@ async function check(target) {
   socket.on('connect', () => end('connected'));
   socket.on('error', e => end(e.code));
  });
- return {name:target.name, allowed:target.allowed, outcome, passed:outcome === (target.allowed ? 'connected' : 'timeout')};
+ attempts++; outcomes[outcome]=(outcomes[outcome]||0)+1;
+ if (outcome === (target.allowed ? 'connected' : 'timeout') || Date.now() >= deadline) break;
+ await new Promise(resolve=>setTimeout(resolve,250));
+ } while(true);
+ return {name:target.name, allowed:target.allowed, outcome, attempts, outcomes, passed:outcome === (target.allowed ? 'connected' : 'timeout')};
 }
 (async () => {
  const results=[];
@@ -91,6 +99,21 @@ func (w *browserGatewayWorkload) checkGatewayNetworkIsolation(stage string) {
 		}
 		if unrelated != "" {
 			targets = append(targets, gatewayNetworkTarget{"unrelated-namespace", unrelated, 8080, false})
+		}
+		if w.endpointChange != nil {
+			for _, endpoint := range []struct {
+				name, address string
+				allowed       bool
+			}{
+				{"endpoint-original", w.endpointChange.Initial, !w.endpointReplaced},
+				{"endpoint-replacement", w.endpointChange.Replacement, w.endpointReplaced},
+			} {
+				host, _, err := net.SplitHostPort(endpoint.address)
+				if err != nil {
+					w.t.Fatal(err)
+				}
+				targets = append(targets, gatewayNetworkTarget{endpoint.name, host, 8080, endpoint.allowed})
+			}
 		}
 		// Confirm denied targets are live from the permitted fixture before the
 		// probe runs. Refused connections or DNS failures do not count as isolation.
