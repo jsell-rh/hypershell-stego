@@ -5,10 +5,16 @@ policy creation before bindings, restart, and rejected permission changes.
 Regeneration and cleanup passed on jshell. No Pods ran in that check.
 
 Hypershell still uses compiler `fe07b0a`. Its production allocation isolation
-setting remains off. Compiler CI for the new common mechanism is still running.
+setting remains off. Compiler CI passed in
+[run 34997668449](https://github.com/jsell-rh/stego/actions/runs/34997668449).
 The next application change must supply all required paths and prove fresh
 allowed and denied connections in the complete Gateway workflow. The external
 DNS provider choice remains open. These results do not establish traffic isolation.
+
+Candidate `101f31d` uses compiler `e394ab5` and passed regeneration in both
+modules. Its core, rendered browser, console, image, and regeneration checks
+are running in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
+The manual run skips CNPG and Sandbox. Production isolation remains off.
 
 The following record preserves the initial gap and the earlier checks.
 
