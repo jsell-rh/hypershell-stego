@@ -166,6 +166,10 @@ def main():
             active = installation.oc('-n', namespace, 'get', kind, '-o', 'json')
             if active['items']:
                 raise RuntimeError('Application resources remain; keep the CNPG server and Lease')
+        for kind in ['secrets', 'services', 'networkpolicies', 'configmaps']:
+            remaining = installation.oc('-n', namespace, 'get', kind, '-l', 'stego.test/browser-run=' + namespace, '-o', 'json')
+            if remaining['items']:
+                raise RuntimeError('Application test data remains; keep the CNPG server and Lease')
         marker = hashlib.sha256((namespace + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]
         for kind in ['namespaces', 'clusterroles', 'clusterrolebindings']:
             if installation.oc('get', kind, '-l', 'stego.dev/allocator=' + marker, '-o', 'json')['items']:

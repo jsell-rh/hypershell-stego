@@ -126,3 +126,18 @@ An installation that restricts public database access must preserve its server
 maintenance roles explicitly. This belongs to installation setup; Gateway
 controllers must not change unrelated database permissions. The complete
 restart and cross-database denial tests remain required for this correction.
+
+The corrected source `327f24c` passed the complete CNPG browser application
+workflow in 462.01 seconds. CNPG promoted its second instance, restored the
+former primary as a replica, and retained the required data. Namespace recovery,
+credential encryption, SQL cleanup denial, both Gateway deletions, and browser
+session checks also passed. The final cleanup list request failed, so the outer
+run returned a failure. This is an application pass with a cleanup observation
+failure; it is not an unattended CI pass.
+
+Cleanup reads now have three bounded attempts. Invalid replies and persistent
+errors still fail without a success record. The outer runner also checks all
+labeled test data before it can release the Lease. Four small tests cover a
+single read failure, repeated timeouts, invalid replies, and remaining objects.
+The original failed run record is retained. A separate read-only check must
+confirm absence and verify the application evidence.

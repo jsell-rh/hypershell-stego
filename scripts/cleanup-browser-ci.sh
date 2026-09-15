@@ -11,13 +11,22 @@ cleanup_browser_ci() {
     python3 "$project/scripts/browser-ci-installation.py" verify --context "$STEGO_TEST_CONTEXT" --results "$results" || return 1
   fi
   python3 - "$STEGO_TEST_CONTEXT" "$namespace" "$results" <<'CI_CLEANUP'
-import json, subprocess, sys
+import json, subprocess, sys, time
 from pathlib import Path
 context, namespace, directory = sys.argv[1:]
 command = ['oc', '--context=' + context, '--request-timeout=20s', '-n', namespace]
 def read(*args):
-    result = subprocess.run(command + ['get', *args, '-o', 'json'], capture_output=True, check=True, timeout=30)
-    return json.loads(result.stdout)
+    for attempt in range(3):
+        try:
+            result = subprocess.run(command + ['get', *args, '-o', 'json'], capture_output=True, check=True, timeout=30)
+            value = json.loads(result.stdout)
+            if not isinstance(value, dict) or not isinstance(value.get('items'), list):
+                raise ValueError('Invalid cleanup list response')
+            return value
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError):
+            if attempt == 2:
+                raise RuntimeError('Cleanup list read failed after three attempts; keep the Lease: ' + args[0]) from None
+            time.sleep(1)
 for kind in ['pods', 'jobs', 'deployments']:
     if read(kind)['items']:
         raise RuntimeError('Test execution resources remain; keep the Lease')
