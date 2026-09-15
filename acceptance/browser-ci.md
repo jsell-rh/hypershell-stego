@@ -39,3 +39,12 @@ containers, lasting tokens, foreign Secret reads, and installation writes.
 No Job ran during these checks. The complete CI workflow and cleanup
 after failure still require live results. Installation CNPG, actual RDS, and
 Sandbox checks remain open.
+
+Use `scripts/check-browser-ci-recovery.sh` from a frozen inspection source to
+check cleanup after failure. Set the explicit CI context and a new results
+directory. The check creates two allocations through the generated allocator,
+then starts one small Job that exits with code 23. It removes the Job and its
+Pod before it calls the normal CI cleanup path. The result must confirm that
+both allocations and labelled test data are absent and that the operator's
+installation remains. This check uses the same shared Lease. Its source builds;
+the first live result is still pending.
