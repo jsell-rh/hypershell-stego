@@ -158,7 +158,7 @@ func TestGatewayAccountCleanupSerializesCreation(t *testing.T) {
 	f := database(t)
 	provider := newAccountProvider()
 	accounts, gateway := accountService(t, f, provider)
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, AccountCleaner: accounts})
+	service, err := gateways.New(f.storage, gateways.Options{AccountCleaner: accounts})
 	if err != nil {
 		t.Fatal(err)
 	}

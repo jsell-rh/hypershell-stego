@@ -15,7 +15,7 @@ import (
 func controllerService(t *testing.T, f *fixture) (*gateways.Service, gateways.Principal) {
 	t.Helper()
 	controller := principal("controller")
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{controller.Subject}, ControllerWritePolicy: controllerWritePolicy(t, controller.Issuer, writeGrant(controller.Subject, "observe.sandbox-count", f.cluster))})
+	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{controller.Subject}, ControllerWritePolicy: controllerWritePolicy(t, controller.Issuer, writeGrant(controller.Subject, "observe.sandbox-count", f.cluster))})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -55,7 +55,7 @@ func TestSandboxCountTransitionsAndEvents(t *testing.T) {
 			t.Fatal(err)
 		}
 		current := stored.(model.Gateway)
-		if current.ActiveSandboxCount == nil || *current.ActiveSandboxCount != step.want || current.Name != row.Name || current.Namespace != row.Namespace || current.DatabaseID != row.DatabaseID {
+		if current.ActiveSandboxCount == nil || *current.ActiveSandboxCount != step.want || current.Name != row.Name || current.Namespace != row.Namespace {
 			t.Fatal("count write changed another field")
 		}
 	}

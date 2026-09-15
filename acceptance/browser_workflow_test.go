@@ -637,7 +637,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if response.StatusCode != expectedStatus || json.Unmarshal(response.Body, &gateway) != nil {
 		t.Fatal("browser Gateway creation failed", response.StatusCode)
 	}
-	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" || gateway.DatabaseID != f.database {
+	if _, err := ksuid.Parse(gateway.ID); err != nil || gateway.Kind != "Gateway" || gateway.Href != "/api/hypershell/v1/gateways/"+gateway.ID || gateway.CreatedBy != "console-alice" {
 		t.Fatal("browser Gateway contract changed")
 	}
 	var grants int

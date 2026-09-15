@@ -184,3 +184,9 @@ cleanup results. The Job, Pods, and private fixtures are absent. The shared test
 Lease was released. The full acceptance conversion and live SQL/workload gate
 remain open. In particular, cleanup before initial source state exists still
 needs a complete application test and implementation review.
+
+The [expanded test result](controller-local-test-transition.md) adds passing
+SDK, CLI, catalog, identity, telemetry, cleanup deadline, cleanup backlog, and
+parent-deletion checks. All 81 selected application tests have passing results
+across the full run and its bounded correction run. The full acceptance build
+and live SQL/workload gate remain open.

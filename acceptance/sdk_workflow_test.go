@@ -86,7 +86,7 @@ func TestGeneratedGoSDKGatewayWorkflow(t *testing.T) {
 	gateway := created.JSON201
 	id := *gateway.Id
 	parsed, err := ksuid.Parse(id)
-	if err != nil || gateway.Namespace == nil || *gateway.Namespace != "openshell-"+hex.EncodeToString(parsed.Payload()[:8]) || gateway.DatabaseId == "" || gateway.CreatedAt == nil || gateway.UpdatedAt == nil {
+	if err != nil || gateway.Namespace == nil || *gateway.Namespace != "openshell-"+hex.EncodeToString(parsed.Payload()[:8]) || gateway.CreatedAt == nil || gateway.UpdatedAt == nil {
 		t.Fatal("SDK lost assigned Gateway fields")
 	}
 	if gateway.ServerDnsNames == nil || len(*gateway.ServerDnsNames) != 1 || (*gateway.ServerDnsNames)[0] != dns[0] {
@@ -135,7 +135,6 @@ func TestGeneratedGoSDKGatewayWorkflow(t *testing.T) {
 		t.Fatal(err)
 	}
 	beforeGrants := count(t, f.db, "role_bindings")
-	beforeDatabases := count(t, f.db, "managed_databases")
 	awaitQueueEmpty(t, f)
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_sdk_event CHECK (kind <> 'gateway.created') NOT VALID"); err != nil {
 		t.Fatal(err)
@@ -146,7 +145,7 @@ func TestGeneratedGoSDKGatewayWorkflow(t *testing.T) {
 	if err != nil || response.StatusCode() != 500 || response.JSON500 == nil {
 		t.Fatal("SDK lost creation failure status", err)
 	}
-	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != beforeGrants || count(t, f.db, "managed_databases") != beforeDatabases {
+	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != beforeGrants {
 		t.Fatal("SDK failed creation left records")
 	}
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_sdk_event"); err != nil {

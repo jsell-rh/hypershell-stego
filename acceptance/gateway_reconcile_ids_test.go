@@ -28,7 +28,7 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		row := model.Gateway{Meta: model.Meta{ID: ids[i]}, Name: fmt.Sprintf("recovery-%d", i), Namespace: ns, ClusterID: f.cluster, ReleaseID: f.release, DatabaseID: f.database}
+		row := model.Gateway{Meta: model.Meta{ID: ids[i]}, Name: fmt.Sprintf("recovery-%d", i), Namespace: ns, ClusterID: f.cluster, ReleaseID: f.release}
 		if err := f.storage.Create(context.Background(), "Gateway", row); err != nil {
 			t.Fatal(err)
 		}

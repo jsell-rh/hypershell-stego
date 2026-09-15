@@ -20,7 +20,7 @@ func TestGatewayDefaultsRemainExplicitAndAtomic(t *testing.T) {
 	if _, err := f.service.Create(ctx, creator, request); !errors.Is(err, gateways.ErrInvalid) {
 		t.Fatal("unset defaults selected placement", err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, DefaultClusterID: f.cluster, DefaultReleaseID: f.release})
+	service, err := gateways.New(f.storage, gateways.Options{DefaultClusterID: f.cluster, DefaultReleaseID: f.release})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -30,7 +30,7 @@ func TestGatewayDefaultsRemainExplicitAndAtomic(t *testing.T) {
 		t.Fatal(err)
 	}
 	row, err := service.Create(ctx, creator, request)
-	if err != nil || row.ClusterID != f.cluster || row.ReleaseID != f.release || row.DatabaseID != f.database {
+	if err != nil || row.ClusterID != f.cluster || row.ReleaseID != f.release {
 		t.Fatal("default placement differs", err)
 	}
 	request.Name = "explicit-release"
@@ -39,7 +39,7 @@ func TestGatewayDefaultsRemainExplicitAndAtomic(t *testing.T) {
 	if err != nil || row.ReleaseID != other {
 		t.Fatal("default replaced an explicit release", err)
 	}
-	broken, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, DefaultClusterID: f.cluster, DefaultReleaseID: ksuid.New().String()})
+	broken, err := gateways.New(f.storage, gateways.Options{DefaultClusterID: f.cluster, DefaultReleaseID: ksuid.New().String()})
 	if err != nil {
 		t.Fatal(err)
 	}

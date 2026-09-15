@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"gorm.io/driver/postgres"
@@ -53,121 +52,98 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	resources, err := catalog.New(store, service)
+
+	owner := principal("alice", "gateway:creator")
+	live, err := f.service.Create(ctx, owner, f.request("cursor-live"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := principal("controller")
-	db, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: "cursor-deleted", Provider: "cnpg", ClusterID: f.cluster})
+	deleted, err := f.service.Create(ctx, owner, f.request("cursor-deleted"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := resources.Databases.Delete(ctx, principal("operator", "platform:admin"), db.ID); err != nil {
+	if err := f.service.Delete(ctx, owner, deleted.ID); err != nil {
 		t.Fatal(err)
 	}
-	gateway, err := f.service.Create(ctx, principal("alice", "gateway:creator"), f.request("cursor-gateway"))
-	if err != nil {
-		t.Fatal(err)
+	queries.counts.Store(0)
+	queries.reads.Store(0)
+	ids, err := service.ReconcileIDs(ctx, principal("controller"), "")
+	if err != nil || len(ids) != 2 || !slices.Contains(ids, live.ID) || !slices.Contains(ids, deleted.ID) {
+		t.Fatal("recovery omitted live or deleted Gateway", err)
 	}
-	for _, name := range []string{"database", "retained database", "gateway"} {
-		t.Run(name, func(t *testing.T) {
-			queries.counts.Store(0)
-			queries.reads.Store(0)
-			if name == "database" {
-				rows, more, err := resources.Databases.Deleted(ctx, p, "", 100)
-				if err != nil || len(rows) != 1 || rows[0].ID != db.ID || more {
-					t.Fatal("database recovery page", err)
-				}
-			} else if name == "retained database" {
-				rows, more, err := resources.Databases.Retained(ctx, p, "", 100)
-				if err != nil || len(rows) != 2 || more || !slices.ContainsFunc(rows, func(row model.ManagedDatabase) bool { return row.ID == db.ID && row.DeletedAt.Valid }) || !slices.ContainsFunc(rows, func(row model.ManagedDatabase) bool { return row.ID == f.database && !row.DeletedAt.Valid }) {
-					t.Fatal("retained database recovery page", err)
-				}
-			} else {
-				ids, err := service.ReconcileIDs(ctx, p, "")
-				if err != nil || len(ids) != 1 || ids[0] != gateway.ID {
-					t.Fatal("Gateway recovery page", err)
-				}
-			}
-			if queries.counts.Load() != 0 || queries.reads.Load() != 1 {
-				t.Fatalf("recovery page ran %d counts and %d reads; want no count and one read", queries.counts.Load(), queries.reads.Load())
-			}
-			queries.counts.Store(0)
-			queries.reads.Store(0)
-			if name == "database" {
-				_, _, err = resources.Databases.Deleted(ctx, principal("outsider"), "", 100)
-			} else if name == "retained database" {
-				_, _, err = resources.Databases.Retained(ctx, principal("outsider"), "", 100)
-			} else {
-				_, err = service.ReconcileIDs(ctx, principal("outsider"), "")
-			}
-			if !errors.Is(err, gateways.ErrForbidden) || queries.reads.Load() != 0 {
-				t.Fatal("unauthorized recovery read", err)
-			}
-		})
+	if queries.counts.Load() != 0 || queries.reads.Load() != 1 {
+		t.Fatalf("recovery ran %d counts and %d reads", queries.counts.Load(), queries.reads.Load())
+	}
+	queries.counts.Store(0)
+	queries.reads.Store(0)
+	_, err = service.ReconcileIDs(ctx, principal("outsider"), "")
+	if !errors.Is(err, gateways.ErrForbidden) || queries.reads.Load() != 0 {
+		t.Fatal("unauthorized recovery read", err)
 	}
 }
 
-// Removal of an earlier live row must not shift later rows out of recovery.
-func TestDatabaseRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
-	f := databaseCatalogFixture(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
+// Deletion of an earlier row must not shift later IDs out of recovery.
+func TestGatewayRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
+	f := database(t)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
-	policy, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	resources, err := catalog.New(f.storage, policy)
-	if err != nil {
-		t.Fatal(err)
-	}
-	p := principal("controller")
-	for i := range 21 {
-		if _, err := resources.Databases.Create(ctx, principal("operator", "platform:admin"), catalog.DatabaseCreate{Name: fmt.Sprintf("moving-page-%02d", i), Provider: "cnpg", ClusterID: f.cluster}); err != nil {
+	owner := principal("cursor-owner", "gateway:creator")
+	for i := range 205 {
+		_, err := f.service.Create(ctx, owner, f.request(fmt.Sprintf("cursor-%03d", i)))
+		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	query, err := f.db.QueryContext(ctx, "SELECT id FROM managed_databases ORDER BY id")
+	// The cursor and this fixed baseline use the database's ID collation.
+	// Byte order in Go can differ from the installation's database order.
+	rows, err := f.db.QueryContext(ctx, "SELECT id FROM gateways ORDER BY id")
 	if err != nil {
 		t.Fatal(err)
 	}
+	defer rows.Close()
 	var expected []string
-	for query.Next() {
+	for rows.Next() {
 		var id string
-		if err := query.Scan(&id); err != nil {
+		if err := rows.Scan(&id); err != nil {
 			t.Fatal(err)
 		}
 		expected = append(expected, id)
 	}
-	if err := query.Err(); err != nil {
-		t.Fatal(err)
+	if err := rows.Err(); err != nil || len(expected) != 205 {
+		t.Fatal("invalid recovery baseline", len(expected), err)
 	}
-	query.Close()
+	rows.Close()
 	var actual []string
 	after := ""
-	for page := 0; page < 5; page++ {
-		rows, more, err := resources.Databases.Retained(ctx, p, after, 5)
-		if err != nil || len(rows) == 0 || len(rows) > 5 {
-			t.Fatal("invalid recovery page", err)
+	for page := range 3 {
+		ids, err := service.ReconcileIDs(ctx, principal("controller"), after)
+		want := 100
+		if page == 2 {
+			want = 5
 		}
-		for _, row := range rows {
-			actual = append(actual, row.ID)
+		if err != nil || len(ids) != want {
+			t.Fatal("invalid recovery page", page, len(ids), err)
 		}
-		after = rows[len(rows)-1].ID
+		actual = append(actual, ids...)
+		after = ids[len(ids)-1]
 		if page == 0 {
-			if err := resources.Databases.Delete(ctx, principal("operator", "platform:admin"), rows[0].ID); err != nil {
+			if err := f.service.Delete(ctx, owner, ids[0]); err != nil {
 				t.Fatal(err)
 			}
 		}
-		if more != (page < 4) {
-			t.Fatal("incorrect recovery continuation", page, more)
-		}
 	}
-	if len(expected) != 21 || !slices.Equal(actual, expected) {
-		t.Fatal("deletion shifted a later ID out of recovery", len(actual))
+	if !slices.Equal(actual, expected) {
+		t.Fatal("deletion changed recovery order or omitted an ID")
 	}
-	deleted, err := resources.Databases.GetRetained(ctx, p, expected[0])
-	if err != nil || !deleted.DeletedAt.Valid {
-		t.Fatal("fixture did not delete an earlier row", err)
+	if ids, err := service.ReconcileIDs(ctx, principal("controller"), after); err != nil || len(ids) != 0 {
+		t.Fatal("recovery did not end", err)
+	}
+	row, err := service.IdentityState(ctx, principal("controller"), expected[0])
+	if err != nil || !row.DeletedAt.Valid {
+		t.Fatal("fixture did not retain the earlier deletion", err)
 	}
 }

@@ -7,7 +7,6 @@ import (
 
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
-	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/metadata"
 )
@@ -17,7 +16,7 @@ import (
 func cliCleanupSettings(t *testing.T, settings []string, cluster string) []string {
 	t.Helper()
 	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["cli-cleanup"]`)
-	return withCleanupGrants(t, settings, cleanupGrant("cli-cleanup", "Gateway", "workload", cluster), cleanupGrant("cli-cleanup", "ManagedDatabase", "provider", cluster))
+	return withCleanupGrants(t, settings, cleanupGrant("cli-cleanup", "Gateway", "workload", cluster), cleanupGrant("cli-cleanup", "Gateway", "sql", cluster))
 }
 
 func observeCLIGatewayCleanup(t *testing.T, connection *grpc.ClientConn, bearer, cluster string, ids ...string) {
@@ -27,42 +26,18 @@ func observeCLIGatewayCleanup(t *testing.T, connection *grpc.ClientConn, bearer,
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
 	state := control.NewGatewayIdentityServiceClient(connection)
 	for _, id := range ids {
-		current, err := state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
-		if err != nil || !current.GetDeleted() {
-			t.Fatal("CLI cleanup requires a deleted Gateway", err)
+		for _, owner := range []string{"sql", "workload"} {
+			current, err := state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
+			if err != nil || !current.GetDeleted() {
+				t.Fatal("CLI cleanup requires a deleted Gateway", err)
+			}
+			write, err := rpc.WithResourceVersion(ctx, current.ResourceVersion)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: owner, Target: cluster, Complete: true}); err != nil {
+				t.Fatal("CLI provider cleanup failed", err)
+			}
 		}
-		write, err := rpc.WithResourceVersion(ctx, current.ResourceVersion)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "workload", Target: cluster, Complete: true}); err != nil {
-			t.Fatal("CLI provider cleanup failed", err)
-		}
-	}
-}
-
-func observeCLIDatabaseCleanup(t *testing.T, connection *grpc.ClientConn, bearer, id string) {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
-	read, err := rpc.WithRetainedResourceRead(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	var header metadata.MD
-	if _, err := pb.NewManagedDatabaseServiceClient(connection).GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header)); err != nil {
-		t.Fatal(err)
-	}
-	version, deleted, err := rpc.ObservedResourceState(header)
-	if err != nil || !deleted {
-		t.Fatal("CLI cleanup requires a deleted database", err)
-	}
-	write, err := rpc.WithResourceVersion(ctx, version)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := control.NewDatabaseCleanupServiceClient(connection).ObserveDatabaseCleanup(write, &control.ObserveDatabaseCleanupRequest{Id: id, Owner: "provider", Complete: true}); err != nil {
-		t.Fatal("CLI database cleanup failed", err)
 	}
 }

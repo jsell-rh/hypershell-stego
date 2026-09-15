@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
@@ -106,13 +105,10 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	}{
 		{name: "managedCluster", alias: "managed-cluster", path: "managed_clusters", kind: "ManagedCluster", source: "ManagedClusters", event: "managedcluster", args: []string{"--name", "cli-cluster", "--provider", "kubernetes", "--region", "east", "--kubeconfig-secret", "cluster-access", "--status", "ready", "--api-server-url", "https://cluster.example.test:6443"}},
 		{name: "gatewayRelease", alias: "gateway-release", path: "gateway_releases", kind: "GatewayRelease", source: "GatewayReleases", event: "gatewayrelease", args: []string{"--name", "cli-release", "--image", "registry.example/gateway:v1", "--rollout-strategy", "canary", "--canary-percent", "0", "--canary-duration", "5m", "--status", "ready"}},
-		{name: "managedDatabase", alias: "managed-database", path: "managed_databases", kind: "ManagedDatabase", source: "ManagedDatabases", event: "manageddatabase", args: []string{"--name", "cli-database", "--provider", "cnpg", "--region", "east", "--engine", "postgresql", "--engine-version", "18", "--instance-class", "small", "--connection-secret", "database-access", "--status", "ready"}},
 	}
 	for i := range entries {
 		entry := &entries[i]
-		if entry.kind == "ManagedDatabase" {
-			entry.args = append(entry.args, "--cluster-id", entries[0].id)
-		}
+
 		if count(t, f.db, entry.path) != 0 {
 			t.Fatal("catalog fixture was not empty")
 		}
@@ -144,15 +140,11 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	if json.Unmarshal(success("alice", "get", "gateway-release", entries[1].id), &release) != nil || release.CanaryPercent == nil || *release.CanaryPercent != 0 || release.Image != "registry.example/gateway:v1" {
 		t.Fatal("CLI lost the zero canary percentage")
 	}
-	var database httpapi.ManagedDatabase
-	namespace, err := catalog.DatabaseNamespace(entries[2].id)
-	if err != nil || json.Unmarshal(success("alice", "get", "managedDatabase", entries[2].id), &database) != nil || database.Namespace != namespace || database.ClusterID == nil || *database.ClusterID != entries[0].id || database.ConnectionSecret == nil || *database.ConnectionSecret != "database-access" {
-		t.Fatal("CLI database namespace or secret reference differs")
-	}
+
 	denied("admin", "400", "create", "gatewayRelease", "--name", "bad-range", "--image", "registry.example/gateway:v2", "--canary-percent", "101")
 	denied("admin", "400", "create", "gatewayRelease", "--name", "bad-width", "--image", "registry.example/gateway:v2", "--canary-percent", "2147483648")
 	if _, _, err := run("admin", "create", "managedDatabase", "--name", "bad-namespace", "--provider", "cnpg", "--namespace", "chosen"); err == nil {
-		t.Fatal("CLI accepted a server-owned namespace")
+		t.Fatal("CLI accepted a retired database command")
 	}
 	awaitQueueEmpty(t, f)
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_cli_catalog_create CHECK (kind <> 'gatewayrelease.created') NOT VALID"); err != nil {
@@ -176,7 +168,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	success("admin", "delete", "gateway-release", nullable.ID, "--yes")
 	var gateway httpapi.Gateway
 	data := success("alice", "create", "gateway", "--name", "catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id)
-	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" || gateway.ClusterID != entries[0].id || gateway.ReleaseID != entries[1].id || gateway.DatabaseID != entries[2].id {
+	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" || gateway.ClusterID != entries[0].id || gateway.ReleaseID != entries[1].id {
 		t.Fatal("CLI Gateway did not use the returned catalog IDs")
 	}
 	gatewayEvents := kafkaConsumer(t, brokerConfig)
@@ -194,7 +186,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	defer cancel()
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+tokens["alice"]))
 	got, err := rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: gateway.ID})
-	if err != nil || got.GetGateway().GetClusterId() != entries[0].id || got.GetGateway().GetReleaseId() != entries[1].id || got.GetGateway().GetDatabaseId() != entries[2].id {
+	if err != nil || got.GetGateway().GetClusterId() != entries[0].id || got.GetGateway().GetReleaseId() != entries[1].id {
 		t.Fatal("gRPC placement differs after CLI creation and restart", err)
 	}
 	cluster, err := pb.NewManagedClusterServiceClient(connection).GetManagedCluster(ctx, &pb.GetManagedClusterRequest{Id: entries[0].id})
@@ -209,48 +201,14 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	if _, err := rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: gateway.ID}); status.Code(err) != codes.NotFound {
 		t.Fatal("gRPC retained a deleted Gateway", err)
 	}
-	// The default selects the local CNPG server. The client ID is a placeholder.
-	connection.Close()
-	stop()
-	defaultSettings := append(append([]string{}, settings...), "DATABASE_PROVIDER=")
-	stop, address, rpcAddress = startBoth(t, api, f.dsn, brokerConfig, defaultSettings...)
-	backend.Store(address)
-	var defaultGatewayRow httpapi.Gateway
-	data = success("alice", "create", "gateway", "--name", "default-catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id)
-	if json.Unmarshal(data, &defaultGatewayRow) != nil || defaultGatewayRow.ID == "" || defaultGatewayRow.DatabaseID == "" || defaultGatewayRow.DatabaseID != entries[2].id {
-		t.Fatal("default CLI creation did not select the local database server")
-	}
-	var placement httpapi.ManagedDatabase
-	if json.Unmarshal(success("alice", "get", "managed-database", defaultGatewayRow.DatabaseID), &placement) != nil || placement.Provider != "cnpg" || placement.ClusterID == nil || *placement.ClusterID != entries[0].id {
-		t.Fatal("default CLI database provider differs")
-	}
-	expectedNamespace, err := catalog.DatabaseNamespace(defaultGatewayRow.DatabaseID)
-	if err != nil || placement.Namespace != expectedNamespace {
-		t.Fatal("default database namespace differs")
-	}
-	readEvent(t, kafkaConsumer(t, brokerConfig), defaultGatewayRow.ID)
-	if count(t, f.db, "managed_databases") != 1 {
-		t.Fatal("Gateway creation created another database server")
-	}
-	denied("admin", "409", "delete", "managedDatabase", defaultGatewayRow.DatabaseID, "--yes")
-	defaultRPC, defaultConnection := grpcClient(t, rpcAddress, rpcIdentity)
-	defaultCtx, defaultCancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defaultCtx = metadata.NewOutgoingContext(defaultCtx, metadata.Pairs("authorization", "Bearer "+tokens["alice"]))
-	defaultGateway, err := defaultRPC.GetGateway(defaultCtx, &pb.GetGatewayRequest{Id: defaultGatewayRow.ID})
-	defaultCancel()
-	defaultConnection.Close()
-	if err != nil || defaultGateway.GetGateway().GetDatabaseId() != defaultGatewayRow.DatabaseID {
-		t.Fatal("gRPC default placement differs", err)
-	}
-	success("alice", "delete", "gateway", defaultGatewayRow.ID, "--yes")
-	denied("admin", "409", "delete", "managedDatabase", entries[2].id, "--yes")
+
 	denied("admin", "409", "delete", "managedCluster", entries[0].id, "--yes")
 	_, cleanupConnection := grpcClient(t, rpcAddress, rpcIdentity)
 	defer cleanupConnection.Close()
 	cleanupToken := token(t, key, "cli-cleanup")
-	observeCLIGatewayCleanup(t, cleanupConnection, cleanupToken, entries[0].id, gateway.ID, defaultGatewayRow.ID)
-	// Delete the database before its cluster. Provider cleanup must release it.
-	for _, index := range []int{2, 1, 0} {
+	observeCLIGatewayCleanup(t, cleanupConnection, cleanupToken, entries[0].id, gateway.ID)
+	// Cleanup must release the cluster before its record can be deleted.
+	for _, index := range []int{1, 0} {
 		entry := entries[index]
 		if _, _, err := run("admin", "delete", entry.name, entry.id); err == nil {
 			t.Fatal("catalog deletion did not require confirmation")
@@ -262,10 +220,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 		if json.Unmarshal(success("alice", "list", entry.name+"s"), &list) != nil || list.Total != 0 {
 			t.Fatal("CLI retained a deleted catalog record")
 		}
-		if index == 2 {
-			denied("admin", "409", "delete", "managedCluster", entries[0].id, "--yes")
-			observeCLIDatabaseCleanup(t, cleanupConnection, cleanupToken, entry.id)
-		}
+
 	}
 
 	awaitQueueEmpty(t, f)

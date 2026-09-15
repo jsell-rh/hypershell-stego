@@ -62,10 +62,10 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	if code != 200 || json.Unmarshal(data, &patched) != nil {
 		t.Fatalf("REST patch: %d %s", code, data)
 	}
-	if patched.ID != original.ID || patched.Name != "rest-patch" || patched.DatabaseID != original.DatabaseID || patched.Namespace != original.Namespace || !patched.CreatedAt.Equal(original.CreatedAt) || !patched.UpdatedAt.After(original.UpdatedAt) || patched.CreatedBy != "alice" {
+	if patched.ID != original.ID || patched.Name != "rest-patch" || patched.Namespace != original.Namespace || !patched.CreatedAt.Equal(original.CreatedAt) || !patched.UpdatedAt.After(original.UpdatedAt) || patched.CreatedBy != "alice" {
 		t.Fatalf("REST patch shape: %s", data)
 	}
-	reference, err := contracts.Load(ctx)
+	document, err := contracts.LoadActiveOpenAPI(ctx)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -73,7 +73,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	if err := json.Unmarshal(data, &value); err != nil {
 		t.Fatal(err)
 	}
-	schema := reference.OpenAPI.Paths.Value("/api/hypershell/v1/gateways/{id}").Patch.Responses.Status(200).Value.Content.Get("application/json").Schema.Value
+	schema := document.Paths.Value("/api/hypershell/v1/gateways/{id}").Patch.Responses.Status(200).Value.Content.Get("application/json").Schema.Value
 	if err := schema.VisitJSON(value); err != nil {
 		t.Fatalf("patch response violates contract: %v", err)
 	}

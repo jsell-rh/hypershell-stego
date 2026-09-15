@@ -6,8 +6,8 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
-	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -21,15 +21,12 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
-	"github.com/twmb/franz-go/pkg/kgo"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/reflect/protodesc"
 	"google.golang.org/protobuf/reflect/protoreflect"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func TestPlacementDescriptorsMatchReference(t *testing.T) {
@@ -37,43 +34,13 @@ func TestPlacementDescriptorsMatchReference(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, descriptor := range []protoreflect.FileDescriptor{pb.File_hypershell_v1_managed_clusters_proto, pb.File_hypershell_v1_gateway_releases_proto, pb.File_hypershell_v1_managed_databases_proto} {
+	for _, descriptor := range []protoreflect.FileDescriptor{pb.File_hypershell_v1_managed_clusters_proto, pb.File_hypershell_v1_gateway_releases_proto} {
 		expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(descriptor.Path()))
 		actual := protodesc.ToFileDescriptorProto(descriptor)
 		actual.Options.GoPackage = nil
 		expected.Options.GoPackage = nil
 		actual.SourceCodeInfo = nil
 		expected.SourceCodeInfo = nil
-		// The application adds only the documented database locality fields.
-		if descriptor.Path() == "hypershell/v1/managed_databases.proto" {
-			fields := map[string]int32{"ManagedDatabase": 12, "CreateManagedDatabaseRequest": 10, "UpdateManagedDatabaseRequest": 11}
-			seen := 0
-			for _, message := range actual.MessageType {
-				number, extended := fields[message.GetName()]
-				if !extended {
-					continue
-				}
-				if len(message.Field) == 0 {
-					t.Fatal("database locality field missing")
-				}
-				field := message.Field[len(message.Field)-1]
-				optional := message.GetName() != "CreateManagedDatabaseRequest"
-				if field.GetName() != "cluster_id" || field.GetJsonName() != "clusterId" || field.GetNumber() != number || field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING || field.GetLabel() != descriptorpb.FieldDescriptorProto_LABEL_OPTIONAL || field.GetProto3Optional() != optional {
-					t.Fatal("database locality wire extension changed")
-				}
-				if optional {
-					if field.OneofIndex == nil || int(field.GetOneofIndex()) != len(message.OneofDecl)-1 || message.OneofDecl[len(message.OneofDecl)-1].GetName() != "_cluster_id" {
-						t.Fatal("database locality presence changed")
-					}
-					message.OneofDecl = message.OneofDecl[:len(message.OneofDecl)-1]
-				}
-				message.Field = message.Field[:len(message.Field)-1]
-				seen++
-			}
-			if seen != 3 {
-				t.Fatal("database locality extension is incomplete")
-			}
-		}
 		if !proto.Equal(actual, expected) {
 			t.Fatal("catalog wire contract changed", descriptor.Path())
 		}
@@ -104,7 +71,6 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	gatewayClient, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	clusters := pb.NewManagedClusterServiceClient(connection)
 	releases := pb.NewGatewayReleaseServiceClient(connection)
-	databases := pb.NewManagedDatabaseServiceClient(connection)
 	clusterWatch, err := clusters.WatchManagedClusters(call(creator), &pb.WatchManagedClustersRequest{})
 	if err != nil {
 		t.Fatal(err)
@@ -119,14 +85,6 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if _, err := releaseWatch.Header(); err != nil {
 		t.Fatal(err)
 	}
-	databaseWatch, err := databases.WatchManagedDatabases(call(creator), &pb.WatchManagedDatabasesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := databaseWatch.Header(); err != nil {
-		t.Fatal(err)
-	}
-
 	clusterBody := []byte(`{"name":"primary-cluster","provider":"kubernetes","region":"east","kubeconfig_secret":"cluster-access","status":"ready","api_server_url":"https://cluster.example.test:6443"}`)
 	code, data := requestJSON(t, "POST", base+"/managed_clusters", admin, clusterBody)
 	var cluster httpapi.ManagedCluster
@@ -154,16 +112,6 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	releaseID := release.GetGatewayRelease().GetMetadata().GetId()
-	code, data = requestJSON(t, "POST", base+"/managed_databases", admin, []byte(fmt.Sprintf(`{"name":"shared","provider":"cnpg","cluster_id":%q,"region":"east","engine":"postgresql","engine_version":"18","instance_class":"small","connection_secret":"database-access","status":"ready"}`, cluster.ID)))
-	var database httpapi.ManagedDatabase
-	if code != 201 || json.Unmarshal(data, &database) != nil {
-		t.Fatal("database creation", code, string(data))
-	}
-	checkREST("managed_databases", 201, data)
-	wantNamespace, err := catalog.DatabaseNamespace(database.ID)
-	if err != nil || database.Namespace != wantNamespace {
-		t.Fatal("database namespace", database.Namespace, err)
-	}
 	clusterNotice, err := clusterWatch.Recv()
 	if err != nil || clusterNotice.GetType() != pb.EventType_EVENT_TYPE_CREATED || clusterNotice.GetResourceId() != cluster.ID || clusterNotice.GetManagedCluster().GetKubeconfigSecret() != cluster.KubeconfigSecret {
 		t.Fatal("cluster watch", clusterNotice, err)
@@ -172,11 +120,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || releaseNotice.GetType() != pb.EventType_EVENT_TYPE_CREATED || releaseNotice.GetResourceId() != releaseID || releaseNotice.GetGatewayRelease().GetCanaryPercent() != 10 {
 		t.Fatal("release watch", releaseNotice, err)
 	}
-	databaseNotice, err := databaseWatch.Recv()
-	if err != nil || databaseNotice.GetType() != pb.EventType_EVENT_TYPE_CREATED || databaseNotice.GetResourceId() != database.ID || databaseNotice.GetManagedDatabase().GetNamespace() != wantNamespace {
-		t.Fatal("database watch", databaseNotice, err)
-	}
-	for _, v := range []struct{ id, source, kind string }{{cluster.ID, "ManagedClusters", "managedcluster.created"}, {releaseID, "GatewayReleases", "gatewayrelease.created"}, {database.ID, "ManagedDatabases", "manageddatabase.created"}} {
+	for _, v := range []struct{ id, source, kind string }{{cluster.ID, "ManagedClusters", "managedcluster.created"}, {releaseID, "GatewayReleases", "gatewayrelease.created"}} {
 		readCatalogEvent(t, kafkaConsumer(t, config), v.id, v.source, "Create", v.kind)
 	}
 
@@ -184,17 +128,13 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || gotCluster.ManagedCluster.GetApiServerUrl() != *cluster.ApiServerUrl || !gotCluster.ManagedCluster.Metadata.CreatedAt.AsTime().Equal(cluster.CreatedAt) {
 		t.Fatal("cluster cross-transport read", gotCluster, err)
 	}
-	gotDatabase, err := databases.GetManagedDatabase(call(creator), &pb.GetManagedDatabaseRequest{Id: database.ID})
-	if err != nil || gotDatabase.ManagedDatabase.GetConnectionSecret() != *database.ConnectionSecret || gotDatabase.ManagedDatabase.GetNamespace() != database.Namespace {
-		t.Fatal("database cross-transport read", gotDatabase, err)
-	}
 	code, data = requestJSON(t, "GET", base+"/gateway_releases/"+releaseID, creator, nil)
 	var restRelease httpapi.GatewayRelease
 	if code != 200 || json.Unmarshal(data, &restRelease) != nil || restRelease.Image != release.GatewayRelease.Image || restRelease.CanaryPercent == nil || *restRelease.CanaryPercent != 10 {
 		t.Fatal("release cross-transport read", code, string(data))
 	}
 	checkREST("gateway_releases", 201, data)
-	for _, path := range []string{"managed_clusters", "managed_databases", "gateway_releases"} {
+	for _, path := range []string{"managed_clusters", "gateway_releases"} {
 		code, data = requestJSON(t, "GET", base+"/"+path+"?search="+url.QueryEscape("name = 'does-not-exist'"), creator, nil)
 		var list struct {
 			Total int64
@@ -219,7 +159,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	for _, v := range []struct {
 		path, id string
 		body     []byte
-	}{{"managed_clusters", cluster.ID, clusterBody}, {"gateway_releases", releaseID, []byte(`{"name":"evil","image":"example/evil:v1"}`)}, {"managed_databases", database.ID, []byte(`{"name":"evil","provider":"cnpg"}`)}} {
+	}{{"managed_clusters", cluster.ID, clusterBody}, {"gateway_releases", releaseID, []byte(`{"name":"evil","image":"example/evil:v1"}`)}} {
 		for _, method := range []string{"POST", "PATCH", "DELETE"} {
 			target := base + "/" + v.path
 			body := v.body
@@ -246,13 +186,13 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if _, err := releases.UpdateGatewayRelease(call(creator), &pb.UpdateGatewayReleaseRequest{Id: releaseID, Image: proto.String("evil")}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("gRPC denied update", err)
 	}
-	if _, err := databases.DeleteManagedDatabase(call(creator), &pb.DeleteManagedDatabaseRequest{Id: database.ID}); status.Code(err) != codes.PermissionDenied {
+	if _, err := clusters.DeleteManagedCluster(call(creator), &pb.DeleteManagedClusterRequest{Id: cluster.ID}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("gRPC denied delete", err)
 	}
-	if _, err := databases.ListManagedDatabases(call(outsider), &pb.ListManagedDatabasesRequest{}); status.Code(err) != codes.PermissionDenied {
+	if _, err := clusters.ListManagedClusters(call(outsider), &pb.ListManagedClustersRequest{}); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("gRPC list disclosure", err)
 	}
-	deniedWatch, err := databases.WatchManagedDatabases(call(outsider), &pb.WatchManagedDatabasesRequest{})
+	deniedWatch, err := clusters.WatchManagedClusters(call(outsider), &pb.WatchManagedClustersRequest{})
 	if err == nil {
 		_, err = deniedWatch.Recv()
 	}
@@ -268,32 +208,10 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code != 200 || json.Unmarshal(data, &restRelease) != nil || restRelease.CanaryPercent == nil || *restRelease.CanaryPercent != 0 {
 		t.Fatal("release zero patch", code, string(data))
 	}
-	var databaseHeader metadata.MD
-	if _, err := databases.GetManagedDatabase(call(controller), &pb.GetManagedDatabaseRequest{Id: database.ID}, grpc.Header(&databaseHeader)); err != nil {
-		t.Fatal(err)
-	}
-	revision, err := rpc.ObservedResourceVersion(databaseHeader)
-	if err != nil {
-		t.Fatal(err)
-	}
-	observedCall, err := rpc.WithResourceVersion(call(controller), revision)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := databases.UpdateManagedDatabase(observedCall, &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")}); status.Code(err) != codes.PermissionDenied {
-		t.Fatal("controller changed desired database settings", err)
-	}
-	dbUpdate, err := databases.UpdateManagedDatabase(call(admin), &pb.UpdateManagedDatabaseRequest{Id: database.ID, EngineVersion: proto.String("18.1")})
-	if err != nil || dbUpdate.ManagedDatabase.GetEngineVersion() != "18.1" || dbUpdate.ManagedDatabase.Namespace != wantNamespace {
-		t.Fatal("database update", dbUpdate, err)
-	}
-	if _, err := databases.UpdateManagedDatabase(call(admin), &pb.UpdateManagedDatabaseRequest{Id: database.ID, Provider: proto.String("deployment")}); status.Code(err) != codes.InvalidArgument {
-		t.Fatal("database provider changed", err)
-	}
 	for _, v := range []struct {
 		path string
 		body []byte
-	}{{"managed_databases", []byte(`{"name":"bad","provider":"unknown"}`)}, {"managed_databases", []byte(`{"name":"bad","provider":"cnpg","namespace":"chosen"}`)}, {"managed_clusters", []byte(`{"name":"bad","provider":"kubernetes"}`)}, {"gateway_releases", []byte(`{"name":"bad","image":"image","canary_percent":101}`)}} {
+	}{{"managed_clusters", []byte(`{"name":"bad","provider":"kubernetes"}`)}, {"gateway_releases", []byte(`{"name":"bad","image":"image","canary_percent":101}`)}} {
 		if code, _ := requestJSON(t, "POST", base+"/"+v.path, admin, v.body); code != 400 {
 			t.Fatal("invalid catalog create", v.path, code)
 		}
@@ -306,19 +224,14 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || releaseNotice.Type != pb.EventType_EVENT_TYPE_UPDATED || releaseNotice.GatewayRelease.CanaryPercent == nil || *releaseNotice.GatewayRelease.CanaryPercent != 0 {
 		t.Fatal("release update watch", releaseNotice, err)
 	}
-	databaseNotice, err = databaseWatch.Recv()
-	if err != nil || databaseNotice.Type != pb.EventType_EVENT_TYPE_UPDATED || databaseNotice.ManagedDatabase.GetEngineVersion() != "18.1" {
-		t.Fatal("database update watch", databaseNotice, err)
-	}
-
 	body, _ := json.Marshal(gateways.CreateRequest{Name: "api-placed", ClusterID: cluster.ID, ReleaseID: releaseID})
 	code, data = requestJSON(t, "POST", base+"/gateways", creator, body)
 	var gateway httpapi.Gateway
-	if code != 201 || json.Unmarshal(data, &gateway) != nil || gateway.DatabaseID != database.ID {
+	if code != 201 || json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("API placement", code, string(data))
 	}
 	gotGateway, err := gatewayClient.GetGateway(call(owner), &pb.GetGatewayRequest{Id: gateway.ID})
-	if err != nil || gotGateway.Gateway.ClusterId != cluster.ID || gotGateway.Gateway.ReleaseId != releaseID || gotGateway.Gateway.DatabaseId != database.ID {
+	if err != nil || gotGateway.Gateway.ClusterId != cluster.ID || gotGateway.Gateway.ReleaseId != releaseID {
 		t.Fatal("placed Gateway read", gotGateway, err)
 	}
 	readEvent(t, kafkaConsumer(t, config), gateway.ID)
@@ -328,7 +241,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || len(bindings.GetItems()) != 1 || bindings.Items[0].GetRoleName() != "gateway:owner" {
 		t.Fatal("placed owner grant", bindings, err)
 	}
-	for _, v := range []struct{ path, id string }{{"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}, {"managed_databases", database.ID}} {
+	for _, v := range []struct{ path, id string }{{"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}} {
 		if code, _ := requestJSON(t, "DELETE", base+"/"+v.path+"/"+v.id, admin, nil); code != 409 {
 			t.Fatal("deleted placement in use", v.path, code)
 		}
@@ -336,7 +249,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	stop()
 	// An offline catalog update queues its event for the next generated process.
-	policy, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG})
+	policy, err := gateways.New(f.storage, gateways.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -355,17 +268,16 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err := f.db.QueryRow(`SELECT id::text FROM stego_outbox.messages`).Scan(&offlineMessageID); err != nil {
 		t.Fatal(err)
 	}
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", cluster.ID), cleanupGrant("controller", "ManagedDatabase", "provider", cluster.ID))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", cluster.ID), cleanupGrant("controller", "Gateway", "sql", cluster.ID))
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	base = address + "/api/hypershell/v1"
 	gatewayClient, connection = grpcClient(t, grpcAddress, tlsIdentity)
-	databases = pb.NewManagedDatabaseServiceClient(connection)
 	code, data = requestJSON(t, "GET", base+"/gateway_releases/"+releaseID, creator, nil)
 	if code != 200 || json.Unmarshal(data, &restRelease) != nil || restRelease.Status == nil || *restRelease.Status != offlineStatus {
 		t.Fatal("catalog restart state", code, string(data))
 	}
 	gotGateway, err = gatewayClient.GetGateway(call(owner), &pb.GetGatewayRequest{Id: gateway.ID})
-	if err != nil || gotGateway.Gateway.DatabaseId != database.ID {
+	if err != nil || gotGateway.Gateway.ClusterId != cluster.ID {
 		t.Fatal("Gateway restart placement", gotGateway, err)
 	}
 	readCatalogEvent(t, kafkaConsumer(t, config), releaseID, "GatewayReleases", "Update", "gatewayrelease.updated", offlineMessageID)
@@ -373,7 +285,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code, _ := requestJSON(t, "DELETE", base+"/gateways/"+gateway.ID, owner, nil); code != 204 {
 		t.Fatal("Gateway removal", code)
 	}
-	for _, target := range []string{"managed_databases/" + database.ID, "managed_clusters/" + cluster.ID} {
+	for _, target := range []string{"managed_clusters/" + cluster.ID} {
 		if code, _ := requestJSON(t, "DELETE", base+"/"+target, admin, nil); code != 409 {
 			t.Fatal("catalog deletion ignored pending Gateway cleanup", target, code)
 		}
@@ -381,73 +293,31 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	// This API fixture has no Kubernetes workload. Record the cleanup observation
 	// through the same versioned, scoped RPC that the real worker uses.
 	state := control.NewGatewayIdentityServiceClient(connection)
-	retained, err := state.GetGatewayIdentityState(call(controller), &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
-	if err != nil || !retained.GetDeleted() || retained.GetGateway().GetClusterId() != cluster.ID {
-		t.Fatal("retained Gateway cleanup state", err)
-	}
-	write, err := rpc.WithResourceVersion(call(controller), retained.GetResourceVersion())
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: gateway.ID, Owner: "workload", Target: cluster.ID, Complete: true}); err != nil {
-		t.Fatal("Gateway cleanup observation", err)
-	}
-	observeDatabaseCleanup := func(id string) {
-		t.Helper()
-		read, err := rpc.WithRetainedResourceRead(call(controller))
+	for _, owner := range []string{"sql", "workload"} {
+		retained, err := state.GetGatewayIdentityState(call(controller), &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
+		if err != nil || !retained.GetDeleted() || retained.GetGateway().GetClusterId() != cluster.ID {
+			t.Fatal("retained Gateway cleanup state", err)
+		}
+		write, err := rpc.WithResourceVersion(call(controller), retained.GetResourceVersion())
 		if err != nil {
 			t.Fatal(err)
 		}
-		var header metadata.MD
-		if _, err := databases.GetManagedDatabase(read, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header)); err != nil {
-			t.Fatal(err)
-		}
-		version, deleted, err := rpc.ObservedResourceState(header)
-		if err != nil || !deleted {
-			t.Fatal("retained database cleanup state", err)
-		}
-		write, err := rpc.WithResourceVersion(call(controller), version)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if _, err := control.NewDatabaseCleanupServiceClient(connection).ObserveDatabaseCleanup(write, &control.ObserveDatabaseCleanupRequest{Id: id, Owner: "provider", Complete: true}); err != nil {
-			t.Fatal("database cleanup observation", err)
+		if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: gateway.ID, Owner: owner, Target: cluster.ID, Complete: true}); err != nil {
+			t.Fatal("Gateway cleanup observation", err)
 		}
 	}
-	dbWatch, err := databases.WatchManagedDatabases(call(creator), &pb.WatchManagedDatabasesRequest{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := dbWatch.Header(); err != nil {
-		t.Fatal(err)
-	}
-	for _, v := range []struct{ path, id string }{{"managed_databases", database.ID}, {"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}} {
+	for _, v := range []struct{ path, id string }{{"managed_clusters", cluster.ID}, {"gateway_releases", releaseID}} {
 		if code, _ := requestJSON(t, "DELETE", base+"/"+v.path+"/"+v.id, admin, nil); code != 204 {
 			t.Fatal("unused catalog removal", v.path, code)
-		}
-		if v.path == "managed_databases" {
-			if code, _ := requestJSON(t, "DELETE", base+"/managed_clusters/"+cluster.ID, admin, nil); code != 409 {
-				t.Fatal("cluster deletion ignored pending database cleanup", code)
-			}
-			observeDatabaseCleanup(v.id)
 		}
 		if code, _ := requestJSON(t, "GET", base+"/"+v.path+"/"+v.id, creator, nil); code != 404 {
 			t.Fatal("deleted catalog read", v.path, code)
 		}
 	}
-	deleted, err := dbWatch.Recv()
-	if err != nil || deleted.GetType() != pb.EventType_EVENT_TYPE_DELETED || deleted.GetResourceId() != database.ID || deleted.GetManagedDatabase().GetNamespace() != wantNamespace {
-		t.Fatal("database deletion watch", deleted, err)
-	}
-	readCatalogEvent(t, kafkaConsumer(t, config), database.ID, "ManagedDatabases", "Delete", "manageddatabase.deleted")
 	// Exercise the other transport direction for every catalog operation.
 	clusters = pb.NewManagedClusterServiceClient(connection)
 	releases = pb.NewGatewayReleaseServiceClient(connection)
 	spareCluster, err := clusters.CreateManagedCluster(call(admin), &pb.CreateManagedClusterRequest{Name: "spare", Provider: "kubernetes", KubeconfigSecret: "spare-access"})
-	if err != nil {
-		t.Fatal(err)
-	}
-	spareDB, err := databases.CreateManagedDatabase(call(admin), &pb.CreateManagedDatabaseRequest{Name: "spare", Provider: "cnpg", ClusterId: spareCluster.ManagedCluster.Metadata.Id})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -456,7 +326,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code != 201 || json.Unmarshal(data, &spareRelease) != nil {
 		t.Fatal("REST release create", code, string(data))
 	}
-	for _, v := range []struct{ path, id string }{{"managed_clusters", spareCluster.ManagedCluster.Metadata.Id}, {"managed_databases", spareDB.ManagedDatabase.Metadata.Id}} {
+	for _, v := range []struct{ path, id string }{{"managed_clusters", spareCluster.ManagedCluster.Metadata.Id}} {
 		if code, _ := requestJSON(t, "PATCH", base+"/"+v.path+"/"+v.id, admin, []byte(`{"region":"north"}`)); code != 200 {
 			t.Fatal("REST catalog patch", v.path, code)
 		}
@@ -476,70 +346,16 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err != nil || releaseList.GetMetadata().GetTotal() != 1 || len(releaseList.Items) != 1 {
 		t.Fatal("RPC release list", releaseList, err)
 	}
-	databaseList, err := databases.ListManagedDatabases(call(creator), &pb.ListManagedDatabasesRequest{})
-	if err != nil || databaseList.GetMetadata().GetTotal() != 1 || len(databaseList.Items) != 1 || databaseList.Items[0].GetRegion() != "north" {
-		t.Fatal("RPC database list", databaseList, err)
-	}
-	stop()
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", spareCluster.ManagedCluster.Metadata.Id))
-	stop, _, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
-	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
-	clusters = pb.NewManagedClusterServiceClient(connection)
-	releases = pb.NewGatewayReleaseServiceClient(connection)
-	databases = pb.NewManagedDatabaseServiceClient(connection)
-	if _, err := clusters.DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: spareCluster.ManagedCluster.Metadata.Id}); status.Code(err) != codes.AlreadyExists {
-		t.Fatal("cluster deletion ignored its registered database", err)
-	}
 	if _, err := releases.DeleteGatewayRelease(call(admin), &pb.DeleteGatewayReleaseRequest{Id: spareRelease.ID}); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := databases.DeleteManagedDatabase(call(admin), &pb.DeleteManagedDatabaseRequest{Id: spareDB.ManagedDatabase.Metadata.Id}); err != nil {
-		t.Fatal(err)
-	}
-	observeDatabaseCleanup(spareDB.ManagedDatabase.Metadata.Id)
 	if _, err := clusters.DeleteManagedCluster(call(admin), &pb.DeleteManagedClusterRequest{Id: spareCluster.ManagedCluster.Metadata.Id}); err != nil {
 		t.Fatal(err)
 	}
 
 }
 
-func readCatalogEvent(t *testing.T, consumer *kgo.Client, id, source, operation, kind string, expectedID ...string) string {
-	t.Helper()
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-	for ctx.Err() == nil {
-		for _, record := range consumer.PollRecords(ctx, 1).Records() {
-			if string(record.Key) != id {
-				continue
-			}
-			var payload map[string]string
-			if json.Unmarshal(record.Value, &payload) != nil {
-				t.Fatal("invalid event JSON")
-			}
-			if payload["event_type"] != operation {
-				continue
-			}
-			if len(payload) != 3 || payload["source"] != source || payload["source_id"] != id {
-				t.Fatal("catalog event payload", string(record.Value))
-			}
-			headers := map[string]string{}
-			for _, h := range record.Headers {
-				headers[h.Key] = string(h.Value)
-			}
-			if len(expectedID) > 0 && headers["stego-message-id"] != expectedID[0] {
-				continue
-			}
-			if headers["stego-message-kind"] != kind || headers["stego-message-id"] == "" {
-				t.Fatal("catalog event headers", headers)
-			}
-			return headers["stego-message-id"]
-		}
-	}
-	t.Fatal("catalog event was not delivered", id, operation)
-	return ""
-}
-
-func TestCatalogAtomicChangesAndMigration(t *testing.T) {
+func TestCatalogAtomicChangesAndConstraints(t *testing.T) {
 	f := database(t)
 	ctx := context.Background()
 	s, err := catalog.New(f.storage, f.service)
@@ -569,66 +385,14 @@ func TestCatalogAtomicChangesAndMigration(t *testing.T) {
 	if _, err := f.db.Exec(`DROP TRIGGER reject_catalog_event ON stego_outbox.messages`); err != nil {
 		t.Fatal(err)
 	}
-	// Recreate the old name-only schema while preserving each row and its ID.
-	for _, query := range []string{`ALTER TABLE managed_clusters DROP COLUMN provider,DROP COLUMN region,DROP COLUMN kubeconfig_secret,DROP COLUMN status,DROP COLUMN api_server_url`, `ALTER TABLE gateway_releases DROP COLUMN image,DROP COLUMN rollout_strategy,DROP COLUMN canary_percent,DROP COLUMN canary_duration,DROP COLUMN status`, `ALTER TABLE managed_databases DROP COLUMN provider,DROP COLUMN namespace,DROP COLUMN region,DROP COLUMN engine,DROP COLUMN engine_version,DROP COLUMN instance_class,DROP COLUMN connection_secret,DROP COLUMN status`} {
-		if _, err := f.db.Exec(query); err != nil {
-			t.Fatal(err)
-		}
-	}
-	migration, err := os.ReadFile("../migrations/000006_placement_catalog.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	// Use a dedicated connection because the failed explicit transaction needs rollback.
-	conn, err := f.db.Conn(ctx)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer conn.Close()
-	if _, err := conn.ExecContext(ctx, string(migration)); err == nil {
-		t.Fatal("upgrade invented missing placement data")
-	}
-	if _, err := conn.ExecContext(ctx, "ROLLBACK"); err != nil {
-		t.Fatal(err)
-	}
-	var columns int
-	if err := f.db.QueryRow(`SELECT count(*) FROM information_schema.columns WHERE table_name='managed_clusters' AND column_name='provider'`).Scan(&columns); err != nil || columns != 0 {
-		t.Fatal("failed migration changed schema", columns, err)
-	}
-	for _, query := range []string{`ALTER TABLE managed_clusters ADD COLUMN provider varchar(64),ADD COLUMN kubeconfig_secret varchar(253);UPDATE managed_clusters SET provider='kubernetes',kubeconfig_secret='actual-cluster-reference'`, `ALTER TABLE gateway_releases ADD COLUMN image varchar(2048);UPDATE gateway_releases SET image='registry.example/gateway:v1'`, `ALTER TABLE managed_databases ADD COLUMN provider text,ADD COLUMN namespace varchar(29);UPDATE managed_databases SET provider='cnpg'`} {
-		if _, err := f.db.Exec(query); err != nil {
-			t.Fatal(err)
-		}
-	}
-	namespace, err := catalog.DatabaseNamespace(f.database)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := f.db.Exec(`UPDATE managed_databases SET namespace=$1 WHERE id=$2`, namespace, f.database); err != nil {
-		t.Fatal(err)
-	}
-	for range 2 {
-		if _, err := conn.ExecContext(ctx, string(migration)); err != nil {
-			t.Fatal(err)
-		}
-	}
-	after, err := s.Clusters.Get(ctx, p, f.cluster)
-	if err != nil || after.ID != cluster.ID || !after.CreatedTime.Equal(cluster.CreatedTime) || !after.UpdatedTime.Equal(cluster.UpdatedTime) || after.KubeconfigSecret != "actual-cluster-reference" {
-		t.Fatal("migration changed identity or times", after, err)
-	}
-	if err := f.storage.Create(ctx, "ManagedDatabase", model.ManagedDatabase{Meta: model.Meta{ID: ksuid.New().String()}, Name: "bad", Provider: "unknown", Namespace: "openshell-db-0000000000000000"}); err == nil {
-		t.Fatal("database provider constraint missing")
-	}
 	badPercent := int32(101)
 	if err := f.storage.Create(ctx, "GatewayRelease", model.GatewayRelease{Meta: model.Meta{ID: ksuid.New().String()}, Name: "invalid-range", Image: "registry.example/gateway:v1", CanaryPercent: &badPercent}); err == nil {
 		t.Fatal("direct storage write bypassed the numeric bound")
 	}
-	if _, err := s.Databases.Event(ctx, p, f.database, true); !errors.Is(err, storage.ErrNotFound) {
+	if _, err := s.Clusters.Event(ctx, p, f.cluster, true); !errors.Is(err, storage.ErrNotFound) {
 		t.Fatal("forged deletion accepted", err)
 	}
-	if _, err := catalog.DatabaseNamespace("not-a-ksuid"); !errors.Is(err, gateways.ErrInvalid) {
-		t.Fatal("invalid namespace ID accepted", err)
-	}
+
 }
 
 func BenchmarkCatalogFilteredPage(b *testing.B) {
@@ -661,22 +425,24 @@ type catalogRaceRepository struct {
 	gateways.Repository
 	ready  chan struct{}
 	resume chan struct{}
+	once   *sync.Once
 }
 type catalogRaceTransaction struct {
 	storage.Transaction
 	ready  chan struct{}
 	resume chan struct{}
+	once   *sync.Once
 }
 
 func (r catalogRaceRepository) WithTransaction(ctx context.Context, fn func(context.Context, storage.Transaction) error) error {
 	return r.Repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
-		return fn(ctx, catalogRaceTransaction{tx, r.ready, r.resume})
+		return fn(ctx, catalogRaceTransaction{tx, r.ready, r.resume, r.once})
 	})
 }
 func (tx catalogRaceTransaction) List(ctx context.Context, entity, field, value string, q storage.ListOptions) (storage.ListResult, error) {
 	result, err := tx.Transaction.List(ctx, entity, field, value, q)
 	if err == nil && entity == "Gateway" {
-		close(tx.ready)
+		tx.once.Do(func() { close(tx.ready) })
 		select {
 		case <-tx.resume:
 		case <-ctx.Done():
@@ -688,7 +454,7 @@ func (tx catalogRaceTransaction) List(ctx context.Context, entity, field, value 
 func (tx catalogRaceTransaction) HasUnfinishedReferences(ctx context.Context, reference storage.CleanupReference) (bool, error) {
 	pending, err := tx.Transaction.(storage.CleanupReferenceReader).HasUnfinishedReferences(ctx, reference)
 	if err == nil && reference.Entity == "Gateway" {
-		close(tx.ready)
+		tx.once.Do(func() { close(tx.ready) })
 		select {
 		case <-tx.resume:
 		case <-ctx.Done():
@@ -699,13 +465,13 @@ func (tx catalogRaceTransaction) HasUnfinishedReferences(ctx context.Context, re
 }
 
 func TestCatalogDeletionCannotRaceGatewayCreation(t *testing.T) {
-	for _, entity := range []string{"cluster", "release", "database"} {
+	for _, entity := range []string{"cluster", "release"} {
 		t.Run(entity, func(t *testing.T) {
 			f := database(t)
 			ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 			defer cancel()
 			ready, resume := make(chan struct{}), make(chan struct{})
-			repository := catalogRaceRepository{f.storage, ready, resume}
+			repository := catalogRaceRepository{f.storage, ready, resume, new(sync.Once)}
 			service, err := catalog.New(repository, f.service)
 			if err != nil {
 				t.Fatal(err)
@@ -718,8 +484,6 @@ func TestCatalogDeletionCannotRaceGatewayCreation(t *testing.T) {
 					outcome <- service.Clusters.Delete(ctx, p, f.cluster)
 				case "release":
 					outcome <- service.Releases.Delete(ctx, p, f.release)
-				case "database":
-					outcome <- service.Databases.Delete(ctx, p, f.database)
 				}
 			}()
 			select {
@@ -731,22 +495,17 @@ func TestCatalogDeletionCannotRaceGatewayCreation(t *testing.T) {
 			close(resume)
 			deleteErr := <-outcome
 			want := storage.ErrSerialization
-			if entity == "cluster" {
-				// Its live database is an independent reference. That reference
-				// must block deletion before the transaction attempts a write.
-				want = storage.ErrConflict
-			}
 			if createErr != nil || !errors.Is(deleteErr, want) {
 				t.Fatal("concurrent placement result", createErr, deleteErr)
 			}
 			var deleteEvents int
-			if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages WHERE kind IN ('managedcluster.deleted','gatewayrelease.deleted','manageddatabase.deleted')").Scan(&deleteEvents); err != nil || deleteEvents != 0 {
+			if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages WHERE kind IN ('managedcluster.deleted','gatewayrelease.deleted')").Scan(&deleteEvents); err != nil || deleteEvents != 0 {
 				t.Fatal("rejected parent deletion committed an event", err)
 			}
 			if _, err := f.service.Get(ctx, principal("alice"), gateway.ID); err != nil {
 				t.Fatal(err)
 			}
-			for kind, id := range map[string]string{"ManagedCluster": f.cluster, "GatewayRelease": f.release, "ManagedDatabase": f.database} {
+			for kind, id := range map[string]string{"ManagedCluster": f.cluster, "GatewayRelease": f.release} {
 				if _, err := f.storage.Get(ctx, kind, id); err != nil {
 					t.Fatal("Gateway has a deleted placement", kind, err)
 				}

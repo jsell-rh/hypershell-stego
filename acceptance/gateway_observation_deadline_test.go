@@ -3,18 +3,16 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"path/filepath"
 	"sync/atomic"
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -22,13 +20,23 @@ import (
 
 type deadlineObservationProvider struct {
 	*blockedCleanupProvider
-	calls atomic.Int64
+	calls    atomic.Int64
+	timedOut chan struct{}
 }
 
-func (p *deadlineObservationProvider) Ensure(ctx context.Context, _ *pb.Gateway, _ *pb.ManagedDatabase, _ *pb.GatewayRelease) error {
+func (p *deadlineObservationProvider) Ensure(ctx context.Context, _ *pb.Gateway, _ *pb.GatewayRelease) error {
 	return p.observe(ctx)
 }
-func (p *deadlineObservationProvider) Delete(ctx context.Context, _ *pb.Gateway, _ *pb.ManagedDatabase) error {
+func (p *deadlineObservationProvider) Delete(ctx context.Context, _ *pb.Gateway) error {
+	if p.cleanupOwner == "sql" {
+		return nil
+	}
+	return p.observe(ctx)
+}
+func (p *deadlineObservationProvider) DeleteDatabase(ctx context.Context, _ *pb.Gateway) error {
+	if p.cleanupOwner != "sql" {
+		return nil
+	}
 	return p.observe(ctx)
 }
 func (p *deadlineObservationProvider) observe(ctx context.Context) error {
@@ -40,17 +48,14 @@ func (p *deadlineObservationProvider) observe(ctx context.Context) error {
 	case <-p.release:
 		return nil
 	case <-ctx.Done():
+		if errors.Is(ctx.Err(), context.DeadlineExceeded) && p.timedOut != nil {
+			select {
+			case p.timedOut <- struct{}{}:
+			default:
+			}
+		}
 		return ctx.Err()
 	}
-}
-
-type deadlineDatabaseObservationProvider struct{ *deadlineObservationProvider }
-
-func (p *deadlineDatabaseObservationProvider) Ensure(ctx context.Context, _ *pb.ManagedDatabase) error {
-	return p.observe(ctx)
-}
-func (p *deadlineDatabaseObservationProvider) Delete(ctx context.Context, row *pb.ManagedDatabase) error {
-	return p.observe(ctx)
 }
 
 type deadlineIdentityObservationProvider struct{ *deadlineObservationProvider }
@@ -87,44 +92,30 @@ func observationRead[T any](ctx context.Context, read func(context.Context) (T, 
 func TestGatewayProviderDeadlineCommitsFailureAndRecovers(t *testing.T) {
 	testProviderDeadlineObservation(t, "gateway", false)
 }
-func TestDatabaseProviderDeadlineCommitsFailureAndRecovers(t *testing.T) {
-	testProviderDeadlineObservation(t, "database", false)
-}
 func TestGatewayCleanupDeadlineReopensConfirmation(t *testing.T) {
 	testProviderDeadlineObservation(t, "gateway", true)
 }
-func TestDatabaseCleanupDeadlineReopensConfirmation(t *testing.T) {
-	testProviderDeadlineObservation(t, "database", true)
+func TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery(t *testing.T) {
+	testProviderDeadlineObservation(t, "sql", true)
 }
 func TestIdentityCleanupDeadlineReopensConfirmation(t *testing.T) {
 	testProviderDeadlineObservation(t, "identity", true)
 }
 func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool) {
-	databaseResource, identityResource := resource == "database", resource == "identity"
-	var f *fixture
-	if databaseResource {
-		f = databaseCatalogFixture(t)
-	} else {
-		f = database(t)
-	}
+	sqlResource, identityResource := resource == "sql", resource == "identity"
+	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	if databaseResource {
-		settings = withControllerWriteGrants(t, settings, databaseWriteGrant("controller", f.cluster))
-	} else {
-		settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
-	}
+	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
 	if cleanup {
-		if databaseResource {
-			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", f.cluster))
-		} else if identityResource {
+		if identityResource {
 			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "identity", ""))
 		} else {
-			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "ManagedDatabase", "record", f.cluster))
+			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "sql", f.cluster), cleanupGrant("controller", "Gateway", "workload", f.cluster))
 		}
 	}
 	binary := buildApplication(t)
@@ -133,11 +124,6 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	owner := token(t, key, "alice", "gateway:creator")
 	body, _ := json.Marshal(f.request("deadline-observation"))
 	path, healthyPhase, healthyStatus, failedPhase, failedStatus := "/api/hypershell/v1/gateways", "Running", "Healthy", "Degraded", "WorkloadUnavailable"
-	if databaseResource {
-		path, healthyPhase, healthyStatus, failedPhase, failedStatus = "/api/hypershell/v1/managed_databases", "", "ready", "", "error"
-		owner = token(t, key, "alice", "platform:admin")
-		body = databaseCreateBody(t, "deadline-observation", "cnpg", f.cluster)
-	}
 	action, kind := "Update", "updated"
 	if cleanup {
 		healthyPhase, healthyStatus, failedPhase, failedStatus = "", "complete", "", "pending"
@@ -154,11 +140,7 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	}
 	event := func(action, kind string) {
 		t.Helper()
-		if databaseResource {
-			readCatalogEvent(t, consumer, created.ID, "ManagedDatabases", action, "manageddatabase."+kind)
-		} else {
-			readGatewayEvent(t, consumer, created.ID, action, "gateway."+kind)
-		}
+		readGatewayEvent(t, consumer, created.ID, action, "gateway."+kind)
 	}
 	event("Create", "created")
 	if cleanup {
@@ -172,18 +154,20 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	auth := metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token(t, key, "controller")))
 	_, observationConnection := grpcClient(t, rpcAddress, apiTLS)
 	defer func() { observationConnection.Close() }()
-	provider := &deadlineObservationProvider{blockedCleanupProvider: &blockedCleanupProvider{cluster: f.cluster, entered: make(chan struct{}), release: make(chan struct{})}}
+	provider := &deadlineObservationProvider{blockedCleanupProvider: &blockedCleanupProvider{cluster: f.cluster, entered: make(chan struct{}), release: make(chan struct{})}, timedOut: make(chan struct{}, 1)}
+	if sqlResource {
+		provider.cleanupOwner = "sql"
+		provider.calls.Store(1)
+	}
 	startController := func() func() {
 		t.Helper()
 		_, connection := grpcClient(t, rpcAddress, apiTLS)
 		var controller interface{ Run(context.Context) error }
 		var err error
-		if databaseResource {
-			controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), f.cluster, &deadlineDatabaseObservationProvider{provider})
-		} else if identityResource {
+		if identityResource {
 			controller, err = gatewayidentity.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), &deadlineIdentityObservationProvider{provider})
 		} else {
-			controller, err = gatewayworkload.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+			controller, err = gatewayworkload.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
 		}
 		if err != nil {
 			t.Fatal(err)
@@ -214,39 +198,18 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 		t.Helper()
 		if cleanup {
 			complete := false
-			if databaseResource {
-				readContext, err := rpc.WithRetainedResourceRead(auth)
-				if err != nil {
-					t.Fatal(err)
-				}
-				var header metadata.MD
-				response, err := observationRead(readContext, func(ctx context.Context) (*pb.GetManagedDatabaseResponse, error) {
-					return pb.NewManagedDatabaseServiceClient(observationConnection).GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: created.ID}, grpc.Header(&header))
-				})
-				if err != nil || response.GetManagedDatabase().GetMetadata().GetId() != created.ID {
-					t.Fatal("retained database", err)
-				}
-				_, deleted, err := rpc.ObservedResourceState(header)
-				if err != nil || !deleted {
-					t.Fatal("missing database deletion", err)
-				}
-				states, err := rpc.ObservedCleanupObservations(header)
-				if err != nil {
-					t.Fatal(err)
-				}
-				complete = states["provider"]
+			state, err := observationRead(auth, func(ctx context.Context) (*control.GetGatewayIdentityStateResponse, error) {
+				return control.NewGatewayIdentityServiceClient(observationConnection).GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: created.ID})
+			})
+			if err != nil || !state.GetDeleted() {
+				t.Fatal("retained Gateway", err)
+			}
+			if identityResource {
+				complete = state.GetCleanup()["identity"]
+			} else if sqlResource {
+				complete = state.GetCleanupTargets()["sql"].GetTargets()[f.cluster]
 			} else {
-				state, err := observationRead(auth, func(ctx context.Context) (*control.GetGatewayIdentityStateResponse, error) {
-					return control.NewGatewayIdentityServiceClient(observationConnection).GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: created.ID})
-				})
-				if err != nil || !state.GetDeleted() {
-					t.Fatal("retained Gateway", err)
-				}
-				if identityResource {
-					complete = state.GetCleanup()["identity"]
-				} else {
-					complete = state.GetCleanupTargets()["workload"].GetTargets()[f.cluster]
-				}
+				complete = state.GetCleanupTargets()["workload"].GetTargets()[f.cluster]
 			}
 			status := "pending"
 			if complete {
@@ -280,15 +243,26 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 			time.Sleep(50 * time.Millisecond)
 		}
 	}
-	await(healthyPhase, healthyStatus, 8*time.Second)
-	event(action, kind)
+	if !sqlResource {
+		await(healthyPhase, healthyStatus, 8*time.Second)
+		event(action, kind)
+	}
 	select {
 	case <-provider.entered:
 	case <-time.After(12 * time.Second):
 		t.Fatal("provider did not start the blocked observation")
 	}
+	if sqlResource {
+		select {
+		case <-provider.timedOut:
+		case <-time.After(22 * time.Second):
+			t.Fatal("SQL cleanup did not honor its deadline")
+		}
+	}
 	await(failedPhase, failedStatus, 22*time.Second)
-	event(action, kind)
+	if !sqlResource {
+		event(action, kind)
+	}
 	stopController()
 	stopController = nil
 	stopAPI()
@@ -311,22 +285,6 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	}
 	_, connection := grpcClient(t, rpcAddress, apiTLS)
 	defer connection.Close()
-	if databaseResource {
-		readContext, err := rpc.WithRetainedResourceRead(auth)
-		if err != nil {
-			t.Fatal(err)
-		}
-		var header metadata.MD
-		_, err = pb.NewManagedDatabaseServiceClient(connection).GetManagedDatabase(readContext, &pb.GetManagedDatabaseRequest{Id: created.ID}, grpc.Header(&header))
-		if err != nil {
-			t.Fatal(err)
-		}
-		version, deleted, err := rpc.ObservedResourceState(header)
-		if err != nil || deleted || version < 4 {
-			t.Fatal("database recovery lost observation revisions", version, err)
-		}
-		return
-	}
 	state, err := control.NewGatewayIdentityServiceClient(connection).GetGatewayIdentityState(auth, &control.GetGatewayIdentityStateRequest{Id: created.ID})
 	if err != nil || state.GetObservedGeneration() != state.GetResourceGeneration() {
 		t.Fatal("recovery did not confirm the current generation", err)

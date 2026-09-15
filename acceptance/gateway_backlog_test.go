@@ -19,10 +19,10 @@ type backlogProvider struct{ cluster, failed string }
 func (p *backlogProvider) Handles(*pb.Gateway) bool                     { return true }
 func (p *backlogProvider) CleanupTarget() string                        { return p.cluster }
 func (p *backlogProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *backlogProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
+func (p *backlogProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *backlogProvider) Delete(ctx context.Context, gw *pb.Gateway, _ *pb.ManagedDatabase) error {
+func (p *backlogProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
 	id := gw.GetMetadata().GetId()
 	if id == p.failed {
 		return gatewayworkload.ErrPending
@@ -37,6 +37,10 @@ func (p *backlogProvider) Delete(ctx context.Context, gw *pb.Gateway, _ *pb.Mana
 	}
 }
 
+func (p *backlogProvider) DeleteDatabase(ctx context.Context, gw *pb.Gateway) error {
+	return p.Delete(ctx, gw)
+}
+
 func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
@@ -45,7 +49,7 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("controller", "Gateway", "sql", f.cluster))
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -78,10 +82,10 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	}
 	_, connection := grpcClient(t, rpcAddress, apiTLS)
 	state := control.NewGatewayIdentityServiceClient(connection)
-	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 105*time.Second)
+	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 195*time.Second)
 	defer cancel()
 	provider := &backlogProvider{cluster: f.cluster, failed: ids[0]}
-	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -99,28 +103,33 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 		}
 	}()
 	started := time.Now()
-	deadline := started.Add(90 * time.Second)
+	// Each healthy Gateway now needs two separate cleanup commits. Keep the
+	// same per-phase bound and require both phases to finish on the CI CPU limit.
+	deadline := started.Add(180 * time.Second)
 	nextProgress := started.Add(10 * time.Second)
 	for {
-		var completed int
-		if err := f.db.QueryRowContext(ctx, `SELECT count(*) FROM gateways WHERE stego_cleanup->>'workload'='true'`).Scan(&completed); err != nil {
+		var sqlCompleted, completed int
+		if err := f.db.QueryRowContext(ctx, `SELECT count(*) FILTER (WHERE stego_cleanup->>'sql'='true'), count(*) FILTER (WHERE stego_cleanup->>'workload'='true') FROM gateways`).Scan(&sqlCompleted, &completed); err != nil {
 			t.Fatal(err)
+		}
+		if completed > sqlCompleted || sqlCompleted > total-1 {
+			t.Fatal("cleanup phases completed out of order or included the failed provider", sqlCompleted, completed)
 		}
 		if completed == total-1 {
 			break
 		}
 		if time.Now().After(nextProgress) {
-			t.Logf("backlog progress after %s: %d of %d healthy Gateways", time.Since(started).Round(time.Millisecond), completed, total-1)
+			t.Logf("backlog progress after %s: SQL %d, workload %d of %d healthy Gateways", time.Since(started).Round(time.Millisecond), sqlCompleted, completed, total-1)
 			nextProgress = time.Now().Add(10 * time.Second)
 		}
 		if time.Now().After(deadline) {
-			t.Fatalf("backlog did not progress beyond capacity: %d of %d healthy Gateways completed", completed, total-1)
+			t.Fatalf("backlog did not finish both phases: SQL %d, workload %d of %d healthy Gateways", sqlCompleted, completed, total-1)
 		}
 		time.Sleep(20 * time.Millisecond)
 	}
 	for _, id := range []string{ids[0], ids[len(ids)-1]} {
 		observed, err := state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
-		if err != nil || !observed.GetDeleted() || observed.GetCleanupTargets()["workload"].GetTargets()[f.cluster] != (id != provider.failed) {
+		if err != nil || !observed.GetDeleted() || observed.GetCleanupTargets()["workload"].GetTargets()[f.cluster] != (id != provider.failed) || observed.GetCleanupTargets()["sql"].GetTargets()[f.cluster] != (id != provider.failed) {
 			t.Fatal("wrong retained cleanup observation", id, err)
 		}
 	}

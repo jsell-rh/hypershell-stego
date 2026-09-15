@@ -215,7 +215,6 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	// Gateway event. Its failure must roll back all creation records.
 	success("get", "gateway", gateway.ID)
 	grants := count(t, f.db, "role_bindings")
-	databases := count(t, f.db, "managed_databases")
 	awaitQueueEmpty(t, f)
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_cli_event CHECK (kind <> 'gateway.created') NOT VALID"); err != nil {
 		t.Fatal(err)
@@ -228,7 +227,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	if output, problem, err := run(cfg, "create", "gateway", "--body", body); err == nil || len(output) != 0 || !strings.Contains(problem, "HTTP 500") || strings.Contains(problem, "reject_cli_event") {
 		t.Fatal("CLI failure response is incorrect")
 	}
-	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != grants || count(t, f.db, "managed_databases") != databases {
+	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != grants {
 		t.Fatal("CLI failed commit left resource data")
 	}
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_cli_event"); err != nil {

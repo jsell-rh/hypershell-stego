@@ -223,7 +223,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	gateway := result.JSON201
 	id := *gateway.Id
 	parsed, err := ksuid.Parse(id)
-	if err != nil || gateway.Namespace == nil || *gateway.Namespace != "openshell-"+hex.EncodeToString(parsed.Payload()[:8]) || gateway.DatabaseId == "" || gateway.CreatedAt == nil || gateway.UpdatedAt == nil {
+	if err != nil || gateway.Namespace == nil || *gateway.Namespace != "openshell-"+hex.EncodeToString(parsed.Payload()[:8]) || gateway.CreatedAt == nil || gateway.UpdatedAt == nil {
 		t.Fatal("deployed Gateway lost its assigned fields")
 	}
 	var grants int
@@ -275,7 +275,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	controllerToken := token(t, key, "gateway-controller")
 	reconcile := checkKubernetesGatewayIdentity(t, namespace, apply, command, owner, apiHost, apiIdentity, controllerToken, id, exports)
 	awaitQueueEmpty(t, f)
-	beforeGrants, beforeDatabases := count(t, f.db, "role_bindings"), count(t, f.db, "managed_databases")
+	beforeGrants := count(t, f.db, "role_bindings")
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_deployment_event CHECK (kind <> 'gateway.created') NOT VALID"); err != nil {
 		t.Fatal(err)
 	}
@@ -285,7 +285,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	if err != nil || response.StatusCode() != 500 {
 		t.Fatal("deployed event failure did not reject creation", err)
 	}
-	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != beforeGrants || count(t, f.db, "managed_databases") != beforeDatabases {
+	if count(t, f.db, "gateways") != 1 || count(t, f.db, "role_bindings") != beforeGrants {
 		t.Fatal("deployed failed transaction left records")
 	}
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_deployment_event"); err != nil {

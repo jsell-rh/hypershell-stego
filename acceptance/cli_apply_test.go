@@ -107,21 +107,14 @@ kind: GatewayRelease
 metadata: {name: apply-release}
 spec: {image: registry.example/gateway:v1, canary_percent: 0}
 `
-	dependentCatalogs := func(cluster string) string {
-		return fmt.Sprintf(`kind: ManagedDatabase
-metadata: {name: apply-database}
-spec: {provider: cnpg, cluster_id: %s, connection_secret: database-access}
----
-kind: GatewayNetwork
+	network := `kind: GatewayNetwork
 metadata: {name: apply-network}
 spec: {topology: mesh, status: planned}
-`, cluster)
-	}
-	// Offline validation checks shape. Real placement uses the returned cluster ID.
-	catalogs := foundation + "---\n" + dependentCatalogs(ksuid.New().String())
+`
+	catalogs := foundation + "---\n" + network
 	data, problem, err := run("offline", catalogs, "apply", "-f", "-", "--dry-run", "-o", "json")
 	var dry []command.ApplyResult
-	if err != nil || json.Unmarshal(data, &dry) != nil || len(dry) != 4 || requests.Load() != 0 || count(t, f.db, "managed_clusters") != 0 || count(t, f.db, "stego_outbox.messages") != 0 {
+	if err != nil || json.Unmarshal(data, &dry) != nil || len(dry) != 3 || requests.Load() != 0 || count(t, f.db, "managed_clusters") != 0 || count(t, f.db, "stego_outbox.messages") != 0 {
 		t.Fatal("dry run wrote or required login", err, problem)
 	}
 	for _, result := range dry {
@@ -140,10 +133,10 @@ spec: {topology: mesh, status: planned}
 	if err != nil || len(created) != 2 || created[0].Kind != "ManagedCluster" {
 		t.Fatal("apply cluster and release", err, problem)
 	}
-	dependent := dependentCatalogs(created[0].ID)
+	dependent := network
 	rest, problem, err := apply("admin", dependent)
-	if err != nil || len(rest) != 2 {
-		t.Fatal("apply database and network", err, problem)
+	if err != nil || len(rest) != 1 {
+		t.Fatal("apply network", err, problem)
 	}
 	created = append(created, rest...)
 	catalogs = foundation + "---\n" + dependent
@@ -157,11 +150,11 @@ spec: {topology: mesh, status: planned}
 		}
 		ids[result.Kind] = result.ID
 	}
-	for _, event := range []struct{ kind, source, prefix string }{{"ManagedCluster", "ManagedClusters", "managedcluster"}, {"GatewayRelease", "GatewayReleases", "gatewayrelease"}, {"ManagedDatabase", "ManagedDatabases", "manageddatabase"}, {"GatewayNetwork", "GatewayNetworks", "gatewaynetwork"}} {
+	for _, event := range []struct{ kind, source, prefix string }{{"ManagedCluster", "ManagedClusters", "managedcluster"}, {"GatewayRelease", "GatewayReleases", "gatewayrelease"}, {"GatewayNetwork", "GatewayNetworks", "gatewaynetwork"}} {
 		readCatalogEvent(t, kafkaConsumer(t, brokerConfig), ids[event.kind], event.source, "Create", event.prefix+".created")
 	}
 	again, problem, err := apply("admin", catalogs)
-	if err != nil || len(again) != 4 {
+	if err != nil || len(again) != 3 {
 		t.Fatal("repeat catalog apply", err, problem)
 	}
 	for _, result := range again {
@@ -189,7 +182,7 @@ spec: {topology: mesh, status: planned}
 		t.Fatal("apply did not commit the owner grant", err)
 	}
 	var gateway httpapi.Gateway
-	if json.Unmarshal(success("owner", "get", "gateway", gatewayID), &gateway) != nil || gateway.Name != gatewayName || gateway.ClusterID != ids["ManagedCluster"] || gateway.ReleaseID != ids["GatewayRelease"] || gateway.DatabaseID != ids["ManagedDatabase"] {
+	if json.Unmarshal(success("owner", "get", "gateway", gatewayID), &gateway) != nil || gateway.Name != gatewayName || gateway.ClusterID != ids["ManagedCluster"] || gateway.ReleaseID != ids["GatewayRelease"] {
 		t.Fatal("apply Gateway placement differs")
 	}
 	rpc, connection := grpcClient(t, rpcAddress, rpcIdentity)
@@ -197,7 +190,7 @@ spec: {topology: mesh, status: planned}
 	defer cancel()
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+tokens["owner"]))
 	read, err := rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: gatewayID})
-	if err != nil || read.GetGateway().GetName() != gatewayName || read.GetGateway().GetDatabaseId() != ids["ManagedDatabase"] {
+	if err != nil || read.GetGateway().GetName() != gatewayName {
 		t.Fatal("gRPC apply read differs", err)
 	}
 	updated := gatewayDocument(gatewayName, "", "registry.example/gateway:v2", ids["ManagedCluster"])
@@ -283,47 +276,11 @@ spec: {topology: mesh, status: planned}
 	for _, id := range []string{gatewayID, firstID, duplicate.ID} {
 		success("owner", "delete", "gateway", id, "--yes")
 	}
-	// The default selects the local CNPG server. Reapply must keep that ID.
-	connection.Close()
-	stop()
-	defaults := append(append([]string{}, settings...), "DATABASE_PROVIDER=")
-	stop, address, rpcAddress = startBoth(t, api, f.dsn, brokerConfig, defaults...)
-	backend.Store(address)
-	defaultInput := gatewayDocument("default-applied", "", "registry.example/gateway:v1", ids["ManagedCluster"])
-	results, problem, err = apply("alice", defaultInput)
-	if err != nil || len(results) != 1 || results[0].Status != "created" {
-		t.Fatal("default apply creation", err, problem)
-	}
-	defaultID := results[0].ID
-	var defaultGatewayRow httpapi.Gateway
-	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &defaultGatewayRow) != nil || defaultGatewayRow.DatabaseID == "" || defaultGatewayRow.DatabaseID != ids["ManagedDatabase"] {
-		t.Fatal("default apply did not select the local database server")
-	}
-	databaseID := defaultGatewayRow.DatabaseID
-	readEvent(t, kafkaConsumer(t, brokerConfig), defaultID)
-	results, problem, err = apply("owner", defaultInput)
-	if err != nil || results[0].Status != "configured" || results[0].ID != defaultID {
-		t.Fatal("default repeat apply", err, problem)
-	}
-	if json.Unmarshal(success("owner", "get", "gateway", defaultID), &defaultGatewayRow) != nil || defaultGatewayRow.DatabaseID != databaseID || count(t, f.db, "managed_databases") != 1 {
-		t.Fatal("default apply changed database placement")
-	}
-	rpc, connection = grpcClient(t, rpcAddress, rpcIdentity)
-	read, err = rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: defaultID})
-	if err != nil || read.GetGateway().GetDatabaseId() != databaseID {
-		t.Fatal("gRPC default apply placement", err)
-	}
-	success("owner", "delete", "gateway", defaultID, "--yes")
-	if _, problem, err := run("admin", "", "delete", "managedDatabase", databaseID, "--yes"); err == nil || !strings.Contains(problem, "HTTP 409") {
-		t.Fatal("CLI deleted the database before Gateway cleanup", err, problem)
+	if _, problem, err := run("admin", "", "delete", "managedCluster", ids["ManagedCluster"], "--yes"); err == nil || !strings.Contains(problem, "HTTP 409") {
+		t.Fatal("CLI deleted the cluster before Gateway cleanup", err, problem)
 	}
 	cleanupToken := token(t, key, "cli-cleanup")
-	observeCLIGatewayCleanup(t, connection, cleanupToken, ids["ManagedCluster"], gatewayID, firstID, duplicate.ID, defaultID)
-	success("admin", "delete", "managedDatabase", databaseID, "--yes")
-	if _, problem, err := run("admin", "", "delete", "managedCluster", ids["ManagedCluster"], "--yes"); err == nil || !strings.Contains(problem, "HTTP 409") {
-		t.Fatal("CLI deleted the cluster before database cleanup", err, problem)
-	}
-	observeCLIDatabaseCleanup(t, connection, cleanupToken, databaseID)
+	observeCLIGatewayCleanup(t, connection, cleanupToken, ids["ManagedCluster"], gatewayID, firstID, duplicate.ID)
 	for _, resource := range []struct{ kind, path string }{{"GatewayRelease", "gatewayRelease"}, {"GatewayNetwork", "gatewayNetwork"}, {"ManagedCluster", "managedCluster"}} {
 		success("admin", "delete", resource.path, ids[resource.kind], "--yes")
 	}

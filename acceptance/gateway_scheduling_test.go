@@ -16,17 +16,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/databasecontroller"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
-	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
-	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
@@ -34,6 +31,7 @@ import (
 
 type blockedCleanupProvider struct {
 	cluster, slow string
+	cleanupOwner  string
 	entered       chan struct{}
 	release       chan struct{}
 	once          sync.Once
@@ -46,10 +44,19 @@ type blockedCleanupProvider struct {
 func (p *blockedCleanupProvider) Handles(*pb.Gateway) bool                     { return true }
 func (p *blockedCleanupProvider) CleanupTarget() string                        { return p.cluster }
 func (p *blockedCleanupProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.ManagedDatabase, *pb.GatewayRelease) error {
+func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
 	return nil
 }
-func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway, _ *pb.ManagedDatabase) error {
+func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway) error {
+	if p.cleanupOwner == "sql" {
+		return nil
+	}
+	return p.deleteID(ctx, gw.GetMetadata().GetId())
+}
+func (p *blockedCleanupProvider) DeleteDatabase(ctx context.Context, gw *pb.Gateway) error {
+	if p.cleanupOwner != "sql" {
+		return nil
+	}
 	return p.deleteID(ctx, gw.GetMetadata().GetId())
 }
 func (p *blockedCleanupProvider) deleteID(ctx context.Context, id string) error {
@@ -84,17 +91,8 @@ func (p *blockedIdentityCleanupProvider) ReconcileGatewayUser(context.Context, s
 	return nil
 }
 
-type blockedDatabaseCleanupProvider struct{ *blockedCleanupProvider }
-
-func (p *blockedDatabaseCleanupProvider) Ensure(context.Context, *pb.ManagedDatabase) error {
-	return nil
-}
-func (p *blockedDatabaseCleanupProvider) Delete(ctx context.Context, row *pb.ManagedDatabase) error {
-	return p.blockedCleanupProvider.deleteID(ctx, row.GetMetadata().GetId())
-}
-
-func TestDatabaseCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
-	testIndependentResourceCleanup(t, "provider")
+func TestGatewaySQLCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
+	testIndependentResourceCleanup(t, "sql")
 }
 func TestGatewayCleanupMakesIndependentProgressAfterRestart(t *testing.T) {
 	testIndependentResourceCleanup(t, "workload")
@@ -104,16 +102,10 @@ func TestGatewayIdentityCleanupMakesIndependentProgressAfterRestart(t *testing.T
 }
 func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	t.Helper()
-	var f *fixture
-	var foreignCluster string
-	if cleanupOwner == "provider" {
-		f = databaseCatalogFixture(t)
-		foreignCluster = ksuid.New().String()
-		if err := f.storage.Create(context.Background(), "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: foreignCluster}, Name: "foreign", Provider: "kubernetes", KubeconfigSecret: "foreign-ref"}); err != nil {
-			t.Fatal(err)
-		}
-	} else {
-		f = database(t)
+	f := database(t)
+	foreignCluster := ksuid.New().String()
+	if err := f.storage.Create(context.Background(), "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: foreignCluster}, Name: "foreign", Provider: "kubernetes", KubeconfigSecret: "foreign-ref"}); err != nil {
+		t.Fatal(err)
 	}
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
@@ -123,41 +115,27 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
 	resource := "Gateway"
 	endpoint := "gateways"
-	if cleanupOwner == "provider" {
-		resource = "ManagedDatabase"
-		endpoint = "managed_databases"
-	}
 	target := ""
-	if cleanupOwner == "workload" || cleanupOwner == "provider" {
+	if cleanupOwner == "workload" || cleanupOwner == "sql" {
 		target = f.cluster
 	}
 	grants := []auth.Grant{cleanupGrant("controller", resource, cleanupOwner, target)}
-	if cleanupOwner == "workload" {
-		grants = append(grants, cleanupGrant("controller", "ManagedDatabase", "record", f.cluster))
+	if cleanupOwner != "identity" {
+		grants = []auth.Grant{cleanupGrant("controller", "Gateway", "sql", f.cluster), cleanupGrant("controller", "Gateway", "workload", f.cluster)}
 	}
 	settings = withCleanupGrants(t, settings, grants...)
 	binary := buildApplication(t)
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	owner := token(t, key, "owner", "gateway:creator")
-	if cleanupOwner == "provider" {
-		owner = token(t, key, "owner", "platform:admin")
-	}
 	root := address + "/api/hypershell/v1/" + endpoint
 	event := func(id, action, kind string) {
 		t.Helper()
-		if cleanupOwner == "provider" {
-			readCatalogEvent(t, consumer, id, "ManagedDatabases", action, "manageddatabase."+kind)
-		} else {
-			readGatewayEvent(t, consumer, id, action, "gateway."+kind)
-		}
+		readGatewayEvent(t, consumer, id, action, "gateway."+kind)
 	}
 	ids := make([]string, 0, 2)
 	for _, name := range []string{"blocked-cleanup", "independent-cleanup"} {
 		input := map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release}
-		if cleanupOwner == "provider" {
-			input = map[string]string{"name": name, "provider": "cnpg", "cluster_id": f.cluster}
-		}
 		body, _ := json.Marshal(input)
 		code, data := requestJSON(t, "POST", root, owner, body)
 		var row struct {
@@ -173,24 +151,22 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		}
 		event(row.ID, "Delete", "deleted")
 	}
-	if cleanupOwner == "provider" {
-		for _, other := range []struct{ name, provider, cluster string }{
-			{"separate-provider", "external", f.cluster},
-			{"separate-cluster", "cnpg", foreignCluster},
-		} {
-			code, data := requestJSON(t, "POST", root, owner, databaseCreateBody(t, other.name, other.provider, other.cluster))
-			var row struct {
-				ID string `json:"id"`
-			}
-			if code != 201 || json.Unmarshal(data, &row) != nil {
-				t.Fatal("create other scope", code, string(data))
-			}
-			event(row.ID, "Create", "created")
-			if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
-				t.Fatal("delete other scope", code)
-			}
-			event(row.ID, "Delete", "deleted")
+	foreignID := ""
+	if cleanupOwner == "sql" {
+		body, _ := json.Marshal(map[string]string{"name": "other-cluster", "cluster_id": foreignCluster, "release_id": f.release})
+		code, data := requestJSON(t, "POST", root, owner, body)
+		var row struct {
+			ID string `json:"id"`
 		}
+		if code != 201 || json.Unmarshal(data, &row) != nil {
+			t.Fatal("create other scope", code)
+		}
+		foreignID = row.ID
+		event(row.ID, "Create", "created")
+		if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
+			t.Fatal("delete other scope", code)
+		}
+		event(row.ID, "Delete", "deleted")
 	}
 
 	sort.Strings(ids)
@@ -203,9 +179,6 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 30*time.Second)
 	defer cancel()
 	summaryRead := func(callContext context.Context) (*control.CleanupSummary, error) {
-		if cleanupOwner == "provider" {
-			return control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(callContext, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "cnpg", ClusterId: f.cluster})
-		}
 		return state.GetGatewayCleanupSummary(callContext, &control.GetGatewayCleanupSummaryRequest{Owner: cleanupOwner, Target: target})
 	}
 	initialSummary, err := summaryRead(ctx)
@@ -216,30 +189,24 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if _, err := summaryRead(deniedContext); status.Code(err) != codes.PermissionDenied {
 		t.Fatal("ordinary caller read cleanup summary", err)
 	}
-	if cleanupOwner == "provider" {
-		other, err := control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(ctx, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "cnpg", ClusterId: foreignCluster})
-		if status.Code(err) != codes.PermissionDenied {
-			t.Fatal("provider summary bypassed its grant", other, err)
-		}
-	} else {
-		otherOwner, otherTarget := "workload", f.cluster
-		if cleanupOwner == "workload" {
-			otherOwner, otherTarget = "identity", ""
-		}
-		if _, err := state.GetGatewayCleanupSummary(ctx, &control.GetGatewayCleanupSummaryRequest{Owner: otherOwner, Target: otherTarget}); status.Code(err) != codes.PermissionDenied {
-			t.Fatal("summary bypassed owner grant", err)
-		}
+	if _, err := state.GetGatewayCleanupSummary(ctx, &control.GetGatewayCleanupSummaryRequest{Owner: "sql", Target: foreignCluster}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("summary crossed its cluster grant", err)
 	}
-	provider := &blockedCleanupProvider{cluster: f.cluster, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{}), transient: true}
+	otherOwner, otherTarget := "identity", ""
+	if cleanupOwner == "identity" {
+		otherOwner, otherTarget = "sql", f.cluster
+	}
+	if _, err := state.GetGatewayCleanupSummary(ctx, &control.GetGatewayCleanupSummaryRequest{Owner: otherOwner, Target: otherTarget}); status.Code(err) != codes.PermissionDenied {
+		t.Fatal("summary crossed its owner grant", err)
+	}
+	provider := &blockedCleanupProvider{cluster: f.cluster, cleanupOwner: cleanupOwner, slow: ids[0], entered: make(chan struct{}), release: make(chan struct{}), transient: true}
 	var controller interface {
 		RunWithMetrics(context.Context, *runtime.Metrics) error
 	}
-	if cleanupOwner == "provider" {
-		controller, err = databasecontroller.New(pb.NewManagedDatabaseServiceClient(connection), control.NewDatabaseCleanupServiceClient(connection), f.cluster, &blockedDatabaseCleanupProvider{provider})
-	} else if cleanupOwner == "identity" {
+	if cleanupOwner == "identity" {
 		controller, err = gatewayidentity.New(api, state, &blockedIdentityCleanupProvider{provider})
 	} else {
-		controller, err = gatewayworkload.New(api, state, pb.NewManagedDatabaseServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+		controller, err = gatewayworkload.New(api, state, pb.NewGatewayReleaseServiceClient(connection), provider)
 	}
 	if err != nil {
 		t.Fatal(err)
@@ -272,26 +239,6 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		t.Helper()
 		request, stop := context.WithTimeout(ctx, time.Second)
 		defer stop()
-		if cleanupOwner == "provider" {
-			request, err := rpc.WithRetainedResourceRead(request)
-			if err != nil {
-				t.Fatal(err)
-			}
-			var header metadata.MD
-			response, err := pb.NewManagedDatabaseServiceClient(connection).GetManagedDatabase(request, &pb.GetManagedDatabaseRequest{Id: id}, grpc.Header(&header))
-			if err != nil || response.GetManagedDatabase().GetMetadata().GetId() != id {
-				t.Fatal("retained database read", err)
-			}
-			_, deleted, err := rpc.ObservedResourceState(header)
-			if err != nil {
-				t.Fatal(err)
-			}
-			observations, err := rpc.ObservedCleanupObservations(header)
-			if err != nil {
-				t.Fatal(err)
-			}
-			return deleted, observations[cleanupOwner]
-		}
 		result, err := state.GetGatewayIdentityState(request, &control.GetGatewayIdentityStateRequest{Id: id})
 		if err != nil {
 			t.Fatal(err)
@@ -369,10 +316,10 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if err != nil || finishedSummary.GetPending() != 0 || finishedSummary.GetOldestPending() != nil {
 		t.Fatal("finished cleanup summary", finishedSummary, err)
 	}
-	if cleanupOwner == "provider" {
-		other, err := control.NewDatabaseCleanupServiceClient(connection).GetDatabaseCleanupSummary(ctx, &control.GetDatabaseCleanupSummaryRequest{Owner: "provider", Provider: "external", ClusterId: f.cluster})
-		if err != nil || other.GetPending() != 1 {
-			t.Fatal("CNPG cleanup changed external provider work", other, err)
+	if foreignID != "" {
+		row, err := state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: foreignID})
+		if err != nil || !row.GetDeleted() || row.GetCleanupTargets()["sql"].GetTargets()[foreignCluster] || row.GetCleanupTargets()["workload"].GetTargets()[foreignCluster] {
+			t.Fatal("cleanup changed another cluster", err)
 		}
 	}
 	if provider.overlap.Load() {

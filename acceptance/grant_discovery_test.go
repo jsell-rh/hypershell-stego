@@ -273,7 +273,7 @@ func TestGrantDiscoveryUsesCurrentRolesAndLiveGateways(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{DatabaseProvider: gateways.ProviderCNPG, ControlPlaneSubjects: []string{"controller"}})
+	service, err := gateways.New(f.storage, gateways.Options{ControlPlaneSubjects: []string{"controller"}})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -329,8 +329,8 @@ func TestGrantDiscoveryRejectsOversizedGRPCResponse(t *testing.T) {
 	if _, err := f.db.Exec("UPDATE users SET username=$1 WHERE id=$2", strings.Repeat("b", 255), input.UserID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.db.Exec(`INSERT INTO gateways(id,name,cluster_id,release_id,database_id,namespace,created_time,updated_time)
- SELECT lpad(n::text,27,'0'),'load', $1,$2,$3,'load-'||n,now(),now() FROM generate_series(1,7000) n`, f.cluster, f.release, f.database); err != nil {
+	if _, err := f.db.Exec(`INSERT INTO gateways(id,name,cluster_id,release_id,namespace,created_time,updated_time)
+ SELECT lpad(n::text,27,'0'),'load', $1,$2,'load-'||n,now(),now() FROM generate_series(1,7000) n`, f.cluster, f.release); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := f.db.Exec(`INSERT INTO role_bindings(id,user_id,role_id,gateway_id,scope,created_time,updated_time)
