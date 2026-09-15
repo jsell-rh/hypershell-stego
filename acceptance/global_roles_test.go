@@ -7,9 +7,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
-	"time"
 
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
@@ -337,53 +335,5 @@ func TestGlobalRoleMigrationPreservesGatewayGrants(t *testing.T) {
 	list, err := f.service.ListGrants(ctx, owner, gateways.GrantQuery{Page: 1, Size: 100})
 	if err != nil || len(list.Items) != 2 {
 		t.Fatal("migration did not preserve both scopes", err)
-	}
-}
-
-func TestConcurrentGlobalRoleProjection(t *testing.T) {
-	f := database(t)
-	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
-	defer cancel()
-	wave := func(p gateways.Principal) {
-		t.Helper()
-		const workers = 8
-		start := make(chan struct{})
-		results := make(chan error, workers)
-		var pending sync.WaitGroup
-		for range workers {
-			pending.Add(1)
-			go func() {
-				defer pending.Done()
-				<-start
-				var err error
-				for range 20 {
-					err = f.service.PrepareRequest(ctx, p)
-					if !errors.Is(err, storage.ErrConflict) && !errors.Is(err, storage.ErrSerialization) {
-						break
-					}
-				}
-				results <- err
-			}()
-		}
-		close(start)
-		pending.Wait()
-		close(results)
-		for err := range results {
-			if err != nil {
-				t.Fatal("concurrent projection", err)
-			}
-		}
-	}
-	wave(principal("concurrent", "gateway:creator", "platform:admin"))
-	if count(t, f.db, "users") != 1 || count(t, f.db, "role_bindings") != 2 || count(t, f.db, "stego_outbox.messages") != 2 {
-		t.Fatal("concurrent requests duplicated creation")
-	}
-	wave(principal("concurrent"))
-	var live int
-	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE deleted_at IS NULL").Scan(&live); err != nil || live != 0 {
-		t.Fatal("concurrent removal retained roles", err)
-	}
-	if count(t, f.db, "role_bindings") != 2 || count(t, f.db, "stego_outbox.messages") != 4 {
-		t.Fatal("concurrent requests duplicated deletion")
 	}
 }

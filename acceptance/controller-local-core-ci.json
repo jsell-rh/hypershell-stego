@@ -69,5 +69,19 @@
     "error": "PostgreSQL serialization failure 40001 after the test used 20 immediate retries.",
     "package_seconds": 1099.215,
     "assessment": "The generated transaction API deliberately calls its callback once and reports serialization failures. The concurrency test retries without delay. The failure needs a bounded concurrency review; it is not yet classified as a runtime or fixture defect."
+  },
+  "later_core_run": {
+    "application_commit": "4f0767f878355b66a21f40eae70ed9396f2f53c6",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34927200274",
+    "job": "acceptance (core)",
+    "result": "success",
+    "package_seconds": 1147.428,
+    "log_sha256": "a7d638cafcc2b544d51fb571299a3011d6ab70785dbbcfa1ba4284656b50eeec",
+    "scope": "The complete core suite passed, including the corrected credential and metrics fixtures. This run used the old global-role concurrency test. The stronger forced-conflict test has separate cluster evidence.",
+    "workflow_result": "failure",
+    "other_failures": [
+      "The browser tab crashed with a nearly full temporary filesystem.",
+      "The Gateway, CNPG, and Sandbox workload gates still require a restricted installation fixture."
+    ]
   }
 }

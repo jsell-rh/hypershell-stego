@@ -37,19 +37,11 @@ the Gateway field. Active replay includes global and Gateway grants that the
 caller can read. A deleted global record remains as history, and a later re-grant
 gets a new ID. Replay recovers active state; it does not recover missed deletions.
 
-Stop the old API before the schema update. Apply the role catalog migration and
-then `migrations/000005_global_roles.sql` with the application database settings:
-
-```sh
-psql --set=ON_ERROR_STOP=1 --file=migrations/000004_role_catalog.sql
-psql --set=ON_ERROR_STOP=1 --file=migrations/000005_global_roles.sql
-```
-
-The second migration permits a NULL Gateway ID only for global scope. Gateway
-scope requires an ID. It preserves the existing Gateway grant key and adds a
-separate live global key on role and user. The generated schema expresses the
-optional reference. The external domain migration enforces the relationship
-between scope and reference presence. The application does not run migrations.
+The current installation requires a fresh schema. Apply the installation schema
+as specified in the installation guide. The old database-catalog upgrade path is
+not supported. The earlier role migrations remain historical evidence only.
+Global scope permits an absent Gateway ID. Gateway scope requires an ID. The
+current schema enforces the relationship between scope and reference presence.
 
 | Behavior | Evidence |
 | --- | --- |
@@ -63,14 +55,16 @@ between scope and reference presence. The application does not run migrations.
 | Atomic failure | A failed event write preserves the old role and profile; a preparation error stops REST and gRPC operations |
 | Delivery and restart | The generated process delivers global events and retains IDs after restart |
 | Real provider | Browser login uses a fresh Keycloak token after role removal and re-grant |
-| Migration | Repeated migration preserves existing Gateway grants and rejects invalid scope/reference combinations |
+| Schema | Current schema rejects invalid scope/reference combinations; legacy installation upgrades are not supported |
 
 STEGO supplies optional HTTP preparation and a gRPC registrar wrapper. Independent
 Record service tests cover verified identity, failures, cancellation, and both
 RPC forms. Hypershell supplies the role names, projection transaction, access
 rules, and schema migration. No Hypershell entity or role name was added to STEGO.
 
-The focused global, grant-discovery, and role-catalog race checks passed in
+The following timings are historical results from the earlier schema. They do
+not prove the current installation path. The focused global, grant-discovery,
+and role-catalog race checks passed in
 18.747 seconds. Migration and concurrent projection checks passed separately
 in 1.703 seconds. The corrected sandbox-count workflow and these checks passed
 in 6.950 seconds. The full local race suite passed with PostgreSQL and Keycloak
@@ -85,11 +79,23 @@ goal remains open, including immediate token revocation, user administration,
 distributed coordination, remaining workload support, larger REST pages,
 and production capacity.
 
-A local benchmark prepared unchanged claims with 10,000 unrelated users and
-global grants. Across 100 calls, it averaged 0.922 ms, 60,914 bytes, and 759
-allocations per call. It used Go 1.26.8, PostgreSQL 18.6, and an Intel Core Ultra 9
-185H. The measurement includes the transaction, identity lookup, role lookup,
-and comparison of current records. It excludes transport, token verification,
-Keycloak, initial registration, role changes, and concurrent load. Run
-`go test -mod=readonly -run '^$' -bench '^BenchmarkGlobalRolePreparation$' -benchtime=100x ./acceptance`
-with the PostgreSQL test settings. This does not establish production capacity.
+The current cluster check forces eight callers to read the same initial state
+before they change roles. Creation and removal each produced seven conflict
+retries. All callers completed within the shared 15-second deadline. The check
+found one user, two grant records, and four events after both operations. No
+record or event was duplicated. The generated transaction executes its callback
+once; the test caller retries a complete request with a bounded delay.
+
+The same focused run passed concurrent user registration, concurrent REST user
+requests, and rollback on an event write failure. The runner rejects untracked
+Go files before it creates a test Job. See
+[the source and test evidence](global-role-concurrency-evidence.json) for all
+attempts, source hashes, output checks, and cleanup. The final attempt did not
+repeat generation. The preceding attempt verified two generations with the
+same generator inputs; the final attempt verified unchanged output after tests.
+
+A historical workstation benchmark used 10,000 unrelated users and 100 calls.
+It averaged 0.922 ms, 60,914 bytes, and 759 allocations per call on Go 1.26.8,
+PostgreSQL 18.6, and an Intel Core Ultra 9 185H. It did not measure production
+capacity. Do not run benchmarks or load tests on the workstation. Use CI or a
+bounded test in the jshell cluster.

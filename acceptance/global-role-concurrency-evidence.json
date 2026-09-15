@@ -1,0 +1,393 @@
+{
+  "scope": "Forced concurrent global-role projection and bounded caller retries on the generated PostgreSQL transaction runtime.",
+  "compiler_revision": "868ff1f83a1289a7becffa6530f282f980a5216b",
+  "source_base_commit": "2352729cfeedc3d87cae5da6f8bfed98f772c56e",
+  "result": "success",
+  "attempts": [
+    {
+      "attempt": 1,
+      "result": "failure",
+      "source_archive_sha256": "aafaa71b048afc71c89758814acb8df1a5c801f2194a5652dbdffb1fe63ac00a",
+      "source_inventory_sha256": "df14edb9320253dce678731144f2bdc38894cb45ac26e7c4bf4a9dc51374ec9e",
+      "role_test_in_source": false,
+      "job": {
+        "name": "gateway-api-d06e4a9681c9",
+        "uid": "fbf4a003-0353-44c8-bede-86556b048483",
+        "status_before_removal": {
+          "active": 1,
+          "ready": 1,
+          "startTime": "2026-09-15T04:08:51Z",
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        }
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-d06e4a9681c9",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "artifact_sha256": {
+        "cleanup.json": "a85260e34c79d8309191e5c1ded98bab6dd52f176521fa9c81703ebdc7e4b06f",
+        "job-final.json": "f45d1c3e0e739a72da5092cabefa570b7445e00ab8633f4882821d3ce99a1da6",
+        "job.json": "c44237c826727d97865ad8730934742499d4dbfed759ba66f334c2f89a738918",
+        "required-tests.json": "fb7fcdc929ec997246730defbfb51a6e170b6bef9678453843d432bdd1836053",
+        "source-sha256.json": "df14edb9320253dce678731144f2bdc38894cb45ac26e7c4bf4a9dc51374ec9e"
+      },
+      "failure": "A Pod-list request failed before source upload and test startup."
+    },
+    {
+      "attempt": 2,
+      "result": "failure",
+      "source_archive_sha256": "aafaa71b048afc71c89758814acb8df1a5c801f2194a5652dbdffb1fe63ac00a",
+      "source_inventory_sha256": "df14edb9320253dce678731144f2bdc38894cb45ac26e7c4bf4a9dc51374ec9e",
+      "role_test_in_source": false,
+      "job": {
+        "name": "gateway-api-5ac69a6a9fed",
+        "uid": "cbb948f8-685c-4c5b-a915-1494f5d69593",
+        "status_before_removal": {
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T04:13:51Z",
+              "lastTransitionTime": "2026-09-15T04:13:51Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "FailureTarget"
+            },
+            {
+              "lastProbeTime": "2026-09-15T04:13:51Z",
+              "lastTransitionTime": "2026-09-15T04:13:51Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "Failed"
+            }
+          ],
+          "failed": 1,
+          "ready": 0,
+          "startTime": "2026-09-15T04:10:09Z",
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        }
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-5ac69a6a9fed",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "artifact_sha256": {
+        "cleanup.json": "b0b36a646043dc0d541332b18f035e8f77aa213ea3db47c131202b569148da9c",
+        "verification.json": "e6a388a58cf3aae3215bd073f330693f855f81d0bb86b54bca16ede676f91fee",
+        "job-final.json": "a127fd15d431f5a28b79836effce060d0f8ab52910e51160ff4eb56782eb758a",
+        "after.sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "second.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "first.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "tests.jsonl": "5ff380682546a7461303316d7bbc81616d5961d3be7681a6c48862cc6d662153",
+        "test.log": "f58baed1d01e48e03cf83a7c1d8ef4f7630c06553c49c4200839176020ead4fb",
+        "job.json": "58afe7fceadb2ff844e59d67d8fbda3d74d7e9163c5e2147a1de82b6772186d8",
+        "required-tests.json": "fb7fcdc929ec997246730defbfb51a6e170b6bef9678453843d432bdd1836053",
+        "source-sha256.json": "df14edb9320253dce678731144f2bdc38894cb45ac26e7c4bf4a9dc51374ec9e"
+      },
+      "failure": "The moved test left an unused time import. The acceptance build failed.",
+      "verification": {
+        "required": [
+          "TestConcurrentGlobalRoleProjection",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "passed": [
+          "TestCleanupSummaryScopeAndTimestampChecks",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+        ],
+        "failed": [
+          "github.com/jsell-rh/hypershell-stego/acceptance"
+        ],
+        "missing": [
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestConcurrentGlobalRoleProjection",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "exit_code": 1
+      }
+    },
+    {
+      "attempt": 3,
+      "result": "failure",
+      "source_archive_sha256": "fcc672abf78bb5ff2c12641d2497d63a5040975b9dac0e0f17e79f621e6563b2",
+      "source_inventory_sha256": "5a7ac2f917b03f5dc1e559f2948acbfb854244dcf68ad9c9133c3b9f676b6b9b",
+      "role_test_in_source": false,
+      "job": {
+        "name": "gateway-api-34a5cecce8d0",
+        "uid": "64373017-3a50-458b-b716-e980f0c80795",
+        "status_before_removal": {
+          "completionTime": "2026-09-15T04:19:14Z",
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T04:19:14Z",
+              "lastTransitionTime": "2026-09-15T04:19:14Z",
+              "message": "Reached expected number of succeeded pods",
+              "reason": "CompletionsReached",
+              "status": "True",
+              "type": "SuccessCriteriaMet"
+            },
+            {
+              "lastProbeTime": "2026-09-15T04:19:14Z",
+              "lastTransitionTime": "2026-09-15T04:19:14Z",
+              "message": "Reached expected number of succeeded pods",
+              "reason": "CompletionsReached",
+              "status": "True",
+              "type": "Complete"
+            }
+          ],
+          "ready": 0,
+          "startTime": "2026-09-15T04:15:19Z",
+          "succeeded": 1,
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        }
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-34a5cecce8d0",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "artifact_sha256": {
+        "cleanup.json": "a0669a78523fb5d0f3a3ceca0b84b9e359ae2ac16f7251670993f2bcea1c30e0",
+        "verification.json": "501f8793f8fc75ab7489de69b4e2108cea848f8b29cb94a2ac1cb860765a9d15",
+        "job-final.json": "8c6440b4e8b353a09ccc77a688a033a62544f79320acd3f60016622e6e3293d7",
+        "after.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "second.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "first.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "tests.jsonl": "ac6a198e776b70098c0ea44970aa1c477303771da09151cefa64d75d83785b6c",
+        "test.log": "f58baed1d01e48e03cf83a7c1d8ef4f7630c06553c49c4200839176020ead4fb",
+        "job.json": "1adce80ea2ee350aa190f2933909087ebb48944134a49a17aa372052a1d7cc8d",
+        "required-tests.json": "fb7fcdc929ec997246730defbfb51a6e170b6bef9678453843d432bdd1836053",
+        "source-sha256.json": "5a7ac2f917b03f5dc1e559f2948acbfb854244dcf68ad9c9133c3b9f676b6b9b"
+      },
+      "failure": "The new role test was not tracked and was absent from the source archive. The required-test check failed.",
+      "verification": {
+        "required": [
+          "TestConcurrentGlobalRoleProjection",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "passed": [
+          "TestCleanupSummaryScopeAndTimestampChecks",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "failed": [],
+        "missing": [
+          "TestConcurrentGlobalRoleProjection"
+        ],
+        "exit_code": 0
+      }
+    },
+    {
+      "attempt": 4,
+      "result": "failure",
+      "source_archive_sha256": "53c9a06c0d93ba634cafef84470f8d02e7a0e3803eef58616f616ffa5093172f",
+      "source_inventory_sha256": "8bfb6fcd847a2e8d5b9a2c94c1d484c213c63b8e6b4db80722f079cf661d656d",
+      "role_test_in_source": true,
+      "job": {
+        "name": "gateway-api-e8a219c5a186",
+        "uid": "ac8315b5-13cd-48ad-bda5-a8f363b620f1",
+        "status_before_removal": {
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T04:24:05Z",
+              "lastTransitionTime": "2026-09-15T04:24:05Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "FailureTarget"
+            },
+            {
+              "lastProbeTime": "2026-09-15T04:24:05Z",
+              "lastTransitionTime": "2026-09-15T04:24:05Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "Failed"
+            }
+          ],
+          "failed": 1,
+          "ready": 0,
+          "startTime": "2026-09-15T04:20:04Z",
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        }
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-e8a219c5a186",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "artifact_sha256": {
+        "cleanup.json": "3a94711c63cbafe2e16cc7d75d94ce081b977fb22b2605b4a29e47fc9081a749",
+        "verification.json": "5eb742d4cd6babdd30ea18d16a1c50e01d1297243b7807dab95f6fac00647c93",
+        "job-final.json": "cb129911e106bc310d09c41145ddb25518cdf64b54200561708efa32ac42b9c0",
+        "after.sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "second.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "first.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "tests.jsonl": "9753b6f478e7becd8b278aafeec74639df0f1bbb181bdc039fee4fe91cac6c9b",
+        "test.log": "f58baed1d01e48e03cf83a7c1d8ef4f7630c06553c49c4200839176020ead4fb",
+        "job.json": "49c80ab345cb18a1133f555b5eb6901d00c62907d6e1237468d9a1726c39f014",
+        "required-tests.json": "fb7fcdc929ec997246730defbfb51a6e170b6bef9678453843d432bdd1836053",
+        "source-sha256.json": "8bfb6fcd847a2e8d5b9a2c94c1d484c213c63b8e6b4db80722f079cf661d656d"
+      },
+      "failure": "The test transaction wrapper did not preserve CursorReader. Role lookup failed before writes.",
+      "verification": {
+        "required": [
+          "TestConcurrentGlobalRoleProjection",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "passed": [
+          "TestCleanupSummaryScopeAndTimestampChecks",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "failed": [
+          "TestConcurrentGlobalRoleProjection",
+          "github.com/jsell-rh/hypershell-stego/acceptance"
+        ],
+        "missing": [
+          "TestConcurrentGlobalRoleProjection"
+        ],
+        "exit_code": 1
+      }
+    },
+    {
+      "attempt": 5,
+      "result": "success",
+      "source_archive_sha256": "8301e6cbf2966ba2b196cfe11baa123c0b62cc04bb4736daf03043d5bdabdbcb",
+      "source_inventory_sha256": "8c35d50b1b1adab6eab09cf56c575c3bf079a419032e5e4ea03d0292dbd7a5aa",
+      "role_test_in_source": true,
+      "job": {
+        "name": "gateway-api-0b45e549984d",
+        "uid": "4a4997a3-99dc-4046-8b5a-b121ef374ec8",
+        "status_before_removal": {
+          "completionTime": "2026-09-15T04:28:02Z",
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T04:28:02Z",
+              "lastTransitionTime": "2026-09-15T04:28:02Z",
+              "message": "Reached expected number of succeeded pods",
+              "reason": "CompletionsReached",
+              "status": "True",
+              "type": "SuccessCriteriaMet"
+            },
+            {
+              "lastProbeTime": "2026-09-15T04:28:02Z",
+              "lastTransitionTime": "2026-09-15T04:28:02Z",
+              "message": "Reached expected number of succeeded pods",
+              "reason": "CompletionsReached",
+              "status": "True",
+              "type": "Complete"
+            }
+          ],
+          "ready": 0,
+          "startTime": "2026-09-15T04:25:18Z",
+          "succeeded": 1,
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        }
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-0b45e549984d",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "artifact_sha256": {
+        "cleanup.json": "1f0c3e6a3184ebbd5be6721d68d21380f270cd8e903ef2fb6a7d4b7aaaf15b9f",
+        "verification.json": "9d79847e9925efa45d7682d9bcec5572b8bcf3c00e63e8a254b6a5b98b359a3d",
+        "job-final.json": "f27e68d210d1f72cd8a86a8a980541bcbfec7b177022a98297f4ae2ddee82480",
+        "after.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+        "tests.jsonl": "0de225fac265c463f5885045be3fbd293c16732195391d51d2f102e164b531d5",
+        "test.log": "f0b978a9703e21519d8b16eb47521ccafc5c668abea39fbdc686bd9cebcff2fe",
+        "job.json": "dd988e79723b6a57a894a09f8f902b41a190b03557ea111c7365cc196cc453e8",
+        "required-tests.json": "fb7fcdc929ec997246730defbfb51a6e170b6bef9678453843d432bdd1836053",
+        "source-sha256.json": "8c35d50b1b1adab6eab09cf56c575c3bf079a419032e5e4ea03d0292dbd7a5aa"
+      },
+      "verification": {
+        "required": [
+          "TestConcurrentGlobalRoleProjection",
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "passed": [
+          "TestConcurrentCurrentUserRegistration",
+          "TestConcurrentCurrentUserRequests",
+          "TestConcurrentGlobalRoleProjection",
+          "TestGlobalRoleProjectionIsAtomic"
+        ],
+        "failed": [],
+        "missing": [],
+        "exit_code": 0
+      }
+    }
+  ],
+  "required_tests": [
+    "TestConcurrentGlobalRoleProjection",
+    "TestConcurrentCurrentUserRegistration",
+    "TestConcurrentCurrentUserRequests",
+    "TestGlobalRoleProjectionIsAtomic"
+  ],
+  "final_passed": [
+    "TestConcurrentCurrentUserRegistration",
+    "TestConcurrentCurrentUserRequests",
+    "TestConcurrentGlobalRoleProjection",
+    "TestGlobalRoleProjectionIsAtomic"
+  ],
+  "conflict_retries": {
+    "creation": 7,
+    "removal": 7
+  },
+  "source_matches_checkout": true,
+  "final_check": "Focused acceptance tests only. No regeneration in attempt 5.",
+  "committed_output_snapshots": {
+    "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+    "after.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512"
+  },
+  "prior_regeneration": {
+    "attempt": 4,
+    "snapshots": {
+      "committed.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+      "first.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512",
+      "second.sha256": "066dab721a06c860c56c628ae5d05bd0d12ac7d098404a93f0c30511634a1512"
+    },
+    "all_non_acceptance_source_unchanged": true,
+    "after_snapshot": "Empty after the failed test. It is not used as evidence. Attempt 5 verifies the output after the corrected tests."
+  },
+  "test_source_sha256": {
+    "acceptance/global_role_concurrency_test.go": "046e05da9fe9f9faf025b9ce81a67c234b3c50ee3cd37f0c563bc57a9a5a7f64",
+    "acceptance/global_roles_test.go": "3cf42bd5f8108bfc4edeb58885409af12d0477bfd0e8ff1fbe67524305295346",
+    "acceptance/current_user_concurrency_test.go": "4912d910a762e04df68b1caaa981f000b89a5396772d41fd8cf770a27d81bdeb",
+    "scripts/check-jshell-gateway.py": "5a7950526f3a67198c0eb7b5e4b4c38a5f9b3325e684906e90090323b26dc78e"
+  },
+  "preflight": {
+    "result": "Untracked Go input was rejected before a Job was created.",
+    "log_sha256": "3f58b876ebf8469b610ec47b6de67e3244988e61764a58cb0ef8e8eabf079af9",
+    "job_manifest_absent": true
+  },
+  "runner_sha256": "f7213d0b9e9c08f321f2ff95c212b7d4d3b738f7d25b4ca519cbe636d4561c99",
+  "limits": [
+    "This is a correctness check with eight callers and a 15-second projection deadline, not a capacity test.",
+    "The transaction runtime still invokes each callback once. Callers retry complete requests after reported conflicts.",
+    "The complete core CI suite must run against the committed correction."
+  ]
+}

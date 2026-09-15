@@ -18,7 +18,7 @@ import (
 
 // Model a caller that retries the complete request after a conflict. Production
 // transactions still execute their callback once and return conflicts to callers.
-func registerWithConflictRetry(ctx context.Context, phase int, call func(context.Context) (string, error)) (string, int, error) {
+func requestWithConflictRetry(ctx context.Context, phase int, call func(context.Context) (string, error)) (string, int, error) {
 	var last error
 	for attempt := 0; attempt < 64; attempt++ {
 		if err := ctx.Err(); err != nil {
@@ -125,7 +125,7 @@ func testConcurrentCurrentUser(t *testing.T, throughHTTP bool) {
 		go func() {
 			defer work.Done()
 			<-start
-			id, retries, err := registerWithConflictRetry(ctx, worker, call)
+			id, retries, err := requestWithConflictRetry(ctx, worker, call)
 			results <- result{id, retries, err}
 		}()
 	}

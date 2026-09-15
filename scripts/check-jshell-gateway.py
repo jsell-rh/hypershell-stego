@@ -19,6 +19,7 @@ import time
 import uuid
 
 REQUIRED = [
+    "TestConcurrentGlobalRoleProjection",
     "TestCleanupSummaryScopeAndTimestampChecks",
     "TestGatewayDatabaseSecretFileAndCredentialRotation",
     "TestGatewayDeletionBeforeWorkloadStartup",
@@ -78,6 +79,9 @@ def main():
         raw = oc("get", kind, resource, "--ignore-not-found", "-o", "json")
         return json.loads(raw) if raw.strip() else None
 
+    untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z"], cwd=root).decode().split("\0")
+    if any(path.endswith(".go") for path in untracked):
+        raise RuntimeError("Track Go source files before freezing test input")
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
     if "scripts/check-jshell-gateway.py" not in names:
         raise RuntimeError("Track the runner before freezing source")
