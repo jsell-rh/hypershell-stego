@@ -3,11 +3,13 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"os"
 	"reflect"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"google.golang.org/protobuf/proto"
 )
@@ -46,6 +48,41 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 	admin := w.fixtureSQL()
 	names := databaseNames(w.t, w.f.cluster, id)
 	role := pgx.Identifier{names.User}.Sanitize()
+	otherID := ""
+	for _, candidate := range w.gatewayIDs {
+		if candidate != id {
+			otherID = candidate
+		}
+	}
+	if otherID == "" {
+		w.t.Fatal("SQL session isolation requires another Gateway")
+	}
+	open := func(gatewayID string) *pgx.Conn {
+		w.t.Helper()
+		config, err := pgx.ParseConfig(os.Getenv("STEGO_TEST_POSTGRES_DSN"))
+		if err != nil || config.TLSConfig == nil || config.TLSConfig.InsecureSkipVerify || config.TLSConfig.RootCAs == nil || config.Host != "127.0.0.1" {
+			w.t.Fatal("SQL session checks require the verified loopback fixture")
+		}
+		options, _ := w.sqlOptions(gatewayID)
+		config.Database, config.User, config.Password = options.Database, options.User, options.Password
+		config.ConnectTimeout = 5 * time.Second
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		connection, err := pgx.ConnectConfig(ctx, config)
+		if err != nil {
+			w.t.Fatal("Gateway SQL session setup failed")
+		}
+		w.t.Cleanup(func() {
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			connection.Close(ctx)
+		})
+		var one int
+		if err := connection.QueryRow(ctx, "SELECT 1").Scan(&one); err != nil || one != 1 {
+			w.t.Fatal("Gateway SQL session precondition failed")
+		}
+		return connection
+	}
 	exec := func(query string) {
 		w.t.Helper()
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -59,6 +96,7 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 		{"GRANT pg_read_all_data TO " + role, "REVOKE pg_read_all_data FROM " + role},
 	} {
 		func() {
+			ownedSession, otherSession := open(id), open(otherID)
 			// Restore the operator-owned fault even if the assertion stops this test.
 			defer func() {
 				ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -83,6 +121,21 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 					w.t.Fatal("unsafe Gateway SQL permissions did not disable login and report failure")
 				}
 				time.Sleep(time.Second)
+			}
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			var one int
+			err := ownedSession.QueryRow(ctx, "SELECT 1").Scan(&one)
+			cancel()
+			var stopped *pgconn.PgError
+			if !errors.As(err, &stopped) || stopped.Code != "57P01" {
+				w.t.Fatal("unsafe Gateway SQL session was not terminated by the server")
+			}
+			ctx, cancel = context.WithTimeout(context.Background(), 5*time.Second)
+			err = otherSession.QueryRow(ctx, "SELECT 1").Scan(&one)
+			otherSession.Close(ctx)
+			cancel()
+			if err != nil || one != 1 {
+				w.t.Fatal("SQL quarantine interrupted another Gateway session")
 			}
 			exec(fault.restore)
 			w.check(id)
@@ -121,5 +174,5 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 	if err != nil || !proto.Equal(provider, after) {
 		w.t.Fatal("SQL fault recovery changed provider data")
 	}
-	w.t.Log("Unsafe SQL privileges and role membership disabled Gateway login; operator repair and password recovery preserved credentials, keys, and provider data")
+	w.t.Log("Unsafe SQL privileges and role membership disabled Gateway login and terminated its existing session; the other Gateway session remained open. Operator repair and password recovery preserved credentials, keys, and provider data")
 }

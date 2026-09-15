@@ -312,3 +312,23 @@ unit test and the credential-file rotation workflow. Both passed in a focused
 jshell retest, with the SQL adapter contract. All four generated snapshots match,
 and test resources were removed. See `controller-local-core-ci.json`. The complete
 core suite still requires a passing CI run.
+
+
+The complete browser Gateway workflow now also passes with STEGO `868ff1f` and
+`postgres-client` 1.2.1. The check holds one SQL session for each Gateway before
+it adds unsafe privileges or role membership to one login. The generated
+runtime disables that login and terminates its session with PostgreSQL code
+`57P01`. The other Gateway session remains open. Recovery retains credentials,
+keys, and provider data. The full workflow passed in 336.85 seconds with race
+detection. PostgreSQL restart, worker replacement, access, events, service
+accounts, and both Gateway deletions also passed.
+
+All 229 generated files match repeat generation and the post-test check. The
+source matches the frozen copy. Test resources are absent and the shared Lease
+is free. See [the result](sql-quarantine-browser-evidence.json). Installation
+CNPG, RDS, the remaining recovery cases, Sandbox, and full CI remain open.
+
+The new complete core CI run at `3bd9f63` passed the corrected fixtures but
+failed `TestConcurrentGlobalRoleProjection` with serialization error `40001`.
+This concurrency failure needs review. It does not invalidate the explicit
+29-check API or browser results, and neither result makes full CI pass.

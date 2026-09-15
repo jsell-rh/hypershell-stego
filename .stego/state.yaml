@@ -112,13 +112,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915023133-16e09a2c5d48
+        module_version: v0.0.0-20260915033650-868ff1f83a12
         vcs: git
-        revision: 16e09a2c5d483fce29b76308f0f3272e6bd5ca75
+        revision: 868ff1f83a1289a7becffa6530f282f980a5216b
         source_state: clean
     service_hash: eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a
     registry_sha: gateway-workflow
-    registry_content_sha256: 0d93cd39fd801fa0fbcc7a80adcd53981b7a7fc7f4bc0d1b5c0ebe6a96bb0f7e
+    registry_content_sha256: 9e28534413cbffebed8b5336e5dcb6b699dc41d61c6bb5ec8b6c2cbbe45ee2da
     components:
         browser-telemetry:
             version: 1.0.0
@@ -163,7 +163,7 @@ last_applied:
             version: 4.4.0
             sha: gateway-workflow
         postgres-client:
-            version: 1.2.0
+            version: 1.2.1
             sha: gateway-workflow
         tsl-search:
             version: 1.0.2
@@ -421,7 +421,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 16c3f76dc149971ee0d7bb9923612dcdeefed743b01c44211b677dbefaaef1ee
+        cli/command/version.go: bca213ab1c0b14050f6e28ed93d4be05a2611dd44627144bdd58bd78016dfbd0
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -499,7 +499,7 @@ last_applied:
         outbox/source.go: ee8472131ef50fecbfe38b56a5afd9c9b9afcbe531b442fa6d6804cde5065a9b
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
         postgres/client.go: dde40af3259df8263c647c912cbe7119442b70982007a1e6298d0041cd34f5b8
-        postgres/provision.go: af9e0809b31a68e883b6669af0375b796a5eb73981c4dcbb8c9d536f6aefc91f
+        postgres/provision.go: df9147fdd71b869106bf330fe22eef180f8ef97adc63914b20f6f67233a4630e
         sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
