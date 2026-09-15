@@ -12,6 +12,11 @@ The next application change must supply all required paths and prove fresh
 allowed and denied connections in the complete Gateway workflow. The external
 DNS provider choice remains open. These results do not establish traffic isolation.
 
+Candidate `101f31d` uses compiler `e394ab5` and passed regeneration in both
+modules. Its core, rendered browser, console, image, and regeneration checks
+are running in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
+The manual run skips CNPG and Sandbox. Production isolation remains off.
+
 The following record preserves the initial gap and the earlier checks.
 
 The Gateway workflow does not yet prove network isolation in allocated
