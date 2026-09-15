@@ -37,5 +37,59 @@
     "This run precedes the production RPC lifecycle correction.",
     "No public Route, network enforcement, or certificate renewal result is present.",
     "The overall run failed. The skipped Sandbox check is not a pass."
+  ],
+  "later_runs": [
+    {
+      "run_id": 34985981930,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34985981930",
+      "source_revision": "3a50db7ea813ae8d160f79a86359970b457f03a8",
+      "compiler_revision": "0b0c932716f09d492cdc31e0c00a9849c13d1fc8",
+      "overall": "failure",
+      "core_job_id": 104438636148,
+      "core": "success",
+      "ordinary_browser": "success",
+      "console": "success",
+      "service_image": "success",
+      "cnpg": "failure",
+      "sandbox": "skipped",
+      "acceptance_package_seconds": 1203.85,
+      "race_detection": true,
+      "selected_checks": [
+        {
+          "name": "TestGatewayControllerTelemetryAcrossFailureAndRestart",
+          "result": "pass",
+          "seconds": 7.88
+        },
+        {
+          "name": "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+          "result": "pass",
+          "seconds": 7.78
+        },
+        {
+          "name": "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "result": "pass",
+          "seconds": 5.47
+        },
+        {
+          "name": "TestGatewayGRPCTracingAcrossWatchRestartAndCollectorFailure",
+          "result": "pass",
+          "seconds": 7.91
+        },
+        {
+          "name": "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "result": "pass",
+          "seconds": 5.78
+        }
+      ],
+      "log": {
+        "path": "/tmp/hypershell-core-34985981930.log",
+        "sha256": "fb07b57397a74eca21167fb569c0ceb31c87aaac4b07f23e6e004bb862893f52"
+      },
+      "limits": [
+        "CNPG startup and cleanup failed; see cnpg-ci-recovery-20260915.json.",
+        "The separate public run is still active.",
+        "No allocated namespace network-isolation result is supplied by this core run."
+      ]
+    }
   ]
 }
