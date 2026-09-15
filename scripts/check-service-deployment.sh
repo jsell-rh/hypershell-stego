@@ -28,6 +28,10 @@ if [[ $workload == 1 ]]; then
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
   test -s acceptance/browser-inspection-source.json
 fi
+# Check lifetime before acquiring a Lease or changing the test installation.
+if [[ $preinstalled == 1 ]]; then
+  python3 scripts/ci_credentials.py --context "$STEGO_TEST_CONTEXT" --gate browser
+fi
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"
 held_lease=${STEGO_TEST_HELD_LEASE_HOLDER:-}

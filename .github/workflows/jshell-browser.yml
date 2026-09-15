@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   gateway-workload:
+    environment: jshell-ci
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
@@ -27,6 +28,7 @@ jobs:
       - name: Check the CI boundary
         run: |
           python3 scripts/test_browser_ci.py
+          python3 scripts/test_ci_credentials.py
           python3 scripts/test_browser_cluster_installation.py
           python3 scripts/test_browser_inspection.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go

@@ -17,6 +17,7 @@ import tarfile
 import tempfile
 import time
 import uuid
+from ci_credentials import API_SECONDS, require_credentials
 
 REQUIRED = [
     "TestConcurrentGlobalRoleProjection",
@@ -78,6 +79,9 @@ def main():
     def get(kind, resource):
         raw = oc("get", kind, resource, "--ignore-not-found", "-o", "json")
         return json.loads(raw) if raw.strip() else None
+
+    config = json.loads(oc('config', 'view', '--raw', '--minify', '-o', 'json'))
+    require_credentials(config, API_SECONDS)
 
     untracked = subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "-z"], cwd=root).decode().split("\0")
     if any(path.endswith(".go") for path in untracked):

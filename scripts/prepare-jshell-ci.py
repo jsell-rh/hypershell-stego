@@ -21,7 +21,10 @@ def main():
     parser.add_argument("--context", required=True)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--github-repository", help="Store JSHELL_CI_KUBECONFIG in this repository")
+    parser.add_argument("--github-environment", help="Store the secret in this GitHub environment")
     args = parser.parse_args()
+    if args.github_environment and not args.github_repository:
+        parser.error("--github-environment requires --github-repository")
     root = Path(__file__).resolve().parent.parent
     document = json.loads((root / "deploy/ci/jshell.json").read_text())
 
@@ -94,9 +97,13 @@ def main():
         finally:
             temporary.unlink(missing_ok=True)
     if args.github_repository:
-        subprocess.run(["gh", "secret", "set", "JSHELL_CI_KUBECONFIG", "--repo", args.github_repository],
+        command = ["gh", "secret", "set", "JSHELL_CI_KUBECONFIG", "--repo", args.github_repository]
+        if args.github_environment:
+            command += ["--env", args.github_environment]
+        subprocess.run(command,
                        input=json.dumps(config).encode(), capture_output=True, check=True, timeout=30)
-        print("Updated GitHub secret JSHELL_CI_KUBECONFIG for " + args.github_repository)
+        print("Updated GitHub secret JSHELL_CI_KUBECONFIG for " + args.github_repository +
+              (" environment " + args.github_environment if args.github_environment else ""))
     expiry = datetime.fromtimestamp(payload["exp"], timezone.utc).isoformat()
     print("CI identity: system:serviceaccount:stego-ci-access:hypershell-ci")
     print("CI token expires: " + expiry)

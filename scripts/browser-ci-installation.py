@@ -7,7 +7,7 @@ import json
 import os
 from pathlib import Path
 import subprocess
-import time
+from ci_credentials import BROWSER_SECONDS, require_credentials
 
 NAMESPACE = 'stego-service-ci'
 MANIFESTS = ['hypershell', 'hypershell-console', 'hypershell-provisioner', 'hypershell-namespace-allocation', 'hypershell-gateway-identity', 'hypershell-gateway-workload']
@@ -46,15 +46,7 @@ def main():
             words += ['-n', namespace]
         return json.loads(oc(*words))
     config = json.loads(oc('config', 'view', '--raw', '--minify', '-o', 'json'))
-    cluster = config['clusters'][0]['cluster']; user = config['users'][0]['user']
-    if cluster.get('insecure-skip-tls-verify') or not cluster['server'].startswith('https://') or set(user) != {'token'}:
-        raise RuntimeError('Require the bounded CI token and verified HTTPS context')
-    token = user['token']
-    claim = token.split('.')[1]; payload = json.loads(base64.urlsafe_b64decode(claim + '=' * (-len(claim) % 4)))
-    if not time.time() < payload.get('exp', 0) <= time.time() + 3660:
-        raise RuntimeError('The CI token is expired or exceeds one hour')
-    if payload.get('sub') != 'system:serviceaccount:stego-ci-access:hypershell-ci':
-        raise RuntimeError('This runner requires the restricted CI identity')
+    token, cluster = require_credentials(config, BROWSER_SECONDS if args.action == 'prepare' else 0)
     installation = get('configmap', 'browser-ci-installation', NAMESPACE)
     if installation.get('immutable') is not True or installation['metadata'].get('labels', {}).get('app.kubernetes.io/managed-by') != 'stego-browser-ci':
         raise RuntimeError('The browser CI manifest record is not owned and immutable')

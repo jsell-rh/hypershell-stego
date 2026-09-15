@@ -31,9 +31,12 @@ and fixture objects to disappear. Cleanup failure retains the Lease for
 operator inspection. Test credentials and private keys are not stored in the
 result directory or artifact.
 
-The CI kubeconfig expires after one hour. An operator must renew it before a
-later run. Automatic credential renewal remains open. An absent or expired
-credential fails the gate; it does not skip the tests.
+The CI kubeconfig expires after one hour. Jobs now read it from the `jshell-ci`
+GitHub environment when they start. The API runner requires at least 25 minutes
+of remaining time before it acquires the Lease. An operator must renew the
+environment secret before a later run. Automatic renewal remains open. An
+absent or unsuitable credential fails the gate; it does not skip the tests.
+See the [credential timing contract](ci-credentials.md).
 
 ## Historical fixture corrections
 

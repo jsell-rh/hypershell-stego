@@ -4,6 +4,11 @@ admission policy, and generated cluster resources before CI runs. CI cannot
 create cluster roles or change admission policy. The test source remains
 trusted: it can start workers and request their scoped tokens in this namespace.
 
+The `jshell-ci` GitHub environment supplies the short-lived credential when the
+job starts. The runner requires at least 35 minutes of remaining time before
+it acquires the Lease. An operator still renews the environment secret. See
+the [credential timing contract](ci-credentials.md).
+
 Prepare the inspection source with `scripts/prepare-browser-inspection.py`.
 From that frozen directory, run `scripts/prepare-browser-ci.py --context
 <operator-context> --issuer <existing-cluster-issuer> --results <new-directory>`.

@@ -1,0 +1,55 @@
+# CI credential lifetime
+
+The jshell jobs use the `jshell-ci` GitHub environment and its
+`JSHELL_CI_KUBECONFIG` secret. GitHub reads environment secrets when a job starts.
+Repository secrets are read when a workflow run enters the queue, so a waiting
+run can retain an old token after rotation. See the
+[GitHub secret timing rules](https://docs.github.com/en/actions/reference/security/secrets).
+
+The operator still issues a one-hour token for the restricted `hypershell-ci`
+service account. CI cannot renew this token or obtain an operator credential.
+The environment changes when GitHub reads the secret; it does not change
+cluster permissions or provide unattended credential renewal.
+
+Before acquiring the shared Lease, each runner checks the explicit context,
+verified HTTPS, token-only authentication, expected service-account subject,
+issue time, and expiry. It requires the following remaining time:
+
+| Gate | Minimum time | Basis |
+| --- | --- | --- |
+| Gateway API | 25 minutes | 20-minute Job and five-minute collection margin |
+| Rendered browser | 35 minutes | 30-minute Job and five-minute collection margin |
+
+These are start requirements. They do not guarantee that cluster cleanup will
+finish within the margin. Cleanup failures retain the Lease and require operator
+inspection. Cleanup can use any remaining valid token time; it does not require
+a new full test budget. Parsed JWT claims are not authentication evidence. The
+Kubernetes API authenticates every request and enforces the restricted roles.
+
+Renew the environment secret before the remaining time falls below the required
+budget. Use the existing operator context explicitly:
+
+```sh
+python3 scripts/prepare-jshell-ci.py \
+  --context=default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell \
+  --output=/home/jsell/.config/stego/ci/jshell.kubeconfig \
+  --github-repository=jsell-rh/hypershell-stego \
+  --github-environment=jshell-ci
+```
+
+The environment must already exist. The helper writes the private kubeconfig
+atomically and sends the secret through standard input to GitHub CLI. It prints
+the identity and expiry, never the token. It preserves an active cluster Lease.
+
+Earlier workflow revisions still read the repository secret. Rotation cannot
+change their queued snapshot. A waiting run can be cancelled before it starts
+and rerun on the same commit after rotation. Keep that cancellation in the run
+history, require the replacement result, and do not treat it as a passing test.
+Do not interrupt an active Job to rotate credentials.
+
+Six small checks cover the time boundaries, malformed credentials, wrong
+identity, excessive lifetime, unverified TLS, and both runner entry points.
+Near-expiry credentials stop the API and browser runners after only the local
+kubeconfig read. The renewed private credential also
+passed the browser lifetime check. A live run of the environment-backed
+workflow remains required.
