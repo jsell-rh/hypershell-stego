@@ -147,12 +147,27 @@ STEGO provider record. Production permissions did not change.
 This application still uses its existing compiler pin and handwritten provider.
 No new application result or source reduction is claimed for this change.
 
-STEGO now also has a native client profile at `f5d35b9`. It requires PKCE S256,
-explicit loopback callbacks, disabled setup and repair, and declared device-flow
-policy. Native and service-account profiles share their checked base lifecycle.
-They reject client authentication-flow overrides and unexpected management or
-logout targets. Small generated tests passed. The live native login test is
-pending in [run 35032114627](https://github.com/jsell-rh/stego/actions/runs/35032114627).
-Earlier attempts found a Keycloak creation default and a test-driver redirect
-restriction. Their failures and cleanup records are retained. This application
-has not yet adopted the native provider methods.
+STEGO's native client profile passed at
+`fae5f39f680e1c33ffa399b46a5ae9521d255bd8` in
+[run 35032789086](https://github.com/jsell-rh/stego/actions/runs/35032789086).
+It requires PKCE S256, explicit loopback callbacks, disabled setup and repair,
+and declared device-flow policy. Native and service-account profiles share
+their checked base lifecycle. They reject authentication-flow overrides and
+unexpected management or logout targets. The native profile removes unwanted
+attributes through explicit provider patches. It converts port wildcards to
+registrations with an exact callback path and no port.
+
+The real Keycloak test passed for IPv4 and IPv6 policies. It verified login,
+wrong-verifier rejection, denied callback changes, code reuse denial, signed
+claims, attribute repair, and device-authorization request policy. The runtime
+took 45.19 seconds, and container cleanup passed. The full compiler job was
+still running when this record was written. Device user approval and token
+exchange are not yet covered. Earlier failures and cleanup records remain in
+the STEGO provider record.
+
+This application has not adopted these methods. Its compiler pin and
+handwritten provider remain unchanged. Checked production enablement and
+ownership migration must precede adoption. Then the existing Gateway and
+service-account workflows must pass with the common provider. Hypershell keeps
+its role names, claim paths, audiences, and ownership values as application
+policy. No application source reduction is claimed by this provider test.
