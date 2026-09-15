@@ -1,3 +1,7 @@
+> Historical contract. This file describes the retired database catalog and
+> server-controller fixture. Use [the current transition record](controller-local-test-transition.md)
+> and the generated allocation manifests for this release.
+
 The database workflow connects Gateway creation to a real PostgreSQL workload.
 `TestDatabaseWorkloadAndOfflineDeletion` creates a Gateway through REST. The API
 commits its private ManagedDatabase, Gateway, owner grant, and events. A separate
@@ -107,7 +111,7 @@ API instances after a grant change.
 Token files must have no group or other access. The generated clients read them
 again for each request. Project Kubernetes tokens with mode `0400` and arrange
 for the controller process to read them. The controller does not create permanent
-service-account token Secrets. Apply the [RBAC manifest](../deploy/database-controller-rbac.yaml)
+service-account token Secrets. Apply the [RBAC manifest](https://github.com/jsell-rh/hypershell-stego/blob/a637a33105dfe00c54ab1c482f38ec08f1b4d122/deploy/database-controller-rbac.yaml)
 after creating the `hypershell-control-plane` namespace. These permissions belong
 to a trusted platform controller. They include namespace creation and deletion
 and access to database Secrets across namespaces.

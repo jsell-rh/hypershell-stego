@@ -1,3 +1,7 @@
+> Historical contract. This file describes the retired database catalog and
+> server-controller fixture. Use [the current transition record](controller-local-test-transition.md)
+> and the generated allocation manifests for this release.
+
 This gate runs the actual OpenShell Gateway image with the STEGO Hypershell API,
 database controller, identity controller, and Gateway workload controller.
 It tests provider management inside the Gateway. Sandbox execution remains open.
@@ -121,7 +125,7 @@ See the [controller write permissions](controller-write-permissions.md).
 
 Token files must have mode 0400 or 0600. Replace them before expiry; generated
 clients read them for each request. Apply
-`deploy/gateway-workload-controller-rbac.yaml` in the configured cluster. The
+the historical Gateway worker RBAC manifest in the configured cluster. The
 namespace and identity must exist before the controller starts.
 
 The trust bundle must include every CA needed by the Gateway's outbound clients.

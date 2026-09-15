@@ -1,3 +1,7 @@
+> Historical contract. This file describes the retired database catalog and
+> server-controller fixture. Use [the current transition record](controller-local-test-transition.md)
+> and the generated allocation manifests for this release.
+
 The CNPG provider creates the shared `openshell-db` Cluster in the namespace
 derived from the ManagedDatabase ID. Set `DATABASE_PROVIDER=cnpg` on both the API
 and `out/deploy/workers/database`. The deployment provider remains the default. An
@@ -48,7 +52,7 @@ preconditions. A pending or denied deletion keeps the cleanup obligation open.
 The controller records completion only after the namespace is absent. Unsupported
 mutable engine settings do not prevent cleanup of a valid stored placement.
 
-Use the [CNPG RBAC manifest](../deploy/cnpg-database-controller-rbac.yaml) for a
+Use the [CNPG RBAC manifest](https://github.com/jsell-rh/hypershell-stego/blob/a637a33105dfe00c54ab1c482f38ec08f1b4d122/deploy/cnpg-database-controller-rbac.yaml) for a
 separate provider service account. It needs no direct Secret access. Give its
 verified API subject the `ManagedDatabase` / `observe.provider` grant with target
 `cnpg`, plus the `ManagedDatabase` / `provider` cleanup grant. Use the API and
