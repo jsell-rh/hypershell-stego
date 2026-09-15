@@ -30,6 +30,13 @@ match `59a6d32`. Thus the browser pass establishes behavior of the committed
 archive, but not a fresh build from that source. The corrected archive requires
 a new console and complete browser gate.
 
+Commit `01fa021` replaces the archive with the checked CI candidate and
+regenerates the console. The application bundle differs only by removal of
+`route_address` from the owner patch schema. The other changes are asset names
+and manifest references. See [the archive evidence](console-endpoint-assets-evidence.json).
+Full CI `34974186524`, API `34974186030`, and browser `34974186012` remain
+required for this source. The cluster runs need a renewed CI login.
+
 The full public workflow remains incomplete. The browser checks use an internal
 Service endpoint. The connection panel still shows loading placeholders. Route
 verification, certificate selection, and public connection evidence remain open.

@@ -40,8 +40,9 @@ connectivity or certificate rotation in a live Gateway.
 Compiler `0953fcc` supplies the shared check. Its generated runtime checks pass
 for an independent widget service. Hypershell uses that check directly; it has
 no separate public certificate verifier. Focused application checks and repeated
-generation pass. Full compiler and application CI results remain required for
-this revision.
+generation pass. [Full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34973613718)
+passed, including both independent examples and SQL provisioning. Complete
+application CI and public connection results remain required for this revision.
 
 The 1.8.1 runtime also rejects private-key blocks and extra text in `tls.crt`.
 A regression check reproduced this defect in 1.8.0 before the correction.
