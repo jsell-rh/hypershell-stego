@@ -1,3 +1,13 @@
+The second live run installed all 18 generated cluster resources, then failed
+in state recovery test fixtures before application execution. Cleanup completed,
+and the shared Lease was released. Candidate `23273c0` supplies the required
+policy snapshots and adds missing, changed, and extra policy denial cases.
+The focused recovery test passed. Its frozen public run is active in
+`stego-service-20260915-e77723`. Candidate `8b17fb4` separately corrects the
+receiver rules for telemetry and token-free network probes. The active frozen
+run does not contain those receiver corrections. See the
+[workflow record](gateway-network-workflow-20260915.json).
+
 The working candidate now enables Gateway and state namespace policies. The
 Gateway declaration permits the selected OpenShift router, DNS Pods, test SQL,
 identity-provider, and telemetry Pods, plus operator-bound Kubernetes addresses.
