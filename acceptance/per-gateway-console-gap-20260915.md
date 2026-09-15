@@ -92,7 +92,7 @@ cover these contracts, including the editor and terminal.
 
 Common Keycloak client management must also come from STEGO. Use the existing
 service-account and Gateway identity workflows to prove the
-[provider extraction](https://github.com/jsell-rh/stego/blob/261b2ea/specs/keycloak-provider-boundary.md)
+[provider extraction](https://github.com/jsell-rh/stego/blob/b7b3efa/specs/keycloak-provider-boundary.md)
 before adding per-Gateway dashboard client policy. Hypershell keeps Gateway
 roles, grants, audiences, and ownership identifiers.
 
@@ -135,7 +135,15 @@ reconciliation and typed access-token mappers. The provider detaches shared
 scopes without changing their definitions. It confirms removal before addition
 and retains mapper IDs when their configuration is correct. Application policy
 supplies audiences and claim paths. Small generated tests passed with the race
-detector, with and without telemetry. The real Keycloak test is pending in
-[run 35029927597](https://github.com/jsell-rh/stego/actions/runs/35029927597).
+detector, with and without telemetry. The real Keycloak test passed at
+`6360ce42bddda4dd48cc8061abb225dcd1d450c0` in
+[run 35030627861](https://github.com/jsell-rh/stego/actions/runs/35030627861).
+The test checked exact signed token audiences and roles, identity, lifetime,
+optional metadata, mapper repair, preserved shared scope definitions, and
+permission denial. It took 45.75 seconds, and container cleanup passed.
+Four STEGO CI jobs passed; the compiler job was still running when this result
+was recorded. Earlier attempts exposed the assigned-scope response shape and
+the separate realm-role scope permission. Those results are retained in the
+STEGO provider record. Production permissions did not change.
 This application still uses its existing compiler pin and handwritten provider.
 No new application result or source reduction is claimed for this change.
