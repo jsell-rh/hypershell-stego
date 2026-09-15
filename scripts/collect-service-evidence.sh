@@ -18,7 +18,7 @@ collect_service_evidence() {
         [ -s worker-image.json ] || exit 1
       fi
       if [ "$3" = 1 ]; then
-        for file in namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/postgres-server.json; do
+        for file in namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
           [ -s "$file" ] || exit 1
         done
       fi

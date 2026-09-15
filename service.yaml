@@ -128,14 +128,20 @@ overrides:
         scope: namespace
         rules:
           - {api_group: "", resources: [pods], verbs: [get, list, watch]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
       - name: gateway-state
         scope: namespace
         rules:
           - {api_group: "", resources: [secrets, configmaps], verbs: [get, create]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
       - name: gateway-worker
         scope: namespace
         rules:
           - {api_group: "", resources: [secrets, configmaps, services, serviceaccounts], verbs: [get, create, patch]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
           - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
           - {api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
           - {api_group: route.openshift.io, resources: [routes], verbs: [get, create, patch, delete]}
@@ -154,6 +160,16 @@ overrides:
           - {api_group: "", resources: [namespaces], verbs: [get]}
     allocation_profiles:
       - name: gateway
+        network_isolation: true
+        network_endpoints: [kubernetes]
+        network_peers:
+          - {direction: ingress, namespace: external, external_namespace: openshift-ingress, pod_label: ingresscontroller.operator.openshift.io/deployment-ingresscontroller, pod_value: default, port: 8080, protocol: TCP}
+          - {direction: ingress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 8080, protocol: TCP}
+          - {direction: egress, namespace: external, external_namespace: openshift-dns, pod_label: dns.operator.openshift.io/daemonset-dns, pod_value: default, port: 5353, protocol: UDP}
+          - {direction: egress, namespace: external, external_namespace: openshift-dns, pod_label: dns.operator.openshift.io/daemonset-dns, pod_value: default, port: 5353, protocol: TCP}
+          - {direction: egress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
+          - {direction: egress, namespace: control, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
+          - {direction: egress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
         namespace_prefix: openshell-
         suffix_length: 16
         owner_label: hypershell.redhat.io/gateway-id
@@ -171,6 +187,7 @@ overrides:
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
       - name: gateway-state
+        network_isolation: true
         identity_config_map: openshell-state-identity
         identity_annotations:
           - {field: sha256, key: hypershell.redhat.io/state-identity}

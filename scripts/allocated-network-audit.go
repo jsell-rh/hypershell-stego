@@ -27,6 +27,7 @@ import (
 
 func main() { os.Exit(run()) }
 func run() int {
+	must(os.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", `{"kubernetes":["192.0.2.1:443"]}`))
 	flags := flag.NewFlagSet("allocation-network-audit", flag.ContinueOnError)
 	extra := flags.Bool("additional-policy", false, "Add an unlabelled allow-all policy to the test fixture")
 	if flags.Parse(os.Args[1:]) != nil || flags.NArg() != 0 {

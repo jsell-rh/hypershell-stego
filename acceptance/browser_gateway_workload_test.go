@@ -52,6 +52,15 @@ type browserGatewayWorkload struct {
 
 func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessions *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
 	t.Helper()
+	var endpoints []string
+	if json.Unmarshal([]byte(os.Getenv("STEGO_TEST_KUBERNETES_EGRESS")), &endpoints) != nil || len(endpoints) == 0 {
+		t.Fatal("operator Kubernetes endpoints are missing")
+	}
+	bindings, err := json.Marshal(map[string][]string{"kubernetes": endpoints})
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", string(bindings))
 	issuer := os.Getenv("STEGO_TEST_GATEWAY_CLUSTER_ISSUER")
 	if issuer == "" {
 		t.Fatal("Gateway workflow requires an existing test ClusterIssuer")
@@ -165,6 +174,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		w.checkPublicCertificateRotation(gatewayID)
 	}
 	w.checkAllocationAccess()
+	w.checkGatewayNetworkIsolation("initial")
 	w.checkSQLFaultRecovery(gatewayID)
 	w.checkDatabaseRestart(gatewayID)
 	for _, restart := range w.restarts {
@@ -177,6 +187,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		w.t.Fatal("worker restart changed a database or credential identity")
 	}
 	w.checkNamespaceReplacement(gatewayID, viewer)
+	w.checkGatewayNetworkIsolation("after-recovery")
 	w.checkCredentialEncryption(gatewayID)
 }
 

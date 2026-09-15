@@ -29,6 +29,7 @@ func records(t *testing.T) (*pb.Gateway, *pb.GatewayRelease) {
 }
 func fixture(t *testing.T, handler http.HandlerFunc) *Kubernetes {
 	t.Helper()
+	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", `{"kubernetes":["192.0.2.1:443"]}`)
 	server := httptest.NewTLSServer(handler)
 	t.Cleanup(server.Close)
 	dir := t.TempDir()

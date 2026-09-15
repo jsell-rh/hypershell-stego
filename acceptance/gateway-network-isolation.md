@@ -1,3 +1,21 @@
+The working candidate now enables Gateway and state namespace policies. The
+Gateway declaration permits the selected OpenShift router, DNS Pods, test SQL,
+identity-provider, and telemetry Pods, plus operator-bound Kubernetes addresses.
+State namespaces permit no traffic. Reader roles can inspect the named policy
+and list the complete policy set. The copied component schema is now 1.15.0.
+
+The complete browser workflow now includes bounded probes in both Gateway
+namespaces before and after recovery. It checks fresh allowed connections and
+denied access to the other Gateway and the control API. Each denied target must
+have a live baseline from the permitted test client. Probe Pods mount no tokens
+or Secrets and have a 90-second deadline. The inspection fixture supplies Pod
+creation, log reading, and policy observation rights only in its bound namespaces.
+These probes have not run on the cluster yet. They do not establish complete
+network isolation. An unrelated namespace and live endpoint changes still need
+checks. The CNPG fixture needs its selected database Pod peer in the allocation
+profile. External RDS deployments need explicit operator endpoint declarations;
+the default test SQL peer does not permit an arbitrary external server.
+
 The current candidate `5043608` uses STEGO `5516e48`. Regeneration passed in both
 modules. Its [application CI](https://github.com/jsell-rh/hypershell-stego/actions/runs/35001051267)
 is pending. The endpoint change passed 168 live admission checks, full compiler

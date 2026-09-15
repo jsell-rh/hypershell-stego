@@ -24,6 +24,7 @@ import (
 
 type countNamespace struct {
 	owner, uid     string
+	policy         kube.Object
 	pods           []kube.Object
 	denied         bool
 	denials, opens int
@@ -39,6 +40,18 @@ type countKubernetes struct {
 func (k *countKubernetes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	k.mu.Lock()
 	parts := strings.Split(r.URL.Path, "/")
+	if r.Method == "GET" && r.Header.Get("Authorization") == "Bearer count-fixture" && len(parts) >= 7 && parts[1] == "apis" && parts[2] == "networking.k8s.io" && parts[3] == "v1" && parts[4] == "namespaces" && parts[6] == "networkpolicies" {
+		ns := k.namespaces[parts[5]]
+		if ns != nil && ((len(parts) == 8 && parts[7] == "stego-allocation") || (len(parts) == 7 && r.URL.Query().Get("limit") == "2" && r.URL.Query().Get("labelSelector") == "")) {
+			var result any = ns.policy
+			if len(parts) == 7 {
+				result = kube.Object{"metadata": kube.Object{"resourceVersion": "1"}, "items": []any{ns.policy}}
+			}
+			k.mu.Unlock()
+			_ = json.NewEncoder(w).Encode(result)
+			return
+		}
+	}
 	if r.Method != "GET" || r.Header.Get("Authorization") != "Bearer count-fixture" || len(parts) < 5 || len(parts) > 6 || parts[1] != "api" || parts[2] != "v1" || parts[3] != "namespaces" {
 		k.invalid++
 		k.mu.Unlock()
@@ -94,10 +107,11 @@ func (k *countKubernetes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
-func (k *countKubernetes) add(row *pb.Gateway, denied bool) {
+func (k *countKubernetes) add(t *testing.T, row *pb.Gateway, denied bool) {
+	policy := allocationPolicyFixture(t, "count-control", "gateway", row.Namespace, row.Metadata.Id)
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	k.namespaces[row.Namespace] = &countNamespace{owner: row.Metadata.Id, uid: "uid-" + row.Namespace, denied: denied, watches: map[chan kube.Object]bool{}}
+	k.namespaces[row.Namespace] = &countNamespace{policy: policy, owner: row.Metadata.Id, uid: "uid-" + row.Namespace, denied: denied, watches: map[chan kube.Object]bool{}}
 }
 func (k *countKubernetes) pod(t *testing.T, ns, uid string) {
 	t.Helper()
@@ -118,6 +132,7 @@ func (k *countKubernetes) pod(t *testing.T, ns, uid string) {
 // The Kubernetes endpoint is a TLS protocol fixture. This test proves the
 // generated process and API behavior; live Kubernetes RBAC needs its own gate.
 func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
+	t.Setenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS", `{"kubernetes":["192.0.2.1:443"]}`)
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
@@ -149,8 +164,8 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	}
 	one, two := create("namespace-one"), create("namespace-two")
 	provider := &countKubernetes{namespaces: map[string]*countNamespace{}}
-	provider.add(one, false)
-	provider.add(two, false)
+	provider.add(t, one, false)
+	provider.add(t, two, false)
 	server := httptest.NewTLSServer(provider)
 	defer server.Close()
 	files := t.TempDir()
@@ -216,7 +231,7 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	readGatewayEvent(t, consumer, two.Metadata.Id, "Update", "gateway.updated")
 	// A denied baseline must preserve the API value, including through rescan.
 	three := create("namespace-three")
-	provider.add(three, true)
+	provider.add(t, three, true)
 	if _, err := client.SetActiveSandboxCount(call(controller), &pb.SetActiveSandboxCountRequest{Namespace: three.Namespace, Count: 9}); err != nil {
 		t.Fatal(err)
 	}

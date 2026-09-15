@@ -121,9 +121,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 3535d77fac3420e9492949d7aa02bf618765c380df3a0b675a847fb50a91f062
+                sha256: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
                 mode: 420
-        sha256: 8861334090374187e7ef1a11b6d31b202524ed677cefb206e773d4999b4b66bb
+        sha256: c12875651747e29304df681eb7d6b3a5aaef9218a52007b5becbb1417f2aface
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -132,9 +132,9 @@ last_applied:
         vcs: git
         revision: 5516e4812ed6fd0ee03b521ecea20f7e9fc37860
         source_state: clean
-    service_hash: 3535d77fac3420e9492949d7aa02bf618765c380df3a0b675a847fb50a91f062
+    service_hash: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
     registry_sha: gateway-workflow
-    registry_content_sha256: fa54cffc74867324cc0255ae5640f4c3a8fd4f12be769c7a28400ab00ce479a9
+    registry_content_sha256: 6b785db9eed177604222e5983576c5752eca0ced8876c802eb8d583dd2d4ebb9
     components:
         browser-telemetry:
             version: 1.0.0
@@ -167,7 +167,7 @@ last_applied:
             version: 1.9.0
             sha: gateway-workflow
         kubernetes-service:
-            version: 1.12.0
+            version: 1.15.0
             sha: gateway-workflow
         otel-tracing:
             version: 1.14.0
@@ -456,14 +456,14 @@ last_applied:
         controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/allocation/allocation.go: 2e3cc6837c0b1583114c3abb597444efd22efbda6e2ab81c6ee42669fa081a5b
+        deploy/allocation/allocation.go: 031f81313090fb637d25271bbc2116d6e45619216c44ad05e1ec1484634cab6d
         deploy/render/main.go: 41268f1ff494e1632184841b1b607320e0404c03ca5b2fcd943427bcf7736551
         deploy/render/manifest.json.tmpl: 460eeec60b8155e9c62828142ba55a829ef3f24b594f581ba33d56fcd52ad60f
         deploy/render/rpc-provisioner.json.tmpl: 971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
-        deploy/render/worker-gateway-workload.json.tmpl: c4b6cf3ae94181c02847f989300fbeeea036679f333c4092af9f4b0a8f78b02b
-        deploy/render/worker-namespace-allocation.json.tmpl: b1a29da52174ea195eb5f601dd84e7a98ceb1d488c0d94159814048c1cfff3a7
-        deploy/render/worker-sandbox-count.json.tmpl: 962635b1d71def1bdc3503322cc4e8e4a2279be43649a4767a73d5631c40a454
+        deploy/render/worker-gateway-workload.json.tmpl: db594ca65bd58f02e7483848d680f5ffb975eb77a5e3bf82c9155c3ef51ba851
+        deploy/render/worker-namespace-allocation.json.tmpl: 44e501d8a8f6dd2f8ae80eb89a2dec7d1bf0755afa4ef2d23650b52049f2066d
+        deploy/render/worker-sandbox-count.json.tmpl: f8a205fb17feea43715c1ed6a4603983416a6c4c949a5c14a1094e5ac284bb74
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7
         deploy/rpc/provisioner/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
         deploy/workers/gateway-identity/Containerfile: 5f7395f954d74b6f2596b369c38a026e8c3c34213f7cadc9e51b20c09d1d2da9

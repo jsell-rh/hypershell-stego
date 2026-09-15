@@ -43,3 +43,10 @@ def kubernetes_endpoints(directory):
     if not 1 <= len(endpoints) <= 16:
         raise ValueError('The Kubernetes endpoint set exceeds its limit')
     return sorted(endpoints)
+
+
+if __name__ == '__main__':
+    import sys
+    if len(sys.argv) != 2:
+        raise SystemExit('Usage: kubernetes_endpoint_bindings.py SNAPSHOT_DIRECTORY')
+    print(json.dumps({'kubernetes': kubernetes_endpoints(sys.argv[1])}))

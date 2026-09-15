@@ -38,7 +38,7 @@ last_applied:
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: fa54cffc74867324cc0255ae5640f4c3a8fd4f12be769c7a28400ab00ce479a9
+    registry_content_sha256: 6b785db9eed177604222e5983576c5752eca0ced8876c802eb8d583dd2d4ebb9
     components:
         browser-backend:
             version: 1.6.1
@@ -47,7 +47,7 @@ last_applied:
             version: 1.0.0
             sha: browser-workflow
         kubernetes-service:
-            version: 1.12.0
+            version: 1.15.0
             sha: browser-workflow
         otel-tracing:
             version: 1.14.0

@@ -155,6 +155,9 @@
       "apiVersion": "apps/v1",
       "kind": "Deployment",
       "metadata": {
+        "annotations": {
+          "stego.dev/allocation-network-endpoints": "{\"gateway\":[\"kubernetes\"]}"
+        },
         "name": "hypershell-sandbox-count",
         "namespace": "{{.Namespace}}"
       },
@@ -196,6 +199,10 @@
                   {
                     "name": "OTEL_SERVICE_NAME",
                     "value": "hypershell-sandbox-count"
+                  },
+                  {
+                    "name": "STEGO_ALLOCATION_NETWORK_ENDPOINTS",
+                    "value": "stego_unrendered_allocation_endpoints"
                   }
                 ],
                 "envFrom": [

@@ -19,7 +19,10 @@ ROLES = '''      - name: fixture-gateway-inspector
         rules:
           - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
-          - {api_group: "", resources: [pods], verbs: [get, list, watch, delete]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+          - {api_group: "", resources: [pods], verbs: [get, list, watch, create, delete]}
+          - {api_group: "", resources: [pods/log], verbs: [get]}
           - {api_group: apps, resources: [deployments], resource_names: [openshell-gateway], verbs: [get, list, watch]}
           - {api_group: cert-manager.io, resources: [certificates], resource_names: [openshell-public-tls], verbs: [get]}
           - {api_group: cert-manager.io, resources: [certificates/status], resource_names: [openshell-public-tls], verbs: [update]}
@@ -28,6 +31,8 @@ ROLES = '''      - name: fixture-gateway-inspector
         rules:
           - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-state], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
 '''
 BINDINGS = [
     ('          - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}\n',
@@ -39,7 +44,7 @@ BINDINGS = [
 def declaration(source):
     if 'fixture-gateway-inspector' in source or 'fixture-state-inspector' in source:
         raise ValueError('The source already contains fixture inspection roles')
-    for boundary in ('      - name: gateway-state\n        identity_config_map:', '    workers:\n'):
+    for boundary in ('      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', '    workers:\n'):
         if source.count(boundary) != 1:
             raise ValueError('The production profile boundary changed')
     anchors = [('    allocation_roles:\n', ROLES), *BINDINGS]
@@ -52,7 +57,7 @@ def declaration(source):
     # and resource names stay unchanged. Move each to its profile's end.
     for _, addition in BINDINGS:
         result = result.replace(addition, '', 1)
-    result = result.replace('      - name: gateway-state\n        identity_config_map:', BINDINGS[0][1] + '      - name: gateway-state\n        identity_config_map:', 1)
+    result = result.replace('      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', BINDINGS[0][1] + '      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', 1)
     result = result.replace('    workers:\n', BINDINGS[1][1] + '    workers:\n', 1)
     restored = result.replace(ROLES, '', 1)
     for _, addition in BINDINGS:
@@ -109,15 +114,16 @@ def inspection_roles():
             value['resourceNames'] = names
         return value
     quota = rule('', 'resourcequotas', ['get'], ['stego-allocation'])
+    network = [rule('networking.k8s.io', 'networkpolicies', ['get'], ['stego-allocation']), rule('networking.k8s.io', 'networkpolicies', ['list'])]
     return [
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
-            quota, rule('', 'pods', ['delete', 'get', 'list', 'watch']),
+            quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']), rule('', 'pods/log', ['get']),
             rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway']),
             rule('cert-manager.io', 'certificates', ['get'], ['openshell-public-tls']),
             rule('cert-manager.io', 'certificates/status', ['update'], ['openshell-public-tls'])]},
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota]},
+            rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota, *network]},
     ]
 
 

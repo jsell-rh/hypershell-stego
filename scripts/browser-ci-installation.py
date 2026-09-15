@@ -121,7 +121,9 @@ def main():
                    '--result', str(args.results / ('allocation-cleanup.json' if args.action == 'cleanup' else 'allocation-preflight.json'))]
         if args.action == 'cleanup':
             command.append('--remove')
-        subprocess.run(command, check=True, timeout=195)
+        from kubernetes_endpoint_bindings import kubernetes_endpoints
+        environment = dict(os.environ, STEGO_ALLOCATION_NETWORK_ENDPOINTS=json.dumps({"kubernetes": kubernetes_endpoints(args.results)}))
+        subprocess.run(command, check=True, timeout=195, env=environment)
     print('Browser CI installation checked: ' + args.action)
 
 

@@ -48,6 +48,8 @@ timeout 60s env GOMAXPROCS=1 GOMEMLIMIT=256MiB GOWORK=off go build -p=1 -mod=rea
   -o "$results/allocation-recovery" scripts/browser-allocation-recovery.go
 ca=$results/ci-ca.pem
 [[ -s $ca ]] || ca=''
+STEGO_ALLOCATION_NETWORK_ENDPOINTS=$(python3 scripts/kubernetes_endpoint_bindings.py "$results")
+export STEGO_ALLOCATION_NETWORK_ENDPOINTS
 created=true
 "$results/allocation-recovery" --server "$(cat "$results/ci-server")" --ca-file "$ca" \
   --token-file "$results/ci-token" --result "$results/recovery-allocations.json"

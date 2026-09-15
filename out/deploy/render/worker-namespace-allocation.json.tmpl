@@ -5,6 +5,9 @@
       "apiVersion": "admissionregistration.k8s.io/v1",
       "kind": "ValidatingAdmissionPolicy",
       "metadata": {
+        "annotations": {
+          "stego.dev/allocation-network-endpoints": "{\"gateway\":[\"kubernetes\"]}"
+        },
         "name": "{{.Namespace}}.hypershell-namespace-allocation.allocation"
       },
       "spec": {
@@ -50,6 +53,22 @@
                 "rolebindings",
                 "clusterrolebindings"
               ]
+            },
+            {
+              "apiGroups": [
+                "networking.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "networkpolicies"
+              ]
             }
           ]
         },
@@ -77,12 +96,20 @@
           {
             "expression": "oldObject == null || (oldObject != null \u0026\u0026 has(oldObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in oldObject.metadata.labels \u0026\u0026 oldObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")",
             "message": "Allocator cannot change a foreign resource"
+          },
+          {
+            "expression": "request.resource.resource != 'networkpolicies' || (((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-[a-z0-9][a-z0-9-]{14}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 request.operation != 'DELETE' \u0026\u0026 variables.o.metadata.name == 'stego-allocation' \u0026\u0026 has(variables.o.spec) \u0026\u0026 has(variables.o.spec.podSelector) \u0026\u0026 (!has(variables.o.spec.podSelector.matchLabels) || size(variables.o.spec.podSelector.matchLabels) == 0) \u0026\u0026 (!has(variables.o.spec.podSelector.matchExpressions) || size(variables.o.spec.podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.policyTypes) \u0026\u0026 size(variables.o.spec.policyTypes) == 2 \u0026\u0026 'Ingress' in variables.o.spec.policyTypes \u0026\u0026 'Egress' in variables.o.spec.policyTypes \u0026\u0026 (has(variables.o.spec.ingress) \u0026\u0026 size(variables.o.spec.ingress) == 2 \u0026\u0026 has(variables.o.spec.ingress[0].from) \u0026\u0026 size(variables.o.spec.ingress[0].from) == 1 \u0026\u0026 !has(variables.o.spec.ingress[0].from[0].ipBlock) \u0026\u0026 has(variables.o.spec.ingress[0].from[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.ingress[0].from[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.ingress[0].from[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.ingress[0].from[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.ingress[0].from[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"openshift-ingress\" \u0026\u0026 (!has(variables.o.spec.ingress[0].from[0].namespaceSelector.matchExpressions) || size(variables.o.spec.ingress[0].from[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.ingress[0].from[0].podSelector) \u0026\u0026 has(variables.o.spec.ingress[0].from[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.ingress[0].from[0].podSelector.matchLabels) == 1 \u0026\u0026 \"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\" in variables.o.spec.ingress[0].from[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.ingress[0].from[0].podSelector.matchLabels[\"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\"] == \"default\" \u0026\u0026 (!has(variables.o.spec.ingress[0].from[0].podSelector.matchExpressions) || size(variables.o.spec.ingress[0].from[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.ingress[0].ports) \u0026\u0026 size(variables.o.spec.ingress[0].ports) == 1 \u0026\u0026 has(variables.o.spec.ingress[0].ports[0].port) \u0026\u0026 variables.o.spec.ingress[0].ports[0].port == 8080 \u0026\u0026 has(variables.o.spec.ingress[0].ports[0].protocol) \u0026\u0026 variables.o.spec.ingress[0].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.ingress[0].ports[0].endPort) \u0026\u0026 has(variables.o.spec.ingress[1].from) \u0026\u0026 size(variables.o.spec.ingress[1].from) == 1 \u0026\u0026 !has(variables.o.spec.ingress[1].from[0].ipBlock) \u0026\u0026 has(variables.o.spec.ingress[1].from[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.ingress[1].from[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.ingress[1].from[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.ingress[1].from[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.ingress[1].from[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"{{.Namespace}}\" \u0026\u0026 (!has(variables.o.spec.ingress[1].from[0].namespaceSelector.matchExpressions) || size(variables.o.spec.ingress[1].from[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.ingress[1].from[0].podSelector) \u0026\u0026 has(variables.o.spec.ingress[1].from[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.ingress[1].from[0].podSelector.matchLabels) == 1 \u0026\u0026 \"app\" in variables.o.spec.ingress[1].from[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.ingress[1].from[0].podSelector.matchLabels[\"app\"] == \"stego-fixture\" \u0026\u0026 (!has(variables.o.spec.ingress[1].from[0].podSelector.matchExpressions) || size(variables.o.spec.ingress[1].from[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.ingress[1].ports) \u0026\u0026 size(variables.o.spec.ingress[1].ports) == 1 \u0026\u0026 has(variables.o.spec.ingress[1].ports[0].port) \u0026\u0026 variables.o.spec.ingress[1].ports[0].port == 8080 \u0026\u0026 has(variables.o.spec.ingress[1].ports[0].protocol) \u0026\u0026 variables.o.spec.ingress[1].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.ingress[1].ports[0].endPort)) \u0026\u0026 (has(variables.o.spec.egress) \u0026\u0026 size(variables.o.spec.egress) == 5 + size(variables.networkEndpoints[\"gateway\"]) \u0026\u0026 variables.networkEndpoints[\"gateway\"].all(endpoint, variables.o.spec.egress.exists(rule, has(rule.to) \u0026\u0026 size(rule.to) == 1 \u0026\u0026 has(rule.to[0].ipBlock) \u0026\u0026 rule.to[0].ipBlock.cidr == endpoint.cidr \u0026\u0026 (!has(rule.to[0].ipBlock.except) || size(rule.to[0].ipBlock.except) == 0) \u0026\u0026 !has(rule.to[0].namespaceSelector) \u0026\u0026 !has(rule.to[0].podSelector) \u0026\u0026 has(rule.ports) \u0026\u0026 size(rule.ports) == 1 \u0026\u0026 has(rule.ports[0].port) \u0026\u0026 rule.ports[0].port == int(endpoint.port) \u0026\u0026 has(rule.ports[0].protocol) \u0026\u0026 rule.ports[0].protocol == 'TCP' \u0026\u0026 !has(rule.ports[0].endPort))) \u0026\u0026 has(variables.o.spec.egress[0].to) \u0026\u0026 size(variables.o.spec.egress[0].to) == 1 \u0026\u0026 !has(variables.o.spec.egress[0].to[0].ipBlock) \u0026\u0026 has(variables.o.spec.egress[0].to[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.egress[0].to[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[0].to[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.egress[0].to[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.egress[0].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"openshift-dns\" \u0026\u0026 (!has(variables.o.spec.egress[0].to[0].namespaceSelector.matchExpressions) || size(variables.o.spec.egress[0].to[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[0].to[0].podSelector) \u0026\u0026 has(variables.o.spec.egress[0].to[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[0].to[0].podSelector.matchLabels) == 1 \u0026\u0026 \"dns.operator.openshift.io/daemonset-dns\" in variables.o.spec.egress[0].to[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.egress[0].to[0].podSelector.matchLabels[\"dns.operator.openshift.io/daemonset-dns\"] == \"default\" \u0026\u0026 (!has(variables.o.spec.egress[0].to[0].podSelector.matchExpressions) || size(variables.o.spec.egress[0].to[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[0].ports) \u0026\u0026 size(variables.o.spec.egress[0].ports) == 1 \u0026\u0026 has(variables.o.spec.egress[0].ports[0].port) \u0026\u0026 variables.o.spec.egress[0].ports[0].port == 5353 \u0026\u0026 has(variables.o.spec.egress[0].ports[0].protocol) \u0026\u0026 variables.o.spec.egress[0].ports[0].protocol == \"UDP\" \u0026\u0026 !has(variables.o.spec.egress[0].ports[0].endPort) \u0026\u0026 has(variables.o.spec.egress[1].to) \u0026\u0026 size(variables.o.spec.egress[1].to) == 1 \u0026\u0026 !has(variables.o.spec.egress[1].to[0].ipBlock) \u0026\u0026 has(variables.o.spec.egress[1].to[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.egress[1].to[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[1].to[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.egress[1].to[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.egress[1].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"openshift-dns\" \u0026\u0026 (!has(variables.o.spec.egress[1].to[0].namespaceSelector.matchExpressions) || size(variables.o.spec.egress[1].to[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[1].to[0].podSelector) \u0026\u0026 has(variables.o.spec.egress[1].to[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[1].to[0].podSelector.matchLabels) == 1 \u0026\u0026 \"dns.operator.openshift.io/daemonset-dns\" in variables.o.spec.egress[1].to[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.egress[1].to[0].podSelector.matchLabels[\"dns.operator.openshift.io/daemonset-dns\"] == \"default\" \u0026\u0026 (!has(variables.o.spec.egress[1].to[0].podSelector.matchExpressions) || size(variables.o.spec.egress[1].to[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[1].ports) \u0026\u0026 size(variables.o.spec.egress[1].ports) == 1 \u0026\u0026 has(variables.o.spec.egress[1].ports[0].port) \u0026\u0026 variables.o.spec.egress[1].ports[0].port == 5353 \u0026\u0026 has(variables.o.spec.egress[1].ports[0].protocol) \u0026\u0026 variables.o.spec.egress[1].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.egress[1].ports[0].endPort) \u0026\u0026 has(variables.o.spec.egress[2].to) \u0026\u0026 size(variables.o.spec.egress[2].to) == 1 \u0026\u0026 !has(variables.o.spec.egress[2].to[0].ipBlock) \u0026\u0026 has(variables.o.spec.egress[2].to[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.egress[2].to[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[2].to[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.egress[2].to[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.egress[2].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"{{.Namespace}}\" \u0026\u0026 (!has(variables.o.spec.egress[2].to[0].namespaceSelector.matchExpressions) || size(variables.o.spec.egress[2].to[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[2].to[0].podSelector) \u0026\u0026 has(variables.o.spec.egress[2].to[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[2].to[0].podSelector.matchLabels) == 1 \u0026\u0026 \"app\" in variables.o.spec.egress[2].to[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.egress[2].to[0].podSelector.matchLabels[\"app\"] == \"stego-fixture\" \u0026\u0026 (!has(variables.o.spec.egress[2].to[0].podSelector.matchExpressions) || size(variables.o.spec.egress[2].to[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[2].ports) \u0026\u0026 size(variables.o.spec.egress[2].ports) == 1 \u0026\u0026 has(variables.o.spec.egress[2].ports[0].port) \u0026\u0026 variables.o.spec.egress[2].ports[0].port == 5432 \u0026\u0026 has(variables.o.spec.egress[2].ports[0].protocol) \u0026\u0026 variables.o.spec.egress[2].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.egress[2].ports[0].endPort) \u0026\u0026 has(variables.o.spec.egress[3].to) \u0026\u0026 size(variables.o.spec.egress[3].to) == 1 \u0026\u0026 !has(variables.o.spec.egress[3].to[0].ipBlock) \u0026\u0026 has(variables.o.spec.egress[3].to[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.egress[3].to[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[3].to[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.egress[3].to[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.egress[3].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"{{.Namespace}}\" \u0026\u0026 (!has(variables.o.spec.egress[3].to[0].namespaceSelector.matchExpressions) || size(variables.o.spec.egress[3].to[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[3].to[0].podSelector) \u0026\u0026 has(variables.o.spec.egress[3].to[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[3].to[0].podSelector.matchLabels) == 1 \u0026\u0026 \"app\" in variables.o.spec.egress[3].to[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.egress[3].to[0].podSelector.matchLabels[\"app\"] == \"identity-fixture\" \u0026\u0026 (!has(variables.o.spec.egress[3].to[0].podSelector.matchExpressions) || size(variables.o.spec.egress[3].to[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[3].ports) \u0026\u0026 size(variables.o.spec.egress[3].ports) == 1 \u0026\u0026 has(variables.o.spec.egress[3].ports[0].port) \u0026\u0026 variables.o.spec.egress[3].ports[0].port == 8443 \u0026\u0026 has(variables.o.spec.egress[3].ports[0].protocol) \u0026\u0026 variables.o.spec.egress[3].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.egress[3].ports[0].endPort) \u0026\u0026 has(variables.o.spec.egress[4].to) \u0026\u0026 size(variables.o.spec.egress[4].to) == 1 \u0026\u0026 !has(variables.o.spec.egress[4].to[0].ipBlock) \u0026\u0026 has(variables.o.spec.egress[4].to[0].namespaceSelector) \u0026\u0026 has(variables.o.spec.egress[4].to[0].namespaceSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[4].to[0].namespaceSelector.matchLabels) == 1 \u0026\u0026 \"kubernetes.io/metadata.name\" in variables.o.spec.egress[4].to[0].namespaceSelector.matchLabels \u0026\u0026 variables.o.spec.egress[4].to[0].namespaceSelector.matchLabels[\"kubernetes.io/metadata.name\"] == \"{{.Namespace}}\" \u0026\u0026 (!has(variables.o.spec.egress[4].to[0].namespaceSelector.matchExpressions) || size(variables.o.spec.egress[4].to[0].namespaceSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[4].to[0].podSelector) \u0026\u0026 has(variables.o.spec.egress[4].to[0].podSelector.matchLabels) \u0026\u0026 size(variables.o.spec.egress[4].to[0].podSelector.matchLabels) == 1 \u0026\u0026 \"app\" in variables.o.spec.egress[4].to[0].podSelector.matchLabels \u0026\u0026 variables.o.spec.egress[4].to[0].podSelector.matchLabels[\"app\"] == \"stego-fixture\" \u0026\u0026 (!has(variables.o.spec.egress[4].to[0].podSelector.matchExpressions) || size(variables.o.spec.egress[4].to[0].podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.egress[4].ports) \u0026\u0026 size(variables.o.spec.egress[4].ports) == 1 \u0026\u0026 has(variables.o.spec.egress[4].ports[0].port) \u0026\u0026 variables.o.spec.egress[4].ports[0].port == 19093 \u0026\u0026 has(variables.o.spec.egress[4].ports[0].protocol) \u0026\u0026 variables.o.spec.egress[4].ports[0].protocol == \"TCP\" \u0026\u0026 !has(variables.o.spec.egress[4].ports[0].endPort))) || ((((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] == \"gateway-state\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 (namespaceObject.metadata.name != '{{.Namespace}}' \u0026\u0026 namespaceObject.metadata.name.matches(\"^openshell-state-[a-z0-9][a-z0-9-]{38}[a-z0-9]$\")) \u0026\u0026 ((variables.o != null \u0026\u0026 has(variables.o.metadata.labels) \u0026\u0026 'stego.dev/allocator' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['stego.dev/allocation-profile'] == \"gateway-state\" \u0026\u0026 \"hypershell.redhat.io/gateway-id\" in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"].matches('^[A-Za-z0-9]([A-Za-z0-9_.-]{0,61}[A-Za-z0-9])?$') \u0026\u0026 'app.kubernetes.io/managed-by' in variables.o.metadata.labels \u0026\u0026 variables.o.metadata.labels['app.kubernetes.io/managed-by'] == \"hypershell-gateway-controller\") \u0026\u0026 variables.o.metadata.labels[\"hypershell.redhat.io/gateway-id\"] == namespaceObject.metadata.labels[\"hypershell.redhat.io/gateway-id\"] \u0026\u0026 variables.o.metadata.namespace == namespaceObject.metadata.name) \u0026\u0026 request.operation != 'DELETE' \u0026\u0026 variables.o.metadata.name == 'stego-allocation' \u0026\u0026 has(variables.o.spec) \u0026\u0026 has(variables.o.spec.podSelector) \u0026\u0026 (!has(variables.o.spec.podSelector.matchLabels) || size(variables.o.spec.podSelector.matchLabels) == 0) \u0026\u0026 (!has(variables.o.spec.podSelector.matchExpressions) || size(variables.o.spec.podSelector.matchExpressions) == 0) \u0026\u0026 has(variables.o.spec.policyTypes) \u0026\u0026 size(variables.o.spec.policyTypes) == 2 \u0026\u0026 'Ingress' in variables.o.spec.policyTypes \u0026\u0026 'Egress' in variables.o.spec.policyTypes \u0026\u0026 (!has(variables.o.spec.ingress) || size(variables.o.spec.ingress) == 0) \u0026\u0026 (!has(variables.o.spec.egress) || size(variables.o.spec.egress) == 0)))",
+            "message": "Network policy must match its allocation profile"
           }
         ],
         "variables": [
           {
             "expression": "object != null ? object : oldObject",
             "name": "o"
+          },
+          {
+            "expression": "stego_unrendered_allocation_endpoints",
+            "name": "networkEndpoints"
           }
         ]
       }
@@ -171,7 +198,7 @@
         "failurePolicy": "Fail",
         "matchConditions": [
           {
-            "expression": "!has(request.name) || (request.resource.resource == 'resourcequotas' ? request.name == 'stego-allocation' : request.name.startsWith(\"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-\"))",
+            "expression": "(request.resource.resource == 'networkpolicies' || (!has(request.name) || (request.resource.resource == 'resourcequotas' ? request.name == 'stego-allocation' : request.name.startsWith(\"stego-{{allocationID .Namespace `hypershell-namespace-allocation`}}-\"))))",
             "name": "selected-identity"
           }
         ],
@@ -208,13 +235,29 @@
               "resources": [
                 "rolebindings"
               ]
+            },
+            {
+              "apiGroups": [
+                "networking.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "networkpolicies"
+              ]
             }
           ]
         },
         "validations": [
           {
-            "expression": "!((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")) || request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\" || (request.operation == 'DELETE' \u0026\u0026 has(namespaceObject.metadata.deletionTimestamp))",
-            "message": "Only the allocator can change allocation limits and bindings"
+            "expression": "(request.resource.resource == 'networkpolicies' \u0026\u0026 has(request.name) \u0026\u0026 request.name != 'stego-allocation' \u0026\u0026 !((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\") \u0026\u0026 'stego.dev/allocation-profile' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocation-profile'] in [\"gateway\",\"gateway-state\"])) || (!((namespaceObject != null \u0026\u0026 has(namespaceObject.metadata.labels) \u0026\u0026 'stego.dev/allocator' in namespaceObject.metadata.labels \u0026\u0026 namespaceObject.metadata.labels['stego.dev/allocator'] == \"{{allocationID .Namespace `hypershell-namespace-allocation`}}\")) || request.userInfo.username == \"system:serviceaccount:{{.Namespace}}:hypershell-namespace-allocation\" || (request.operation == 'DELETE' \u0026\u0026 has(namespaceObject.metadata.deletionTimestamp)))",
+            "message": "Only the allocator can change allocation limits, bindings, and isolated network policies"
           }
         ],
         "variables": [
@@ -257,6 +300,31 @@
             "list",
             "watch"
           ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resourceNames": [
+            "stego-allocation"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "list"
+          ]
         }
       ]
     },
@@ -278,6 +346,31 @@
           "verbs": [
             "create",
             "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resourceNames": [
+            "stego-allocation"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "list"
           ]
         }
       ]
@@ -303,6 +396,31 @@
             "create",
             "get",
             "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resourceNames": [
+            "stego-allocation"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "list"
           ]
         },
         {
@@ -560,6 +678,33 @@
           "verbs": [
             "bind"
           ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resourceNames": [
+            "stego-allocation"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "create",
+            "list"
+          ]
         }
       ]
     },
@@ -697,6 +842,9 @@
       "apiVersion": "apps/v1",
       "kind": "Deployment",
       "metadata": {
+        "annotations": {
+          "stego.dev/allocation-network-endpoints": "{\"gateway\":[\"kubernetes\"]}"
+        },
         "name": "hypershell-namespace-allocation",
         "namespace": "{{.Namespace}}"
       },
@@ -738,6 +886,10 @@
                   {
                     "name": "OTEL_SERVICE_NAME",
                     "value": "hypershell-namespace-allocation"
+                  },
+                  {
+                    "name": "STEGO_ALLOCATION_NETWORK_ENDPOINTS",
+                    "value": "stego_unrendered_allocation_endpoints"
                   }
                 ],
                 "envFrom": [
