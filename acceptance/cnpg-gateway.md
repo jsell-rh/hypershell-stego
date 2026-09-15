@@ -1,3 +1,8 @@
+> Historical result or design. This file uses the retired database catalog
+> and server controller. It does not prove the current installation-supplied
+> PostgreSQL model. See the [current database contract](controller-local-database.md)
+> and [test conversion record](controller-local-test-transition.md).
+
 The complete fresh-cluster CNPG Gateway gate passed on 2026-09-10 with race
 detection. The workflow took 334.73 seconds; the acceptance package took
 335.777 seconds. It used compiler `b3886715adfb6cdad57c099bd33351fe65ca83d5`.

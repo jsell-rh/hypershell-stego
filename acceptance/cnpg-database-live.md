@@ -1,3 +1,8 @@
+> Historical result or design. This file uses the retired database catalog
+> and server controller. It does not prove the current installation-supplied
+> PostgreSQL model. See the [current database contract](controller-local-database.md)
+> and [test conversion record](controller-local-test-transition.md).
+
 # CNPG database acceptance on jshell
 
 On 2026-09-14, the bounded CNPG run passed all three required race tests:

@@ -343,22 +343,22 @@ and production acceptance remain open.
 
 The [generated apply workflow](acceptance/cli-apply.md) now creates and patches
 catalogs and Gateways from resource documents. It checks dry runs without API
-contact, complete preflight, partial failures, access, events, restart, and both
-database modes. [RoleBinding apply](acceptance/cli-immutable-apply.md) also creates
+contact, complete preflight, partial failures, access, events, and restart.
+The converted tests use installation-supplied SQL. [RoleBinding apply](acceptance/cli-immutable-apply.md) also creates
 grants and recognizes an exact existing match without a write. The common
 runtime is supplied by STEGO. Kustomize rendering and the complete CLI port
 remain open.
 Recovery now uses [generated storage cursors](acceptance/storage-cursors.md) for
-Gateway IDs, deleted databases, and service accounts. These queries preserve
+Gateway IDs and service accounts. These queries preserve
 access and state filters without unused counts or application-built ID searches.
 
 Controllers use [generated observation budgets](acceptance/observation-deadlines.md)
 to leave time for a conditional status or cleanup write after a provider timeout.
 Five workflows check failure, event delivery, API restart, and recovery.
 
-[Database recovery](acceptance/database-recovery.md) now uses one generated
-cursor stream for live and retained deleted IDs. Public list shapes remain
-unchanged. The controller checks the replay scope before it accepts any IDs.
+The historical [database recovery record](acceptance/database-recovery.md)
+describes the retired database catalog. The current Gateway controller retains
+SQL cleanup work on the Gateway and checks its assigned controller scope.
 
 The compiler now protects [generated Go symbol bindings](https://github.com/jsell-rh/stego/blob/main/specs/symbol-bindings.md),
 including import names, constructor names, and fill aliases. The pin upgrade
@@ -419,8 +419,8 @@ Generated state records the declaration, configuration, module files, and declar
 protobuf inputs. See [project input records](acceptance/project-inputs.md) for the
 manifest checks and their limits.
 
-The database, Gateway workload, Gateway identity, and sandbox-count controllers
-use STEGO-generated worker commands. Their main functions, signals, health
+The namespace allocator, Gateway workload, Gateway identity, and sandbox-count
+controllers use STEGO-generated worker commands. Their main functions, signals, health
 probes, safe process errors, and [controller metrics](acceptance/controller-metrics.md)
 come from STEGO. Domain provider setup remains under `internal/`.
 Set `STEGO_CONTROLLER_MONITOR_ADDR` to an available literal loopback address.
@@ -433,11 +433,11 @@ resources and the oldest deletion time for an authorized owner and target.
 The generated sampler runs independently of recovery scans and reports failed
 reads as unavailable. Summary responses and metrics contain no resource IDs.
 
-The [CNPG database workflow](acceptance/cnpg-database.md) uses the generated
-controller runtime for the shared managed-database provider. It has a separate
-real Kubernetes acceptance gate. The [CNPG Gateway workflow](acceptance/cnpg-gateway.md)
-adds separate SQL identities, retained keys, application calls, and SQL-confirmed
-cleanup on that shared Cluster. Its record states the test result and limits.
+The historical [CNPG database workflow](acceptance/cnpg-database.md) and
+[CNPG Gateway workflow](acceptance/cnpg-gateway.md) tested the retired server
+controller. The current installation owns CNPG or RDS infrastructure. Its
+Gateway controller manages logical SQL resources through STEGO. A new CNPG
+installation workflow remains required; the old results do not prove it.
 
 Generated [process failure records](acceptance/process-failure-privacy.md) report
 the failed step without private database or component error text. A Gateway

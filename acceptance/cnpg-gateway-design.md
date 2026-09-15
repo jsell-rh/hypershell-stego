@@ -1,3 +1,8 @@
+> Historical result or design. This file uses the retired database catalog
+> and server controller. It does not prove the current installation-supplied
+> PostgreSQL model. See the [current database contract](controller-local-database.md)
+> and [test conversion record](controller-local-test-transition.md).
+
 The next CNPG gate must run a real Gateway against the shared database. It must
 cover two Gateway identities, separate SQL roles and databases, encrypted
 connections, access denial, stored encrypted data, restart, drift repair, and
