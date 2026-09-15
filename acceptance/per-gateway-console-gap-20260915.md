@@ -160,8 +160,8 @@ registrations with an exact callback path and no port.
 The real Keycloak test passed for IPv4 and IPv6 policies. It verified login,
 wrong-verifier rejection, denied callback changes, code reuse denial, signed
 claims, attribute repair, and device-authorization request policy. The runtime
-took 45.19 seconds, and container cleanup passed. The full compiler job was
-still running when this record was written. Device user approval and token
+took 45.19 seconds, and container cleanup passed. All five STEGO CI jobs passed.
+Device user approval and token
 exchange are not yet covered. Earlier failures and cleanup records remain in
 the STEGO provider record.
 
@@ -171,3 +171,18 @@ ownership migration must precede adoption. Then the existing Gateway and
 service-account workflows must pass with the common provider. Hypershell keeps
 its role names, claim paths, audiences, and ownership values as application
 policy. No application source reduction is claimed by this provider test.
+
+STEGO now provides checked native enablement through `NativeAccessPolicy` and
+`ReconcileNativeClientAccess`. The real Keycloak test passed at
+`f27377f7c09eeffd5e8912f0754309a67c63baf3` in
+[run 35033171244](https://github.com/jsell-rh/stego/actions/runs/35033171244).
+Both policies used that operation for setup and drift repair, then completed
+login and the signed-claim checks. The runtime took 47.01 seconds, and container
+cleanup passed. Full compiler CI was still running when this record was written.
+Small generated tests also cover uncertain enablement, failed checks, cleanup,
+caller cancellation, unchanged state, and changed ownership.
+
+The first extraction still requires the service-account token check and checked
+enablement. Existing service-account rows hold provider IDs; Gateway state does
+not. Adoption must preserve or explicitly migrate those bindings. This record
+does not change the application compiler pin or its provider implementation.
