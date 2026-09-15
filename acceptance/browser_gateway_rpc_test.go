@@ -8,6 +8,7 @@ import (
 
 	protocol "github.com/jsell-rh/hypershell-stego/contracts/gateway"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	"github.com/jsell-rh/hypershell-stego/out/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
@@ -69,9 +70,24 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	}
 	owner := w.identity.browserLogin(w.t, w.audience(id), "console-alice")
 	other := w.identity.browserLogin(w.t, w.audience(id), "console-bob")
-	for _, value := range []string{"", "forged", w.identity.browserLogin(w.t, "hypershell", "console-alice")} {
-		if _, err := w.call("GetCurrentUser", value, `{}`); status.Code(err) != codes.Unauthenticated {
-			w.t.Fatal("Gateway accepted invalid identity", status.Code(err))
+	apiToken := w.identity.browserLogin(w.t, "hypershell", "console-alice")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	keys, err := w.identity.http.Do(ctx, "GET", "/realms/workflow/protocol/openid-connect/certs", nil, nil)
+	cancel()
+	if err != nil || keys.StatusCode != 200 {
+		w.t.Fatal("provider keys unavailable for the negative audience check")
+	}
+	config := auth.Config{Issuer: w.identity.options.ServerURL + "/realms/workflow", Audience: "hypershell", RolesClaim: "resource_access.hypershell.roles"}
+	if _, err := auth.VerifyWithJWKS(config, apiToken, keys.Body); err != nil {
+		w.t.Fatal("negative audience fixture is not a valid API token")
+	}
+	config.Audience = w.audience(id)
+	if _, err := auth.VerifyWithJWKS(config, apiToken, keys.Body); err == nil {
+		w.t.Fatal("negative audience fixture contains the Gateway audience")
+	}
+	for _, test := range []struct{ name, bearer string }{{"missing", ""}, {"malformed", "forged"}, {"wrong-audience", apiToken}} {
+		if _, err := w.call("GetCurrentUser", test.bearer, `{}`); status.Code(err) != codes.Unauthenticated {
+			w.t.Fatal("Gateway accepted invalid identity", test.name, status.Code(err))
 		}
 	}
 	if _, err := w.call("GetProvider", other, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {

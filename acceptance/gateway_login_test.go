@@ -151,7 +151,7 @@ func (k *keycloakFixture) browserLogin(t *testing.T, clientID, username string) 
 func (k *keycloakFixture) apiLoginSetup(t *testing.T) ([]string, []byte) {
 	t.Helper()
 	audience := map[string]any{"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"}}
-	response := k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell", "protocol": "openid-connect", "publicClient": true, "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{"http://127.0.0.1:7777/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256"}, "protocolMappers": []any{audience}})
+	response := k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell", "protocol": "openid-connect", "publicClient": true, "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": false, "redirectUris": []string{"http://127.0.0.1:7777/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256"}, "protocolMappers": []any{audience}})
 	location, _ := url.Parse(response.Header.Get("Location"))
 	clientPath := strings.TrimPrefix(location.Path, "/admin/realms/workflow")
 	k.adminRequest(t, "POST", clientPath+"/roles", map[string]string{"name": "gateway:creator"})
@@ -334,6 +334,14 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 		}
 	}
 	ownerGatewayToken := waitRoles("alice", aliceID, []string{keycloak.RoleAdmin, keycloak.RoleUser})
+	// Grant synchronization must not add Gateway audiences to a new API token.
+	freshAPIToken := k.browserLogin(t, "hypershell", "alice")
+	if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: "hypershell", RolesClaim: "resource_access.hypershell.roles"}, freshAPIToken, jwks); err != nil {
+		t.Fatal("fresh API token is invalid")
+	}
+	if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: gatewayClient, RolesClaim: "hypershell.roles"}, freshAPIToken, jwks); err == nil {
+		t.Fatal("API login fixture added Gateway audience authority")
+	}
 	if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: "hypershell", RolesClaim: "hypershell.roles"}, ownerGatewayToken, jwks); err == nil {
 		t.Fatal("Gateway token carries API audience authority")
 	}
