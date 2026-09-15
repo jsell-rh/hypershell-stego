@@ -1,0 +1,142 @@
+{
+  "scope": "Five failed attempts to complete the controller-local PostgreSQL browser workflow.",
+  "source_commit": "75b9332",
+  "result": "The complete browser workflow remains open.",
+  "latest_passed_stages": [
+    "Two Gateways with verified PostgreSQL TLS and separate restricted logins.",
+    "Denied cross-database connections.",
+    "Verified Gateway RPC, denied calls, and stored provider recovery after Gateway Pod replacement.",
+    "Fifteen worker RBAC checks and five generated admission denials.",
+    "Stable SQL and credential identities after all three worker Pods were replaced.",
+    "REST and gRPC access checks after API and console replacement, before the rendered collector-outage step."
+  ],
+  "latest_failure_observation": {
+    "page": "Gateway could not load",
+    "session_and_api_http_status": 503,
+    "session_state": "refreshing",
+    "observed_refresh_age_seconds": 20.32
+  },
+  "limits": [
+    "The tests use the explicit 126-file transition list. Three old live files still block the complete acceptance build.",
+    "Direct apply and drift ran twice. Full dependency checks remain required.",
+    "Normal Gateway deletion and final event/telemetry checks were not reached in the latest attempt.",
+    "CNPG and RDS deployment, server restart, and early deletion remain open."
+  ],
+  "attempts": [
+    {
+      "directory": "/tmp/stego-service-results.WMQNUC0p",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (272.25s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "Runtime SQL role lacked schema-generation read access.",
+      "generation_records_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-eed9e0",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "980a1f6c6fac4bed2147dbfa5c7d446b5796e579c367ced26f6ccd3626d56441",
+        "deployment.log": "cbf42ca11c4e3c5a55477353927ccdcd73ca69154f2fce19298e7cfbf09323e7",
+        "job-status.json": "8f4da91d7659afbf229fd5e5865586026b05e97293daf0b685f12aee14d5c038",
+        "cleanup.json": "cb572120d1c12b94d0992ec114b5bd5628b641d95345b6839c5345dd66894d70",
+        "evidence.tar": "c76550ce3b75fe04e38fd6013dc5233f15f1034a9f73d490dea578d106fbddab"
+      }
+    },
+    {
+      "directory": "/tmp/stego-service-results.C6QF1Xrg",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (350.14s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "SQL egress included the Service IP without the backing Pod IP.",
+      "generation_records_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-edd07a",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "7a6fbe9c23cbddab7c5d6e15a4bd712c01df66e5d8edfed3b1c9c68224a1b952",
+        "deployment.log": "16c1a705f9bf8cbcddf4fedfdfed845b533c95caf70f355bdb091fd8569cbcf2",
+        "job-status.json": "81e62a3e15e95338d410ffc43b139b4bcd473a1e743aa5efa35250ff9db4d438",
+        "cleanup.json": "4f28a48556b320a0194c49bfab83f7748cbf209541629eb93f76545caebe1966",
+        "evidence.tar": "b8b08d9ac272c803a8d7a106699da0f35bfdd46a1634945908860517ec80243a"
+      }
+    },
+    {
+      "directory": "/tmp/stego-service-results.VyH1T6dt",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (355.56s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "The fixture used a CA certificate as a server certificate.",
+      "generation_records_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-df6c78",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "d801ff615a4651f3140eba0a6f748319acbd72c7780b926e741c46c4f24dc346",
+        "deployment.log": "62976b9be6bb1cd0d8e3ad6d3ea70d81fed14c58ea042d0a2ea8dbd041f38aa1",
+        "job-status.json": "ee986c935f756932e40e2bcfcb152df526f3c220a3b8fc3ccc732a9ce211f895",
+        "cleanup.json": "ab8454d8e207321bc5a7f19a059cb1f4cab39efdca87a584a2fd908a0295adc0",
+        "evidence.tar": "e70744a32246fd44bcfd935d9f2e919f4a215a81a1dbb3ad912659af659dd5c1"
+      }
+    },
+    {
+      "directory": "/tmp/stego-service-results.ZfDTu6jj",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (193.60s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "The test expected no allocator namespace patch grant, but public identity records require it.",
+      "generation_records_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-45c099",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "3896616e832c96c87668166b2e58ac240f2411fb22427904020460d5afde34aa",
+        "deployment.log": "0ff7013e6e072f1d16aab4011614e6b192cd1f3458824bb0e0393e24e096f11a",
+        "job-status.json": "341f2b615c9f099dffc9b38d0ac9c033fc801227a32d97c35c7e5a743b6117e1",
+        "cleanup.json": "bec70b8dc9dcf5960e12817e08d5d2472256b81a3fe5c6e5013256c594c19ec6",
+        "evidence.tar": "5ec99e02925de47af733905ffd5602e783f485b7d36bcdaf59147421d4642d30"
+      }
+    },
+    {
+      "directory": "/tmp/stego-service-results.olFYGvrR",
+      "result": [
+        "TestGeneratedKubernetesBrowserGatewayWorkflow (251.20s)"
+      ],
+      "deployment_exit": "123",
+      "failure": "The rendered browser received session-renewal 503 responses after console replacement during collector failure. The cause remains under investigation.",
+      "generation_records_sha256": {
+        "first.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756",
+        "second.sha256": "8b1030c437c67e5afccc8d0debdae934518be16a2f96b55058e28e060f61c756"
+      },
+      "cleanup": {
+        "namespace_absent": "stego-service-20260915-5fdb0b",
+        "owned_resources_absent": true
+      },
+      "artifact_sha256": {
+        "application.tar": "7ee0cada1464d3e3212f2770bab2aa596b93a0cc6c6b5a22580fa9e3019c850c",
+        "deployment.log": "28c53f252c9710053659f355b147f2dc5f3a406226bcb03b3f2da1aaad044bf4",
+        "job-status.json": "7957054feb73e4e4e21e239c2fe97c53f6ab357be959b44ee3ff2eeadb8e900a",
+        "cleanup.json": "c0ae96db495a65d737022f1311c1d5a1fd94894f92e09f54f73e1a83c8348b99",
+        "evidence.tar": "9caea11306d96e64b41b988bbf65cbc8e4f900c3c4fa0b0d0f3265a4cede1121"
+      }
+    }
+  ]
+}

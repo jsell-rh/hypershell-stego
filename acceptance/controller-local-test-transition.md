@@ -151,3 +151,17 @@ identity record requires that grant. The test now checks the grant and makes
 two additional server dry-runs: fingerprint replacement and removal. Both
 must fail under the generated ownership policy and leave the record unchanged.
 The existing denial with the test actor remains. No runtime permission changed.
+
+The fifth run passed those admission checks, all 15 worker access checks,
+and SQL isolation after all three worker Pods were replaced. Gateway SQL and
+credential identities remained stable. REST and gRPC access checks also passed
+after API and console replacement. The rendered collector-outage step then
+failed: the browser received `503` responses while one session remained in
+`refreshing`. Its observed age was 20.32 seconds. The cause remains under
+investigation in STEGO's common session runtime.
+
+The [attempt record](controller-local-browser-attempts.json) retains all five
+failures, generation hashes, and cleanup results. Every failed Job and its
+owned resources are gone. Normal Gateway deletion and the final event and
+telemetry checks were not reached in the fifth run. The complete browser gate
+remains open.
