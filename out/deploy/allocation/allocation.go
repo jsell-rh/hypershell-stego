@@ -23,7 +23,12 @@ import (
 type role struct{ Name, Scope string }
 type binding struct{ Role, ExternalRole, ServiceAccount, Namespace, ExternalNamespace string }
 type identityField struct{ Field, Key string }
+type networkPeer struct {
+	Direction, Namespace, ExternalNamespace, PodLabel, PodValue, Protocol string
+	Port                                                                  int
+}
 type profile struct {
+	NetworkPeers                        []networkPeer
 	NetworkIsolation                    bool
 	IdentityConfigMap                   string
 	IdentityLabels, IdentityAnnotations []identityField
@@ -253,7 +258,7 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 		return err
 	}
 	if p.NetworkIsolation {
-		if err = a.requireNetwork(ctx, name, owner, true); err != nil {
+		if err = a.requireNetwork(ctx, p, name, owner, true); err != nil {
 			return err
 		}
 	}
@@ -274,10 +279,57 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 	return a.sealIdentity(ctx, p, name, owner)
 }
 
-// requireNetwork verifies the fixed deny policy before access is granted.
+type networkSelector struct {
+	MatchLabels      map[string]string `json:"matchLabels,omitempty"`
+	MatchExpressions []json.RawMessage `json:"matchExpressions,omitempty"`
+}
+type networkTarget struct {
+	NamespaceSelector *networkSelector `json:"namespaceSelector,omitempty"`
+	PodSelector       *networkSelector `json:"podSelector,omitempty"`
+}
+type networkPort struct {
+	Protocol string `json:"protocol"`
+	Port     int    `json:"port"`
+}
+type networkRule struct {
+	From  []networkTarget `json:"from,omitempty"`
+	To    []networkTarget `json:"to,omitempty"`
+	Ports []networkPort   `json:"ports,omitempty"`
+}
+type networkSpec struct {
+	PodSelector *networkSelector `json:"podSelector"`
+	PolicyTypes []string         `json:"policyTypes,omitempty"`
+	Ingress     []networkRule    `json:"ingress,omitempty"`
+	Egress      []networkRule    `json:"egress,omitempty"`
+}
+
+func (a *Allocator) networkSpec(p profile, name string) networkSpec {
+	spec := networkSpec{PodSelector: &networkSelector{}, PolicyTypes: []string{"Ingress", "Egress"}}
+	for _, peer := range p.NetworkPeers {
+		ns := peer.ExternalNamespace
+		if peer.Namespace == "control" {
+			ns = a.namespace
+		}
+		if peer.Namespace == "allocated" {
+			ns = name
+		}
+		target := networkTarget{NamespaceSelector: &networkSelector{MatchLabels: map[string]string{"kubernetes.io/metadata.name": ns}}, PodSelector: &networkSelector{MatchLabels: map[string]string{peer.PodLabel: peer.PodValue}}}
+		rule := networkRule{Ports: []networkPort{{Protocol: peer.Protocol, Port: peer.Port}}}
+		if peer.Direction == "ingress" {
+			rule.From = []networkTarget{target}
+			spec.Ingress = append(spec.Ingress, rule)
+		} else {
+			rule.To = []networkTarget{target}
+			spec.Egress = append(spec.Egress, rule)
+		}
+	}
+	return spec
+}
+
+// requireNetwork verifies the complete declared policy before access is granted.
 // It does not prove that the cluster network plugin has applied the policy.
 // A changed policy is rejected. It is not patched or adopted.
-func (a *Allocator) requireNetwork(ctx context.Context, name string, owner kube.Owner, create bool) error {
+func (a *Allocator) requireNetwork(ctx context.Context, p profile, name string, owner kube.Owner, create bool) error {
 	collection := "/apis/networking.k8s.io/v1/namespaces/" + name + "/networkpolicies"
 	current, code, err := a.client.Request(ctx, http.MethodGet, collection+"/stego-allocation", nil)
 	if err != nil {
@@ -289,7 +341,7 @@ func (a *Allocator) requireNetwork(ctx context.Context, name string, owner kube.
 		}
 		meta := metadata("stego-allocation", owner)
 		meta["namespace"] = name
-		desired := kube.Object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": kube.Object{"podSelector": kube.Object{}, "policyTypes": []string{"Ingress", "Egress"}}}
+		desired := kube.Object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": a.networkSpec(p, name)}
 		if _, _, err = a.client.Request(ctx, http.MethodPost, collection, desired); err != nil {
 			return err
 		}
@@ -318,26 +370,35 @@ func (a *Allocator) requireNetwork(ctx context.Context, name string, owner kube.
 	if !owner.Matches(current) || kube.String(current, "metadata", "name") != "stego-allocation" || kube.String(current, "metadata", "namespace") != name || kube.String(current, "metadata", "uid") == "" || kube.String(current, "metadata", "resourceVersion") == "" || kube.String(current, "metadata", "deletionTimestamp") != "" {
 		return errors.New("allocation network policy is not owned and active")
 	}
-	var spec struct {
-		PodSelector *struct {
-			MatchLabels      map[string]string
-			MatchExpressions []json.RawMessage
-		}
-		PolicyTypes     []string
-		Ingress, Egress []json.RawMessage
-	}
+	var spec networkSpec
 	data, err := json.Marshal(current["spec"])
 	if err != nil {
 		return errors.New("invalid allocation network policy")
 	}
 	decoder := json.NewDecoder(bytes.NewReader(data))
 	decoder.DisallowUnknownFields()
-	if err = decoder.Decode(&spec); err != nil || spec.PodSelector == nil || len(spec.PodSelector.MatchLabels) != 0 || len(spec.PodSelector.MatchExpressions) != 0 || len(spec.Ingress) != 0 || len(spec.Egress) != 0 || len(spec.PolicyTypes) != 2 {
-		return errors.New("allocation network policy must deny all Pod traffic")
+	if err = decoder.Decode(&spec); err != nil || spec.PodSelector == nil || len(spec.PodSelector.MatchLabels) != 0 || len(spec.PodSelector.MatchExpressions) != 0 || len(spec.PolicyTypes) != 2 {
+		return errors.New("invalid allocation network policy shape")
 	}
 	if !(spec.PolicyTypes[0] == "Ingress" && spec.PolicyTypes[1] == "Egress" || spec.PolicyTypes[0] == "Egress" && spec.PolicyTypes[1] == "Ingress") {
-		return errors.New("allocation network policy must deny both directions")
+		return errors.New("allocation network policy must restrict both directions")
 	}
+	expected := a.networkSpec(p, name)
+	// Policy type order and omitted empty fields do not change permissions.
+	spec.PolicyTypes = nil
+	expected.PolicyTypes = nil
+	actualJSON, err := json.Marshal(spec)
+	if err != nil {
+		return err
+	}
+	expectedJSON, err := json.Marshal(expected)
+	if err != nil {
+		return err
+	}
+	if !bytes.Equal(actualJSON, expectedJSON) {
+		return errors.New("allocation network policy differs from its declared peers")
+	}
+
 	return nil
 }
 
@@ -460,7 +521,7 @@ func (a *Allocator) RequireNamespace(ctx context.Context, profileName, name, own
 		return err
 	}
 	if p.NetworkIsolation {
-		return a.requireNetwork(ctx, name, owner, false)
+		return a.requireNetwork(ctx, p, name, owner, false)
 	}
 	return nil
 }

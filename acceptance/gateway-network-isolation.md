@@ -4,8 +4,10 @@ contains 89 passing live checks: 18 allowed and 71 denied. Runtime tests cover
 policy creation before bindings, restart, and rejected permission changes.
 Regeneration and cleanup passed on jshell. No Pods ran in that check.
 
-Hypershell still uses compiler `fe07b0a`. Its production allocation isolation
-setting remains off. Compiler CI for the new common mechanism is still running.
+This candidate uses compiler `e394ab5`. Its production allocation isolation
+setting remains off. Full compiler CI passed in
+[run 34997668449](https://github.com/jsell-rh/stego/actions/runs/34997668449).
+The candidate passed regeneration in both modules. Application CI remains required.
 The next application change must supply all required paths and prove fresh
 allowed and denied connections in the complete Gateway workflow. The external
 DNS provider choice remains open. These results do not establish traffic isolation.
