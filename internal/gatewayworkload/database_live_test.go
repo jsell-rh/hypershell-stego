@@ -84,6 +84,15 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 		defer mu.Unlock()
 		switch r.Method {
 		case http.MethodGet:
+			if strings.HasSuffix(r.URL.Path, "/networkpolicies") {
+				value := objects[r.URL.Path+"/stego-allocation"]
+				if value == nil {
+					w.WriteHeader(404)
+					return
+				}
+				_ = json.NewEncoder(w).Encode(object{"metadata": object{"resourceVersion": "1"}, "items": []any{value}})
+				return
+			}
 			if value := objects[r.URL.Path]; value != nil {
 				_ = json.NewEncoder(w).Encode(value)
 				return
@@ -169,6 +178,7 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 		meta := namespace["metadata"].(object)
 		meta["uid"], meta["resourceVersion"] = ns, "1"
 		put("/api/v1/namespaces/"+ns, namespace)
+		put("/apis/networking.k8s.io/v1/namespaces/"+ns+"/networkpolicies/stego-allocation", stateNetworkPolicyFixture(k, gw.Metadata.Id))
 		if _, _, err := k.localState(ctx, gw); !errors.Is(err, ErrPending) {
 			t.Fatal("SQL did not wait for the state seal", err)
 		}

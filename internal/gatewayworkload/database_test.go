@@ -2,7 +2,9 @@ package gatewayworkload
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -14,10 +16,10 @@ import (
 )
 
 func TestDurableGatewayStateSurvivesRestartAndRejectsLoss(t *testing.T) {
-	for _, mode := range []string{"restart", "credential-rotation", "destination-change", "missing-secret", "missing-marker", "changed-secret", "foreign-owner", "unsealed"} {
+	for _, mode := range []string{"restart", "credential-rotation", "destination-change", "missing-secret", "missing-marker", "changed-secret", "foreign-owner", "unsealed", "missing-policy", "changed-policy", "extra-policy"} {
 		t.Run(mode, func(t *testing.T) {
 			gw, _ := records(t)
-			var namespace, secret, marker object
+			var namespace, secret, marker, policy object
 			writes := 0
 			k := fixture(t, func(w http.ResponseWriter, r *http.Request) {
 				if r.Method != http.MethodGet {
@@ -27,6 +29,14 @@ func TestDurableGatewayStateSurvivesRestartAndRejectsLoss(t *testing.T) {
 				}
 				var value object
 				switch {
+				case strings.HasSuffix(r.URL.Path, "/networkpolicies/stego-allocation"):
+					value = policy
+				case strings.HasSuffix(r.URL.Path, "/networkpolicies"):
+					items := []any{policy}
+					if mode == "extra-policy" {
+						items = append(items, object{"metadata": object{"name": "extra"}})
+					}
+					value = object{"metadata": object{"resourceVersion": "1"}, "items": items}
 				case strings.HasSuffix(r.URL.Path, "/secrets/"+stateSecret):
 					value = secret
 				case strings.HasSuffix(r.URL.Path, "/configmaps/"+stateIdentity):
@@ -85,7 +95,12 @@ func TestDurableGatewayStateSurvivesRestartAndRejectsLoss(t *testing.T) {
 			meta["uid"] = "namespace"
 			meta["resourceVersion"] = "3"
 			meta["annotations"] = object{stateAnnotation: fingerprint}
+			policy = stateNetworkPolicyFixture(k, gw.Metadata.Id)
 			switch mode {
+			case "missing-policy":
+				policy = nil
+			case "changed-policy":
+				policy["spec"].(object)["egress"] = []any{object{}}
 			case "credential-rotation":
 				config.User = "replacement-admin"
 				config.Password = "replacement-password"
@@ -131,4 +146,15 @@ func TestGatewayStateNamesPreserveEveryIDByte(t *testing.T) {
 	if _, err = StateNamespace("invalid"); err == nil {
 		t.Fatal("invalid ID accepted")
 	}
+}
+
+// State storage has no Pod traffic. Supply its explicit deny policy in the
+// HTTPS fixture so recovery still checks the generated allocation boundary.
+func stateNetworkPolicyFixture(k *Kubernetes, id string) object {
+	namespace, _ := StateNamespace(id)
+	encoded, _ := json.Marshal(object{"podSelector": object{}})
+	digest := sha256.Sum256(encoded)
+	return object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy",
+		"metadata": object{"name": "stego-allocation", "namespace": namespace, "uid": namespace + "-policy", "resourceVersion": "1", "labels": k.stateOwner(id), "annotations": object{"stego.dev/network-spec-sha256": hex.EncodeToString(digest[:])}},
+		"spec":     object{"podSelector": object{}, "policyTypes": []string{"Ingress", "Egress"}}}
 }
