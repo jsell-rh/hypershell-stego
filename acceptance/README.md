@@ -2,7 +2,8 @@ The [controller-local database change](controller-local-database.md) replaces
 the database catalog. The current release has passing restricted API and browser
 workflows, including [workload namespace recovery](browser-namespace-replacement.md).
 See [the current CI evidence](browser-ci.md) for source revisions and limits.
-CNPG, actual RDS, Sandbox, and the broader enterprise requirements remain open.
+The [CNPG installation path](cnpg-installation.md), actual RDS, Sandbox, and the
+broader enterprise requirements remain open.
 
 Use the complete [contract workflows](../.github/workflows/checks.yml),
 [API workflow](../.github/workflows/jshell-gateway.yml), and

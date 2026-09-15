@@ -4,14 +4,14 @@
     "head": "d61f1dffe639f1de6e67cd82d89282fedb0d15e6"
   },
   "api_ci": {
-    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34937319123",
-    "commit": "ae371ae34b62cbea28b5ff494a50c104b0468e96",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34939474440",
+    "commit": "ee1f23e875509e6e923a8102a94f8a8ef6a0864c",
     "required_passed": 30,
     "source_files_checked": 872,
     "generated_files_checked": 228,
-    "job_uid": "e913d1e3-cd99-43a6-9465-0cf7857ac504",
+    "job_uid": "de64b193-b619-4a31-b406-03953e5f93ac",
     "cleanup": {
-      "job_absent": "gateway-api-55efd517b753",
+      "job_absent": "gateway-api-10b0b375df08",
       "pods_absent": true,
       "fixture_resources_absent": true
     }
@@ -746,13 +746,26 @@
     "commit": "ee1f23e875509e6e923a8102a94f8a8ef6a0864c",
     "browser_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34939475635",
     "api_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34939474440",
-    "result": "browser_cancelled_before_start_known_fixture_error_api_running"
+    "result": "api_success_browser_cancelled_before_start_known_fixture_error",
+    "api_evidence": {
+      "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34939474440",
+      "commit": "ee1f23e875509e6e923a8102a94f8a8ef6a0864c",
+      "required_passed": 30,
+      "source_files_checked": 872,
+      "generated_files_checked": 228,
+      "job_uid": "de64b193-b619-4a31-b406-03953e5f93ac",
+      "cleanup": {
+        "job_absent": "gateway-api-10b0b375df08",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      }
+    }
   },
   "sql_owner_access_denial_candidate": {
     "commit": "70b2dd712eb84a7807e9d65e3f50f67e7392e471",
     "browser_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34941181554",
     "api_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34941181696",
-    "result": "pending",
+    "result": "browser_running_api_pending",
     "includes_credential_encryption": true
   }
 }

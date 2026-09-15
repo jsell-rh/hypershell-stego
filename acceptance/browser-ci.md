@@ -96,3 +96,9 @@ run failed in the permission fixture before the denial assertion. Host cleanup
 passed. The pending encryption browser run was cancelled before it started
 because it had the same fixture error. Commit `70b2dd7` corrects the fixture and
 includes the encryption test. Its complete browser and API checks are queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
+
+The encryption candidate `ee1f23e` passed its separate API run with all 30
+required tests. All 872 source files and 228 generated files match the commit.
+Generation and cleanup passed. This compiles the encryption test but does not
+execute its storage assertions. The corrected `70b2dd7` browser run is active;
+its API run is queued. The earlier encryption browser run remains cancelled.
