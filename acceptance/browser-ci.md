@@ -87,6 +87,6 @@ for the cancellation. The same pushed commit now has new browser and API
 dispatches. The old run uses the default queue setting; new runs use `queue: max`.
 Do not treat this transition as proof that the new queue preserves all runs.
 
-After the older API run finished, the namespace recovery browser run started.
-The API run for that commit and both runs for the SQL cleanup denial candidate
-remain queued. Neither new live recovery result is available yet.
+After the older API run finished, the namespace recovery browser run started
+and passed. Its separate API run is now active. Both runs for the SQL cleanup
+denial candidate remain queued. See the [namespace recovery result](browser-namespace-replacement-evidence.json).
