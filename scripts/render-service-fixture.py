@@ -6,6 +6,7 @@ import os
 import secrets
 import sys
 from pathlib import Path
+from kubernetes_endpoint_bindings import kubernetes_endpoints
 
 PROJECT = Path(__file__).resolve().parent.parent
 
@@ -37,21 +38,7 @@ def fixture(ns, directory, browser, workload, issuer):
     if workload=='1':
         import re
         if browser!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',issuer): raise SystemExit('Invalid Gateway test profile')
-        import ipaddress
-        endpoints=set()
-        for item in json.loads((root/'kubernetes-endpoints.json').read_text())['items']:
-            for endpoint in item['endpoints']:
-                if endpoint.get('conditions',{}).get('ready') is not True: continue
-                for port in item['ports']:
-                    if port.get('protocol')!='TCP' or port.get('name')!='https': continue
-                    for address in endpoint['addresses']:
-                        ip=ipaddress.ip_address(address)
-                        endpoints.add(f'[{ip}]:{port["port"]}' if ip.version==6 else f'{ip}:{port["port"]}')
-        service=json.loads((root/'kubernetes-service.json').read_text())
-        for address in service['spec'].get('clusterIPs',[service['spec']['clusterIP']]):
-            ip=ipaddress.ip_address(address)
-            endpoints.add(f'[{ip}]:443' if ip.version==6 else f'{ip}:443')
-        if not 1<=len(endpoints)<=16: raise SystemExit('Invalid Kubernetes endpoint set')
+        endpoints = kubernetes_endpoints(root)
         for item in job['items']:
             if item['kind']=='ResourceQuota': item['spec']['hard'].update({'limits.memory':'11Gi','limits.cpu':'12','pods':'10'})
             if item['kind']=='Role' and item['metadata']['name']=='service-check':

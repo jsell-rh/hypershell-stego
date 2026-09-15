@@ -5,6 +5,8 @@ import importlib.util
 import json
 from pathlib import Path
 import unittest
+import tempfile
+from kubernetes_endpoint_bindings import kubernetes_endpoints
 
 spec = importlib.util.spec_from_file_location("installation", Path(__file__).with_name("prepare-browser-cluster.py"))
 installation = importlib.util.module_from_spec(spec)
@@ -86,6 +88,58 @@ class InstallationBoundary(unittest.TestCase):
             with self.assertRaises(RuntimeError):
                 installation.remove_resources(record, self.namespace, oc)
             self.assertFalse(any(words[0] == "delete" for words in calls))
+
+
+class EndpointSnapshot(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.slices = {"items": [{"endpoints": [{"conditions": {"ready": True}, "addresses": ["192.0.2.10", "2001:db8::10"]}], "ports": [{"name": "https", "protocol": "TCP", "port": 6443}]}]}
+        self.service = {"spec": {"clusterIP": "172.30.0.1", "clusterIPs": ["172.30.0.1", "2001:db8:1::1"]}}
+
+    def save(self):
+        (self.root / 'kubernetes-endpoints.json').write_text(json.dumps(self.slices))
+        (self.root / 'kubernetes-service.json').write_text(json.dumps(self.service))
+
+    def test_job_and_operator_share_exact_addresses(self):
+        self.save()
+        expected = ["172.30.0.1:443", "192.0.2.10:6443", "[2001:db8:1::1]:443", "[2001:db8::10]:6443"]
+        self.assertEqual(kubernetes_endpoints(self.root), expected)
+        for name, _, flags in installation.workload_targets(self.root):
+            actual = [value.removeprefix('kubernetes=') for value in flags if value.startswith('kubernetes=')]
+            self.assertEqual(actual, [] if name == 'hypershell-gateway-identity' else expected)
+        self.slices['items'].append(copy.deepcopy(self.slices['items'][0]))
+        self.slices['items'].reverse()
+        self.save()
+        self.assertEqual(kubernetes_endpoints(self.root), expected)
+
+    def test_rejects_unusable_addresses_and_ports(self):
+        for address in ['255.255.255.255', '127.0.0.1', '::', 'fe80::1', '224.0.0.1', '::ffff:192.0.2.1', 'fe80::1%eth0', 'database.example']:
+            self.slices['items'][0]['endpoints'][0]['addresses'] = [address]
+            self.save()
+            with self.subTest(address=address), self.assertRaises(ValueError):
+                kubernetes_endpoints(self.root)
+        self.slices['items'][0]['endpoints'][0]['addresses'] = ['192.0.2.10']
+        for port in [0, 65536, True, '443']:
+            self.slices['items'][0]['ports'][0]['port'] = port
+            self.save()
+            with self.subTest(port=port), self.assertRaises(ValueError):
+                kubernetes_endpoints(self.root)
+
+    def test_rejects_missing_ready_backend_and_excess(self):
+        self.slices['items'][0]['endpoints'][0]['conditions']['ready'] = False
+        self.save()
+        with self.assertRaises(ValueError):
+            installation.workload_targets(self.root)
+        self.slices['items'][0]['endpoints'][0]['conditions']['ready'] = True
+        self.slices['items'][0]['endpoints'][0]['addresses'] = ['192.0.2.' + str(i) for i in range(1, 17)]
+        self.save()
+        with self.assertRaises(ValueError):
+            kubernetes_endpoints(self.root)
+        (self.root / 'kubernetes-endpoints.json').write_bytes(b' ' * ((256 << 10) + 1))
+        with self.assertRaises(ValueError):
+            kubernetes_endpoints(self.root)
 
 
 if __name__ == "__main__":

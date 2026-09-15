@@ -4,7 +4,9 @@ is pending. The endpoint change passed 168 live admission checks, full compiler
 CI, and cleanup. See the [endpoint record](allocated-network-endpoints-20260915.json).
 Production Gateway isolation remains off. The next workflow change must bind
 actual operator addresses in both the admission setup and the generated workers.
-The existing setup uses placeholder addresses for cluster-scoped rendering.
+The setup now shares the operator's saved Kubernetes endpoint set with the
+test Job. Ten bounded installation checks and nine inspection checks passed.
+SQL and identity-provider paths still need their declared network rules.
 
 The earlier candidate `101f31d` uses STEGO `e394ab5`, which adds declared namespace, Pod, port,
 and protocol peers to the protected allocation policy. The [admission record](allocated-network-peers-admission-20260915.json)

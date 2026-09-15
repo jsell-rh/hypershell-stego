@@ -15,6 +15,7 @@ import re
 import subprocess
 import time
 from urllib.parse import quote
+from kubernetes_endpoint_bindings import kubernetes_endpoints
 
 
 def cluster_items(manifest, namespace):
@@ -62,6 +63,15 @@ def remove_resources(record, namespace, oc):
             raise RuntimeError("A cluster installation resource was replaced; keep it for inspection")
         options = {"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": {"uid": item["uid"]}, "propagationPolicy": "Background"}
         oc("delete", "--raw=" + paths[item["kind"]] + quote(item["name"], safe=""), "-f", "-", data=json.dumps(options).encode())
+
+
+def workload_targets(directory):
+    flags = []
+    for endpoint in kubernetes_endpoints(directory):
+        flags += ["--egress", "kubernetes=" + endpoint]
+    return [("hypershell-namespace-allocation", "api", ["--worker", "namespace-allocation", *flags]),
+            ("hypershell-gateway-identity", "api", ["--worker", "gateway-identity"]),
+            ("hypershell-gateway-workload", "api", ["--worker", "gateway-workload", *flags, "--egress", "gateway-postgres=192.0.2.2:5432"])]
 
 
 def main():
@@ -115,14 +125,13 @@ def main():
         targets = [("hypershell", "api", []), ("hypershell-console", "console", []),
                    ("hypershell-provisioner", "api", ["--rpc-process", "provisioner"])]
         if args.workload:
-            targets += [("hypershell-namespace-allocation", "api", ["--worker", "namespace-allocation", "--egress", "kubernetes=192.0.2.1:443"]),
-                        ("hypershell-gateway-identity", "api", ["--worker", "gateway-identity"]),
-                        ("hypershell-gateway-workload", "api", ["--worker", "gateway-workload", "--egress", "kubernetes=192.0.2.1:443", "--egress", "gateway-postgres=192.0.2.2:5432"])]
+            targets += workload_targets(args.results)
         resources = []
         for name, module, target in targets:
-            # Cluster roles and policies have no image or network endpoint. The
-            # Pod checks this output against a render with its actual deployment
-            # arguments before it can apply the corresponding namespace scope.
+            # Allocation admission can contain Kubernetes endpoint bindings.
+            # Use the same operator snapshot as the Job. The Pod compares its
+            # actual render before it can apply namespace resources. The SQL
+            # placeholder is used only for worker egress, which this scope omits.
             command = [str(binaries[module]), "--namespace", args.namespace, "--fs-group", str(args.fs_group),
                        "--image", "registry.example.test/fixture@sha256:" + "a" * 64, "--scope", "cluster", *target]
             manifest = subprocess.check_output(command, env=environment, timeout=5)
