@@ -8,6 +8,7 @@ on:
         type: boolean
         default: true
   push:
+    branches: [main]
     paths-ignore:
       - '**/*.md'
 

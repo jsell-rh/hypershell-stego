@@ -2,6 +2,7 @@ name: Gateway and contract checks
 
 on:
   push:
+    branches: [main]
     paths-ignore:
       - '**/*.md'
   pull_request:
