@@ -125,7 +125,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		w.tokens[name] = k.browserLogin(t, "hypershell", username)
 
 	}
-	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster), writeGrant(ids["workload"], "configure.sql", f.cluster))
 	settings = withCleanupGrants(t, settings, cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
 	encoded, _ := json.Marshal(subjects)
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(encoded))
@@ -175,6 +175,8 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 	identities := w.checkSQLIsolation()
 	w.checkRPC(gatewayID)
 	w.checkAllocationAccess()
+	w.checkSQLFaultRecovery(gatewayID)
+	w.checkDatabaseRestart(gatewayID)
 	for _, restart := range w.restarts {
 		restart()
 	}

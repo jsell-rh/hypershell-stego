@@ -1,0 +1,298 @@
+{
+  "scope": "API SQL registration, retained cleanup, and complete-package generation after database catalog removal.",
+  "compiler_revision": "8a864829ea4dad41955dda691c131770ffb77395",
+  "source_base_commit": "a637a33105dfe00c54ab1c482f38ec08f1b4d122",
+  "final_result": "The second run passed 26 required API and SQL checks. The worker startup privacy fixture failed before it invoked the worker. The complete gate did not pass.",
+  "corrections": [
+    "Keep the application registry output namespace at storage when updating its adapter version.",
+    "Use valid test RPC inputs, then require the actual provider startup error before checking the worker fixed failure log."
+  ],
+  "limits": [
+    "The two recorded API attempts remain failed runs. The corrected worker privacy check passed in both later browser preflight runs.",
+    "The complete browser workflow, real-worker early deletion, SQL fault recovery, and sidecar restart passed. See sql-registration-browser-evidence.json.",
+    "The normal committed-source API CI gate must pass for the final application commit."
+  ],
+  "runs": [
+    {
+      "directory": "/tmp/hypershell-gateway-registration-v1",
+      "verification": {
+        "required": [
+          "TestGatewayDeletionBeforeWorkloadStartup",
+          "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+          "TestGeneratedWorkloadWorkerStartupPrivacy",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGatewayCreationCommitsOwnerAndEvent",
+          "TestGatewayRequestsRejectRetiredDatabaseField",
+          "TestGeneratedGoSDKGatewayWorkflow",
+          "TestGeneratedCLIWorkflow",
+          "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+          "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+          "TestEventFailureRollsBackGatewayAndOwner",
+          "TestAccessFiltersRunBeforeCountAndPagination",
+          "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+          "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestPlacementWorkflowThroughGeneratedRuntime",
+          "TestControllerLocalSchemaHasNoDatabaseCatalog",
+          "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+          "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+          "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestGeneratedCLIApplyWorkflow"
+        ],
+        "passed": [],
+        "failed": [],
+        "missing": [
+          "TestAccessFiltersRunBeforeCountAndPagination",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+          "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+          "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+          "TestControllerLocalSchemaHasNoDatabaseCatalog",
+          "TestEventFailureRollsBackGatewayAndOwner",
+          "TestGatewayCreationCommitsOwnerAndEvent",
+          "TestGatewayDeletionBeforeWorkloadStartup",
+          "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+          "TestGatewayRequestsRejectRetiredDatabaseField",
+          "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+          "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+          "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "TestGeneratedCLIApplyWorkflow",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestGeneratedCLIWorkflow",
+          "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+          "TestGeneratedGoSDKGatewayWorkflow",
+          "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+          "TestGeneratedWorkloadWorkerStartupPrivacy",
+          "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+          "TestPlacementWorkflowThroughGeneratedRuntime"
+        ],
+        "exit_code": 1
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-a571715300ff",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "job": {
+        "namespace": "stego-ci",
+        "name": "gateway-api-a571715300ff",
+        "uid": "df0b772f-d74a-48fa-b2c0-c32d66b051b3",
+        "status": {
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T02:30:00Z",
+              "lastTransitionTime": "2026-09-15T02:30:00Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "FailureTarget"
+            },
+            {
+              "lastProbeTime": "2026-09-15T02:30:00Z",
+              "lastTransitionTime": "2026-09-15T02:30:00Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "Failed"
+            }
+          ],
+          "failed": 1,
+          "ready": 0,
+          "startTime": "2026-09-15T02:28:36Z",
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        },
+        "activeDeadlineSeconds": 1200
+      },
+      "source_sha256": {
+        ".stego/compiler-revision": "6e439443a45a8197f22085832bfd69446916ceda5f1e130cc59c02c03cda868a",
+        "acceptance/controller_local_schema_test.go": "dbe2a6bef7ee916ef4ff0905aa51e5455b70e27218f07b4abfd96efa628f7214",
+        "acceptance/gateway_recovery_test.go": "2fa934600c03a7fa839898a328daaff1b1f02242af344b3fb49d7b4e5bcbe888",
+        "acceptance/workload_worker_test.go": "e2778aadfba70c99a67223c7675cf5b20e7034457b774a8122ac387f5c0f8819",
+        "contracts/controlplane/gateway_identity.proto": "ec8f369dc597ed69cdebf40dc476e424806ac18e4a312f9da6c0406f76ff3f44",
+        "internal/gateways/sql_state.go": "d5801d2d32236eb2f06b7c634ca88936a8f20db11e01ddf4bedd85311eba1d58",
+        "internal/gatewayworkload/controller.go": "bb196e39e9ec008e107917213aa8dd70206d305c88b9ee05bbbafb6196009394",
+        "internal/gatewayworkload/database.go": "cb40f499d64008798e27b2408574905d476a45d13d4fb49f98b134161994894c",
+        "internal/gatewayworkload/kubernetes.go": "f271555ef81c0a31dee031951be83b95e4c79f399a5dbaff48ba938607bb96af",
+        "internal/gatewayworkload/sql_state.go": "f4e80d1bab22bb80d4965294af41b24158046a520b7c46e6b8335256a7272f61",
+        "internal/gatewayworkloadapp/worker.go": "50ac6c9d15c0fb5b8eebcb9d1ce21c32bbccc50b3d5d0d7b7ec5acac5d95cce4",
+        "internal/grpcapi/sql_state.go": "8880bfe0bcd96b420a23dacef55b06dfe292503ea46ff5d21b7bca68b770a036",
+        "registry/components/postgres-adapter/component.yaml": "b74d1eedc34a2b6a25e742f36d845f604c3417c086ceda9b0abc06186aef4afd",
+        "service.yaml": "eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a"
+      },
+      "artifact_sha256": {
+        "test.log": "3a41b7093a582a249eaf3a78b566447be197d9ae1078e68322cf026e21414757",
+        "tests.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "source.tar": "8b534c6ac01a3ca3f494a99f44c45144a826adae0b53891a32f2b272d9a66c1e",
+        "generated.tar": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "first.sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "second.sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "verification.json": "75cf056e256f704581ed61ebe3e8dc8ee5ff4c5038dc4f6084f800ffde920cfc",
+        "cleanup.json": "263e56ecee7cfc0b22f58aa3e6bbfbb7801ab7c337dc763193bfbb6cab65cd9f"
+      },
+      "generation_passes_match": false
+    },
+    {
+      "directory": "/tmp/hypershell-gateway-registration-v2",
+      "verification": {
+        "required": [
+          "TestGatewayDeletionBeforeWorkloadStartup",
+          "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+          "TestGeneratedWorkloadWorkerStartupPrivacy",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGatewayCreationCommitsOwnerAndEvent",
+          "TestGatewayRequestsRejectRetiredDatabaseField",
+          "TestGeneratedGoSDKGatewayWorkflow",
+          "TestGeneratedCLIWorkflow",
+          "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+          "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+          "TestEventFailureRollsBackGatewayAndOwner",
+          "TestAccessFiltersRunBeforeCountAndPagination",
+          "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+          "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestPlacementWorkflowThroughGeneratedRuntime",
+          "TestControllerLocalSchemaHasNoDatabaseCatalog",
+          "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+          "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+          "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestGeneratedCLIApplyWorkflow"
+        ],
+        "passed": [
+          "TestAccessFiltersRunBeforeCountAndPagination",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites/empty",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites/populated",
+          "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+          "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+          "TestControllerLocalSchemaHasNoDatabaseCatalog",
+          "TestEventFailureRollsBackGatewayAndOwner",
+          "TestEventFailureRollsBackGatewayAndOwner/gateway.created",
+          "TestEventFailureRollsBackGatewayAndOwner/rolebinding.created",
+          "TestGatewayCreationCommitsOwnerAndEvent",
+          "TestGatewayDeletionBeforeWorkloadStartup",
+          "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+          "TestGatewayRequestsRejectRetiredDatabaseField",
+          "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+          "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+          "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "TestGeneratedCLIApplyWorkflow",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestGeneratedCLIWorkflow",
+          "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+          "TestGeneratedGoSDKGatewayWorkflow",
+          "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+          "TestGeneratedWorkloadWorkerStartupPrivacy/namespace-allocation",
+          "TestGeneratedWorkloadWorkerStartupPrivacy/sandbox-count",
+          "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+          "TestPlacementWorkflowThroughGeneratedRuntime"
+        ],
+        "failed": [
+          "TestGeneratedWorkloadWorkerStartupPrivacy/gateway-workload",
+          "TestGeneratedWorkloadWorkerStartupPrivacy",
+          "github.com/jsell-rh/hypershell-stego/acceptance"
+        ],
+        "missing": [
+          "TestGeneratedWorkloadWorkerStartupPrivacy"
+        ],
+        "exit_code": 1
+      },
+      "cleanup": {
+        "job_absent": "gateway-api-2fecd4a4499e",
+        "pods_absent": true,
+        "fixture_resources_absent": true
+      },
+      "job": {
+        "namespace": "stego-ci",
+        "name": "gateway-api-2fecd4a4499e",
+        "uid": "4520a085-b2a8-4ab3-a2ae-368f26232ba2",
+        "status": {
+          "conditions": [
+            {
+              "lastProbeTime": "2026-09-15T02:36:55Z",
+              "lastTransitionTime": "2026-09-15T02:36:55Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "FailureTarget"
+            },
+            {
+              "lastProbeTime": "2026-09-15T02:36:55Z",
+              "lastTransitionTime": "2026-09-15T02:36:55Z",
+              "message": "Job has reached the specified backoff limit",
+              "reason": "BackoffLimitExceeded",
+              "status": "True",
+              "type": "Failed"
+            }
+          ],
+          "failed": 1,
+          "ready": 0,
+          "startTime": "2026-09-15T02:30:31Z",
+          "terminating": 0,
+          "uncountedTerminatedPods": {}
+        },
+        "activeDeadlineSeconds": 1200
+      },
+      "source_sha256": {
+        ".stego/compiler-revision": "6e439443a45a8197f22085832bfd69446916ceda5f1e130cc59c02c03cda868a",
+        "acceptance/controller_local_schema_test.go": "dbe2a6bef7ee916ef4ff0905aa51e5455b70e27218f07b4abfd96efa628f7214",
+        "acceptance/gateway_recovery_test.go": "2fa934600c03a7fa839898a328daaff1b1f02242af344b3fb49d7b4e5bcbe888",
+        "acceptance/workload_worker_test.go": "e2778aadfba70c99a67223c7675cf5b20e7034457b774a8122ac387f5c0f8819",
+        "contracts/controlplane/gateway_identity.proto": "ec8f369dc597ed69cdebf40dc476e424806ac18e4a312f9da6c0406f76ff3f44",
+        "internal/gateways/sql_state.go": "d5801d2d32236eb2f06b7c634ca88936a8f20db11e01ddf4bedd85311eba1d58",
+        "internal/gatewayworkload/controller.go": "bb196e39e9ec008e107917213aa8dd70206d305c88b9ee05bbbafb6196009394",
+        "internal/gatewayworkload/database.go": "cb40f499d64008798e27b2408574905d476a45d13d4fb49f98b134161994894c",
+        "internal/gatewayworkload/kubernetes.go": "f271555ef81c0a31dee031951be83b95e4c79f399a5dbaff48ba938607bb96af",
+        "internal/gatewayworkload/sql_state.go": "f4e80d1bab22bb80d4965294af41b24158046a520b7c46e6b8335256a7272f61",
+        "internal/gatewayworkloadapp/worker.go": "50ac6c9d15c0fb5b8eebcb9d1ce21c32bbccc50b3d5d0d7b7ec5acac5d95cce4",
+        "internal/grpcapi/sql_state.go": "8880bfe0bcd96b420a23dacef55b06dfe292503ea46ff5d21b7bca68b770a036",
+        "registry/components/postgres-adapter/component.yaml": "1d8e4f0d158c26100f2a9025f6803aba8d3742b5b506ad3062269b20f481976d",
+        "service.yaml": "eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a"
+      },
+      "artifact_sha256": {
+        "test.log": "fcf5c236679671f50d5c959df98aff751f0a1a7755115383322d9951ba38d7d5",
+        "tests.jsonl": "b283d1ab299b48e6119818ebee3724a535dd0e134eed69553504b9d8573c25b4",
+        "source.tar": "5cdf65826977202f23020c5b7571fa15eda24f71698b00a4a2f7f40e7b5bee09",
+        "generated.tar": "1008eebd969038936c26749c12998736e72d778ff7a2f9eeaa027aa8f382c06b",
+        "first.sha256": "39ca7dee47223f1213d1cb3012547350ee6012afd886e28d34413e5f76633ebd",
+        "second.sha256": "39ca7dee47223f1213d1cb3012547350ee6012afd886e28d34413e5f76633ebd",
+        "verification.json": "56806880ec0e61609f1faafd84f6f3ff74eedcc9ed223337513a82a9a62e5ddb",
+        "cleanup.json": "b19ed39b1b0db60aecc514c08c075e208e4c2d0e8bce14120e60427b84a1b365"
+      },
+      "generation_passes_match": true
+    }
+  ],
+  "privacy_retest": {
+    "compiler_revision": "16e09a2c5d483fce29b76308f0f3272e6bd5ca75",
+    "job": "stego-service-20260915-c384cb/service-check",
+    "result": "Passed in the full acceptance package browser preflight. The later browser workflow failed at the database restart check. Cleanup is verified in sql-registration-browser-attempts.json.",
+    "passed": [
+      "TestGeneratedWorkloadWorkerStartupPrivacy",
+      "TestGeneratedWorkloadWorkerStartupPrivacy/namespace-allocation",
+      "TestGeneratedWorkloadWorkerStartupPrivacy/gateway-workload",
+      "TestGeneratedWorkloadWorkerStartupPrivacy/sandbox-count"
+    ],
+    "package_seconds": 35.719
+  }
+}

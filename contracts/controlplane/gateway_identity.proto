@@ -6,6 +6,9 @@ import "google/protobuf/timestamp.proto";
 // This contract supplies privileged state to Hypershell Gateway controllers.
 // A denied or missing row must never cause provider deletion.
 service GatewayIdentityService {
+ rpc LoadGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc BindGatewaySQLState(BindGatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc CloseGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc LoadGatewayIdentityCycle(LoadGatewayIdentityCheckpointRequest) returns (GatewayIdentityCycle);
  rpc SaveGatewayIdentityCycle(SaveGatewayIdentityCycleRequest) returns (GatewayIdentityCycle);
  rpc ObserveGatewayIdentity(ObserveGatewayIdentityRequest) returns (ObserveGatewayIdentityResponse);
@@ -19,6 +22,18 @@ service GatewayIdentityService {
  rpc ListGatewayIdentityUsers(ListGatewayIdentityUsersRequest) returns (ListGatewayIdentityUsersResponse);
  rpc GetGatewayIdentityUser(GetGatewayIdentityUserRequest) returns (GetGatewayIdentityUserResponse);
  rpc GetGatewayIdentityState(GetGatewayIdentityStateRequest) returns (GetGatewayIdentityStateResponse);
+}
+// This is a public digest of retained controller state, never SQL credentials.
+// Registration requires a live Gateway and its observed resource version.
+// Closure requires deletion and prevents any later first registration.
+message GatewaySQLStateRequest { string gateway_id = 1; string cluster_id = 2; }
+message BindGatewaySQLStateRequest { string gateway_id = 1; string cluster_id = 2; string digest = 3; }
+message GatewaySQLStateBinding {
+ string gateway_id = 1;
+ string cluster_id = 2;
+ bool present = 3;
+ string digest = 4;
+ bool closed = 5;
 }
 message GetGatewayIdentityStateRequest { string id = 1; }
 message GetGatewayIdentityStateResponse {

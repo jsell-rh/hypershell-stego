@@ -218,6 +218,30 @@ for file in "$results/private-job.json" "$results/server.key"; do
 "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for='jsonpath={.status.active}=1' job/service-check --timeout=180s
 "${oc_cmd[@]}" --request-timeout=0 -n "$namespace" wait --for=condition=Ready pod -l job-name=service-check --timeout=180s
 pod=$("${oc_cmd[@]}" -n "$namespace" get pod -l job-name=service-check -o jsonpath='{.items[0].metadata.name}')
+# The test can restart only its own database sidecar and the identity fixture.
+# Bind exec permission to this exact Pod name before the frozen test starts.
+"${oc_cmd[@]}" -n "$namespace" get role service-check -o json > "$results/fixture-role.json"
+python3 - "$pod" "$results" <<'EXEC_PERMISSION'
+import json, re, sys
+from pathlib import Path
+pod, directory = sys.argv[1], Path(sys.argv[2])
+if not re.fullmatch(r'service-check-[a-z0-9]+', pod):
+    raise SystemExit('The fixture Pod name is invalid')
+role = json.loads((directory / 'fixture-role.json').read_text())
+matches = [i for i, rule in enumerate(role['rules']) if rule.get('apiGroups') == [''] and rule.get('resources') == ['pods/exec']]
+if len(matches) != 1:
+    raise SystemExit('The fixture exec rule is missing or repeated')
+index = matches[0]
+if role['rules'][index].get('resourceNames') != ['identity-fixture'] or set(role['rules'][index].get('verbs', [])) != {'get', 'create'}:
+    raise SystemExit('The fixture exec rule differs')
+patch = [
+    {'op': 'test', 'path': '/metadata/uid', 'value': role['metadata']['uid']},
+    {'op': 'test', 'path': '/metadata/resourceVersion', 'value': role['metadata']['resourceVersion']},
+    {'op': 'add', 'path': f'/rules/{index}/resourceNames/-', 'value': pod},
+]
+(directory / 'fixture-exec-patch.json').write_text(json.dumps(patch) + '\n')
+EXEC_PERMISSION
+"${oc_cmd[@]}" -n "$namespace" patch role service-check --type=json --patch-file="$results/fixture-exec-patch.json"
 group=$("${oc_cmd[@]}" get namespace "$namespace" -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}')
 group=${group%%/*}
 [[ $group =~ ^[1-9][0-9]*$ ]]

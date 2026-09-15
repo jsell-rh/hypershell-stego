@@ -515,3 +515,17 @@ controllers as separate generated Deployments. It verifies their Kubernetes
 identity projections, declared RBAC, Pod replacement, and metrics with
 correlated logs and traces. The complete browser Gateway and account workflow
 passed with these workers. Shared-cluster isolation remains open.
+
+Gateway SQL registration requires the exact `configure.sql` controller grant
+for its managed cluster. The worker registers the retained state digest before
+SQL provisioning. Cleanup requires the exact `cleanup.sql` grant. Only a deleted
+Gateway can close registration. Closed registrations and SQL deletion records
+must be retained. This release uses schema generation `controller-local-v2`;
+it rejects earlier generations before startup and does not migrate old data.
+
+
+The [SQL registration browser result](acceptance/sql-registration-browser-evidence.json)
+proves the complete-package Gateway workflow, early deletion before workers
+start, SQL fault recovery, PostgreSQL restart, and retained installation data.
+All 229 generated files match repeat generation. The broader installation,
+Sandbox, and SQL session-isolation requirements remain open.

@@ -178,7 +178,11 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if err != nil {
 			return err
 		}
-		return c.provider.Ensure(operation, gw, release.GetGatewayRelease())
+		writeContext, err := rpc.WithResourceVersion(operation, state.ResourceVersion)
+		if err != nil {
+			return err
+		}
+		return c.provider.Ensure(writeContext, gw, release.GetGatewayRelease())
 	}, func(commit context.Context, observation error) error {
 		phase, desired := "Running", "Healthy"
 		if errors.Is(observation, ErrPending) {

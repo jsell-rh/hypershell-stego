@@ -112,3 +112,33 @@ func TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites(t *testing.T) 
 		})
 	}
 }
+
+// Version one could use SQL state without an API binding. An empty new binding
+// table must not cause cleanup to skip that old work.
+func TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration(t *testing.T) {
+	f := database(t)
+	if model.SchemaGeneration != "controller-local-v2" {
+		t.Fatal("SQL registration requires its own schema generation")
+	}
+	before := count(t, f.db, "stego_outbox.messages")
+	if _, err := f.db.Exec("UPDATE stego_schema.generation SET generation='controller-local-v1'"); err != nil {
+		t.Fatal(err)
+	}
+	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Discard})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := schema.Initialize(orm); !errors.Is(err, model.ErrSchemaGeneration) {
+		t.Fatal("old SQL generation was initialized", err)
+	}
+	if _, err := model.NewStore(orm); !errors.Is(err, model.ErrSchemaGeneration) {
+		t.Fatal("old SQL generation started storage", err)
+	}
+	var generation string
+	if err := f.db.QueryRow("SELECT generation FROM stego_schema.generation").Scan(&generation); err != nil || generation != "controller-local-v1" {
+		t.Fatal("rejection changed schema generation", err)
+	}
+	if count(t, f.db, "stego_effect_bindings") != 0 || count(t, f.db, "stego_outbox.messages") != before {
+		t.Fatal("rejection changed application state")
+	}
+}

@@ -7,16 +7,17 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkloadapp"
 	"github.com/segmentio/ksuid"
 )
 
 func TestGeneratedWorkloadWorkerStartupPrivacy(t *testing.T) {
-	for _, name := range []string{"database", "gateway-workload", "sandbox-count"} {
+	for _, name := range []string{"namespace-allocation", "gateway-workload", "sandbox-count"} {
 		t.Run(name, func(t *testing.T) {
 			binary := buildProgram(t, "./out/deploy/workers/"+name)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -32,31 +33,44 @@ func TestGeneratedWorkloadWorkerStartupPrivacy(t *testing.T) {
 			command := exec.CommandContext(ctx, binary)
 			cluster := ksuid.New().String()
 			image := "example.invalid/fixture@sha256:" + strings.Repeat("0", 64)
+			apiCA, apiToken := "/private-worker-trust", "/private-worker-token"
 			if name == "gateway-workload" {
-				_, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{
-					ClusterID: cluster, ClusterIssuer: "fixture", Issuer: "https://issuer.invalid",
-					SandboxImage: image, SupervisorImage: image, TrustBundleFile: "/private-worker-trust",
-				})
-				if err == nil || !strings.Contains(err.Error(), "/private-worker-trust") {
-					t.Fatal("startup fixture did not produce a private provider error")
+				apiCA = identity(t, "localhost").config.CAFile
+				apiToken = filepath.Join(t.TempDir(), "api-token")
+				if err := os.WriteFile(apiToken, []byte("private-worker-token"), 0600); err != nil {
+					t.Fatal(err)
 				}
 			}
-			command.Env = append(os.Environ(),
-				"STEGO_CONTROLLER_MONITOR_ADDR="+monitor,
+
+			settings := []string{
+				"STEGO_CONTROLLER_MONITOR_ADDR=" + monitor,
 				"OTEL_EXPORTER_OTLP_ENDPOINT=",
-				"DATABASE_PROVIDER=deployment",
-				"HYPERSHELL_DATABASE_CLUSTER_ISSUER=fixture",
-				"HYPERSHELL_MANAGED_CLUSTER_ID="+cluster,
+				"HYPERSHELL_API_GRPC_ADDR=localhost:443",
+				"HYPERSHELL_API_CA_FILE=" + apiCA,
+				"HYPERSHELL_API_TOKEN_FILE=" + apiToken,
+				"HYPERSHELL_CONTROL_NAMESPACE=fixture",
+				"HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE=" + filepath.Join(t.TempDir(), "database.json"),
+				"HYPERSHELL_MANAGED_CLUSTER_ID=" + cluster,
 				"HYPERSHELL_GATEWAY_CLUSTER_ISSUER=fixture",
 				"HYPERSHELL_GATEWAY_OIDC_ISSUER=https://issuer.invalid",
-				"HYPERSHELL_GATEWAY_SANDBOX_IMAGE="+image,
-				"HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE="+image,
+				"HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + image,
+				"HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + image,
 				"HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS=",
-				"HYPERSHELL_CNPG_DIAL_ADDRESS=",
 				"HYPERSHELL_GATEWAY_TRUST_BUNDLE=/private-worker-trust",
 				"HYPERSHELL_KUBERNETES_URL=http://private-worker-provider.invalid/private?token=private-worker-startup",
 				"HYPERSHELL_KUBERNETES_TOKEN_FILE=/private-worker-token",
-				"HYPERSHELL_KUBERNETES_CA_FILE=/private-worker-ca")
+				"HYPERSHELL_KUBERNETES_CA_FILE=/private-worker-ca"}
+			for _, setting := range settings {
+				name, value, _ := strings.Cut(setting, "=")
+				t.Setenv(name, value)
+			}
+			if name == "gateway-workload" {
+				err := gatewayworkloadapp.Run(ctx, nil)
+				if err == nil || !strings.Contains(err.Error(), "/private-worker-trust") {
+					t.Fatal("startup fixture did not reach the private provider error")
+				}
+			}
+			command.Env = os.Environ()
 			output, err := command.CombinedOutput()
 			var exit *exec.ExitError
 			if ctx.Err() != nil || !errors.As(err, &exit) || exit.ExitCode() != 1 {

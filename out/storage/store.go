@@ -90,6 +90,9 @@ func NewStore(db *gorm.DB) (*Store, error) {
 	if err := verifyScanCheckpoints(db); err != nil {
 		return nil, err
 	}
+	if err := verifyEffectBindings(db); err != nil {
+		return nil, err
+	}
 	return &Store{db: db}, nil
 }
 

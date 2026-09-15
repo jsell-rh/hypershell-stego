@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915014140-421ce6b53a40
+        module_version: v0.0.0-20260915023133-16e09a2c5d48
         vcs: git
-        revision: 421ce6b53a40850a3241cd1582843e65d6709fc9
+        revision: 16e09a2c5d483fce29b76308f0f3272e6bd5ca75
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 9fb71042e5ddde01e74ed7a762fbe13b7ccc4662748bbfe84e2ecdb5a121dc43
+    registry_content_sha256: 0d93cd39fd801fa0fbcc7a80adcd53981b7a7fc7f4bc0d1b5c0ebe6a96bb0f7e
     components:
         browser-backend:
             version: 1.6.1
@@ -53,7 +53,7 @@ last_applied:
             version: 1.11.0
             sha: browser-workflow
         postgres-adapter:
-            version: 4.3.1
+            version: 4.4.0
             sha: browser-workflow
     files:
         browser/backend.go: c014c4113ce229739c5a2eddf7ae44f4412edffaee8916f6f81e7ed72430242b

@@ -161,6 +161,16 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 	if err != nil {
 		return nil, config, err
 	}
+	if k.options.SQLBindings == nil {
+		return nil, config, errors.New("SQL state registration is required")
+	}
+	binding, err := k.options.SQLBindings.Load(ctx, gw.GetMetadata().GetId(), k.options.ClusterID)
+	if err != nil {
+		return nil, config, err
+	}
+	if create && binding.Closed {
+		return nil, config, errors.New("SQL state registration is closed")
+	}
 	ns, namespace, err := k.stateNamespace(ctx, gw)
 	if err != nil {
 		return nil, config, err
@@ -180,7 +190,7 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 		return nil, config, err
 	}
 	if code == 404 {
-		if !create || pinned != "" || markerCode != 404 {
+		if !create || binding.Present || pinned != "" || markerCode != 404 {
 			return nil, config, errors.New("Gateway state is missing; restore the original Secret")
 		}
 		// SQL identity is pinned before the first SQL database operation. A new
@@ -228,6 +238,9 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 	if err != nil {
 		return nil, config, err
 	}
+	if binding.Present && binding.Digest != fingerprint {
+		return nil, config, errors.New("Gateway state differs from its registered identity")
+	}
 	if pinned != "" && pinned != fingerprint {
 		return nil, config, errors.New("Gateway state differs from its namespace identity")
 	}
@@ -248,6 +261,17 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 	// The allocator must retain the public fingerprint before SQL can start.
 	if pinned != fingerprint {
 		return nil, config, ErrPending
+	}
+	if create {
+		registered, err := k.options.SQLBindings.Bind(ctx, id, k.options.ClusterID, fingerprint)
+		if err != nil {
+			return nil, config, err
+		}
+		if !registered.Present || registered.Closed || registered.Digest != fingerprint {
+			return nil, config, errors.New("SQL state registration was not confirmed")
+		}
+	} else if !binding.Present || binding.Digest != fingerprint {
+		return nil, config, errors.New("SQL state requires its registered binding")
 	}
 	server, _ := data(secret, "database-server")
 	config.ServerIdentity = string(server)

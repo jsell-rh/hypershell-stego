@@ -23,6 +23,7 @@ import (
 
 type object = kube.Object
 type Options struct {
+	SQLBindings                                            SQLBindings
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
 	DatabaseConfigFile                                     string
@@ -38,8 +39,8 @@ type Kubernetes struct {
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
-	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" {
-		return nil, errors.New("Gateway controller requires an explicit database file and control namespace")
+	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" || o.SQLBindings == nil {
+		return nil, errors.New("Gateway controller requires a database file, control namespace, and SQL state client")
 	}
 	if _, err := Namespace(o.ClusterID); err != nil {
 		return nil, errors.New("Gateway controller requires a managed cluster ID")
@@ -290,6 +291,19 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 func (k *Kubernetes) DeleteDatabase(ctx context.Context, gw *pb.Gateway) error {
 	if err := k.Delete(ctx, gw); err != nil {
 		return err
+	}
+	if k.options.SQLBindings == nil {
+		return errors.New("SQL state registration is required")
+	}
+	binding, err := k.options.SQLBindings.Close(ctx, gw.GetMetadata().GetId(), k.options.ClusterID)
+	if err != nil {
+		return err
+	}
+	if !binding.Present || !binding.Closed {
+		return errors.New("SQL state closure was not confirmed")
+	}
+	if binding.Digest == "" {
+		return nil
 	}
 	state, config, err := k.readLocalState(ctx, gw)
 	if err != nil {

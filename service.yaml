@@ -261,7 +261,7 @@ overrides:
     database: true
   postgres-adapter:
     migrations: startup
-    schema_generation: controller-local-v1
+    schema_generation: controller-local-v2
   jwt-auth:
     roles_claim: realm_access.roles
     mode: verifier

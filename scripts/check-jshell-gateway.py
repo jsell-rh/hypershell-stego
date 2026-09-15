@@ -19,6 +19,9 @@ import time
 import uuid
 
 REQUIRED = [
+    "TestGatewayDeletionBeforeWorkloadStartup",
+    "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+    "TestGeneratedWorkloadWorkerStartupPrivacy",
     "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
     "TestGatewayCreationCommitsOwnerAndEvent",
     "TestGatewayRequestsRejectRetiredDatabaseField",

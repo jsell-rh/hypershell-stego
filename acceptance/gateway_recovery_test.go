@@ -1,116 +1,160 @@
 package acceptance
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
-	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
+	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	"github.com/segmentio/ksuid"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
+// This API check proves the registration decision across restart. The real
+// browser workflow also checks early deletion through all three workers.
 func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
-	k := kubernetesFixture(t)
-	gatewayControllerRBAC(t, k)
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
-	apiTLS := identity(t, "localhost")
-	directory := filepath.Dir(apiTLS.config.CAFile)
-	settings = append(settings, "DATABASE_PROVIDER=deployment", `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "ManagedDatabase", "provider", f.cluster), cleanupGrant("controller", "ManagedDatabase", "record", f.cluster), cleanupGrant("controller", "Gateway", "workload", f.cluster))
-	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster), databaseWriteGrant("controller", f.cluster))
+	tlsIdentity := identity(t, "localhost")
+	dir := filepath.Dir(tlsIdentity.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["sql-worker","wrong-target","reader"]`)
+	foreign := ksuid.New().String()
+	settings = withControllerWriteGrants(t, settings, writeGrant("sql-worker", "configure.sql", f.cluster), writeGrant("wrong-target", "configure.sql", foreign))
+	settings = withCleanupGrants(t, settings, cleanupGrant("sql-worker", "Gateway", "sql", f.cluster), cleanupGrant("wrong-target", "Gateway", "sql", foreign))
 	binary := buildApplication(t)
-	dbBinary := buildProgram(t, "./out/deploy/workers/database")
-	workloadBinary := buildProgram(t, "./out/deploy/workers/gateway-workload")
-	stopAPI, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
-	controllerToken := token(t, key, "controller")
-	creator := token(t, key, "creator", "gateway:creator")
-	stopDatabase, dbLogs := startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
-	input, _ := json.Marshal(gateways.CreateRequest{Name: "deleted-before-startup", ClusterID: f.cluster, ReleaseID: f.release})
-	code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", creator, input)
-	for attempt := 0; code == 409 && attempt < 5; attempt++ {
-		time.Sleep(100 * time.Millisecond)
-		code, body = requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", creator, input)
-	}
-	var gateway httpapi.Gateway
-	if code != 201 || json.Unmarshal(body, &gateway) != nil {
-		t.Fatal("create Gateway", code, string(body))
-	}
-	namespace, err := gateways.DatabaseNamespace(gateway.DatabaseID)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		stopDatabase()
-		stopAPI()
-		k.must(t, "", "delete", "namespace", namespace, "--ignore-not-found=true", "--wait=false")
-	})
-	_, connection := grpcClient(t, rpcAddress, apiTLS)
-	databases := pb.NewManagedDatabaseServiceClient(connection)
-	deadline := time.Now().Add(150 * time.Second)
-	for {
-		ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+controllerToken)), 3*time.Second)
-		response, err := databases.GetManagedDatabase(ctx, &pb.GetManagedDatabaseRequest{Id: gateway.DatabaseID})
-		cancel()
-		if err == nil && response.GetManagedDatabase().GetStatus() == "ready" {
-			break
+	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	defer func() { stop() }()
+	owner := token(t, key, "owner", "gateway:creator")
+	create := func(name string) httpapi.Gateway {
+		t.Helper()
+		input, _ := json.Marshal(f.request(name))
+		code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, input)
+		var row httpapi.Gateway
+		if code != 201 || json.Unmarshal(body, &row) != nil {
+			t.Fatal("Gateway creation failed", code)
 		}
-		if time.Now().After(deadline) {
-			t.Fatalf("database did not become ready: %v\n%s", err, dbLogs())
+		return row
+	}
+	early, bound := create("deleted-before-work"), create("registered-state")
+	_, connection := grpcClient(t, grpcAddress, tlsIdentity)
+	client := control.NewGatewayIdentityServiceClient(connection)
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	call := func(subject string) context.Context {
+		return metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+token(t, key, subject)))
+	}
+	request := func(id string) *control.GatewaySQLStateRequest {
+		return &control.GatewaySQLStateRequest{GatewayId: id, ClusterId: f.cluster}
+	}
+	revision := func(id string) int64 {
+		t.Helper()
+		state, err := client.GetGatewayIdentityState(call("sql-worker"), &control.GetGatewayIdentityStateRequest{Id: id})
+		if err != nil {
+			t.Fatal(err)
 		}
-		time.Sleep(time.Second)
+		return state.ResourceVersion
 	}
-	stopDatabase()
-	if got := k.must(t, "", "get", "namespace", gateway.Namespace, "--ignore-not-found=true", "-o", "name"); len(bytes.TrimSpace(got)) != 0 {
-		t.Fatal("Gateway already has resources")
+	versioned := func(subject string, version int64) context.Context {
+		t.Helper()
+		c, err := rpc.WithResourceVersion(call(subject), version)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c
 	}
-	var ns struct {
-		Metadata struct {
-			Labels      map[string]string
-			Annotations map[string]string
+	digest := strings.Repeat("a", 64)
+	bind := &control.BindGatewaySQLStateRequest{GatewayId: bound.ID, ClusterId: f.cluster, Digest: digest}
+	before := revision(bound.ID)
+	awaitQueueEmpty(t, f)
+	for _, subject := range []string{"owner", "reader", "wrong-target"} {
+		if _, err := client.LoadGatewaySQLState(call(subject), request(bound.ID)); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("SQL state read lacked an exact grant", subject, err)
+		}
+		if _, err := client.BindGatewaySQLState(versioned(subject, before), bind); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("SQL state binding lacked an exact grant", subject, err)
+		}
+		if _, err := client.CloseGatewaySQLState(call(subject), request(bound.ID)); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("SQL state closure lacked an exact grant", subject, err)
 		}
 	}
-	if json.Unmarshal(k.must(t, "", "get", "namespace", namespace, "-o", "json"), &ns) != nil {
-		t.Fatal("read database namespace")
+	if _, err := client.BindGatewaySQLState(call("sql-worker"), bind); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("binding accepted no resource version", err)
 	}
-	if ns.Metadata.Labels["hypershell.redhat.io/gateway-id"] != "" || ns.Metadata.Annotations["hypershell.redhat.io/gateway-keys"] != "" {
-		t.Fatal("database already has a Gateway link")
+	if _, err := client.BindGatewaySQLState(versioned("sql-worker", before+1), bind); status.Code(err) != codes.Aborted {
+		t.Fatal("binding accepted a stale resource version", err)
 	}
-	code, body = requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, creator, nil)
-	if code != 204 {
-		t.Fatal("delete Gateway", code, string(body))
+	for _, bad := range []string{"", strings.Repeat("A", 64), strings.Repeat("a", 63)} {
+		bind.Digest = bad
+		if _, err := client.BindGatewaySQLState(versioned("sql-worker", before), bind); status.Code(err) != codes.InvalidArgument {
+			t.Fatal("invalid binding digest accepted", err)
+		}
 	}
-	// No queued event can supply the deleted ID after API restart.
+	bind.Digest = digest
+	if _, err := client.CloseGatewaySQLState(call("sql-worker"), request(bound.ID)); status.Code(err) != codes.Aborted {
+		t.Fatal("live registration was closed", err)
+	}
+	if count(t, f.db, "stego_effect_bindings") != 0 {
+		t.Fatal("rejected registration wrote state")
+	}
+	for range 2 {
+		value, err := client.BindGatewaySQLState(versioned("sql-worker", before), bind)
+		if err != nil || !value.GetPresent() || value.GetClosed() || value.GetDigest() != digest {
+			t.Fatal("binding was not retained", err)
+		}
+	}
+	bind.Digest = strings.Repeat("b", 64)
+	if _, err := client.BindGatewaySQLState(versioned("sql-worker", before), bind); status.Code(err) != codes.FailedPrecondition {
+		t.Fatal("binding replacement succeeded", err)
+	}
+	bind.Digest = digest
+	if revision(bound.ID) != before {
+		t.Fatal("state binding changed the public resource revision")
+	}
+	if n := count(t, f.db, "stego_effect_bindings"); n != 1 {
+		t.Fatal("binding record count differs", n)
+	}
+	for _, row := range []httpapi.Gateway{early, bound} {
+		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 204 {
+			t.Fatal("Gateway deletion failed", code)
+		}
+	}
 	awaitQueueEmpty(t, f)
 	connection.Close()
-	stopAPI()
-	stopAPI, _, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
-	stopDatabase, dbLogs = startDatabaseController(t, dbBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, "HYPERSHELL_MANAGED_CLUSTER_ID="+f.cluster)
-	workloadSettings := []string{"HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_GATEWAY_CLUSTER_ISSUER=" + k.options.ClusterIssuer, "HYPERSHELL_GATEWAY_OIDC_ISSUER=https://unused.invalid/realm", "HYPERSHELL_GATEWAY_TRUST_BUNDLE=" + apiTLS.config.CAFile, "HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + sandboxImage, "HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + supervisorImage}
-	stopWorkload, logs := startDatabaseController(t, workloadBinary, k, rpcAddress, apiTLS.config.CAFile, controllerToken, workloadSettings...)
-	defer stopWorkload()
-	deadline = time.Now().Add(45 * time.Second)
-	for {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		output, err := k.command(ctx, "", "get", "namespace", namespace, "--ignore-not-found=true", "-o", "name")
-		cancel()
-		if err == nil && len(bytes.TrimSpace(output)) == 0 {
-			break
+	stop()
+	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
+	defer connection.Close()
+	client = control.NewGatewayIdentityServiceClient(connection)
+	for _, row := range []httpapi.Gateway{early, bound} {
+		expected := ""
+		if row.ID == bound.ID {
+			expected = digest
 		}
-		if time.Now().After(deadline) {
-			t.Fatalf("Gateway deletion before first observation was lost: %v\n%s\n%s", err, logs(), dbLogs())
+		for range 2 {
+			closed, err := client.CloseGatewaySQLState(call("sql-worker"), request(row.ID))
+			if err != nil || !closed.GetPresent() || !closed.GetClosed() || closed.GetDigest() != expected {
+				t.Fatal("restart lost SQL registration history", err)
+			}
 		}
-		time.Sleep(time.Second)
+		bind.GatewayId = row.ID
+		if _, err := client.BindGatewaySQLState(versioned("sql-worker", revision(row.ID)), bind); status.Code(err) != codes.NotFound {
+			t.Fatal("deleted Gateway accepted SQL registration", err)
+		}
+		loaded, err := client.LoadGatewaySQLState(call("sql-worker"), request(row.ID))
+		if err != nil || !loaded.GetClosed() || loaded.GetDigest() != expected {
+			t.Fatal("closed state changed", err)
+		}
 	}
-	var deleted bool
-	if err := f.db.QueryRow("SELECT deleted_at IS NOT NULL FROM managed_databases WHERE id=$1", gateway.DatabaseID).Scan(&deleted); err != nil || !deleted {
-		t.Fatal("database was not deleted through the API", err)
+	if n := count(t, f.db, "stego_effect_bindings"); n != 2 {
+		t.Fatal("closure record count differs", n)
 	}
-	t.Log("Gateway deletion before workload startup survived API restart and removed its database")
+	t.Log("API restart preserved early deletion and registered SQL state; late registration and state replacement were denied")
 }

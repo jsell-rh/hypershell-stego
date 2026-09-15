@@ -71,6 +71,9 @@ func TestDurableGatewayStateSurvivesRestartAndRejectsLoss(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if _, err := k.options.SQLBindings.Bind(context.Background(), gw.Metadata.Id, k.options.ClusterID, fingerprint); err != nil {
+				t.Fatal(err)
+			}
 			marker = k.stateDefinition("ConfigMap", stateIdentity, gw.Metadata.Id)
 			marker["data"] = object{"sha256": fingerprint}
 			meta = marker["metadata"].(object)

@@ -219,3 +219,83 @@ full CI run confirms that failure; its SQL adapter test passed before generation
 stopped on the old import. Deletion before the first worker run, the remaining
 SQL fault tests, database-server restart, installation CNPG, and actual RDS
 remain required. This browser result does not establish production readiness.
+
+## SQL registration conversion
+
+The next source revision uses `controller-local-v2`. STEGO now stores a public,
+immutable state digest before the worker can use retained Gateway state for
+SQL. The API locks the live Gateway and requires the exact `configure.sql`
+grant and resource version. Deletion closes registration. A closed empty record
+permits early cleanup without inventing state. A retained digest requires the
+original keys and credentials. Version one is rejected because its workers
+could use SQL without this record. No automatic migration is supplied.
+
+The old `gateway_workload_test.go` and `cnpg_gateway_test.go` are removed. They
+required a deleted API, a deleted worker, and the old kind permissions. The
+current full acceptance package must compile; a selected file list is no longer
+the proposed gate. The historical file list and evidence describe only the
+previous result.
+
+The browser workflow now has checks for deletion before worker startup and API
+restart, SQL privilege and membership faults, retained password recovery, and
+PostgreSQL sidecar restart. The old requirement to repair unsafe privileges
+automatically is replaced by login denial until the operator repairs the grant.
+The sidecar test is not a CNPG or RDS failover test. These new checks have not yet
+passed a complete application run.
+
+The following application evidence remains required: installation CNPG and RDS,
+workload namespace replacement with retained source keys, denied SQL cleanup
+with retained keys, encrypted data at rest, viewer behavior after recovery, and
+Sandbox/Kata execution with namespace isolation and count recovery. Existing
+common SQL tests for ownership and late retries do not replace these workflows.
+
+CI no longer builds the removed database worker or runs the retired server CRUD
+jobs. The CNPG Gateway, Gateway workload, and Sandbox CI jobs remain open until
+their restricted installation runners exist. The three old manual RBAC manifests
+are removed. They granted server-controller and cluster-wide worker access.
+Use the generated namespace allocation and worker roles for this release.
+Historical contract pages retain links to the old manifests in Git history.
+
+The SQL privilege fault check proves that new login is disabled. It does not
+prove termination of sessions that were already open. The current common SQL
+runtime must be extended and tested to stop those owned sessions after an
+isolation failure. This is an open security requirement before production use.
+
+
+## Complete-package SQL registration result
+
+The next complete browser run passed in 327.75 seconds with race detection and
+compiler `16e09a2`. It compiled the full acceptance package and ran the named
+preflight checks before the browser workflow. No test files were excluded.
+Both API and console dependency checks passed. Repeated generation and the
+post-test check produced the same hashes for all 229 archived files.
+
+The real workers completed deletion of a Gateway created and deleted before
+worker startup. API restart retained that deletion. SQL registration closed
+with an empty digest, and no Gateway database, role, or namespace was created.
+The API checks also retained an existing digest across restart and rejected
+late registration, state replacement, missing versions, and denied grants.
+
+SQL privilege and membership faults disabled new login and reported workload
+failure. Operator repair and password recovery retained the original keys,
+credentials, and provider data. A confirmed PostgreSQL sidecar restart preserved
+both Gateways and installation data. Worker replacement then passed. Normal
+Gateway deletion removed its SQL and retained state. The other Gateway and
+supplied server remained available. Final deletion retained installation data.
+
+The workflow also passed rendered login, service accounts, REST and gRPC access,
+event delivery, process replacement, session renewal, rotation, collector loss,
+and logout. All three workers emitted metrics and correlated logs and traces
+before and after replacement. The Job exited with zero. Its namespace and all
+owned cluster resources are absent. The shared live-test Lease was released.
+
+The [result](sql-registration-browser-evidence.json) records the exact frozen
+source, generated hashes, images, and cleanup. The
+[failed attempt](sql-registration-browser-attempts.json) remains recorded: its
+test role could not exec into the PostgreSQL sidecar. The correction permits
+exec for the exact Job Pod, checks authorization errors, and still requires an
+observed restart. No runtime permission changed.
+
+This closes the selected-file transition and the new early-deletion, SQL fault,
+and database-restart application checks. It does not close the remaining
+installation, Sandbox, SQL session-termination, or full CI requirements above.

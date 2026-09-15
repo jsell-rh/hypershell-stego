@@ -25,6 +25,197 @@ const (
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
 
+// This is a public digest of retained controller state, never SQL credentials.
+// Registration requires a live Gateway and its observed resource version.
+// Closure requires deletion and prevents any later first registration.
+type GatewaySQLStateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GatewayId     string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,2,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewaySQLStateRequest) Reset() {
+	*x = GatewaySQLStateRequest{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewaySQLStateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewaySQLStateRequest) ProtoMessage() {}
+
+func (x *GatewaySQLStateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewaySQLStateRequest.ProtoReflect.Descriptor instead.
+func (*GatewaySQLStateRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *GatewaySQLStateRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
+func (x *GatewaySQLStateRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
+	}
+	return ""
+}
+
+type BindGatewaySQLStateRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GatewayId     string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,2,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
+	Digest        string                 `protobuf:"bytes,3,opt,name=digest,proto3" json:"digest,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *BindGatewaySQLStateRequest) Reset() {
+	*x = BindGatewaySQLStateRequest{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[1]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *BindGatewaySQLStateRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*BindGatewaySQLStateRequest) ProtoMessage() {}
+
+func (x *BindGatewaySQLStateRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[1]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use BindGatewaySQLStateRequest.ProtoReflect.Descriptor instead.
+func (*BindGatewaySQLStateRequest) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *BindGatewaySQLStateRequest) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
+func (x *BindGatewaySQLStateRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
+	}
+	return ""
+}
+
+func (x *BindGatewaySQLStateRequest) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+type GatewaySQLStateBinding struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	GatewayId     string                 `protobuf:"bytes,1,opt,name=gateway_id,json=gatewayId,proto3" json:"gateway_id,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,2,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
+	Present       bool                   `protobuf:"varint,3,opt,name=present,proto3" json:"present,omitempty"`
+	Digest        string                 `protobuf:"bytes,4,opt,name=digest,proto3" json:"digest,omitempty"`
+	Closed        bool                   `protobuf:"varint,5,opt,name=closed,proto3" json:"closed,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GatewaySQLStateBinding) Reset() {
+	*x = GatewaySQLStateBinding{}
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GatewaySQLStateBinding) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GatewaySQLStateBinding) ProtoMessage() {}
+
+func (x *GatewaySQLStateBinding) ProtoReflect() protoreflect.Message {
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GatewaySQLStateBinding.ProtoReflect.Descriptor instead.
+func (*GatewaySQLStateBinding) Descriptor() ([]byte, []int) {
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *GatewaySQLStateBinding) GetGatewayId() string {
+	if x != nil {
+		return x.GatewayId
+	}
+	return ""
+}
+
+func (x *GatewaySQLStateBinding) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
+	}
+	return ""
+}
+
+func (x *GatewaySQLStateBinding) GetPresent() bool {
+	if x != nil {
+		return x.Present
+	}
+	return false
+}
+
+func (x *GatewaySQLStateBinding) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *GatewaySQLStateBinding) GetClosed() bool {
+	if x != nil {
+		return x.Closed
+	}
+	return false
+}
+
 type GetGatewayIdentityStateRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -34,7 +225,7 @@ type GetGatewayIdentityStateRequest struct {
 
 func (x *GetGatewayIdentityStateRequest) Reset() {
 	*x = GetGatewayIdentityStateRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[0]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -46,7 +237,7 @@ func (x *GetGatewayIdentityStateRequest) String() string {
 func (*GetGatewayIdentityStateRequest) ProtoMessage() {}
 
 func (x *GetGatewayIdentityStateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[0]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -59,7 +250,7 @@ func (x *GetGatewayIdentityStateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGatewayIdentityStateRequest.ProtoReflect.Descriptor instead.
 func (*GetGatewayIdentityStateRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{0}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *GetGatewayIdentityStateRequest) GetId() string {
@@ -86,7 +277,7 @@ type GetGatewayIdentityStateResponse struct {
 
 func (x *GetGatewayIdentityStateResponse) Reset() {
 	*x = GetGatewayIdentityStateResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[1]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -98,7 +289,7 @@ func (x *GetGatewayIdentityStateResponse) String() string {
 func (*GetGatewayIdentityStateResponse) ProtoMessage() {}
 
 func (x *GetGatewayIdentityStateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[1]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,7 +302,7 @@ func (x *GetGatewayIdentityStateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGatewayIdentityStateResponse.ProtoReflect.Descriptor instead.
 func (*GetGatewayIdentityStateResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{1}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GetGatewayIdentityStateResponse) GetGateway() *v1.Gateway {
@@ -181,7 +372,7 @@ type ListGatewayIdentityUsersRequest struct {
 
 func (x *ListGatewayIdentityUsersRequest) Reset() {
 	*x = ListGatewayIdentityUsersRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[2]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -193,7 +384,7 @@ func (x *ListGatewayIdentityUsersRequest) String() string {
 func (*ListGatewayIdentityUsersRequest) ProtoMessage() {}
 
 func (x *ListGatewayIdentityUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[2]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -206,7 +397,7 @@ func (x *ListGatewayIdentityUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGatewayIdentityUsersRequest.ProtoReflect.Descriptor instead.
 func (*ListGatewayIdentityUsersRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{2}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *ListGatewayIdentityUsersRequest) GetGatewayId() string {
@@ -233,7 +424,7 @@ type ListGatewayIdentityUsersResponse struct {
 
 func (x *ListGatewayIdentityUsersResponse) Reset() {
 	*x = ListGatewayIdentityUsersResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[3]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -245,7 +436,7 @@ func (x *ListGatewayIdentityUsersResponse) String() string {
 func (*ListGatewayIdentityUsersResponse) ProtoMessage() {}
 
 func (x *ListGatewayIdentityUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[3]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -258,7 +449,7 @@ func (x *ListGatewayIdentityUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGatewayIdentityUsersResponse.ProtoReflect.Descriptor instead.
 func (*ListGatewayIdentityUsersResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{3}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{6}
 }
 
 func (x *ListGatewayIdentityUsersResponse) GetUserIds() []string {
@@ -285,7 +476,7 @@ type GetGatewayIdentityUserRequest struct {
 
 func (x *GetGatewayIdentityUserRequest) Reset() {
 	*x = GetGatewayIdentityUserRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[4]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -297,7 +488,7 @@ func (x *GetGatewayIdentityUserRequest) String() string {
 func (*GetGatewayIdentityUserRequest) ProtoMessage() {}
 
 func (x *GetGatewayIdentityUserRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[4]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -310,7 +501,7 @@ func (x *GetGatewayIdentityUserRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGatewayIdentityUserRequest.ProtoReflect.Descriptor instead.
 func (*GetGatewayIdentityUserRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{4}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetGatewayIdentityUserRequest) GetGatewayId() string {
@@ -341,7 +532,7 @@ type GetGatewayIdentityUserResponse struct {
 
 func (x *GetGatewayIdentityUserResponse) Reset() {
 	*x = GetGatewayIdentityUserResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[5]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -353,7 +544,7 @@ func (x *GetGatewayIdentityUserResponse) String() string {
 func (*GetGatewayIdentityUserResponse) ProtoMessage() {}
 
 func (x *GetGatewayIdentityUserResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[5]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -366,7 +557,7 @@ func (x *GetGatewayIdentityUserResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGatewayIdentityUserResponse.ProtoReflect.Descriptor instead.
 func (*GetGatewayIdentityUserResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{5}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{8}
 }
 
 func (x *GetGatewayIdentityUserResponse) GetGatewayId() string {
@@ -416,7 +607,7 @@ type ListGatewayReconcileIDsRequest struct {
 
 func (x *ListGatewayReconcileIDsRequest) Reset() {
 	*x = ListGatewayReconcileIDsRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -428,7 +619,7 @@ func (x *ListGatewayReconcileIDsRequest) String() string {
 func (*ListGatewayReconcileIDsRequest) ProtoMessage() {}
 
 func (x *ListGatewayReconcileIDsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[6]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -441,7 +632,7 @@ func (x *ListGatewayReconcileIDsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGatewayReconcileIDsRequest.ProtoReflect.Descriptor instead.
 func (*ListGatewayReconcileIDsRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{6}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ListGatewayReconcileIDsRequest) GetAfterId() string {
@@ -460,7 +651,7 @@ type ListGatewayReconcileIDsResponse struct {
 
 func (x *ListGatewayReconcileIDsResponse) Reset() {
 	*x = ListGatewayReconcileIDsResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -472,7 +663,7 @@ func (x *ListGatewayReconcileIDsResponse) String() string {
 func (*ListGatewayReconcileIDsResponse) ProtoMessage() {}
 
 func (x *ListGatewayReconcileIDsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[7]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -485,7 +676,7 @@ func (x *ListGatewayReconcileIDsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListGatewayReconcileIDsResponse.ProtoReflect.Descriptor instead.
 func (*ListGatewayReconcileIDsResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{7}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *ListGatewayReconcileIDsResponse) GetIds() []string {
@@ -507,7 +698,7 @@ type SetObservedSandboxCountRequest struct {
 
 func (x *SetObservedSandboxCountRequest) Reset() {
 	*x = SetObservedSandboxCountRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -519,7 +710,7 @@ func (x *SetObservedSandboxCountRequest) String() string {
 func (*SetObservedSandboxCountRequest) ProtoMessage() {}
 
 func (x *SetObservedSandboxCountRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[8]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -532,7 +723,7 @@ func (x *SetObservedSandboxCountRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetObservedSandboxCountRequest.ProtoReflect.Descriptor instead.
 func (*SetObservedSandboxCountRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{8}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *SetObservedSandboxCountRequest) GetNamespace() string {
@@ -565,7 +756,7 @@ type SetObservedSandboxCountResponse struct {
 
 func (x *SetObservedSandboxCountResponse) Reset() {
 	*x = SetObservedSandboxCountResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -577,7 +768,7 @@ func (x *SetObservedSandboxCountResponse) String() string {
 func (*SetObservedSandboxCountResponse) ProtoMessage() {}
 
 func (x *SetObservedSandboxCountResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[9]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -590,7 +781,7 @@ func (x *SetObservedSandboxCountResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SetObservedSandboxCountResponse.ProtoReflect.Descriptor instead.
 func (*SetObservedSandboxCountResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{9}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *SetObservedSandboxCountResponse) GetCount() int32 {
@@ -612,7 +803,7 @@ type ObserveGatewayCleanupRequest struct {
 
 func (x *ObserveGatewayCleanupRequest) Reset() {
 	*x = ObserveGatewayCleanupRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[10]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -624,7 +815,7 @@ func (x *ObserveGatewayCleanupRequest) String() string {
 func (*ObserveGatewayCleanupRequest) ProtoMessage() {}
 
 func (x *ObserveGatewayCleanupRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[10]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -637,7 +828,7 @@ func (x *ObserveGatewayCleanupRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveGatewayCleanupRequest.ProtoReflect.Descriptor instead.
 func (*ObserveGatewayCleanupRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{10}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *ObserveGatewayCleanupRequest) GetId() string {
@@ -676,7 +867,7 @@ type ObserveGatewayCleanupResponse struct {
 
 func (x *ObserveGatewayCleanupResponse) Reset() {
 	*x = ObserveGatewayCleanupResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[11]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -688,7 +879,7 @@ func (x *ObserveGatewayCleanupResponse) String() string {
 func (*ObserveGatewayCleanupResponse) ProtoMessage() {}
 
 func (x *ObserveGatewayCleanupResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[11]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -701,7 +892,7 @@ func (x *ObserveGatewayCleanupResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveGatewayCleanupResponse.ProtoReflect.Descriptor instead.
 func (*ObserveGatewayCleanupResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{11}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{14}
 }
 
 type CleanupTargetObservations struct {
@@ -713,7 +904,7 @@ type CleanupTargetObservations struct {
 
 func (x *CleanupTargetObservations) Reset() {
 	*x = CleanupTargetObservations{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[12]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -725,7 +916,7 @@ func (x *CleanupTargetObservations) String() string {
 func (*CleanupTargetObservations) ProtoMessage() {}
 
 func (x *CleanupTargetObservations) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[12]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -738,7 +929,7 @@ func (x *CleanupTargetObservations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CleanupTargetObservations.ProtoReflect.Descriptor instead.
 func (*CleanupTargetObservations) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{12}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *CleanupTargetObservations) GetTargets() map[string]bool {
@@ -763,7 +954,7 @@ type ScanGatewayIdentityUsersRequest struct {
 
 func (x *ScanGatewayIdentityUsersRequest) Reset() {
 	*x = ScanGatewayIdentityUsersRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[13]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -775,7 +966,7 @@ func (x *ScanGatewayIdentityUsersRequest) String() string {
 func (*ScanGatewayIdentityUsersRequest) ProtoMessage() {}
 
 func (x *ScanGatewayIdentityUsersRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[13]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -788,7 +979,7 @@ func (x *ScanGatewayIdentityUsersRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanGatewayIdentityUsersRequest.ProtoReflect.Descriptor instead.
 func (*ScanGatewayIdentityUsersRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{13}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *ScanGatewayIdentityUsersRequest) GetGatewayId() string {
@@ -822,7 +1013,7 @@ type GatewayIdentityUserReference struct {
 
 func (x *GatewayIdentityUserReference) Reset() {
 	*x = GatewayIdentityUserReference{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[14]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -834,7 +1025,7 @@ func (x *GatewayIdentityUserReference) String() string {
 func (*GatewayIdentityUserReference) ProtoMessage() {}
 
 func (x *GatewayIdentityUserReference) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[14]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -847,7 +1038,7 @@ func (x *GatewayIdentityUserReference) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GatewayIdentityUserReference.ProtoReflect.Descriptor instead.
 func (*GatewayIdentityUserReference) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{14}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *GatewayIdentityUserReference) GetGrantId() string {
@@ -876,7 +1067,7 @@ type ScanGatewayIdentityUsersResponse struct {
 
 func (x *ScanGatewayIdentityUsersResponse) Reset() {
 	*x = ScanGatewayIdentityUsersResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[15]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -888,7 +1079,7 @@ func (x *ScanGatewayIdentityUsersResponse) String() string {
 func (*ScanGatewayIdentityUsersResponse) ProtoMessage() {}
 
 func (x *ScanGatewayIdentityUsersResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[15]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -901,7 +1092,7 @@ func (x *ScanGatewayIdentityUsersResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ScanGatewayIdentityUsersResponse.ProtoReflect.Descriptor instead.
 func (*ScanGatewayIdentityUsersResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{15}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *ScanGatewayIdentityUsersResponse) GetGatewayId() string {
@@ -942,7 +1133,7 @@ type GetGatewayCleanupSummaryRequest struct {
 
 func (x *GetGatewayCleanupSummaryRequest) Reset() {
 	*x = GetGatewayCleanupSummaryRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[16]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -954,7 +1145,7 @@ func (x *GetGatewayCleanupSummaryRequest) String() string {
 func (*GetGatewayCleanupSummaryRequest) ProtoMessage() {}
 
 func (x *GetGatewayCleanupSummaryRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[16]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -967,7 +1158,7 @@ func (x *GetGatewayCleanupSummaryRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetGatewayCleanupSummaryRequest.ProtoReflect.Descriptor instead.
 func (*GetGatewayCleanupSummaryRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{16}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *GetGatewayCleanupSummaryRequest) GetOwner() string {
@@ -996,7 +1187,7 @@ type LoadGatewayIdentityCheckpointRequest struct {
 
 func (x *LoadGatewayIdentityCheckpointRequest) Reset() {
 	*x = LoadGatewayIdentityCheckpointRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[17]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1008,7 +1199,7 @@ func (x *LoadGatewayIdentityCheckpointRequest) String() string {
 func (*LoadGatewayIdentityCheckpointRequest) ProtoMessage() {}
 
 func (x *LoadGatewayIdentityCheckpointRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[17]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1021,7 +1212,7 @@ func (x *LoadGatewayIdentityCheckpointRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use LoadGatewayIdentityCheckpointRequest.ProtoReflect.Descriptor instead.
 func (*LoadGatewayIdentityCheckpointRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{17}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *LoadGatewayIdentityCheckpointRequest) GetGatewayId() string {
@@ -1042,7 +1233,7 @@ type SaveGatewayIdentityCheckpointRequest struct {
 
 func (x *SaveGatewayIdentityCheckpointRequest) Reset() {
 	*x = SaveGatewayIdentityCheckpointRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[18]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1054,7 +1245,7 @@ func (x *SaveGatewayIdentityCheckpointRequest) String() string {
 func (*SaveGatewayIdentityCheckpointRequest) ProtoMessage() {}
 
 func (x *SaveGatewayIdentityCheckpointRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[18]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1067,7 +1258,7 @@ func (x *SaveGatewayIdentityCheckpointRequest) ProtoReflect() protoreflect.Messa
 
 // Deprecated: Use SaveGatewayIdentityCheckpointRequest.ProtoReflect.Descriptor instead.
 func (*SaveGatewayIdentityCheckpointRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{18}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{21}
 }
 
 func (x *SaveGatewayIdentityCheckpointRequest) GetGatewayId() string {
@@ -1102,7 +1293,7 @@ type GatewayIdentityCheckpoint struct {
 
 func (x *GatewayIdentityCheckpoint) Reset() {
 	*x = GatewayIdentityCheckpoint{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[19]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1114,7 +1305,7 @@ func (x *GatewayIdentityCheckpoint) String() string {
 func (*GatewayIdentityCheckpoint) ProtoMessage() {}
 
 func (x *GatewayIdentityCheckpoint) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[19]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1127,7 +1318,7 @@ func (x *GatewayIdentityCheckpoint) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GatewayIdentityCheckpoint.ProtoReflect.Descriptor instead.
 func (*GatewayIdentityCheckpoint) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{19}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GatewayIdentityCheckpoint) GetGatewayId() string {
@@ -1162,7 +1353,7 @@ type ResourceConditions struct {
 
 func (x *ResourceConditions) Reset() {
 	*x = ResourceConditions{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[20]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1174,7 +1365,7 @@ func (x *ResourceConditions) String() string {
 func (*ResourceConditions) ProtoMessage() {}
 
 func (x *ResourceConditions) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[20]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1187,7 +1378,7 @@ func (x *ResourceConditions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceConditions.ProtoReflect.Descriptor instead.
 func (*ResourceConditions) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{20}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *ResourceConditions) GetConditions() map[string]*ResourceCondition {
@@ -1212,7 +1403,7 @@ type ResourceCondition struct {
 
 func (x *ResourceCondition) Reset() {
 	*x = ResourceCondition{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[21]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1224,7 +1415,7 @@ func (x *ResourceCondition) String() string {
 func (*ResourceCondition) ProtoMessage() {}
 
 func (x *ResourceCondition) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[21]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1237,7 +1428,7 @@ func (x *ResourceCondition) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ResourceCondition.ProtoReflect.Descriptor instead.
 func (*ResourceCondition) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{21}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *ResourceCondition) GetStatus() string {
@@ -1296,7 +1487,7 @@ type ObserveGatewayIdentityRequest struct {
 
 func (x *ObserveGatewayIdentityRequest) Reset() {
 	*x = ObserveGatewayIdentityRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[22]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1308,7 +1499,7 @@ func (x *ObserveGatewayIdentityRequest) String() string {
 func (*ObserveGatewayIdentityRequest) ProtoMessage() {}
 
 func (x *ObserveGatewayIdentityRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[22]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1321,7 +1512,7 @@ func (x *ObserveGatewayIdentityRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveGatewayIdentityRequest.ProtoReflect.Descriptor instead.
 func (*ObserveGatewayIdentityRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{22}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ObserveGatewayIdentityRequest) GetId() string {
@@ -1353,7 +1544,7 @@ type ObserveGatewayIdentityResponse struct {
 
 func (x *ObserveGatewayIdentityResponse) Reset() {
 	*x = ObserveGatewayIdentityResponse{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[23]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1365,7 +1556,7 @@ func (x *ObserveGatewayIdentityResponse) String() string {
 func (*ObserveGatewayIdentityResponse) ProtoMessage() {}
 
 func (x *ObserveGatewayIdentityResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[23]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1378,7 +1569,7 @@ func (x *ObserveGatewayIdentityResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ObserveGatewayIdentityResponse.ProtoReflect.Descriptor instead.
 func (*ObserveGatewayIdentityResponse) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{23}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{26}
 }
 
 // Data is a bounded STEGO scan-cycle record. The generation and checkpoint
@@ -1396,7 +1587,7 @@ type GatewayIdentityCycle struct {
 
 func (x *GatewayIdentityCycle) Reset() {
 	*x = GatewayIdentityCycle{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1408,7 +1599,7 @@ func (x *GatewayIdentityCycle) String() string {
 func (*GatewayIdentityCycle) ProtoMessage() {}
 
 func (x *GatewayIdentityCycle) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[24]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1421,7 +1612,7 @@ func (x *GatewayIdentityCycle) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GatewayIdentityCycle.ProtoReflect.Descriptor instead.
 func (*GatewayIdentityCycle) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{24}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *GatewayIdentityCycle) GetGatewayId() string {
@@ -1472,7 +1663,7 @@ type SaveGatewayIdentityCycleRequest struct {
 
 func (x *SaveGatewayIdentityCycleRequest) Reset() {
 	*x = SaveGatewayIdentityCycleRequest{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1484,7 +1675,7 @@ func (x *SaveGatewayIdentityCycleRequest) String() string {
 func (*SaveGatewayIdentityCycleRequest) ProtoMessage() {}
 
 func (x *SaveGatewayIdentityCycleRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1497,7 +1688,7 @@ func (x *SaveGatewayIdentityCycleRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use SaveGatewayIdentityCycleRequest.ProtoReflect.Descriptor instead.
 func (*SaveGatewayIdentityCycleRequest) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{25}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *SaveGatewayIdentityCycleRequest) GetGatewayId() string {
@@ -1550,7 +1741,7 @@ type CleanupSummary struct {
 
 func (x *CleanupSummary) Reset() {
 	*x = CleanupSummary{}
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[26]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1562,7 +1753,7 @@ func (x *CleanupSummary) String() string {
 func (*CleanupSummary) ProtoMessage() {}
 
 func (x *CleanupSummary) ProtoReflect() protoreflect.Message {
-	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[26]
+	mi := &file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1575,7 +1766,7 @@ func (x *CleanupSummary) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use CleanupSummary.ProtoReflect.Descriptor instead.
 func (*CleanupSummary) Descriptor() ([]byte, []int) {
-	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{26}
+	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP(), []int{29}
 }
 
 func (x *CleanupSummary) GetOwner() string {
@@ -1624,7 +1815,26 @@ var File_hypershell_controlplane_v1_gateway_identity_proto protoreflect.FileDesc
 
 const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\n" +
-	"1hypershell/controlplane/v1/gateway_identity.proto\x12\x1ahypershell.controlplane.v1\x1a\x1chypershell/v1/gateways.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"0\n" +
+	"1hypershell/controlplane/v1/gateway_identity.proto\x12\x1ahypershell.controlplane.v1\x1a\x1chypershell/v1/gateways.proto\x1a\x1fgoogle/protobuf/timestamp.proto\"V\n" +
+	"\x16GatewaySQLStateRequest\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x02 \x01(\tR\tclusterId\"r\n" +
+	"\x1aBindGatewaySQLStateRequest\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x02 \x01(\tR\tclusterId\x12\x16\n" +
+	"\x06digest\x18\x03 \x01(\tR\x06digest\"\xa0\x01\n" +
+	"\x16GatewaySQLStateBinding\x12\x1d\n" +
+	"\n" +
+	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x02 \x01(\tR\tclusterId\x12\x18\n" +
+	"\apresent\x18\x03 \x01(\bR\apresent\x12\x16\n" +
+	"\x06digest\x18\x04 \x01(\tR\x06digest\x12\x16\n" +
+	"\x06closed\x18\x05 \x01(\bR\x06closed\"0\n" +
 	"\x1eGetGatewayIdentityStateRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"\xea\x06\n" +
 	"\x1fGetGatewayIdentityStateResponse\x120\n" +
@@ -1760,8 +1970,11 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\apending\x18\x04 \x01(\x03R\apending\x12A\n" +
 	"\x0eoldest_pending\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\roldestPending\x12;\n" +
 	"\vobserved_at\x18\x06 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
-	"observedAt2\x93\x0f\n" +
-	"\x16GatewayIdentityService\x12\x8e\x01\n" +
+	"observedAt2\x96\x12\n" +
+	"\x16GatewayIdentityService\x12}\n" +
+	"\x13LoadGatewaySQLState\x122.hypershell.controlplane.v1.GatewaySQLStateRequest\x1a2.hypershell.controlplane.v1.GatewaySQLStateBinding\x12\x81\x01\n" +
+	"\x13BindGatewaySQLState\x126.hypershell.controlplane.v1.BindGatewaySQLStateRequest\x1a2.hypershell.controlplane.v1.GatewaySQLStateBinding\x12~\n" +
+	"\x14CloseGatewaySQLState\x122.hypershell.controlplane.v1.GatewaySQLStateRequest\x1a2.hypershell.controlplane.v1.GatewaySQLStateBinding\x12\x8e\x01\n" +
 	"\x18LoadGatewayIdentityCycle\x12@.hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x89\x01\n" +
 	"\x18SaveGatewayIdentityCycle\x12;.hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest\x1a0.hypershell.controlplane.v1.GatewayIdentityCycle\x12\x8f\x01\n" +
 	"\x16ObserveGatewayIdentity\x129.hypershell.controlplane.v1.ObserveGatewayIdentityRequest\x1a:.hypershell.controlplane.v1.ObserveGatewayIdentityResponse\x12\x98\x01\n" +
@@ -1788,84 +2001,93 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_rawDescGZIP() []byte
 	return file_hypershell_controlplane_v1_gateway_identity_proto_rawDescData
 }
 
-var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 32)
+var file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes = make([]protoimpl.MessageInfo, 35)
 var file_hypershell_controlplane_v1_gateway_identity_proto_goTypes = []any{
-	(*GetGatewayIdentityStateRequest)(nil),       // 0: hypershell.controlplane.v1.GetGatewayIdentityStateRequest
-	(*GetGatewayIdentityStateResponse)(nil),      // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse
-	(*ListGatewayIdentityUsersRequest)(nil),      // 2: hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
-	(*ListGatewayIdentityUsersResponse)(nil),     // 3: hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
-	(*GetGatewayIdentityUserRequest)(nil),        // 4: hypershell.controlplane.v1.GetGatewayIdentityUserRequest
-	(*GetGatewayIdentityUserResponse)(nil),       // 5: hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	(*ListGatewayReconcileIDsRequest)(nil),       // 6: hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
-	(*ListGatewayReconcileIDsResponse)(nil),      // 7: hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
-	(*SetObservedSandboxCountRequest)(nil),       // 8: hypershell.controlplane.v1.SetObservedSandboxCountRequest
-	(*SetObservedSandboxCountResponse)(nil),      // 9: hypershell.controlplane.v1.SetObservedSandboxCountResponse
-	(*ObserveGatewayCleanupRequest)(nil),         // 10: hypershell.controlplane.v1.ObserveGatewayCleanupRequest
-	(*ObserveGatewayCleanupResponse)(nil),        // 11: hypershell.controlplane.v1.ObserveGatewayCleanupResponse
-	(*CleanupTargetObservations)(nil),            // 12: hypershell.controlplane.v1.CleanupTargetObservations
-	(*ScanGatewayIdentityUsersRequest)(nil),      // 13: hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
-	(*GatewayIdentityUserReference)(nil),         // 14: hypershell.controlplane.v1.GatewayIdentityUserReference
-	(*ScanGatewayIdentityUsersResponse)(nil),     // 15: hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
-	(*GetGatewayCleanupSummaryRequest)(nil),      // 16: hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
-	(*LoadGatewayIdentityCheckpointRequest)(nil), // 17: hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
-	(*SaveGatewayIdentityCheckpointRequest)(nil), // 18: hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
-	(*GatewayIdentityCheckpoint)(nil),            // 19: hypershell.controlplane.v1.GatewayIdentityCheckpoint
-	(*ResourceConditions)(nil),                   // 20: hypershell.controlplane.v1.ResourceConditions
-	(*ResourceCondition)(nil),                    // 21: hypershell.controlplane.v1.ResourceCondition
-	(*ObserveGatewayIdentityRequest)(nil),        // 22: hypershell.controlplane.v1.ObserveGatewayIdentityRequest
-	(*ObserveGatewayIdentityResponse)(nil),       // 23: hypershell.controlplane.v1.ObserveGatewayIdentityResponse
-	(*GatewayIdentityCycle)(nil),                 // 24: hypershell.controlplane.v1.GatewayIdentityCycle
-	(*SaveGatewayIdentityCycleRequest)(nil),      // 25: hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
-	(*CleanupSummary)(nil),                       // 26: hypershell.controlplane.v1.CleanupSummary
-	nil,                                          // 27: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
-	nil,                                          // 28: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
-	nil,                                          // 29: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
-	nil,                                          // 30: hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
-	nil,                                          // 31: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
-	(*v1.Gateway)(nil),                           // 32: hypershell.v1.Gateway
-	(*timestamppb.Timestamp)(nil),                // 33: google.protobuf.Timestamp
+	(*GatewaySQLStateRequest)(nil),               // 0: hypershell.controlplane.v1.GatewaySQLStateRequest
+	(*BindGatewaySQLStateRequest)(nil),           // 1: hypershell.controlplane.v1.BindGatewaySQLStateRequest
+	(*GatewaySQLStateBinding)(nil),               // 2: hypershell.controlplane.v1.GatewaySQLStateBinding
+	(*GetGatewayIdentityStateRequest)(nil),       // 3: hypershell.controlplane.v1.GetGatewayIdentityStateRequest
+	(*GetGatewayIdentityStateResponse)(nil),      // 4: hypershell.controlplane.v1.GetGatewayIdentityStateResponse
+	(*ListGatewayIdentityUsersRequest)(nil),      // 5: hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
+	(*ListGatewayIdentityUsersResponse)(nil),     // 6: hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
+	(*GetGatewayIdentityUserRequest)(nil),        // 7: hypershell.controlplane.v1.GetGatewayIdentityUserRequest
+	(*GetGatewayIdentityUserResponse)(nil),       // 8: hypershell.controlplane.v1.GetGatewayIdentityUserResponse
+	(*ListGatewayReconcileIDsRequest)(nil),       // 9: hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	(*ListGatewayReconcileIDsResponse)(nil),      // 10: hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	(*SetObservedSandboxCountRequest)(nil),       // 11: hypershell.controlplane.v1.SetObservedSandboxCountRequest
+	(*SetObservedSandboxCountResponse)(nil),      // 12: hypershell.controlplane.v1.SetObservedSandboxCountResponse
+	(*ObserveGatewayCleanupRequest)(nil),         // 13: hypershell.controlplane.v1.ObserveGatewayCleanupRequest
+	(*ObserveGatewayCleanupResponse)(nil),        // 14: hypershell.controlplane.v1.ObserveGatewayCleanupResponse
+	(*CleanupTargetObservations)(nil),            // 15: hypershell.controlplane.v1.CleanupTargetObservations
+	(*ScanGatewayIdentityUsersRequest)(nil),      // 16: hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
+	(*GatewayIdentityUserReference)(nil),         // 17: hypershell.controlplane.v1.GatewayIdentityUserReference
+	(*ScanGatewayIdentityUsersResponse)(nil),     // 18: hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
+	(*GetGatewayCleanupSummaryRequest)(nil),      // 19: hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
+	(*LoadGatewayIdentityCheckpointRequest)(nil), // 20: hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
+	(*SaveGatewayIdentityCheckpointRequest)(nil), // 21: hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
+	(*GatewayIdentityCheckpoint)(nil),            // 22: hypershell.controlplane.v1.GatewayIdentityCheckpoint
+	(*ResourceConditions)(nil),                   // 23: hypershell.controlplane.v1.ResourceConditions
+	(*ResourceCondition)(nil),                    // 24: hypershell.controlplane.v1.ResourceCondition
+	(*ObserveGatewayIdentityRequest)(nil),        // 25: hypershell.controlplane.v1.ObserveGatewayIdentityRequest
+	(*ObserveGatewayIdentityResponse)(nil),       // 26: hypershell.controlplane.v1.ObserveGatewayIdentityResponse
+	(*GatewayIdentityCycle)(nil),                 // 27: hypershell.controlplane.v1.GatewayIdentityCycle
+	(*SaveGatewayIdentityCycleRequest)(nil),      // 28: hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
+	(*CleanupSummary)(nil),                       // 29: hypershell.controlplane.v1.CleanupSummary
+	nil,                                          // 30: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
+	nil,                                          // 31: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
+	nil,                                          // 32: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
+	nil,                                          // 33: hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
+	nil,                                          // 34: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
+	(*v1.Gateway)(nil),                           // 35: hypershell.v1.Gateway
+	(*timestamppb.Timestamp)(nil),                // 36: google.protobuf.Timestamp
 }
 var file_hypershell_controlplane_v1_gateway_identity_proto_depIdxs = []int32{
-	32, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
-	27, // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
-	28, // 2: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup_targets:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
-	29, // 3: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.conditions:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
-	30, // 4: hypershell.controlplane.v1.CleanupTargetObservations.targets:type_name -> hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
-	14, // 5: hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse.references:type_name -> hypershell.controlplane.v1.GatewayIdentityUserReference
-	31, // 6: hypershell.controlplane.v1.ResourceConditions.conditions:type_name -> hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
-	33, // 7: hypershell.controlplane.v1.CleanupSummary.oldest_pending:type_name -> google.protobuf.Timestamp
-	33, // 8: hypershell.controlplane.v1.CleanupSummary.observed_at:type_name -> google.protobuf.Timestamp
-	12, // 9: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry.value:type_name -> hypershell.controlplane.v1.CleanupTargetObservations
-	20, // 10: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceConditions
-	21, // 11: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceCondition
-	17, // 12: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
-	25, // 13: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
-	22, // 14: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:input_type -> hypershell.controlplane.v1.ObserveGatewayIdentityRequest
-	17, // 15: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
-	18, // 16: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
-	16, // 17: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:input_type -> hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
-	10, // 18: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:input_type -> hypershell.controlplane.v1.ObserveGatewayCleanupRequest
-	8,  // 19: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:input_type -> hypershell.controlplane.v1.SetObservedSandboxCountRequest
-	6,  // 20: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
-	13, // 21: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
-	2,  // 22: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
-	4,  // 23: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
-	0,  // 24: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
-	24, // 25: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
-	24, // 26: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
-	23, // 27: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:output_type -> hypershell.controlplane.v1.ObserveGatewayIdentityResponse
-	19, // 28: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
-	19, // 29: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
-	26, // 30: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:output_type -> hypershell.controlplane.v1.CleanupSummary
-	11, // 31: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:output_type -> hypershell.controlplane.v1.ObserveGatewayCleanupResponse
-	9,  // 32: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:output_type -> hypershell.controlplane.v1.SetObservedSandboxCountResponse
-	7,  // 33: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
-	15, // 34: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
-	3,  // 35: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
-	5,  // 36: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
-	1,  // 37: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
-	25, // [25:38] is the sub-list for method output_type
-	12, // [12:25] is the sub-list for method input_type
+	35, // 0: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.gateway:type_name -> hypershell.v1.Gateway
+	30, // 1: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupEntry
+	31, // 2: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.cleanup_targets:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry
+	32, // 3: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.conditions:type_name -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry
+	33, // 4: hypershell.controlplane.v1.CleanupTargetObservations.targets:type_name -> hypershell.controlplane.v1.CleanupTargetObservations.TargetsEntry
+	17, // 5: hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse.references:type_name -> hypershell.controlplane.v1.GatewayIdentityUserReference
+	34, // 6: hypershell.controlplane.v1.ResourceConditions.conditions:type_name -> hypershell.controlplane.v1.ResourceConditions.ConditionsEntry
+	36, // 7: hypershell.controlplane.v1.CleanupSummary.oldest_pending:type_name -> google.protobuf.Timestamp
+	36, // 8: hypershell.controlplane.v1.CleanupSummary.observed_at:type_name -> google.protobuf.Timestamp
+	15, // 9: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.CleanupTargetsEntry.value:type_name -> hypershell.controlplane.v1.CleanupTargetObservations
+	23, // 10: hypershell.controlplane.v1.GetGatewayIdentityStateResponse.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceConditions
+	24, // 11: hypershell.controlplane.v1.ResourceConditions.ConditionsEntry.value:type_name -> hypershell.controlplane.v1.ResourceCondition
+	0,  // 12: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewaySQLState:input_type -> hypershell.controlplane.v1.GatewaySQLStateRequest
+	1,  // 13: hypershell.controlplane.v1.GatewayIdentityService.BindGatewaySQLState:input_type -> hypershell.controlplane.v1.BindGatewaySQLStateRequest
+	0,  // 14: hypershell.controlplane.v1.GatewayIdentityService.CloseGatewaySQLState:input_type -> hypershell.controlplane.v1.GatewaySQLStateRequest
+	20, // 15: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
+	28, // 16: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCycleRequest
+	25, // 17: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:input_type -> hypershell.controlplane.v1.ObserveGatewayIdentityRequest
+	20, // 18: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.LoadGatewayIdentityCheckpointRequest
+	21, // 19: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:input_type -> hypershell.controlplane.v1.SaveGatewayIdentityCheckpointRequest
+	19, // 20: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:input_type -> hypershell.controlplane.v1.GetGatewayCleanupSummaryRequest
+	13, // 21: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:input_type -> hypershell.controlplane.v1.ObserveGatewayCleanupRequest
+	11, // 22: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:input_type -> hypershell.controlplane.v1.SetObservedSandboxCountRequest
+	9,  // 23: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:input_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsRequest
+	16, // 24: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersRequest
+	5,  // 25: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:input_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersRequest
+	7,  // 26: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:input_type -> hypershell.controlplane.v1.GetGatewayIdentityUserRequest
+	3,  // 27: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:input_type -> hypershell.controlplane.v1.GetGatewayIdentityStateRequest
+	2,  // 28: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewaySQLState:output_type -> hypershell.controlplane.v1.GatewaySQLStateBinding
+	2,  // 29: hypershell.controlplane.v1.GatewayIdentityService.BindGatewaySQLState:output_type -> hypershell.controlplane.v1.GatewaySQLStateBinding
+	2,  // 30: hypershell.controlplane.v1.GatewayIdentityService.CloseGatewaySQLState:output_type -> hypershell.controlplane.v1.GatewaySQLStateBinding
+	27, // 31: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
+	27, // 32: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCycle:output_type -> hypershell.controlplane.v1.GatewayIdentityCycle
+	26, // 33: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayIdentity:output_type -> hypershell.controlplane.v1.ObserveGatewayIdentityResponse
+	22, // 34: hypershell.controlplane.v1.GatewayIdentityService.LoadGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
+	22, // 35: hypershell.controlplane.v1.GatewayIdentityService.SaveGatewayIdentityCheckpoint:output_type -> hypershell.controlplane.v1.GatewayIdentityCheckpoint
+	29, // 36: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayCleanupSummary:output_type -> hypershell.controlplane.v1.CleanupSummary
+	14, // 37: hypershell.controlplane.v1.GatewayIdentityService.ObserveGatewayCleanup:output_type -> hypershell.controlplane.v1.ObserveGatewayCleanupResponse
+	12, // 38: hypershell.controlplane.v1.GatewayIdentityService.SetObservedSandboxCount:output_type -> hypershell.controlplane.v1.SetObservedSandboxCountResponse
+	10, // 39: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayReconcileIDs:output_type -> hypershell.controlplane.v1.ListGatewayReconcileIDsResponse
+	18, // 40: hypershell.controlplane.v1.GatewayIdentityService.ScanGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ScanGatewayIdentityUsersResponse
+	6,  // 41: hypershell.controlplane.v1.GatewayIdentityService.ListGatewayIdentityUsers:output_type -> hypershell.controlplane.v1.ListGatewayIdentityUsersResponse
+	8,  // 42: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityUser:output_type -> hypershell.controlplane.v1.GetGatewayIdentityUserResponse
+	4,  // 43: hypershell.controlplane.v1.GatewayIdentityService.GetGatewayIdentityState:output_type -> hypershell.controlplane.v1.GetGatewayIdentityStateResponse
+	28, // [28:44] is the sub-list for method output_type
+	12, // [12:28] is the sub-list for method input_type
 	12, // [12:12] is the sub-list for extension type_name
 	12, // [12:12] is the sub-list for extension extendee
 	0,  // [0:12] is the sub-list for field type_name
@@ -1876,14 +2098,14 @@ func file_hypershell_controlplane_v1_gateway_identity_proto_init() {
 	if File_hypershell_controlplane_v1_gateway_identity_proto != nil {
 		return
 	}
-	file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[22].OneofWrappers = []any{}
+	file_hypershell_controlplane_v1_gateway_identity_proto_msgTypes[25].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc), len(file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc)),
 			NumEnums:      0,
-			NumMessages:   32,
+			NumMessages:   35,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
