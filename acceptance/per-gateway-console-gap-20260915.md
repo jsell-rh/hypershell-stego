@@ -110,7 +110,7 @@ The common service-account creation test also passed at STEGO revision
 It creates two clients with different ownership policies and stable provider
 IDs. It checks token denial while disabled, creation conflicts, configuration
 changes, credential preservation, client reconstruction, and deletion. Container
-cleanup passed. The full compiler job is still running.
+cleanup passed. All five STEGO CI jobs passed for this revision.
 
 The common service-account profile uses ownership keys under `stego.owner.`.
 Hypershell must retain its Gateway and service-account identifiers as policy
