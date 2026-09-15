@@ -3,7 +3,10 @@ package acceptance
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
+	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -68,6 +71,7 @@ func (w *browserGatewayWorkload) checkSQLIsolation() map[string]map[string]strin
 	if len(w.gatewayIDs) != 2 {
 		w.t.Fatal("SQL isolation requires two Gateways")
 	}
+	w.recordSQLServer()
 	identities := map[string]map[string]string{}
 	for i, id := range w.gatewayIDs {
 		o, identity := w.sqlOptions(id)
@@ -95,6 +99,27 @@ func (w *browserGatewayWorkload) checkSQLIsolation() map[string]map[string]strin
 	}
 	w.t.Log("Both Gateway logins use verified TLS and separate databases; cross-database access is denied")
 	return identities
+}
+
+func (w *browserGatewayWorkload) recordSQLServer() {
+	w.t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	var version int
+	var tls, superuser, createDB, createRole bool
+	err := postgres.ReadRow(ctx, w.databaseOptions, `SELECT current_setting('server_version_num')::integer,
+		s.ssl,r.rolsuper,r.rolcreatedb,r.rolcreaterole FROM pg_catalog.pg_roles r
+		JOIN pg_catalog.pg_stat_ssl s ON s.pid=pg_backend_pid() WHERE r.rolname=current_user`, nil,
+		&version, &tls, &superuser, &createDB, &createRole)
+	if err != nil || version < 160000 || !tls || superuser || !createDB || !createRole {
+		w.t.Fatal("supplied PostgreSQL version, TLS, or provisioning role is invalid")
+	}
+	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
+		data, err := json.Marshal(map[string]any{"server_version_num": version, "tls": tls, "provisioning_superuser": superuser, "provisioning_createdb": createDB, "provisioning_createrole": createRole})
+		if err != nil || os.WriteFile(filepath.Join(directory, "postgres-server.json"), append(data, '\n'), 0600) != nil {
+			w.t.Fatal("cannot record supplied PostgreSQL evidence")
+		}
+	}
 }
 
 func (w *browserGatewayWorkload) checkSQLDeletion(id string) {
