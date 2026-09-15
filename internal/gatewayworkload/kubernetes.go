@@ -8,7 +8,6 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"io"
@@ -241,27 +240,27 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 			return err
 		}
 	}
-	current, _, err := k.client.Request(ctx, http.MethodGet, "/apis/apps/v1/namespaces/"+ns+"/deployments/"+Name, nil)
+	return k.deploymentAvailable(ctx, id, ns)
+}
+
+func (k *Kubernetes) deploymentAvailable(ctx context.Context, id, namespace string) error {
+	current, code, err := k.client.Request(ctx, http.MethodGet, "/apis/apps/v1/namespaces/"+namespace+"/deployments/"+Name, nil)
 	if err != nil {
 		return err
 	}
-	integer := func(keys ...string) int64 {
-		n, ok := kube.Nested(current, keys...).(json.Number)
-		if !ok {
-			return -1
-		}
-		v, err := n.Int64()
-		if err != nil {
-			return -1
-		}
-		return v
+	if code == http.StatusNotFound {
+		return ErrPending
 	}
-	generation := integer("metadata", "generation")
-	if generation < 1 || integer("status", "observedGeneration") < generation || integer("status", "readyReplicas") != 1 || integer("status", "updatedReplicas") != 1 {
+	available, err := kube.DeploymentAvailable(current, owner(id), 1)
+	if err != nil {
+		return err
+	}
+	if !available {
 		return ErrPending
 	}
 	return nil
 }
+
 func sha256sum(value []byte) []byte { sum := sha256.Sum256(value); return sum[:] }
 
 func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {

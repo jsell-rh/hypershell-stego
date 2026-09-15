@@ -112,13 +112,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915040650-2097bea6e155
+        module_version: v0.0.0-20260915090112-5e9c89d9201d
         vcs: git
-        revision: 2097bea6e155a889c48514e640507cae26bb3037
+        revision: 5e9c89d9201db4532de1787dcff234e3988cfa00
         source_state: clean
     service_hash: eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a
     registry_sha: gateway-workflow
-    registry_content_sha256: 176afe9794b5a766fd9a8e5e4f9b9006f9932c75ac7fd25d99425f9a6924c1e9
+    registry_content_sha256: 4fd325e32c4376252a98c9a79431b386ef7d252f467291ffa1c7bdfe2083e660
     components:
         browser-telemetry:
             version: 1.0.0
@@ -148,7 +148,7 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         kubernetes-client:
-            version: 1.3.2
+            version: 1.6.0
             sha: gateway-workflow
         kubernetes-service:
             version: 1.9.0
@@ -421,7 +421,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 19bbe416695f6bb695ad6b5df6d033a64ab039a2be9e0aa104a26709f4036661
+        cli/command/version.go: 03bfce4d74b68bc6f21fb623043379e1059c673e9d4ee9c51f8c9b69d3143d59
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -491,6 +491,7 @@ last_applied:
         kubernetes/client.go: 71dadddfbdf51c689d7631f49242f74f7d374fef5f97f36266ce87f85d97613a
         kubernetes/discovery.go: d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15
         kubernetes/observe.go: d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80
+        kubernetes/readiness.go: 043ecec9b020829f9be504df2e229c935a340083d76e39b22a1c35e1488ddd41
         kubernetes/watch_set.go: 8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47
         main.go: b97743f310382b253e9960e1963592d7e8059b69d7a9cb1e81f19dbbd38bb403
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
