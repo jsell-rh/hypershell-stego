@@ -61,7 +61,8 @@ OpenShell dashboard. STEGO must generate its common authentication, deployment,
 and lifecycle support. Hypershell supplies Gateway-specific configuration and
 access rules. Do not port the upstream dashboard backend as part of this work.
 The dashboard terminal uses WebSockets; the generated integration must preserve
-that contract. The current buffered browser HTTP proxy does not provide it.
+that contract. The application's current buffered browser HTTP proxy does not
+provide it.
 
 STEGO now has an internal local application renderer that reuses its browser
 sessions and OAuth flow. The
@@ -70,9 +71,28 @@ passed at `7d05c2d94f71f44cbee94b44fa9b1b125b8d71ab`, with required PostgreSQL
 and race detection. It covers HTTP authentication, header removal, CSRF checks,
 restart, refresh, upstream denial, and logout across backend instances. These
 checks use a test application server. No service YAML setting enables this
-mode yet, and it rejects WebSocket upgrades.
+mode yet. That initial revision rejected WebSocket upgrades.
 
-The [STEGO integration record](https://github.com/jsell-rh/stego/blob/5c8299d/specs/upstream-dashboard-integration.md)
+The later common runtime at STEGO revision
+`1fc6ac6e2e3dc3160bd39e1aef805e0c8639f994` adds authenticated, bounded WebSocket
+delivery. [CI run 35023836717](https://github.com/jsell-rh/stego/actions/runs/35023836717)
+passed all four jobs. Its generated session tests require PostgreSQL and use
+the race detector. They cover delivery, access denial, logout, expiry, storage
+failure, backend close, and runtime stop. The common HTTP lifecycle drains
+upgraded handlers, and telemetry records status 101. The generated application
+also passed its vulnerability check. These tests use a test application server.
+
+The [STEGO integration record](https://github.com/jsell-rh/stego/blob/a7d1207/specs/upstream-dashboard-integration.md)
 lists the remaining work. Hypershell has not yet adopted this mode. Generated
 deployment, terminal behavior, and a live upstream dashboard result remain
 required. The management-console and Gateway results do not close this gate.
+The upstream build also requires root asset paths and runtime style elements
+that the current proxy and content policy do not support. The real UI gate must
+cover these contracts, including the editor and terminal.
+
+Common Keycloak client management must also come from STEGO. Use the existing
+service-account and Gateway identity workflows to prove the
+[provider extraction](https://github.com/jsell-rh/stego/blob/5386609/specs/keycloak-provider-boundary.md)
+before adding per-Gateway dashboard client policy. Hypershell keeps Gateway
+roles, grants, audiences, and ownership identifiers. This extraction is not yet
+implemented; moving the current client without this separation is insufficient.
