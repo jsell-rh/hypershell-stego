@@ -94,3 +94,14 @@ verified all eighteen installation resources. The Lease was then released.
 Public run `34986369202` is queued after this cleanup.
 Push checks now require the public profile and its operator configuration.
 A manual dispatch can select `public_gateway=false` for an internal-only check.
+
+Public run `34987757894` passed Gateway readiness and SQL isolation, then
+failed an invalid-identity RPC check. Cleanup passed and removed all four
+allocations. Its log did not identify which negative token was accepted. The
+API fixture allowed all client scopes, which can add a Gateway audience to an
+owner API token. This is a possible fixture error, not a confirmed diagnosis.
+
+Commit `cc8e545` restricts that fixture and verifies the negative token's API
+and Gateway audiences before it makes the RPC call. It also names each case.
+The acceptance package compiled locally. Core/browser run `34989401887` and
+public run `34989405950` are active; their results remain required.
