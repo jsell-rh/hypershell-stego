@@ -29,8 +29,11 @@ ADDITIONS = {
         ('cert-manager.io', 'certificates/status', 'update', 'openshell-public-tls')},
     PREFIX + 'gateway-worker': {
         ('route.openshift.io', 'routes', verb, None)
-        for verb in ('create', 'delete', 'get', 'patch')},
+        for verb in ('create', 'delete', 'get', 'patch')} | {
+        ('route.openshift.io', 'routes/custom-host', 'create', None)},
 }
+HOST_ADDITIONS = {PREFIX + 'gateway-worker': {
+    ('route.openshift.io', 'routes/custom-host', 'create', None)}}
 
 
 def require(condition, message):
@@ -114,7 +117,9 @@ def grants(rules):
     return result
 
 
-def plan(installation, rendered, manifests):
+def plan(installation, rendered, manifests, phase='initial'):
+    require(phase in ('initial', 'route-host'), 'Unknown public permission update phase')
+    additions = ADDITIONS if phase == 'initial' else HOST_ADDITIONS
     require(installation.get('apiVersion') == 'v1' and installation.get('kind') == 'ConfigMap'
             and installation.get('immutable') is True, 'Require the immutable installation record')
     meta = installation['metadata']
@@ -160,16 +165,16 @@ def plan(installation, rendered, manifests):
         old, new = before[key], after[key]
         if old == new:
             continue
-        require(key[0] == 'ClusterRole' and key[1] in ADDITIONS, 'Unexpected cluster resource change')
+        require(key[0] == 'ClusterRole' and key[1] in additions, 'Unexpected cluster resource change')
         require(set(old) == set(new) == {'kind', 'apiVersion', 'metadata', 'rules'}, 'Unsupported ClusterRole fields')
         require({k: v for k, v in old.items() if k != 'rules'} ==
                 {k: v for k, v in new.items() if k != 'rules'}, 'Role fields changed outside rules')
         prior, following = grants(old['rules']), grants(new['rules'])
-        require(not prior - following and following - prior == ADDITIONS[key[1]], 'Permission changes exceed the public test scope')
+        require(not prior - following and following - prior == additions[key[1]], 'Permission changes exceed the public test scope')
         changes.append({'kind': key[0], 'name': key[1], 'uid': ids[key],
                         'before': old, 'after': new,
-                        'added_grants': [list(atom) for atom in sorted(ADDITIONS[key[1]])]})
-    require({change['name'] for change in changes} == set(ADDITIONS), 'Require both public permission changes')
+                        'added_grants': [list(atom) for atom in sorted(additions[key[1]])]})
+    require({change['name'] for change in changes} == set(additions), 'Require all permission changes for the selected phase')
     proposed = copy.deepcopy(data)
     proposed_record = copy.deepcopy(rendered)
     proposed_record.pop('mode')
@@ -178,7 +183,7 @@ def plan(installation, rendered, manifests):
     proposed['cluster-installation.json'] = json.dumps(proposed_record, indent=2) + '\n'
     for name, raw in manifests.items():
         proposed[name + '.json'] = raw
-    return {'kind': 'BrowserPublicPermissionPlan', 'namespace': NAMESPACE,
+    return {'kind': 'BrowserPublicPermissionPlan', 'phase': phase, 'namespace': NAMESPACE,
             'namespace_uid': namespace_uid, 'installation_uid': uid,
             'installation_resource_version': meta['resourceVersion'],
             'installation_data_sha256': digest(json.dumps(data, sort_keys=True, separators=(',', ':'))),
@@ -201,16 +206,17 @@ def main():
     parser.add_argument('--installation', required=True, type=Path)
     parser.add_argument('--rendered', required=True, type=Path)
     parser.add_argument('--output', required=True, type=Path)
+    parser.add_argument('--phase', choices=['initial', 'route-host'], default='initial')
     args = parser.parse_args()
     manifests = {}
     for name in MANIFESTS:
         path = args.rendered / 'cluster-manifests' / (name + '.json')
         manifests[name] = read_text(path)
-    result = plan(read(args.installation), read(args.rendered / 'cluster-installation.json'), manifests)
+    result = plan(read(args.installation), read(args.rendered / 'cluster-installation.json'), manifests, args.phase)
     descriptor = os.open(args.output, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(descriptor, 'w') as output:
         output.write(json.dumps(result, indent=2) + '\n')
-    print('Planned two ClusterRole updates; sixteen cluster resources remain unchanged. No cluster requests were made.')
+    print(f"Planned {len(result['changes'])} ClusterRole updates; {result['unchanged_resource_count']} cluster resources remain unchanged. No cluster requests were made.")
 
 
 if __name__ == '__main__':

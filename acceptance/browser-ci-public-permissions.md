@@ -8,7 +8,7 @@ Only two ClusterRoles change:
 | Role | Added permission |
 | --- | --- |
 | `fixture-gateway-inspector` | Read the named `openshell-public-tls` Secret and Certificate; update only that Certificate's status for renewal |
-| `gateway-worker` | Create, get, patch, and delete OpenShift Routes |
+| `gateway-worker` | Create, get, patch, and delete OpenShift Routes; create `routes/custom-host` |
 
 Both role names have the prefix
 `stego-service-ci.hypershell-namespace-allocation.`. Existing bindings restrict
@@ -63,3 +63,21 @@ The public workflow started in run `34983965151` with the existing jshell router
 its current address, and the public certificate from the selected test issuer.
 The complete public Gateway result remains pending. These installation checks do
 not prove application behavior or Gateway network isolation.
+
+The first complete public run, `34983965151`, failed. Its Gateway Pod and
+certificates were ready, but OpenShift denied the Route's explicit host under
+the controller identity. A server dry run reproduced this error. The
+[OpenShift host assignment code](https://github.com/openshift/library-go/blob/main/pkg/route/hostassignment/assignment.go)
+requires `create` on `routes/custom-host` when a caller sets the host.
+
+The earlier two-Role update lacked this permission. The current initial plan
+includes it. For an installation that already has the earlier update, select
+`--phase route-host`. This phase permits only that one added grant on the existing
+Gateway worker role. It rejects additional changes. Seven planner tests pass.
+
+The [Route host update record](public-route-host.json) preserves the failed run,
+its complete cleanup, the rejected dry run, and the live correction. Seventeen
+resources remain unchanged. All eighteen identities and specifications passed
+verification before the immutable record was replaced. The new record passed
+verification before the Lease was released. A fresh complete public run remains
+required. No public connection result is claimed from the failed run.

@@ -139,6 +139,7 @@ overrides:
           - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
           - {api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
           - {api_group: route.openshift.io, resources: [routes], verbs: [get, create, patch, delete]}
+          - {api_group: route.openshift.io, resources: [routes/custom-host], verbs: [create]}
       - name: gateway-runtime
         scope: namespace
         rules:

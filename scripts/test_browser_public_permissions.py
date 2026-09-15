@@ -35,6 +35,7 @@ def fixture():
         {'apiGroups': ['cert-manager.io'], 'resources': ['certificates/status'], 'verbs': ['update'], 'resourceNames': ['openshell-public-tls']},
     ]
     after[1]['rules'].append({'apiGroups': ['route.openshift.io'], 'resources': ['routes'], 'verbs': ['get', 'create', 'patch', 'delete']})
+    after[1]['rules'].append({'apiGroups': ['route.openshift.io'], 'resources': ['routes/custom-host'], 'verbs': ['create']})
     old = {name: document([]) for name in planner.MANIFESTS}
     old['hypershell-namespace-allocation'] = document(before)
     new = {**old, 'hypershell-namespace-allocation': document(after)}
@@ -54,6 +55,35 @@ def fixture():
 
 
 class PublicPermissionPlan(unittest.TestCase):
+    def test_route_host_phase_changes_only_the_existing_worker_role(self):
+        installation, rendered, manifests = fixture()
+        # Start after the earlier Route and certificate permission update.
+        items = json.loads(manifests['hypershell-namespace-allocation'])['items']
+        items[1]['rules'].pop()
+        old = document(items)
+        installation['data']['hypershell-namespace-allocation.json'] = old
+        record = json.loads(installation['data']['cluster-installation.json'])
+        record['manifests']['hypershell-namespace-allocation'] = planner.digest(old)
+        installation['data']['cluster-installation.json'] = json.dumps(record)
+        result = planner.plan(installation, rendered, manifests, 'route-host')
+        self.assertEqual(result['unchanged_resource_count'], 17)
+        self.assertEqual(result['changes'][0]['added_grants'], [['route.openshift.io', 'routes/custom-host', 'create', None]])
+        with self.assertRaises(ValueError):
+            planner.plan(installation, rendered, manifests)
+        with self.assertRaises(ValueError):
+            planner.plan(*fixture(), phase='route-host')
+        for change in [lambda rules: rules[-1]['verbs'].append('update'),
+                       lambda rules: rules[-1].update(resources=['routes/status']),
+                       lambda rules: rules[0]['verbs'].append('watch')]:
+            altered = copy.deepcopy(manifests)
+            values = json.loads(altered['hypershell-namespace-allocation'])
+            change(values['items'][1]['rules'])
+            altered['hypershell-namespace-allocation'] = json.dumps(values)
+            fresh = copy.deepcopy(rendered)
+            fresh['manifests']['hypershell-namespace-allocation'] = planner.digest(altered['hypershell-namespace-allocation'])
+            with self.assertRaises(ValueError):
+                planner.plan(installation, fresh, altered, 'route-host')
+
     def test_exact_additions_retain_installation_identity_and_other_data(self):
         installation, rendered, manifests = fixture()
         originals = copy.deepcopy((installation, rendered, manifests))
@@ -63,7 +93,7 @@ class PublicPermissionPlan(unittest.TestCase):
         self.assertEqual(plan['namespace_uid'], installation['data']['namespace-uid'])
         self.assertEqual(len(plan['changes']), 2)
         self.assertEqual(plan['unchanged_resource_count'], 16)
-        self.assertEqual(sum(len(c['added_grants']) for c in plan['changes']), 7)
+        self.assertEqual(sum(len(c['added_grants']) for c in plan['changes']), 8)
         self.assertEqual(plan['proposed_installation_data']['issuer'], 'test')
         self.assertEqual(json.loads(plan['proposed_installation_data']['cluster-installation.json'])['policy_type_checks'], 'pending-live-verification')
         self.assertEqual((installation, rendered, manifests), originals)
