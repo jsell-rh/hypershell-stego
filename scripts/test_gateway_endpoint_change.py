@@ -120,5 +120,67 @@ class TransitionBoundary(unittest.TestCase):
             transition.checked_patch(value, self.before, self.after, self.change.uid)
 
 
+class TransitionOwnership(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.temp.cleanup)
+        self.change = object.__new__(transition.Change)
+        c = self.change
+        c.root = Path(self.temp.name)
+        c.namespace, c.pod = 'stego-service-20260915-abcdef', 'service-check-abcde'
+        peer_name = c.namespace + '-peer'
+        c.input = {'namespace': peer_name}
+        peer = {'namespace': peer_name, 'control': c.namespace, 'nonce': 'a' * 32,
+                'namespace_uid': 'peer-uid', 'lease_uid': 'lease-uid',
+                'pods': {'address-a': 'a-uid', 'address-b': 'b-uid'},
+                'address_listeners': {'address-a': {'uid': 'a-uid', 'address': '192.0.2.10:8080'},
+                                      'address-b': {'uid': 'b-uid', 'address': '192.0.2.11:8080'}}}
+        (c.root / 'network-peer.json').write_text(json.dumps(peer))
+        self.record = {'control_uid': 'control-uid', 'pod_uid': 'test-pod-uid'}
+        self.values = {
+            ('-n', 'stego-ci', 'get', 'lease', 'jshell-live-test'): {
+                'metadata': {'uid': 'lease-uid', 'annotations': {'stego.test/namespace': c.namespace, 'stego.test/job': 'service-check'}},
+                'spec': {'holderIdentity': c.namespace}},
+            ('get', 'namespace', c.namespace): {'metadata': {'uid': 'control-uid'}},
+            ('-n', c.namespace, 'get', 'pod', c.pod): {'metadata': {'uid': 'test-pod-uid'}, 'status': {'phase': 'Running'}},
+            ('get', 'namespace', peer_name): {'metadata': {'name': peer_name, 'uid': 'peer-uid',
+                'labels': {'stego.test/browser-run': c.namespace, 'stego.test/peer-run': peer['nonce']}}},
+            ('-n', peer_name, 'get', 'pod', 'address-a'): {'metadata': {'uid': 'a-uid'}, 'status': {'podIP': '192.0.2.10'}},
+            ('-n', peer_name, 'get', 'pod', 'address-b'): {'metadata': {'uid': 'b-uid'}, 'status': {'podIP': '192.0.2.11'}},
+        }
+        self.calls = []
+        def get(*words):
+            self.calls.append(words)
+            return copy.deepcopy(self.values[words])
+        c.object = get
+
+    def test_guard_reads_only_the_six_recorded_resources(self):
+        self.change.guard(self.record)
+        self.assertEqual(set(self.calls), set(self.values))
+        self.assertEqual(len(self.calls), 6)
+
+    def test_changed_owner_identity_phase_or_address_stops_the_transition(self):
+        keys = list(self.values)
+        changes = [
+            (keys[0], lambda v: v['spec'].update(holderIdentity='another-run')),
+            (keys[0], lambda v: v['metadata'].update(uid='replaced-lease')),
+            (keys[0], lambda v: v['metadata']['annotations'].update({'stego.test/job': 'other-job'})),
+            (keys[1], lambda v: v['metadata'].update(uid='replaced-control')),
+            (keys[2], lambda v: v['metadata'].update(uid='replaced-pod')),
+            (keys[2], lambda v: v['metadata'].update(deletionTimestamp='2026-09-15T19:00:00Z')),
+            (keys[2], lambda v: v['status'].update(phase='Failed')),
+            (keys[3], lambda v: v['metadata'].update(uid='replaced-peer')),
+            (keys[3], lambda v: v['metadata']['labels'].update({'stego.test/browser-run': 'other'})),
+            (keys[4], lambda v: v['metadata'].update(uid='replaced-listener')),
+            (keys[5], lambda v: v['status'].update(podIP='192.0.2.12')),
+        ]
+        original = copy.deepcopy(self.values)
+        for key, alter in changes:
+            self.values = copy.deepcopy(original)
+            alter(self.values[key])
+            with self.subTest(key=key), self.assertRaises((ValueError, RuntimeError)):
+                self.change.guard(self.record)
+
+
 if __name__ == '__main__':
     unittest.main()
