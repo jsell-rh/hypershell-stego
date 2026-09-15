@@ -35,5 +35,9 @@ found no test resources, and the shared Lease was free.
 
 The reviewed Gateway page shows Healthy and no accounts after deletion. Its
 connection panel still shows loading placeholders. Public Gateway connectivity
-remains unverified. Full CI `34967271365` is still active; its final result
-remains required.
+remains unverified. Full CI `34967271365` finished with failure. Core acceptance,
+ordinary browser tests, console checks, and service images passed. CNPG and
+Sandbox failed because their required fixtures and restricted runners were
+absent at that source. The separate CNPG run uses the new restricted runner.
+The user has since deferred the Kata Sandbox test; the earlier failure remains
+recorded. The complete API and browser passes do not make full CI pass.
