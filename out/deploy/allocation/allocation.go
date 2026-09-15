@@ -4,6 +4,7 @@
 package allocation
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
@@ -23,6 +24,7 @@ type role struct{ Name, Scope string }
 type binding struct{ Role, ExternalRole, ServiceAccount, Namespace, ExternalNamespace string }
 type identityField struct{ Field, Key string }
 type profile struct {
+	NetworkIsolation                    bool
 	IdentityConfigMap                   string
 	IdentityLabels, IdentityAnnotations []identityField
 	Name, Prefix, OwnerLabel, Manager   string
@@ -250,6 +252,11 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 	if _, err = a.client.Ensure(ctx, "/api/v1/namespaces/"+name+"/resourcequotas", quota, owner); err != nil {
 		return err
 	}
+	if p.NetworkIsolation {
+		if err = a.requireNetwork(ctx, name, owner, true); err != nil {
+			return err
+		}
+	}
 	if err = a.prune(ctx, p, name, owner); err != nil {
 		return err
 	}
@@ -265,6 +272,59 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 		}
 	}
 	return a.sealIdentity(ctx, p, name, owner)
+}
+
+// requireNetwork verifies the fixed deny policy before access is granted.
+// It does not prove that the cluster network plugin has applied the policy.
+// A changed policy is rejected. It is not patched or adopted.
+func (a *Allocator) requireNetwork(ctx context.Context, name string, owner kube.Owner, create bool) error {
+	collection := "/apis/networking.k8s.io/v1/namespaces/" + name + "/networkpolicies"
+	current, code, err := a.client.Request(ctx, http.MethodGet, collection+"/stego-allocation", nil)
+	if err != nil {
+		return err
+	}
+	if code == http.StatusNotFound {
+		if !create {
+			return ErrPending
+		}
+		meta := metadata("stego-allocation", owner)
+		meta["namespace"] = name
+		desired := kube.Object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": kube.Object{"podSelector": kube.Object{}, "policyTypes": []string{"Ingress", "Egress"}}}
+		if _, _, err = a.client.Request(ctx, http.MethodPost, collection, desired); err != nil {
+			return err
+		}
+		current, code, err = a.client.Request(ctx, http.MethodGet, collection+"/stego-allocation", nil)
+		if err != nil {
+			return err
+		}
+		if code == http.StatusNotFound {
+			return ErrPending
+		}
+	}
+	if !owner.Matches(current) || kube.String(current, "metadata", "name") != "stego-allocation" || kube.String(current, "metadata", "namespace") != name || kube.String(current, "metadata", "uid") == "" || kube.String(current, "metadata", "resourceVersion") == "" || kube.String(current, "metadata", "deletionTimestamp") != "" {
+		return errors.New("allocation network policy is not owned and active")
+	}
+	var spec struct {
+		PodSelector *struct {
+			MatchLabels      map[string]string
+			MatchExpressions []json.RawMessage
+		}
+		PolicyTypes     []string
+		Ingress, Egress []json.RawMessage
+	}
+	data, err := json.Marshal(current["spec"])
+	if err != nil {
+		return errors.New("invalid allocation network policy")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err = decoder.Decode(&spec); err != nil || spec.PodSelector == nil || len(spec.PodSelector.MatchLabels) != 0 || len(spec.PodSelector.MatchExpressions) != 0 || len(spec.Ingress) != 0 || len(spec.Egress) != 0 || len(spec.PolicyTypes) != 2 {
+		return errors.New("allocation network policy must deny all Pod traffic")
+	}
+	if !(spec.PolicyTypes[0] == "Ingress" && spec.PolicyTypes[1] == "Egress" || spec.PolicyTypes[0] == "Egress" && spec.PolicyTypes[1] == "Ingress") {
+		return errors.New("allocation network policy must deny both directions")
+	}
+	return nil
 }
 
 // Delete removes cluster bindings first. It returns true only after all owned
@@ -374,10 +434,20 @@ func (a *Allocator) sealIdentity(ctx context.Context, p profile, name string, ow
 }
 
 // RequireNamespace checks allocation identity without creating or changing it.
-// A resource worker can use its own client, with read-only Namespace access.
+// A resource worker needs read-only Namespace access. An isolated profile also
+// needs get access to the named stego-allocation NetworkPolicy.
 func (a *Allocator) RequireNamespace(ctx context.Context, profileName, name, ownerID string) error {
-	_, err := a.NamespaceUID(ctx, profileName, name, ownerID)
-	return err
+	if _, err := a.NamespaceUID(ctx, profileName, name, ownerID); err != nil {
+		return err
+	}
+	p, owner, err := a.request(profileName, name, ownerID)
+	if err != nil {
+		return err
+	}
+	if p.NetworkIsolation {
+		return a.requireNetwork(ctx, name, owner, false)
+	}
+	return nil
 }
 
 // NamespaceUID returns the identity of the verified, live allocation. It does

@@ -81,7 +81,7 @@ reserved name. A read-only allocation check also requires the policy.
 
 Focused generated runtime tests passed for restart, policy loss, invalid policy
 contents, API errors, and cancellation. Manifest checks passed. Full compiler CI
-is pending in [run 34981210745](https://github.com/jsell-rh/stego/actions/runs/34981210745).
+passed in [run 34981210745](https://github.com/jsell-rh/stego/actions/runs/34981210745).
 Live admission and CNI tests have not run. The
 [common mechanism](https://github.com/jsell-rh/stego/blob/d709240557c91f7b415262b35de107c4d70f987e/specs/namespace-allocation.md#fixed-network-deny-policy)
 does not yet supply allowed destinations or protect the complete policy set.
@@ -93,3 +93,15 @@ The earlier [core CI run](gateway-core-ci-20260915.json) passed core and ordinar
 browser acceptance. It used compiler `4f692d0`, before the production RPC
 lifecycle correction. Its CNPG job failed credential validation before test
 creation. It supplies no network isolation result.
+
+The compiler pin and generated output now include `d709240`. Regeneration passed
+with no drift in the application and console. Production allocation settings
+are unchanged. Its diagnostic still returns status 1 for the known network gap.
+
+A [frozen declaration check](allocated-network-opt-in-fixture.json) enabled
+`network_isolation` only in a temporary copy. Regeneration passed. The generated
+allocator then wrote nine resources against the local TLS API fixture. The deny
+NetworkPolicy was third, after the Namespace and quota and before all bindings.
+The diagnostic returned status 0. This proves the declared option changes the
+Hypershell allocator through STEGO. It does not prove live admission, network
+enforcement, permitted service traffic, or complete application behavior.
