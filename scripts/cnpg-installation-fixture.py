@@ -106,11 +106,34 @@ class Installation:
 
     def oc(self, *words, data=None):
         # Secret contents and raw server errors must not enter public evidence.
-        result = subprocess.run(['oc', '--context=' + self.args.context, '--request-timeout=20s', *words],
-                                input=None if data is None else json.dumps(data), capture_output=True, text=True, timeout=30)
-        if result.returncode:
-            raise RuntimeError('CNPG installation request failed: ' + words[0])
-        return json.loads(result.stdout) if result.stdout.strip() else None
+        read = bool(words) and words[0] == 'get'
+        attempts = 3 if read else 1
+        for attempt in range(attempts):
+            try:
+                result = subprocess.run(['oc', '--context=' + self.args.context, '--request-timeout=20s', *words],
+                                        input=None if data is None else json.dumps(data), capture_output=True, text=True, timeout=30)
+                if result.returncode:
+                    raise RuntimeError('request failed')
+                if not result.stdout.strip():
+                    if read and '--ignore-not-found' not in words:
+                        raise ValueError('read has no JSON response')
+                    return None
+                value = json.loads(result.stdout)
+                if read:
+                    if not isinstance(value, dict):
+                        raise ValueError('read is not an object')
+                    if 'items' in value:
+                        if not isinstance(value['items'], list):
+                            raise ValueError('read has no item list')
+                    elif not isinstance(value.get('metadata'), dict) or not value['metadata'].get('uid'):
+                        raise ValueError('read has no resource identity')
+                return value
+            except (OSError, subprocess.SubprocessError, ValueError, RuntimeError):
+                if attempt + 1 == attempts:
+                    budget = 'three attempts' if read else 'one attempt'
+                    operation = words[0] if words else 'empty command'
+                    raise RuntimeError('CNPG installation request failed after ' + budget + ': ' + operation) from None
+            time.sleep(attempt + 1)
 
     def get(self, kind, name, namespace=None):
         words = ['get', kind, name, '--ignore-not-found', '-o', 'json']

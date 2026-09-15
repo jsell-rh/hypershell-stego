@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 import subprocess
 import tempfile
+import traceback
 from types import SimpleNamespace
 import unittest
 from unittest.mock import Mock, patch
@@ -18,6 +19,70 @@ class InstallationTests(unittest.TestCase):
     def args(self, directory):
         return SimpleNamespace(context='operator-test-context', namespace='stego-service-ci', database_namespace='stego-cnpg-database-ci',
                                storage_class='gp3-csi', results=Path(directory), lease_holder='stego-cnpg-live-0123456789abcdef', lease_uid='lease-uid')
+
+    def test_failed_read_retries_before_confirming_absence(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            failed = subprocess.CompletedProcess(['oc'], 1, '', 'private-error-value')
+            absent = subprocess.CompletedProcess(['oc'], 0, '', '')
+            with patch.object(fixture.subprocess, 'run', side_effect=[failed, absent]) as calls, patch.object(fixture.time, 'sleep'):
+                self.assertIsNone(installation.get('Namespace', 'stego-cnpg-database-ci'))
+                self.assertEqual(calls.call_count, 2)
+                self.assertEqual(calls.call_args.kwargs['timeout'], 30)
+
+    def test_invalid_read_never_means_absence(self):
+        for output in ['[]', 'null', '{}', '{"items":null}', 'private-invalid-json']:
+            with self.subTest(output=output), tempfile.TemporaryDirectory() as directory:
+                installation = fixture.Installation(self.args(directory))
+                reply = subprocess.CompletedProcess(['oc'], 0, output, '')
+                with patch.object(fixture.subprocess, 'run', return_value=reply) as calls, patch.object(fixture.time, 'sleep'):
+                    with self.assertRaisesRegex(RuntimeError, 'three attempts'):
+                        installation.get('Namespace', 'stego-cnpg-database-ci')
+                    self.assertEqual(calls.call_count, 3)
+
+    def test_read_timeout_is_bounded_and_private(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            failure = subprocess.TimeoutExpired(['oc', 'private-command-value'], 30, output='private-output-value')
+            with patch.object(fixture.subprocess, 'run', side_effect=failure) as calls, patch.object(fixture.time, 'sleep'):
+                try:
+                    installation.get('Namespace', 'stego-cnpg-database-ci')
+                except RuntimeError:
+                    self.assertNotIn('private-', traceback.format_exc())
+                else:
+                    self.fail('Repeated read timeout was accepted')
+                self.assertEqual(calls.call_count, 3)
+
+    def test_mutation_failure_is_not_replayed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            failed = subprocess.CompletedProcess(['oc'], 1, '', 'private-error-value')
+            with patch.object(fixture.subprocess, 'run', return_value=failed) as calls, patch.object(fixture.time, 'sleep') as sleep:
+                with self.assertRaises(RuntimeError) as error:
+                    installation.oc('delete', 'Namespace', 'stego-cnpg-database-ci')
+                self.assertNotIn('private-', str(error.exception))
+                self.assertEqual(calls.call_count, 1)
+                sleep.assert_not_called()
+
+    def test_valid_reads_preserve_resource_identity_and_empty_lists(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            for value in [{'metadata': {'uid': 'original'}}, {'items': []}]:
+                reply = subprocess.CompletedProcess(['oc'], 0, json.dumps(value), '')
+                with patch.object(fixture.subprocess, 'run', return_value=reply) as call, patch.object(fixture.time, 'sleep') as sleep:
+                    self.assertEqual(installation.oc('get', 'pods', '-o', 'json'), value)
+                    self.assertIn('--context=operator-test-context', call.call_args.args[0])
+                    self.assertEqual(call.call_count, 1)
+                    sleep.assert_not_called()
+
+    def test_empty_list_reply_requires_valid_json(self):
+        with tempfile.TemporaryDirectory() as directory:
+            installation = fixture.Installation(self.args(directory))
+            reply = subprocess.CompletedProcess(['oc'], 0, '', '')
+            with patch.object(fixture.subprocess, 'run', return_value=reply) as calls, patch.object(fixture.time, 'sleep'):
+                with self.assertRaisesRegex(RuntimeError, 'three attempts'):
+                    installation.oc('get', 'pods', '-o', 'json')
+                self.assertEqual(calls.call_count, 3)
 
     def test_server_scope_limits_and_tls(self):
         items = fixture.definitions('stego-service-ci', 'stego-cnpg-database-ci', 'gp3-csi', [('192.0.2.1', 6443), ('192.0.2.2', 443)])

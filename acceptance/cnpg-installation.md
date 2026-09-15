@@ -171,6 +171,25 @@ released. Results will be stored in `/tmp/hypershell-cnpg-installation-run-v5`.
 The API result does not prove CNPG recovery or cleanup; those checks must pass
 in the complete browser workflow.
 
+The [v5 attempt](cnpg-startup-v5-evidence.json) failed before application tests.
+The Pod needed a new worker. Scale-up began at 10:21:14 UTC; the worker registered
+at 10:23:49 and became ready at 10:25:03. The Pod's 180-second startup wait
+expired. The browser runner removed its resources. The outer installer then
+failed on a final read while it checked database namespace deletion. This is
+not an application pass or an automated cleanup pass.
+
+Manual recovery removed the remaining operator resources. Final checks confirmed
+absence of the database namespace, private fixture, application resources,
+allocations, all 26 operator resources, and database volumes. The Lease is free.
+The final complete inventory check ran after manual Lease release; no new test
+started before that check. The original failed run state is retained.
+
+The installer now retries reads up to three times with fixed call limits.
+Invalid replies cannot mean absence. Timeout errors remain private, and writes
+are not replayed. The regression first failed on the old reader. Twelve small
+installation checks and six workflow checks now pass. These changes affect the
+test installer; production controller permissions and runtime code are unchanged.
+
 This source includes the verified viewer and account checks, the cleanup read
 retry, and the new credential check before installation. Eight credential
 checks, six CNPG workflow checks, six server fixture checks, and four operator
