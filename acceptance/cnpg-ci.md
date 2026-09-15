@@ -38,6 +38,20 @@ Pull requests do not receive cluster credentials. Artifact selection excludes
 credentials and private fixture contents. Static installation objects remain
 between runs; application and database runtime resources must not remain.
 
-Status: local boundary checks pass. Live admission and the complete workflow
-have not yet been verified for this path. The earlier operator-run CNPG result
-does not establish an unattended CI pass.
+The [static installation evidence](cnpg-ci-installation-evidence.json) records
+45 operator-owned objects from source `dab02cf`. Independent reads verified
+their selected identities, all three admission policies with no type errors,
+the ready certificate, injected webhook CA, immutable configuration, and absence
+of test Jobs and Pods. The installer used a frozen source copy and released its
+shared Lease. Local boundary checks passed: six CI checks and 13 fixture checks.
+
+The complete CNPG job is queued in
+[CI 34968718717](https://github.com/jsell-rh/hypershell-stego/actions/runs/34968718717).
+Live positive and negative admission requests and the complete workflow remain
+unverified. This static result does not establish an unattended CI pass.
+
+The same push also queued ordinary API run `34968718133` and browser run
+`34968718081`. Both were canceled before execution to avoid duplicate tests:
+this change adds CI support and does not change application runtime output.
+The existing JWT application runs and the complete new CNPG job remain required.
+Canceled runs are not passes.

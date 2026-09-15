@@ -17,7 +17,13 @@ apply to their recorded sources; a compiler pass does not replace these gates.
 See [the shared key source contract](https://github.com/jsell-rh/stego/blob/main/specs/jwt-key-source.md)
 and [SSO audit](https://github.com/jsell-rh/stego/blob/main/specs/sso-auth-audit.md).
 
-Hypershell `752d92e` has queued API run `34967271359`, browser run `34967271404`,
-and full CI run `34967271365`. The shared Lease permits one live cluster test
-at a time. The previous browser Job retains its fixed `677973f` source until
-that run and its cleanup finish.
+The [complete API evidence](shared-jwt-api-evidence.json) records a pass for
+Hypershell `752d92e` in run `34967271359`. All 31 required tests passed in
+166.638 seconds. Verification matched 911 source files, 231 generated files,
+and four generation records. The retired database request test, worker startup
+signals, and pool wait, restart, and recovery checks passed. Automatic cleanup
+and independent reads found no test resources.
+
+Browser run `34967271404` is active; full CI `34967271365` is also active.
+Their results remain required. Do not restart an active run because an
+observation times out or a result is not yet available.
