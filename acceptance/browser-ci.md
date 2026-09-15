@@ -62,8 +62,12 @@ and removed the CI deletion right. Restricted CI cleanup then removed the
 remaining data, verified the installation, and released the Lease. This repair
 does not change the failed GitHub run into a passing run. The new
 [browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017009)
-and [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017005)
-are pending results. See the [verified evidence](browser-ci-evidence.json).
+passed the complete workflow in 331.54 seconds and passed host cleanup. All
+867 source files and 229 generated files match the committed source and frozen
+records. All 16 CI probes, 57 application access checks, and six admission probes
+passed. The operator installation remains; test data and allocations are absent.
+The earlier [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017005)
+is still active. See the [verified evidence](browser-ci-evidence.json).
 
 The fixed namespace retains six test image streams. Registry retention is
 outside this cleanup proof. The browser fixture has no external connection
@@ -75,3 +79,9 @@ at a time, and the shared cluster Lease remains the second guard. GitHub documen
 a limit of 100 pending entries for this setting; a full queue rejects new runs.
 See [the queue contract](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/control-workflow-concurrency).
 An expired CI credential still stops a run. A queued run is not a passing check.
+
+During the queue transition, both new push runs were cancelled before a Job
+started, when the older API workflow became active. The API provides no reason
+for the cancellation. The same pushed commit now has new browser and API
+dispatches. The old run uses the default queue setting; new runs use `queue: max`.
+Do not treat this transition as proof that the new queue preserves all runs.

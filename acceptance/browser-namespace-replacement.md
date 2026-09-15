@@ -21,3 +21,8 @@ results. It does not record credentials, Secret contents, or hashes of secrets.
 The new check has passed formatting and source checks. It has not yet compiled
 or run in CI. The active CI run uses the earlier frozen source. No namespace
 recovery result is claimed until the complete new browser workflow passes.
+
+The pushed candidate is `48eae25`. Its first push runs were cancelled before
+a Job started. The replacement [browser check](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937103556)
+and [API check](https://github.com/jsell-rh/hypershell-stego/actions/runs/34937105018)
+use that same commit. No recovery result is available yet.
