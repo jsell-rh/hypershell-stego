@@ -33,9 +33,15 @@ REQUIRED = [
     "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
     "TestGatewayWatchThroughGeneratedRuntime",
     "TestPlacementWorkflowThroughGeneratedRuntime",
-    "TestLocalDatabaseSelectionAndRollback",
-    "TestLocalDatabaseRegistrationThroughRESTAndGRPC",
-    "TestLocalDatabaseMigrationPreservesLegacyRows",
+    "TestControllerLocalSchemaHasNoDatabaseCatalog",
+    "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+    "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+    "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+    "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+    "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+    "TestGeneratedCLICatalogWorkflow",
+    "TestGeneratedCLIApplyWorkflow",
 ]
 
 
