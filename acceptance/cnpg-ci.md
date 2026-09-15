@@ -108,3 +108,25 @@ was released. The first manual Cluster delete failed with a private request
 error. A new read found the same live UID; a later conditional delete succeeded.
 The first error cause is unknown. Manual recovery does not prove automatic
 cleanup. Keep this failed run in the acceptance record.
+
+CNPG job `104438635923` in run `34985981930` also failed before application
+testing. Both database instances were ready. The application Pod waited for a
+fifth node and then exceeded the five-minute readiness limit during startup.
+The runner now permits ten minutes for startup within the same 30-minute Job
+deadline. It also saves bounded Pod startup evidence on future failures.
+
+Application cleanup passed. The outer cleanup then failed because the browser
+child had removed its token file. A focused test reproduced this failure. The
+outer check now uses its own restricted context and deletes its temporary token
+afterward. Manual recovery also exposed an incorrect raw Cluster delete URL.
+The corrected URL retains UID and resourceVersion preconditions. Eleven CNPG
+checks and eight credential checks pass.
+
+The [recovery record](cnpg-ci-recovery-20260915.json) contains the failed run,
+startup evidence, corrections, and completed manual recovery. All test runtime,
+claims, volumes, and the private fixture were absent before Lease release. The
+static installation remains. Automatic cleanup and the complete application
+workflow still require a fresh pass. Public run `34987757894` runs first.
+The corrected final allocation check also passed against jshell with the
+restricted CI identity and no browser token file. It found zero allocations.
+This verifies that credential path, not the complete CNPG workflow.
