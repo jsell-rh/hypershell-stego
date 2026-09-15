@@ -235,5 +235,6 @@ The later SQL client telemetry API run is active; its browser run remains queued
 
 The public Gateway profile needs a bounded update to two existing ClusterRoles.
 Use the [public permission plan](browser-ci-public-permissions.md) to compare
-saved installation state with a fresh frozen render. The live operator update
-and complete public workflow remain required.
+saved installation state with a fresh frozen render. The live operator update passed on 2026-09-15. The
+[live update record](browser-public-permission-update.json) contains the resource
+checks and new installation identity. The complete public workflow remains required.

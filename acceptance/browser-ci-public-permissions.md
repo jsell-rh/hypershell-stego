@@ -49,10 +49,17 @@ check state. Before an operator applies this plan:
    Keep the old data and journal for recovery. Verify the new record, then release
    the Lease. An interrupted update requires inspection before another test.
 
-The live update remains pending. The operator context returned `Unauthorized`
-on 2026-09-15. The offline plan is based on a saved snapshot; it does not prove
-that the current cluster has the same state. The
-[plan record](browser-public-permission-plan.json) preserves source, manifest,
-and plan hashes. Six bounded local tests passed, including rejected permission
-expansion, changed policy, invalid identity, duplicate resource, and bad hash
-cases. These results do not establish a public Gateway workflow pass.
+The live update passed on 2026-09-15 after the operator restored access. A fresh
+render used consumer `0befe58` and compiler `7ebd678`. The update changed only the
+two rule lists. All eighteen resource UIDs and complete specifications passed
+verification. Admission type checks passed. The immutable installation record
+was replaced with identity and revision checks. The shared Lease was released
+after the new record passed verification.
+
+The [live update record](browser-public-permission-update.json) contains resource
+receipts and recovery journal hashes. The earlier
+[offline plan](browser-public-permission-plan.json) remains a historical record.
+The public workflow started in run `34983965151` with the existing jshell router,
+its current address, and the public certificate from the selected test issuer.
+The complete public Gateway result remains pending. These installation checks do
+not prove application behavior or Gateway network isolation.
