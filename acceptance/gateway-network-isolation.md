@@ -1,5 +1,19 @@
+STEGO `e394ab5` adds declared namespace, Pod, port, and protocol peers to its
+protected allocation policy. The [admission record](allocated-network-peers-admission-20260915.json)
+contains 89 passing live checks: 18 allowed and 71 denied. Runtime tests cover
+policy creation before bindings, restart, and rejected permission changes.
+Regeneration and cleanup passed on jshell. No Pods ran in that check.
+
+Hypershell still uses compiler `fe07b0a`. Its production allocation isolation
+setting remains off. Compiler CI for the new common mechanism is still running.
+The next application change must supply all required paths and prove fresh
+allowed and denied connections in the complete Gateway workflow. The external
+DNS provider choice remains open. These results do not establish traffic isolation.
+
+The following record preserves the initial gap and the earlier checks.
+
 The Gateway workflow does not yet prove network isolation in allocated
-namespaces. The source review on 2026-09-15 found no NetworkPolicy in the
+namespaces. The initial source review on 2026-09-15 found no NetworkPolicy in the
 namespace allocator or the Gateway resource builder. The controller worker's
 own NetworkPolicy protects a different Pod in the control namespace.
 
