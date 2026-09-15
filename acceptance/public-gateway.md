@@ -18,6 +18,18 @@ checks pass. The complete acceptance package compiles; live transport checks
 still need CI results. The restricted API gate now requires the controller
 write-grant test, including address ownership and stale observations.
 
+The complete browser workflow passed at `59a6d32` with compiler `a355306`.
+Source, generation, artifacts, rendered pages, and independent cleanup reads
+were checked. See [the evidence](controller-endpoint-browser-evidence.json).
+The run uses an external PostgreSQL container and an internal Gateway endpoint.
+It does not verify the later public TLS changes. The new 32-test API gate has
+not passed: the available CI login had too little time left to start the run.
+
+The console archive gate at `25927c2` found source drift. Its frontend inputs
+match `59a6d32`. Thus the browser pass establishes behavior of the committed
+archive, but not a fresh build from that source. The corrected archive requires
+a new console and complete browser gate.
+
 The full public workflow remains incomplete. The browser checks use an internal
 Service endpoint. The connection panel still shows loading placeholders. Route
 verification, certificate selection, and public connection evidence remain open.
