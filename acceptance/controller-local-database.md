@@ -152,19 +152,13 @@ installation CNPG, and actual RDS checks remain required before release.
 
 ## Focused application check
 
-`controller-local-api.files` selects the application tests for this transition.
-It includes creation and rollback, access filters, REST and gRPC, event delivery,
-watch failures, API restart, rejected retired fields, schema rejection, and SQL
-cleanup grants. Run these tests with PostgreSQL required in a bounded CI or
-cluster Job. From `acceptance`, use:
-
-```sh
-xargs go test -race -mod=readonly -count=1 -timeout=12m < controller-local-api.files
-```
-
-The file list is explicit because older provider fixtures still import removed
-packages. This check does not establish that the complete acceptance package
-builds. It does not replace the live Gateway workload and SQL lifecycle gate.
+The initial conversion used `controller-local-api.files` to select tests while
+older provider fixtures still imported removed packages. That temporary list is
+retired and remains in Git history. The complete acceptance package now builds.
+Use the workflows in the [acceptance index](README.md). The current restricted
+API gate requires 30 named checks and compiles the complete acceptance package.
+Its separate browser workflow proves the real Gateway workload and SQL lifecycle.
+See [the current CI evidence](browser-ci.md) for source revisions and limits.
 
 ## Verified API result
 

@@ -1,6 +1,15 @@
 The [controller-local database change](controller-local-database.md) replaces
-the database catalog. The results below describe earlier revisions unless a
-result explicitly names the new model. The full workload gate must pass again.
+the database catalog. The current release has passing restricted API and browser
+workflows, including [workload namespace recovery](browser-namespace-replacement.md).
+See [the current CI evidence](browser-ci.md) for source revisions and limits.
+CNPG, actual RDS, Sandbox, and the broader enterprise requirements remain open.
+
+Use the complete [contract workflows](../.github/workflows/checks.yml),
+[API workflow](../.github/workflows/jshell-gateway.yml), and
+[browser workflow](../.github/workflows/jshell-browser.yml). The temporary
+file-list test entry points from the catalog conversion are retired. They did
+not compile the complete package. Do not use them as current acceptance gates.
+The results below describe earlier revisions unless they name the new model.
 
 The requested Gateway workflow gate passed. Local race tests, pinned
 regeneration, and remote CI passed for

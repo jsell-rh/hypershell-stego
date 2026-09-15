@@ -1,5 +1,15 @@
 # Test conversion after database catalog removal
 
+The complete acceptance package now builds, and its core and browser CI jobs
+pass at `48eae25`. The restricted browser workflow also passes, including
+[namespace recovery](browser-namespace-replacement.md). The temporary file-list
+entry points are retired. Use the workflows in the [acceptance index](README.md).
+Full CI still fails on the unfinished CNPG and Sandbox checks.
+
+The following record describes earlier conversion steps. Its open-work statements
+apply to those revisions; use [the current CI evidence](browser-ci.md) for the
+current result and remaining work.
+
 The `ManagedDatabase` API and its server-resource controller are retired.
 Their CRUD, provider-selection, observation, and replay tests no longer describe
 an application interface. Git history retains those tests and their old evidence.
@@ -53,12 +63,8 @@ the earlier compile failures, test names, frozen source hashes, generated file
 hashes, limits, and resource removal. All test Jobs, Pods, and private fixtures
 are absent. The shared test Lease was released.
 
-`controller-local-extended.files` contains the explicit test file list. Run it
-only in CI or a bounded cluster Job, with PostgreSQL required. From `acceptance`:
-
-```sh
-xargs go test -race -mod=readonly -count=1 -timeout=12m < controller-local-extended.files
-```
+These selected checks used the temporary `controller-local-extended.files`
+list. Git history retains that list. It is no longer a supported test entry point.
 
 ## Real SQL adapter check
 
@@ -111,9 +117,9 @@ Their requirement to create, repair, and delete PostgreSQL server resources
 conflicts with the current installation contract. Their old source remains in
 Git history. CNPG as an installation-supplied server remains required.
 
-`controller-local-browser.files` lists the converted test files for bounded
-transition checks. It includes the race-enabled fixture and excludes its
-non-race alternative. Three live files still require conversion:
+The temporary `controller-local-browser.files` list selected converted test
+files for bounded transition checks. Git history retains that list. At this
+stage of the conversion, three live files still required work:
 
 | File | Remaining work |
 | --- | --- |
