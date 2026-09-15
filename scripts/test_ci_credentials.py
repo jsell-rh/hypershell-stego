@@ -112,6 +112,7 @@ class Credentials(unittest.TestCase):
             environment = dict(os.environ, PATH=str(root / 'bin') + os.pathsep + os.environ['PATH'],
                                STEGO_TEST_CONTEXT='explicit-ci', STEGO_TEST_PREINSTALLED='1',
                                STEGO_TEST_BROWSER_WORKLOAD='1', STEGO_TEST_BROWSER_DEPLOYMENT='1',
+                               STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(root / 'not-read-ca.pem'),
                                STEGO_TEST_GATEWAY_CLUSTER_ISSUER='test', STEGO_TEST_RESULTS=str(root / 'result'))
             result = subprocess.run(['bash', str(root / 'scripts/check-service-deployment.sh')],
                                     env=environment, capture_output=True, timeout=10)
