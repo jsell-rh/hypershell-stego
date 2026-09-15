@@ -20,7 +20,9 @@ The internal RPC client also uses this independent trust source.
 
 The [regression record](internal-tls-trust.json) contains six invalid cases that
 the old internal verifier accepted. The corrected focused checks and frozen
-inspection passed. The earlier public workflow uses the previous source. A
-complete run with this correction remains required. Sandbox client-certificate
+inspection passed. Full compiler CI `34984419930` passed, including generated
+race checks, SQL provisioning, and both example services. The earlier public workflow uses the previous source. A
+complete run with this correction is queued as `34984874811`. Its result remains
+required. Sandbox client-certificate
 distribution, certificate revocation, production CA rotation, and Gateway network
 isolation remain separate open requirements.
