@@ -8,7 +8,7 @@ They must not create CNPG Cluster, Database, or DatabaseRole resources.
 `--database-namespace stego-cnpg-database-<suffix>`. It no longer accepts a
 catalog ID or derives a namespace from one. Its operator watch and webhooks
 select that namespace. The operator starts with zero replicas. Its existing
-30-minute lifetime Job, resource limits, and ownership journal stay in place.
+40-minute lifetime Job, resource limits, and ownership journal stay in place.
 The caller must create and remove the installation database namespace while
 the operator can process finalizers. The helper refuses existing resources,
 a repeated plan, or operator removal before the database namespace is absent.
@@ -61,3 +61,41 @@ The normal sidecar restart now checks SQL object IDs as well.
 These source paths have not yet passed a live CNPG run. The remaining installer
 must create the bounded server, supply the private fixture file and namespace
 permissions, run the complete browser workflow, and verify final cleanup.
+
+The installation runner is `scripts/check-cnpg-installation.py`. Prepare a new
+frozen source directory with the CNPG namespace option, then run that frozen
+runner with these explicit inputs:
+
+- `--operator-context`: the saved operator context.
+- `--ci-kubeconfig`: the private, short-lived CI kubeconfig.
+- `--source`: the frozen source directory.
+- `--repository`: the local repository used to verify the recorded commit.
+- `--results`: a new evidence directory.
+- `--storage-class`: dynamic storage with the `Delete` reclaim policy.
+
+The runner verifies the full source inventory against the commit before it
+writes to the cluster. It acquires the shared live-test Lease, installs the
+scoped operator and server, and supplies a private Secret to only the test
+container. The browser runner uses the CI identity and verifies the same Lease
+UID and test target. It cannot release the Lease while the server remains.
+The operator stays limited to 40 minutes; the server has a 25-minute lifetime.
+The extra operator time permits finalizer cleanup after server termination.
+
+The server has two instances with fixed CPU, memory, storage, and connection
+limits. Its network rules allow only the required SQL, replication, operator,
+DNS, and Kubernetes API traffic. It uses a pinned PostgreSQL 18.6 image.
+The test account can read the named CNPG Cluster and SQL service and replace
+Pods in the dedicated database namespace. It cannot read server Secrets or
+write CNPG Cluster resources. Production workers receive none of these rights.
+
+The runner records a create intent before each server resource write. If a
+create response is lost, it records a matching observed owner for cleanup and
+stops that attempt. Cleanup checks resource UIDs and the run owner, waits for
+confirmed absence, and retains the Lease if any application, allocation, or
+server resource remains. Missing or failed application and restart evidence
+cannot produce a passing result.
+
+The local boundary, projection, lock, evidence, and inspection checks pass.
+No CNPG server has been installed or tested yet for this implementation. The
+GitHub CNPG gate remains unsuccessful until its installation and CI execution
+path has passed. A manual operator-assisted pass will be recorded separately.

@@ -142,13 +142,13 @@ def prepare(args):
     # that Deployment. Its deadline and TTL also stop CNPG if the host exits.
     items.append({'apiVersion': 'batch/v1', 'kind': 'Job',
         'metadata': {'name': 'cnpg-test-lifetime', 'namespace': OPERATOR_NS, 'labels': {LABEL: args.namespace}},
-        'spec': {'suspend': True, 'backoffLimit': 0, 'activeDeadlineSeconds': 1800, 'ttlSecondsAfterFinished': 0,
+        'spec': {'suspend': True, 'backoffLimit': 0, 'activeDeadlineSeconds': 2400, 'ttlSecondsAfterFinished': 0,
             'template': {'metadata': {'labels': {LABEL: args.namespace}}, 'spec': {
                 'restartPolicy': 'Never', 'automountServiceAccountToken': False,
                 'securityContext': {'runAsNonRoot': True, 'seccompProfile': {'type': 'RuntimeDefault'}},
                 'containers': [{'name': 'deadline',
                     'image': 'docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393',
-                    'command': ['/bin/sleep', '3600'],
+                    'command': ['/bin/sleep', '4200'],
                     'securityContext': {'readOnlyRootFilesystem': True, 'allowPrivilegeEscalation': False, 'capabilities': {'drop': ['ALL']}},
                     'resources': {'requests': {'cpu': '5m', 'memory': '8Mi', 'ephemeral-storage': '1Mi'},
                         'limits': {'cpu': '50m', 'memory': '32Mi', 'ephemeral-storage': '16Mi'}}}]}}}})

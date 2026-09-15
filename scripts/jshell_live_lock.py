@@ -42,6 +42,17 @@ def acquire(context, holder, namespace, job):
     oc(context, "-n", "stego-ci", "patch", "lease", "jshell-live-test", "--type=json", "-p", json.dumps(patch), "-o", "json")
 
 
+def verify(context, holder, uid, namespace, job):
+    if not holder or not uid or not namespace or not job:
+        raise RuntimeError("Require the held Lease identity and test target")
+    current = lease(context)
+    annotations = current['metadata'].get('annotations', {})
+    if current['metadata']['uid'] != uid or current.get('spec', {}).get('holderIdentity') != holder or annotations.get('stego.test/namespace') != namespace or annotations.get('stego.test/job') != job:
+        raise RuntimeError("The held Lease identity or test target differs")
+    if oc(context, '-n', namespace, 'get', 'job', job, '--ignore-not-found', '-o', 'json'):
+        raise RuntimeError("The held Lease already has a test Job; inspect it first")
+
+
 def release(context, holder):
     current = lease(context)
     if current.get("spec", {}).get("holderIdentity") != holder:
@@ -59,15 +70,18 @@ def release(context, holder):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("action", choices=["acquire", "release"])
+    parser.add_argument("action", choices=["acquire", "release", "verify"])
     parser.add_argument("--context", required=True)
     parser.add_argument("--holder", required=True)
     parser.add_argument("--namespace")
+    parser.add_argument("--uid")
     parser.add_argument("--job", default="check")
     args = parser.parse_args()
     if args.action == "acquire":
         if not args.namespace:
             parser.error("acquire requires --namespace")
         acquire(args.context, args.holder, args.namespace, args.job)
+    elif args.action == "verify":
+        verify(args.context, args.holder, args.uid, args.namespace, args.job)
     else:
         release(args.context, args.holder)

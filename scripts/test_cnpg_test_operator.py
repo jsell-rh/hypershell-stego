@@ -92,7 +92,7 @@ class InstallationBoundary(unittest.TestCase):
             self.assertEqual(manager['resources']['limits']['cpu'], '500m')
             self.assertEqual(manager['resources']['limits']['memory'], '512Mi')
             lifetime = next(o for o in items if o['kind'] == 'Job')
-            self.assertEqual(lifetime['spec']['activeDeadlineSeconds'], 1800)
+            self.assertEqual(lifetime['spec']['activeDeadlineSeconds'], 2400)
             self.assertTrue(lifetime['spec']['suspend'])
             self.assertEqual(lifetime['spec']['backoffLimit'], 0)
             self.assertFalse(lifetime['spec']['template']['spec']['automountServiceAccountToken'])

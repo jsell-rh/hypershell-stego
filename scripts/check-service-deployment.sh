@@ -30,8 +30,16 @@ if [[ $workload == 1 ]]; then
 fi
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"
-python3 "$results/jshell_live_lock.py" acquire --context "$STEGO_TEST_CONTEXT" \
-  --holder "$namespace" --namespace "$namespace" --job service-check
+held_lease=${STEGO_TEST_HELD_LEASE_HOLDER:-}
+held_lease_uid=${STEGO_TEST_HELD_LEASE_UID:-}
+if [[ -n $held_lease || -n $held_lease_uid ]]; then
+  [[ -n $held_lease && -n $held_lease_uid && $preinstalled == 1 ]]
+  python3 "$results/jshell_live_lock.py" verify --context "$STEGO_TEST_CONTEXT" \
+    --holder "$held_lease" --uid "$held_lease_uid" --namespace "$namespace" --job service-check
+else
+  python3 "$results/jshell_live_lock.py" acquire --context "$STEGO_TEST_CONTEXT" \
+    --holder "$namespace" --namespace "$namespace" --job service-check
+fi
 created=false
 cleanup_resources() {
   if [[ $preinstalled == 1 ]]; then
@@ -97,8 +105,14 @@ cleanup() {
   status=$?
   trap - EXIT
   if cleanup_resources; then
-    python3 "$results/jshell_live_lock.py" release --context "$STEGO_TEST_CONTEXT" \
-      --holder "$namespace" || status=1
+    if [[ -n $held_lease ]]; then
+      # The outer installation runner must remove its server before release.
+      python3 "$results/jshell_live_lock.py" verify --context "$STEGO_TEST_CONTEXT" \
+        --holder "$held_lease" --uid "$held_lease_uid" --namespace "$namespace" --job service-check || status=1
+    else
+      python3 "$results/jshell_live_lock.py" release --context "$STEGO_TEST_CONTEXT" \
+        --holder "$namespace" || status=1
+    fi
   else
     status=1
     echo "Cleanup failed. Keep the shared live-test Lease for inspection." >&2

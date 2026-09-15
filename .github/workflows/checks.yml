@@ -184,6 +184,8 @@ jobs:
       - run: timeout 15s python3 scripts/test_browser_cluster_installation.py
       - run: timeout 15s python3 scripts/test_browser_inspection.py
       - run: timeout 15s python3 scripts/test_cnpg_test_operator.py
+      - run: timeout 15s python3 scripts/test_cnpg_installation_fixture.py
+      - run: timeout 15s python3 scripts/test_cnpg_workflow.py
       - run: bash -n scripts/check-external-egress.sh
       - name: Build the generated service image
         run: docker build --file out/deploy/Containerfile --tag hypershell-stego:check .
