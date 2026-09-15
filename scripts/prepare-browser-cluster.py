@@ -74,6 +74,30 @@ def workload_targets(directory):
             ("hypershell-gateway-workload", "api", ["--worker", "gateway-workload", *flags, "--egress", "gateway-postgres=192.0.2.2:5432"])]
 
 
+def install_resources(resources, oc, record, save):
+    for item in sorted(resources, key=lambda item: item["kind"] != "ValidatingAdmissionPolicy"):
+        record["pending_resource"] = {"kind": item["kind"], "name": item["metadata"]["name"]}
+        save()
+        created = json.loads(oc("create", "-f", "-", "-o", "json", data=json.dumps(item).encode()))
+        record["resources"].append({"kind": created["kind"], "name": created["metadata"]["name"], "uid": created["metadata"]["uid"]})
+        record.pop("pending_resource")
+        save()
+        if item["kind"] != "ValidatingAdmissionPolicy":
+            continue
+        for _ in range(40):
+            policy = json.loads(oc("get", item["kind"], item["metadata"]["name"], "-o", "json"))
+            status = policy.get("status", {})
+            if status.get("observedGeneration") == policy["metadata"]["generation"] and "typeChecking" in status:
+                if status["typeChecking"].get("expressionWarnings"):
+                    raise RuntimeError("A generated admission policy has type-check warnings")
+                break
+            time.sleep(0.5)
+        else:
+            raise RuntimeError("Generated admission policy type checking did not finish")
+    record["policy_type_checks"] = "success"
+    save()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--context", required=True)
@@ -151,28 +175,7 @@ def main():
             return
         require_absent(resources, oc)
         save()
-        for item in resources:
-            record["pending_resource"] = {"kind": item["kind"], "name": item["metadata"]["name"]}
-            save()
-            created = json.loads(oc("create", "-f", "-", "-o", "json", data=json.dumps(item).encode()))
-            record["resources"].append({"kind": created["kind"], "name": created["metadata"]["name"], "uid": created["metadata"]["uid"]})
-            record.pop("pending_resource")
-            save()
-        for item in resources:
-            if item["kind"] != "ValidatingAdmissionPolicy":
-                continue
-            for _ in range(40):
-                policy = json.loads(oc("get", item["kind"], item["metadata"]["name"], "-o", "json"))
-                status = policy.get("status", {})
-                if status.get("observedGeneration") == policy["metadata"]["generation"] and "typeChecking" in status:
-                    if status["typeChecking"].get("expressionWarnings"):
-                        raise RuntimeError("A generated admission policy has type-check warnings")
-                    break
-                time.sleep(0.5)
-            else:
-                raise RuntimeError("Generated admission policy type checking did not finish")
-        record["policy_type_checks"] = "success"
-        save()
+        install_resources(resources, oc, record, save)
         print("Operator installed " + str(len(resources)) + " generated cluster resources.")
     finally:
         for binary in binaries.values():

@@ -90,6 +90,29 @@ class InstallationBoundary(unittest.TestCase):
             self.assertFalse(any(words[0] == "delete" for words in calls))
 
 
+    def test_policies_are_checked_before_bindings_or_roles(self):
+        policy = {"apiVersion": "admissionregistration.k8s.io/v1", "kind": "ValidatingAdmissionPolicy", "metadata": {"name": self.namespace + ".policy"}}
+        binding = {"apiVersion": "admissionregistration.k8s.io/v1", "kind": "ValidatingAdmissionPolicyBinding", "metadata": {"name": self.namespace + ".policy"}}
+        for warnings in [[], [{"warning": "invalid expression"}]]:
+            calls = []
+            record = {"resources": []}
+            def oc(*words, data=None):
+                calls.append(words)
+                if words[0] == 'create':
+                    obj = json.loads(data);obj['metadata']['uid'] = 'created';return json.dumps(obj).encode()
+                return json.dumps({'metadata': {'generation': 1}, 'status': {'observedGeneration': 1, 'typeChecking': {'expressionWarnings': warnings}}}).encode()
+            if warnings:
+                with self.assertRaises(RuntimeError):
+                    installation.install_resources([binding, self.role, policy], oc, record, lambda: None)
+                self.assertEqual(len(calls), 2)
+            else:
+                installation.install_resources([binding, self.role, policy], oc, record, lambda: None)
+                self.assertEqual([r['kind'] for r in record['resources']], ['ValidatingAdmissionPolicy', 'ValidatingAdmissionPolicyBinding', 'ClusterRole'])
+                self.assertEqual([c[0] for c in calls], ['create', 'get', 'create', 'create'])
+                self.assertEqual(record['policy_type_checks'], 'success')
+            self.assertNotIn('pending_resource', record)
+
+
 class EndpointSnapshot(unittest.TestCase):
     def setUp(self):
         self.directory = tempfile.TemporaryDirectory()
