@@ -133,7 +133,14 @@ then restores the generated policy and waits for healthy addresses. It checks
 SQL credential identities and provider data through public RPC. The partial
 result is `gateway-public-network-recovery.json`. The input check passes and
 the acceptance package compiles. Live network denial and recovery remain
-unverified until this profile completes on the cluster.
+unverified until this profile completes on the cluster. The test captures SQL
+credentials, SQL object OIDs, provider data, and the live worker policy before
+it starts the fault. It verifies the actual policy before and after removal:
+only one exact rule per selected public IP/443 pair can disappear. The worker
+selector, ingress, required destinations, and policy UID must remain unchanged.
+Restoration must recover the original policy specification. The evidence records
+all three policy hashes. Synthetic policy checks reject unrelated policy
+changes; they do not replace the live denial test.
 
 
 ## Public certificate renewal

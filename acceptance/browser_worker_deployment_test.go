@@ -73,11 +73,12 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 		if worker.name == "gateway-workload" && w.public != nil {
 			w.publicEgressFailure = func(id string) {
 				original := append([]string{}, target...)
-				stop()
-				previous += logs()
-				target = withoutPublicEgress(original)
-				stop, logs = start()
 				w.checkPublicEgressLoss(id, func() {
+					stop()
+					previous += logs()
+					target = withoutPublicEgress(original)
+					stop, logs = start()
+				}, func() {
 					stop()
 					previous += logs()
 					target = original

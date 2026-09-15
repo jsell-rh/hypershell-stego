@@ -1,7 +1,11 @@
 package acceptance
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
+	"net/http"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -10,6 +14,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -35,21 +40,43 @@ func TestPublicFailureKeepsRequiredEgress(t *testing.T) {
 	}
 }
 
-func (w *browserGatewayWorkload) checkPublicEgressLoss(id string, restore func()) {
+func (w *browserGatewayWorkload) checkPublicEgressLoss(id string, remove, restore func()) {
 	w.t.Helper()
+	readPolicy := func() kube.Object {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		policy, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/apis/networking.k8s.io/v1/namespaces/"+w.p.namespace+"/networkpolicies/"+publicWorkerPolicy, nil)
+		if err != nil || code != 200 {
+			w.t.Fatal("public worker policy read failed")
+		}
+		if _, err := publicPolicySpec(policy, w.p.namespace); err != nil {
+			w.t.Fatal(err)
+		}
+		return policy
+	}
+	for _, gatewayID := range w.gatewayIDs {
+		w.check(gatewayID)
+	}
+	originalPolicy := readPolicy()
 	beforeSQL := w.checkSQLIsolation()
+	beforeSQLObjects := w.gatewaySQLObjectIDs()
 	token := w.identity.browserLogin(w.t, w.audience(id), "console-alice")
 	before, err := w.call("GetProvider", token, `{"name":"browser-provider"}`)
 	if err != nil {
 		w.t.Fatal("public provider read before recovery failed", status.Code(err))
 	}
 	started := time.Now()
-	deadline := started.Add(90 * time.Second)
+	remove()
+	blockedPolicy := readPolicy()
+	if err := verifyPublicEgressRemoval(originalPolicy, blockedPolicy, w.p.namespace, w.public.Endpoints); err != nil {
+		w.t.Fatal(err)
+	}
+	deadline := time.Now().Add(90 * time.Second)
 	for _, gatewayID := range w.gatewayIDs {
 		for {
 			response := w.owner.api(w.t, "GET", "/gateways/"+gatewayID, nil)
 			var gateway httpapi.Gateway
-			if response.StatusCode == 200 && json.Unmarshal(response.Body, &gateway) == nil && gateway.Phase != nil && *gateway.Phase == "Degraded" && gateway.Status != nil && *gateway.Status != "Healthy" && (gateway.RouteAddress == nil || *gateway.RouteAddress == "") {
+			if response.StatusCode == 200 && json.Unmarshal(response.Body, &gateway) == nil && gateway.Phase != nil && *gateway.Phase == "Degraded" && gateway.Status != nil && (*gateway.Status == "WorkloadUnavailable" || *gateway.Status == "WorkloadNotReady") && (gateway.RouteAddress == nil || *gateway.RouteAddress == "") {
 				break
 			}
 			if time.Now().After(deadline) {
@@ -59,10 +86,14 @@ func (w *browserGatewayWorkload) checkPublicEgressLoss(id string, restore func()
 		}
 	}
 	restore()
+	restoredPolicy := readPolicy()
+	if kube.String(restoredPolicy, "metadata", "uid") != kube.String(originalPolicy, "metadata", "uid") || kube.String(restoredPolicy, "metadata", "resourceVersion") == kube.String(blockedPolicy, "metadata", "resourceVersion") || !reflect.DeepEqual(originalPolicy["spec"], restoredPolicy["spec"]) {
+		w.t.Fatal("public policy was not restored exactly")
+	}
 	for _, gatewayID := range w.gatewayIDs {
 		w.check(gatewayID)
 	}
-	if next := w.checkSQLIsolation(); !reflect.DeepEqual(beforeSQL, next) {
+	if next := w.checkSQLIsolation(); !reflect.DeepEqual(beforeSQL, next) || !reflect.DeepEqual(beforeSQLObjects, w.gatewaySQLObjectIDs()) {
 		w.t.Fatal("public network recovery changed database or credential identities")
 	}
 	token = w.identity.browserLogin(w.t, w.audience(id), "console-alice")
@@ -70,7 +101,12 @@ func (w *browserGatewayWorkload) checkPublicEgressLoss(id string, restore func()
 	if err != nil || !proto.Equal(before, after) {
 		w.t.Fatal("public network recovery changed provider data", status.Code(err))
 	}
-	record := map[string]any{"gateway_ids": w.gatewayIDs, "worker_public_egress_removed": true, "degraded_addresses_cleared": true, "generated_egress_restored": true, "healthy_addresses_restored": true, "sql_credentials_preserved": true, "provider_data_preserved": true, "seconds": time.Since(started).Seconds()}
+	hashPolicy := func(policy kube.Object) string {
+		raw, _ := json.Marshal(policy["spec"])
+		sum := sha256.Sum256(raw)
+		return hex.EncodeToString(sum[:])
+	}
+	record := map[string]any{"policy_uid": kube.String(originalPolicy, "metadata", "uid"), "before_policy_sha256": hashPolicy(originalPolicy), "blocked_policy_sha256": hashPolicy(blockedPolicy), "restored_policy_sha256": hashPolicy(restoredPolicy), "live_policy_change_verified": true, "baseline_before_fault": true, "sql_object_ids_preserved": true, "gateway_ids": w.gatewayIDs, "worker_public_egress_removed": true, "degraded_addresses_cleared": true, "generated_egress_restored": true, "healthy_addresses_restored": true, "sql_credentials_preserved": true, "provider_data_preserved": true, "seconds": time.Since(started).Seconds()}
 	data, err := json.MarshalIndent(record, "", "  ")
 	if err != nil {
 		w.t.Fatal(err)
