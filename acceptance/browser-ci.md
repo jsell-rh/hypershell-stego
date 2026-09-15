@@ -141,3 +141,9 @@ All three generation records matched. SQL cleanup denial, namespace recovery,
 credential encryption, session isolation, and automated cleanup passed. The
 Job and test Pods are absent, and the shared Lease is free. This run used the
 supplied PostgreSQL fixture; it does not replace the separate CNPG result.
+
+Full CI run [34947673554](https://github.com/jsell-rh/hypershell-stego/actions/runs/34947673554)
+completed at source `ee79099`. Core acceptance passed in 1357.045 seconds after
+the count access-loss correction. Ordinary browser, console, and service-image
+jobs also passed. The overall run failed on the unfinished CNPG and Sandbox
+jobs. This result does not include the later availability or viewer changes.

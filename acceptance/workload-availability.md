@@ -19,7 +19,14 @@ runtime file and updated compiler records. Existing API schemas, generated
 deployment permissions, and other runtime files did not change. The withdrawn
 pinned-admission prototype is absent from generated output.
 
-Full compiler CI and the complete supplied-server browser workflow remain
-required for this revision. This check does not prove an external endpoint.
+Full compiler [CI passed](https://github.com/jsell-rh/stego/actions/runs/34950180723).
+The [API gate](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950339329)
+passed all 30 required workflows at application revision `3f188b2`. Verification
+matched 886 source files, 229 generated files, and all four generation records.
+The Job, Pods, and fixtures are absent. See the
+[verified evidence](workload-availability-evidence.json).
+
+The complete supplied-server browser result remains required for this revision.
+The API gate does not exercise a live Deployment or prove an external endpoint.
 The [external connection gate](https://github.com/jsell-rh/stego/blob/main/specs/hypershell-external-connection.md)
 remains open, including TLS and address-ownership decisions.
