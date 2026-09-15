@@ -91,7 +91,7 @@ status check and before cancellation completed. It retained the Lease during
 preparation. The earlier snapshot did not prove that cancellation would prevent
 cluster access. A later audit found no test workloads, data, or allocations and
 verified all eighteen installation resources. The Lease was then released.
-Public run `34986369202` is queued after this cleanup.
+Public run `34986369202` was later canceled while CNPG held the Lease.
 Push checks now require the public profile and its operator configuration.
 A manual dispatch can select `public_gateway=false` for an internal-only check.
 
@@ -103,5 +103,14 @@ owner API token. This is a possible fixture error, not a confirmed diagnosis.
 
 Commit `cc8e545` restricts that fixture and verifies the negative token's API
 and Gateway audiences before it makes the RPC call. It also names each case.
-The acceptance package compiled locally. Core/browser run `34989401887` and
-public run `34989405950` are active; their results remain required.
+Public run `34989405950` passed those audience and RPC denial checks. It also
+passed public network recovery and certificate rotation, then failed the worker
+telemetry count assertion. Its collector permitted two instances per worker;
+the public test starts the workload worker four times. Cleanup removed all four
+allocations and released the Lease. The [progress record](public-gateway-progress-20260915.json)
+retains these results without claiming a complete workflow pass.
+
+Commit `842a71c` requires the exact count for each profile and retains the signal
+checks for every instance. Nine focused cases passed. Public run `34991226917`
+and core/browser run `34991229447` check the corrected source. Their complete
+results remain required.
