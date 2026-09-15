@@ -79,5 +79,8 @@ Full application CI at `eb53ea7`
 Core acceptance passed in 1091.085 seconds. Ordinary browser, console, and
 service-image jobs passed. The overall run failed because the CNPG and Sandbox
 entry points still require their restricted cluster execution paths. The
-separate restricted API run remains active. The prepared CNPG run must wait for
-its completion and cleanup.
+separate [restricted API run](cnpg-source-api-evidence.json) also passed all 30
+required tests. All 891 source files, 229 generated files, and generation records
+matched. Its Job, Pods, and private fixtures are absent. The shared Lease was
+released before the frozen CNPG workflow started. CNPG recovery and cleanup
+remain a separate live requirement.

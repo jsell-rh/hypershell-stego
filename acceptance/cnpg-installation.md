@@ -164,6 +164,13 @@ five allowed fixture changes. The source is
 is `stego-cnpg-database-20260915-v5`. See the
 [preflight evidence](cnpg-installation-preflight-evidence.json).
 
+The [restricted API gate](cnpg-source-api-evidence.json) passed all 30 required
+tests at this frozen revision. Source, generation, and cleanup checks passed.
+The CNPG run started after the API Job and Pods were removed and the Lease was
+released. Results will be stored in `/tmp/hypershell-cnpg-installation-run-v5`.
+The API result does not prove CNPG recovery or cleanup; those checks must pass
+in the complete browser workflow.
+
 This source includes the verified viewer and account checks, the cleanup read
 retry, and the new credential check before installation. Eight credential
 checks, six CNPG workflow checks, six server fixture checks, and four operator
