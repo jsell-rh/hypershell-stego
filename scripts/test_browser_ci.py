@@ -25,6 +25,12 @@ class BrowserCI(unittest.TestCase):
             self.assertEqual((kind, namespace), ('networkpolicy', setup.NAMESPACE))
             return policies[name]
         installation.verify_fixture_network(body, get)
+        policies['deny-ingress']['spec'].pop('ingress')
+        installation.verify_fixture_network(body, get)
+        policies['deny-ingress']['spec']['ingress'] = [{'from': [{}]}]
+        with self.assertRaises(RuntimeError):
+            installation.verify_fixture_network(body, get)
+        policies['deny-ingress']['spec']['ingress'] = []
         original = copy.deepcopy(policies)
         receiver = policies['fixture-ingress']
         gateway_rule = next(rule for rule in receiver['spec']['ingress'] if any(

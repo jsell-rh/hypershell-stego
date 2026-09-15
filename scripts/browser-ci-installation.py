@@ -28,6 +28,10 @@ def normalize(item):
         for subject in value['subjects']:
             if subject['kind'] == 'ServiceAccount':
                 subject.setdefault('apiGroup', '')
+    if value['kind'] == 'NetworkPolicy':
+        # The API omits empty rule lists. Keep policyTypes and every rule exact.
+        value['spec'].setdefault('ingress', [])
+        value['spec'].setdefault('egress', [])
     return value
 
 
