@@ -8,7 +8,7 @@ on:
       - components/web-console/**
       - packages/gateway-management-ui/**
       - out/browsertelemetry/**
-      - out/typescriptsdk/**
+      - out/tssdk/**
       - pnpm-lock.yaml
       - pnpm-workspace.yaml
 
