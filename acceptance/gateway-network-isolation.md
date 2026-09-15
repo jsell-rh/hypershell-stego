@@ -36,9 +36,10 @@ The full network gate remains open:
 
 1. Check approved and retired endpoint addresses with fresh connections,
    controller restart, and regeneration.
-2. Complete the CNPG workflow with network isolation enabled. Source `6062269`
-   passed generation, complete source verification, and 17 focused source and
-   inspection checks. Its live restricted workflow is active. The
+2. Complete the CNPG workflow with network isolation enabled. Source `38a1d76`
+   passed generation, full source verification, and 22 focused preflight and
+   workflow checks. Its live restricted workflow is active. The earlier run
+   stopped before browser setup and required manual cleanup. The
    [CI policy update](network-ci-update-20260915.json) passed resource identity,
    specification, and admission checks before this run.
 3. Declare and test external database destinations. The default SQL Pod peer

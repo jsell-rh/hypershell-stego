@@ -8,9 +8,18 @@ peers, broader roles, and changed runtime code.
 The [fixed CI policy update](network-ci-update-20260915.json) passed. Admission
 policies were checked before permission changes. All 18 cluster resource
 identities and specifications, the CNPG receiver rule, and the new immutable
-record were verified. The complete restricted CNPG workflow is now active.
-There is no CNPG isolation or cleanup pass yet. See the
-[workflow record](gateway-network-workflow-20260915.json).
+record were verified. The first restricted run stopped before browser setup because the local command
+omitted the required Gateway CA file. The outer cleanup then lacked endpoint
+files that the browser had not created. No application Job was created.
+[Manual recovery](cnpg-network-recovery-20260915.json) removed runtime, private
+fixtures, claims, and volumes and released the Lease.
+
+Source `38a1d76` validates and copies the supplied CA before cluster access.
+It builds its own allocation check before resource creation. Twenty-two focused
+checks passed, followed by generation and full frozen-source verification.
+The corrected run is active. Its initial live check found no allocations with
+no browser child files. Full application and automatic cleanup results remain
+required. See the [workflow record](gateway-network-workflow-20260915.json).
 
 # CNPG CI
 
