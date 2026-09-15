@@ -52,3 +52,10 @@ this review. The external DNS and separate Sandbox allocation requirements
 also remain open. The historical `acceptance/gateway-workload.md` is explicitly
 marked as retired; its deployment-backed database description is not the
 current database contract.
+
+The user selected the implementation boundary on 2026-09-15: keep the upstream
+OpenShell dashboard. STEGO must generate its common authentication, deployment,
+and lifecycle support. Hypershell supplies Gateway-specific configuration and
+access rules. Do not port the upstream dashboard backend as part of this work.
+The dashboard terminal uses WebSockets; the generated integration must preserve
+that contract. The current buffered browser HTTP proxy does not provide it.
