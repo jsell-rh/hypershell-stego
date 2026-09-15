@@ -33,11 +33,10 @@ installation remains. It does not remove finalizers to force deletion.
 The first preflight passed the restricted identity and live manifest checks.
 Admission then rejected the test Job because its pod-level non-root setting
 was implicit. The fixture now sets it explicitly. The Job cleanup limit is also
-one hour. All 15 actual admission and access checks now pass. They include
+one hour. The first 15 actual admission and access checks passed. They include
 rejected parallel Jobs, excessive deadlines, foreign identities, privileged
 containers, lasting tokens, foreign Secret reads, and installation writes.
-No Job ran during these checks. The complete CI workflow and cleanup
-after failure still require live results. Installation CNPG, actual RDS, and
+No Job ran during these preflight checks. Installation CNPG, actual RDS, and
 Sandbox checks remain open.
 
 Use `scripts/check-browser-ci-recovery.sh` from a frozen inspection source to
@@ -46,8 +45,10 @@ directory. The check creates two allocations through the generated allocator,
 then starts one small Job that exits with code 23. It removes the Job and its
 Pod before it calls the normal CI cleanup path. The result must confirm that
 both allocations and labelled test data are absent and that the operator's
-installation remains. This check uses the same shared Lease. Its source builds;
-the first live result is still pending.
+installation remains. This check uses the same shared Lease. The live check
+passed at `de07bff`: the Job exited with code 23, its Pod was removed, both
+allocations were removed, and all 16 access checks passed. The frozen source
+matched all 867 files in that commit. The shared Lease was released.
 
 The first GitHub run passed the complete application workflow in 335.05 seconds,
 then failed during host cleanup. The test's cleanup had deleted the allocator
@@ -59,4 +60,11 @@ service-account deletion rights. An actual denied-delete probe raises the
 access check count to 16. The operator restored the missing allocator account
 and removed the CI deletion right. Restricted CI cleanup then removed the
 remaining data, verified the installation, and released the Lease. This repair
-does not change the failed GitHub run into a passing run. A new run is required.
+does not change the failed GitHub run into a passing run. The new
+[browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017009)
+and [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34936017005)
+are pending results. See the [verified evidence](browser-ci-evidence.json).
+
+The fixed namespace retains six test image streams. Registry retention is
+outside this cleanup proof. The browser fixture has no external connection
+endpoint; its screenshots do not prove external connectivity.
