@@ -25,6 +25,11 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 		w.t.Fatal("admission test client setup failed")
 	}
 	defer client.Close()
+	namespace, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+state, nil)
+	fingerprint := kube.String(namespace, "metadata", "annotations", "hypershell.redhat.io/state-identity")
+	if err != nil || code != 200 || len(fingerprint) != 64 {
+		w.t.Fatal("retained state fingerprint is unavailable")
+	}
 	type rule struct{ policy, message string }
 	probes := []struct {
 		name, method, path string
@@ -35,6 +40,8 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 		{"foreign namespace", "POST", "/api/v1/namespaces?dryRun=All&fieldValidation=Strict", kube.Object{"apiVersion": "v1", "kind": "Namespace", "metadata": kube.Object{"name": "stego-denied-namespace"}}, []rule{{"allocation", "Namespace must match its allocation profile"}}, false},
 		{"quota change", "PATCH", "/api/v1/namespaces/" + state + "/resourcequotas/stego-allocation?dryRun=All&fieldValidation=Strict", kube.Object{"spec": kube.Object{"hard": kube.Object{"pods": "3"}}}, []rule{{"allocation", "Quota must match its allocation profile"}}, false},
 		{"allocation identity change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"labels": kube.Object{"stego.dev/allocation-profile": "gateway"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, true},
+		{"retained fingerprint change", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": "changed-public-fingerprint"}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, false},
+		{"retained fingerprint removal", "PATCH", "/api/v1/namespaces/" + state + "?dryRun=All&fieldValidation=Strict", kube.Object{"metadata": kube.Object{"annotations": kube.Object{"hypershell.redhat.io/state-identity": nil}}}, []rule{{"ownership", "Allocation identity and restricted Pod security are immutable"}}, false},
 	}
 	type result struct {
 		Name   string
@@ -53,8 +60,7 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 		}
 		bearer := token
 		if probe.harness {
-			// The allocator has no namespace patch grant. Use the test actor, which
-			// has that grant, to reach the ownership policy that applies to all actors.
+			// Also prove that ownership protection applies to the test actor.
 			value, err := transport.ReadPrivateFile(w.options.TokenFile)
 			if err != nil {
 				w.t.Fatal("admission test identity is unavailable")
@@ -97,8 +103,8 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 	if err != nil || code != 200 || kube.String(quota, "spec", "hard", "pods") != "0" {
 		w.t.Fatal("dry-run changed the allocation quota", code)
 	}
-	namespace, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+state, nil)
-	if err != nil || code != 200 || kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") != "gateway-state" {
+	namespace, code, err = w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+state, nil)
+	if err != nil || code != 200 || kube.String(namespace, "metadata", "labels", "stego.dev/allocation-profile") != "gateway-state" || kube.String(namespace, "metadata", "annotations", "hypershell.redhat.io/state-identity") != fingerprint {
 		w.t.Fatal("dry-run changed allocation identity", code)
 	}
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
@@ -107,5 +113,5 @@ func (w *browserGatewayWorkload) checkAdmission(ctx context.Context, state, toke
 			w.t.Fatal("cannot write admission evidence")
 		}
 	}
-	w.t.Log("Three server dry-runs were denied by the expected generated admission rules; stored namespace, quota, and identity remained unchanged")
+	w.t.Log("Five server dry-runs were denied by the expected generated admission rules; stored namespace, quota, and fingerprint remained unchanged")
 }

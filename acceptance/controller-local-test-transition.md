@@ -143,3 +143,11 @@ with `CA:FALSE`, server-authentication usage, and explicit DNS and IP names.
 It checks the chain and names before cluster deployment. The CA signing key
 is removed after certificate issuance. The clients receive only the CA
 certificate, and PostgreSQL receives only its server certificate and key.
+
+The fourth run passed real Gateway SQL isolation, verified RPC, denied calls,
+and data recovery after Gateway Pod replacement. It then failed an old test
+expectation that the allocator could not patch namespaces. The declared public
+identity record requires that grant. The test now checks the grant and makes
+two additional server dry-runs: fingerprint replacement and removal. Both
+must fail under the generated ownership policy and leave the record unchanged.
+The existing denial with the test actor remains. No runtime permission changed.

@@ -58,7 +58,8 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		{"gateway-workload", "", "", "namespaces", "delete", false},
 		{"gateway-workload", "", "rbac.authorization.k8s.io", "clusterroles", "create", false},
 		{"gateway-workload", gateway, "rbac.authorization.k8s.io", "rolebindings", "create", false},
-		{"namespace-allocation", "", "", "namespaces", "patch", false},
+		// Public state fingerprints require patch. Admission keeps them immutable.
+		{"namespace-allocation", "", "", "namespaces", "patch", true},
 		{"namespace-allocation", state, "", "secrets", "get", false},
 		{"namespace-allocation", gateway, "", "secrets", "get", false},
 		{"namespace-allocation", w.p.namespace, "", "secrets", "get", false},
