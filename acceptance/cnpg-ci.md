@@ -100,3 +100,11 @@ on 2026-09-15. All nine focused Python checks passed. Named ConfigMap checks
 retain their resource names. The active run uses its earlier frozen source;
 its old exec probe is not evidence of subresource denial. This correction changes
 only the permission check and does not start another live test.
+
+[The first run evidence](cnpg-ci-first-run-evidence.json) records its failure and
+manual recovery. Fresh reads found no CNPG runtime, claims, or volumes. The
+private fixture was removed, the static installation was retained, and the Lease
+was released. The first manual Cluster delete failed with a private request
+error. A new read found the same live UID; a later conditional delete succeeded.
+The first error cause is unknown. Manual recovery does not prove automatic
+cleanup. Keep this failed run in the acceptance record.
