@@ -14,8 +14,14 @@ process failure record remains required.
 The Gateway workload regression failed with compiler `f2b09c0`: no runtime
 lifecycle or failure event reached local output or OTLP during provider setup.
 The update adopts compiler `f97b315`. Repeated generation and drift checks pass.
-The focused four-worker check passes with local and TLS OTLP evidence. Complete
-API and browser workflows and full compiler CI remain required for this source.
+The focused four-worker check passes with local and TLS OTLP evidence in 3.887
+seconds. [Full compiler CI](https://github.com/jsell-rh/stego/actions/runs/34964671704)
+passed at `f97b315`, including controller race checks and SQL provisioning.
+Complete API and browser workflows remain required for this source.
+
+Hypershell `677973f` has queued API run `34964891352`, browser run `34964891373`,
+and full CI run `34964891409`. These checks retain the complete Gateway workflow
+and the SQL telemetry requirements from the previous source.
 
 This does not establish complete API or RPC bootstrap telemetry. It does not
 declare the worker ready before its actual queue and provider checks succeed.
