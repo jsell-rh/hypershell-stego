@@ -18,8 +18,9 @@ import sys
 import tarfile
 import time
 
-
 sys.dont_write_bytecode = True
+
+from ci_credentials import CNPG_SECONDS, require_context_credentials
 
 
 def module(name, path):
@@ -114,6 +115,7 @@ def main():
     database_namespace = record['cnpg_installation']['namespace']
     if args.ci_kubeconfig.is_symlink() or not args.ci_kubeconfig.is_file() or args.ci_kubeconfig.stat().st_mode & 0o077:
         raise RuntimeError('Require a private CI kubeconfig file')
+    require_context_credentials('jshell-ci', CNPG_SECONDS, args.ci_kubeconfig.resolve())
     args.results.mkdir(mode=0o700, parents=False, exist_ok=False)
     os.umask(0o077)
     operator_results = args.results / 'operator'

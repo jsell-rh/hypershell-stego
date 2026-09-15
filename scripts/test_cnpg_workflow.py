@@ -6,6 +6,8 @@ import tarfile
 import os
 from pathlib import Path
 import tempfile
+import subprocess
+import sys
 import unittest
 from unittest.mock import patch
 
@@ -25,6 +27,19 @@ runner = load('cnpg_runner_test', 'check-cnpg-installation.py')
 
 
 class CNPGWorkflowTests(unittest.TestCase):
+    def test_runner_import_keeps_frozen_source_unchanged(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ['check-cnpg-installation.py', 'ci_credentials.py']:
+                (root / name).write_bytes((ROOT / 'scripts' / name).read_bytes())
+            environment = dict(os.environ)
+            environment.pop('PYTHONDONTWRITEBYTECODE', None)
+            environment.pop('PYTHONPYCACHEPREFIX', None)
+            result = subprocess.run([sys.executable, str(root / 'check-cnpg-installation.py'), '--help'],
+                                    cwd=root, env=environment, capture_output=True, timeout=10)
+            self.assertEqual(result.returncode, 0)
+            self.assertEqual({p.name for p in root.iterdir()}, {'check-cnpg-installation.py', 'ci_credentials.py'})
+
     def lease(self):
         return {'metadata': {'uid': 'original', 'annotations': {'stego.test/namespace': 'stego-service-ci', 'stego.test/job': 'service-check'}},
                 'spec': {'holderIdentity': 'cnpg-run'}}

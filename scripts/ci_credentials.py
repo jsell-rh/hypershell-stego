@@ -13,6 +13,7 @@ import time
 SUBJECT = 'system:serviceaccount:stego-ci-access:hypershell-ci'
 API_SECONDS = 25 * 60
 BROWSER_SECONDS = 35 * 60
+CNPG_SECONDS = 45 * 60
 
 
 def require_credentials(config, minimum_seconds, now=None):
@@ -49,14 +50,26 @@ def require_credentials(config, minimum_seconds, now=None):
     return token, cluster
 
 
+def require_context_credentials(context, minimum_seconds, kubeconfig=None):
+    command = ['oc', '--context=' + context]
+    if kubeconfig is not None:
+        command.append('--kubeconfig=' + str(kubeconfig))
+    command += ['config', 'view', '--raw', '--minify', '-o', 'json']
+    try:
+        result = subprocess.run(command, capture_output=True, check=True, timeout=30)
+        config = json.loads(result.stdout)
+    except (OSError, subprocess.SubprocessError, ValueError):
+        raise RuntimeError('CI credential inspection failed') from None
+    require_credentials(config, minimum_seconds)
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--context', required=True)
-    parser.add_argument('--gate', choices=['api', 'browser'], required=True)
+    budgets = {'api': API_SECONDS, 'browser': BROWSER_SECONDS, 'cnpg': CNPG_SECONDS}
+    parser.add_argument('--gate', choices=list(budgets), required=True)
     args = parser.parse_args(argv)
-    result = subprocess.run(['oc', '--context=' + args.context, 'config', 'view', '--raw',
-                             '--minify', '-o', 'json'], capture_output=True, check=True, timeout=30)
-    require_credentials(json.loads(result.stdout), API_SECONDS if args.gate == 'api' else BROWSER_SECONDS)
+    require_context_credentials(args.context, budgets[args.gate])
     print('CI credential lifetime is sufficient for the test and collection margin')
 
 

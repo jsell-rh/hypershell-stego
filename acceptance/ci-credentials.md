@@ -19,12 +19,19 @@ issue time, and expiry. It requires the following remaining time:
 | --- | --- | --- |
 | Gateway API | 25 minutes | 20-minute Job and five-minute collection margin |
 | Rendered browser | 35 minutes | 30-minute Job and five-minute collection margin |
+| Supplied CNPG browser | 45 minutes | Browser budget and ten-minute installation margin |
 
 These are start requirements. They do not guarantee that cluster cleanup will
 finish within the margin. Cleanup failures retain the Lease and require operator
 inspection. Cleanup can use any remaining valid token time; it does not require
 a new full test budget. Parsed JWT claims are not authentication evidence. The
 Kubernetes API authenticates every request and enforces the restricted roles.
+
+The CNPG runner checks its explicit CI kubeconfig before it creates the results
+directory, acquires the Lease, or installs the operator and database. It must not
+use the operator context for this check. After server installation, the inner
+browser runner checks its 35-minute budget again. A long installation can still
+stop at that second check; the operator must then complete normal cleanup.
 
 Renew the environment secret before the remaining time falls below the required
 budget. Use the existing operator context explicitly:
@@ -47,9 +54,10 @@ and rerun on the same commit after rotation. Keep that cancellation in the run
 history, require the replacement result, and do not treat it as a passing test.
 Do not interrupt an active Job to rotate credentials.
 
-Six small checks cover the time boundaries, malformed credentials, wrong
-identity, excessive lifetime, unverified TLS, and both runner entry points.
-Near-expiry credentials stop the API and browser runners after only the local
+Eight small checks cover the time boundaries, malformed credentials, wrong
+identity, excessive lifetime, unverified TLS, private inspection failures, and
+all three runner entry points. The CNPG regression failed before the early
+check was added. Near-expiry credentials stop each runner after only the local
 kubeconfig read. The renewed private credential also
 passed the browser lifetime check. A live run of the environment-backed
 workflow remains required.

@@ -74,7 +74,13 @@ runner with these explicit inputs:
 - `--storage-class`: dynamic storage with the `Delete` reclaim policy.
 
 The runner verifies the full source inventory against the commit before it
-writes to the cluster. It acquires the shared live-test Lease, installs the
+writes to the cluster. It requires at least 45 minutes on the explicit CI
+credential before installation. The inner browser runner checks its 35-minute
+budget again after the server is ready. This avoids installing the operator
+and database with a credential that is already too short for the test. See
+[the credential contract](ci-credentials.md).
+
+The runner acquires the shared live-test Lease, installs the
 scoped operator and server, and supplies a private Secret to only the test
 container. The browser runner uses the CI identity and verifies the same Lease
 UID and test target. It cannot release the Lease while the server remains.
