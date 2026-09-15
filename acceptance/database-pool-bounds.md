@@ -102,5 +102,15 @@ The same test passed cancellation, allowed and denied reads, API restart, and
 collector failure and recovery. These values are test observations, not capacity
 estimates. Independent reads confirmed that the Job, Pods, and private fixtures
 were absent and that the Lease was free. See [the evidence](database-pool-api-evidence.json).
-The complete browser pool result remains required; run `34961014607` is active.
-The later PostgreSQL client telemetry change has separate application checks.
+The [complete browser result](database-pool-browser-evidence.json) also passed
+at `916f3a7` in run `34961014607`, in 366.3 seconds. The console retained its
+three-connection limit at all three checkpoints, with distinct runtime instance
+IDs. The last checkpoint followed key rotation and collector recovery. The
+complete Gateway, access, SQL isolation, namespace recovery, account cleanup,
+encryption, and session workflow passed. Verification matched 899 source files,
+231 generated files, and all generation records. Automatic and independent
+cleanup checks passed. Full core CI passed in 1223.434 seconds; the overall CI
+result remains failure because the CNPG and Sandbox jobs failed.
+
+The API and console pool gates now pass for this source. The later PostgreSQL
+client telemetry change has separate application checks.

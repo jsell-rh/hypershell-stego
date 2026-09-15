@@ -210,3 +210,20 @@ The [PostgreSQL client telemetry change](postgres-client-observability.md) at
 `2af1b46` has separate queued checks: API `34962176232`, browser `34962176339`,
 and full CI `34962176260`. Its compiler is `f2b09c0`. The earlier pool-metric
 runs remain in the queue or active; no required live test was canceled.
+
+The [complete browser pool run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34961014607)
+passed at `916f3a7` in 366.3 seconds. Verification matched 899 source files,
+231 generated files, all generation records, 16 CI access checks, 57 application
+access checks, six admission probes, and 18 operator resources. All three
+console pool checkpoints retained the configured limit and had distinct runtime
+identities. Namespace recovery took 44.35 seconds. Access rules, SQL isolation,
+cleanup denial and recovery, account cleanup, encryption, and automatic cleanup
+passed. Independent reads confirmed that browser Jobs, Pods, and private test
+fixtures were absent. The next serialized API Job holds the Lease.
+
+The reviewed images show a healthy Gateway and an empty account list. They do
+not verify a public connection command. Full CI `34961014648` passed core
+acceptance in 1223.434 seconds, ordinary browser tests, console checks, and the
+service image. Its overall result remains failure because the CNPG and Sandbox
+jobs failed. See [the verified pool record](database-pool-browser-evidence.json).
+The later SQL client telemetry API run is active; its browser run remains queued.
