@@ -138,6 +138,7 @@ overrides:
           - {api_group: "", resources: [secrets, configmaps, services, serviceaccounts], verbs: [get, create, patch]}
           - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
           - {api_group: cert-manager.io, resources: [certificates], verbs: [get, create, patch]}
+          - {api_group: route.openshift.io, resources: [routes], verbs: [get, create, patch, delete]}
       - name: gateway-runtime
         scope: namespace
         rules:
@@ -292,3 +293,11 @@ overrides:
         import_path: hypershell/v1/gateway_releases.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_networks.proto
         import_path: hypershell/v1/gateway_networks.proto
+      - path: contracts/gateway/openshell.proto
+        import_path: openshell.proto
+      - path: contracts/gateway/datamodel.proto
+        import_path: datamodel.proto
+      - path: contracts/gateway/options.proto
+        import_path: options.proto
+      - path: contracts/gateway/sandbox.proto
+        import_path: sandbox.proto

@@ -5,6 +5,7 @@ package client
 
 import (
 	"context"
+	"crypto/sha256"
 	"crypto/tls"
 	"crypto/x509"
 	"encoding/json"
@@ -129,10 +130,8 @@ type Client struct {
 }
 
 func New(options Options) (*Client, error) {
-	host, port, err := net.SplitHostPort(options.Address)
-	number, portErr := strconv.Atoi(port)
-	if err != nil || host == "" || portErr != nil || number < 1 || number > 65535 || strings.ContainsAny(host, "/\\@?#% \t\r\n") {
-		return nil, errors.New("RPC address must be host:port")
+	if err := clientAddress(options.Address); err != nil {
+		return nil, err
 	}
 	ca, err := readFile(options.CAFile, 65536, false)
 	if err != nil {
@@ -146,13 +145,69 @@ func New(options Options) (*Client, error) {
 	if _, err := token.read(); err != nil {
 		return nil, err
 	}
-	connection, err := grpc.NewClient("passthrough:///"+options.Address,
-		grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})),
-		grpc.WithPerRPCCredentials(token), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithMaxHeaderListSize(32<<10),
+	return newClient(options.Address, &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots}, token)
+}
+
+// TLSProbeOptions requires trusted roots and the expected leaf DER certificate
+// SHA-256 digest. The digest does not replace hostname or chain verification.
+type TLSProbeOptions struct {
+	Address               string
+	Roots                 *x509.CertPool
+	PeerCertificateSHA256 [sha256.Size]byte
+}
+
+// TLSProbe makes bounded unary calls without application credentials. It
+// removes caller metadata before adding its own generated telemetry metadata.
+// It does not accept per-call transport options or support response streams.
+type TLSProbe struct{ client *Client }
+
+func NewTLSProbe(options TLSProbeOptions) (*TLSProbe, error) {
+	if err := clientAddress(options.Address); err != nil {
+		return nil, err
+	}
+	if options.Roots == nil || options.PeerCertificateSHA256 == ([sha256.Size]byte{}) {
+		return nil, errors.New("RPC probe requires trust and an expected peer certificate")
+	}
+	expected := options.PeerCertificateSHA256
+	config := &tls.Config{MinVersion: tls.VersionTLS13, RootCAs: options.Roots.Clone(), VerifyConnection: func(state tls.ConnectionState) error {
+		if len(state.VerifiedChains) == 0 || len(state.PeerCertificates) == 0 || sha256.Sum256(state.PeerCertificates[0].Raw) != expected {
+			return errors.New("RPC probe peer certificate differs")
+		}
+		return nil
+	}}
+	c, err := newClient(options.Address, config, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &TLSProbe{client: c}, nil
+}
+func (p *TLSProbe) Close() { p.client.Close() }
+func (p *TLSProbe) Invoke(ctx context.Context, method string, request, response any) error {
+	if ctx == nil {
+		return status.Error(codes.InvalidArgument, "RPC probe requires a context")
+	}
+	return p.client.Invoke(metadata.NewOutgoingContext(ctx, metadata.MD{}), method, request, response)
+}
+func clientAddress(address string) error {
+	host, port, err := net.SplitHostPort(address)
+	number, portErr := strconv.Atoi(port)
+	if err != nil || host == "" || portErr != nil || number < 1 || number > 65535 || strings.ContainsAny(host, "/\\@?#% \t\r\n") {
+		return errors.New("RPC address must be host:port")
+	}
+	return nil
+}
+func newClient(address string, config *tls.Config, token credentials.PerRPCCredentials) (*Client, error) {
+	options := []grpc.DialOption{
+		grpc.WithTransportCredentials(credentials.NewTLS(config)),
+		grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithMaxHeaderListSize(32 << 10),
 		grpc.WithContextDialer(func(ctx context.Context, address string) (net.Conn, error) {
 			return (&net.Dialer{Timeout: CallTimeout}).DialContext(ctx, "tcp", address)
 		}),
-	)
+	}
+	if token != nil {
+		options = append(options, grpc.WithPerRPCCredentials(token))
+	}
+	connection, err := grpc.NewClient("passthrough:///"+address, options...)
 	if err != nil {
 		return nil, errors.New("RPC client configuration failed")
 	}
@@ -428,6 +483,140 @@ func clientMethod(method string) string {
 	case "/hypershell.v1.RoleBindingService/ListRoleBindings":
 		return method[1:]
 	case "/hypershell.v1.RoleBindingService/WatchRoleBindings":
+		return method[1:]
+	case "/openshell.v1.OpenShell/AddWorkspaceMember":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ApproveAllDraftChunks":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ApproveDraftChunk":
+		return method[1:]
+	case "/openshell.v1.OpenShell/AttachSandboxProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ClearDraftChunks":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ConfigureProviderRefresh":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ConnectSupervisor":
+		return method[1:]
+	case "/openshell.v1.OpenShell/CreateProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/CreateSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/CreateSshSession":
+		return method[1:]
+	case "/openshell.v1.OpenShell/CreateWorkspace":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteProviderProfile":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteProviderRefresh":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteService":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DeleteWorkspace":
+		return method[1:]
+	case "/openshell.v1.OpenShell/DetachSandboxProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/EditDraftChunk":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ExecSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ExecSandboxInteractive":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ExposeService":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ForwardTcp":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetCurrentUser":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetDraftHistory":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetDraftPolicy":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetGatewayConfig":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetGatewayInfo":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetProviderProfile":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetProviderRefreshStatus":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetSandboxConfig":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetSandboxLogs":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetSandboxPolicyStatus":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetSandboxProviderEnvironment":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetService":
+		return method[1:]
+	case "/openshell.v1.OpenShell/GetWorkspace":
+		return method[1:]
+	case "/openshell.v1.OpenShell/Health":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ImportProviderProfiles":
+		return method[1:]
+	case "/openshell.v1.OpenShell/IssueSandboxToken":
+		return method[1:]
+	case "/openshell.v1.OpenShell/LintProviderProfiles":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListProviderProfiles":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListProviders":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListSandboxPolicies":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListSandboxProviders":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListSandboxes":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListServices":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListWorkspaceMembers":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ListWorkspaces":
+		return method[1:]
+	case "/openshell.v1.OpenShell/PushSandboxLogs":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RefreshSandboxToken":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RejectDraftChunk":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RelayStream":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RemoveWorkspaceMember":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ReportMainProcessExit":
+		return method[1:]
+	case "/openshell.v1.OpenShell/ReportPolicyStatus":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RevokeSshSession":
+		return method[1:]
+	case "/openshell.v1.OpenShell/RotateProviderCredential":
+		return method[1:]
+	case "/openshell.v1.OpenShell/StartSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/StopSandbox":
+		return method[1:]
+	case "/openshell.v1.OpenShell/SubmitPolicyAnalysis":
+		return method[1:]
+	case "/openshell.v1.OpenShell/UndoDraftChunk":
+		return method[1:]
+	case "/openshell.v1.OpenShell/UpdateConfig":
+		return method[1:]
+	case "/openshell.v1.OpenShell/UpdateProvider":
+		return method[1:]
+	case "/openshell.v1.OpenShell/UpdateProviderProfiles":
+		return method[1:]
+	case "/openshell.v1.OpenShell/WatchSandbox":
 		return method[1:]
 	default:
 		return "_OTHER"

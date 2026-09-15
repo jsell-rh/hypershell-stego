@@ -51,6 +51,22 @@ last_applied:
                 exists: true
                 sha256: 642cce071b45694102fe959cf7bd81118767a306fad09dd8f4e3b1cbdc1fda1a
                 mode: 420
+            contracts/gateway/datamodel.proto:
+                exists: true
+                sha256: 48a071f5e61c975938999a0d7a41855a0a7bd82d611d22f21f353cacd55e5b51
+                mode: 420
+            contracts/gateway/openshell.proto:
+                exists: true
+                sha256: 467239fc7c0d740d2916dbdc0d7d2f4ff9abbabce10b92641a3add9fb1814e14
+                mode: 420
+            contracts/gateway/options.proto:
+                exists: true
+                sha256: 10c8a99b505047f759951285fdae6068afd267ef672d00a65385a91ee8d027ee
+                mode: 420
+            contracts/gateway/sandbox.proto:
+                exists: true
+                sha256: b2f05ac1a74790a335541b810ae17eb6cbe2372e78188954bb630d29b266d4ec
+                mode: 420
             contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto:
                 exists: true
                 sha256: 3045710da55d46d93687d4e52524e07cb5998a4bdc558168bba975e90cde2c15
@@ -89,7 +105,7 @@ last_applied:
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: 947dd24bb05b49fb91384224da2c5180416d3ad6081bdbff10514690434845a0
+                sha256: cef74f79e09547a2c1c56f8a9b1af3f5b69fca24e849b0ddebf8bba41a6f5c0b
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -105,18 +121,18 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 8bbbbc2d438968893985350b419dabe4b4468501a37b8dfbc4693b5111142213
+                sha256: c6892dbdbb16793f84481be9dd3ed267eeca876dc64814a15d4e18db9f7a57dd
                 mode: 420
-        sha256: 8a0786d529383485cf15215a7e3d6d46949ab753af4c1ef52844fb814b56bbb4
+        sha256: c1747ee3ea0e29c569ca2079aec038d45135592c0cde42c24f4353c845125e95
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915131315-0953fcc245a7
+        module_version: v0.0.0-20260915132340-3f757e32fd2d
         vcs: git
-        revision: 0953fcc245a74c5a1711c7dd18a96d0e07398454
+        revision: 3f757e32fd2d4b4b2f9fbc1b116915efa08da937
         source_state: clean
-    service_hash: 8bbbbc2d438968893985350b419dabe4b4468501a37b8dfbc4693b5111142213
+    service_hash: c6892dbdbb16793f84481be9dd3ed267eeca876dc64814a15d4e18db9f7a57dd
     registry_sha: gateway-workflow
     registry_content_sha256: 9f932f4f03f92dee513a04a733e63301dce0b596cd6637ee566ab2ef01d808da
     components:
@@ -422,7 +438,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: f6e5bf31e12d017994407200fd503d783f0a8d380887416c3c6bbdd6d305cd73
+        cli/command/version.go: 1e93617f857b0a47b62962a9df7678560f6f9c6130f612613c36399cb709aa7e
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -440,13 +456,13 @@ last_applied:
         controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/allocation/allocation.go: cbd9e0b8454acbd5da853ea52b4a40964ae746545c13a467d827e9a7ef2998da
+        deploy/allocation/allocation.go: 25d6abe73097e453f18e6d0c98a8fac3626aac495f45982014fa23f5b0e0f9bc
         deploy/render/main.go: d4a11a31b10f0b6e36b5f7a05cad958566efc5cc3819c8a91922e3c2352db66b
         deploy/render/manifest.json.tmpl: 460eeec60b8155e9c62828142ba55a829ef3f24b594f581ba33d56fcd52ad60f
         deploy/render/rpc-provisioner.json.tmpl: 971c250fd5bef449c1f778405362887375029b41b868f8b73a53c5f2f2e0951b
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
         deploy/render/worker-gateway-workload.json.tmpl: eb45d144303edd7f90dc0cc926590fa01dbc9e877b08772e44e5d1cf5a418992
-        deploy/render/worker-namespace-allocation.json.tmpl: 89103458dc3dc0928e227ab8968e050058cd953816a7b31fe000d7256b76431a
+        deploy/render/worker-namespace-allocation.json.tmpl: 5c86159bb38c8fad8086967f5c0f8e760d1776155f3957729564a923f387bbf2
         deploy/render/worker-sandbox-count.json.tmpl: 962635b1d71def1bdc3503322cc4e8e4a2279be43649a4767a73d5631c40a454
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7
         deploy/rpc/provisioner/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
@@ -465,8 +481,9 @@ last_applied:
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
-        grpcapi/client/client.go: 0923e0ff845924d68b2c32c7518bd3af55e3f04ada20fa5eb159454da0032d74
+        grpcapi/client/client.go: 05b747b6f385158a9afd8ac0fddd17ad7a0e69e55a5e184309441a40421bf99d
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
+        grpcapi/pb/datamodel.pb.go: c6caf936644ead4b030c774ab28e36bf00717b54c70dcdc46088e7da13154294
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 4ab36c844cc94e4b85cfe902714f4a58d6a90b9b50933f83ca39f851cd15cdee
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 69c0f7aadb5da3b2247ac6ec457d34725e6e22d8c73d9ba59895f876719123f0
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
@@ -482,6 +499,10 @@ last_applied:
         grpcapi/pb/hypershell/v1/managed_clusters_grpc.pb.go: aa087866ba13e2a773645b22753cef3ae236746d962f720b0c19cd02b364cc93
         grpcapi/pb/hypershell/v1/role_bindings.pb.go: 006f05b81b567462e72ad9598235da3013e7c0fa77e9bd57cabf39551b625fd8
         grpcapi/pb/hypershell/v1/role_bindings_grpc.pb.go: 21dd494fea6990badfd25af862fd6fbca8a816cb6847b740bd728f3dd1ede355
+        grpcapi/pb/openshell.pb.go: 527147f4a189bfd332a4682f0f35734cf7ad836ec98fd872dccda138527bc7cd
+        grpcapi/pb/openshell_grpc.pb.go: e6854346348b22bfa0c8c3f171f4b003b6ec7c70aae909d2cb15e28332acf421
+        grpcapi/pb/options.pb.go: 8ac06d8dc39c1be0ed04552571a1e1372945a70946db19d20c3fef799f3f7ad0
+        grpcapi/pb/sandbox.pb.go: ae795160aa6fe04ec4963c33f499ea67a8b28dbb478909e44fd4186afdeb7caf
         grpcapi/process/health.go: 993deafa82b3695780ab3b0a923db9b80cb5038165997f97d9b57c4ca99eba86
         grpcapi/process/runtime.go: b247adeb0c511a174fd23d5001f22b8ce4583f39663d8d5cb92b902d6b433368
         grpcapi/processes/provisioner/main.go: 8fac17d292aa3389b6dc64e52be0591170b4799493fd7c7621085a313b2631b4

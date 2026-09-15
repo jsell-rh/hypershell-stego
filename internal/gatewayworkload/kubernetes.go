@@ -22,7 +22,7 @@ import (
 
 type object = kube.Object
 type Options struct {
-	PublicDomain, PublicIssuer, PublicCAFile               string
+	PublicDomain, PublicIssuer, PublicCAFile, PublicRouter string
 	SQLBindings                                            SQLBindings
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
@@ -250,7 +250,10 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 			return err
 		}
 	}
-	return k.deploymentAvailable(ctx, id, ns)
+	if err := k.deploymentAvailable(ctx, id, ns); err != nil {
+		return err
+	}
+	return k.ensurePublicRoute(ctx, gw, publicCertificate, k.probePublicGateway)
 }
 
 func (k *Kubernetes) deploymentAvailable(ctx context.Context, id, namespace string) error {

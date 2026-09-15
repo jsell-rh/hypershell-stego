@@ -31,6 +31,12 @@ type Provider interface {
 	DeleteDatabase(context.Context, *pb.Gateway) error
 	GatewayIDs(context.Context) ([]string, error)
 }
+
+// EndpointProvider supplies the desired address. Ensure must verify that
+// endpoint before it succeeds. Nil keeps the internal-only observation path.
+type EndpointProvider interface {
+	DesiredEndpoint(*pb.Gateway) *string
+}
 type Controller struct {
 	gateways pb.GatewayServiceClient
 	state    control.GatewayIdentityServiceClient
@@ -173,6 +179,13 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if !recorded {
 		return errors.New("current workload target was not recorded before provider work")
 	}
+	var endpoint *string
+	if provider, ok := c.provider.(EndpointProvider); ok {
+		if desired := provider.DesiredEndpoint(gw); desired != nil {
+			value := *desired
+			endpoint = &value
+		}
+	}
 	return runtime.RunObservation(ctx, func(operation context.Context) error {
 		release, err := c.releases.GetGatewayRelease(operation, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
 		if err != nil {
@@ -193,14 +206,19 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		} else if observation != nil {
 			phase, desired = "Degraded", "WorkloadUnavailable"
 		}
-		if gw.GetStatus() == desired && gw.GetPhase() == phase && state.GetObservedGeneration() == state.GetResourceGeneration() {
+		published := endpoint
+		if observation != nil && endpoint != nil {
+			empty := ""
+			published = &empty
+		}
+		if gw.GetStatus() == desired && gw.GetPhase() == phase && state.GetObservedGeneration() == state.GetResourceGeneration() && (published == nil || gw.GetRouteAddress() == *published) {
 			return nil
 		}
 		writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
 		if err != nil {
 			return err
 		}
-		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired})
+		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired, RouteAddress: published})
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 }

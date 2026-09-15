@@ -6,6 +6,7 @@ import (
 	"github.com/segmentio/ksuid"
 	"slices"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -31,16 +32,21 @@ func (f *stateFixture) GetGatewayIdentityState(context.Context, *control.GetGate
 
 type apiFixture struct {
 	pb.GatewayServiceClient
-	updates int
-	desired string
-	phase   string
-	err     error
+	updates  int
+	desired  string
+	phase    string
+	err      error
+	endpoint *string
+	version  string
 }
 
-func (f *apiFixture) UpdateGateway(_ context.Context, r *pb.UpdateGatewayRequest, _ ...grpc.CallOption) (*pb.UpdateGatewayResponse, error) {
+func (f *apiFixture) UpdateGateway(ctx context.Context, r *pb.UpdateGatewayRequest, _ ...grpc.CallOption) (*pb.UpdateGatewayResponse, error) {
 	f.updates++
 	f.desired = r.GetStatus()
 	f.phase = r.GetPhase()
+	f.endpoint = r.RouteAddress
+	md, _ := metadata.FromOutgoingContext(ctx)
+	f.version = strings.Join(md.Get("if-resource-version"), ",")
 	return &pb.UpdateGatewayResponse{}, f.err
 }
 
@@ -59,7 +65,10 @@ type providerFixture struct {
 	creates, deletes int
 	sqlDeletes       int
 	err              error
+	endpoint         *string
 }
+
+func (f *providerFixture) DesiredEndpoint(*pb.Gateway) *string { return f.endpoint }
 
 func workloadHistory(target string) map[string]*control.CleanupTargetObservations {
 	return map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{target: false}}, "sql": {Targets: map[string]bool{target: true}}}

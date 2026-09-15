@@ -54,7 +54,7 @@ func TestPublicTrustRequiresCertificateOnlyFile(t *testing.T) {
 	if err := os.WriteFile(file, ca, 0644); err != nil {
 		t.Fatal(err)
 	}
-	options := Options{PublicDomain: "example.test", PublicIssuer: "public-issuer", PublicCAFile: file}
+	options := Options{PublicDomain: "example.test", PublicIssuer: "public-issuer", PublicRouter: "default", PublicCAFile: file}
 	if roots, err := publicTrust(options); err != nil || roots == nil {
 		t.Fatal("public CA file rejected", err)
 	}

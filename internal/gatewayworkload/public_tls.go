@@ -19,12 +19,12 @@ func publicHostname(namespace, domain string) string { return "gw-" + namespace 
 
 func publicTrust(o Options) (*x509.CertPool, error) {
 	if o.PublicDomain == "" {
-		if o.PublicIssuer != "" || o.PublicCAFile != "" {
+		if o.PublicIssuer != "" || o.PublicCAFile != "" || o.PublicRouter != "" {
 			return nil, errors.New("public Gateway TLS requires a domain and issuer")
 		}
 		return nil, nil
 	}
-	if len(o.PublicDomain) > 223 || net.ParseIP(o.PublicDomain) != nil || !dnsLabel.MatchString(o.PublicIssuer) {
+	if len(o.PublicDomain) > 223 || net.ParseIP(o.PublicDomain) != nil || !dnsLabel.MatchString(o.PublicIssuer) || !dnsLabel.MatchString(o.PublicRouter) {
 		return nil, errors.New("public Gateway TLS configuration is invalid")
 	}
 	for _, label := range strings.Split(o.PublicDomain, ".") {
