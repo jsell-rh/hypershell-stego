@@ -159,6 +159,17 @@ at `3f188b2` with compiler `5e9c89d`. The application took 387.32 seconds.
 Verification matched 886 source files, 230 generated files, three generation
 records, all access and admission checks, and automated cleanup. Namespace
 recovery, SQL isolation, encryption, and session checks passed. The screenshots
-still have no public connection command. The later viewer and live-account
-cleanup changes remain separate pending results. See
+still have no public connection command. That source does not include the later
+viewer and live-account cleanup changes. See
 [the verified record](workload-availability-evidence.json).
+
+The combined viewer and account
+[browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34951393842)
+passed at `10a0827` in 395.99 seconds. It proves retained viewer membership,
+filtered reads, denied operations, access removal, and cleanup of three live
+automation accounts on Gateway deletion. SQL isolation and recovery,
+encryption, session checks, and automated cleanup passed. Verification matched
+887 source files, 230 generated files, all generation records, and the access
+and admission checks. The Job and Pods are absent. See the
+[verified evidence](browser-viewer-recovery-evidence.json). External connectivity
+and the later environment-backed CI credential change remain separate gates.

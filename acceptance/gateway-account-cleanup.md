@@ -80,6 +80,15 @@ The [account-source API run](https://github.com/jsell-rh/hypershell-stego/action
 passed all 30 required checks at `10a0827`. Verification matched 887 source
 files, 229 generated files, all generation records, and cleanup. This compiles
 the complete acceptance package but does not execute the new live account
-checks. Browser run `34951393842` must prove both viewer recovery and account
-deletion. See the [partial evidence](browser-viewer-recovery-evidence.json).
+checks. Browser run `34951393842` subsequently passed both viewer recovery and
+account deletion. See the [verified evidence](browser-viewer-recovery-evidence.json).
 The historical results above do not cover the added checks.
+
+The complete supplied PostgreSQL browser workflow passed in 395.99 seconds at
+`10a0827`. All three automation accounts used the actual Gateway. After the
+Gateway DELETE response, token issuance failed, all three provider clients were
+absent, and each account had closed metadata and one successful cleanup audit.
+SQL denial and recovery, normal deletion, and automated cleanup also passed.
+Verification matched all 887 source files, 230 generated files, and three
+generation records. Independent reads confirmed that the Job and Pods were
+absent. This result does not claim immediate invalidation of issued tokens.

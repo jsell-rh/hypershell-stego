@@ -56,9 +56,8 @@ generated browser backend and the actual Gateway RPC server. The test needs no
 additional Kubernetes permissions. The earlier viewer helper had no caller;
 its presence did not establish this behavior in the current workflow.
 
-The complete acceptance package compiled with these checks. The new live
-browser result remains required. Earlier results above do not cover the added
-viewer checks.
+The complete acceptance package compiled with these checks. The earlier
+results above did not cover the added viewer checks.
 
 The [viewer-source API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34950955027)
 passed all 30 required tests at `5dc5742`. Verification matched 886 source files,
@@ -68,6 +67,17 @@ the viewer helper but does not execute it against a live Gateway. Browser run
 credential rotation. Its second attempt was later cancelled while still pending.
 The newer account-source browser run `34951393842` includes identical viewer
 and namespace recovery checks, plus live account deletion. That complete run
-now supplies the required live gate. No pass is claimed for either cancelled
+passed the required live gate. No pass is claimed for either cancelled
 attempt. See
-[the partial evidence](browser-viewer-recovery-evidence.json).
+[the verified evidence](browser-viewer-recovery-evidence.json).
+
+The complete supplied PostgreSQL browser run `34951393842` passed at `10a0827`
+in 395.99 seconds. Namespace recovery took 45.86 seconds. Viewer membership,
+filtered lists, and denied writes passed before and after replacement. Both
+access-removal paths passed after recovery. The same three controller Pods
+remained running. SQL object
+identities, credentials, encryption keys, and provider data remained unchanged.
+The other Gateway remained available. All 887 source files, 230 generated
+files, access and admission checks, generation records, and automated cleanup
+passed verification. No public Gateway connection or Sandbox execution is
+included in this result.
