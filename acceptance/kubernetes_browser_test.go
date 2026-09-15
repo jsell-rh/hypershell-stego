@@ -287,7 +287,9 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 	}
 	if p.pods[name] == "" {
 		p.t.Cleanup(func() {
-			p.command(nil, "delete", "deployment/"+name, "service/"+name, "serviceaccount/"+name, "networkpolicy/"+name, "secret/"+name+"-files", "secret/"+name+"-runtime", "--ignore-not-found")
+			// Keep service accounts until the host finishes allocation cleanup.
+			// The fixed CI installation owns the allocator identity.
+			p.command(nil, "delete", "deployment/"+name, "service/"+name, "networkpolicy/"+name, "secret/"+name+"-files", "secret/"+name+"-runtime", "--ignore-not-found")
 		})
 	}
 	p.apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]string{"name": name + "-files", "namespace": p.namespace}, "data": files})

@@ -43,6 +43,7 @@ VERIFY
 trap cleanup EXIT
 test -z "$("${oc_cmd[@]}" -n "$namespace" get jobs,pods -o name)"
 python3 scripts/browser-ci-installation.py prepare --context "$STEGO_TEST_CONTEXT" --results "$results"
+python3 scripts/verify-browser-ci.py --context "$STEGO_TEST_CONTEXT" --results "$results"
 timeout 60s env GOMAXPROCS=1 GOMEMLIMIT=256MiB GOWORK=off go build -p=1 -mod=readonly -trimpath \
   -o "$results/allocation-recovery" scripts/browser-allocation-recovery.go
 ca=$results/ci-ca.pem

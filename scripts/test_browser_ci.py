@@ -46,6 +46,10 @@ class BrowserCI(unittest.TestCase):
         self.assertFalse(any('rbac.authorization.k8s.io' in r['apiGroups'] for r in driver['rules']))
         exec_rule = next(r for r in driver['rules'] if r['resources'] == ['pods/exec'])
         self.assertEqual(exec_rule['resourceNames'], ['identity-fixture'])
+        for role in [o for o in objects if o['kind'] == 'Role']:
+            rules = [r for r in role['rules'] if 'serviceaccounts' in r['resources']]
+            self.assertEqual(len(rules), 1)
+            self.assertNotIn('delete', rules[0]['verbs'])
 
     def test_jobs_and_storage_are_bounded(self):
         body, objects = self.objects()

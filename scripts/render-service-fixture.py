@@ -72,6 +72,11 @@ def fixture(ns, directory, browser, workload, issuer):
         for item in job['items']:
             if item['kind']=='Job': item['spec']['template']['spec']['containers'][0]['env'] += [{'name':'STEGO_TEST_BROWSER_WORKLOAD','value':'1'},{'name':'STEGO_TEST_GATEWAY_CLUSTER_ISSUER','value':issuer}]
     for item in job['items']:
+        if item['kind'] == 'Role' and item['metadata']['name'] == 'service-check':
+            for rule in list(item['rules']):
+                if rule['apiGroups'] == [''] and 'serviceaccounts' in rule['resources']:
+                    rule['resources'].remove('serviceaccounts')
+                    item['rules'].append({'apiGroups': [''], 'resources': ['serviceaccounts'], 'verbs': [v for v in rule['verbs'] if v != 'delete']})
         if item['kind'] == 'Job':
             item['spec']['ttlSecondsAfterFinished'] = 3600
             item['spec']['template']['spec'].setdefault('securityContext', {}).update({'runAsNonRoot': True, 'seccompProfile': {'type': 'RuntimeDefault'}})

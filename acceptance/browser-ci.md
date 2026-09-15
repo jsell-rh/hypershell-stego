@@ -48,3 +48,15 @@ Pod before it calls the normal CI cleanup path. The result must confirm that
 both allocations and labelled test data are absent and that the operator's
 installation remains. This check uses the same shared Lease. Its source builds;
 the first live result is still pending.
+
+The first GitHub run passed the complete application workflow in 335.05 seconds,
+then failed during host cleanup. The test's cleanup had deleted the allocator
+service account. Host cleanup could no longer request its token. The Job and
+Pods were gone, but the Lease and labelled fixture data remained.
+
+Test cleanup now keeps service accounts. The test and CI roles also lack
+service-account deletion rights. An actual denied-delete probe raises the
+access check count to 16. The operator restored the missing allocator account
+and removed the CI deletion right. Restricted CI cleanup then removed the
+remaining data, verified the installation, and released the Lease. This repair
+does not change the failed GitHub run into a passing run. A new run is required.
