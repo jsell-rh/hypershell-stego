@@ -14,8 +14,14 @@ DNS provider choice remains open. These results do not establish traffic isolati
 
 Candidate `101f31d` uses compiler `e394ab5` and passed regeneration in both
 modules. Its core, rendered browser, console, image, and regeneration checks
-are running in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
+are tracked in [run 34998079776](https://github.com/jsell-rh/hypershell-stego/actions/runs/34998079776).
 The manual run skips CNPG and Sandbox. Production isolation remains off.
+
+The rendered browser workflow passed in 97 seconds. Its 229 console tests,
+bundle reproduction, regeneration, and image checks passed. Core tests remain
+active. The inspected Gateway screenshot shows Provisioning. The service-account
+screen uses a separate Healthy fixture. This run does not create a Gateway Pod
+or prove its network isolation.
 
 The following record preserves the initial gap and the earlier checks.
 

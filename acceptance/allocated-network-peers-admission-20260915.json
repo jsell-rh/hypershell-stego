@@ -468,6 +468,40 @@
     "production_isolation_enabled": false,
     "cnpg": "skipped",
     "sandbox": "skipped",
-    "scope": "Core, rendered browser, web console, images, and regeneration. This run does not prove Gateway network isolation."
+    "scope": "Core, rendered browser, web console, images, and regeneration. This run does not prove Gateway network isolation.",
+    "browser": {
+      "job_id": 104479328805,
+      "conclusion": "success",
+      "test": "TestGeneratedBrowserGatewayWorkflow",
+      "test_seconds": 97,
+      "race_detection": true,
+      "screenshots_viewed": true,
+      "screenshots": [
+        {
+          "name": "verify.json.png",
+          "sha256": "fd5d2e1e55386fbc91393be5a6c5da7ff273c406a3868515184249befe35c413"
+        },
+        {
+          "name": "accounts-delete.json.png",
+          "sha256": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48"
+        }
+      ],
+      "screenshot_scope": "Gateway creation shows Provisioning. The service-account screen uses a separate Healthy fixture and shows an empty list after deletion. No Gateway Pod or public Route is proved by this run.",
+      "memory_peak_bytes": 489639936,
+      "memory_limit_bytes": 1610612736,
+      "oom_events": 0,
+      "pid_limit": 256,
+      "pid_limit_events": 0,
+      "log_sha256": "99101d03fbb88bf5ca81c03227ec9096a693622733c1653e2dc4ab4aa1c47e3c"
+    },
+    "web_console": {
+      "job_id": 104479328671,
+      "conclusion": "success",
+      "tests_passed": 229,
+      "regeneration": "passed",
+      "bundle_reproduction": "passed"
+    },
+    "service_image": "success",
+    "core": "in_progress"
   }
 }
