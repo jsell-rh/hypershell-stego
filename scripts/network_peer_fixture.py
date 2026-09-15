@@ -1,5 +1,7 @@
 """Run a bounded, unrelated listener for the direct Gateway network check."""
 import argparse
+import copy
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -18,7 +20,9 @@ def peer_namespace(control):
     return control + '-peer'
 
 
-def definitions(control, nonce):
+def definitions(control, nonce, endpoint_change=False):
+    if type(endpoint_change) is not bool:
+        raise ValueError('The endpoint change flag must be a boolean')
     namespace = peer_namespace(control)
     labels = {'stego.test/browser-run': control, 'stego.test/peer-run': nonce}
     def item(kind, name, api='v1', **fields):
@@ -26,7 +30,7 @@ def definitions(control, nonce):
         if kind == 'Pod':
             selected['app'] = 'stego-network-peer'
         return dict(apiVersion=api, kind=kind, metadata={'name': name, 'namespace': namespace, 'labels': selected}, **fields)
-    return [
+    objects = [
         {'apiVersion': 'v1', 'kind': 'Namespace', 'metadata': {'name': namespace, 'labels': {
             **labels, 'pod-security.kubernetes.io/enforce': 'restricted'}}},
         item('ResourceQuota', 'peer', spec={'hard': {'pods': '1', 'services': '1',
@@ -50,6 +54,32 @@ def definitions(control, nonce):
                 'resources': {'requests': {'cpu': '20m', 'memory': '32Mi', 'ephemeral-storage': '1Mi'},
                               'limits': {'cpu': '100m', 'memory': '128Mi', 'ephemeral-storage': '16Mi'}},
                 'readinessProbe': {'tcpSocket': {'port': 8080}, 'periodSeconds': 1, 'timeoutSeconds': 1}}]})]
+    if endpoint_change:
+        objects[1]['spec']['hard'].update({'pods': '3', 'limits.cpu': '300m',
+            'limits.memory': '384Mi', 'limits.ephemeral-storage': '48Mi'})
+        for name in ('address-a', 'address-b'):
+            pod = copy.deepcopy(objects[-1])
+            pod['metadata']['name'] = name
+            pod['metadata']['labels']['app'] = 'stego-network-' + name
+            objects.append(pod)
+    return objects
+
+
+def listener_addresses(pods, recorded):
+    result, seen = {}, set()
+    for name in ('address-a', 'address-b'):
+        pod = pods[name]
+        if pod['metadata']['uid'] != recorded[name]:
+            raise RuntimeError('An address test listener was replaced')
+        address = ipaddress.ip_address(pod.get('status', {}).get('podIP', ''))
+        if (address.is_unspecified or address.is_loopback or address.is_link_local or address.is_multicast or
+                getattr(address, 'ipv4_mapped', None) or '%' in str(address) or
+                str(address) == '255.255.255.255' or str(address) in seen):
+            raise ValueError('The address test requires two distinct unicast Pod addresses')
+        seen.add(str(address))
+        host = '[' + str(address) + ']' if address.version == 6 else str(address)
+        result[name] = {'uid': pod['metadata']['uid'], 'address': host + ':8080'}
+    return result
 
 
 def require_owner(value, record):
@@ -95,18 +125,24 @@ class Fixture:
             raise RuntimeError('The direct test does not hold the shared Lease')
         return value['metadata']['uid']
 
-    def create(self):
+    def create(self, endpoint_change=False):
         lease_uid = self.lease()
         if self.path.exists() or self.request('get', 'namespace', self.namespace, '--ignore-not-found', '-o', 'json'):
             raise RuntimeError('The peer fixture already exists; do not adopt it')
         record = {'control': self.control, 'namespace': self.namespace, 'nonce': uuid.uuid4().hex,
                   'phase': 'creating', 'host': 'peer.' + self.namespace + '.svc.cluster.local', 'port': 8080,
                   'lease_uid': lease_uid}
+        if endpoint_change:
+            record['endpoint_change'] = True
         self.save(record)
-        for item in definitions(self.control, record['nonce']):
+        pod_ids = {}
+        for item in definitions(self.control, record['nonce'], endpoint_change):
             created = self.request('create', '-f', '-', '-o', 'json', body=item)
             if item['kind'] == 'Namespace':
                 record['namespace_uid'] = created['metadata']['uid']
+            if item['kind'] == 'Pod':
+                pod_ids[item['metadata']['name']] = created['metadata']['uid']
+                record['pods'] = dict(pod_ids)
             record['last_created'] = {'kind': item['kind'], 'uid': created['metadata']['uid']}
             self.save(record)
             if item['kind'] == 'Namespace':
@@ -123,16 +159,19 @@ class Fixture:
                         raise RuntimeError('OpenShift did not assign the peer namespace security ranges')
                     time.sleep(0.5)
         deadline = time.monotonic() + 150
-        while True:
-            pod = self.request('-n', self.namespace, 'get', 'pod', 'peer', '-o', 'json')
-            if any(c['type'] == 'Ready' and c['status'] == 'True' for c in pod.get('status', {}).get('conditions', [])):
-                break
-            if pod.get('status', {}).get('phase') in {'Failed', 'Succeeded'} or time.monotonic() >= deadline:
-                raise RuntimeError('The peer listener did not become ready')
-            time.sleep(1)
+        pods = {}
+        for name, uid in pod_ids.items():
+            while True:
+                pod = self.request('-n', self.namespace, 'get', 'pod', name, '-o', 'json')
+                if pod['metadata']['uid'] != uid:
+                    raise RuntimeError('The peer listener was replaced')
+                if any(c['type'] == 'Ready' and c['status'] == 'True' for c in pod.get('status', {}).get('conditions', [])):
+                    pods[name] = pod
+                    break
+                if pod.get('status', {}).get('phase') in {'Failed', 'Succeeded'} or time.monotonic() >= deadline:
+                    raise RuntimeError('The peer listener did not become ready')
+                time.sleep(1)
         require_owner(self.request('get', 'namespace', self.namespace, '-o', 'json'), record)
-        if pod['metadata']['uid'] != record['last_created']['uid']:
-            raise RuntimeError('The peer listener was replaced')
         policies = self.request('-n', self.namespace, 'get', 'networkpolicies', '-o', 'json')['items']
         if len(policies) != 1:
             raise RuntimeError('The peer namespace has an unexpected policy set')
@@ -141,8 +180,10 @@ class Fixture:
         if (policy['metadata']['name'] != 'peer' or spec.get('podSelector') != {} or
                 spec.get('policyTypes') != ['Egress'] or spec.get('egress') or spec.get('ingress')):
             raise RuntimeError('The peer namespace policy changed')
-        record.update(phase='ready', pod_uid=pod['metadata']['uid'], policy_uid=policy['metadata']['uid'],
+        record.update(phase='ready', pod_uid=pod_ids['peer'], policy_uid=policy['metadata']['uid'],
                       ingress_policy=False, outbound_connections=False)
+        if endpoint_change:
+            record['address_listeners'] = listener_addresses(pods, pod_ids)
         self.save(record)
 
     def cleanup(self):
@@ -177,6 +218,13 @@ if __name__ == '__main__':
     parser.add_argument('--context', required=True)
     parser.add_argument('--namespace', required=True)
     parser.add_argument('--results', type=Path, required=True)
+    parser.add_argument('--endpoint-change', action='store_true')
     args = parser.parse_args()
     os.umask(0o077)
-    getattr(Fixture(args.context, args.namespace, args.results), args.action)()
+    fixture = Fixture(args.context, args.namespace, args.results)
+    if args.action == 'create':
+        fixture.create(args.endpoint_change)
+    else:
+        if args.endpoint_change:
+            parser.error('--endpoint-change applies only to creation')
+        fixture.cleanup()

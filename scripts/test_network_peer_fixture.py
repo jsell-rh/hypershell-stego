@@ -4,12 +4,42 @@ import tempfile
 import unittest
 from unittest.mock import Mock
 
-from network_peer_fixture import definitions, peer_namespace, require_owner, Fixture
+from network_peer_fixture import definitions, listener_addresses, peer_namespace, require_owner, Fixture
 
 CONTROL = 'stego-service-20260915-123abc'
 
 
 class NetworkPeerFixture(unittest.TestCase):
+    def test_address_listeners_are_separate_and_bounded(self):
+        objects = definitions(CONTROL, 'nonce', endpoint_change=True)
+        pods = [o for o in objects if o['kind'] == 'Pod']
+        self.assertEqual([p['metadata']['name'] for p in pods], ['peer', 'address-a', 'address-b'])
+        selector = next(o for o in objects if o['kind'] == 'Service')['spec']['selector']
+        self.assertEqual([p['metadata']['name'] for p in pods if p['metadata']['labels']['app'] == selector['app']], ['peer'])
+        quota = next(o for o in objects if o['kind'] == 'ResourceQuota')['spec']['hard']
+        self.assertEqual(quota, {'pods': '3', 'services': '1', 'limits.cpu': '300m',
+            'limits.memory': '384Mi', 'limits.ephemeral-storage': '48Mi', 'persistentvolumeclaims': '0'})
+        for pod in pods:
+            self.assertFalse(pod['spec']['automountServiceAccountToken'])
+            self.assertNotIn('volumes', pod['spec'])
+            self.assertEqual(pod['spec']['activeDeadlineSeconds'], 1800)
+            self.assertEqual(pod['spec']['containers'][0]['resources'], pods[0]['spec']['containers'][0]['resources'])
+        with self.assertRaises(ValueError):
+            definitions(CONTROL, 'nonce', endpoint_change='true')
+
+    def test_address_receipt_requires_distinct_valid_ips_and_fixed_uids(self):
+        def pod(uid, ip):
+            return {'metadata': {'uid': uid}, 'status': {'podIP': ip}}
+        ids = {'address-a': 'a', 'address-b': 'b'}
+        valid = {'address-a': pod('a', '10.128.0.1'), 'address-b': pod('b', '10.128.0.2')}
+        self.assertEqual(listener_addresses(valid, ids), {'address-a': {'uid': 'a', 'address': '10.128.0.1:8080'},
+                                                       'address-b': {'uid': 'b', 'address': '10.128.0.2:8080'}})
+        for address in ['', '10.128.0.1', '127.0.0.1', '169.254.1.2', '224.0.0.1', '0.0.0.0', '255.255.255.255', '::ffff:10.128.0.2', '2001:db8::1%eth0']:
+            with self.subTest(address=address), self.assertRaises(ValueError):
+                listener_addresses(dict(valid, **{'address-b': pod('b', address)}), ids)
+        with self.assertRaisesRegex(RuntimeError, 'replaced'):
+            listener_addresses(dict(valid, **{'address-b': pod('replacement', '10.128.0.2')}), ids)
+
     def test_listener_has_no_ingress_policy_token_or_secret(self):
         objects = definitions(CONTROL, 'nonce')
         self.assertEqual([o['kind'] for o in objects], ['Namespace', 'ResourceQuota', 'NetworkPolicy', 'ServiceAccount', 'Service', 'Pod'])
