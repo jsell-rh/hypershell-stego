@@ -1,5 +1,7 @@
 """Check the CNPG lock handoff and private fixture projection."""
 import importlib.util
+import copy
+import hashlib
 import json
 import io
 import tarfile
@@ -24,9 +26,71 @@ def load(name, filename):
 lock = load('cnpg_lock_test', 'jshell_live_lock.py')
 fixture = load('cnpg_projection_test', 'render-service-fixture.py')
 runner = load('cnpg_runner_test', 'check-cnpg-installation.py')
+inspection = load('cnpg_source_inspection_test', 'prepare-browser-inspection.py')
 
 
 class CNPGWorkflowTests(unittest.TestCase):
+    def test_frozen_source_checks_cnpg_peer_and_inspection_permissions_together(self):
+        runtime = 'out/deploy/allocation/allocation.go'
+        original = inspection.allocation_config((ROOT / runtime).read_text())
+        config = copy.deepcopy(original)
+        config['Roles'] = inspection.inspection_roles() + config['Roles']
+        for profile in config['Profiles']:
+            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}[profile['Name']]
+            profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
+            if profile['Name'] == 'gateway':
+                profile['NetworkPeers'].insert(0, {'Direction': 'egress', 'Namespace': 'external',
+                    'ExternalNamespace': 'stego-cnpg-database-ci', 'PodLabel': 'cnpg.io/cluster',
+                    'PodValue': 'gateway-database', 'Protocol': 'TCP', 'Port': 5432})
+        def go(value):
+            return 'json.Unmarshal([]byte(' + json.dumps(json.dumps(value)) + '), &config)'
+        payloads = {'service.yaml': (ROOT / 'service.yaml').read_text(), runtime: go(original),
+                    '.stego/compiler-revision': 'a' * 40, '.stego/state.yaml': 'original',
+                    'out/deploy/render/worker-namespace-allocation.json.tmpl': 'original',
+                    'out/deploy/render/worker-gateway-workload.json.tmpl': 'original'}
+        archive = io.BytesIO()
+        with tarfile.open(fileobj=archive, mode='w') as files:
+            for name, text in payloads.items():
+                data = text.encode(); item = tarfile.TarInfo(name); item.size = len(data)
+                files.addfile(item, io.BytesIO(data))
+        changed = set(payloads) - {'.stego/compiler-revision'}
+        def gateway(value):
+            return next(p for p in value['Profiles'] if p['Name'] == 'gateway')
+        cases = [
+            ('valid', lambda c: None, ''),
+            ('foreign namespace', lambda c: gateway(c)['NetworkPeers'][0].update(ExternalNamespace='default'), ''),
+            ('all ports', lambda c: gateway(c)['NetworkPeers'][0].update(Port=0), ''),
+            ('missing peer', lambda c: gateway(c)['NetworkPeers'].pop(0), ''),
+            ('extra peer', lambda c: gateway(c)['NetworkPeers'].append(copy.deepcopy(gateway(c)['NetworkPeers'][0])), ''),
+            ('broader role', lambda c: c['Roles'][0]['Rules'][0].pop('resourceNames'), ''),
+            ('changed runtime', lambda c: None, '; changed code'),
+        ]
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory)
+            (source / 'acceptance').mkdir()
+            for label, mutate, suffix in cases:
+                modified = copy.deepcopy(config); mutate(modified)
+                fixture_files = dict(payloads)
+                for name in changed:
+                    fixture_files[name] = 'fixture'
+                fixture_files[runtime] = go(modified) + suffix
+                fixture_files['service.yaml'] = inspection.cnpg_declaration(
+                    inspection.declaration(payloads['service.yaml']), 'stego-cnpg-database-ci')
+                for name, text in fixture_files.items():
+                    path = source / name; path.parent.mkdir(parents=True, exist_ok=True); path.write_text(text)
+                hashes = lambda values: {name: hashlib.sha256(text.encode()).hexdigest() for name, text in values.items()}
+                record = {'source_base_commit': 'b' * 40, 'compiler_revision': 'a' * 40,
+                          'source_sha256': hashes(payloads), 'fixture_sha256': hashes(fixture_files),
+                          'changed_files': sorted(changed),
+                          'cnpg_installation': {'namespace': 'stego-cnpg-database-ci', 'cluster': 'gateway-database'}}
+                (source / 'acceptance/browser-inspection-source.json').write_text(json.dumps(record))
+                with self.subTest(case=label), patch.object(runner.subprocess, 'check_output', return_value=archive.getvalue()), patch.object(runner, 'module', return_value=inspection):
+                    if label == 'valid':
+                        self.assertEqual(runner.verify_source(source, ROOT), record)
+                    else:
+                        with self.assertRaises(ValueError):
+                            runner.verify_source(source, ROOT)
+
     def test_runner_import_keeps_frozen_source_unchanged(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

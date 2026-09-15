@@ -63,7 +63,8 @@ def verify_source(source, repository):
     if (source / 'service.yaml').read_text() != expected_declaration:
         raise RuntimeError('The CNPG fixture declaration exceeds its allowed additions')
     runtime = 'out/deploy/allocation/allocation.go'
-    inspection.verify_runtime(payloads[runtime].decode(), (source / runtime).read_text())
+    inspection.verify_runtime(payloads[runtime].decode(), (source / runtime).read_text(),
+                              record['cnpg_installation']['namespace'])
     observed = {str(p.relative_to(source)) for p in source.rglob('*') if p.is_file()}
     if observed - {'acceptance/browser-inspection-source.json', '.stego/apply.lock'} != set(record['fixture_sha256']):
         raise RuntimeError('The frozen source inventory changed')

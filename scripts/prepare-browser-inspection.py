@@ -132,20 +132,28 @@ def inspection_roles():
     ]
 
 
-def verify_cnpg_runtime(before, after, namespace):
-    original, fixture = allocation_config(before), allocation_config(after)
-    profiles = [p for p in fixture['Profiles'] if p['Name'] == 'gateway']
+def remove_cnpg_peer(config, namespace):
+    profiles = [p for p in config['Profiles'] if p['Name'] == 'gateway']
     expected = {'Direction': 'egress', 'Namespace': 'external', 'ExternalNamespace': namespace,
                 'PodLabel': 'cnpg.io/cluster', 'PodValue': 'gateway-database', 'Protocol': 'TCP', 'Port': 5432}
-    if len(profiles) != 1 or profiles[0]['NetworkPeers'].pop(0) != expected or original != fixture:
+    if len(profiles) != 1 or not profiles[0]['NetworkPeers'] or profiles[0]['NetworkPeers'].pop(0) != expected:
+        raise ValueError('The CNPG allocation must add one exact database Pod peer')
+
+
+def verify_cnpg_runtime(before, after, namespace):
+    original, fixture = allocation_config(before), allocation_config(after)
+    remove_cnpg_peer(fixture, namespace)
+    if original != fixture:
         raise ValueError('The CNPG allocation must add one exact database Pod peer')
     pattern = r'json.Unmarshal\(\[\]byte\(("(?:[^"\\]|\\.)*")\), &config\)'
     if re.sub(pattern, 'CONFIG', before) != re.sub(pattern, 'CONFIG', after):
         raise ValueError('The CNPG fixture changed the allocation runtime')
 
 
-def verify_runtime(before, after):
+def verify_runtime(before, after, cnpg_namespace=None):
     original, fixture = allocation_config(before), allocation_config(after)
+    if cnpg_namespace is not None:
+        remove_cnpg_peer(fixture, cnpg_namespace)
     additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state'}
     roles = [r for r in fixture['Roles'] if r['Name'] in additions]
     if roles != inspection_roles():
