@@ -110,3 +110,9 @@ generated files, 16 CI access checks, 57 application access checks, six admissio
 probes, and 18 operator resources were verified. Cleanup passed. The screenshot
 shows the healthy Gateway; its loading connection panel does not prove an
 external endpoint. The API run for this source remains active.
+
+The separate API run for `70b2dd7` also passed all 30 required tests. Verification
+covered all 872 source files and 228 generated files. Generation records match;
+the Job, Pods, and private fixtures are absent. Both the API and full supplied
+PostgreSQL browser gates now pass for the SQL denial and encryption source.
+The installation CNPG test remains a separate required check.
