@@ -182,8 +182,8 @@ cleanup passed. All five STEGO CI jobs passed.
 Small generated tests also cover uncertain enablement, failed checks, cleanup,
 caller cancellation, unchanged state, and changed ownership.
 
-The first extraction still requires the service-account token check and checked
-enablement. Existing service-account rows hold provider IDs; Gateway state does
+The first extraction must adopt the common service-account token check and
+checked enablement. Existing service-account rows hold provider IDs; Gateway state does
 not. Adoption must preserve or explicitly migrate those bindings. This record
 does not change the application compiler pin or its provider implementation.
 
@@ -194,7 +194,7 @@ The common service-account token check passed at STEGO revision
 checks a fresh token against the saved subject, client ID, exact audiences,
 role arrays, and lifetime. The real test covered both policies and denied wrong
 subjects and audiences. The runtime took 47.52 seconds, and container cleanup
-passed. Full compiler CI was still running when this record was written.
+passed. All five STEGO CI jobs passed.
 
 The provider requires the saved subject to exist and be enabled before it
 requests a token. It does not return credentials or tokens to the caller.
@@ -202,3 +202,19 @@ Small tests cover signature and claim failures, extra credentials, missing
 subjects, and ownership changes. Checked service-account enablement must use
 this proof and handle its failure before this application adopts the provider.
 No application source reduction is claimed yet.
+
+Checked service-account enablement passed at STEGO revision
+`94ffb943b1afee9f7ed6f0af4f15ab47a16966b2` in
+[run 35034193690](https://github.com/jsell-rh/stego/actions/runs/35034193690).
+`ServiceAccountAccessPolicy` keeps the application values separate from the
+common setup, repair, checks, and failure cleanup. The provider derives expected
+token roles from the intersection of grants and scopes. Both service-account
+policies passed group and configuration repair, repeated reconciliation, and
+fresh signed token proof. The runtime took 55.21 seconds, and cleanup passed.
+Full compiler CI was still running when this record was written.
+
+The common native and service-account flows now share one checked-enable
+sequence. The application still uses its handwritten implementation. Ownership
+migration and adoption must preserve provider IDs, saved subjects, credentials,
+and Gateway role policy, then pass the existing application workflows. This
+provider test does not claim that application result or source reduction.
