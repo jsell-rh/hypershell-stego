@@ -39,7 +39,7 @@ row lock. A real Keycloak test removes two stored clients and one orphan after
 an outage and restart, while another Gateway credential continues to work.
 
 The earlier Gateway workflow created three automation accounts, used each token
-to read Gateway provider data, then deletes the Gateway. It checks that token
+to read Gateway provider data, then deleted the Gateway. It checked that token
 issuance fails for all three accounts before workload teardown. This test found
 a readiness mismatch: the controller reported `ready`, while account creation
 requires `Running` and `Healthy`. The controller now writes the phase and status
