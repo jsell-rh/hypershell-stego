@@ -20,11 +20,15 @@ import (
 
 type databaseSignals struct {
 	poolRegistration metric.Registration
-	tracer           trace.Tracer
-	logger           otellog.Logger
-	duration         metric.Float64Histogram
-	active           metric.Int64UpDownCounter
-	connection       metric.Float64Histogram
+	databaseCallSignals
+	provision databaseCallSignals
+}
+type databaseCallSignals struct {
+	tracer     trace.Tracer
+	logger     otellog.Logger
+	duration   metric.Float64Histogram
+	active     metric.Int64UpDownCounter
+	connection metric.Float64Histogram
 }
 
 func (r *Runtime) initDatabaseSignals() error {
@@ -50,6 +54,24 @@ func (r *Runtime) initDatabaseSignals() error {
 			return errors.New("cannot create database call metric")
 		}
 	}
+	if r.provider != nil {
+		r.database.provision.tracer = r.provider.Tracer("stego/postgres-client")
+	}
+	if r.signals.logs != nil {
+		r.database.provision.logger = r.signals.logs.Logger("stego/postgres-client")
+	}
+	if r.signals.meter != nil {
+		meter := r.signals.meter.Meter("stego/postgres-client")
+		var err error
+		r.database.provision.duration, err = meter.Float64Histogram("stego.postgres.database.duration", metric.WithUnit("s"))
+		if err != nil {
+			return errors.New("cannot create PostgreSQL operation metric")
+		}
+		r.database.provision.active, err = meter.Int64UpDownCounter("stego.postgres.database.active", metric.WithUnit("{operation}"))
+		if err != nil {
+			return errors.New("cannot create PostgreSQL operation metric")
+		}
+	}
 	return nil
 }
 
@@ -57,6 +79,26 @@ func (r *Runtime) initDatabaseSignals() error {
 // configuration, and errors are not accepted by this boundary. The returned
 // completion function accepts fixed outcomes and is idempotent.
 func TraceDatabase(ctx context.Context, call string) (context.Context, func(string)) {
+	switch call {
+	case "query", "connect", "prepare", "batch", "copy":
+	default:
+		call = "_OTHER"
+	}
+	return traceDatabaseCall(ctx, call, false)
+}
+
+// TracePostgresOperation observes one bounded PostgreSQL client operation.
+// The runtime accepts only fixed operation and outcome values, never SQL or errors.
+func TracePostgresOperation(ctx context.Context, operation string) (context.Context, func(string)) {
+	switch operation {
+	case "read", "server-identity", "ensure", "delete", "quarantine":
+	default:
+		operation = "_OTHER"
+	}
+	return traceDatabaseCall(ctx, operation, true)
+}
+
+func traceDatabaseCall(ctx context.Context, call string, provision bool) (context.Context, func(string)) {
 	if ctx == nil {
 		return ctx, func(string) {}
 	}
@@ -64,20 +106,24 @@ func TraceDatabase(ctx context.Context, call string) (context.Context, func(stri
 	if r == nil || r.closed.Load() {
 		return ctx, func(string) {}
 	}
-	switch call {
-	case "query", "connect", "prepare", "batch", "copy":
-	default:
-		call = "_OTHER"
+	signals := &r.database.databaseCallSignals
+	spanName, event, message, attributeName := "postgresql "+call, "db.client.operation.completed", "Database call completed", "stego.db.call"
+	if provision {
+		signals = &r.database.provision
+		spanName = "postgres.database." + call
+		event = "postgres.database.completed"
+		message = "PostgreSQL database operation completed"
+		attributeName = "operation"
 	}
 
 	ctx = r.Context(ctx)
 	start := time.Now()
 	var span trace.Span
-	if r.database.tracer != nil {
-		ctx, span = r.database.tracer.Start(ctx, "postgresql "+call, trace.WithSpanKind(trace.SpanKindClient), trace.WithTimestamp(start))
+	if signals.tracer != nil {
+		ctx, span = signals.tracer.Start(ctx, spanName, trace.WithSpanKind(trace.SpanKindClient), trace.WithTimestamp(start))
 	}
-	if r.database.active != nil {
-		r.database.active.Add(ctx, 1)
+	if signals.active != nil {
+		signals.active.Add(ctx, 1)
 	}
 	var once sync.Once
 	return ctx, func(outcome string) {
@@ -86,9 +132,11 @@ func TraceDatabase(ctx context.Context, call string) (context.Context, func(stri
 			switch outcome {
 			case "success", "failure", "canceled", "deadline", "aborted":
 			default:
-				outcome = "failure"
+				if !provision || outcome != "busy" {
+					outcome = "failure"
+				}
 			}
-			attrs := []attribute.KeyValue{attribute.String("db.system.name", "postgresql"), attribute.String("stego.db.call", call), attribute.String("outcome", outcome)}
+			attrs := []attribute.KeyValue{attribute.String("db.system.name", "postgresql"), attribute.String(attributeName, call), attribute.String("outcome", outcome)}
 			failed := outcome != "success" && outcome != "canceled"
 			severity := otellog.SeverityInfo
 			text := "INFO"
@@ -98,18 +146,23 @@ func TraceDatabase(ctx context.Context, call string) (context.Context, func(stri
 				text = "ERROR"
 			}
 			duration := end.Sub(start).Seconds()
-			if r.database.duration != nil {
-				if call == "connect" {
-					r.database.connection.Record(ctx, duration, metric.WithAttributes(attrs...))
+			if signals.duration != nil {
+				if !provision && call == "connect" {
+					signals.connection.Record(ctx, duration, metric.WithAttributes(attrs...))
 				} else {
-					r.database.duration.Record(ctx, duration, metric.WithAttributes(attrs...))
+					signals.duration.Record(ctx, duration, metric.WithAttributes(attrs...))
 				}
-				r.database.active.Add(ctx, -1)
+				signals.active.Add(ctx, -1)
 			}
 			r.service.mu.Lock()
 			if !r.closed.Load() {
 				sc := trace.SpanContextFromContext(ctx)
-				local := localRecord{Time: end, Service: r.service.service, Instance: r.instance, Severity: text, Event: "db.client.operation.completed", Message: "Database call completed", DatabaseCall: call, Outcome: outcome, DurationSeconds: &duration}
+				local := localRecord{Time: end, Service: r.service.service, Instance: r.instance, Severity: text, Event: event, Message: message, Outcome: outcome, DurationSeconds: &duration}
+				if provision {
+					local.Operation = call
+				} else {
+					local.DatabaseCall = call
+				}
 				if failed {
 					local.ErrorType = outcome
 				}
@@ -120,7 +173,7 @@ func TraceDatabase(ctx context.Context, call string) (context.Context, func(stri
 				if r.service.local != nil {
 					r.service.local.enqueue(local)
 				}
-				if r.database.logger != nil {
+				if signals.logger != nil {
 					var record otellog.Record
 					record.SetTimestamp(end)
 					record.SetEventName(local.Event)
@@ -129,7 +182,7 @@ func TraceDatabase(ctx context.Context, call string) (context.Context, func(stri
 					record.SetSeverityText(text)
 					record.AddAttributes(attrs...)
 					record.AddAttributes(attribute.Float64("duration_seconds", duration))
-					r.database.logger.Emit(ctx, record)
+					signals.logger.Emit(ctx, record)
 				}
 			}
 			r.service.mu.Unlock()

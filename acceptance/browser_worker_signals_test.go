@@ -13,6 +13,7 @@ import (
 )
 
 type workerSignalState struct {
+	postgres           postgresSignalState
 	logs, traces       []string
 	metric, correlated bool
 }
@@ -115,6 +116,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 			s := state(r.Resource)
 			for _, scope := range r.ScopeLogs {
 				for _, record := range scope.LogRecords {
+					if scope.Scope.Name == "stego/postgres-client" {
+						s.postgres.log(record)
+					}
 					if record.EventName == "controller.work.completed" {
 						s.pair(pair(record.TraceId, record.SpanId), true)
 					}
@@ -126,6 +130,7 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 			s := state(r.Resource)
 			for _, scope := range r.ScopeSpans {
 				for _, span := range scope.Spans {
+					s.postgres.span(scope.Scope.Name, span)
 					s.pair(pair(span.TraceId, span.SpanId), false)
 				}
 			}
@@ -135,6 +140,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 			s := state(r.Resource)
 			for _, scope := range r.ScopeMetrics {
 				for _, metric := range scope.Metrics {
+					if scope.Scope.Name == "stego/postgres-client" {
+						s.postgres.metric(metric)
+					}
 					if metric.Name == "stego.controller.work.duration" {
 						s.metric = true
 					}

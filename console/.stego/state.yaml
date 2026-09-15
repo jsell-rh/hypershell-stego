@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915105951-e5b9931b54ae
+        module_version: v0.0.0-20260915111158-f2b09c076240
         vcs: git
-        revision: e5b9931b54aef309f721554c761fe4163edeec24
+        revision: f2b09c0762405cabb5e7f9404abbf2be4d57a1b2
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 8518f633ab97d50de8edaacde0e97714934b270cdab869e8de94e7f07d551d1c
+    registry_content_sha256: 8df3db0760fd89a3d0d1f71e8d783fbeac0cb702da487a957d4ddc485249abe4
     components:
         browser-backend:
             version: 1.6.1
@@ -50,7 +50,7 @@ last_applied:
             version: 1.9.0
             sha: browser-workflow
         otel-tracing:
-            version: 1.13.0
+            version: 1.14.0
             sha: browser-workflow
         postgres-adapter:
             version: 4.4.1
@@ -131,7 +131,7 @@ last_applied:
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
         tracing/controller.go: 330e49b31935577ae95a5c009b5796144ec64141c998d0dc2c0bb17953f9c222
-        tracing/database.go: 22808f6bb543217621aa832bc9fecef12a04290971dd8581383a3c455c65c0ca
+        tracing/database.go: ab4b6ee0244f004876885030e8e72d7e8f6a47a7819b054696d40f6ee6273e33
         tracing/http_client.go: ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683
         tracing/identity.go: 2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6
         tracing/runtime.go: ad9a45463fa10843600b36b02dd51c0e43cf2fa94c3d26369a93901dad2b253b
