@@ -10,6 +10,7 @@ import json
 import os
 from pathlib import Path
 import secrets
+import ssl
 import subprocess
 import tempfile
 import time
@@ -94,6 +95,41 @@ def verify_allocations(browser):
         raise RuntimeError('Gateway allocation absence is not confirmed; retain the SQL server and Lease')
 
 
+def gateway_ca_input(value):
+    if not value or not Path(value).is_file():
+        raise ValueError('Set STEGO_TEST_GATEWAY_INTERNAL_CA_FILE to the operator-supplied CA file')
+    with Path(value).open('rb') as source:
+        data = source.read((64 << 10) + 1)
+    if not data or len(data) > 64 << 10 or b'PRIVATE KEY' in data:
+        raise ValueError('The Gateway CA must contain at most 64 KiB of public certificates')
+    try:
+        context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+        context.load_verify_locations(cadata=data.decode('ascii'))
+    except (UnicodeError, ssl.SSLError) as error:
+        raise ValueError('The Gateway CA file must contain valid PEM certificates') from error
+    return data
+
+
+def prepare_allocation_check(source, directory, client):
+    # The outer cleanup must work even when the browser child never starts.
+    # Read the operator's immutable inputs and build the existing read-only
+    # allocation client before any CNPG runtime is created.
+    installation = client.get('configmap', 'browser-ci-installation', ci.APP_NS)
+    if not installation or installation.get('immutable') is not True or installation['metadata'].get('labels', {}).get('app.kubernetes.io/managed-by') != 'stego-browser-ci':
+        raise RuntimeError('Require the immutable browser installation for the allocation check')
+    namespace = client.get('namespace', ci.APP_NS)
+    if not namespace or namespace['metadata']['uid'] != installation['data']['namespace-uid']:
+        raise RuntimeError('The browser installation namespace identity differs')
+    directory.mkdir(mode=0o700, exist_ok=False)
+    for name in ('kubernetes-endpoints.json', 'kubernetes-service.json'):
+        (directory / name).write_text(installation['data'][name])
+    kubernetes_endpoints(directory)
+    environment = dict(os.environ, GOMAXPROCS='1', GOMEMLIMIT='256MiB', GOWORK='off')
+    subprocess.run(['go', 'build', '-p=1', '-mod=readonly', '-trimpath', '-o', str(directory / 'allocation-cleanup'),
+                    'scripts/browser-allocation-cleanup.go'], cwd=source, env=environment, check=True, timeout=60)
+    return directory
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -101,6 +137,7 @@ def main():
     parser.add_argument('--kubeconfig', type=Path, required=True)
     parser.add_argument('--results', type=Path, required=True)
     args = parser.parse_args()
+    gateway_ca = gateway_ca_input(os.environ.get('STEGO_TEST_GATEWAY_INTERNAL_CA_FILE'))
     source = args.source.resolve()
     context = 'jshell-ci'
     if args.kubeconfig.is_symlink() or not args.kubeconfig.is_file() or args.kubeconfig.stat().st_mode & 0o077:
@@ -113,6 +150,8 @@ def main():
         raise RuntimeError('The source must select the fixed CNPG CI namespace')
     args.results.mkdir(mode=0o700, parents=False, exist_ok=False)
     os.umask(0o077)
+    gateway_ca_file = args.results.resolve() / 'gateway-internal-ca.pem'
+    gateway_ca_file.write_bytes(gateway_ca)
     fixture = ci.module('cnpg_ci_fixture_runner', 'cnpg-installation-fixture.py')
     lock = ci.module('cnpg_ci_live_lock', 'jshell_live_lock.py')
     holder = 'stego-cnpg-live-' + secrets.token_hex(8)
@@ -164,6 +203,7 @@ def main():
             raise RuntimeError('CNPG CI access boundary differs: ' + verb + ' ' + resource)
         access.append({'verb': verb, 'resource': resource, 'namespace': namespace, 'allowed': expected})
     fixture.write(args.results / 'cnpg-ci-access.json', access)
+    allocation_check = prepare_allocation_check(source, args.results.resolve() / 'allocation-check', client)
     lock.acquire(context, holder, ci.APP_NS, 'service-check')
     settings.lease_uid = lock.lease(context)['metadata']['uid']
     state = {'source_base_commit': frozen['source_base_commit'], 'compiler_revision': frozen['compiler_revision'],
@@ -220,9 +260,10 @@ def main():
         for kind in ['clusterroles', 'clusterrolebindings']:
             if client.oc('get', kind, '-l', 'stego.dev/allocator=' + marker, '-o', 'json')['items']:
                 raise RuntimeError('Gateway allocations remain; retain the SQL server and Lease')
-        verify_allocations(args.results / 'browser')
+        verify_allocations(allocation_check)
     try:
         require_empty()
+        app_absent()
         if client.get('secret', 'cnpg-credentials', ci.APP_NS):
             raise RuntimeError('An earlier private SQL fixture remains')
         fixture.write(client.journal, journal)
@@ -302,6 +343,7 @@ def main():
         environment = dict(os.environ, PYTHONDONTWRITEBYTECODE='1', STEGO_TEST_CONTEXT=context,
             STEGO_TEST_PREINSTALLED='1', STEGO_TEST_BROWSER_DEPLOYMENT='1', STEGO_TEST_BROWSER_WORKLOAD='1',
             STEGO_TEST_GATEWAY_CLUSTER_ISSUER=record['issuer'], STEGO_TEST_RESULTS=str((args.results / 'browser').resolve()),
+            STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(gateway_ca_file),
             STEGO_TEST_CNPG_FIXTURE='1', STEGO_TEST_HELD_LEASE_HOLDER=holder, STEGO_TEST_HELD_LEASE_UID=settings.lease_uid)
         with (args.results / 'browser-run.log').open('w') as log:
             result = subprocess.run(['bash', str(source / 'scripts/check-service-deployment.sh')], cwd=source, env=environment,

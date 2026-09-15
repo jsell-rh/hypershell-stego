@@ -3,6 +3,8 @@ import unittest
 import tempfile
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
 from unittest.mock import patch, Mock
 from types import SimpleNamespace
@@ -95,6 +97,77 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_invalid_gateway_ca_stops_before_cluster_access(self):
+        runner = ci.module('cnpg_ci_ca_preflight', 'check-cnpg-ci.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            ca = root / 'ca.pem'
+            results = root / 'results'
+            argv = ['check-cnpg-ci.py', '--source', str(root), '--repository', str(root),
+                    '--kubeconfig', str(root / 'credentials'), '--results', str(results)]
+            for data in [None, b'', b'not a certificate', b'PRIVATE KEY', b'x' * ((64 << 10) + 1)]:
+                if data is not None:
+                    ca.write_bytes(data)
+                with self.subTest(data=None if data is None else len(data)), \
+                     patch.dict(os.environ, {'STEGO_TEST_GATEWAY_INTERNAL_CA_FILE': '' if data is None else str(ca)}), \
+                     patch.object(sys, 'argv', argv), patch.object(runner, 'require_context_credentials') as credentials, \
+                     patch.object(runner.ci, 'module') as module:
+                    with self.assertRaises(ValueError):
+                        runner.main()
+                    credentials.assert_not_called()
+                    module.assert_not_called()
+                    self.assertFalse(results.exists())
+
+    def test_gateway_ca_is_validated_and_captured_before_use(self):
+        runner = ci.module('cnpg_ci_ca_snapshot', 'check-cnpg-ci.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); ca = root / 'ca.pem'
+            subprocess.run(['openssl', 'req', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256',
+                            '-nodes', '-keyout', str(root / 'key.pem'), '-out', str(ca), '-subj', '/CN=CNPG test CA', '-days', '1'],
+                           capture_output=True, check=True, timeout=10)
+            expected = ca.read_bytes()
+            captured = runner.gateway_ca_input(str(ca))
+            ca.write_text('changed input')
+            self.assertEqual(captured, expected)
+
+    def test_outer_allocation_check_needs_no_browser_child_files(self):
+        runner = ci.module('cnpg_ci_outer_allocation', 'check-cnpg-ci.py')
+        installation = {'metadata': {'labels': {'app.kubernetes.io/managed-by': 'stego-browser-ci'}},
+                        'immutable': True, 'data': {'namespace-uid': 'expected',
+                        'kubernetes-endpoints.json': json.dumps({'items': [{'endpoints': [{'conditions': {'ready': True}, 'addresses': ['192.0.2.1']}], 'ports': [{'name': 'https', 'protocol': 'TCP', 'port': 6443}]}]}),
+                        'kubernetes-service.json': json.dumps({'spec': {'clusterIP': '10.0.0.1'}})}}
+        client = Mock()
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); outer = root / 'allocation-check'
+            client.get.side_effect = [installation, {'metadata': {'uid': 'expected'}}]
+            with patch.object(runner.subprocess, 'run') as build:
+                self.assertEqual(runner.prepare_allocation_check(root, outer, client), outer)
+                self.assertEqual(build.call_args.args[0][:3], ['go', 'build', '-p=1'])
+                self.assertEqual(build.call_args.kwargs['timeout'], 60)
+            self.assertFalse((root / 'browser').exists())
+            def complete(words, **options):
+                self.assertEqual(words[0], str(outer / 'allocation-cleanup'))
+                self.assertNotIn('--remove', words)
+                self.assertEqual(json.loads(options['env']['STEGO_ALLOCATION_NETWORK_ENDPOINTS']),
+                                 {'kubernetes': ['10.0.0.1:443', '192.0.2.1:6443']})
+                Path(words[words.index('--result') + 1]).write_text('{"allocations_absent":true,"allocations_before":0}')
+            with patch.object(runner, 'require_context_credentials', return_value=('test-private-token', {'server': 'https://api.example'})), \
+                 patch.object(runner.subprocess, 'run', side_effect=complete):
+                runner.verify_allocations(outer)
+            client.create.assert_not_called()
+            client.oc.assert_not_called()
+            for change in [lambda: installation.update(immutable=False),
+                           lambda: installation['data'].update({'namespace-uid': 'foreign'}),
+                           lambda: installation['data'].update({'kubernetes-endpoints.json': '{"items":[]}'})]:
+                installation['immutable'] = True
+                installation['data']['namespace-uid'] = 'expected'
+                change()
+                client.get.side_effect = [installation, {'metadata': {'uid': 'expected'}}]
+                target = root / ('invalid-' + str(len(list(root.iterdir()))))
+                with patch.object(runner.subprocess, 'run') as build, self.assertRaises((ValueError, RuntimeError)):
+                    runner.prepare_allocation_check(root, target, client)
+                build.assert_not_called()
+
     def test_deletion_uses_api_resource_names_and_identity_preconditions(self):
         runner = ci.module('cnpg_ci_delete_boundary', 'check-cnpg-ci.py')
         for version, kind, resource, prefix, api_resource in [('postgresql.cnpg.io/v1', 'Cluster', 'clusters.postgresql.cnpg.io', '/apis/postgresql.cnpg.io/v1', 'clusters'),
