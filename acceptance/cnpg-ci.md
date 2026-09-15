@@ -1,3 +1,10 @@
+The network isolation candidate `7e23873` passes saved Kubernetes endpoint
+bindings to the final allocation check. Missing or empty endpoint input cannot
+produce a cleanup success result. Twelve boundary checks passed. Its frozen
+CNPG source passed generation and comparison checks. This source has not run
+the complete CNPG isolation workflow. See the
+[active workflow record](gateway-network-workflow-20260915.json).
+
 # CNPG CI
 
 The complete unattended workflow passed in
