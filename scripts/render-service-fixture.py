@@ -88,6 +88,8 @@ def fixture(ns, directory, browser, workload, issuer):
                 test = spec['containers'][0]
                 test['volumeMounts'].append({'name': 'cnpg-fixture', 'mountPath': '/cnpg-installation', 'readOnly': True})
                 test['env'].append({'name': 'STEGO_TEST_GATEWAY_SQL_FIXTURE_FILE', 'value': '/cnpg-installation/fixture.json'})
+    from public_gateway_fixture import apply_public_fixture
+    apply_public_fixture(job, ns, workload, browser)
     for item in job['items']:
         if item['kind'] == 'Role' and item['metadata']['name'] == 'service-check':
             for rule in list(item['rules']):
@@ -119,7 +121,7 @@ def main():
         if item['kind']=='Secret' and item['metadata']['name']=='database-tls':
             item['data']={name:encode((root/name).read_text()) for name in ['server.key','server.crt']}
         if item['kind']=='ConfigMap' and item['metadata']['name']=='database-ca':
-            item['data']={'server.crt':(root/'ca.crt').read_text()}
+            item.setdefault('data', {})['server.crt']=(root/'ca.crt').read_text()
     (root/'private-job.json').write_text(json.dumps(job))
     for item in job['items']:
         if item['kind']=='Secret':item.pop('data',None)

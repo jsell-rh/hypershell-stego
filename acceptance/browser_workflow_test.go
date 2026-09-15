@@ -342,12 +342,13 @@ func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, req
 }
 
 type renderedBrowser struct {
-	Origin    string   `json:"origin"`
-	Pins      []string `json:"pins"`
-	Session   string   `json:"session"`
-	ID        string   `json:"id"`
-	directory string
-	diagnose  func()
+	PublicEndpoint string   `json:"publicEndpoint,omitempty"`
+	Origin         string   `json:"origin"`
+	Pins           []string `json:"pins"`
+	Session        string   `json:"session"`
+	ID             string   `json:"id"`
+	directory      string
+	diagnose       func()
 }
 
 func (b *renderedBrowser) run(t *testing.T, phase string) {
@@ -663,6 +664,15 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		stopAPI, api, rpc = startAPI(settings...)
 		workload.start(alice, bob, rpc, apiIdentity.config.CAFile, gateway.ID)
 		workload.checkEarlyDeletion(early)
+		if workload.public != nil && rendered != nil {
+			response := alice.api(t, "GET", "/gateways/"+gateway.ID, nil)
+			var current httpapi.Gateway
+			if response.StatusCode != 200 || json.Unmarshal(response.Body, &current) != nil {
+				t.Fatal("public Gateway read failed")
+			}
+			workload.requirePublicEndpoint(current)
+			rendered.PublicEndpoint = *current.RouteAddress
+		}
 	}
 	assertAccess := func() {
 		t.Helper()
@@ -725,6 +735,9 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	stop, logs = startBrowser()
 	alice.session(t)
 	assertAccess()
+	if workload != nil && workload.public != nil {
+		workload.check(gateway.ID)
+	}
 	if rendered != nil {
 		signals.unavailable.Store(true)
 		rendered.run(t, "verify")

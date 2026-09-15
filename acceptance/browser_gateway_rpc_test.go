@@ -29,26 +29,33 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("Gateway read failed")
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	secret, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+gateway.Namespace+"/secrets/openshell-server-tls", nil)
-	cancel()
-	if err != nil || code != 200 {
-		w.t.Fatal("Gateway CA unavailable")
-	}
-	encoded, ok := secret["data"].(map[string]any)
-	if !ok {
-		w.t.Fatal("Gateway CA document invalid")
-	}
-	text, ok := encoded["ca.crt"].(string)
-	if !ok {
-		w.t.Fatal("Gateway CA absent")
-	}
-	ca, err := base64.StdEncoding.DecodeString(text)
+	address := "openshell-gateway." + gateway.Namespace + ".svc.cluster.local:8080"
 	roots := x509.NewCertPool()
-	if err != nil || !roots.AppendCertsFromPEM(ca) {
-		w.t.Fatal("Gateway CA invalid")
+	if w.public != nil {
+		address = w.publicRPCAddress(gateway)
+		roots = w.public.roots
+	} else {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		secret, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+gateway.Namespace+"/secrets/openshell-server-tls", nil)
+		cancel()
+		if err != nil || code != 200 {
+			w.t.Fatal("Gateway CA unavailable")
+		}
+		encoded, ok := secret["data"].(map[string]any)
+		if !ok {
+			w.t.Fatal("Gateway CA document invalid")
+		}
+		text, ok := encoded["ca.crt"].(string)
+		if !ok {
+			w.t.Fatal("Gateway CA absent")
+		}
+		ca, err := base64.StdEncoding.DecodeString(text)
+		if err != nil || !roots.AppendCertsFromPEM(ca) {
+			w.t.Fatal("Gateway CA invalid")
+		}
+
 	}
-	connection, err := grpc.NewClient("passthrough:///openshell-gateway."+gateway.Namespace+".svc.cluster.local:8080", grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
+	connection, err := grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
 	if err != nil {
 		w.t.Fatal("Gateway RPC connection failed")
 	}
@@ -82,7 +89,7 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	}
 	owner := w.identity.browserLogin(w.t, w.audience(id), "console-alice")
 	other := w.identity.browserLogin(w.t, w.audience(id), "console-bob")
-	for _, value := range []string{"", "forged"} {
+	for _, value := range []string{"", "forged", w.identity.browserLogin(w.t, "hypershell", "console-alice")} {
 		if _, err := w.call("GetCurrentUser", value, `{}`); status.Code(err) != codes.Unauthenticated {
 			w.t.Fatal("Gateway accepted invalid identity", status.Code(err))
 		}
@@ -116,6 +123,7 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	if err != nil || !proto.Equal(before, after) {
 		w.t.Fatal("Gateway lost provider data after replacement", status.Code(err))
 	}
+	w.recordPublicRPC(gateway)
 	w.t.Log("Browser-created OpenShell Gateway passed verified RPC, denied calls, and provider data recovery after Pod replacement")
 }
 

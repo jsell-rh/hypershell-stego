@@ -22,6 +22,7 @@ import (
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
+	public            *browserPublicGateway
 	t                 *testing.T
 	p                 *kubernetesBrowser
 	f                 *fixture
@@ -65,6 +66,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		t.Fatal("Kubernetes client setup failed")
 	}
 	w := &browserGatewayWorkload{t: t, p: p, f: f, identity: k, kubernetes: client, options: options, tokens: map[string]string{}, telemetry: browserWorkerTelemetry(settings), allocations: map[string]allocationTarget{}}
+	w.preparePublicGateway()
 	w.prepareDatabase(sessions)
 	t.Cleanup(func() {
 		defer client.Close()
@@ -88,7 +90,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		w.tokens[name] = k.browserLogin(t, "hypershell", username)
 
 	}
-	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster), writeGrant(ids["workload"], "configure.sql", f.cluster))
+	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster), writeGrant(ids["workload"], "observe.endpoint", f.cluster), writeGrant(ids["workload"], "configure.sql", f.cluster))
 	settings = withCleanupGrants(t, settings, cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
 	encoded, _ := json.Marshal(subjects)
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(encoded))
@@ -172,6 +174,7 @@ func (w *browserGatewayWorkload) check(id string) {
 			}
 			data, _ := json.Marshal(object)
 			if err == nil && code == 200 && json.Unmarshal(data, &state) == nil && state.Metadata.Generation > 0 && state.Status.ObservedGeneration >= state.Metadata.Generation && state.Status.ReadyReplicas == 1 && state.Status.UpdatedReplicas == 1 {
+				w.requirePublicEndpoint(gateway)
 				w.t.Log("Browser Gateway has current controller observations and a ready OpenShell Deployment")
 				return
 			}

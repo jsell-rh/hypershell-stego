@@ -55,6 +55,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				for _, endpoint := range w.databaseEndpoints {
 					target = append(target, "--egress", "gateway-postgres="+endpoint)
 				}
+				target = w.publicWorkerSettings(env, files, target)
 				env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 				env["HYPERSHELL_GATEWAY_CLUSTER_ISSUER"] = w.options.ClusterIssuer
 				env["HYPERSHELL_GATEWAY_OIDC_ISSUER"] = w.identity.options.ServerURL + "/realms/workflow"

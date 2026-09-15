@@ -2,6 +2,11 @@ name: Gateway browser workflow on jshell
 
 on:
   workflow_dispatch:
+    inputs:
+      public_gateway:
+        description: Test the public Gateway with the operator configuration
+        type: boolean
+        default: false
   push:
 
 permissions:
@@ -31,6 +36,7 @@ jobs:
           python3 scripts/test_ci_credentials.py
           python3 scripts/test_browser_cluster_installation.py
           python3 scripts/test_browser_inspection.py
+          python3 scripts/test_public_gateway_fixture.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go
       - name: Prepare the frozen inspection source
         timeout-minutes: 5
@@ -62,6 +68,16 @@ jobs:
           test -n "$CI_KUBECONFIG"
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Write the public test configuration
+        if: inputs.public_gateway
+        env:
+          PUBLIC_CONFIG: ${{ vars.JSHELL_GATEWAY_PUBLIC_CONFIG }}
+        run: |
+          test -n "$PUBLIC_CONFIG"
+          umask 077
+          printf '%s' "$PUBLIC_CONFIG" > "$RUNNER_TEMP/public-gateway.json"
+          echo "STEGO_TEST_GATEWAY_PUBLIC_CONFIG=$RUNNER_TEMP/public-gateway.json" >> "$GITHUB_ENV"
+          echo 'STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=1' >> "$GITHUB_ENV"
       - name: Run the generated Gateway workflow
         env:
           KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig

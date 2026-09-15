@@ -79,3 +79,50 @@ and the test actor's access. It must verify network enforcement, public RPC,
 certificate rotation, restart, and cleanup. API run `34975653347` and browser
 run `34975653307` stopped before test creation because the CI credential had
 too little time left. They provide no application result for these changes.
+
+## Public browser test inputs
+
+The existing browser workflow accepts an explicit public profile. Set
+`JSHELL_GATEWAY_PUBLIC_CONFIG` in the `jshell-ci` GitHub environment to a JSON
+object with these fields:
+
+- `domain`: the DNS suffix routed to the selected ingress controller.
+- `issuer`: the existing cert-manager ClusterIssuer name.
+- `router`: the selected Route status router name.
+- `ca_pem`: the independently supplied certificate authority bundle.
+- `endpoints`: 1 to 16 router IP and port pairs, each on TCP port 443.
+
+For example, an endpoint can be `192.0.2.3:443` or `[2001:db8::3]:443`.
+These are example addresses. Use the actual addresses visible at the cluster
+network policy boundary. Supply certificates only. Do not put private keys or
+credentials in this configuration.
+
+Start the `Gateway browser workflow on jshell` workflow manually with
+`public_gateway` set to `true`. The test fails if the configuration is absent
+or invalid. For a direct run, set `STEGO_TEST_GATEWAY_PUBLIC_CONFIG` to the
+configuration file and `STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=1`. Normal push runs
+retain the internal Service profile. They cannot establish a public pass.
+
+The fixture mounts the public inputs from a separate key in the existing test
+trust ConfigMap. Database trust stays in its own key. The test grants the
+assigned worker both workload and endpoint observation rights for one cluster.
+It uses the generated network renderer for the public worker destination. The
+Job deadline, resource limits, shared Lease, and cleanup checks stay in effect.
+The fixed cluster installation must match the current generated policy before
+a test can start.
+
+In the public profile, the existing real Gateway RPC sequence uses the
+controller-published address and the supplied trust. It checks invalid tokens,
+a foreign audience, an ungranted user, owner provider writes and reads, and
+provider data after Gateway Pod replacement. Subsequent worker restart,
+namespace replacement, viewer recovery, and service account calls use the same
+public connection. The rendered browser must show a connection command with
+the expected endpoint after API and console restart.
+
+`gateway-public-rpc.json` records the initial RPC and Pod replacement stage.
+`verify.json` records the rendered connection check. These files are partial
+evidence until the complete Job, regeneration, and cleanup checks pass.
+Focused fixture input and manifest tests pass, the acceptance package compiles,
+and the WebDriver script passes its syntax check. No live public result exists
+for this source. Explicit Route failure and certificate rotation tests still
+need to be added to this profile.

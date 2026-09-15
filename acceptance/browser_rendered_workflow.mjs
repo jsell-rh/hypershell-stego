@@ -76,6 +76,9 @@ try {
   await element(`a[href="/gateways/${input.id}"]`);
   await click(`a[href="/gateways/${input.id}"]`);
   await gatewayDetail(input.id,'Gateway from list');
+  if(input.publicEndpoint){
+   await until(()=>script(`return [...document.querySelectorAll('code')].some(node=>node.getClientRects().length>0 && node.textContent.includes('openshell gateway add') && node.textContent.includes(arguments[0]) && !/--(?:tls-)?insecure/.test(node.textContent))`,[input.publicEndpoint]),'verified public connection command');
+  }
   await writeFile(outputPath+'.png',Buffer.from(await command('/screenshot'),'base64'));
   await command('',undefined,'DELETE');session=undefined;
   await newSession();await login('console-bob');
@@ -88,7 +91,7 @@ try {
   await until(()=>script('return document.body.innerText.match(/not found|could not|unable|unavailable/i)?.[0]'),'denied detail');
   assert.equal(await script('return document.body.innerText.includes("rendered-browser-workflow")'),false);
   await command('',undefined,'DELETE');session=undefined;
-  await writeFile(outputPath,JSON.stringify({verified:true}));
+  await writeFile(outputPath,JSON.stringify({verified:true,publicConnectionVerified:Boolean(input.publicEndpoint)}));
  }else throw new Error('unknown browser phase');
 }catch(error){
  if(session){
