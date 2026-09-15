@@ -76,5 +76,10 @@ runs before the existing SQL cleanup denial and recovery checks. Evidence
 contains account IDs and counts, with no credentials. It does not claim that
 previously issued access tokens are erased.
 
-The complete acceptance package compiles. A new live browser result is required
-for this source; the historical results above do not cover the added checks.
+The [account-source API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34951393810)
+passed all 30 required checks at `10a0827`. Verification matched 887 source
+files, 229 generated files, all generation records, and cleanup. This compiles
+the complete acceptance package but does not execute the new live account
+checks. Browser run `34951393842` must prove both viewer recovery and account
+deletion. See the [partial evidence](browser-viewer-recovery-evidence.json).
+The historical results above do not cover the added checks.

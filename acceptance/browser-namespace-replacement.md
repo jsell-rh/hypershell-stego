@@ -65,5 +65,9 @@ passed all 30 required tests at `5dc5742`. Verification matched 886 source files
 229 generated files, all generation records, and cleanup. This API run compiles
 the viewer helper but does not execute it against a live Gateway. Browser run
 `34950955188` was cancelled while pending and requeued on the same commit after
-credential rotation. Its second attempt remains required. See
+credential rotation. Its second attempt was later cancelled while still pending.
+The newer account-source browser run `34951393842` includes identical viewer
+and namespace recovery checks, plus live account deletion. That complete run
+now supplies the required live gate. No pass is claimed for either cancelled
+attempt. See
 [the partial evidence](browser-viewer-recovery-evidence.json).
