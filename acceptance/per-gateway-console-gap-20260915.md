@@ -92,7 +92,7 @@ cover these contracts, including the editor and terminal.
 
 Common Keycloak client management must also come from STEGO. Use the existing
 service-account and Gateway identity workflows to prove the
-[provider extraction](https://github.com/jsell-rh/stego/blob/0ebc3cf/specs/keycloak-provider-boundary.md)
+[provider extraction](https://github.com/jsell-rh/stego/blob/506ffe8/specs/keycloak-provider-boundary.md)
 before adding per-Gateway dashboard client policy. Hypershell keeps Gateway
 roles, grants, audiences, and ownership identifiers.
 
@@ -100,7 +100,21 @@ STEGO now has initial typed client operations. Its real-Keycloak job passed at
 `b6f814165df869797d1418ff1269814f35426924`, including ownership checks,
 credential reads, disablement, confirmed deletion, and trace privacy. That test
 reconstructs a provider client within one process; it does not restart this
-application or Keycloak. Client creation, roles, scopes, and mappers remain
-open. Hypershell has not adopted the provider, and its handwritten client has
+application or Keycloak. Hypershell has not adopted the provider, and its handwritten client has
 not been reduced. Moving that client without the policy separation would be
 insufficient.
+
+The common service-account creation test also passed at STEGO revision
+`84b445767b468ee8b8d388f078fac0220d0b5fc7` in
+[run 35026787020](https://github.com/jsell-rh/stego/actions/runs/35026787020).
+It creates two clients with different ownership policies and stable provider
+IDs. It checks token denial while disabled, creation conflicts, configuration
+changes, credential preservation, client reconstruction, and deletion. Container
+cleanup passed. The full compiler job is still running.
+
+The common service-account profile uses ownership keys under `stego.owner.`.
+Hypershell must retain its Gateway and service-account identifiers as policy
+values and explicitly migrate existing ownership attributes during adoption.
+Roles, scopes, mappers, and verified enablement remain required before the
+handwritten client can be removed. The existing application workflows must
+then pass with the common provider. This provider test does not close that gate.
