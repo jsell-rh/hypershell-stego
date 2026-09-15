@@ -100,7 +100,7 @@ func (w *browserGatewayWorkload) trackAllocation(name, id, profile string) {
 	w.allocations[name] = allocationTarget{profile: profile, id: id}
 }
 
-func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatewayID string) {
+func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, ca, gatewayID string) {
 	w.t.Helper()
 	w.owner = owner
 	rows, err := w.f.db.Query("SELECT id,namespace FROM gateways WHERE cluster_id=$1 AND deleted_at IS NULL", w.f.cluster)
@@ -149,7 +149,7 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 	if next := w.checkSQLIsolation(); !reflect.DeepEqual(identities, next) {
 		w.t.Fatal("worker restart changed a database or credential identity")
 	}
-	w.checkNamespaceReplacement(gatewayID)
+	w.checkNamespaceReplacement(gatewayID, viewer)
 	w.checkCredentialEncryption(gatewayID)
 }
 

@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"slices"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
@@ -19,15 +18,39 @@ import (
 
 type gatewayCall func(method, bearer, input string) (*dynamicpb.Message, error)
 
-// A Hypershell grant and a Gateway workspace membership have separate owners.
-// Return a check that the caller runs after the actual workload restarts.
-func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, gateway httpapi.Gateway, gatewayClient, ownerAPI, ownerGateway, bobSubject string, expected *dynamicpb.Message, call gatewayCall) func(string) {
+// Keep the viewer grant and workspace membership through namespace replacement.
+// Return the post-recovery checks and remove both grants through their APIs.
+func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *consoleBrowser, ownerGateway string, expected *dynamicpb.Message) func(string) {
+	t := w.t
 	t.Helper()
-	bobAPI := k.browserLogin(t, "hypershell", "bob")
-	recipient := currentUser(t, root, bobAPI)
+	k, call, gatewayClient := w.identity, w.call, w.audience(id)
+	ownerAPI := func(method, path string, body []byte) (int, []byte) {
+		response := w.owner.api(t, method, path, body)
+		return response.StatusCode, response.Body
+	}
+	viewerAPI := func(method, path string, body []byte) (int, []byte) {
+		response := browser.api(t, method, path, body)
+		return response.StatusCode, response.Body
+	}
+	code, body := ownerAPI("GET", "/gateways/"+id, nil)
+	var gateway httpapi.Gateway
+	if code != 200 || json.Unmarshal(body, &gateway) != nil || gateway.ID != id {
+		t.Fatal("viewer workflow Gateway read failed", code)
+	}
+	code, body = viewerAPI("GET", "/users/me", nil)
+	var recipient httpapi.CurrentUser
+	if code != 200 || json.Unmarshal(body, &recipient) != nil || recipient.ID == "" || recipient.Subject == "" {
+		t.Fatal("viewer workflow identity read failed", code)
+	}
+	bobSubject := recipient.Subject
+	code, body = ownerAPI("GET", "/roles?search=name%20%3D%20%27gateway%3Aviewer%27", nil)
+	var roles httpapi.RoleList
+	if code != 200 || json.Unmarshal(body, &roles) != nil || roles.Total != 1 || len(roles.Items) != 1 || roles.Items[0].Name != "gateway:viewer" || roles.Items[0].ID == "" {
+		t.Fatal("viewer workflow role read failed", code)
+	}
 	visibleGateways := func(want []string) {
 		t.Helper()
-		code, body := requestJSON(t, "GET", root+"/gateways", bobAPI, nil)
+		code, body := viewerAPI("GET", "/gateways", nil)
 		var result httpapi.GatewayList
 		if code != 200 || json.Unmarshal(body, &result) != nil {
 			t.Fatal("list viewer Gateways", code)
@@ -41,18 +64,18 @@ func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, g
 		}
 	}
 	visibleGateways(nil)
-	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: recipient.ID, RoleID: discoverRole(t, root, ownerAPI, "gateway:viewer").ID}
+	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: recipient.ID, RoleID: roles.Items[0].ID}
 	encoded, _ := json.Marshal(grant)
-	code, body := requestJSON(t, "POST", root+"/role_bindings", ownerAPI, encoded)
+	code, body = ownerAPI("POST", "/role_bindings", encoded)
 	var binding struct{ ID string }
 	if code != 201 || json.Unmarshal(body, &binding) != nil || binding.ID == "" {
-		t.Fatal("grant actual Gateway viewer access", code, string(body))
+		t.Fatal("grant actual Gateway viewer access", code)
 	}
 	waitRoles := func(want []string) string {
 		t.Helper()
 		deadline := time.Now().Add(30 * time.Second)
 		for {
-			raw := k.browserLogin(t, gatewayClient, "bob")
+			raw := k.browserLogin(t, gatewayClient, "console-bob")
 			response, err := call("GetCurrentUser", raw, `{}`)
 			if err != nil {
 				t.Fatal("Gateway viewer identity", err)
@@ -79,7 +102,7 @@ func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, g
 	}
 	visibleGateways([]string{gateway.ID})
 	viewer := waitRoles([]string{keycloak.RoleUser})
-	if _, err := call("GetProvider", viewer, `{"name":"stored-provider"}`); status.Code(err) != codes.PermissionDenied || !strings.Contains(status.Convert(err).Message(), "not a member") {
+	if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied || !strings.Contains(status.Convert(err).Message(), "not a member") {
 		t.Fatal("Gateway role alone granted workspace access", err)
 	}
 	member, _ := json.Marshal(map[string]any{"workspace": "default", "principal_subject": bobSubject, "role": "WORKSPACE_ROLE_USER"})
@@ -135,7 +158,7 @@ func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, g
 	addMember(ownerGateway)
 	checkViewer := func(bearer string) {
 		t.Helper()
-		response, err := call("GetProvider", bearer, `{"name":"stored-provider"}`)
+		response, err := call("GetProvider", bearer, `{"name":"browser-provider"}`)
 		if err != nil || !proto.Equal(response, expected) {
 			t.Fatal("viewer could not read the stored provider", err)
 		}
@@ -157,9 +180,9 @@ func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, g
 			t.Fatal("workspace list did not filter viewer access", names)
 		}
 		for _, denied := range []struct{ method, input string }{
-			{"GetProvider", `{"name":"stored-provider","workspace":"owner-private"}`},
+			{"GetProvider", `{"name":"browser-provider","workspace":"owner-private"}`},
 			{"CreateProvider", `{"provider":{"metadata":{"name":"viewer-denied"},"type":"openai","credentials":{"OPENAI_API_KEY":"test-only"}}}`},
-			{"DeleteProvider", `{"name":"stored-provider"}`},
+			{"DeleteProvider", `{"name":"browser-provider"}`},
 			{"CreateWorkspace", `{"name":"viewer-denied"}`},
 			{"GetGatewayInfo", `{}`},
 			{"AddWorkspaceMember", strings.Replace(string(member), "WORKSPACE_ROLE_USER", "WORKSPACE_ROLE_ADMIN", 1)},
@@ -168,53 +191,54 @@ func startGatewayViewerWorkflow(t *testing.T, k *keycloakFixture, root string, g
 				t.Fatal("viewer reached a denied Gateway operation", denied.method, err)
 			}
 		}
+		visibleGateways([]string{gateway.ID})
+		if code, _ := viewerAPI("GET", "/gateways/"+gateway.ID, nil); code != 200 {
+			t.Fatal("viewer cannot read the Hypershell Gateway", code)
+		}
+		if code, _ := viewerAPI("PATCH", "/gateways/"+gateway.ID, []byte(`{"name":"viewer-denied"}`)); code != 404 {
+			t.Fatal("viewer changed the Hypershell Gateway", code)
+		}
+		create, _ := json.Marshal(gateways.CreateRequest{Name: "viewer-denied", ClusterID: gateway.ClusterID, ReleaseID: gateway.ReleaseID})
+		if code, _ := viewerAPI("POST", "/gateways", create); code != 403 {
+			t.Fatal("viewer created a Hypershell Gateway", code)
+		}
 	}
 	checkViewer(viewer)
-	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, bobAPI, nil); code != 200 {
-		t.Fatal("viewer cannot read the Hypershell Gateway", code)
-	}
-	if code, _ := requestJSON(t, "PATCH", root+"/gateways/"+gateway.ID, bobAPI, []byte(`{"name":"viewer-denied"}`)); code != 404 {
-		t.Fatal("viewer changed the Hypershell Gateway", code)
-	}
-	create, _ := json.Marshal(gateways.CreateRequest{Name: "viewer-denied", ClusterID: gateway.ClusterID, ReleaseID: gateway.ReleaseID})
-	if code, _ := requestJSON(t, "POST", root+"/gateways", bobAPI, create); code != 403 {
-		t.Fatal("viewer created a Hypershell Gateway", code)
-	}
 	return func(owner string) {
 		t.Helper()
 		viewer = waitRoles([]string{keycloak.RoleUser})
 		checkViewer(viewer)
 		removeMember(owner)
-		if _, err := call("GetProvider", viewer, `{"name":"stored-provider"}`); status.Code(err) != codes.PermissionDenied {
+		if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("removed membership retained access with a current token", err)
 		}
 		if names := workspaceNames(viewer); len(names) != 0 {
 			t.Fatal("removed membership remained in workspace list", names)
 		}
-		if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, bobAPI, nil); code != 200 {
+		if code, _ := viewerAPI("GET", "/gateways/"+gateway.ID, nil); code != 200 {
 			t.Fatal("workspace removal changed the separate Hypershell grant", code)
 		}
 		addMember(owner)
-		if code, _ := requestJSON(t, "DELETE", root+"/role_bindings/"+binding.ID, ownerAPI, nil); code != 204 {
+		if code, _ := ownerAPI("DELETE", "/role_bindings/"+binding.ID, nil); code != 204 {
 			t.Fatal("remove Hypershell viewer grant", code)
 		}
-		if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, bobAPI, nil); code != 404 {
+		if code, _ := viewerAPI("GET", "/gateways/"+gateway.ID, nil); code != 404 {
 			t.Fatal("removed viewer grant retained API access", code)
 		}
 		visibleGateways(nil)
 		fresh := waitRoles(nil)
-		if _, err := call("GetProvider", fresh, `{"name":"stored-provider"}`); status.Code(err) != codes.PermissionDenied {
+		if _, err := call("GetProvider", fresh, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("new token retained removed Gateway role", err)
 		}
 		// The reference accepts an issued token until expiry. Removing workspace
 		// membership must deny that same token without waiting for its expiry.
-		if _, err := call("GetProvider", viewer, `{"name":"stored-provider"}`); err != nil {
+		if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); err != nil {
 			t.Fatal("issued token changed before expiry", err)
 		}
 		removeMember(owner)
-		if _, err := call("GetProvider", viewer, `{"name":"stored-provider"}`); status.Code(err) != codes.PermissionDenied {
+		if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("old token bypassed workspace revocation", err)
 		}
-		t.Log("Viewer grant, separate workspace membership, filtered workspaces, denied writes, restart, and both access-removal paths passed")
+		t.Log("Viewer grant and workspace membership survived namespace replacement; filtered lists, denied writes, and both access-removal paths passed")
 	}
 }

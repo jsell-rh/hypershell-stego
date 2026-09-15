@@ -40,3 +40,22 @@ match the commit; its Job, Pods, and fixtures are absent. The complete core,
 ordinary browser, console, and service-image
 jobs passed; full CI still fails on the unfinished CNPG and Sandbox checks.
 The later SQL cleanup denial test is not part of this passing browser source.
+
+The current test also gives a viewer a Hypershell grant and a separate default
+workspace membership before namespace deletion. Both must survive replacement.
+Before and after recovery, the viewer must see only its granted Gateway and
+workspace. Provider reads must redact credentials. Provider writes, workspace
+creation, membership changes, administrative RPC, and Gateway writes must fail.
+An owner-only workspace must remain inaccessible.
+
+After recovery, the test removes workspace membership and requires the same
+issued token to lose workspace access. It restores membership, removes the
+Hypershell grant, and checks API denial and new-token denial. Finally, workspace
+removal must also deny the earlier token. These requests pass through the
+generated browser backend and the actual Gateway RPC server. The test needs no
+additional Kubernetes permissions. The earlier viewer helper had no caller;
+its presence did not establish this behavior in the current workflow.
+
+The complete acceptance package compiled with these checks. The new live
+browser result remains required. Earlier results above do not cover the added
+viewer checks.

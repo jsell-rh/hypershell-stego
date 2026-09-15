@@ -20,7 +20,7 @@ import (
 
 // Lose only the observed workload namespace. Keep controllers running and keep
 // the Gateway, retained source state, and supplied PostgreSQL server in place.
-func (w *browserGatewayWorkload) checkNamespaceReplacement(id string) {
+func (w *browserGatewayWorkload) checkNamespaceReplacement(id string, viewer *consoleBrowser) {
 	w.t.Helper()
 	namespace, err := gatewayworkload.Namespace(id)
 	if err != nil {
@@ -81,6 +81,7 @@ func (w *browserGatewayWorkload) checkNamespaceReplacement(id string) {
 	if err != nil {
 		w.t.Fatal("namespace recovery setup could not read provider")
 	}
+	checkViewer := w.startViewerWorkflow(id, viewer, owner, provider)
 	allocator, err := allocation.New(w.kubernetes, w.p.namespace)
 	if err != nil {
 		w.t.Fatal(err)
@@ -179,6 +180,7 @@ func (w *browserGatewayWorkload) checkNamespaceReplacement(id string) {
 		}
 		time.Sleep(time.Second)
 	}
+	checkViewer(owner)
 	other := w.identity.browserLogin(w.t, w.audience(id), "console-bob")
 	if _, err := w.call("GetProvider", other, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 		w.t.Fatal("namespace recovery changed Gateway access rules")
@@ -191,7 +193,7 @@ func (w *browserGatewayWorkload) checkNamespaceReplacement(id string) {
 	w.requireInstallationData(ctx)
 	cancel()
 	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-		record := map[string]any{"gateway_id": id, "namespace": namespace, "old_namespace_uid": oldUID, "new_namespace_uid": newUID, "old_deployment_uid": kube.String(beforeDeployment, "metadata", "uid"), "new_deployment_uid": kube.String(afterDeployment, "metadata", "uid"), "state_namespace_uid": kube.String(afterState, "metadata", "uid"), "source_secret_uid": kube.String(afterSource, "metadata", "uid"), "source_data_unchanged": true, "database_and_role_oids_unchanged": true, "sql_credentials_unchanged": true, "provider_data_unchanged": true, "ungranted_rpc_denied": true, "other_gateway_sql_unchanged": true, "controller_pods_unchanged": controllers, "seconds": time.Since(started).Seconds()}
+		record := map[string]any{"gateway_id": id, "namespace": namespace, "old_namespace_uid": oldUID, "new_namespace_uid": newUID, "old_deployment_uid": kube.String(beforeDeployment, "metadata", "uid"), "new_deployment_uid": kube.String(afterDeployment, "metadata", "uid"), "state_namespace_uid": kube.String(afterState, "metadata", "uid"), "source_secret_uid": kube.String(afterSource, "metadata", "uid"), "source_data_unchanged": true, "database_and_role_oids_unchanged": true, "sql_credentials_unchanged": true, "provider_data_unchanged": true, "ungranted_rpc_denied": true, "viewer_membership_recovered": true, "viewer_lists_filtered": true, "viewer_writes_denied": true, "workspace_and_gateway_revocation_verified": true, "other_gateway_sql_unchanged": true, "controller_pods_unchanged": controllers, "seconds": time.Since(started).Seconds()}
 		data, err := json.MarshalIndent(record, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(directory, "namespace-replacement.json"), append(data, '\n'), 0600) != nil {
 			w.t.Fatal("cannot write namespace recovery evidence")

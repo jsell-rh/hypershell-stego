@@ -647,7 +647,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		awaitQueueEmpty(t, f)
 		stopAPI()
 		stopAPI, api, rpc = startAPI(settings...)
-		workload.start(alice, rpc, apiIdentity.config.CAFile, gateway.ID)
+		workload.start(alice, bob, rpc, apiIdentity.config.CAFile, gateway.ID)
 		workload.checkEarlyDeletion(early)
 	}
 	assertAccess := func() {
