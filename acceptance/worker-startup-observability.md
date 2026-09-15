@@ -26,3 +26,11 @@ and the SQL telemetry requirements from the previous source.
 This does not establish complete API or RPC bootstrap telemetry. It does not
 declare the worker ready before its actual queue and provider checks succeed.
 See the [shared worker contract](https://github.com/jsell-rh/stego/blob/main/specs/worker-startup-observability.md).
+
+The [complete API evidence](worker-startup-api-evidence.json) records a pass for Hypershell `677973f`
+in run `34964891352`. All 31 required tests passed; acceptance took 166.615
+seconds. This run includes the four actual worker startup failures and their
+correlated local and TLS OTLP records, in 7.24 seconds. Verification matched
+907 source files, 230 generated files, and four identical generation records.
+Automatic cleanup and independent cluster reads found no test resources. The
+complete browser run `34964891373` and full CI `34964891409` remain active.
