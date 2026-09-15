@@ -18,6 +18,26 @@ setup = load('setup', 'prepare-browser-ci.py')
 installation = load('installation', 'browser-ci-installation.py')
 
 class BrowserCI(unittest.TestCase):
+    def test_fixture_receiver_policy_must_match_the_current_source(self):
+        body, objects = self.objects()
+        policies = {o['metadata']['name']: o for o in objects if o['kind'] == 'NetworkPolicy'}
+        def get(kind, name, namespace):
+            self.assertEqual((kind, namespace), ('networkpolicy', setup.NAMESPACE))
+            return policies[name]
+        installation.verify_fixture_network(body, get)
+        original = copy.deepcopy(policies)
+        receiver = policies['fixture-ingress']
+        gateway_rule = next(rule for rule in receiver['spec']['ingress'] if any(
+            'stego.dev/allocator' in peer.get('namespaceSelector', {}).get('matchLabels', {}) for peer in rule['from']))
+        self.assertIn({'port': 19093, 'protocol': 'TCP'}, gateway_rule['ports'])
+        gateway_rule['ports'].remove({'port': 19093, 'protocol': 'TCP'})
+        with self.assertRaises(RuntimeError):
+            installation.verify_fixture_network(body, get)
+        policies.clear(); policies.update(original)
+        policies['fixture-ingress']['metadata']['labels'].clear()
+        with self.assertRaises(RuntimeError):
+            installation.verify_fixture_network(body, get)
+
     def objects(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

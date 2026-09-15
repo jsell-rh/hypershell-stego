@@ -31,6 +31,31 @@ def normalize(item):
     return value
 
 
+def verify_fixture_network(fixture, get):
+    names = set()
+    for expected in fixture['items']:
+        if expected['kind'] != 'NetworkPolicy':
+            continue
+        name = expected['metadata']['name']
+        if name in names or expected['metadata']['namespace'] != NAMESPACE:
+            raise RuntimeError('The fixture network policy identity differs')
+        names.add(name)
+        actual = get('networkpolicy', name, NAMESPACE)
+        if (actual['metadata'].get('labels', {}).get('app.kubernetes.io/managed-by') != 'stego-browser-ci' or
+                normalize(actual) != normalize(expected)):
+            raise RuntimeError('The installed fixture network policy differs: ' + name)
+    if not names:
+        raise RuntimeError('The fixture has no receiver network policy')
+
+
+def fixture_document(root, directory, issuer):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location('fixture', root / 'scripts/render-service-fixture.py')
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module.fixture(NAMESPACE, directory, '1', '1', issuer)
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('action', choices=['prepare', 'verify', 'cleanup'])
@@ -86,10 +111,8 @@ def main():
         (args.results / 'cluster-installation.json').write_text(data['cluster-installation.json'])
         # Each run starts with the original, narrow test Role. RBAC escalation
         # checks limit the CI identity to permissions it already has here.
-        import importlib.util
-        spec = importlib.util.spec_from_file_location('fixture', root / 'scripts/render-service-fixture.py')
-        module = importlib.util.module_from_spec(spec); spec.loader.exec_module(module)
-        fixture = module.fixture(NAMESPACE, args.results, '1', '1', data['issuer'])
+        fixture = fixture_document(root, args.results, data['issuer'])
+        verify_fixture_network(fixture, get)
         desired = next(i for i in fixture['items'] if i['kind'] == 'Role' and i['metadata']['name'] == 'service-check')
         current = get('role', 'service-check', NAMESPACE)
         patch = [{'op': 'test', 'path': '/metadata/uid', 'value': current['metadata']['uid']}, {'op': 'test', 'path': '/metadata/resourceVersion', 'value': current['metadata']['resourceVersion']}, {'op': 'replace', 'path': '/rules', 'value': desired['rules']}]
@@ -110,6 +133,7 @@ def main():
         environment = dict(os.environ, GOMAXPROCS='1', GOMEMLIMIT='256MiB', GOWORK='off')
         subprocess.run(['go', 'build', '-p=1', '-mod=readonly', '-trimpath', '-o', str(args.results / 'allocation-cleanup'), 'scripts/browser-allocation-cleanup.go'], cwd=root, env=environment, check=True, timeout=60)
     if args.action == 'verify':
+        verify_fixture_network(fixture_document(root, args.results, data['issuer']), get)
         for name in MANIFESTS:
             if (args.results / 'cluster-manifests' / (name + '.json')).read_bytes() != data[name + '.json'].encode():
                 raise RuntimeError('Generated cluster policy differs from the operator installation')
