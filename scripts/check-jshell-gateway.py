@@ -19,6 +19,7 @@ import time
 import uuid
 
 REQUIRED = [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
     "TestGatewayCreationCommitsOwnerAndEvent",
     "TestGatewayRequestsRejectRetiredDatabaseField",
     "TestGeneratedGoSDKGatewayWorkflow",
@@ -104,6 +105,7 @@ snapshot() {
 }
 snapshot committed
 go mod verify
+STEGO_REQUIRE_GATEWAY_SQL=1 go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload -run '^TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer$' > /work/tests.jsonl
 bash scripts/generate.sh
 snapshot first
 cmp /work/committed.sha256 /work/first.sha256
@@ -111,7 +113,7 @@ bash scripts/generate.sh
 snapshot second
 cmp /work/first.sha256 /work/second.sha256
 tar cf /work/generated.tar -T /work/generated-files
-go test -json -race -mod=readonly -count=1 -timeout=12m ./acceptance -run '@TESTS@' > /work/tests.jsonl
+go test -json -race -mod=readonly -count=1 -timeout=12m ./acceptance -run '@TESTS@' >> /work/tests.jsonl
 snapshot after
 cmp /work/first.sha256 /work/after.sha256
 ) > /work/test.log 2>&1

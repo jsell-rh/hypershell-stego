@@ -1,0 +1,186 @@
+{
+  "scope": "Real PostgreSQL through the Gateway SQL adapter; Kubernetes state uses an HTTPS fixture.",
+  "limits": [
+    "This is not a real Gateway Pod or browser workflow.",
+    "Restart creates a new adapter; it does not restart an API process, PostgreSQL, or Kubernetes.",
+    "CNPG and RDS operation remain unproven.",
+    "The complete acceptance package still imports retired database packages."
+  ],
+  "source_base_commit": "425871f64846cff7ac24d0d9b2a7db0c609e9f4f",
+  "result_directory": "/tmp/hypershell-gateway-sql-v1",
+  "runner": "/tmp/check-gateway-sql-v1.py",
+  "runner_sha256": "f0fd3af150e37fece8bbe3528ad52dc3965653ac797116e24d1ad35c6aa49a87",
+  "command": "STEGO_REQUIRE_GATEWAY_SQL=1 go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload -run ^TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer$",
+  "verification": {
+    "required": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+    ],
+    "passed": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+    ],
+    "failed": [],
+    "missing": [],
+    "exit_code": 0
+  },
+  "passes": [
+    {
+      "Time": "2026-09-15T00:26:59.843790005Z",
+      "Action": "pass",
+      "Package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "Test": "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "Elapsed": 0.9
+    },
+    {
+      "Time": "2026-09-15T00:27:00.845678263Z",
+      "Action": "pass",
+      "Package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "Elapsed": 1.913
+    }
+  ],
+  "job": {
+    "namespace": "stego-ci",
+    "name": "controller-local-18e72fbbfcdc",
+    "uid": "21a3cbf0-556a-4422-9c0d-c6913ae8c763",
+    "status": {
+      "completionTime": "2026-09-15T00:27:09Z",
+      "conditions": [
+        {
+          "lastProbeTime": "2026-09-15T00:27:09Z",
+          "lastTransitionTime": "2026-09-15T00:27:09Z",
+          "message": "Reached expected number of succeeded pods",
+          "reason": "CompletionsReached",
+          "status": "True",
+          "type": "SuccessCriteriaMet"
+        },
+        {
+          "lastProbeTime": "2026-09-15T00:27:09Z",
+          "lastTransitionTime": "2026-09-15T00:27:09Z",
+          "message": "Reached expected number of succeeded pods",
+          "reason": "CompletionsReached",
+          "status": "True",
+          "type": "Complete"
+        }
+      ],
+      "ready": 0,
+      "startTime": "2026-09-15T00:25:36Z",
+      "succeeded": 1,
+      "terminating": 0,
+      "uncountedTerminatedPods": {}
+    },
+    "activeDeadlineSeconds": 600,
+    "backoffLimit": 0,
+    "securityContext": {
+      "runAsNonRoot": true,
+      "seccompProfile": {
+        "type": "RuntimeDefault"
+      }
+    },
+    "containers": [
+      {
+        "name": "postgres",
+        "image": "docker.io/library/postgres@sha256:7341002d2b8c7c5bdd7542a671a95b36196c0b5b888daf454ae4fc33ba5346d7",
+        "resources": {
+          "limits": {
+            "cpu": "500m",
+            "ephemeral-storage": "2Gi",
+            "memory": "512Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": "1Gi",
+            "memory": "256Mi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true
+        }
+      },
+      {
+        "name": "test",
+        "image": "docker.io/library/golang@sha256:2d54f6c8c6ea532a321e0b4c69553b2ed3637608d4f4357dbed37939fe2620cc",
+        "resources": {
+          "limits": {
+            "cpu": "1",
+            "ephemeral-storage": "6Gi",
+            "memory": "3Gi"
+          },
+          "requests": {
+            "cpu": "500m",
+            "ephemeral-storage": "2Gi",
+            "memory": "1Gi"
+          }
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true
+        }
+      }
+    ]
+  },
+  "cleanup": {
+    "job_absent": "controller-local-18e72fbbfcdc",
+    "pods_absent": true,
+    "fixture_resources_absent": true,
+    "shared_lease_released": true
+  },
+  "checked_behavior": [
+    "A non-superuser account supplies the server connection.",
+    "Each of two Gateways has its own SQL database and login.",
+    "The database is not created before the allocator seals source state.",
+    "Gateway logins can write their data and cannot connect to the other Gateway, provisioning database, or postgres database.",
+    "The adapter restart preserves source keys, SQL credentials, and both Gateway data sets.",
+    "A changed database destination or missing source Secret denies creation and cleanup.",
+    "SQL cleanup waits for workload namespace removal.",
+    "Repeated cleanup removes the target database and both roles.",
+    "A deletion record denies a late creation retry.",
+    "The other Gateway database and installation table remain usable."
+  ],
+  "source_sha256": {
+    ".stego/state.yaml": "7d28da4339272b505bce370bdd38fe92c3f8d6e4ffbb8cf4047b81f2e0d7aa6a",
+    "acceptance/kubernetes-service-job.json": "c113388e09643a7a2c6c7563339417f03be550c29aacef40b47915e49d2bdb3c",
+    "go.mod": "408c43f04d8f29b5a8d65396b2546bc1f60b122ef3055ab59057cdd7af8580f5",
+    "go.sum": "48b39c7119c0bb0b91837e1890214af98635ee3c67e4f96ffd518df00fc03535",
+    "internal/gatewayworkload/config.go": "db5840d5ae5a4d4f758a16a1fab7f03c7c55f4a046b303795021e939d0dc46d0",
+    "internal/gatewayworkload/controller.go": "ac0f8470e428f175873bc44f64f40df6a3e70d68c49f8f22bfb0e9d7ce7de1ab",
+    "internal/gatewayworkload/controller_test.go": "7c52cdadec69000c82ecc52e0165e83ea8140f93b88e44957c9fc589fd194daa",
+    "internal/gatewayworkload/database.go": "5df7f0639b12ffc32c14f28a979451113a5b144495be20be32f5f0b909098a53",
+    "internal/gatewayworkload/database_live_test.go": "753e14cea1079aa6d45ba6e0a9159bee562c661959e001cc1952f68768b59022",
+    "internal/gatewayworkload/database_test.go": "5d66fef96d9652694f1d8cbc176f99bb01af24304815c6390cd7b2d888cfaffc",
+    "internal/gatewayworkload/keys.go": "8eef44a60eb3a022fa228d5b7cc0de8788327c053e572fbcd3a12930fc4e1225",
+    "internal/gatewayworkload/kubernetes.go": "14f9e366dc14b21ec90c259cadb1f7a8d56357657b30531801d82983b26153bc",
+    "internal/gatewayworkload/kubernetes_test.go": "c0dcab4078b0dbae196ec1039a7b1383f46ddc3fdf60065528e5599973420f65",
+    "internal/gatewayworkload/resources.go": "a88c168b03240cdaa25b219f90bbee1ae75729742e84c0becf3c1660dde94eb1",
+    "internal/gatewayworkload/sandbox.go": "2c98846c39651d707d91335183b15a6b4e3b954820cec6bc270954c1bc773056",
+    "out/deploy/allocation/allocation.go": "cbd9e0b8454acbd5da853ea52b4a40964ae746545c13a467d827e9a7ef2998da",
+    "out/kubernetes/client.go": "71dadddfbdf51c689d7631f49242f74f7d374fef5f97f36266ce87f85d97613a",
+    "out/kubernetes/discovery.go": "d05106f8da0d4934d81b008e8ba4992d4953913a6a23289e16b18e4dd7548b15",
+    "out/kubernetes/observe.go": "d06d67a8991ae7c01d3b85492b4de72ee894231fa3b106691f9a6249a6801e80",
+    "out/kubernetes/watch_set.go": "8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47",
+    "out/postgres/client.go": "dde40af3259df8263c647c912cbe7119442b70982007a1e6298d0041cd34f5b8",
+    "out/postgres/provision.go": "af9e0809b31a68e883b6669af0375b796a5eb73981c4dcbb8c9d536f6aefc91f",
+    "scripts/check-jshell-gateway.py": "e4d333c6f7a9e2b1dcf7fd16ec26099d14b993b17af419613deeb0d0a945cf8f",
+    "service.yaml": "ff30ba0d55f9f24c3c094dc5d82fd725ee4c8d87a31c44e6f62fb6e863b1fe91"
+  },
+  "artifact_sha256": {
+    "source.tar": "ee2a4faceb9d11ea2e575321fef0340ece83fe013d3915ea29d801c59f388e81",
+    "source-sha256.json": "52d6892d63e29ba21bc96f739e4700f28be21c7671386084b7bf3a4653662a55",
+    "tests.jsonl": "95f9160001d1c610a3992d206661dc3c5662aac1db5e9ecc353f56739f360a4b",
+    "test.log": "e99cc1a6dc902c12935ed75f94859adaf5b021f83b9ec4999d05b7b35d0eeb49",
+    "job-final.json": "6c26843c2bca7e67ea9f27f1f429703d3b47d17f3244e4b67b803bf42fdb2c5b",
+    "cleanup.json": "f0e6ae2dbd981be595e7ab3ea7f3838ec09ceb9d624ff6b4bc63a47279cf3f7b",
+    "verification.json": "947fffbf55ce3d03570c071b52e6e00a0c07be39712ec3154a455e3286cbe903"
+  }
+}

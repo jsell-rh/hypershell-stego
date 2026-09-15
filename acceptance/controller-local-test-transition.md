@@ -54,3 +54,32 @@ only in CI or a bounded cluster Job, with PostgreSQL required. From `acceptance`
 ```sh
 xargs go test -race -mod=readonly -count=1 -timeout=12m < controller-local-extended.files
 ```
+
+## Real SQL adapter check
+
+`TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer` passed with race
+detection in a bounded jshell Job. It uses a real PostgreSQL server and a
+non-superuser provisioning account. Two Gateways have separate databases and
+logins. Each login can write its own data. Connections to the other Gateway,
+the provisioning database, and `postgres` fail with permission errors.
+
+The check creates a new adapter and verifies the original keys, credentials,
+and data. A changed SQL destination or missing source Secret stops creation
+and cleanup. Cleanup waits for workload namespace removal, removes only the
+target database and roles, and rejects a late creation retry. The other
+Gateway and the installation data remain usable. Repeated deletion succeeds.
+
+The test took 0.900 seconds. Its package took 1.913 seconds after compilation.
+The Job completed with exit zero. Its Pods and private fixtures are absent,
+and the shared Lease was released. The [evidence](controller-local-sql-evidence.json)
+records the source hashes, image pins, limits, and cleanup results.
+
+Kubernetes records use an HTTPS fixture in this check. Restart means a new
+adapter; this check does not restart the API process or database server. It
+does not prove real Gateway Pod, browser, CNPG, or RDS operation. Those checks
+and the complete acceptance build remain open. The existing API process
+restart evidence remains a separate result.
+
+The jshell API gate now requires this real SQL check before generation and
+the application tests. It still requires the full acceptance package. A pass
+in the SQL check cannot hide a later build or application test failure.
