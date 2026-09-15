@@ -11,31 +11,58 @@ import (
 	"strings"
 )
 
-// VerifyWithJWKS uses keys obtained from an independently trusted source.
-// It never fetches URLs from the token or the key document. The caller owns
-// authenticated key retrieval. Unknown keys fail without a fallback key.
+// VerifyWithJWKS uses an independently trusted key document. It never fetches
+// a URL supplied by a token. Repeated calls can use JWKSVerifier to cache keys.
 func VerifyWithJWKS(config Config, raw string, document []byte) (Identity, error) {
-	failure := errors.New("invalid authentication key set or token")
-	if len(raw) == 0 || len(raw) > maxTokenBytes || len(document) == 0 || len(document) > 65536 {
-		return Identity{}, failure
+	keys, err := compileJWKS(config, document)
+	if err != nil {
+		return Identity{}, err
 	}
-	if checkJSONObject(document) != nil {
-		return Identity{}, failure
+	return verifyKeySet(keys, raw)
+}
+
+func tokenKeyID(raw string) (string, error) {
+	failure := errors.New("invalid authentication token")
+	if len(raw) == 0 || len(raw) > maxTokenBytes {
+		return "", failure
 	}
 	parts := strings.Split(raw, ".")
 	if len(parts) != 3 {
-		return Identity{}, failure
+		return "", failure
 	}
 	header, err := base64.RawURLEncoding.Strict().DecodeString(parts[0])
 	if err != nil || checkJSONObject(header) != nil {
-		return Identity{}, failure
+		return "", failure
 	}
 	var h struct {
 		KeyID     string `json:"kid"`
 		Algorithm string `json:"alg"`
 	}
 	if json.Unmarshal(header, &h) != nil || h.KeyID == "" || len(h.KeyID) > 255 || h.Algorithm != "RS256" {
-		return Identity{}, failure
+		return "", failure
+	}
+	return h.KeyID, nil
+}
+
+func verifyKeySet(keys map[string]*Verifier, raw string) (Identity, error) {
+	id, err := tokenKeyID(raw)
+	if err != nil {
+		return Identity{}, err
+	}
+	verifier := keys[id]
+	if verifier == nil {
+		return Identity{}, errors.New("unknown authentication key")
+	}
+	return verifier.Verify(raw)
+}
+
+func compileJWKS(config Config, document []byte) (map[string]*Verifier, error) {
+	failure := errors.New("invalid authentication key set")
+	if _, err := validateTrust(config); err != nil {
+		return nil, err
+	}
+	if len(document) == 0 || len(document) > maxKeyFileBytes || checkJSONObject(document) != nil {
+		return nil, failure
 	}
 	var set struct {
 		Keys []struct {
@@ -49,38 +76,36 @@ func VerifyWithJWKS(config Config, raw string, document []byte) (Identity, error
 		} `json:"keys"`
 	}
 	if json.Unmarshal(document, &set) != nil || len(set.Keys) == 0 || len(set.Keys) > 32 {
-		return Identity{}, failure
+		return nil, failure
 	}
 	seen := map[string]bool{}
-	var selected *rsa.PublicKey
+	keys := map[string]*Verifier{}
 	for _, key := range set.Keys {
 		if key.KeyID == "" || len(key.KeyID) > 255 || seen[key.KeyID] {
-			return Identity{}, failure
+			return nil, failure
 		}
 		seen[key.KeyID] = true
-		if key.KeyID != h.KeyID {
-			continue
-		}
+		// Providers can publish other key types. They cannot verify RS256 tokens.
 		if key.Type != "RSA" || (key.Algorithm != "" && key.Algorithm != "RS256") || (key.Use != "" && key.Use != "sig") || (key.Operations != nil && (len(key.Operations) != 1 || key.Operations[0] != "verify")) {
-			return Identity{}, failure
+			continue
 		}
 		n, err := base64.RawURLEncoding.Strict().DecodeString(key.N)
 		if err != nil || len(n) < 256 || len(n) > 1024 || n[0] == 0 {
-			return Identity{}, failure
+			return nil, failure
 		}
 		e, err := base64.RawURLEncoding.Strict().DecodeString(key.E)
 		if err != nil || string(e) != "\x01\x00\x01" {
-			return Identity{}, failure
+			return nil, failure
 		}
-		selected = &rsa.PublicKey{N: new(big.Int).SetBytes(n), E: 65537}
+		config.PublicKey = &rsa.PublicKey{N: new(big.Int).SetBytes(n), E: 65537}
+		verifier, err := NewVerifier(config)
+		if err != nil {
+			return nil, failure
+		}
+		keys[key.KeyID] = verifier
 	}
-	if selected == nil {
-		return Identity{}, failure
+	if len(keys) == 0 {
+		return nil, failure
 	}
-	config.PublicKey = selected
-	verifier, err := NewVerifier(config)
-	if err != nil {
-		return Identity{}, failure
-	}
-	return verifier.Verify(raw)
+	return keys, nil
 }

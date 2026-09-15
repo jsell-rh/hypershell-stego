@@ -112,9 +112,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915114142-f97b3155c10a
+        module_version: v0.0.0-20260915120412-a355306caea0
         vcs: git
-        revision: f97b3155c10a194082337905939b582814722e98
+        revision: a355306caea077ae8771884e4ca7b5eb5605eeca
         source_state: clean
     service_hash: eefbf1b85645338650cfed11f1ed15a4da0b4ef36d06f4a328b4c2afce09d97a
     registry_sha: gateway-workflow
@@ -403,8 +403,9 @@ last_applied:
         application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
-        auth/jwks.go: 51c74464e07a8273c6613f13a717d3f66207e05b1b35ede365e86d0b4e03c5de
-        auth/middleware.go: cd746b769fcb9913bb7b432417b75f8cf9fcf88ff4c891737340cfb57a137b21
+        auth/jwks.go: a8112269eb448cd7162747c7c97755f6e6f40d8360243e4939399d842726ab09
+        auth/key_source.go: c445bf904bf9e1f039b324d78f6476cbc59028ca482096db009e4a6d5f5495c6
+        auth/middleware.go: 51f3373da7f51c6909fd7b5ce43c26419d86d223aa3cf6721fb9bb151b30d5ae
         browsertelemetry/index.d.ts: 7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8
         browsertelemetry/index.js: 72d4776927a5e8b87208ec71b500a588bcec69a10ac47cee02d7848748480d93
         browsertelemetry/package.json: 6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90
@@ -421,7 +422,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 31d400d4b6a83490d199c07e0c2dd8222dbfbb232f46a688f2b7c1ef40d5fc09
+        cli/command/version.go: 667391647daac7255631cba06223a1b6967932c92b27dfadd23e27abadcb9d8e
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1

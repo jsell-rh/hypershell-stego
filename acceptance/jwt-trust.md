@@ -1,0 +1,18 @@
+Hypershell now pins compiler `a355306`, whose
+[full CI passed](https://github.com/jsell-rh/stego/actions/runs/34966748920).
+That compiler also closes the separate SSO example's issuer, audience, and
+expiry defect through the shared JWT runtime. Hypershell uses `jwt-auth`.
+
+The generated API adopts the common key decoder and optional bounded JWKS key
+source. Its existing static-key authentication mode remains in use. The compiler
+checks include signed tokens, verified TLS, key rotation, provider failure and
+recovery, input limits, and shutdown cancellation. Both independent example
+services passed vulnerability checks, race tests, builds, and regeneration.
+
+API and console generation, dependency resolution, repeated apply, and drift
+checks passed with the pinned compiler. The complete Hypershell API, browser,
+and full CI gates are required for this application revision. Earlier results
+apply to their recorded sources; a compiler pass does not replace these gates.
+
+See [the shared key source contract](https://github.com/jsell-rh/stego/blob/main/specs/jwt-key-source.md)
+and [SSO audit](https://github.com/jsell-rh/stego/blob/main/specs/sso-auth-audit.md).
