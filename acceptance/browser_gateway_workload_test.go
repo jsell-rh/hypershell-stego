@@ -146,6 +146,7 @@ func (w *browserGatewayWorkload) start(owner *consoleBrowser, address, ca, gatew
 		w.t.Fatal("worker restart changed a database or credential identity")
 	}
 	w.checkNamespaceReplacement(gatewayID)
+	w.checkCredentialEncryption(gatewayID)
 }
 
 func (w *browserGatewayWorkload) check(id string) {
