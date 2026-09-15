@@ -22,27 +22,28 @@ import (
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
-	public            *browserPublicGateway
-	t                 *testing.T
-	p                 *kubernetesBrowser
-	f                 *fixture
-	identity          *keycloakFixture
-	owner             *consoleBrowser
-	kubernetes        *kube.Client
-	options           gatewayworkload.Options
-	tokens            map[string]string
-	allocations       map[string]allocationTarget
-	call              gatewayCall
-	stops             []func()
-	outputs           []func() string
-	telemetry         []string
-	restarts          []func()
-	gatewayIDs        []string
-	sqlFixture        *pgx.ConnConfig
-	cnpgFixture       *browserCNPGFixture
-	databaseOptions   postgres.Options
-	databaseConfig    []byte
-	databaseEndpoints []string
+	publicEgressFailure func(string)
+	public              *browserPublicGateway
+	t                   *testing.T
+	p                   *kubernetesBrowser
+	f                   *fixture
+	identity            *keycloakFixture
+	owner               *consoleBrowser
+	kubernetes          *kube.Client
+	options             gatewayworkload.Options
+	tokens              map[string]string
+	allocations         map[string]allocationTarget
+	call                gatewayCall
+	stops               []func()
+	outputs             []func() string
+	telemetry           []string
+	restarts            []func()
+	gatewayIDs          []string
+	sqlFixture          *pgx.ConnConfig
+	cnpgFixture         *browserCNPGFixture
+	databaseOptions     postgres.Options
+	databaseConfig      []byte
+	databaseEndpoints   []string
 }
 
 func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessions *fixture, k *keycloakFixture, settings []string) (*browserGatewayWorkload, []string) {
@@ -139,6 +140,12 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 	}
 	identities := w.checkSQLIsolation()
 	w.checkRPC(gatewayID)
+	if w.public != nil {
+		if w.publicEgressFailure == nil {
+			w.t.Fatal("public egress failure check is missing")
+		}
+		w.publicEgressFailure(gatewayID)
+	}
 	w.checkAllocationAccess()
 	w.checkSQLFaultRecovery(gatewayID)
 	w.checkDatabaseRestart(gatewayID)

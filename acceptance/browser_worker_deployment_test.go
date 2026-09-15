@@ -70,6 +70,21 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 		}
 		stop, logs := start()
 		previous := ""
+		if worker.name == "gateway-workload" && w.public != nil {
+			w.publicEgressFailure = func(id string) {
+				original := append([]string{}, target...)
+				stop()
+				previous += logs()
+				target = withoutPublicEgress(original)
+				stop, logs = start()
+				w.checkPublicEgressLoss(id, func() {
+					stop()
+					previous += logs()
+					target = original
+					stop, logs = start()
+				})
+			}
+		}
 		w.stops = append(w.stops, func() { stop() })
 		w.outputs = append(w.outputs, func() string { return previous + logs() })
 		w.restarts = append(w.restarts, func() { stop(); previous += logs(); stop, logs = start() })

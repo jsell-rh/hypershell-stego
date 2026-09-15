@@ -124,5 +124,13 @@ the expected endpoint after API and console restart.
 evidence until the complete Job, regeneration, and cleanup checks pass.
 Focused fixture input and manifest tests pass, the acceptance package compiles,
 and the WebDriver script passes its syntax check. No live public result exists
-for this source. Explicit Route failure and certificate rotation tests still
-need to be added to this profile.
+for this source. Certificate rotation still needs an explicit test in this profile.
+
+The public profile also restarts the worker with its optional router egress
+binding removed. Required Kubernetes and PostgreSQL bindings remain. Every
+Gateway must lose its published address and report degraded status. The test
+then restores the generated policy and waits for healthy addresses. It checks
+SQL credential identities and provider data through public RPC. The partial
+result is `gateway-public-network-recovery.json`. The input check passes and
+the acceptance package compiles. Live network denial and recovery remain
+unverified until this profile completes on the cluster.
