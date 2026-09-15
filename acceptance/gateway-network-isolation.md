@@ -1,12 +1,10 @@
-The second live run installed all 18 generated cluster resources, then failed
-in state recovery test fixtures before application execution. Cleanup completed,
-and the shared Lease was released. Candidate `23273c0` supplies the required
-policy snapshots and adds missing, changed, and extra policy denial cases.
-The focused recovery test passed. Its frozen public run is active in
-`stego-service-20260915-e77723`. Candidate `8b17fb4` separately corrects the
-receiver rules for telemetry and token-free network probes. The active frozen
-run does not contain those receiver corrections. See the
-[workflow record](gateway-network-workflow-20260915.json).
+Candidate `56a5998` includes the state policy snapshots and the destination
+fixture rules for telemetry and token-free probes. Its frozen public workflow
+is running in `stego-service-20260915-5a777b`. The previous run passed preflight
+checks under the race detector. It was stopped before the full workflow because
+its frozen receiver rules would block probes. Its namespace and owned resources
+are absent, and it released the shared Lease before this run started.
+See the [workflow record](gateway-network-workflow-20260915.json).
 
 The working candidate now enables Gateway and state namespace policies. The
 Gateway declaration permits the selected OpenShift router, DNS Pods, test SQL,
@@ -27,7 +25,7 @@ profile and the worker. A generated baseline keeps its inspection-role check
 separate. Its live isolation workflow remains required. External RDS deployments need explicit operator endpoint declarations;
 the default test SQL peer does not permit an arbitrary external server.
 
-The current candidate `5043608` uses STEGO `5516e48`. Regeneration passed in both
+The earlier candidate `5043608` uses STEGO `5516e48`. Regeneration passed in both
 modules. Its [application CI](https://github.com/jsell-rh/hypershell-stego/actions/runs/35001051267)
 is pending. The endpoint change passed 168 live admission checks, full compiler
 CI, and cleanup. See the [endpoint record](allocated-network-endpoints-20260915.json).
