@@ -79,3 +79,8 @@ process runtime, and provisioner entry point compiled. The compiler's bounded
 lifecycle regression passed against a TLS OTLP collector. A new deployed
 application result is still required; the earlier deployment result does not
 verify this source.
+
+The pin then advanced to `635f5dad071323f579dee32e0f89beddb55f6959`, which
+corrects the compiler's command-test telemetry import. Regeneration and drift
+passed again. This update changes compiler identity records and CLI version
+output; the generated RPC runtime is unchanged.
