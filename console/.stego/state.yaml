@@ -13,11 +13,11 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: f6bc46becd9d5291c9745bfd605a79a8c910c4ddd3a4f131572f98a34bc6c3f2
+                sha256: f0933d88b1a3f5e5e89b2cce94476cd7a620bd417841f0118b6412af5b73ad96
                 mode: 420
             go.sum:
                 exists: true
-                sha256: 2c259b964601d37f4a35f2b309f87e9fc4474b2b2f11fe467ab108eae6ab576f
+                sha256: 89f45558c72584d362545df9fb5e399e3eb64d5a93b7ab0bc16391600981d6f4
                 mode: 420
             service.yaml:
                 exists: true
@@ -27,18 +27,18 @@ last_applied:
                 exists: true
                 sha256: f784d94afe4959b7a6b1db4ec4fc106be2e5c81d59f021a50babd3c1d0c23130
                 mode: 420
-        sha256: 7dc98b68a01ea2a574f1a4273acb51d2e9b2ceadbd744135e05aee6199a18b3e
+        sha256: ae0058eea09a1850b958390fe48cd1022c3035549fc4c2f634bca6208406e12e
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915171609-5516e4812ed6
+        module_version: v0.0.0-20260915191225-b0bd9a49722b
         vcs: git
-        revision: 5516e4812ed6fd0ee03b521ecea20f7e9fc37860
+        revision: b0bd9a49722b0c2c8a0a1142a59e91c46bc2d6b6
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 6b785db9eed177604222e5983576c5752eca0ced8876c802eb8d583dd2d4ebb9
+    registry_content_sha256: a99204ffd79f8213ca9c8dbf06a84b60b7f1104f0c1f887e7cdc593bf0ea3776
     components:
         browser-backend:
             version: 1.6.1
@@ -50,7 +50,7 @@ last_applied:
             version: 1.15.0
             sha: browser-workflow
         otel-tracing:
-            version: 1.14.0
+            version: 1.14.1
             sha: browser-workflow
         postgres-adapter:
             version: 4.4.1

@@ -93,11 +93,11 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: 408c43f04d8f29b5a8d65396b2546bc1f60b122ef3055ab59057cdd7af8580f5
+                sha256: 262fd0f1a01025909fe5b9b06172c9c1824cf4e1f6c6217dc3e776a219137dc7
                 mode: 420
             go.sum:
                 exists: true
-                sha256: 48b39c7119c0bb0b91837e1890214af98635ee3c67e4f96ffd518df00fc03535
+                sha256: 76eb76a4eab65401ad1b714320a44880b548917ded64292aa39996b5153167bc
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
@@ -123,18 +123,18 @@ last_applied:
                 exists: true
                 sha256: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
                 mode: 420
-        sha256: c12875651747e29304df681eb7d6b3a5aaef9218a52007b5becbb1417f2aface
+        sha256: 896a9507fb86ce78848545b53934a22367c8771ff79a807936e1d32643f609ea
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260915171609-5516e4812ed6
+        module_version: v0.0.0-20260915191225-b0bd9a49722b
         vcs: git
-        revision: 5516e4812ed6fd0ee03b521ecea20f7e9fc37860
+        revision: b0bd9a49722b0c2c8a0a1142a59e91c46bc2d6b6
         source_state: clean
     service_hash: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
     registry_sha: gateway-workflow
-    registry_content_sha256: 6b785db9eed177604222e5983576c5752eca0ced8876c802eb8d583dd2d4ebb9
+    registry_content_sha256: a99204ffd79f8213ca9c8dbf06a84b60b7f1104f0c1f887e7cdc593bf0ea3776
     components:
         browser-telemetry:
             version: 1.0.0
@@ -149,7 +149,7 @@ last_applied:
             version: 2.0.2
             sha: gateway-workflow
         grpc-application:
-            version: 1.12.1
+            version: 1.12.2
             sha: gateway-workflow
         health-check:
             version: 1.0.0
@@ -170,7 +170,7 @@ last_applied:
             version: 1.15.0
             sha: gateway-workflow
         otel-tracing:
-            version: 1.14.0
+            version: 1.14.1
             sha: gateway-workflow
         outbox:
             version: 1.1.0
@@ -438,7 +438,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 420b2d207953803d6cab776d793cb72576f566a079a5fa584c1fca5166472f6d
+        cli/command/version.go: 21a3c6001a96cc3cb61c4ace3ac13b6d84e15f825c53f14d734909aa934b0b85
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: b3e785e761db60a69d359859f610dbb447cba6068cb1cc0f414882288d6e979a
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
