@@ -131,3 +131,9 @@ were created. All 14 installed resources, both temporary allocation namespaces,
 and their cluster bindings were absent before the shared Lease was released.
 This is admission evidence. Permitted traffic and CNI enforcement still require
 the full Gateway workflow.
+
+The [STEGO external DNS review](https://github.com/jsell-rh/stego/blob/main/specs/allocated-network-dns.md)
+records the open choice between DNS-aware cluster controls and standard
+NetworkPolicy with separate IP-rule updates. This affects external PostgreSQL
+and other approved services. No provider is selected or enabled. The active
+public workflow continues; it does not close the namespace isolation gate.
