@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	jwt "github.com/golang-jwt/jwt/v5"
 	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
-	auth "github.com/jsell-rh/hypershell-stego/out/auth"
+	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 	"regexp"
 )
 
@@ -76,6 +75,7 @@ type Client struct {
 	clientID   string
 	secretFile string
 	httpClient *transport.Client
+	keycloak   *provider.Client
 
 	tokenGate   chan struct{}
 	token       string
@@ -95,11 +95,17 @@ func NewClient(options Options) (*Client, error) {
 	if err != nil {
 		return nil, err
 	}
-	return &Client{serverURL: strings.TrimRight(options.ServerURL, "/"), realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile, httpClient: client, tokenGate: make(chan struct{}, 1)}, nil
+	common, err := provider.New(provider.Options{ServerURL: options.ServerURL, Realm: options.Realm, ClientID: options.ClientID, SecretFile: options.SecretFile, CAFile: options.CAFile})
+	if err != nil {
+		client.Close()
+		return nil, err
+	}
+	return &Client{keycloak: common, serverURL: strings.TrimRight(options.ServerURL, "/"), realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile, httpClient: client, tokenGate: make(chan struct{}, 1)}, nil
 }
 func (c *Client) Close() {
 	if c != nil {
 		c.httpClient.Close()
+		c.keycloak.Close()
 	}
 }
 
@@ -174,20 +180,17 @@ func (c *Client) ProvisionServiceAccount(ctx context.Context, spec ServiceAccoun
 	if err := c.replaceProtocolMappers(ctx, clientUUID, spec.GatewayClientID); err != nil {
 		return nil, fmt.Errorf("set token claims: %w", err)
 	}
-	secret, err := c.getClientSecret(ctx, clientUUID)
-	if err != nil {
-		return nil, fmt.Errorf("obtain one-time client credential: %w", err)
-	}
 	if err := c.setEnabled(ctx, clientUUID, true); err != nil {
 		return nil, fmt.Errorf("enable service-account client: %w", err)
 	}
-	if err := c.verifyClientCredentials(ctx, spec, secret, subject); err != nil {
-		return nil, fmt.Errorf("verify service-account token: %w", err)
+	secret, err := c.keycloak.VerifiedServiceAccountSecret(ctx, serviceAccountBinding(spec, clientUUID), serviceAccountTokenPolicy(spec, subject))
+	if err != nil {
+		return nil, fmt.Errorf("verify one-time service-account credential: %w", err)
 	}
 
 	rollback = false
 	return &ProvisionedServiceAccount{
-		ClientUUID: clientUUID, ClientID: spec.ClientID, ClientSecret: secret, Subject: subject,
+		ClientUUID: clientUUID, ClientID: spec.ClientID, ClientSecret: secret.Reveal(), Subject: subject,
 	}, nil
 }
 
@@ -936,23 +939,6 @@ func (c *Client) replaceProtocolMappers(ctx context.Context, clientUUID, gateway
 	return nil
 }
 
-func (c *Client) getClientSecret(ctx context.Context, clientUUID string) (string, error) {
-	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/client-secret", c.realm, url.PathEscape(clientUUID)), nil)
-	if err != nil {
-		return "", err
-	}
-	if status != http.StatusOK {
-		return "", statusError("read generated client credential", status)
-	}
-	var credential struct {
-		Value string `json:"value"`
-	}
-	if err := json.Unmarshal(body, &credential); err != nil || credential.Value == "" {
-		return "", errors.New("keycloak returned an empty client credential")
-	}
-	return credential.Value, nil
-}
-
 func (c *Client) deleteClient(ctx context.Context, clientUUID string) error {
 	_, status, err := c.admin(ctx, http.MethodDelete, fmt.Sprintf("/admin/realms/%s/clients/%s", c.realm, url.PathEscape(clientUUID)), nil)
 	if err != nil {
@@ -967,121 +953,19 @@ func (c *Client) deleteClient(ctx context.Context, clientUUID string) error {
 	return nil
 }
 
-func (c *Client) verifyClientCredentials(ctx context.Context, spec ServiceAccountSpec, secret, subject string) error {
-	form := url.Values{"grant_type": {"client_credentials"}, "client_id": {spec.ClientID}, "client_secret": {secret}}
-	response, err := c.httpClient.Do(ctx, http.MethodPost, "/realms/"+c.realm+"/protocol/openid-connect/token", http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}}, []byte(form.Encode()))
-	if err != nil {
-		return err
-	}
-	if response.StatusCode != http.StatusOK {
-		return statusError("token verification endpoint", response.StatusCode)
-	}
-	var result struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
-		ExpiresIn    int64  `json:"expires_in"`
-	}
-	if err := json.Unmarshal(response.Body, &result); err != nil || result.AccessToken == "" {
-		return errors.New("parse token verification response")
-	}
-	if result.RefreshToken != "" {
-		return errors.New("client-credentials grant unexpectedly returned a refresh token")
-	}
-	keys, err := c.httpClient.Do(ctx, http.MethodGet, "/realms/"+c.realm+"/protocol/openid-connect/certs", nil, nil)
-	if err != nil {
-		return err
-	}
-	if keys.StatusCode != http.StatusOK {
-		return errors.New("cannot obtain issuer signing keys")
-	}
-	if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: spec.ExpectedIssuer, Audience: spec.GatewayClientID, RolesClaim: "hypershell.roles"}, result.AccessToken, keys.Body); err != nil {
-		return errors.New("service-account token signature or claims are invalid")
-	}
-	// The common verifier checked this exact token before domain claim inspection.
-	parser := jwt.NewParser()
-	token, _, err := parser.ParseUnverified(result.AccessToken, jwt.MapClaims{})
-	if err != nil {
-		return errors.New("parse service-account access token")
-	}
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return errors.New("service-account access token has invalid claims")
-	}
-	if stringClaim(claims, "iss") != spec.ExpectedIssuer || stringClaim(claims, "sub") != subject || stringClaim(claims, "azp") != spec.ClientID {
-		return errors.New("service-account access token identity claims do not match")
-	}
-	if !equalStrings(audienceClaim(claims["aud"]), []string{spec.GatewayClientID}) {
-		return errors.New("service-account access token audience does not match")
-	}
-	actualRoles := stringSliceClaimAtPath(claims, "hypershell.roles")
-	expectedRoles := desiredRoleNames(spec.Role)
-	if !equalStrings(actualRoles, expectedRoles) {
-		return errors.New("service-account access token roles do not match")
-	}
-	iat, iatOK := numberClaim(claims["iat"])
-	exp, expOK := numberClaim(claims["exp"])
-	wantLifetime := int64(spec.AccessTokenLifetimeSeconds)
-	if wantLifetime == 0 {
-		wantLifetime = defaultAccessTokenLifetimeSecs
-	}
-	lifetime := exp - iat
-	if !iatOK || !expOK || exp <= iat || lifetime < wantLifetime-5 || lifetime > wantLifetime+5 || result.ExpiresIn < wantLifetime-5 || result.ExpiresIn > wantLifetime+5 {
-		return errors.New("service-account access token lifetime does not match")
-	}
-	return nil
+// Ownership and token policy come from trusted application input. The common
+// provider owns credential reads, token requests, and signature and claim checks.
+func serviceAccountBinding(spec ServiceAccountSpec, id string) provider.ClientBinding {
+	return provider.ClientBinding{ID: id, ClientID: spec.ClientID, Attributes: map[string]string{
+		managedAttribute: "true", gatewayIDAttribute: spec.GatewayID, serviceAccountIDAttribute: spec.ServiceAccountID, creatorUserIDAttribute: spec.CreatorUserID,
+	}}
 }
-
-func stringClaim(claims jwt.MapClaims, name string) string {
-	value, _ := claims[name].(string)
-	return value
-}
-
-func audienceClaim(value any) []string {
-	switch typed := value.(type) {
-	case string:
-		return []string{typed}
-	case []any:
-		out := make([]string, 0, len(typed))
-		for _, item := range typed {
-			if text, ok := item.(string); ok {
-				out = append(out, text)
-			}
-		}
-		return out
-	case []string:
-		return typed
-	default:
-		return nil
+func serviceAccountTokenPolicy(spec ServiceAccountSpec, subject string) provider.ServiceAccountTokenPolicy {
+	lifetime := spec.AccessTokenLifetimeSeconds
+	if lifetime == 0 {
+		lifetime = defaultAccessTokenLifetimeSecs
 	}
-}
-
-func stringSliceClaim(value any) []string { return audienceClaim(value) }
-
-func stringSliceClaimAtPath(claims jwt.MapClaims, path string) []string {
-	var value any = map[string]any(claims)
-	for _, part := range strings.Split(path, ".") {
-		object, ok := value.(map[string]any)
-		if !ok {
-			return nil
-		}
-		value, ok = object[part]
-		if !ok {
-			return nil
-		}
-	}
-	return stringSliceClaim(value)
-}
-
-func numberClaim(value any) (int64, bool) {
-	switch typed := value.(type) {
-	case float64:
-		return int64(typed), true
-	case json.Number:
-		result, err := typed.Int64()
-		return result, err == nil
-	default:
-		return 0, false
-	}
+	return provider.ServiceAccountTokenPolicy{Subject: subject, AccessTokenLifetimeSeconds: lifetime, Audiences: []string{spec.GatewayClientID}, RoleClaims: map[string][]string{"hypershell.roles": desiredRoleNames(spec.Role)}}
 }
 
 func equalStrings(left, right []string) bool {

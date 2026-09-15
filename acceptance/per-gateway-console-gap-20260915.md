@@ -218,3 +218,30 @@ sequence. The application still uses its handwritten implementation. Ownership
 migration and adoption must preserve provider IDs, saved subjects, credentials,
 and Gateway role policy, then pass the existing application workflows. This
 provider test does not claim that application result or source reduction.
+
+## First provider adoption
+
+The application now uses STEGO `VerifiedServiceAccountSecret` for the one-time
+service-account credential response. Hypershell supplies its trusted client
+binding, expected subject, Gateway audience, role names, claim path, and token
+lifetime. STEGO reads the credential, requests a token, checks the signature and
+exact claims, checks ownership again, and returns the same verified credential.
+A failed check returns no credential. The application retains its existing
+creation failure cleanup and public HTTP and RPC response shapes.
+
+The compiler pin is `cae56de17fa6e8298e1de08a3523ba23c2689f4c`. The local
+registry now selects the common Keycloak provider. Regeneration also includes
+previous STEGO fixes for HTTP handler drain and WebSocket telemetry in the API
+and browser backend. Both applications report no generated drift.
+
+The handwritten client removes duplicate credential response parsing, token
+requests, JWT parsing, and claim checks. Its role policy remains in Hypershell.
+The provider transport and administrative token cache are still duplicated while
+other administrative operations use the old adapter. Full checked enablement,
+legacy binding storage, ownership migration, and Gateway client and user-role
+adoption remain open. This change is the first runtime adoption, not a completed
+provider replacement.
+
+Small adapter tests passed with the race detector in 1.122 seconds. The complete
+application workflow, restart, and regeneration checks are pending in CI. No
+local performance or stress test was run.
