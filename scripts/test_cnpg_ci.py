@@ -75,6 +75,20 @@ class CNPGCIBoundary(unittest.TestCase):
         self.assertEqual(len(operator['spec']['matchConditions']), 1)
         self.assertIn('hypershell-ci', operator['spec']['matchConditions'][0]['expression'])
 
+    def test_lifetime_pod_has_no_code_or_network_extension(self):
+        objects, templates = self.build()
+        network = next(o for o in objects if o['kind'] == 'NetworkPolicy' and o['metadata']['name'] == 'default-deny')
+        self.assertEqual(network['metadata']['namespace'], ci.DATABASE_NS)
+        self.assertEqual(network['spec'], {'podSelector': {}, 'policyTypes': ['Ingress', 'Egress']})
+        policy = next(o for o in objects if o['kind'] == 'ValidatingAdmissionPolicy' and o['metadata']['name'] == ci.DATABASE_NS + '.bounded-jobs')
+        rules = '\n'.join(v['expression'] for v in policy['spec']['validations'])
+        self.assertIn(templates['database-job']['spec']['template']['spec']['containers'][0]['image'], rules)
+        self.assertIn('c.command == ["/bin/sleep", "3600"]', rules)
+        self.assertIn('!has(c.env)', rules)
+        self.assertIn('!has(c.lifecycle)', rules)
+        self.assertIn('!has(c.livenessProbe)', rules)
+        self.assertIn('!("cnpg.io/cluster" in object.spec.template.metadata.labels)', rules)
+
 
 class RuntimeCleanupBoundary(unittest.TestCase):
     def test_a_failed_request_is_not_an_admission_denial(self):

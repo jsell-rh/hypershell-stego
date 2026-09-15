@@ -115,6 +115,8 @@ def build(documents, endpoints, issuer, storage_class):
         if item['kind'] == 'RoleBinding' and item['metadata']['name'] == 'cnpg-manager':
             item['roleRef']['name'] = MANAGER_ROLE
         objects.append(item)
+    objects.append(resource('NetworkPolicy', 'default-deny', DATABASE_NS, 'networking.k8s.io/v1',
+                            spec={'podSelector': {}, 'policyTypes': ['Ingress', 'Egress']}))
     # The operator owns this role. CI cannot change namespace access or policy.
     ci = [service_account('hypershell-ci', 'stego-ci-access')]
     for ns, rules in [(OPERATOR_NS, [
@@ -228,6 +230,15 @@ def policies(templates):
                 ('variables.containers.all(c, [c.livenessProbe, c.readinessProbe, c.startupProbe].all(p, has(p.httpGet) && !has(p.exec) && !has(p.tcpSocket) && !has(p.grpc) && p.httpGet.path == "/readyz" && p.httpGet.port == 9443 && p.httpGet.scheme == "HTTPS" && (!has(p.httpGet.host) || p.httpGet.host == "")))', 'Use only the fixed HTTPS operator health probes'),
                 ('variables.containers.all(c, size(c.volumeMounts) == 3 && c.volumeMounts.all(m, !has(m.subPath) && !has(m.subPathExpr) && ((m.name == "scratch-data" && m.mountPath == "/controller") || (m.name == "webhook-certificates" && m.mountPath == "/run/secrets/cnpg.io/webhook") || (m.name == "webhook-cert" && m.mountPath == "/etc/cnpg-webhook" && m.readOnly))))', 'Keep the operator executable and configuration paths outside writable mounts'),
                 ('size(variables.p.volumes) == 3 && variables.p.volumes.all(v, (v.name == "scratch-data" && has(v.emptyDir) && v.emptyDir.sizeLimit == "64Mi") || (v.name in ["webhook-certificates", "webhook-cert"] && has(v.secret) && v.secret.secretName == "cnpg-webhook-cert"))', 'Use only the fixed scratch volume and supplied webhook certificate'),
+            ]
+        else:
+            container = templates[key]['spec']['template']['spec']['containers'][0]
+            rules += [
+                ('size(variables.p.containers) == 1 && (!has(variables.p.initContainers) || size(variables.p.initContainers) == 0)', 'The database lifetime Job has one pinned container'),
+                (f'variables.containers.all(c, c.image == {json.dumps(container["image"])} && c.command == {json.dumps(container["command"])} && (!has(c.args) || size(c.args) == 0))', 'Use only the pinned database lifetime command'),
+                ('variables.containers.all(c, !has(c.env) && !has(c.envFrom) && !has(c.lifecycle) && !has(c.livenessProbe) && !has(c.readinessProbe) && !has(c.startupProbe) && !has(c.volumeMounts)) && !has(variables.p.volumes)', 'The lifetime command needs no extra input, hooks, probes, or volumes'),
+                ('variables.containers.all(c, c.resources.limits.cpu == "50m" && c.resources.limits.memory == "32Mi" && c.resources.limits["ephemeral-storage"] == "16Mi")', 'Keep the small lifetime container limits'),
+                ('!has(object.spec.template.metadata) || !has(object.spec.template.metadata.labels) || !("cnpg.io/cluster" in object.spec.template.metadata.labels)', 'The lifetime Pod must not select database network permissions'),
             ]
         policy['spec']['validations'] += [{'expression': expression, 'message': message} for expression, message in rules]
         result += [policy, resource('ValidatingAdmissionPolicyBinding', name, api='admissionregistration.k8s.io/v1',

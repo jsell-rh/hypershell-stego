@@ -191,6 +191,15 @@ def main():
             ]:
                 bad = copy.deepcopy(templates[key]); change(bad)
                 probe(key + '-' + name, bad, policy)
+        policy = ci.DATABASE_NS + '.bounded-jobs'
+        for name, change in [
+            ('command', lambda v: v['spec']['template']['spec']['containers'][0].update(command=['/bin/sh'])),
+            ('environment', lambda v: v['spec']['template']['spec']['containers'][0].update(env=[{'name': 'LD_PRELOAD', 'value': '/tmp/library.so'}])),
+            ('probe-command', lambda v: v['spec']['template']['spec']['containers'][0].update(livenessProbe={'exec': {'command': ['/bin/true']}})),
+            ('network-label', lambda v: v['spec']['template'].setdefault('metadata', {}).setdefault('labels', {}).update({'cnpg.io/cluster': 'gateway-database'})),
+        ]:
+            bad = copy.deepcopy(templates['database-job']); change(bad)
+            probe('database-lifetime-' + name, bad, policy)
         policy = ci.OPERATOR_NS + '.bounded-jobs'
         for name, change in [
             ('command', lambda c: c.update(command=['/bin/sh'])),

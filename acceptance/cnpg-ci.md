@@ -45,10 +45,21 @@ the ready certificate, injected webhook CA, immutable configuration, and absence
 of test Jobs and Pods. The installer used a frozen source copy and released its
 shared Lease. Local boundary checks passed: six CI checks and 13 fixture checks.
 
-The complete CNPG job is queued in
-[CI 34968718717](https://github.com/jsell-rh/hypershell-stego/actions/runs/34968718717).
-Live positive and negative admission requests and the complete workflow remain
-unverified. This static result does not establish an unattended CI pass.
+The initial 14 Job dry-run probes passed with the CI identity. A further review
+found that the database lifetime Job could change its command, environment,
+probe command, and network labels. The
+[regression evidence](cnpg-ci-lifetime-admission-evidence.json) confirms that all
+four unwanted variants were accepted by the original policy. No Job was created.
+
+The corrected policy pins the lifetime image and command, excludes extra code
+and inputs, and prevents the lifetime Pod from selecting database network rules.
+The database namespace also receives a default deny policy. Its existing
+PostgreSQL policy supplies only the required database traffic permissions.
+
+[CI 34968718717](https://github.com/jsell-rh/hypershell-stego/actions/runs/34968718717)
+was canceled before execution because this correction needs its own source and
+admission checks. The corrected live policy and complete CNPG workflow remain
+unverified. The initial static result does not establish an unattended CI pass.
 
 The same push also queued ordinary API run `34968718133` and browser run
 `34968718081`. Both were canceled before execution to avoid duplicate tests:
