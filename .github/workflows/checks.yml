@@ -2,6 +2,8 @@ name: Gateway and contract checks
 
 on:
   push:
+    paths-ignore:
+      - '**/*.md'
   pull_request:
   workflow_dispatch:
     inputs:
@@ -89,7 +91,7 @@ jobs:
         env:
           STEGO_REQUIRE_BROWSER: '1'
           STEGO_BROWSER_ARTIFACT_DIR: ${{ runner.temp }}/rendered-browser
-          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
       - name: Save browser resource counters
         if: always() && matrix.suite == 'browser'
         timeout-minutes: 1
@@ -161,7 +163,7 @@ jobs:
       - run: scripts/generate.sh --check
       - run: scripts/check-sandbox-workload.sh
         env:
-          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports[5432] }}/postgres?sslmode=disable
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
 
   service-image:
     if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only

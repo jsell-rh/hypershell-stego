@@ -1,5 +1,10 @@
 # CI credential lifetime
 
+Pushes that change only Markdown files do not start the contract, Gateway API,
+or Gateway browser workflows. Manual dispatch remains available. Other source
+and workflow changes still start the checks. This avoids repeated live tests
+when an acceptance record changes without a code change.
+
 The jshell jobs use the `jshell-ci` GitHub environment and its
 `JSHELL_CI_KUBECONFIG` secret. GitHub reads environment secrets when a job starts.
 Repository secrets are read when a workflow run enters the queue, so a waiting
