@@ -19,7 +19,9 @@ func TestGatewayDatabasePoolWaitCancellationAndRestart(t *testing.T) {
 	_, brokerConfig := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, brokerConfig)
 	key, settings := issuer(t)
-	settings = append(settings, "STEGO_DATABASE_MAX_OPEN_CONNECTIONS=2", "STEGO_DATABASE_MAX_IDLE_CONNECTIONS=2")
+	signals, exports := newHTTPDiagnosticCollector(t)
+	settings = append(settings, exports...)
+	settings = append(settings, "OTEL_SERVICE_NAME=hypershell-pool-api", "STEGO_DATABASE_MAX_OPEN_CONNECTIONS=2", "STEGO_DATABASE_MAX_IDLE_CONNECTIONS=2")
 	dsn := f.dsn + " application_name=stego-pool-probe"
 	if strings.HasPrefix(f.dsn, "postgres://") || strings.HasPrefix(f.dsn, "postgresql://") {
 		address, err := url.Parse(f.dsn)
@@ -117,6 +119,9 @@ func TestGatewayDatabasePoolWaitCancellationAndRestart(t *testing.T) {
 		}
 		time.Sleep(10 * time.Millisecond)
 	}
+	private := []string{owner, gateway.ID, dsn, "private-pool-gateway"}
+	occupiedAfter := uint64(time.Now().UnixNano())
+	occupied := awaitGatewayPoolMetrics(t, signals, private, func(s gatewayPoolSnapshot) bool { return s.Collected >= occupiedAfter && s.Used == 2 && s.Idle == 0 })
 	short, done := context.WithTimeout(context.Background(), 300*time.Millisecond)
 	defer done()
 	limit := time.NewTimer(2 * time.Second)
@@ -154,6 +159,9 @@ func TestGatewayDatabasePoolWaitCancellationAndRestart(t *testing.T) {
 	if code, _ := requestJSON(t, "GET", endpoint, token(t, key, "mallory"), nil); code != 404 {
 		t.Fatal("pool recovery changed access rules", code)
 	}
+	recovered := awaitGatewayPoolMetrics(t, signals, private, func(s gatewayPoolSnapshot) bool {
+		return s.Instance == occupied.Instance && s.Used == 0 && s.Waits > occupied.Waits && s.WaitSeconds >= occupied.WaitSeconds+0.2
+	})
 	stop()
 	stop, address = startApplication(t, binary, dsn, brokerConfig, settings...)
 	endpoint = address + "/api/hypershell/v1/gateways/" + gateway.ID
@@ -161,6 +169,28 @@ func TestGatewayDatabasePoolWaitCancellationAndRestart(t *testing.T) {
 		t.Fatal("restart lost the Gateway", code)
 	}
 	counts()
+	restarted := awaitGatewayPoolMetrics(t, signals, private, func(s gatewayPoolSnapshot) bool { return s.Instance != recovered.Instance })
+	signals.unavailable.Store(true)
+	failureDeadline := time.Now().Add(4 * time.Second)
+	for signals.rejectedMetrics.Load() == 0 {
+		if time.Now().After(failureDeadline) {
+			t.Fatal("collector failure was not observed")
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if code, _ := requestJSON(t, "GET", endpoint, owner, nil); code != 200 {
+		t.Fatal("collector failure stopped Gateway access", code)
+	}
+	if code, _ := requestJSON(t, "GET", endpoint, token(t, key, "mallory"), nil); code != 404 {
+		t.Fatal("collector failure changed access rules", code)
+	}
+	signals.unavailable.Store(false)
+	restoredAfter := uint64(time.Now().UnixNano())
+	awaitGatewayPoolMetrics(t, signals, private, func(s gatewayPoolSnapshot) bool {
+		return s.Collected >= restoredAfter && s.Instance == restarted.Instance
+	})
+	t.Logf("Pool wait count increased from %d to %d; total wait duration increased from %.6f to %.6f seconds", occupied.Waits, recovered.Waits, occupied.WaitSeconds, recovered.WaitSeconds)
+	t.Log("Generated pool metrics reported held connections, canceled waits, recovery, a new runtime identity after restart, and collector failure without loss of Gateway access")
 }
 
 func TestGatewayRejectsInvalidDatabasePoolSettings(t *testing.T) {

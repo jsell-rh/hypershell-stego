@@ -7,6 +7,7 @@ import (
 	"crypto/rand"
 	"crypto/tls"
 	"crypto/x509"
+	"database/sql"
 	"errors"
 	"io"
 	"math"
@@ -69,10 +70,19 @@ type Runtime struct {
 }
 
 // NewTracingRuntime gives compiler assembly a distinct dependency name.
-func NewTracingRuntime() (*Runtime, error) {
+func NewTracingRuntime(pools ...*sql.DB) (*Runtime, error) {
+	if len(pools) > 1 {
+		return nil, errors.New("telemetry accepts one process database pool")
+	}
 	runtime, err := NewRuntime()
 	if err != nil {
 		return nil, err
+	}
+	if len(pools) == 1 && pools[0] != nil {
+		if err := runtime.observeDatabasePool(pools[0]); err != nil {
+			runtime.Close()
+			return nil, err
+		}
 	}
 	runtime.service.lifecycle = true
 	runtime.LogServiceEvent(context.Background(), RuntimeStarted)
@@ -243,6 +253,9 @@ func (r *Runtime) Close() {
 			closeProvider(r.signals.logs.Shutdown)
 		}
 		group.Wait()
+		if r.database.poolRegistration != nil {
+			_ = r.database.poolRegistration.Unregister()
+		}
 		if r.service.local != nil {
 			if r.shutdownFailures.Load() > 0 {
 				r.service.local.enqueue(localRecord{Time: time.Now(), Severity: "WARN", Service: r.service.service, Instance: r.instance, Event: "telemetry.shutdown.incomplete", Message: "Telemetry shutdown did not complete"})

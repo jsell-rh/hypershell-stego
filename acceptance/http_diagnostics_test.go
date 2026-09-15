@@ -166,11 +166,12 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 }
 
 type httpDiagnosticCollector struct {
-	workers     *workerSignalEvidence
-	unavailable atomic.Bool
-	traces      *workflowTraceCollector
-	logs        *workflowLogCollector
-	metrics     *workflowMetricCollector
+	workers         *workerSignalEvidence
+	unavailable     atomic.Bool
+	rejectedMetrics atomic.Uint64
+	traces          *workflowTraceCollector
+	logs            *workflowLogCollector
+	metrics         *workflowMetricCollector
 }
 
 func newHTTPDiagnosticCollector(t *testing.T) (*httpDiagnosticCollector, []string) {
@@ -200,6 +201,9 @@ func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*http
 	}
 	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 		if signals.unavailable.Load() {
+			if info.FullMethod == "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export" {
+				signals.rejectedMetrics.Add(1)
+			}
 			return nil, status.Error(codes.Unavailable, "private-collector-fault")
 		}
 		if signals.workers != nil {

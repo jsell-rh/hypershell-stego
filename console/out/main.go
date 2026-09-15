@@ -66,7 +66,7 @@ func run() (stegoErr error) {
 		}
 	}
 	stegoStage = "component[1].constructor[0]"
-	tracingRuntime, err := tracing.NewTracingRuntime()
+	tracingRuntime, err := tracing.NewTracingRuntime(db)
 	if err != nil {
 		return err
 	}

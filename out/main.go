@@ -102,7 +102,7 @@ func run() (stegoErr error) {
 		return err
 	}
 	stegoStage = "component[12].constructor[0]"
-	tracingRuntime, err := tracing.NewTracingRuntime()
+	tracingRuntime, err := tracing.NewTracingRuntime(sqlDB)
 	if err != nil {
 		return err
 	}

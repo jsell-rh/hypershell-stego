@@ -59,3 +59,22 @@ one CPU, 3 GiB of memory, and `GOMAXPROCS=1`. PostgreSQL had half a CPU and
 PostgreSQL listened on Pod loopback only. No performance test ran on the PC.
 The failed baseline and successful compiler and application checks have separate
 logs and result records. These checks do not replace full application CI.
+
+Compiler `e8f16c7` adds common pool metrics through `otel-tracing` 1.13.0. The
+compiler passes the existing service pool to the generated runtime. Both the
+API and the separate browser backend use this wiring. The application has no
+pool observer or metric collection loop.
+
+The same Gateway pool test now requires eight fixed metric series at the TLS
+collector. It checks the two occupied connections, the configured limit,
+cumulative wait count and duration after cancellation, released connections,
+and a new runtime identity after restart. It then rejects collector exports,
+requires continued authorized and denied Gateway responses, restores export,
+and requires a new metric collection. Collection timestamps prevent an old
+queued export from satisfying recovery. Metric fields must exclude private
+request and database values.
+
+The restricted API gate now requires this test, for a total of 31 named tests.
+Local compilation and repeated generation passed. The new live API, browser,
+and full CI results remain required. This change does not establish production
+capacity or close the separate worker and PostgreSQL client telemetry gaps.
