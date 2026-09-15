@@ -90,6 +90,65 @@
         "The separate public run is still active.",
         "No allocated namespace network-isolation result is supplied by this core run."
       ]
+    },
+    {
+      "run_id": 34989401887,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/34989401887",
+      "source_revision": "cc8e545b2252fa2908c64f94d18f3f910c4fe95c",
+      "compiler_revision": "0b0c932716f09d492cdc31e0c00a9849c13d1fc8",
+      "overall": "success",
+      "core_job_id": 104449821596,
+      "core": "success",
+      "ordinary_browser": "success",
+      "console": "success",
+      "service_image": "success",
+      "cnpg": "skipped",
+      "sandbox": "skipped",
+      "acceptance_package_seconds": 1269.116,
+      "race_detection": true,
+      "regeneration_check": "passed as a required command before core tests",
+      "selected_checks": [
+        {
+          "name": "TestGatewayUserLoginFollowsStoredGrants",
+          "result": "pass",
+          "seconds": 45.16
+        },
+        {
+          "name": "TestGatewayControllerTelemetryAcrossFailureAndRestart",
+          "result": "pass",
+          "seconds": 7.91
+        },
+        {
+          "name": "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+          "result": "pass",
+          "seconds": 8.34
+        },
+        {
+          "name": "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "result": "pass",
+          "seconds": 5.08
+        },
+        {
+          "name": "TestGatewayGRPCTracingAcrossWatchRestartAndCollectorFailure",
+          "result": "pass",
+          "seconds": 8.27
+        },
+        {
+          "name": "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "result": "pass",
+          "seconds": 5.17
+        }
+      ],
+      "log": {
+        "path": "/tmp/hypershell-core-34989401887.log",
+        "sha256": "1a3251940bbdd4bba3e4cf3459773407f021209335ef223bbf048be764bd5c68"
+      },
+      "limits": [
+        "The manual workflow did not run CNPG or Sandbox. Their skipped results are not passes.",
+        "This source precedes the worker telemetry count correction in 842a71c.",
+        "The separate public workflow failed later in the old worker telemetry collector.",
+        "This run does not prove allocated namespace network isolation."
+      ]
     }
   ]
 }
