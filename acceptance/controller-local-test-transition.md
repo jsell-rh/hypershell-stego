@@ -135,3 +135,11 @@ can process address translation before or after the network rule; see the
 [NetworkPolicy contract](https://kubernetes.io/docs/concepts/services-networking/network-policies/#behavior-of-to-and-from-selectors).
 Both failed Jobs and their owned resources were removed. Neither failure is a
 complete browser workflow pass.
+
+The third run reached SQL provisioning and started both Gateway Pods. Their
+TLS library then rejected the fixture's CA certificate as a server certificate
+(`CaUsedAsEndEntity`). The fixture now issues a separate server certificate
+with `CA:FALSE`, server-authentication usage, and explicit DNS and IP names.
+It checks the chain and names before cluster deployment. The CA signing key
+is removed after certificate issuance. The clients receive only the CA
+certificate, and PostgreSQL receives only its server certificate and key.

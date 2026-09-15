@@ -96,7 +96,7 @@ cleanup() {
     status=1
     echo "Cleanup failed. Keep the shared live-test Lease for inspection." >&2
   fi
-  for file in "$results/private-job.json" "$results/server.key"; do
+  for file in "$results/private-job.json" "$results/server.key" "$results/ca.key"; do
     [[ ! -e $file ]] || unlink -- "$file"
   done
   echo "Service deployment results: $results"
@@ -105,8 +105,26 @@ cleanup() {
 trap cleanup EXIT
 umask 077
 openssl req -x509 -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
-  -keyout "$results/server.key" -out "$results/server.crt" -days 2 \
-  -subj /CN=fixture -addext "subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1" >/dev/null 2>&1
+  -keyout "$results/ca.key" -out "$results/ca.crt" -days 2 \
+  -subj /CN=fixture-ca -addext 'basicConstraints=critical,CA:TRUE,pathlen:0' \
+  -addext 'keyUsage=critical,keyCertSign,cRLSign' >/dev/null 2>&1
+openssl req -new -newkey ec -pkeyopt ec_paramgen_curve:P-256 -nodes \
+  -keyout "$results/server.key" -out "$results/server.csr" \
+  -subj /CN=fixture >/dev/null 2>&1
+cat > "$results/server.ext" <<EOF
+basicConstraints=critical,CA:FALSE
+keyUsage=critical,digitalSignature
+extendedKeyUsage=serverAuth
+subjectAltName=DNS:localhost,DNS:fixture.$namespace.svc,IP:127.0.0.1
+EOF
+openssl x509 -req -in "$results/server.csr" -CA "$results/ca.crt" \
+  -CAkey "$results/ca.key" -set_serial 1 -days 2 -extfile "$results/server.ext" \
+  -out "$results/server.crt" >/dev/null 2>&1
+unlink "$results/ca.key"
+openssl verify -CAfile "$results/ca.crt" -purpose sslserver \
+  -verify_hostname "fixture.$namespace.svc" "$results/server.crt" >/dev/null
+openssl verify -CAfile "$results/ca.crt" -purpose sslserver \
+  -verify_ip 127.0.0.1 "$results/server.crt" >/dev/null
 if [[ $workload == 1 ]]; then
   "${oc_cmd[@]}" -n default get endpointslices -l kubernetes.io/service-name=kubernetes -o json > "$results/kubernetes-endpoints.json"
   "${oc_cmd[@]}" -n default get service kubernetes -o json > "$results/kubernetes-service.json"
@@ -184,7 +202,7 @@ for item in job['items']:
     if item['kind']=='Secret' and item['metadata']['name']=='database-tls':
         item['data']={name:encode((root/name).read_text()) for name in ['server.key','server.crt']}
     if item['kind']=='ConfigMap' and item['metadata']['name']=='database-ca':
-        item['data']={'server.crt':(root/'server.crt').read_text()}
+        item['data']={'server.crt':(root/'ca.crt').read_text()}
 (root/'private-job.json').write_text(json.dumps(job))
 for item in job['items']:
     if item['kind']=='Secret':item.pop('data',None)
