@@ -15,7 +15,8 @@ controller write requires an exact `observe.endpoint` grant for the stored
 cluster and the current revision. STEGO's generated observation group hides an
 address from an older desired generation. Focused policy and request-decoder
 checks pass. The complete acceptance package compiles; live transport checks
-still need CI results.
+still need CI results. The restricted API gate now requires the controller
+write-grant test, including address ownership and stale observations.
 
 The full public workflow remains incomplete. The browser checks use an internal
 Service endpoint. The connection panel still shows loading placeholders. Route

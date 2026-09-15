@@ -33,6 +33,7 @@ REQUIRED = [
     "TestGeneratedGoSDKGatewayWorkflow",
     "TestGeneratedCLIWorkflow",
     "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+    "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
     "TestOwnerGrantFailureRollsBackGatewayAndEvent",
     "TestEventFailureRollsBackGatewayAndOwner",
     "TestAccessFiltersRunBeforeCountAndPagination",
