@@ -173,3 +173,14 @@ encryption, session checks, and automated cleanup passed. Verification matched
 and admission checks. The Job and Pods are absent. See the
 [verified evidence](browser-viewer-recovery-evidence.json). External connectivity
 and the later environment-backed CI credential change remain separate gates.
+
+The [environment-backed browser run](https://github.com/jsell-rh/hypershell-stego/actions/runs/34952975989)
+passed at `f900d5a` with compiler `5e9c89d` in 380.37 seconds. Verification matched
+890 source files, 230 generated files, all three generation records, and all
+access and admission checks. Viewer recovery, denied writes, access removal,
+three live account cleanups, SQL isolation, encryption, and automated cleanup
+passed. Namespace recovery took 44.26 seconds. Controller Pods and SQL identities
+did not change. The Job and Pods are absent. See the
+[verified result](browser-environment-credential-evidence.json). This closes the
+live browser check for the CI environment credential change. It does not close
+the public endpoint, CNPG, RDS, or Sandbox requirements.
