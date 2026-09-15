@@ -260,9 +260,24 @@ def check_render(source, destination, env, cnpg_namespace=None, network_baseline
                 '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64, '--worker', 'gateway-workload',
                 '--egress', 'kubernetes=192.0.2.1:443', '--egress', 'gateway-postgres=192.0.2.2:5432'], env=env, timeout=5) for binary in binaries]
             verify_cnpg_manifests(*cnpg_renders, cnpg_namespace)
-        return {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
-                'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
-                'scope': 'Two namespace roles, allocator bind names, and declared namespace binding cases only.'}
+        record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
+                  'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
+                  'scope': 'Two namespace roles, allocator bind names, and declared namespace binding cases only.'}
+        if endpoint_change:
+            from gateway_endpoint_fixture import policy_change
+            transitions = []
+            for endpoint in ('192.0.2.3:8080', '192.0.2.4:8080'):
+                transitions.append(subprocess.check_output([binaries[1], '--namespace', 'stego-service-inspection',
+                    '--fs-group', '10001', '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64,
+                    '--worker', 'namespace-allocation', '--scope', 'cluster',
+                    '--egress', 'kubernetes=192.0.2.1:443', '--egress', 'network-probe=' + endpoint], env=env, timeout=5))
+            _, changed = policy_change(*(json.loads(data) for data in transitions), '192.0.2.3:8080', '192.0.2.4:8080')
+            record['endpoint_transition'] = {'kind': changed['kind'], 'name': changed['metadata']['name'],
+                'initial_sha256': hashlib.sha256(transitions[0]).hexdigest(),
+                'replacement_sha256': hashlib.sha256(transitions[1]).hexdigest(),
+                'scope': 'One address replacement in the Gateway admission variable. All other cluster fields remain equal.',
+                'live_traffic_verified': False}
+        return record
 
 
 def main():
