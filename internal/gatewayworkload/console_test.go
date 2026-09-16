@@ -1,0 +1,147 @@
+package gatewayworkload
+
+import (
+	"context"
+	"encoding/json"
+	"errors"
+	"net/http"
+	"strings"
+	"testing"
+
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+)
+
+func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
+	gw, release := records(t)
+	digest := strings.Repeat("a", 64)
+	entries, err := consoleResources(gw, release.Image, 65532, digest)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 3 {
+		t.Fatal("unexpected resource count", len(entries))
+	}
+	kinds := map[string]bool{}
+	for _, entry := range entries {
+		kind := kube.String(entry.object, "kind")
+		kinds[kind] = true
+		if !consoleOwner(gw.Metadata.Id).Matches(entry.object) {
+			t.Fatal("resource has no console owner", kind)
+		}
+		if kube.String(entry.object, "metadata", "namespace") != gw.Namespace {
+			t.Fatal("resource escaped Gateway namespace", kind)
+		}
+		if kind == "Deployment" {
+			if kube.String(entry.object, "spec", "template", "metadata", "labels", ownerLabel) != "" {
+				t.Fatal("console Pod matches Gateway Service")
+			}
+			if kube.String(entry.object, "spec", "template", "metadata", "annotations", "hypershell.redhat.io/console-configuration") != digest {
+				t.Fatal("configuration does not trigger rollout")
+			}
+		}
+	}
+	if !kinds["Service"] || !kinds["ServiceAccount"] || !kinds["Deployment"] || kinds["NetworkPolicy"] {
+		t.Fatal("worker resource set is incorrect", kinds)
+	}
+	for _, invalid := range []string{"", strings.Repeat("A", 64), strings.Repeat("a", 63)} {
+		if _, err := consoleResources(gw, release.Image, 65532, invalid); err == nil {
+			t.Fatal("invalid digest accepted")
+		}
+	}
+	gw.Namespace = "foreign"
+	if _, err := consoleResources(gw, release.Image, 65532, digest); err == nil {
+		t.Fatal("foreign namespace accepted")
+	}
+}
+
+func consoleDependencies(id string) []object {
+	ns, _ := Namespace(id)
+	values := make([]object, len(consoleSecretNames))
+	for i, name := range consoleSecretNames {
+		values[i] = object{"apiVersion": "v1", "kind": "Secret", "metadata": object{"namespace": ns, "name": name, "uid": "uid", "resourceVersion": "1", "labels": object{ownerLabel: id, consoleComponentLabel: "gateway-console"}}, "type": "Opaque", "data": object{"value": "YWJj"}}
+	}
+	return values
+}
+
+func TestConsoleConfigurationTracksContents(t *testing.T) {
+	gw, _ := records(t)
+	secrets := consoleDependencies(gw.Metadata.Id)
+	first, err := consoleConfigurationDigest(gw.Metadata.Id, secrets)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secrets[0]["metadata"].(object)["resourceVersion"] = "2"
+	next, err := consoleConfigurationDigest(gw.Metadata.Id, secrets)
+	if err != nil || first != next {
+		t.Fatal("metadata update changed configuration", err)
+	}
+	secrets[0]["data"].(object)["value"] = "ZGVm"
+	next, err = consoleConfigurationDigest(gw.Metadata.Id, secrets)
+	if err != nil || first == next {
+		t.Fatal("credential change did not change configuration", err)
+	}
+}
+
+func TestConsoleConfigurationRejectsInvalidDependencies(t *testing.T) {
+	gw, _ := records(t)
+	cases := map[string]func([]object) []object{
+		"missing":      func(s []object) []object { return s[:3] },
+		"owner":        func(s []object) []object { s[0]["metadata"].(object)["labels"] = object{}; return s },
+		"deleted":      func(s []object) []object { s[0]["metadata"].(object)["deletionTimestamp"] = "now"; return s },
+		"uid":          func(s []object) []object { delete(s[0]["metadata"].(object), "uid"); return s },
+		"revision":     func(s []object) []object { delete(s[0]["metadata"].(object), "resourceVersion"); return s },
+		"name":         func(s []object) []object { s[0]["metadata"].(object)["name"] = "foreign"; return s },
+		"type":         func(s []object) []object { s[0]["type"] = "kubernetes.io/tls"; return s },
+		"empty":        func(s []object) []object { s[0]["data"] = object{}; return s },
+		"base64":       func(s []object) []object { s[0]["data"] = object{"value": "not base64"}; return s },
+		"noncanonical": func(s []object) []object { s[0]["data"] = object{"value": "YWJj\n"}; return s },
+		"entry type":   func(s []object) []object { s[0]["data"] = object{"value": 42}; return s },
+		"key":          func(s []object) []object { s[0]["data"] = object{"../value": "YWJj"}; return s },
+		"bound":        func(s []object) []object { s[0]["data"] = object{"value": strings.Repeat("a", (128<<10)+1)}; return s },
+	}
+	for name, change := range cases {
+		t.Run(name, func(t *testing.T) {
+			if _, err := consoleConfigurationDigest(gw.Metadata.Id, change(consoleDependencies(gw.Metadata.Id))); err == nil {
+				t.Fatal("invalid dependency accepted")
+			}
+		})
+	}
+}
+
+func TestConsoleWaitsForAssignedNamespace(t *testing.T) {
+	for _, mode := range []string{"missing", "foreign", "wrong cluster", "wrong namespace"} {
+		t.Run(mode, func(t *testing.T) {
+			gw, release := records(t)
+			calls := 0
+			k := fixture(t, func(w http.ResponseWriter, r *http.Request) {
+				calls++
+				if r.Method != http.MethodGet || r.URL.Path != "/api/v1/namespaces/"+gw.Namespace {
+					t.Error("console accessed a dependency before allocation")
+					w.WriteHeader(500)
+					return
+				}
+				if mode == "missing" {
+					w.WriteHeader(404)
+					return
+				}
+				_ = json.NewEncoder(w).Encode(object{"metadata": object{"uid": "foreign", "resourceVersion": "1", "labels": object{}}})
+			})
+			if mode == "wrong cluster" {
+				gw.ClusterId = "foreign"
+			}
+			if mode == "wrong namespace" {
+				gw.Namespace = "foreign"
+			}
+			err := k.EnsureConsole(context.Background(), gw, release.Image, 65532)
+			if err == nil {
+				t.Fatal("console accepted an invalid allocation")
+			}
+			if mode == "missing" && !errors.Is(err, ErrPending) {
+				t.Fatal("missing allocation did not wait", err)
+			}
+			if (mode == "wrong cluster" || mode == "wrong namespace") && calls != 0 {
+				t.Fatal("invalid placement reached Kubernetes")
+			}
+		})
+	}
+}
