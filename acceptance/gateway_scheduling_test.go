@@ -146,10 +146,10 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		}
 		ids = append(ids, row.ID)
 		event(row.ID, "Create", "created")
-		if code, data := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
+		if code, data := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 202 {
 			t.Fatalf("delete: %d %s", code, data)
 		}
-		event(row.ID, "Delete", "deleted")
+		event(row.ID, "Update", "updated")
 	}
 	foreignID := ""
 	if cleanupOwner == "sql" {
@@ -163,10 +163,10 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		}
 		foreignID = row.ID
 		event(row.ID, "Create", "created")
-		if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
+		if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 202 {
 			t.Fatal("delete other scope", code)
 		}
-		event(row.ID, "Delete", "deleted")
+		event(row.ID, "Update", "updated")
 	}
 
 	sort.Strings(ids)
@@ -263,7 +263,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if _, complete := read(ids[0]); complete {
 		t.Fatal("blocked provider recorded completion")
 	}
-	event(ids[1], "Delete", "deleted")
+	event(ids[1], "Update", "updated")
 	metricsDeadline := time.Now().Add(time.Second)
 	for {
 		snapshot := metrics.Snapshot()
@@ -311,7 +311,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	}
 	close(provider.release)
 	awaitComplete(ids[0])
-	event(ids[0], "Delete", "deleted")
+	event(ids[0], "Update", "updated")
 	finishedSummary, err := summaryRead(ctx)
 	if err != nil || finishedSummary.GetPending() != 0 || finishedSummary.GetOldestPending() != nil {
 		t.Fatal("finished cleanup summary", finishedSummary, err)

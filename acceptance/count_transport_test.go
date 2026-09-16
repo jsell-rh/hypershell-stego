@@ -306,7 +306,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if _, err := client.DeleteGateway(call(owner), &pb.DeleteGatewayRequest{Id: id}); err != nil {
 		t.Fatal(err)
 	}
-	readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	if got, err := client.AdjustActiveSandboxCount(control, &pb.AdjustActiveSandboxCountRequest{Namespace: namespace, Delta: 1}); err != nil || got.ActiveSandboxCount != 0 {
 		t.Fatalf("deleted namespace: %v %v", got, err)

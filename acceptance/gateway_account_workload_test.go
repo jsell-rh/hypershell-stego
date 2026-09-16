@@ -49,6 +49,22 @@ func (w *browserGatewayWorkload) startAccountDeletionWorkflow(gatewayID string) 
 	t.Log("Three service-account identities used the actual Gateway")
 	return func() {
 		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+		defer cancel()
+		for {
+			var complete bool
+			if err := w.f.db.QueryRowContext(ctx, "SELECT COALESCE(stego_cleanup->>'accounts'='true',false) FROM gateways WHERE id=$1", gatewayID).Scan(&complete); err != nil {
+				t.Fatal("account cleanup observation", err)
+			}
+			if complete {
+				break
+			}
+			select {
+			case <-ctx.Done():
+				t.Fatal("account cleanup did not finish")
+			case <-time.After(100 * time.Millisecond):
+			}
+		}
 		ids := make([]string, 0, len(accounts))
 		for _, row := range accounts {
 			ids = append(ids, row.ID)
@@ -73,12 +89,12 @@ FROM service_accounts WHERE id=$1 AND gateway_id=$2`, row.ID, gatewayID).Scan(&c
 			}
 		}
 		if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-			record := map[string]any{"gateway_id": gatewayID, "account_ids": ids, "accounts_used_actual_gateway": len(ids), "token_issuance_denied": len(ids), "provider_clients_absent": len(ids), "metadata_closed": len(ids), "cleanup_audits": len(ids), "checked_after_delete_response": true}
+			record := map[string]any{"gateway_id": gatewayID, "account_ids": ids, "accounts_used_actual_gateway": len(ids), "token_issuance_denied": len(ids), "provider_clients_absent": len(ids), "metadata_closed": len(ids), "cleanup_audits": len(ids), "checked_after_durable_account_cleanup": true}
 			data, err := json.MarshalIndent(record, "", "  ")
 			if err != nil || os.WriteFile(filepath.Join(directory, "gateway-account-deletion.json"), append(data, '\n'), 0600) != nil {
 				t.Fatal("cannot write Gateway account deletion evidence")
 			}
 		}
-		t.Log("Gateway deletion closed three accounts and their cleanup audits; token issuance was denied and all three provider clients were absent after the API response")
+		t.Log("Gateway deletion closed three accounts and their cleanup audits; token issuance was denied and all three provider clients were absent after durable account cleanup")
 	}
 }

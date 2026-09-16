@@ -178,13 +178,13 @@ func TestGeneratedGoSDKGatewayWorkflow(t *testing.T) {
 		t.Fatal("collector loss stopped the SDK", err)
 	}
 	deleted, err := owner.DeleteGatewayWithResponse(ctx, id)
-	if err != nil || deleted.StatusCode() != 204 {
+	if err != nil || deleted.StatusCode() != 202 {
 		t.Fatal("SDK deletion failed", err)
 	}
-	readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	missing, err := owner.GetGatewayWithResponse(ctx, id)
-	if err != nil || missing.StatusCode() != 404 {
-		t.Fatal("SDK read a deleted Gateway", err)
+	if err != nil || missing.StatusCode() != 200 || missing.JSON200 == nil || missing.JSON200.Phase == nil || *missing.JSON200.Phase != "Deleting" {
+		t.Fatal("SDK lost pending deletion", err)
 	}
 	owner.Close()
 	other.Close()

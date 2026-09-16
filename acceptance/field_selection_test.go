@@ -135,9 +135,9 @@ func TestRESTFieldSelectionPreservesAccessAcrossRestart(t *testing.T) {
 	if code, _ := requestJSON(t, "GET", address+root+"/"+ids["b-hidden"], owner, nil); code != 404 {
 		t.Fatal("projection changed hidden read", code)
 	}
-	if code, _ := requestJSON(t, "DELETE", address+root+"/"+ids["a-visible"], owner, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", address+root+"/"+ids["a-visible"], owner, nil); code != 202 {
 		t.Fatal("delete", code)
 	}
-	readGatewayEvent(t, consumer, ids["a-visible"], "Delete", "gateway.deleted")
-	list(url.Values{"fields": {"name"}}, owner, 1, 1, "name")
+	readGatewayEvent(t, consumer, ids["a-visible"], "Update", "gateway.updated")
+	list(url.Values{"fields": {"name"}}, owner, 2, 2, "name")
 }

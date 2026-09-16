@@ -111,7 +111,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	}
 	event := func() {
 		t.Helper()
-		readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+		readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 		awaitQueueEmpty(t, f)
 	}
 	blocked := func(id string) {
@@ -136,7 +136,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	blocked(f.cluster)
 	blocked(second)
 	observe(controller, 2, "workload", f.cluster, true, codes.Aborted)
-	if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, owner, nil); code != 202 {
 		t.Fatal("delete", code)
 	}
 	event()

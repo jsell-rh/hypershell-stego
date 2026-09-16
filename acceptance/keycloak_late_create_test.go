@@ -60,7 +60,7 @@ func TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart(t *testing.T) {
 	}
 	// Cleanup must not depend on a live parent Gateway after a terminal action.
 	code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil)
-	if code != 204 {
+	if code != 202 {
 		t.Fatalf("delete Gateway after failed creation: %d", code)
 	}
 	stop()

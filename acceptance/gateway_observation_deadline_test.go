@@ -127,7 +127,6 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	action, kind := "Update", "updated"
 	if cleanup {
 		healthyPhase, healthyStatus, failedPhase, failedStatus = "", "complete", "", "pending"
-		action, kind = "Delete", "deleted"
 	}
 	type observedResource struct {
 		ID            string
@@ -144,10 +143,10 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	}
 	event("Create", "created")
 	if cleanup {
-		if code, _ := requestJSON(t, "DELETE", address+path+"/"+created.ID, owner, nil); code != 204 {
+		if code, _ := requestJSON(t, "DELETE", address+path+"/"+created.ID, owner, nil); code != 202 {
 			t.Fatal("delete resource", code)
 		}
-		event("Delete", "deleted")
+		event("Update", "updated")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -278,8 +277,8 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	await(healthyPhase, healthyStatus, 8*time.Second)
 	event(action, kind)
 	if cleanup {
-		if code, _ := requestJSON(t, "GET", address+path+"/"+created.ID, owner, nil); code != 404 {
-			t.Fatal("cleanup changed public deletion", code)
+		if code, _ := requestJSON(t, "GET", address+path+"/"+created.ID, owner, nil); code != 200 {
+			t.Fatal("unfinished cleanup lost public visibility", code)
 		}
 		return
 	}

@@ -72,10 +72,10 @@ func TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	}
 	read(false, false, 1)
 	observe(controller, 1, "sql", true, codes.Aborted)
-	if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, admin, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", root+"/"+row.ID, admin, nil); code != 202 {
 		t.Fatal("delete", code)
 	}
-	readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	read(true, false, 2)
 	observe(call(admin), 2, "sql", true, codes.PermissionDenied)
@@ -98,7 +98,7 @@ func TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	observe(controller, 2, "sql", true, codes.OK)
-	readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	read(true, true, 3)
 	stop()
@@ -109,11 +109,11 @@ func TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	read(true, true, 3)
 	observe(controller, 2, "sql", false, codes.Aborted)
 	observe(controller, 3, "sql", false, codes.OK)
-	readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	read(true, false, 4)
 	observe(controller, 4, "sql", true, codes.OK)
-	readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	read(true, true, 5)
 	// Retained input changes require a fresh absence observation.
@@ -122,7 +122,7 @@ func TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart(t *testing.T) {
 	}
 	read(true, false, 6)
 	observe(controller, 5, "sql", true, codes.Aborted)
-	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+row.ID, admin, nil); code != 404 {
-		t.Fatal("cleanup changed public deletion visibility", code)
+	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+row.ID, admin, nil); code != 200 {
+		t.Fatal("unfinished cleanup lost public visibility", code)
 	}
 }

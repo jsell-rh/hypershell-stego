@@ -61,10 +61,10 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 		}
 		ids = append(ids, row.ID)
 		readGatewayEvent(t, consumer, row.ID, "Create", "gateway.created")
-		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 204 {
+		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 202 {
 			t.Fatal("delete Gateway", code)
 		}
-		readGatewayEvent(t, consumer, row.ID, "Delete", "gateway.deleted")
+		readGatewayEvent(t, consumer, row.ID, "Update", "gateway.updated")
 	}
 	awaitQueueEmpty(t, f)
 	blocked := func(resource, id, table string) {
@@ -102,7 +102,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 		if _, err := state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: owner, Target: f.cluster, Complete: complete}); err != nil {
 			t.Fatal(err)
 		}
-		readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+		readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 		awaitQueueEmpty(t, f)
 	}
 	// SQL and workload cleanup each block cluster deletion. A late workload

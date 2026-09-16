@@ -83,10 +83,10 @@ func TestGatewayMutationsPreserveOwnedFields(t *testing.T) {
 	if err := f.service.Delete(ctx, principal("admin", "platform:admin"), created.ID); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.service.Get(ctx, principal("admin", "platform:admin"), created.ID); !errors.Is(err, contract.ErrNotFound) {
-		t.Fatalf("deleted Gateway remains visible: %v", err)
+	if row, err := f.service.Get(ctx, principal("admin", "platform:admin"), created.ID); err != nil || !row.DeletedAt.Valid {
+		t.Fatalf("pending Gateway is not visible: %v", err)
 	}
-	if err := f.service.Delete(ctx, principal("admin", "platform:admin"), created.ID); !errors.Is(err, contract.ErrNotFound) {
+	if err := f.service.Delete(ctx, principal("admin", "platform:admin"), created.ID); err != nil {
 		t.Fatalf("repeat deletion: %v", err)
 	}
 	var deleted bool

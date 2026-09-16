@@ -20,7 +20,7 @@ func (w *browserGatewayWorkload) prepareEarlyDeletion(owner *consoleBrowser) str
 	if response.StatusCode != 201 || json.Unmarshal(response.Body, &row) != nil || row.ID == "" {
 		w.t.Fatal("early Gateway creation failed", response.StatusCode)
 	}
-	if response = owner.api(w.t, "DELETE", "/gateways/"+row.ID, nil); response.StatusCode != 204 {
+	if response = owner.api(w.t, "DELETE", "/gateways/"+row.ID, nil); response.StatusCode != 202 {
 		w.t.Fatal("early Gateway deletion failed", response.StatusCode)
 	}
 	var bindings int

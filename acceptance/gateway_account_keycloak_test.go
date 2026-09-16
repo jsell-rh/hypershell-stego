@@ -124,7 +124,7 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 	}
 	verify(foreign, 200)
 	stopProvider()
-	if code, _ := requestJSON(t, "DELETE", address+path, owner, nil); code != 503 {
+	if code, _ := requestJSON(t, "DELETE", address+path, owner, nil); code != 202 {
 		t.Fatal("provider outage deletion", code)
 	}
 	if code, _ := requestJSON(t, "GET", address+path, owner, nil); code != 200 {
@@ -134,8 +134,24 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 	providerSettings, stopProvider = startRealProvisioner(t, f, k, key, auth)
 	stopAPI, address = startApplication(t, binary, f.dsn, config, append(auth, providerSettings...)...)
 	started := time.Now()
-	if code, data := requestJSON(t, "DELETE", address+path, owner, nil); code != 204 {
-		t.Fatal("restart cleanup", code, string(data))
+	// Only the account controller runs in this fixture. Wait for its durable
+	// completion, including orphan inventory, without forging other owners.
+	deadline := time.Now().Add(30 * time.Second)
+	for {
+		var complete bool
+		if err := f.db.QueryRow("SELECT COALESCE(stego_cleanup->>'accounts'='true',false) FROM gateways WHERE id=$1", gateway.ID).Scan(&complete); err != nil {
+			t.Fatal(err)
+		}
+		if complete {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("restart did not complete real account cleanup")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+	if code, _ := requestJSON(t, "GET", address+path, owner, nil); code != 200 {
+		t.Fatal("account controller bypassed other cleanup owners", code)
 	}
 	t.Logf("Real provider cleanup completed in %s", time.Since(started))
 	for _, c := range credentials {

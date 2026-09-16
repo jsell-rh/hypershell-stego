@@ -70,10 +70,10 @@ func TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime(t *testin
 	}
 	first, second := create("first-shared"), create("second-shared")
 	readEvent(t, consumer, first.ID)
-	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+first.ID, bearer, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+first.ID, bearer, nil); code != 202 {
 		t.Fatal("Gateway deletion failed", code)
 	}
-	readGatewayEvent(t, consumer, first.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, first.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	// The worker starts after event delivery and API restart. Retained state must
 	// recover the pending work without an old event payload as authority.

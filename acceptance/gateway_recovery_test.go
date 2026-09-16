@@ -122,7 +122,7 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 		t.Fatal("binding record count differs", n)
 	}
 	for _, row := range []httpapi.Gateway{early, bound} {
-		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 204 {
+		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 202 {
 			t.Fatal("Gateway deletion failed", code)
 		}
 	}

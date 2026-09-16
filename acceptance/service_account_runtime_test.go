@@ -164,15 +164,6 @@ func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if code, data := requestJSON(t, "GET", path+"/"+id, token(t, key, "mallory", "platform:admin"), nil); code != 404 {
 		t.Fatalf("admin bypassed grant: %d %s", code, data)
 	}
-	provider.mu.Lock()
-	provider.failChange = true
-	provider.mu.Unlock()
-	if code, data := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil); code != 503 {
-		t.Fatalf("Gateway deletion bypassed cleanup: %d %s", code, data)
-	}
-	provider.mu.Lock()
-	provider.failChange = false
-	provider.mu.Unlock()
 	// A correctly signed token for another subject cannot provision identities.
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "wrong-service")), 0600); err != nil {
 		t.Fatal(err)
@@ -241,7 +232,7 @@ func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 		time.Sleep(50 * time.Millisecond)
 	}
 	code, data = requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil)
-	if code != 204 {
+	if code != 202 {
 		t.Fatalf("Gateway after account cleanup: %d %s", code, data)
 	}
 	stop()

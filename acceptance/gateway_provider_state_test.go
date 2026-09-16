@@ -174,10 +174,10 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	save(writer, 2, 1, next, false, codes.OK)
 	verify(2, 2, false, plain)
 	code, _ = requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil)
-	if code != 204 {
+	if code != 202 {
 		t.Fatal("Gateway deletion failed", code)
 	}
-	readGatewayEvent(t, consumer, gateway.ID, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	lastEvent = eventSequence()
 	verify(2, 3, true, plain)

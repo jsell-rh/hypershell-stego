@@ -282,7 +282,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	readCatalogEvent(t, kafkaConsumer(t, config), releaseID, "GatewayReleases", "Update", "gatewayrelease.updated", offlineMessageID)
 	awaitQueueEmpty(t, f)
-	if code, _ := requestJSON(t, "DELETE", base+"/gateways/"+gateway.ID, owner, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", base+"/gateways/"+gateway.ID, owner, nil); code != 202 {
 		t.Fatal("Gateway removal", code)
 	}
 	for _, target := range []string{"managed_clusters/" + cluster.ID} {

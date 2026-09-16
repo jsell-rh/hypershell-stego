@@ -232,7 +232,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	}
 	connection.Close()
 	stop()
-	// The update and delete events are durable while the runtime is stopped.
+	// The update and deletion request remain durable while the runtime is stopped.
 	if _, err := f.service.Update(ctx, principal("alice"), original.ID, gateways.PatchRequest{Name: pointer("stopping")}); err != nil {
 		t.Fatal(err)
 	}
@@ -246,21 +246,21 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	client, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	// Events for one resource retain commit order after restart.
 	first := readGatewayEvent(t, consumer, original.ID, "Update", "gateway.updated")
-	second := readGatewayEvent(t, consumer, original.ID, "Delete", "gateway.deleted")
+	second := readGatewayEvent(t, consumer, original.ID, "Update", "gateway.updated")
 	if first == "" || second == "" || first == second {
 		t.Fatal("restart lost event IDs")
 	}
 	awaitQueueEmpty(t, f)
 	path = httpAddress + "/api/hypershell/v1/gateways"
-	if _, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: original.ID}); status.Code(err) != codes.NotFound {
-		t.Fatalf("restart restored deleted row: %v", err)
+	if row, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: original.ID}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
+		t.Fatalf("restart lost pending deletion: %v", err)
 	}
 	code, _ = requestJSON(t, "GET", path+"/"+original.ID, owner, nil)
-	if code != 404 {
-		t.Fatal("REST restored deleted row")
+	if code != 200 {
+		t.Fatal("REST lost pending deletion")
 	}
-	if list, err := client.ListGateways(call(owner), &pb.ListGatewaysRequest{}); err != nil || list.Metadata.Total != 0 {
-		t.Fatalf("deleted row counted: %v %v", list, err)
+	if list, err := client.ListGateways(call(owner), &pb.ListGatewaysRequest{}); err != nil || list.Metadata.Total != 1 {
+		t.Fatalf("pending row not counted: %v %v", list, err)
 	}
 	// Exercise successful deletes through both public transports.
 	for _, transport := range []string{"REST", "gRPC"} {
@@ -273,7 +273,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		awaitQueueEmpty(t, f)
 		if transport == "REST" {
 			code, data = requestJSON(t, "DELETE", path+"/"+id, owner, nil)
-			if code != 204 || len(data) != 0 {
+			if code != 202 || len(data) != 0 {
 				t.Fatalf("delete response: %d %s", code, data)
 			}
 		} else {
@@ -281,10 +281,10 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+		readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 		awaitQueueEmpty(t, f)
-		if _, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: id}); status.Code(err) != codes.NotFound {
-			t.Fatalf("delete did not persist: %v", err)
+		if row, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: id}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
+			t.Fatalf("pending deletion did not persist: %v", err)
 		}
 	}
 	if _, err := client.DeleteGateway(call(owner), &pb.DeleteGatewayRequest{Id: ksuid.New().String()}); status.Code(err) != codes.NotFound {

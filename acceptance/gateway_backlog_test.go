@@ -72,7 +72,7 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	sort.Strings(ids)
 	awaitQueueEmptyWithin(t, f, 45*time.Second)
 	readEvent(t, consumer, ids[len(ids)-1])
-	readGatewayEvent(t, consumer, ids[len(ids)-1], "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, ids[len(ids)-1], "Update", "gateway.updated")
 	// Discovery must reconstruct the backlog after the original events are gone.
 	stop()
 	stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
@@ -133,9 +133,9 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 			t.Fatal("wrong retained cleanup observation", id, err)
 		}
 	}
-	readGatewayEvent(t, consumer, ids[len(ids)-1], "Delete", "gateway.deleted")
-	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+ids[len(ids)-1], token(t, key, "backlog-owner"), nil); code != 404 {
-		t.Fatal("cleanup changed public deletion", code)
+	readGatewayEvent(t, consumer, ids[len(ids)-1], "Update", "gateway.updated")
+	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+ids[len(ids)-1], token(t, key, "backlog-owner"), nil); code != 200 {
+		t.Fatal("unfinished cleanup lost public visibility", code)
 	}
 	t.Logf("%d retained Gateways crossed a %d-key queue in %s; one provider remained pending", total, gatewayworkload.QueueCapacity, time.Since(started).Round(time.Millisecond))
 }

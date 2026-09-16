@@ -206,12 +206,12 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 		}
 	}
 	code, data = requestJSON(t, "DELETE", path+"/"+id, owner, nil)
-	if code != 204 {
+	if code != 202 {
 		t.Fatalf("watch delete: %d %s", code, data)
 	}
-	expect(owners, pb.EventType_EVENT_TYPE_DELETED, id, "external-writer")
-	if _, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id}); status.Code(err) != codes.NotFound {
-		t.Fatalf("deleted Gateway readable: %v", err)
+	expect(owners, pb.EventType_EVENT_TYPE_UPDATED, id, "external-writer")
+	if row, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
+		t.Fatalf("pending Gateway state: %v", err)
 	}
 	if _, err := client.UpdateGateway(viewerCtx, &pb.UpdateGatewayRequest{Id: anchor.ID, Name: proto.String("after-delete")}); err != nil {
 		t.Fatal(err)
@@ -222,7 +222,7 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	for range 4 {
 		readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	}
-	readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	stop()
 	for _, watch := range all {
@@ -239,8 +239,18 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	client, _ = grpcClient(t, grpcAddress, tlsIdentity)
 	recovered := watchGateways(t, client, ownerCtx)
 	list, err = client.ListGateways(ownerCtx, &pb.ListGatewaysRequest{})
-	if err != nil || list.Metadata.Total != 1 || len(list.Items) != 1 || list.Items[0].Metadata.Id != offline.ID {
+	if err != nil || list.Metadata.Total != 2 || len(list.Items) != 2 {
 		t.Fatalf("recovery list: %v %v", list, err)
+	}
+	seen := map[string]string{}
+	for _, row := range list.Items {
+		seen[row.Metadata.Id] = row.GetPhase()
+	}
+	if len(seen) != 2 || seen[id] != "Deleting" {
+		t.Fatal("restart lost pending Gateway")
+	}
+	if _, found := seen[offline.ID]; !found {
+		t.Fatal("restart lost live Gateway")
 	}
 	if _, err := client.UpdateGateway(ownerCtx, &pb.UpdateGatewayRequest{Id: offline.ID, Name: proto.String("after-restart")}); err != nil {
 		t.Fatal(err)
@@ -252,8 +262,8 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	if _, err := client.DeleteGateway(ownerCtx, &pb.DeleteGatewayRequest{Id: offline.ID}); err != nil {
 		t.Fatal(err)
 	}
-	recovered.expect(t, pb.EventType_EVENT_TYPE_DELETED, offline.ID, "after-restart")
-	readGatewayEvent(t, consumer, offline.ID, "Delete", "gateway.deleted")
+	recovered.expect(t, pb.EventType_EVENT_TYPE_UPDATED, offline.ID, "after-restart")
+	readGatewayEvent(t, consumer, offline.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
 	recovered.cancel()
 	stop()

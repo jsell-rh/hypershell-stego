@@ -327,10 +327,10 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	stopWorker, logs = startDatabaseController(t, worker, k, rpcAddress, tlsIdentity.config.CAFile, controller, workerSettings...)
 	readCount(one, 2)
 	readGatewayEvent(t, consumer, one.Metadata.Id, "Update", "gateway.updated")
-	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+three.Metadata.Id, owner, nil); code != 204 {
+	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+three.Metadata.Id, owner, nil); code != 202 {
 		t.Fatal("Gateway deletion failed", code)
 	}
-	readGatewayEvent(t, consumer, three.Metadata.Id, "Delete", "gateway.deleted")
+	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	if err := remove(three); err != nil {
 		t.Fatal(err)
 	}
