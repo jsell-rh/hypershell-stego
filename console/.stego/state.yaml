@@ -32,10 +32,10 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: (devel)
-        vcs: unknown
-        revision: unknown
-        source_state: unknown
+        module_version: v0.0.0-20260916182340-305bbf99ff2b
+        vcs: git
+        revision: 305bbf99ff2baefa452ad6c017ba8394a9580893
+        source_state: clean
     service_hash: 7456b6c9bcf2e57b96f237fc5a9e62649da552ae5bad56d7be0b219fe3095b6e
     registry_sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
     registry_content_sha256: e50050b9682b0e0bf9f8cb7bccbfe49a22c360b572253b70c60eed1bb78b768c
