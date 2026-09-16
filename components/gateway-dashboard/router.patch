@@ -36,3 +36,9 @@
 +import { TextDecoder, TextEncoder } from 'node:util';
 +
 +Object.assign(globalThis, { TextDecoder, TextEncoder });
+--- a/frontend/jest.config.js
++++ b/frontend/jest.config.js
+@@ -6,2 +6,3 @@
+   moduleNameMapper: {
++    '^@stego/browser-telemetry$': '<rootDir>/stego/browser-telemetry/index.js',
+     '^~/(.*)$': '<rootDir>/src/$1',
