@@ -85,7 +85,17 @@ func (w *browserGatewayWorkload) checkSQLIsolation() map[string]map[string]strin
 			w.t.Fatal("Gateway SQL TLS, ownership, or login permissions differ", err)
 		}
 		other := databaseNames(w.t, w.f.cluster, w.gatewayIDs[1-i])
-		for _, database := range []string{other.Database, w.databaseOptions.Database, "postgres"} {
+		databases := []string{other.Database, w.databaseOptions.Database, "postgres"}
+		if w.public != nil {
+			for _, gatewayID := range w.gatewayIDs {
+				console, err := postgres.DatabaseNames(postgres.DatabaseKey{Scope: w.f.cluster, Resource: "console:" + gatewayID})
+				if err != nil {
+					w.t.Fatal(err)
+				}
+				databases = append(databases, console.Database)
+			}
+		}
+		for _, database := range databases {
 			o.Database = database
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			var one int
@@ -97,6 +107,7 @@ func (w *browserGatewayWorkload) checkSQLIsolation() map[string]map[string]strin
 			}
 		}
 	}
+	w.checkConsoleSQLIsolation()
 	w.t.Log("Both Gateway logins use verified TLS and separate databases; cross-database access is denied")
 	return identities
 }
@@ -151,5 +162,21 @@ func (w *browserGatewayWorkload) requireSQLAbsent(ctx context.Context, o postgre
 	}
 	if _, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+ns, nil); err != nil || code != 404 {
 		w.t.Fatal("deleted Gateway durable state remains", code)
+	}
+	if w.public != nil {
+		console, err := postgres.DatabaseNames(postgres.DatabaseKey{Scope: w.f.cluster, Resource: "console:" + id})
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		if err := postgres.ReadRow(ctx, o, `SELECT NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname IN ($1,$2)) AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$3)`, []any{console.User, console.Owner, console.Database}, &absent); err != nil || !absent {
+			w.t.Fatal("deleted console SQL state remains")
+		}
+		ns, err := gatewayworkload.ConsoleStateNamespace(id)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		if _, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+ns, nil); err != nil || code != 404 {
+			w.t.Fatal("deleted console durable state remains", code)
+		}
 	}
 }
