@@ -20,7 +20,10 @@ concurrency:
 jobs:
   module:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
     env:
       GOMAXPROCS: '2'
       GOMEMLIMIT: 768MiB
@@ -47,8 +50,8 @@ jobs:
           mkdir -p "$RUNNER_TEMP/gateway-console"
           go mod verify
           go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./... 2>&1 | tee "$RUNNER_TEMP/gateway-console/vulnerabilities.log"
-          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gateway-console/browser" ./out
-          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gateway-console/render" ./out/deploy/render
+          go build -mod=readonly -trimpath -buildvcs=false -o "$RUNNER_TEMP/gateway-console/browser" ./out
+          go build -mod=readonly -trimpath -buildvcs=false -o "$RUNNER_TEMP/gateway-console/render" ./out/deploy/render
       - name: Check the real dashboard binding and private deployment
         run: |
           set -euo pipefail
@@ -67,6 +70,43 @@ jobs:
           cp gateway-console/.stego/compiler-revision "$root/compiler-revision"
           cp gateway-console/upstream.json "$root/upstream.json"
           tar -C gateway-console -cf "$root/generated-source.tar" service.yaml registry .stego/config.yaml .stego/compiler-revision .stego/state.yaml go.mod go.sum out
+      - name: Publish and verify the generated browser image
+        timeout-minutes: 8
+        env:
+          REGISTRY_TOKEN: ${{ github.token }}
+          REGISTRY_USER: ${{ github.actor }}
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/gateway-console"
+          image="ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci:$GITHUB_SHA-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          container="stego-console-image-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          export DOCKER_CONFIG="$RUNNER_TEMP/console-image-auth-$GITHUB_RUN_ID-$GITHUB_RUN_ATTEMPT"
+          mkdir -m 700 "$DOCKER_CONFIG"
+          trap 'docker rm "$container" >/dev/null 2>&1 || true; rm -rf "$DOCKER_CONFIG"' EXIT
+          docker build --file gateway-console/out/deploy/Containerfile \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --label "org.opencontainers.image.revision=$GITHUB_SHA" \
+            --tag "$image" gateway-console 2>&1 | tee "$root/browser-image-build.log"
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = '65532:65532'
+          test "$(docker image inspect --format '{{json .Config.Entrypoint}}' "$image")" = '["/service"]'
+          docker create --name "$container" --network=none --read-only \
+            --cap-drop=ALL --security-opt=no-new-privileges --pids-limit=32 \
+            --memory=128m --cpus=0.5 "$image" >/dev/null
+          docker cp "$container:/service" "$root/image-service"
+          cmp "$root/browser" "$root/image-service"
+          sha256sum "$root/image-service" > "$root/browser-image-binary.sha256"
+          rm "$root/image-service"
+          docker rm "$container" >/dev/null
+          docker image inspect "$image" > "$root/browser-image-inspect.json"
+          built_id=$(docker image inspect --format '{{.Id}}' "$image")
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
+          docker push "$image" 2>&1 | tee "$root/browser-image-push.log"
+          digest=$(docker image inspect --format '{{index .RepoDigests 0}}' "$image")
+          [[ $digest =~ ^ghcr\.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:[0-9a-f]{64}$ ]]
+          docker pull "$digest" 2>&1 | tee "$root/browser-image-pull.log"
+          test "$(docker image inspect --format '{{.Id}}' "$digest")" = "$built_id"
+          printf '%s\n' "$digest" > "$root/browser-image"
+          printf '{"binary_matches_module":true,"pulled_digest_matches_build":true}\n' > "$root/browser-image-verification.json"
       - name: Retain the generated application evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
