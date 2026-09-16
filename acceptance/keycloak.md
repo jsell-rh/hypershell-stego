@@ -1,9 +1,15 @@
 The service-account workflow now uses a real Keycloak provider. The application
 creates accounts through REST. A separate provisioner process serves the pinned
 internal RPC contract through STEGO's generated TLS runtime. Hypershell owns
-client settings, role mappings, audience mappings, ownership checks, and lifecycle
-operations. STEGO owns HTTPS limits, JWT signature verification, RPC transport,
-process signals, telemetry, and cleanup. See the [RPC process check](rpc-process.md).
+Gateway IDs, ownership attributes, role and audience policy, quotas, expiry,
+and authorization. STEGO owns typed provider operations, checked lifecycle,
+protected recovery journals, HTTPS limits, JWT verification, RPC transport,
+process signals, and telemetry. See the [RPC process check](rpc-process.md).
+
+The [current qualification](common-account-lifecycle-20260916.md) passed core,
+rendered browser, full Gateway cluster, private journal API, and CNPG workflows.
+The dated records below preserve earlier failures and intermediate results.
+The production process also requires the [private journal settings](service-account-provider-state.md).
 
 Run `go run ./out/grpcapi/processes/provisioner` with these settings:
 
@@ -406,3 +412,14 @@ with explicit empty values, and reads the saved legacy attributes before it
 tests outage, restart, and cleanup. Production ownership checks are unchanged.
 The fixture compiles; its real-provider result is pending. Core CI now streams
 individual test records so failures are visible before the package finishes.
+
+
+## Completed account migration qualification
+
+[Run 35047697086](https://github.com/jsell-rh/hypershell-stego/actions/runs/35047697086)
+passed core, rendered browser, console, images, and CNPG on `a570dd0`. The corrected
+orphan fixture passed against real Keycloak, including outage and restart,
+confirmed cleanup, and continued use of a different Gateway credential. The
+private journal API also passed separately on jshell in run `35045870319`.
+The [complete record](common-account-lifecycle-20260916.md) includes source IDs,
+checks, cleanup, artifact hashes, and remaining limits.

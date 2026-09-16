@@ -7,11 +7,11 @@ account quotas, expiry, and authorization policy.
 
 | Current qualification | Result and scope |
 | --- | --- |
-| Account browser workflow | [Passed on `048ff55`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888): real login, SQL journal, credential delivery, tokens, revoke, and delete |
-| Application regeneration, web console, and images | Passed on `048ff55`; the core suite found one orphan fixture failure, which is being corrected |
+| Account browser workflow | [Passed on `a570dd0`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35047697086/job/104641062793): real login, SQL journal, credential delivery, tokens, revoke, and delete |
+| Core, regeneration, web console, and images | [Passed on `a570dd0`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35047697086); core acceptance took 1382.383 seconds, including corrected orphan cleanup |
 | Full Gateway cluster workflow | [Passed on `048ff55`](acceptance/common-account-lifecycle-20260916.md), including the common account lifecycle, provisioner replacement, real Gateway credentials, and verified cleanup |
 | Private account state API and restart | [Passed on jshell](acceptance/service-account-provider-state.md): all 34 required API tests and cleanup passed |
-| CNPG | Earlier complete workflow passed; qualification of the account migration is pending |
+| CNPG | [Passed on `a570dd0`](acceptance/common-account-lifecycle-20260916.md): common account lifecycle, database primary replacement, 24 network checks, and confirmed cleanup |
 
 These results do not establish production capacity or complete application parity.
 Use one provisioner replica with `Recreate`, stable journal keys, and the exact
@@ -587,5 +587,6 @@ Common code manages creation, migration, access repair, and retained cleanup.
 Hypershell supplies Gateway ownership and OpenShell role policy. This migration
 requires stable journal keys and an exact API grant. Its rendered browser
 and full cluster workflows passed on commit `048ff55`. The private API and
-restart gate also passed on jshell. Core-suite and CNPG qualification remain
-pending.
+restart gate also passed on jshell. The complete core suite and CNPG workflow
+passed on `a570dd0`. The [result record](acceptance/common-account-lifecycle-20260916.md)
+states the tested scope and the remaining limits.

@@ -55,7 +55,67 @@ The legacy orphan fixture now explicitly removes the current ownership
 attributes. Keycloak retains attributes omitted from an update. The test first
 checks that mixed ownership is denied, then verifies the legacy fixture by
 readback. Production ownership checks are unchanged. The corrected core suite
-and the current CNPG gate are running on `a570dd0`. This evidence does not
-establish production capacity,
+and the current CNPG gate passed on `a570dd0`, as recorded below. This evidence
+does not establish production capacity,
 external DNS enforcement, cross-process writer fencing, or database rollback
 detection. The Kata Sandbox test remains deferred.
+
+
+## CNPG result on the same application runtime
+
+The [CNPG job](https://github.com/jsell-rh/hypershell-stego/actions/runs/35047697086/job/104641062738)
+passed on `a570dd037d6ddb9622afbbc0096455b8c70ffd14`, with compiler `3e0bc22`.
+Production journal and provisioner files match the tested `048ff55` runtime;
+the later source corrects the orphan fixture and test output. The complete
+browser test took 485.29 seconds. CNPG primary replacement took 69.57 seconds
+and preserved SQL object IDs, Gateway credentials, keys, provider data, and
+installation data. Both database instances returned to readiness.
+
+The workflow passed account creation, one-time delivery, real Gateway use,
+provisioner replacement, reload, revoke, and delete. Three provider clients and
+their cleanup audits were closed before the Gateway deletion response. SQL
+privilege faults, namespace loss, worker replacement, API and console restart,
+access removal, events, session key rotation, and logout also passed. Six worker
+instances exported metrics and correlated logs and traces.
+
+All 24 fresh-connection checks passed on the first attempt before and after
+namespace recovery. Approved Kubernetes, PostgreSQL, identity, and telemetry
+paths connected. Other-Gateway and control-API paths were denied. This restricted
+fixture does not test a listener in an unrelated namespace or external DNS.
+All 262 generation hashes matched before, between, and after the checks.
+
+The Job UID was `0bbc44cf-02f2-4c2c-9c18-d03bcc4fe085`. Cleanup removed test runtime,
+Gateway allocations, database volumes, and private fixtures. The fixed CI
+installation remains. Independent reads confirmed that database Pods and claims,
+application Jobs and Pods, and the shared Lease holder were absent.
+Artifact `cnpg-gateway-35047697086-1` is retained in the persistent results
+folder under `account-lifecycle-cnpg-success`.
+
+| Artifact file | SHA-256 |
+| --- | --- |
+| `browser/deployment.log` | `89fd33c394c8fd7865ce591f1ac6d6a07bd64dbb369078ef83877b213b469fcd` |
+| `browser/evidence.tar` | `ca55c0d1316d1e850feed03ec852be4cea7f0595e2b9b464bb4aac02f42ea816` |
+| `cnpg-ci-cleanup.json` | `357fca65026406eac9266794fd6f653b95181c6c34e656e352161b38cfcbce06` |
+
+
+## Final core and browser qualification
+
+[Run 35047697086](https://github.com/jsell-rh/hypershell-stego/actions/runs/35047697086)
+completed successfully on `a570dd0`. Core acceptance passed in 1382.383 seconds
+with the race detector. The streamed core results contain 456 passing tests and
+subtests and no failures. The corrected legacy orphan test passed in 47.36
+seconds. It confirmed rejection of mixed ownership, then removed two stored
+clients and one legacy orphan after provider outage and API restart. The other
+Gateway credential remained usable. The observed cleanup request took 470.6 ms;
+this one result is not a capacity measurement.
+
+The real-Keycloak account test passed in 49.44 seconds. The private journal test
+passed again in 5.42 seconds. The rendered browser workflow passed in 96.59
+seconds. Console checks, generated images, vulnerability checks, regeneration,
+and the CNPG job passed. The Kata Sandbox job was skipped under the user's
+recorded deferral; it is not a pass.
+
+These results qualify the common lifecycle migration for the recorded workflows.
+They do not close the full enterprise goal. Large account-history cleanup,
+external DNS enforcement, cross-process writer fencing, backup and restore,
+production capacity, and the per-Gateway dashboard still need work.
