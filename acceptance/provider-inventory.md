@@ -286,3 +286,18 @@ caller must be denied. Changed source versions must fail before any Keycloak
 request. The existing read-failure, later-client, page-shift, and closure checks
 then run through the private RPCs. The test package compiles; the stronger CI
 result is pending. This test change does not alter production code.
+
+
+Public browser run `35104667835`, source `550b2b7`, passed the complete Gateway
+workflow in 501.24 seconds. All 266 generated hashes matched before and after
+the test. The archive exit code is zero, with no failed tests. The wrapper
+reported no remaining allocations or test resources. Independent operator reads
+confirmed no allocated or browser-test namespaces, Jobs, Pods, PVCs, or Lease
+holder. The [evidence record](browser-closure-evidence-20260916.json) identifies
+the source and archive hash. Raw evidence is in `browser-closure-result`.
+
+This pass uses closure preparation and the scope guard, but predates bounded
+discovery. After its cleanup was verified, the 51-check API run `35106819091`
+started at `120711a`, which has the same production code as `85706c6`. It is the
+only active live cluster test. The latest full application run `35106305055`
+is queued behind the earlier full run.

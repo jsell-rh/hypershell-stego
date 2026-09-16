@@ -1,0 +1,29 @@
+{
+  "source": "550b2b724b2db9eca6678ebe04358b8cd278b77b",
+  "compiler": "dfc9a1efa4c33d25896e4f97852519024b18a23f",
+  "archive_sha256": "ae09a4705e563587da608c3c695f934e20d786b0fc2020acbb934846f5683c7e",
+  "exit": "0",
+  "generation_equal": true,
+  "generated_files": 266,
+  "workflow_passes": [
+    "501.24s"
+  ],
+  "failed_tests": [],
+  "cleanup": {
+    "namespace_retained": "stego-service-ci",
+    "test_resources_absent": true,
+    "allocations_absent": true
+  },
+  "allocation_cleanup": {
+    "allocations_before": 0,
+    "allocations_absent": true
+  },
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35104667835",
+  "operator_cleanup": {
+    "allocations": [],
+    "browser_namespaces": [],
+    "runtime": [],
+    "lease": ""
+  },
+  "scope": "Complete public Gateway workflow with external PostgreSQL fixture, before bounded provider discovery. It does not qualify later discovery or failed-window changes."
+}
