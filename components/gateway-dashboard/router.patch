@@ -1,0 +1,26 @@
+--- a/frontend/src/app/App.tsx
++++ b/frontend/src/app/App.tsx
+@@ -15,9 +15,7 @@
+   <QueryClientProvider client={queryClient}>
+     <SlotProvider slots={{}}>
+       <AlertProvider>
+-        <BrowserRouter
+-          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+-        >
++        <BrowserRouter>
+           <AppRoutes />
+         </BrowserRouter>
+       </AlertProvider>
+--- a/frontend/src/app/__tests__/AppRoutes.spec.tsx
++++ b/frontend/src/app/__tests__/AppRoutes.spec.tsx
+@@ -42,9 +42,7 @@
+ 
+ const renderGate = () =>
+   render(
+-    <MemoryRouter
+-      future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
+-    >
++    <MemoryRouter>
+       <AppRoutes />
+     </MemoryRouter>,
+   );

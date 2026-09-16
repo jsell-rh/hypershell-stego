@@ -1,0 +1,23 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35108147006",
+  "application_source": "3b95976449922cf47c08bd2cd90d6443af91d127",
+  "upstream_source": "07f1b13ebd9e1826afe943b831b092be8bf92498",
+  "outcomes": {
+    "backend": "failure",
+    "frontend": "success",
+    "dependencies": "failure",
+    "assets": "failure"
+  },
+  "source_archive_sha256": "058ee9aaae1ac7b40f8448b16989d58e1cce51b577c08c405129e3a5f21701b2",
+  "findings": {
+    "go": "Build passed. The vulnerability check found reachable GO-2026-6348 in grpc 1.82.1.",
+    "javascript": "Types and build passed. Runtime audit reports two affected packages: react-router and react-router-dom.",
+    "assets": "STEGO rejected root asset paths. The main JavaScript file also exceeds the current 4 MiB file limit. Source maps and license text files are not supported assets."
+  },
+  "logs_sha256": {
+    "go-vulnerabilities.log": "06fab370624b8c6139824f08d978b0acea16b3e170d0460cf8902a475088fdbf",
+    "npm-audit.json": "9cb6d9a732e5f3c2f52490e43c57e7cac8a6234c95f0003e5ee2d12323b7b8cb",
+    "asset-contract.log": "6b10836d5f1c055b0eb8f059da841d18f6d876aa45f04837fc3b3cf5ba3d6738",
+    "assets.txt": "8b69094b737f168f418d90e2b88263dbfb238946404441e643bc2c041b5316b1"
+  }
+}

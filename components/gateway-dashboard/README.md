@@ -11,6 +11,18 @@ actual asset output against STEGO's bundle contract. It runs in bounded CI.
 Each check must pass; an earlier failure cannot hide behind artifact collection.
 The source archive, dependency inputs, logs, and outcomes are retained together.
 
+The [first run](../../acceptance/dashboard-source-first-evidence.json) failed.
+The Go build passed, but its vulnerability check found an affected gRPC call.
+The JavaScript audit found affected router dependencies. UI types and build
+passed; the resulting assets failed STEGO's bundle contract.
+
+The checked build inputs now select gRPC 1.83.2 and React Router 7.18.0. The
+small source patch removes the earlier router flags, whose behavior is included
+in version 7. CI checks the existing authentication and Sandbox list tests.
+The original upstream commit and the modified build tree are recorded separately.
+These files change the build inputs; they do not copy the dashboard backend
+into Hypershell or replace its implementation. Qualification remains pending.
+
 This check does not deploy the dashboard or prove authentication, rendering,
 the editor, terminal access, restart, or cleanup. Those remain required in the
 complete Gateway workflow. Do not weaken browser security rules to make the

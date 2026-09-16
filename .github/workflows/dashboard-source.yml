@@ -55,6 +55,19 @@ jobs:
           sha256sum "$RUNNER_TEMP/dashboard-source/upstream-source.tar" > "$RUNNER_TEMP/dashboard-source/upstream-source.sha256"
           cp upstream-dashboard/frontend/package-lock.json "$RUNNER_TEMP/dashboard-source/package-lock.json"
           cp upstream-dashboard/backend/go.mod upstream-dashboard/backend/go.sum "$RUNNER_TEMP/dashboard-source/"
+      - name: Apply the checked dependency inputs
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp components/gateway-dashboard/backend/go.mod components/gateway-dashboard/backend/go.sum upstream-dashboard/backend/
+          cp components/gateway-dashboard/frontend/package.json components/gateway-dashboard/frontend/package-lock.json upstream-dashboard/frontend/
+          git -C upstream-dashboard apply --index "$GITHUB_WORKSPACE/components/gateway-dashboard/router.patch"
+          git -C upstream-dashboard add backend/go.mod backend/go.sum frontend/package.json frontend/package-lock.json
+          git -C upstream-dashboard diff --cached --binary > "$RUNNER_TEMP/dashboard-source/build-overlay.patch"
+          build_tree=$(git -C upstream-dashboard write-tree)
+          printf '%s\n' "$build_tree" > "$RUNNER_TEMP/dashboard-source/build-tree"
+          git -C upstream-dashboard archive "$build_tree" > "$RUNNER_TEMP/dashboard-source/build-source.tar"
+          sha256sum "$RUNNER_TEMP/dashboard-source/build-source.tar" > "$RUNNER_TEMP/dashboard-source/build-source.sha256"
       - name: Check the upstream Go backend
         id: backend
         continue-on-error: true
@@ -75,6 +88,7 @@ jobs:
           set -euo pipefail
           npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/dashboard-source/npm-install.log"
           npm run typecheck 2>&1 | tee "$RUNNER_TEMP/dashboard-source/typecheck.log"
+          npm test -- --runInBand src/app/__tests__/AppRoutes.spec.tsx src/pages/__tests__/SandboxListPage.spec.tsx 2>&1 | tee "$RUNNER_TEMP/dashboard-source/router-tests.log"
           npm run build 2>&1 | tee "$RUNNER_TEMP/dashboard-source/ui-build.log"
           git diff --exit-code
       - name: Check runtime JavaScript dependencies
