@@ -1,0 +1,110 @@
+{
+  "run": 35118797819,
+  "head": "b4b69abff46c95c984eec5dba3800f37f7684193",
+  "log_sha256": "8516f85b24cc4de9029e794e5615fbabf8a7c757086aff72037e65951f6816e1",
+  "tests": [
+    {
+      "name": "TestConsoleDomainPolicy",
+      "elapsed": 0
+    },
+    {
+      "name": "TestGatewayInventoryRegistersPastFailedClientRead",
+      "elapsed": 0.02
+    },
+    {
+      "name": "TestInventoryRPCsDenyUnverifiedCaller",
+      "elapsed": 0
+    },
+    {
+      "name": "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+      "elapsed": 0
+    },
+    {
+      "name": "TestDeletionRequiresExplicitPrivilegedState",
+      "elapsed": 0
+    },
+    {
+      "name": "TestIdentityPublicationRequiresProviderSuccess",
+      "elapsed": 0
+    },
+    {
+      "name": "TestConsoleFailureDoesNotBlockGrantRemoval",
+      "elapsed": 0
+    },
+    {
+      "name": "TestProviderStateJournalScopeAndObservation",
+      "elapsed": 0
+    },
+    {
+      "name": "TestConsoleProviderStateJournalSeparatesNativeScope",
+      "elapsed": 0
+    },
+    {
+      "name": "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "elapsed": 1.18
+    },
+    {
+      "name": "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "elapsed": 0.6
+    },
+    {
+      "name": "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "elapsed": 0.65
+    },
+    {
+      "name": "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "elapsed": 0.52
+    },
+    {
+      "name": "TestGatewayIdentityControllerWorkflow",
+      "elapsed": 86.84
+    },
+    {
+      "name": "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "elapsed": 0.93
+    },
+    {
+      "name": "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "elapsed": 0.35
+    },
+    {
+      "name": "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "elapsed": 0.41
+    },
+    {
+      "name": "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "elapsed": 0.33
+    },
+    {
+      "name": "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "elapsed": 0.38
+    },
+    {
+      "name": "TestGatewayUserLoginFollowsStoredGrants",
+      "elapsed": 96.65
+    },
+    {
+      "name": "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "elapsed": 7.56
+    }
+  ],
+  "compiler": "1db04e6c0d2aa566b4ce027401b70155a190f3dd",
+  "workflow": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35118797819",
+  "status": "passed",
+  "required_top_level_tests": 21,
+  "scope": [
+    "Committed and repeated root, console, and Gateway console generation",
+    "Real Keycloak native and console client recovery and late deletion",
+    "Separate encrypted state scopes over TLS gRPC and API restart",
+    "Real console PKCE login with Gateway roles and audience",
+    "Grant removal while console placement is invalid",
+    "Owner, viewer, rename, revocation, and restart",
+    "Console tokens rejected by the control-plane API"
+  ],
+  "limits": [
+    "The Gateway controller does not yet deploy the dashboard",
+    "Scoped browser credential delivery and session database provisioning remain required",
+    "Live editor, terminal, and console address publication remain required",
+    "This record does not claim a live dashboard workflow or Kata validation"
+  ]
+}

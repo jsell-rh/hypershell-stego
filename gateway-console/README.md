@@ -46,3 +46,10 @@ uses the same assigned identity controller and cleanup grants, with resource
 and record version checks. Cleanup closes the console client before the native
 client. This change does not yet supply credentials to a dashboard Pod or
 publish `console_address`. The application workflow still requires those steps.
+
+The [identity evidence](../acceptance/console-identity-evidence.json) records 21
+passing checks against real Keycloak and PostgreSQL. It includes PKCE console
+login, stored owner and viewer grants, grant removal during a console placement
+fault, and restart. The controller applies grants before client repair. It
+retries from current state if a grant observation changes the resource revision.
+This evidence does not prove a deployed dashboard workflow.
