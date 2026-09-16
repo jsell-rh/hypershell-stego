@@ -1,0 +1,26 @@
+kind: service
+name: hypershell-gateway-console
+archetype: browser-service
+language: go
+overrides:
+  postgres-adapter:
+    migrations: external
+  browser-telemetry:
+    service_name: hypershell-gateway-console
+  health-check:
+    database: true
+  browser-backend:
+    telemetry_service_name: hypershell-gateway-console
+    logout_scope: identity_provider
+    api_prefix: /api/v1
+    routes: ["/", "/gateway", "/global-policy", "/settings", "/workspaces", "/workspaces/{id}", "/workspaces/{id}/sandboxes/{id}", "/workspaces/{id}/providers/{id}"]
+    asset_bundle: ui/build.zip
+  kubernetes-service:
+    local_applications:
+      - port: 8000
+        image: ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:f4d80232a7609b038d5725c6c80eeb9aea04741d94312a91f785b914683f1275
+        listen_env: LISTEN_ADDRESS
+        port_env: PORT
+        env_secret: dashboard-application-env
+        files_secret: dashboard-application-files
+        health_path: /api/v1/readyz

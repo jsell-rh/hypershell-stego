@@ -34,6 +34,7 @@ for target in "$project" "$project/console"; do
     "$scratch/stego" drift
   )
 done
+"$project/scripts/generate-gateway-console.sh" "$@"
 if [[ ${1:-} == --check ]]; then
   git diff --exit-code -- out .stego/state.yaml go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum
   if [[ -n $(git ls-files --others --exclude-standard -- out .stego/state.yaml console/out console/.stego/state.yaml) ]]; then

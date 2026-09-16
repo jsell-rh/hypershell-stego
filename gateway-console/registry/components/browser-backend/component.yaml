@@ -1,0 +1,38 @@
+kind: component
+name: browser-backend
+version: 1.9.0
+output_namespace: browser
+config:
+  telemetry_service_name:
+    type: string
+    optional: true
+  api_prefix:
+    type: string
+  logout_scope:
+    type: string
+    optional: true
+  roles_claim:
+    type: string
+    optional: true
+  routes:
+    type: list
+    items:
+      type: string
+  asset_bundle:
+    type: string
+    optional: true
+  assets:
+    type: list
+    optional: true
+    items:
+      source:
+        type: string
+      path:
+        type: string
+requires:
+  - storage-adapter
+  - tracing
+  - health-endpoint
+provides:
+  - browser-session-http
+slots: []

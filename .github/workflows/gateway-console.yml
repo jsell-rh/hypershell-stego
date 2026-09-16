@@ -1,0 +1,80 @@
+name: Generated Gateway console
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/gateway-console.yml
+      - gateway-console/**
+      - scripts/generate-gateway-console.sh
+      - scripts/check-gateway-console-inputs.py
+      - scripts/check-dashboard-deployment.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: gateway-console-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  module:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 768MiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+      CGO_ENABLED: '0'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+          cache-dependency-path: gateway-console/go.sum
+      - name: Verify exact inputs and committed generation
+        env:
+          STEGO_GENERATION_ROOT: ${{ runner.temp }}/gateway-console-generation
+        run: scripts/generate-gateway-console.sh --check
+      - name: Check dependencies and build both entry points
+        working-directory: gateway-console
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/gateway-console"
+          go mod verify
+          go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./... 2>&1 | tee "$RUNNER_TEMP/gateway-console/vulnerabilities.log"
+          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gateway-console/browser" ./out
+          go build -mod=readonly -trimpath -o "$RUNNER_TEMP/gateway-console/render" ./out/deploy/render
+      - name: Check the real dashboard binding and private deployment
+        run: |
+          set -euo pipefail
+          root="$RUNNER_TEMP/gateway-console"
+          "$root/render" --namespace=dashboard-check --fs-group=65532 \
+            --image=registry.example.test/browser@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa > "$root/deployment.json"
+          python3 - <<'PY'
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP']) / 'gateway-console'
+          source = json.loads(Path('gateway-console/upstream.json').read_text())
+          (root / 'application-image').write_text(source['image'] + '\n')
+          PY
+          python3 scripts/check-dashboard-deployment.py "$root"
+          git rev-parse HEAD > "$root/source-commit"
+          cp gateway-console/.stego/compiler-revision "$root/compiler-revision"
+          cp gateway-console/upstream.json "$root/upstream.json"
+          tar -C gateway-console -cf "$root/generated-source.tar" service.yaml registry .stego/config.yaml .stego/compiler-revision .stego/state.yaml go.mod go.sum out
+      - name: Retain the generated application evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: gateway-console-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/gateway-console/*
+            ${{ runner.temp }}/gateway-console-generation/*/generation.log
+            ${{ runner.temp }}/gateway-console-generation/*/first-state.yaml
