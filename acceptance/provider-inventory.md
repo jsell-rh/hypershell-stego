@@ -197,3 +197,17 @@ no closure journal. The two-client HTTPS fixture fails in 0.01 seconds; its
 result is `provider-read-progress-probe.log`. Keep this regression as a required
 check for the next bounded discovery change. The passing scope, closure, and
 API results above do not resolve this fault.
+
+Run `35104455447`, source `550b2b7`, passed all seven focused SQL recovery tests
+in 4.927 seconds. The stored JSON contains the package pass and no failures or
+skips. This qualifies the existing SQL cases with closure preparation. Evidence
+is in `prepare-closure-sql-result`.
+
+Earlier full run `35102064260`, source `d1ec34c`, also passed. The saved job log
+contains 468 test passes and no failure events. Core acceptance took 1485.314
+seconds; browser acceptance took 88.197 seconds. Suite selection produced 58
+skips. The separate CNPG job was not selected, and Sandbox remains deferred.
+The image and console jobs passed. This source predates the scope guard and
+closure preparation. Evidence is in `core-journal-full-result` and
+`core-journal-full-independent-verification.json`. Full run `35104550272` is
+now active for `550b2b7`.
