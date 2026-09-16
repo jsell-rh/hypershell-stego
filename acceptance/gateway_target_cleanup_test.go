@@ -199,9 +199,7 @@ EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 	read(8, true, false, false, true)
 	blocked(f.cluster)
 	blocked(second)
-	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 404 {
-		t.Fatal("cleanup changed public deletion state", code)
-	}
+	requireDeletingGateway(t, address+"/api/hypershell/v1/gateways/"+row.ID, owner)
 	stop()
 	connection.Close()
 	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", f.cluster), cleanupGrant("other-controller", "Gateway", "workload", second), cleanupGrant("controller", "Gateway", "sql", f.cluster), cleanupGrant("other-controller", "Gateway", "sql", second))

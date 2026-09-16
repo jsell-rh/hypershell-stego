@@ -105,3 +105,18 @@ The final CNPG run `35100459235` uses `bceea63`, which has the same application
 code as `371c230`. It started after external-workflow cleanup was verified.
 Full core run `35098200160` remains active. Both results are required before the
 Hypershell default branch changes.
+
+Full core run `35098200160` finished with one failed test. The generated count
+worker test passed in 18.51 seconds, and the Gateway watch test passed in 7.57
+seconds. The remaining failure was another old 404 assertion in the multi-target
+cleanup test. That assertion now requires visible `Deleting` state. The full
+acceptance package ran for 1472.858 seconds; this is a correctness-suite duration,
+not a capacity result. Its log is `core-final-candidate-failure.log`.
+
+The separate inventory branch `9f7d5cd` then exposed a known-orphan omission case.
+Bulk cleanup returned success after a partial provider list, although a saved
+closure journal could still identify the orphan. The small TLS fixture failed
+in 0.02 seconds; direct cleanup by saved ID succeeded. The Hypershell default
+branch must remain unchanged until recovery covers retained journal IDs and
+this case passes in the application workflow. Earlier passing complete workflows
+do not cover the omission case.
