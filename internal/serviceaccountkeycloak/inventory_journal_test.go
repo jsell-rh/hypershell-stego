@@ -14,7 +14,7 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-func TestGatewayCleanupDoesNotForgetJournalAfterProviderOmission(t *testing.T) {
+func TestGatewayInventoryRequiresIndependentJournalRecovery(t *testing.T) {
 	gatewayID, accountID := ksuid.New().String(), ksuid.New().String()
 	orphan := kcClient{ID: "retained-orphan", ClientID: "hs-sa-" + gatewayID + "-" + accountID, Enabled: false,
 		Attributes: map[string]string{managedAttribute: "true", gatewayIDAttribute: gatewayID, serviceAccountIDAttribute: accountID}}
@@ -92,16 +92,17 @@ func TestGatewayCleanupDoesNotForgetJournalAfterProviderOmission(t *testing.T) {
 	mu.Lock()
 	failDelete, omit = false, true
 	mu.Unlock()
-	// A partial provider list must not erase a known cleanup obligation.
+	// Inventory is one recovery source. The application must separately scan
+	// retained journal IDs before it can certify complete Gateway cleanup.
 	err = client.DeleteGatewayServiceAccounts(context.Background(), gatewayID)
 	mu.Lock()
-	falseComplete := err == nil && exists
+	omitted := err == nil && exists
 	mu.Unlock()
-	if falseComplete {
-		t.Error("cleanup reported completion while a journaled orphan still existed")
+	if !omitted {
+		t.Fatal("fixture did not preserve an omitted journaled orphan", err)
 	}
 	// The retained identity remains sufficient when the list omits the client.
-	if err := client.DeleteServiceAccount(context.Background(), orphan.ID, gatewayID, accountID); err != nil {
+	if err := client.DeleteManagedServiceAccount(context.Background(), gatewayID, accountID); err != nil {
 		t.Fatal("known identity could not recover cleanup", err)
 	}
 	mu.Lock()

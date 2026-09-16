@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -185,4 +186,58 @@ func TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
 		}
 	}
 	t.Log("The first pass saved 100 retained IDs; a reconstructed service completed the last ID")
+}
+
+func TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
+	f := database(t)
+	original := newAccountProvider()
+	_, gateway := accountService(t, f, original)
+	ctx := context.Background()
+	ids := make([]string, 0, 101)
+	// The provider is a recording fixture. Empty state records are sufficient to
+	// check that the application visits all retained keys without domain rows.
+	for i := 0; i < 101; i++ {
+		id := ksuid.New().String()
+		ids = append(ids, id)
+		err := f.storage.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+			_, err := tx.(storage.ResourceStateStore).SaveResourceState(ctx, "ServiceAccount", id, gateways.AccountProviderStateScope(gateway.ID), 0, nil)
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := f.storage.Delete(ctx, "Gateway", gateway.ID); err != nil {
+		t.Fatal(err)
+	}
+	provider := &boundedCleanupProvider{accountProvider: original, confirmed: map[string]int{}}
+	accounts, err := serviceaccounts.New(f.storage, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete, err := accounts.RecoverGatewayCleanup(ctx, gateway.ID)
+	if err != nil || complete || len(provider.confirmed) != 100 || provider.inventory != 0 {
+		t.Fatal("first journal page differs", complete, len(provider.confirmed), err)
+	}
+	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	restarted, err := model.NewStore(orm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts, err = serviceaccounts.New(restarted, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete, err = accounts.RecoverGatewayCleanup(ctx, gateway.ID)
+	if err != nil || !complete || len(provider.confirmed) != len(ids) || provider.inventory != 1 {
+		t.Fatal("resumed journal page differs", complete, len(provider.confirmed), err)
+	}
+	for id, count := range provider.confirmed {
+		if count != 1 {
+			t.Fatal("journal prefix repeated after reconstruction", id, count)
+		}
+	}
 }

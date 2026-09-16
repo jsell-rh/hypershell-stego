@@ -23,6 +23,8 @@ REQUIRED = [
     "TestGatewayDurableDeletionThroughGeneratedTransports",
     "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
     "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayCleanupRecoversJournalOmittedByProvider",
     "TestGatewayCleanupObservationDoesNotRepeatEvents",
     "TestGatewayDeletingPhaseMatchesSearch",
     "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",

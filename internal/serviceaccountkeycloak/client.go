@@ -296,6 +296,10 @@ func (c *Client) DeleteManagedServiceAccount(ctx context.Context, gatewayID, acc
 	}
 	return lifecycle.Close(ctx)
 }
+
+// DeleteGatewayServiceAccounts cleans the current provider inventory. A caller
+// must also recover retained account rows and journal IDs before it reports
+// complete Gateway cleanup. A provider list can omit a known client.
 func (c *Client) DeleteGatewayServiceAccounts(ctx context.Context, gatewayID string) error {
 	if value, err := ksuid.Parse(gatewayID); err != nil || value == ksuid.Nil || value.String() != gatewayID {
 		return ErrNotManaged

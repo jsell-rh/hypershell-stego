@@ -14,10 +14,16 @@ import (
 
 const accountCleanupScope = "gateway-account-cleanup"
 
+type accountCleanupItem struct {
+	row       model.ServiceAccount
+	journalID string
+}
+
 // RecoverGatewayCleanup supplies account policy to the generated durable scan.
 // Only a committed Gateway deletion permits this work. Each account metadata
-// change and audit share one commit. Complete requires both a successful retained
-// scan and a provider inventory check. Repeated calls check late provider effects.
+// change and audit share one commit. Completion requires a successful scan of
+// rows and journals, plus a provider inventory check. Repeated calls check late
+// provider effects.
 func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, error) {
 	if ctx == nil || !validID(id) {
 		return false, runtime.ErrScanContract
@@ -41,7 +47,7 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	if !ok {
 		return false, runtime.ErrScanContract
 	}
-	sourceVersion := strconv.FormatInt(gateway.ResourceGeneration, 10)
+	sourceVersion := strconv.FormatInt(gateway.ResourceGeneration, 10) + ":account-journals-v1"
 	access := runtime.CheckpointAccess{
 		Load: func(ctx context.Context) (runtime.Checkpoint, error) {
 			saved, err := checkpoints.LoadCheckpoint(ctx, "Gateway", id, accountCleanupScope)
@@ -95,8 +101,12 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	if !ok {
 		return false, runtime.ErrScanContract
 	}
-	progress, err := runtime.ScanCycle(ctx, sourceVersion, access, func(ctx context.Context, after string, limit int) (runtime.CursorPage[model.ServiceAccount], error) {
-		page := runtime.CursorPage[model.ServiceAccount]{}
+	keys, ok := s.repository.(storage.ResourceStateKeyReader)
+	if !ok {
+		return false, runtime.ErrScanContract
+	}
+	retainedAccounts := func(ctx context.Context, after string, limit int) (runtime.CursorPage[accountCleanupItem], error) {
+		page := runtime.CursorPage[accountCleanupItem]{}
 		result, err := cursor.ReadCursor(ctx, "ServiceAccount", "gateway_id", id, storage.CursorOptions{AfterID: after, Limit: limit, Deletion: storage.CursorAll})
 		if err != nil {
 			return page, err
@@ -109,11 +119,41 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 			if row.GatewayID != id || !validID(row.ID) {
 				return page, runtime.ErrScanContract
 			}
-			page.Items = append(page.Items, runtime.CursorItem[model.ServiceAccount]{Cursor: row.ID, Value: row})
+			page.Items = append(page.Items, runtime.CursorItem[accountCleanupItem]{Cursor: row.ID, Value: accountCleanupItem{row: row}})
 		}
 		page.More = result.More
 		return page, nil
-	}, s.cleanupGatewayAccount, func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) },
+	}
+	retainedJournals := func(ctx context.Context, after string, limit int) (runtime.CursorPage[accountCleanupItem], error) {
+		page := runtime.CursorPage[accountCleanupItem]{}
+		result, err := keys.ListResourceStateKeys(ctx, "ServiceAccount", gateways.AccountProviderStateScope(id), after, limit)
+		if err != nil {
+			return page, err
+		}
+		for _, key := range result.Keys {
+			if !validID(key.ResourceID) || key.Version < 1 {
+				return page, runtime.ErrScanContract
+			}
+			page.Items = append(page.Items, runtime.CursorItem[accountCleanupItem]{Cursor: key.ResourceID, Value: accountCleanupItem{journalID: key.ResourceID}})
+		}
+		page.More = result.More
+		return page, nil
+	}
+	source, err := runtime.SequenceCursorSources([]runtime.NamedCursorSource[accountCleanupItem]{
+		{Name: "accounts", Read: retainedAccounts}, {Name: "journals", Read: retainedJournals},
+	})
+	if err != nil {
+		return false, err
+	}
+	progress, err := runtime.ScanCycle(ctx, sourceVersion, access, source, func(ctx context.Context, item accountCleanupItem) error {
+		if item.journalID == "" {
+			return s.cleanupGatewayAccount(ctx, item.row)
+		}
+		call, cancel := context.WithTimeout(ctx, 750*time.Millisecond)
+		defer cancel()
+		// An empty UUID tells the provider to load the retained, sealed identity.
+		return errors.Join(s.provider.Delete(call, id, item.journalID, ""), call.Err())
+	}, func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) },
 		runtime.ScanOptions{PageSize: 100, MaxPages: 1, PageTimeout: time.Second},
 		runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second})
 	complete := err == nil && progress.Complete

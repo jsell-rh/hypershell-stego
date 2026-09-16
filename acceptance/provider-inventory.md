@@ -30,3 +30,33 @@ failed-item retry with independent later progress, a page boundary, source and
 checkpoint conflicts, and final-event rollback. Repeat the real provider and
 complete Gateway workflows after the fix. The earlier passing workflow tests
 do not cover this omission case.
+
+## Candidate recovery change
+
+The candidate now uses STEGO's `ResourceStateKeyReader` and
+`SequenceCursorSources`. One durable cycle visits retained account rows and
+saved account journal IDs. Hypershell selects the exact Gateway scope and
+supplies the account policy. STEGO owns cursor encoding, source transitions,
+page bounds, validation before effects, and checkpoint failure retention.
+A changed cycle input version resets older account-only cursors safely.
+
+The original failure log remains unchanged. The provider-only test is now
+`TestGatewayInventoryRequiresIndependentJournalRecovery`: it shows that
+inventory can omit a saved client and that the sealed identity still permits
+recovery. It passed locally with the race detector in 1.043 seconds. This is
+not application completion evidence.
+
+`TestGatewayCleanupRecoversJournalOmittedByProvider` composes the application
+service, generated PostgreSQL storage, encrypted journals, and generated
+provider lifecycle. Its HTTPS provider injects a deletion failure and then
+omits the client. The test requires cleanup to remain incomplete during the
+failure, and then to remove the client through its saved journal after store
+and client reconstruction. It does not claim a process or database-server
+restart. `TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint` checks 101
+journal-only IDs across reconstruction. These database tests must pass in CI.
+The jshell API gate now requires both tests, for a total of 46 required checks.
+
+Compiler and application qualification remain pending. Do not promote this
+candidate to application main until the composed tests and full workflow
+checks pass. Provider inventory query adoption and bounded progress for large
+legacy inventories remain open work.
