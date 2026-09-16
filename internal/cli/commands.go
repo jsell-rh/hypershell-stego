@@ -23,7 +23,7 @@ func Commands() command.Application {
 		{Name: []string{"get", "gateway"}, Method: "GET", Path: path + "/{id}", ID: true, Success: []int{200}},
 		{Name: []string{"get", "gateways"}, Method: "GET", Path: path + "/{id}", ID: true, Success: []int{200}},
 		{Name: []string{"list", "gateways"}, Method: "GET", Path: path, Query: true, Fields: []command.Field{{Flag: "page", Key: "page", Type: "integer"}, {Flag: "size", Key: "size", Type: "integer"}, {Flag: "search", Key: "search", Type: "string"}, {Flag: "order-by", Key: "orderBy", Type: "string"}}, Success: []int{200}},
-		{Name: []string{"delete", "gateway"}, Method: "DELETE", Path: path + "/{id}", ID: true, Confirm: true, Success: []int{204}},
+		{Name: []string{"delete", "gateway"}, Method: "DELETE", Path: path + "/{id}", ID: true, Confirm: true, Success: []int{202}, EmptyResponses: []int{202}},
 	}}
 	app.Commands = append(app.Commands, accountCommands()...)
 	app.Commands = append(app.Commands, grantCommands()...)

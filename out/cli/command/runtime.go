@@ -35,7 +35,7 @@ type Command struct {
 	ID, Query, Confirm, Sensitive bool
 	PathParameters                []PathParameter
 	Fields                        []Field
-	Success                       []int
+	Success, EmptyResponses       []int
 }
 type Application struct {
 	VersionCommand                                    bool
@@ -131,6 +131,22 @@ func validate(app Application) error {
 			if code < 200 || code > 299 {
 				return errors.New("invalid CLI success code")
 			}
+		}
+		if len(c.EmptyResponses) > len(c.Success) {
+			return errors.New("invalid empty response codes")
+		}
+		emptyCodes := map[int]bool{}
+		for _, code := range c.EmptyResponses {
+			found := false
+			for _, success := range c.Success {
+				if code == success {
+					found = true
+				}
+			}
+			if !found || emptyCodes[code] {
+				return errors.New("invalid empty response code")
+			}
+			emptyCodes[code] = true
 		}
 		flags, keys := map[string]bool{}, map[string]bool{}
 		for _, f := range c.Fields {
@@ -410,7 +426,13 @@ func Run(ctx context.Context, app Application, args []string, output io.Writer) 
 	if !success {
 		return fmt.Errorf("API request failed (HTTP %d)", response.StatusCode)
 	}
-	if response.StatusCode == 204 {
+	emptyResponse := response.StatusCode == 204 || response.StatusCode == 205
+	for _, code := range c.EmptyResponses {
+		if code == response.StatusCode {
+			emptyResponse = true
+		}
+	}
+	if emptyResponse {
 		if len(response.Body) != 0 {
 			return errors.New("unexpected response body")
 		}

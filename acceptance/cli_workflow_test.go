@@ -243,14 +243,14 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	}
 	success("get", "gateway", gateway.ID)
 	success("delete", "gateway", gateway.ID, "--yes")
-	readGatewayEvent(t, consumer, gateway.ID, "Delete", "gateway.deleted")
-	if output, problem, err := run(cfg, "get", "gateway", gateway.ID); err == nil || len(output) != 0 || !strings.Contains(problem, "HTTP 404") {
-		t.Fatal("CLI read deleted resource")
+	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
+	if output, _, err := run(cfg, "get", "gateway", gateway.ID); err != nil || !strings.Contains(string(output), `"phase": "Deleting"`) {
+		t.Fatal("CLI lost pending deletion", err)
 	}
 	rpc, connection = grpcClient(t, rpcAddress, rpcIdentity)
 	defer connection.Close()
-	if _, err := rpc.GetGateway(call, &pb.GetGatewayRequest{Id: gateway.ID}); err == nil {
-		t.Fatal("gRPC retained deleted Gateway")
+	if row, err := rpc.GetGateway(call, &pb.GetGatewayRequest{Id: gateway.ID}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
+		t.Fatal("gRPC lost pending deletion", err)
 	}
 	success("logout")
 	if _, err := os.Stat(cfg); !os.IsNotExist(err) {

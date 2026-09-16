@@ -128,9 +128,9 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916120921-07b93687e28e
+        module_version: v0.0.0-20260916121958-e01e624f26c5
         vcs: git
-        revision: 07b93687e28e018fab5b4728dd09caa92e713d00
+        revision: e01e624f26c58e9ff33e7dc1422b540cb70381ee
         source_state: clean
     service_hash: 30cc51b61963462e9e3cebd7c48c0263358b2d662818e7c0fce35c35684ff7dc
     registry_sha: gateway-workflow
@@ -439,9 +439,9 @@ last_applied:
         cli/command/identity.go: d7d23fcc6347897099d25797196c1602d323ea53f19a94713d06198b879422f2
         cli/command/oauth.go: a2aefcb0a3550424f475df17ffc2388c6ed7495e4a72fa60fc431f18448be459
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
-        cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
+        cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 7ccd7649e72741e782dfe30079f7e2cfc5d45d28c7a3e72af1acd7b21d7268dc
+        cli/command/version.go: d384ca0282b22f29fdba1585d44021088ab519688458357834cbdaaaf16e809f
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 463720b4d307166ad9f52cf610880494fec63b83944754ad01b6905c77a64841
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1

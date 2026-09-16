@@ -21,9 +21,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
-	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
-	"google.golang.org/grpc/status"
 )
 
 func TestGeneratedCLICatalogWorkflow(t *testing.T) {
@@ -197,9 +195,9 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 		success("alice", "get", entry.name, entry.id)
 	}
 	success("alice", "delete", "gateway", gateway.ID, "--yes")
-	readGatewayEvent(t, gatewayEvents, gateway.ID, "Delete", "gateway.deleted")
-	if _, err := rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: gateway.ID}); status.Code(err) != codes.NotFound {
-		t.Fatal("gRPC retained a deleted Gateway", err)
+	readGatewayEvent(t, gatewayEvents, gateway.ID, "Update", "gateway.updated")
+	if row, err := rpc.GetGateway(ctx, &pb.GetGatewayRequest{Id: gateway.ID}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
+		t.Fatal("gRPC lost pending deletion", err)
 	}
 
 	denied("admin", "409", "delete", "managedCluster", entries[0].id, "--yes")
