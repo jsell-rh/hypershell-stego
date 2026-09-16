@@ -1,0 +1,121 @@
+package acceptance
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"testing"
+	"time"
+
+	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
+	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	model "github.com/jsell-rh/hypershell-stego/out/storage"
+	"github.com/segmentio/ksuid"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+)
+
+type boundedCleanupProvider struct {
+	*accountProvider
+	calls     int
+	stall     bool
+	confirmed map[string]int
+	inventory int
+}
+
+func (p *boundedCleanupProvider) DeleteGateway(context.Context, string) error {
+	p.inventory++
+	return nil
+}
+func (p *boundedCleanupProvider) Delete(ctx context.Context, gatewayID, id, uuid string) error {
+	p.calls++
+	if p.stall && p.calls == 2 {
+		<-ctx.Done()
+		return ctx.Err()
+	}
+	if err := p.accountProvider.Delete(ctx, gatewayID, id, uuid); err != nil {
+		return err
+	}
+	p.confirmed[id]++
+	return nil
+}
+
+func TestGatewayAccountCleanupRecoveryReachesTailAfterRestart(t *testing.T) {
+	f := database(t)
+	provider := &boundedCleanupProvider{accountProvider: newAccountProvider(), confirmed: map[string]int{}}
+	_, gateway := accountService(t, f, provider.accountProvider)
+	accounts, err := serviceaccounts.New(f.storage, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	live, err := accounts.Create(context.Background(), principal("alice"), gateway.ID, accountInput("cleanup-live"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{live.Account.ID}
+	for i := 0; i < 2; i++ {
+		id := ksuid.New().String()
+		row := model.ServiceAccount{Meta: model.Meta{ID: id}, GatewayID: gateway.ID, Name: fmt.Sprintf("retained-%d", i), CredentialType: "client_secret", Role: serviceaccounts.RoleUser, Status: "error", CreatedByUserID: live.Account.CreatedByUserID, ClientID: "hs-sa-" + gateway.ID + "-" + id, ExpiresAt: time.Now().Add(time.Hour)}
+		if err := f.storage.Create(context.Background(), "ServiceAccount", row); err != nil {
+			t.Fatal(err)
+		}
+		if err := f.storage.Delete(context.Background(), "ServiceAccount", id); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	if complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID); !errors.Is(err, runtime.ErrScanContract) || complete || provider.calls != 0 {
+		t.Fatal("live Gateway cleanup was permitted", complete, err)
+	}
+	// This fixture starts at a committed deletion. The REST acceptance gate must
+	// separately prove that the authorized HTTP request creates this state.
+	if err := f.storage.Delete(context.Background(), "Gateway", gateway.ID); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := accounts.Create(context.Background(), principal("alice"), gateway.ID, accountInput("blocked")); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatal("deleted Gateway accepted an account", err)
+	}
+	provider.stall = true
+	for attempt := 0; attempt < 3; attempt++ {
+		orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+		if err != nil {
+			t.Fatal(err)
+		}
+		restarted, err := model.NewStore(orm)
+		if err != nil {
+			t.Fatal(err)
+		}
+		accounts, err = serviceaccounts.New(restarted, provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+		provider.calls = 0
+		complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID)
+		if complete || (!errors.Is(err, context.DeadlineExceeded) && !errors.Is(err, runtime.ErrCycleFailed)) {
+			t.Fatal("interrupted cycle claimed completion", complete, err)
+		}
+	}
+	if len(provider.confirmed) != len(ids) {
+		t.Fatalf("restart scan reached %d of %d retained IDs", len(provider.confirmed), len(ids))
+	}
+	if provider.inventory != 0 {
+		t.Fatal("failed retained cycle ran inventory completion")
+	}
+	provider.stall = false
+	if complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID); err != nil || !complete {
+		t.Fatal("successful cleanup did not complete", complete, err)
+	}
+	if complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID); err != nil || !complete {
+		t.Fatal("repeated cleanup", complete, err)
+	}
+	if provider.inventory != 2 {
+		t.Fatal("completion omitted repeated provider inventory")
+	}
+	var audits int
+	if err := f.db.QueryRow("SELECT count(*) FROM service_account_audits WHERE gateway_id=$1 AND action='gateway_cleanup' AND outcome='succeeded'", gateway.ID).Scan(&audits); err != nil || audits != 1 {
+		t.Fatal("cleanup audit was lost or duplicated", audits, err)
+	}
+	t.Logf("Restarted cleanup reached all %d retained IDs; the live account has one cleanup audit", len(ids))
+}
