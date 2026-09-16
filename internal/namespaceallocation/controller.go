@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -26,23 +27,34 @@ type Controller struct {
 	state     control.GatewayIdentityServiceClient
 	sources   []runtime.Source[string]
 	cluster   string
+	console   bool
+}
+
+// Options contains operator configuration for this managed cluster.
+type Options struct {
+	ConsoleDomain string
 }
 
 var ErrPending = errors.New("namespace cleanup is pending")
 
 // New connects Gateway state to the generated queue and telemetry scope.
-func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient) (*Controller, error) {
+func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, options Options) (*Controller, error) {
 	if _, err := gatewayworkload.Namespace(cluster); err != nil {
 		return nil, errors.New("namespace allocator requires a managed cluster ID")
 	}
 	if allocator == nil || state == nil {
 		return nil, errors.New("namespace allocator dependencies are required")
 	}
+	if options.ConsoleDomain != "" {
+		if _, err := keycloak.GatewayConsoleOrigin(cluster, options.ConsoleDomain); err != nil {
+			return nil, err
+		}
+	}
 	gatewaySource, err := gatewayworkload.Source(gatewaysAPI, state)
 	if err != nil {
 		return nil, err
 	}
-	return &Controller{allocator: allocator, state: state, cluster: cluster, sources: []runtime.Source[string]{tag("gateway:", gatewaySource)}}, nil
+	return &Controller{allocator: allocator, state: state, cluster: cluster, console: options.ConsoleDomain != "", sources: []runtime.Source[string]{tag("gateway:", gatewaySource)}}, nil
 }
 
 func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
@@ -129,7 +141,8 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 		if err := c.allocator.Ensure(ctx, "gateway-state", stateName, id); err != nil {
 			return err
 		}
-		if gw.GetConsoleAddress() != "" {
+		// Storage must exist before the workload can publish a ready address.
+		if c.console {
 			consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
 			if err != nil {
 				return err

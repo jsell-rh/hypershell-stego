@@ -48,6 +48,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			files["keycloak-secret"] = w.p.read(w.identity.options.SecretFile)
 			files["keycloak-ca.pem"] = w.p.read(w.identity.options.CAFile)
 		} else {
+			if w.public != nil {
+				env["HYPERSHELL_GATEWAY_CONSOLE_DOMAIN"] = w.public.Domain
+			}
 			env["HYPERSHELL_CONTROL_NAMESPACE"] = w.p.namespace
 			env["HYPERSHELL_MANAGED_CLUSTER_ID"] = w.f.cluster
 			env["HYPERSHELL_KUBERNETES_URL"] = "https://kubernetes.default.svc"
@@ -65,7 +68,6 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 					if !strings.Contains(image, "@sha256:") || len(w.consoleProvisioner) != 3 {
 						w.t.Fatal("Gateway console image or provisioner settings are missing")
 					}
-					env["HYPERSHELL_GATEWAY_CONSOLE_DOMAIN"] = w.public.Domain
 					env["HYPERSHELL_GATEWAY_CONSOLE_IMAGE"] = image
 					w.p.settings(w.consoleProvisioner, env, files)
 				}

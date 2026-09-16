@@ -3,6 +3,7 @@ package namespaceallocation
 import (
 	"context"
 	"errors"
+	"slices"
 	"testing"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
@@ -152,20 +153,38 @@ func TestConsoleStateAllocationPrecedesWorkload(t *testing.T) {
 	ns, _ := gatewayworkload.Namespace(id)
 	state, _ := gatewayworkload.StateNamespace(id)
 	consoleState, _ := gatewayworkload.ConsoleStateNamespace(id)
-	address := "https://console.example.test"
-	api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster, ConsoleAddress: &address}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: false}}}}}
-	writes := &allocations{done: true}
-	controller := &Controller{allocator: writes, state: api, cluster: cluster}
-	if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
-		t.Fatal(err)
+	for _, enabled := range []bool{false, true} {
+		// Check initial provisioning, a ready endpoint, and a withdrawn endpoint.
+		for _, address := range []string{"", "https://console.example.test", ""} {
+			api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster, ConsoleAddress: &address}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: false}}}}}
+			writes := &allocations{done: true}
+			controller := &Controller{allocator: writes, state: api, cluster: cluster, console: enabled}
+			if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
+				t.Fatal(err)
+			}
+			expected := []string{"ensure:gateway-state:" + state + ":" + id}
+			if enabled {
+				expected = append(expected, "ensure:gateway-console-state:"+consoleState+":"+id)
+			}
+			expected = append(expected, "ensure:gateway:"+ns+":"+id)
+			if !slices.Equal(writes.calls, expected) {
+				t.Fatalf("allocation depended on readiness: enabled=%t address=%q calls=%v", enabled, address, writes.calls)
+			}
+		}
 	}
-	expected := []string{"ensure:gateway-state:" + state + ":" + id, "ensure:gateway-console-state:" + consoleState + ":" + id, "ensure:gateway:" + ns + ":" + id}
-	if len(writes.calls) != len(expected) {
-		t.Fatal(writes.calls)
-	}
-	for i, value := range expected {
-		if writes.calls[i] != value {
-			t.Fatal(writes.calls)
+}
+
+func TestConsoleAllocationConfiguration(t *testing.T) {
+	cluster := ksuid.New().String()
+	for _, domain := range []string{"", "console.example.test", "https://console.example.test", "console.example.test/path"} {
+		controller, err := New(cluster, &allocations{}, pb.NewGatewayServiceClient(nil), &stateAPI{}, Options{ConsoleDomain: domain})
+		valid := domain == "" || domain == "console.example.test"
+		if valid {
+			if err != nil || controller.console != (domain != "") {
+				t.Fatalf("valid console configuration failed: %q: %v", domain, err)
+			}
+		} else if err == nil {
+			t.Fatalf("invalid console domain accepted: %q", domain)
 		}
 	}
 }

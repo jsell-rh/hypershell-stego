@@ -117,7 +117,7 @@ last_applied:
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
-                sha256: 3f11982b5129f36097c86d07b92658845df86b626d283700190f7f4173566e2f
+                sha256: e0abde43d10a47ddeb01a7ceaaf8c507de59c87df38560e1b8864e7f261521e2
                 mode: 420
             internal/sandboxcountapp/worker.go:
                 exists: true
@@ -131,7 +131,7 @@ last_applied:
                 exists: true
                 sha256: dc03b707d77507f25cbaf08f91ee32621a17d2137bb0e3fb3354db5f6eee337f
                 mode: 420
-        sha256: b382ebd5f2a5aae818d0c5965dd714124a1f44740f8f9c643356dce543637901
+        sha256: a8395d4d376b545ee216c870806f71010dec674e1caadc7c9e0068577528b09b
     compiler_build:
         go_version: go1.26.8
         goos: linux
