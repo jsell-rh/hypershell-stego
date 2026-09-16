@@ -1,0 +1,20 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35108622626",
+  "application_source": "906496874b6a5cb1b74e60361bb1157eb51e0ce0",
+  "outcomes": {
+    "backend": "success",
+    "frontend": "failure",
+    "dependencies": "failure",
+    "assets": "skipped"
+  },
+  "findings": {
+    "go": "Build and vulnerability check passed. No vulnerabilities found.",
+    "javascript": "Types passed. Router tests stopped before execution because jsdom has no TextEncoder. Audit found GHSA-qwww-vcr4-c8h2 in router 7.18.0; select patched 7.18.4.",
+    "assets": "The build did not run after test startup failed. No asset result is claimed."
+  },
+  "logs_sha256": {
+    "go-vulnerabilities.log": "e3c47feabb6539b35ab204e3a2071443f1eb54809a835b43a0550d430c6e8c99",
+    "npm-audit.json": "dde8a97ae24c1d894c2e70c024ad23a2e6fd6f603156f00a4ef0a16f5d2cd4df",
+    "router-tests.log": "2f2c0495b02be38728321332452a057b93518fe6131b2ea1258fb86ed4616140"
+  }
+}

@@ -16,7 +16,7 @@ The Go build passed, but its vulnerability check found an affected gRPC call.
 The JavaScript audit found affected router dependencies. UI types and build
 passed; the resulting assets failed STEGO's bundle contract.
 
-The checked build inputs now select gRPC 1.83.2 and React Router 7.18.0. The
+The checked build inputs now select gRPC 1.83.2 and React Router 7.18.4. The
 small source patch removes the earlier router flags, whose behavior is included
 in version 7. CI checks the existing authentication and Sandbox list tests.
 The original upstream commit and the modified build tree are recorded separately.
@@ -37,3 +37,10 @@ source check pass. Use its failures to select the next integration change.
 
 See the [application gap](../../acceptance/per-gateway-console-gap-20260915.md)
 and [source check](../../.github/workflows/dashboard-source.yml).
+
+The [second run](../../acceptance/dashboard-dependency-evidence.json) passed the
+Go build and vulnerability check. It found a newer router advisory, so the
+candidate now uses 7.18.4. The tests stopped before execution because jsdom did
+not supply `TextEncoder`. The test setup now supplies Node's standard encoder
+and decoder. No application authentication or router behavior is mocked by
+this change. The tests and complete asset check must still pass in CI.
