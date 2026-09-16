@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916003339-866b787500d6
+        module_version: v0.0.0-20260916004033-3643e4ee16dc
         vcs: git
-        revision: 866b787500d647840dd5762080795d1adcbbda62
+        revision: 3643e4ee16dcc07c44e32fc5901e4bf9c7edcf9d
         source_state: clean
     service_hash: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
     registry_sha: gateway-workflow
-    registry_content_sha256: 3ebc2fe9105010246c1cc8d5fa2480eda2b8ac5c109dda98a1d460f807ec2129
+    registry_content_sha256: b1312d5faa5047624d3288d196b802dc7f7fa1e94d138ef7906cb3cf4bedcd3d
     components:
         browser-telemetry:
             version: 1.0.0
@@ -164,7 +164,7 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         keycloak-provider:
-            version: 0.11.1
+            version: 0.11.2
             sha: gateway-workflow
         kubernetes-client:
             version: 1.9.0
@@ -441,7 +441,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 94ee3592b13e85ef1432048089f2df610f301e213ddc66ea6332b95a84cae76f
+        cli/command/version.go: 29817a356a72a4ab43f8c32932fd02554a38147385691cdd51fe7d9b41fe2b94
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: e1b300527a9e97515f6dc5e517f4928da692602d7aaddb88a32b4d63594933f2
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -515,7 +515,7 @@ last_applied:
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2
-        keycloak/access_lifecycle.go: 1d4ff7f34981117adb56709f58ecadb9b07431a1c9dec16f881889c19fd340a2
+        keycloak/access_lifecycle.go: f190b393fab3c4738f32a093e79e6b4f0f4b39f7bd04d71729e810be5804ee58
         keycloak/client.go: 5a84ac1faa477148c1dadf317b0137dee0656d1de58734f607006e6febc172ed
         keycloak/client_configuration.go: 45388a20847e81d10a7853dca0525b9eb4a50cf197d905246bf0ec332837f38c
         keycloak/clients.go: 44ec547ad6cfc32eae55e1fa19f586e30e423a8ffbdbc488fc6a78dce457b856

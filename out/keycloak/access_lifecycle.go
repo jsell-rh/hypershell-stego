@@ -30,10 +30,13 @@ func (c *Client) reconcileClientAccess(work context.Context, b ClientBinding, pl
 	if err != nil {
 		return err
 	}
+	// Only a completed inspection can skip cleanup. A panic or Goexit must also
+	// attempt disablement, without suppression of the abnormal exit.
+	complete := false
 	// From this point, any failure requires confirmed disablement. Cleanup uses
 	// the saved binding again and cannot disable a client with different ownership.
 	defer func() {
-		if err == nil {
+		if complete {
 			return
 		}
 		cleanup, cancel := context.WithTimeout(context.WithoutCancel(work), 5*time.Second)
@@ -54,6 +57,7 @@ func (c *Client) reconcileClientAccess(work context.Context, b ClientBinding, pl
 	if explicitFlag(raw, "enabled", true) {
 		err = plan.inspect(work, true)
 		if err == nil {
+			complete = true
 			return nil
 		}
 		if !repairableClientPolicy(err) {
@@ -81,5 +85,7 @@ func (c *Client) reconcileClientAccess(work context.Context, b ClientBinding, pl
 	if response.StatusCode != http.StatusNoContent {
 		return statusError(response.StatusCode)
 	}
-	return plan.inspect(work, true)
+	err = plan.inspect(work, true)
+	complete = err == nil
+	return err
 }

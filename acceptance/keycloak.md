@@ -279,3 +279,32 @@ The suite took 56.84 seconds. It includes new creation, legacy migration, a lost
 journal acknowledgement, recovery with a new journal, complete access policy,
 and retained cleanup. Hypershell now calls this lifecycle from its production
 identity worker. The new application workflow still requires a CI result.
+
+
+## Restricted native lifecycle and abnormal exits
+
+STEGO CI run `35040645391`, provider job `104620219781`, passed the real native
+lifecycle with `manage-clients`, `view-clients`, `manage-users`, and `view-users`.
+It used no `view-realm` or `manage-realm` grant. The test covered creation,
+legacy migration, a lost journal acknowledgement, a new journal after restart,
+complete access policy, and retained cleanup. The whole real-provider test took
+58.01 seconds. This is provider evidence; the updated Hypershell workflow is
+still pending.
+
+Hypershell now pins compiler `3643e4ee16dcc07c44e32fc5901e4bf9c7edcf9d` and provider
+`0.11.2`. The common access operation attempts bounded disablement after a panic
+or `Goexit`. It preserves that abnormal exit and releases the operation permit.
+The generated regression and access tests passed with the race detector in both
+variants in 11.746 seconds. Both application generation drift checks passed.
+The application adapter and identity-controller tests passed with the race
+detector in 1.342 and 22.283 seconds.
+
+The service-account adapter still needs the complete common access lifecycle.
+Its current full-record enable update can restore a shared Keycloak scope, so
+scope and mapper adoption must include the enable operation. The API already
+commits an account reservation before the provider call. It saves the provider
+client ID and subject only after that call returns. The next change must add
+saved provider creation and migration state to that reservation, preserve the
+one-time credential response, and keep cleanup possible after a lost response.
+Gateway roles, account quotas, expiry, and creator authorization remain
+application policy. No service-account lifecycle migration is claimed here.
