@@ -49,13 +49,13 @@ func (c *Client) gatewayLifecycle(id string, revision int64, cleanup bool) (*pro
 	}
 	return provider.NewNativeClientLifecycle(c.keycloak, journal, identity)
 }
-func (c *Client) EnsureGateway(ctx context.Context, id, name string, revision int64) (string, error) {
+func (c *Client) reconcileGateway(ctx context.Context, id, name string, revision int64) (provider.ClientBinding, error) {
 	if name == "" {
-		return "", errors.New("Gateway name is required")
+		return provider.ClientBinding{}, errors.New("Gateway name is required")
 	}
 	lifecycle, err := c.gatewayLifecycle(id, revision, false)
 	if err != nil {
-		return "", err
+		return provider.ClientBinding{}, err
 	}
 	binding, err := lifecycle.Reconcile(ctx, func(binding provider.ClientBinding) (provider.NativeAccessPolicy, error) {
 		return provider.NativeAccessPolicy{
@@ -66,12 +66,32 @@ func (c *Client) EnsureGateway(ctx context.Context, id, name string, revision in
 		}, nil
 	})
 	if err != nil {
+		return provider.ClientBinding{}, err
+	}
+	return binding, nil
+}
+func (c *Client) gatewayOIDC(binding provider.ClientBinding) string {
+	body, _ := json.Marshal(map[string]any{"issuer": c.issuer(), "client_id": binding.ClientID, "audience": binding.ClientID, "jwks_ttl": 3600, "roles_claim": "hypershell.roles", "admin_role": RoleAdmin, "user_role": RoleUser})
+	return string(body)
+}
+func (c *Client) EnsureGateway(ctx context.Context, id, name string, revision int64) (string, error) {
+	binding, err := c.reconcileGateway(ctx, id, name, revision)
+	if err != nil {
 		return "", err
 	}
-	body, _ := json.Marshal(map[string]any{"issuer": c.issuer(), "client_id": binding.ClientID, "audience": binding.ClientID, "jwks_ttl": 3600, "roles_claim": "hypershell.roles", "admin_role": RoleAdmin, "user_role": RoleUser})
-	return string(body), nil
+	return c.gatewayOIDC(binding), nil
 }
+
 func (c *Client) DeleteGateway(ctx context.Context, id string, revision int64) error {
+	if c.consoleJournal != nil {
+		console, err := c.consoleLifecycle(id, revision, true)
+		if err != nil {
+			return err
+		}
+		if err = console.Close(ctx); err != nil {
+			return err
+		}
+	}
 	lifecycle, err := c.gatewayLifecycle(id, revision, true)
 	if err != nil {
 		return err
@@ -136,6 +156,7 @@ func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider
 func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 	ids := []string{}
 	seen := map[string]bool{}
+	resources := map[string]bool{}
 	for first := 0; first < provider.MaxInventory; first += provider.MaxPageSize {
 		clients, err := c.keycloak.ListClients(ctx, provider.Page{First: first, Size: provider.MaxPageSize})
 		if err != nil {
@@ -150,11 +171,12 @@ func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 			if id == "" {
 				id = client.Attributes[gatewayIDAttribute]
 			}
-			if _, err := gatewayBinding(&client, id); err != nil {
-				continue
-			}
+			_, nativeErr := gatewayBinding(&client, id)
+			_, consoleErr := consoleBinding(&client, id)
 			expected, err := GatewayClientID(id)
-			if err == nil && client.ClientID == expected {
+			native := nativeErr == nil && err == nil && client.ClientID == expected
+			if (native || consoleErr == nil) && !resources[id] {
+				resources[id] = true
 				ids = append(ids, id)
 			}
 		}

@@ -304,6 +304,7 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	for _, a := range b.config.Assets {
 		if a.Path == target {
+
 			if target != "/index.html" {
 				r.Pattern = "/assets/{asset}"
 			} else if len(b.config.ScriptHashes) > 0 {

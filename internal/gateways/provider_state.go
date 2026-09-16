@@ -11,6 +11,7 @@ import (
 )
 
 const identityProviderStateScope = "identity-provider"
+const consoleIdentityProviderStateScope = "console-identity-provider"
 
 // Leave space for resource metadata within the generated 64 KiB RPC limit.
 const MaxGatewayProviderStateBytes = 60 << 10
@@ -21,7 +22,13 @@ type GatewayProviderState struct {
 	Deleted         bool
 }
 
-func (s *Service) LoadIdentityProviderState(ctx context.Context, p Principal, id string) (result GatewayProviderState, err error) {
+func (s *Service) LoadIdentityProviderState(ctx context.Context, p Principal, id string) (GatewayProviderState, error) {
+	return s.loadIdentityProviderState(ctx, p, id, identityProviderStateScope)
+}
+func (s *Service) LoadConsoleIdentityProviderState(ctx context.Context, p Principal, id string) (GatewayProviderState, error) {
+	return s.loadIdentityProviderState(ctx, p, id, consoleIdentityProviderStateScope)
+}
+func (s *Service) loadIdentityProviderState(ctx context.Context, p Principal, id, scope string) (result GatewayProviderState, err error) {
 	if !validID(id) {
 		return result, ErrInvalid
 	}
@@ -47,7 +54,7 @@ func (s *Service) LoadIdentityProviderState(ctx context.Context, p Principal, id
 		if !ok {
 			return errors.New("provider state storage is required")
 		}
-		result.State, err = records.LoadResourceState(ctx, "Gateway", id, identityProviderStateScope)
+		result.State, err = records.LoadResourceState(ctx, "Gateway", id, scope)
 		if err != nil {
 			return err
 		}
@@ -69,7 +76,13 @@ func (s *Service) LoadIdentityProviderState(ctx context.Context, p Principal, id
 // SaveIdentityProviderState keeps recovery writes separate from domain events.
 // Live writes hold the resource lock. Cleanup requires irreversible deletion.
 // Both paths require the observed resource revision and the record version.
-func (s *Service) SaveIdentityProviderState(ctx context.Context, p Principal, id string, resourceVersion, expected int64, sealed []byte, cleanup bool) (result GatewayProviderState, err error) {
+func (s *Service) SaveIdentityProviderState(ctx context.Context, p Principal, id string, resourceVersion, expected int64, sealed []byte, cleanup bool) (GatewayProviderState, error) {
+	return s.saveIdentityProviderState(ctx, p, id, identityProviderStateScope, resourceVersion, expected, sealed, cleanup)
+}
+func (s *Service) SaveConsoleIdentityProviderState(ctx context.Context, p Principal, id string, resourceVersion, expected int64, sealed []byte, cleanup bool) (GatewayProviderState, error) {
+	return s.saveIdentityProviderState(ctx, p, id, consoleIdentityProviderStateScope, resourceVersion, expected, sealed, cleanup)
+}
+func (s *Service) saveIdentityProviderState(ctx context.Context, p Principal, id, scope string, resourceVersion, expected int64, sealed []byte, cleanup bool) (result GatewayProviderState, err error) {
 	if !validID(id) || expected < 0 || expected == math.MaxInt64 || len(sealed) > MaxGatewayProviderStateBytes || runtime.CheckStateEnvelope(sealed) != nil {
 		return result, ErrInvalid
 	}
@@ -96,7 +109,7 @@ func (s *Service) SaveIdentityProviderState(ctx context.Context, p Principal, id
 		if !ok {
 			return errors.New("provider state storage is required")
 		}
-		result.State, err = records.SaveResourceState(ctx, "Gateway", id, identityProviderStateScope, expected, sealed)
+		result.State, err = records.SaveResourceState(ctx, "Gateway", id, scope, expected, sealed)
 		result.ResourceVersion = row.ResourceVersion
 		result.Deleted = row.DeletedAt.Valid
 		return err

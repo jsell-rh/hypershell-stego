@@ -121,12 +121,16 @@ func (k *keycloakFixture) gatewayClient(t *testing.T, id string) map[string]any 
 	if err != nil {
 		t.Fatal(err)
 	}
+	return k.namedIdentityClient(t, clientID)
+}
+func (k *keycloakFixture) namedIdentityClient(t *testing.T, clientID string) map[string]any {
+	t.Helper()
 	response, grant := k.issue(t, "provisioner", "acceptance-only-admin-secret")
 	if response.StatusCode != 200 {
 		t.Fatal("fixture administrator token failed")
 	}
 	headers := http.Header{"Authorization": {"Bearer " + grant["access_token"].(string)}}
-	response, err = k.http.Do(context.Background(), "GET", "/admin/realms/workflow/clients?clientId="+url.QueryEscape(clientID), headers, nil)
+	response, err := k.http.Do(context.Background(), "GET", "/admin/realms/workflow/clients?clientId="+url.QueryEscape(clientID), headers, nil)
 	var clients []map[string]any
 	if err != nil || response.StatusCode != 200 || json.Unmarshal(response.Body, &clients) != nil {
 		t.Fatal("read Gateway provider client")
@@ -174,11 +178,11 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	legacyID := "legacy-" + created.ID
 	legacyClientID, _ := keycloak.GatewayClientID(created.ID)
 	k.adminRequest(t, "POST", "/clients", map[string]any{"id": legacyID, "clientId": legacyClientID, "name": "legacy", "protocol": "openid-connect", "clientAuthenticatorType": "client-secret", "publicClient": true, "enabled": true, "standardFlowEnabled": true, "webOrigins": []string{}, "attributes": map[string]string{"hypershell.gateway": "true", "hypershell.gateway-id": created.ID}})
-	checkJournal := func(id, providerID string, closed bool) {
+	checkJournal := func(id, providerID, scope string, closed bool) {
 		t.Helper()
 		var data []byte
 		var version int64
-		if err := f.db.QueryRow("SELECT data,version FROM stego_resource_state WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-provider'", id).Scan(&data, &version); err != nil {
+		if err := f.db.QueryRow("SELECT data,version FROM stego_resource_state WHERE entity='Gateway' AND resource_id=$1 AND scope=$2", id, scope).Scan(&data, &version); err != nil {
 			t.Fatal(err)
 		}
 		keys, err := os.ReadFile(k.stateKeysFile)
@@ -190,7 +194,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		plain, err := protector.Open(runtime.StateKey{Instance: k.instanceID, Entity: "Gateway", ResourceID: id, Scope: "identity-provider"}, version, data)
+		plain, err := protector.Open(runtime.StateKey{Instance: k.instanceID, Entity: "Gateway", ResourceID: id, Scope: scope}, version, data)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -200,14 +204,75 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 			Closed    bool
 			Binding   struct{ ID, ClientID string }
 			Migration string
+			Kind      string
+		}
+		wantKind := ""
+		if scope == "console-identity-provider" {
+			wantKind = "browser"
 		}
 		raw := plain.Reveal()
 		defer clear(raw)
-		if json.Unmarshal(raw, &record) != nil || record.Version != 1 || record.Phase != "bound" || record.Closed != closed || record.Binding.ID != providerID || record.Migration != "" || bytes.Contains(data, raw) {
+		if json.Unmarshal(raw, &record) != nil || record.Version != 1 || record.Phase != "bound" || record.Closed != closed || record.Binding.ID != providerID || record.Migration != "" || record.Kind != wantKind || bytes.Contains(data, raw) {
 			t.Fatal("production provider journal does not match its resource")
 		}
 	}
-	stopController, logs := startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	consoleDomain := "console.example.com"
+	domainPolicy, err := json.Marshal(map[string]string{f.cluster: consoleDomain})
+	if err != nil {
+		t.Fatal(err)
+	}
+	startConsoleController := func() (func(), func() string) {
+		return startIdentityControllerWithExit(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken, 0, "HYPERSHELL_GATEWAY_CONSOLE_DOMAINS="+string(domainPolicy))
+	}
+	checkConsole := func(id, name string) map[string]any {
+		t.Helper()
+		live := k.namedIdentityClient(t, "hs-console-"+id)
+		if live == nil {
+			t.Fatal("console client was not created")
+		}
+		origin, err := keycloak.GatewayConsoleOrigin(id, consoleDomain)
+		if err != nil {
+			t.Fatal(err)
+		}
+		attrs, ok := live["attributes"].(map[string]any)
+		if !ok || attrs["pkce.code.challenge.method"] != "S256" || attrs["post.logout.redirect.uris"] != origin+"/auth/logout" || attrs["stego.owner.hypershell.console"] != "true" || attrs["stego.owner.hypershell.gateway-id"] != id {
+			t.Fatal("console ownership or callback differs")
+		}
+		redirects, ok := live["redirectUris"].([]any)
+		if !ok || len(redirects) != 1 || redirects[0] != origin+"/auth/callback" {
+			t.Fatal("console login callback differs")
+		}
+		if live["name"] != name || live["publicClient"] != false || live["standardFlowEnabled"] != true || live["enabled"] != true {
+			t.Fatal("console client profile differs")
+		}
+		for _, field := range []string{"directAccessGrantsEnabled", "implicitFlowEnabled", "serviceAccountsEnabled", "fullScopeAllowed"} {
+			if live[field] != false {
+				t.Fatal("console enabled", field)
+			}
+		}
+		clientPath := "/clients/" + url.PathEscape(live["id"].(string))
+		rolesResponse := k.adminRequest(t, "GET", clientPath+"/roles", nil)
+		var ownRoles []map[string]any
+		if rolesResponse.StatusCode != 200 || json.Unmarshal(rolesResponse.Body, &ownRoles) != nil || len(ownRoles) != 0 {
+			t.Fatal("console created a second set of Gateway roles")
+		}
+		native := k.gatewayClient(t, id)
+		scopesResponse := k.adminRequest(t, "GET", clientPath+"/scope-mappings/clients/"+url.PathEscape(native["id"].(string)), nil)
+		var scopes []struct{ Name string }
+		if scopesResponse.StatusCode != 200 || json.Unmarshal(scopesResponse.Body, &scopes) != nil || len(scopes) != 2 {
+			t.Fatal("console did not use the Gateway roles")
+		}
+		names := map[string]bool{}
+		for _, scope := range scopes {
+			names[scope.Name] = true
+		}
+		if !names[keycloak.RoleAdmin] || !names[keycloak.RoleUser] {
+			t.Fatal("console role scope differs")
+		}
+		checkJournal(id, live["id"].(string), "console-identity-provider", false)
+		return live
+	}
+	stopController, logs := startConsoleController()
 	waitOIDC := func(id string) string {
 		t.Helper()
 		deadline := time.Now().Add(15 * time.Second)
@@ -233,7 +298,8 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		}
 	}
 	firstOIDC := waitOIDC(created.ID)
-	checkJournal(created.ID, legacyID, false)
+	firstConsole := checkConsole(created.ID, "seed-identity")
+	checkJournal(created.ID, legacyID, "identity-provider", false)
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -250,7 +316,8 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	secondID := second.GetGateway().GetMetadata().GetId()
 	waitOIDC(secondID)
 	lateClient := k.gatewayClient(t, secondID)
-	checkJournal(secondID, lateClient["id"].(string), false)
+	lateConsole := checkConsole(secondID, "watch-identity")
+	checkJournal(secondID, lateClient["id"].(string), "identity-provider", false)
 	live := k.gatewayClient(t, created.ID)
 	attributes, ok := live["attributes"].(map[string]any)
 	if !ok || attributes["stego.owner.hypershell.gateway-id"] != created.ID || attributes["stego.owner.hypershell.gateway"] != "true" || attributes["pkce.code.challenge.method"] != "S256" || attributes["oauth2.device.authorization.grant.enabled"] != "true" {
@@ -344,13 +411,13 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	stopAPI, address, grpcAddress = startBoth(t, apiBinary, f.dsn, config, settings...)
 	defer stopAPI()
 	root = address + "/api/hypershell/v1/gateways"
-	stopController, logs = startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startConsoleController()
 	defer stopController()
 	if oidc := waitOIDC(created.ID); oidc != firstOIDC {
 		t.Fatal("rename or restart changed the Gateway audience")
 	}
 	deadline := time.Now().Add(15 * time.Second)
-	for k.gatewayClient(t, secondID) != nil {
+	for k.gatewayClient(t, secondID) != nil || k.namedIdentityClient(t, "hs-console-"+secondID) != nil {
 		if time.Now().After(deadline) {
 			t.Fatalf("offline Gateway deletion left its client\n%s", logs())
 		}
@@ -373,10 +440,15 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		}
 	}
 	completedVersion := awaitCleanup()
-	checkJournal(secondID, lateClient["id"].(string), true)
+	checkJournal(secondID, lateClient["id"].(string), "identity-provider", true)
+	checkJournal(secondID, lateConsole["id"].(string), "console-identity-provider", true)
 	stopController()
 	// Reproduce an already-dispatched create with its saved provider ID.
 	// The public reconciliation path must not reopen a closed journal.
+	lateConsole["enabled"] = false
+	if response := k.adminRequest(t, "POST", "/clients", lateConsole); response.StatusCode != 201 {
+		t.Fatal("late console effect fixture failed", response.StatusCode)
+	}
 	lateClient["enabled"] = false
 	if response := k.adminRequest(t, "POST", "/clients", lateClient); response.StatusCode != 201 {
 		t.Fatal("late provider effect fixture failed", response.StatusCode)
@@ -384,10 +456,10 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if k.gatewayClient(t, secondID) == nil {
 		t.Fatal("late identity effect was not created")
 	}
-	stopController, logs = startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startConsoleController()
 	defer stopController()
 	deadline = time.Now().Add(15 * time.Second)
-	for k.gatewayClient(t, secondID) != nil {
+	for k.gatewayClient(t, secondID) != nil || k.namedIdentityClient(t, "hs-console-"+secondID) != nil {
 		if time.Now().After(deadline) {
 			t.Fatalf("completed cleanup skipped a late identity effect\n%s", logs())
 		}
@@ -398,6 +470,9 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	}
 	if live := k.gatewayClient(t, created.ID); live == nil || live["name"] != "renamed-identity" {
 		t.Fatal("restart did not retain the live Gateway identity")
+	}
+	if current := checkConsole(created.ID, "renamed-identity"); current["id"] != firstConsole["id"] {
+		t.Fatal("rename or restart changed console binding")
 	}
 	stopController()
 	checkIdentityWorkerRunAborts(t, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken, controllerBinary, func() {

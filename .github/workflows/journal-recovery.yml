@@ -6,6 +6,13 @@ on:
       - '.github/workflows/journal-recovery.yml'
       - 'acceptance/gateway*recovery_test.go'
       - 'acceptance/gateway_journal_scope_test.go'
+      - 'acceptance/gateway_provider_state_test.go'
+      - 'acceptance/gateway_identity_test.go'
+      - 'internal/gatewayidentity/**'
+      - 'internal/gatewayidentityapp/**'
+      - 'internal/gateways/provider_state.go'
+      - 'internal/grpcapi/provider_state.go'
+      - 'contracts/controlplane/gateway_identity.proto'
       - 'internal/serviceaccounts/**'
       - 'internal/serviceaccountkeycloak/**'
       - '.stego/compiler-revision'
@@ -25,11 +32,12 @@ env:
   GOWORK: 'off'
   STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK: '1'
   STEGO_REQUIRE_POSTGRES: '1'
+  STEGO_REQUIRE_KEYCLOAK: '1'
 
 jobs:
   journal-recovery:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
@@ -61,16 +69,21 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
-          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts \
-            -run '^Test(GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
+          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts ./internal/gatewayidentity \
+            -run '^Test(ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
-          go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
-            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+          go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
+            -run '^TestGateway(IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
             | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
           from pathlib import Path
           required = {
+              "TestConsoleDomainPolicy",
+              "TestConsoleProviderStateJournalSeparatesNativeScope",
+              "TestProviderStateJournalScopeAndObservation",
+              "TestGatewayIdentityControllerWorkflow",
+              "TestGatewayProviderStateAcrossGRPCAndRestart",
               "TestGatewayInventoryRegistersPastFailedClientRead",
               "TestInventoryRPCsDenyUnverifiedCaller",
               "TestInventoryRPCWindowCannotBecomeEmptyCompletion",

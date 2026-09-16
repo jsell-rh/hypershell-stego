@@ -129,7 +129,7 @@ func (clientLifecycle) Format(s fmt.State, _ rune) {
 func (clientLifecycle) MarshalJSON() ([]byte, error) { return nil, ErrClientLifecycle }
 
 func newClientLifecycle(client *Client, journal *runtime.StateJournal, identity ClientIdentity, kind string) (*clientLifecycle, error) {
-	if client == nil || journal == nil || (kind != "" && kind != "service-account") {
+	if client == nil || journal == nil || (kind != "" && kind != "service-account" && kind != "browser") {
 		return nil, ErrClientLifecycle
 	}
 	identity.Ownership = maps.Clone(identity.Ownership)

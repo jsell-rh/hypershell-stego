@@ -34,6 +34,12 @@ type Provider interface {
 	GatewayIDs(context.Context) ([]string, error)
 	ReconcileGatewayUser(context.Context, string, string, string, string) error
 }
+
+// ConsoleProvider composes Gateway and browser identity policy in the same
+// per-Gateway serialized observation. It does not publish an endpoint.
+type ConsoleProvider interface {
+	EnsureGatewayWithConsole(context.Context, string, string, string, int64) (string, error)
+}
 type Controller struct {
 	gateways pb.GatewayServiceClient
 	state    control.GatewayIdentityServiceClient
@@ -148,7 +154,11 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	var oidc string
 	err = runtime.RunObservation(ctx, func(operation context.Context) error {
 		var err error
-		oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName(), state.ResourceVersion)
+		if console, ok := c.provider.(ConsoleProvider); ok {
+			oidc, err = console.EnsureGatewayWithConsole(operation, id, gateway.GetName(), gateway.GetClusterId(), state.ResourceVersion)
+		} else {
+			oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName(), state.ResourceVersion)
+		}
 		if err == nil && (oidc == "" || len(oidc) > 8192 || !utf8.ValidString(oidc) || strings.ContainsRune(oidc, 0)) {
 			return errors.New("identity provider returned no configuration")
 		}

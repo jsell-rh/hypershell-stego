@@ -53,24 +53,27 @@ func (c *Client) InspectNativeClientAccess(ctx context.Context, b ClientBinding,
 }
 
 func (c *Client) inspectNativeAccess(ctx context.Context, b ClientBinding, p NativeAccessPolicy, desired ClientRepresentation, enabled bool) error {
+	return c.inspectInteractiveAccess(ctx, b, p.Roles, p.Scopes, p.Claims, desired, enabled)
+}
+func (c *Client) inspectInteractiveAccess(ctx context.Context, b ClientBinding, rolesPolicy []string, scopes RolePolicy, claims TokenClaimsPolicy, desired ClientRepresentation, enabled bool) error {
 	value, raw, err := c.boundClient(ctx, b)
 	if err != nil {
 		return err
 	}
-	if !nativeClientConfigurationMatchesState(value, raw, desired, enabled) {
+	if !interactiveClientConfigurationMatchesState(value, raw, desired, enabled) {
 		return ErrClientConfiguration
 	}
-	roles, err := c.resolveRoles(ctx, b.ID, p.Roles)
+	roles, err := c.resolveRoles(ctx, b.ID, rolesPolicy)
 	if err != nil {
 		return err
 	}
-	if err = c.inspectClientScopePolicy(ctx, b, p.Scopes); err != nil {
+	if err = c.inspectClientScopePolicy(ctx, b, scopes); err != nil {
 		return err
 	}
-	if err = c.inspectTokenMappers(ctx, b, p.Claims); err != nil {
+	if err = c.inspectTokenMappers(ctx, b, claims); err != nil {
 		return err
 	}
-	confirmed, err := c.resolveRoles(ctx, b.ID, p.Roles)
+	confirmed, err := c.resolveRoles(ctx, b.ID, rolesPolicy)
 	if err != nil {
 		return err
 	}
@@ -81,7 +84,7 @@ func (c *Client) inspectNativeAccess(ctx context.Context, b ClientBinding, p Nat
 	if err != nil {
 		return err
 	}
-	if !nativeClientConfigurationMatchesState(value, raw, desired, enabled) {
+	if !interactiveClientConfigurationMatchesState(value, raw, desired, enabled) {
 		return ErrClientConfiguration
 	}
 	return nil
@@ -89,10 +92,10 @@ func (c *Client) inspectNativeAccess(ctx context.Context, b ClientBinding, p Nat
 
 // Base repair excludes scope assignments, which have separate endpoints.
 // The complete scope policy is required before and after enablement.
-func nativeClientBaseMatches(value ClientRepresentation, raw []byte, desired ClientRepresentation) bool {
+func interactiveClientBaseMatches(value ClientRepresentation, raw []byte, desired ClientRepresentation) bool {
 	value.DefaultClientScopes = []string{}
 	value.OptionalClientScopes = []string{}
-	return nativeClientConfigurationMatches(value, raw, desired)
+	return interactiveClientConfigurationMatchesState(value, raw, desired, false)
 }
 
 // ReconcileNativeClientAccess repairs an existing owned client and enables it
@@ -113,21 +116,24 @@ func (c *Client) ReconcileNativeClientAccess(ctx context.Context, b ClientBindin
 		return err
 	}
 	defer done()
+	return c.reconcileInteractiveAccess(work, b, p.Roles, p.Scopes, p.Claims, desired)
+}
+func (c *Client) reconcileInteractiveAccess(work context.Context, b ClientBinding, roles []string, scopes RolePolicy, claims TokenClaimsPolicy, desired ClientRepresentation) error {
 	return c.reconcileClientAccess(work, b, clientAccessPlan{
 		inspect: func(ctx context.Context, enabled bool) error {
-			return c.inspectNativeAccess(ctx, b, p, desired, enabled)
+			return c.inspectInteractiveAccess(ctx, b, roles, scopes, claims, desired, enabled)
 		},
 		repair: func(ctx context.Context) error {
-			if err := c.configureDisabledClient(ctx, b, desired, nativeClientBaseMatches, true); err != nil {
+			if err := c.configureDisabledClient(ctx, b, desired, interactiveClientBaseMatches, true); err != nil {
 				return err
 			}
-			if _, err := c.ensureClientRoles(ctx, b, p.Roles); err != nil {
+			if _, err := c.ensureClientRoles(ctx, b, roles); err != nil {
 				return err
 			}
-			if err := c.reconcileClientScopes(ctx, b, p.Scopes); err != nil {
+			if err := c.reconcileClientScopes(ctx, b, scopes); err != nil {
 				return err
 			}
-			return c.reconcileTokenMappers(ctx, b, p.Claims)
+			return c.reconcileTokenMappers(ctx, b, claims)
 		},
 	})
 }

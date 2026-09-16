@@ -32,31 +32,31 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916140402-af67e7b8aae8
+        module_version: v0.0.0-20260916152247-1db04e6c0d2a
         vcs: git
-        revision: af67e7b8aae896b62c5b005ae6152862ee199cda
+        revision: 1db04e6c0d2aa566b4ce027401b70155a190f3dd
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 33617165e1b92379a1a297e405948af03de1e87b1cfca31ebbc1499a660a42c2
+    registry_content_sha256: 96afb77c7e6cd90218eb742da603e6d5c2d241c8bd9c94955fc39d417cccba41
     components:
         browser-backend:
-            version: 1.6.1
+            version: 1.9.0
             sha: browser-workflow
         health-check:
-            version: 1.0.0
+            version: 1.1.0
             sha: browser-workflow
         kubernetes-service:
-            version: 1.15.0
+            version: 1.17.0
             sha: browser-workflow
         otel-tracing:
-            version: 1.14.1
+            version: 1.14.2
             sha: browser-workflow
         postgres-adapter:
             version: 4.9.0
             sha: browser-workflow
     files:
-        browser/backend.go: 4cef6c51babe5eb87bc5b5f0967e68fb351031d785cc1449dd3a5eb2bb429b92
+        browser/backend.go: b0064778472466b1a0b79cb0e78e547526813bc2a8c11bdbff59cb14719c4e10
         browser/client/client.go: 137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a
         browser/handlers.go: 64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
@@ -120,8 +120,9 @@ last_applied:
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
-        deploy/render/main.go: 41268f1ff494e1632184841b1b607320e0404c03ca5b2fcd943427bcf7736551
+        deploy/render/main.go: e2a81823df7bc12807755bf155b4cd62dc882941d8fe95b801196f6e99296f1b
         deploy/render/manifest.json.tmpl: 0e111bb672c70f4388e97bd7b3d644187362b4fe96f7462846d0d5e3e5487b6d
+        deploy/resources.go: 49befbd30808a9288737673fa4d6442d888e4ffb0bba7390cdac37130f48b7c2
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
         http_tls_open_other.go: 76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d
         http_tls_open_unix.go: 52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2

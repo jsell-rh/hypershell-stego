@@ -5,7 +5,6 @@ package keycloak
 import (
 	"context"
 	"errors"
-	"strconv"
 )
 
 // ServiceAccountAccessPolicy describes one dedicated service account. Save its
@@ -76,14 +75,6 @@ func (p ServiceAccountAccessPolicy) configuration(b ClientBinding) (ClientRepres
 	return desired, proof, nil
 }
 
-// The provider maintains this timestamp when it creates or rotates a secret.
-// It is not an authentication policy setting. No other unknown attribute is
-// accepted by the access profile.
-func validSecretCreationTime(value string) bool {
-	number, err := strconv.ParseInt(value, 10, 64)
-	return err == nil && number > 0 && strconv.FormatInt(number, 10) == value
-}
-
 func serviceAccountAccessMatches(value ClientRepresentation, raw []byte, desired ClientRepresentation, enabled, scopes bool) bool {
 	if scopes && (value.DefaultClientScopes == nil || len(value.DefaultClientScopes) != 0 || value.OptionalClientScopes == nil || len(value.OptionalClientScopes) != 0) {
 		return false
@@ -95,7 +86,7 @@ func serviceAccountAccessMatches(value ClientRepresentation, raw []byte, desired
 	}
 	count := 0
 	for key, actual := range value.Attributes {
-		if key == "client.secret.creation.time" {
+		if key == clientSecretCreationTime {
 			if !validSecretCreationTime(actual) {
 				return false
 			}
@@ -108,7 +99,7 @@ func serviceAccountAccessMatches(value ClientRepresentation, raw []byte, desired
 		count++
 	}
 	expected := len(desired.Attributes)
-	if _, exists := desired.Attributes["client.secret.creation.time"]; exists {
+	if _, exists := desired.Attributes[clientSecretCreationTime]; exists {
 		expected--
 	}
 	return count == expected
@@ -260,11 +251,11 @@ func (c *Client) reconcileServiceAccountAccess(ctx context.Context, b ClientBind
 			for key, v := range desired.Attributes {
 				repair.Attributes[key] = v
 			}
-			if timestamp, exists := value.Attributes["client.secret.creation.time"]; exists {
+			if timestamp, exists := value.Attributes[clientSecretCreationTime]; exists {
 				if !validSecretCreationTime(timestamp) {
 					return ErrClientConfiguration
 				}
-				repair.Attributes["client.secret.creation.time"] = timestamp
+				repair.Attributes[clientSecretCreationTime] = timestamp
 			}
 			check := func(value ClientRepresentation, raw []byte, want ClientRepresentation) bool {
 				return serviceAccountAccessMatches(value, raw, want, false, false)

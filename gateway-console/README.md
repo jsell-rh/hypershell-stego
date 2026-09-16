@@ -32,3 +32,17 @@ This module is an application integration candidate. The Gateway controller
 does not yet deploy it. The captured UI does not yet import the generated
 browser telemetry package. Live authentication, editor and terminal behavior,
 restart, address publication, and complete deletion remain required.
+
+The identity worker can now create the dashboard's confidential OAuth client.
+Set `HYPERSHELL_GATEWAY_CONSOLE_DOMAINS` to a JSON object that maps each managed
+cluster ID to its operator-controlled DNS domain. An empty setting disables
+new console clients. A nonempty setting must include every reconciled cluster.
+The host uses the complete Gateway ID and does not change on rename.
+
+The console client uses the native Gateway client's roles and audience. It
+creates no second set of grants. STEGO controls client repair and deletion.
+The API stores its encrypted recovery record in a separate fixed scope. It
+uses the same assigned identity controller and cleanup grants, with resource
+and record version checks. Cleanup closes the console client before the native
+client. This change does not yet supply credentials to a dashboard Pod or
+publish `console_address`. The application workflow still requires those steps.

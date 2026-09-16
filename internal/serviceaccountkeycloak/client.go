@@ -74,9 +74,13 @@ type Client struct {
 	keycloak       *provider.Client
 	gatewayJournal func(string, int64, bool) (*runtime.StateJournal, error)
 	accountJournal func(string, string, bool) (*runtime.StateJournal, error)
+	consoleJournal func(string, int64, bool) (*runtime.StateJournal, error)
+	consoleDomains map[string]string
 }
 
 type Options struct {
+	ConsoleDomains                                 map[string]string
+	ConsoleJournal                                 func(string, int64, bool) (*runtime.StateJournal, error)
 	ServerURL, Realm, ClientID, SecretFile, CAFile string
 	GatewayJournal                                 func(string, int64, bool) (*runtime.StateJournal, error)
 	AccountJournal                                 func(string, string, bool) (*runtime.StateJournal, error)
@@ -90,11 +94,16 @@ func (c *Client) MarshalJSON() ([]byte, error) {
 }
 
 func NewClient(options Options) (*Client, error) {
+	domains, err := checkedConsoleDomains(options.ConsoleDomains)
+	if err != nil || (len(domains) != 0 && (options.ConsoleJournal == nil || options.GatewayJournal == nil)) {
+		return nil, errors.New("console identity requires valid placement and protected journals")
+	}
+
 	common, err := provider.New(provider.Options{ServerURL: options.ServerURL, Realm: options.Realm, ClientID: options.ClientID, SecretFile: options.SecretFile, CAFile: options.CAFile})
 	if err != nil {
 		return nil, err
 	}
-	return &Client{gatewayJournal: options.GatewayJournal, accountJournal: options.AccountJournal, keycloak: common, serverURL: options.ServerURL, realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile}, nil
+	return &Client{consoleDomains: domains, consoleJournal: options.ConsoleJournal, gatewayJournal: options.GatewayJournal, accountJournal: options.AccountJournal, keycloak: common, serverURL: options.ServerURL, realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile}, nil
 }
 func (c *Client) Close() {
 	if c != nil {

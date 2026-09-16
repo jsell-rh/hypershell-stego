@@ -39,7 +39,14 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	}) >= 0 {
 		return errors.New("Gateway identity requires a stable instance ID")
 	}
-	provider, err := keycloak.NewClient(keycloak.Options{ServerURL: os.Getenv("HYPERSHELL_KEYCLOAK_URL"), Realm: os.Getenv("HYPERSHELL_KEYCLOAK_REALM"), ClientID: os.Getenv("HYPERSHELL_KEYCLOAK_CLIENT_ID"), SecretFile: os.Getenv("HYPERSHELL_KEYCLOAK_SECRET_FILE"), CAFile: os.Getenv("HYPERSHELL_KEYCLOAK_CA_FILE"),
+	domains, err := keycloak.ParseConsoleDomains(os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_DOMAINS"))
+	if err != nil {
+		return err
+	}
+	provider, err := keycloak.NewClient(keycloak.Options{ConsoleDomains: domains,
+		ConsoleJournal: func(id string, revision int64, cleanup bool) (*runtime.StateJournal, error) {
+			return gatewayidentity.NewConsoleProviderStateJournal(state, protector, instance, id, revision, cleanup)
+		}, ServerURL: os.Getenv("HYPERSHELL_KEYCLOAK_URL"), Realm: os.Getenv("HYPERSHELL_KEYCLOAK_REALM"), ClientID: os.Getenv("HYPERSHELL_KEYCLOAK_CLIENT_ID"), SecretFile: os.Getenv("HYPERSHELL_KEYCLOAK_SECRET_FILE"), CAFile: os.Getenv("HYPERSHELL_KEYCLOAK_CA_FILE"),
 		GatewayJournal: func(id string, revision int64, cleanup bool) (*runtime.StateJournal, error) {
 			return gatewayidentity.NewProviderStateJournal(state, protector, instance, id, revision, cleanup)
 		},

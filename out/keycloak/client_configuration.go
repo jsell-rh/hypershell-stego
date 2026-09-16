@@ -11,6 +11,15 @@ import (
 	"strings"
 )
 
+// Keycloak sets this metadata when it creates a confidential client secret.
+// It is not an application policy input. Preserve its canonical timestamp.
+const clientSecretCreationTime = "client.secret.creation.time"
+
+func validSecretCreationTime(value string) bool {
+	timestamp, err := strconv.ParseInt(value, 10, 64)
+	return err == nil && timestamp > 0 && strconv.FormatInt(timestamp, 10) == value
+}
+
 var ErrClientConfiguration = errors.New("Keycloak client configuration is not confirmed")
 
 func oidcClientConfiguration(b ClientBinding, name string, lifetime int) (ClientRepresentation, error) {
@@ -114,7 +123,7 @@ func (c *Client) configureDisabledClient(ctx context.Context, b ClientBinding, d
 	if err != nil {
 		return ErrResponse
 	}
-	// Native profiles own the complete attribute set. Keycloak also patches
+	// Interactive profiles own the complete attribute set. Keycloak also patches
 	// this map, so omitted settings require explicit empty removal entries.
 	if replaceAttributes {
 		if len(value.Attributes) > 128 {
@@ -124,6 +133,14 @@ func (c *Client) configureDisabledClient(ctx context.Context, b ClientBinding, d
 		for key := range value.Attributes {
 			if !textValue(key, 255) {
 				return ErrResponse
+			}
+			if !desired.PublicClient && key == clientSecretCreationTime {
+				// A public or bearer-only client has no secret. Keycloak supplies fresh
+				// metadata when this update restores the confidential profile.
+				if !value.PublicClient && !value.BearerOnly && !validSecretCreationTime(value.Attributes[key]) {
+					return ErrResponse
+				}
+				continue
 			}
 			attributes[key] = ""
 		}

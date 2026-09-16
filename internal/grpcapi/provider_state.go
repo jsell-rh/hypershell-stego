@@ -10,21 +10,25 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func providerStateResponse(id string, value gateways.GatewayProviderState) *pb.GatewayProviderState {
-	return &pb.GatewayProviderState{GatewayId: id, Version: value.State.Version, SealedState: value.State.Data, ResourceVersion: value.ResourceVersion, Deleted: value.Deleted}
+func providerStateResponse(id string, kind pb.GatewayIdentityClientKind, value gateways.GatewayProviderState) *pb.GatewayProviderState {
+	return &pb.GatewayProviderState{GatewayId: id, Version: value.State.Version, SealedState: value.State.Data, ResourceVersion: value.ResourceVersion, Deleted: value.Deleted, ClientKind: kind}
 }
 func (s *identityServer) LoadGatewayProviderState(ctx context.Context, request *pb.LoadGatewayProviderStateRequest) (*pb.GatewayProviderState, error) {
-	if request == nil || len(request.ProtoReflect().GetUnknown()) != 0 {
+	if request == nil || len(request.ProtoReflect().GetUnknown()) != 0 || !validIdentityClientKind(request.GetClientKind()) {
 		return nil, status.Error(codes.InvalidArgument, "request contains unsupported fields")
 	}
-	value, err := s.service.LoadIdentityProviderState(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId())
+	load := s.service.LoadIdentityProviderState
+	if request.ClientKind == pb.GatewayIdentityClientKind_GATEWAY_IDENTITY_CLIENT_KIND_CONSOLE {
+		load = s.service.LoadConsoleIdentityProviderState
+	}
+	value, err := load(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return providerStateResponse(request.GetGatewayId(), value), nil
+	return providerStateResponse(request.GetGatewayId(), request.GetClientKind(), value), nil
 }
 func (s *identityServer) SaveGatewayProviderState(ctx context.Context, request *pb.SaveGatewayProviderStateRequest) (*pb.GatewayProviderState, error) {
-	if request == nil || len(request.ProtoReflect().GetUnknown()) != 0 {
+	if request == nil || len(request.ProtoReflect().GetUnknown()) != 0 || !validIdentityClientKind(request.GetClientKind()) {
 		return nil, status.Error(codes.InvalidArgument, "request contains unsupported fields")
 	}
 	version, present, err := transport.ResourceVersion(ctx)
@@ -34,9 +38,17 @@ func (s *identityServer) SaveGatewayProviderState(ctx context.Context, request *
 	if !present {
 		return nil, mapError(gateways.ErrObservationRequired)
 	}
-	value, err := s.service.SaveIdentityProviderState(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), version, request.GetExpectedVersion(), request.GetSealedState(), request.GetCleanup())
+	save := s.service.SaveIdentityProviderState
+	if request.ClientKind == pb.GatewayIdentityClientKind_GATEWAY_IDENTITY_CLIENT_KIND_CONSOLE {
+		save = s.service.SaveConsoleIdentityProviderState
+	}
+	value, err := save(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), version, request.GetExpectedVersion(), request.GetSealedState(), request.GetCleanup())
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return providerStateResponse(request.GetGatewayId(), value), nil
+	return providerStateResponse(request.GetGatewayId(), request.GetClientKind(), value), nil
+}
+
+func validIdentityClientKind(kind pb.GatewayIdentityClientKind) bool {
+	return kind == pb.GatewayIdentityClientKind_GATEWAY_IDENTITY_CLIENT_KIND_NATIVE || kind == pb.GatewayIdentityClientKind_GATEWAY_IDENTITY_CLIENT_KIND_CONSOLE
 }

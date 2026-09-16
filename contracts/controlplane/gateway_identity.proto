@@ -138,14 +138,23 @@ message CleanupSummary {
 }
 
 // Provider recovery data is encrypted by the controller. The API has no key.
-// The scope is fixed by the application. These methods grant no provider access.
-message LoadGatewayProviderStateRequest { string gateway_id = 1; }
+// The client kind selects a fixed application scope. These methods grant no
+// provider access. Zero retains the existing native client wire contract.
+enum GatewayIdentityClientKind {
+ GATEWAY_IDENTITY_CLIENT_KIND_NATIVE = 0;
+ GATEWAY_IDENTITY_CLIENT_KIND_CONSOLE = 1;
+}
+message LoadGatewayProviderStateRequest {
+ string gateway_id = 1;
+ GatewayIdentityClientKind client_kind = 2;
+}
 message SaveGatewayProviderStateRequest {
  string gateway_id = 1;
  int64 expected_version = 2;
  bytes sealed_state = 3;
  // Cleanup writes require a deleted Gateway and the identity cleanup grant.
  bool cleanup = 4;
+ GatewayIdentityClientKind client_kind = 5;
 }
 message GatewayProviderState {
  string gateway_id = 1;
@@ -153,6 +162,7 @@ message GatewayProviderState {
  bytes sealed_state = 3;
  int64 resource_version = 4;
  bool deleted = 5;
+ GatewayIdentityClientKind client_kind = 6;
 }
 
 // These methods store encrypted service-account recovery state. They do not

@@ -119,13 +119,16 @@ func nativeClientConfigurationMatches(value ClientRepresentation, raw []byte, de
 	return nativeClientConfigurationMatchesState(value, raw, desired, false)
 }
 func nativeClientConfigurationMatchesState(value ClientRepresentation, raw []byte, desired ClientRepresentation, enabled bool) bool {
+	return interactiveClientConfigurationMatchesState(value, raw, desired, enabled)
+}
+func interactiveClientConfigurationMatchesState(value ClientRepresentation, raw []byte, desired ClientRepresentation, enabled bool) bool {
 	if !clientFlowBindingsMatch(value, raw) {
 		return false
 	}
 	if value.ID != desired.ID || value.ClientID != desired.ClientID || value.Name != desired.Name || value.Protocol != "openid-connect" || value.ClientAuthenticatorType != "client-secret" {
 		return false
 	}
-	for key, want := range map[string]bool{"enabled": enabled, "publicClient": true, "bearerOnly": false, "consentRequired": false, "serviceAccountsEnabled": false, "standardFlowEnabled": true, "implicitFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": false} {
+	for key, want := range map[string]bool{"enabled": enabled, "publicClient": desired.PublicClient, "bearerOnly": false, "consentRequired": false, "serviceAccountsEnabled": false, "standardFlowEnabled": true, "implicitFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": false} {
 		if !explicitFlag(raw, key, want) {
 			return false
 		}
@@ -138,9 +141,18 @@ func nativeClientConfigurationMatchesState(value ClientRepresentation, raw []byt
 	if flag, exists := flags["authorizationServicesEnabled"]; exists && strings.TrimSpace(string(flag)) != "false" {
 		return false
 	}
-	// The complete attribute set belongs to this profile. Unknown settings must
+	// The policy attributes belong to this profile. Unknown settings must
 	// be removed or reviewed before enablement; a subset match is insufficient.
-	if len(value.Attributes) != len(desired.Attributes) {
+	attributeCount := len(value.Attributes)
+	if !desired.PublicClient {
+		if timestamp, exists := value.Attributes[clientSecretCreationTime]; exists {
+			if !validSecretCreationTime(timestamp) {
+				return false
+			}
+			attributeCount--
+		}
+	}
+	if attributeCount != len(desired.Attributes) {
 		return false
 	}
 	for key, want := range desired.Attributes {

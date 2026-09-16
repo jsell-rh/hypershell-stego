@@ -111,6 +111,71 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		}
 		return result
 	}
+	consoleKind := control.GatewayIdentityClientKind_GATEWAY_IDENTITY_CLIENT_KIND_CONSOLE
+	consoleKey := stateKey
+	consoleKey.Scope = "console-identity-provider"
+	consoleLoad := func(parent context.Context, want codes.Code) *control.GatewayProviderState {
+		t.Helper()
+		record, err := client.LoadGatewayProviderState(parent, &control.LoadGatewayProviderStateRequest{GatewayId: gateway.ID, ClientKind: consoleKind})
+		if status.Code(err) != want {
+			t.Fatal("console state read", err, "want", want)
+		}
+		return record
+	}
+	consoleSave := func(parent context.Context, revision, expected int64, cleanup bool, want codes.Code) {
+		t.Helper()
+		parent, err := rpc.WithResourceVersion(parent, revision)
+		if err != nil {
+			t.Fatal(err)
+		}
+		sealed, err := protector.Seal(consoleKey, expected+1, []byte("console checkpoint"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		record, err := client.SaveGatewayProviderState(parent, &control.SaveGatewayProviderStateRequest{GatewayId: gateway.ID, ClientKind: consoleKind, ExpectedVersion: expected, SealedState: sealed, Cleanup: cleanup})
+		if status.Code(err) != want {
+			t.Fatal("console state write", err, "want", want)
+		}
+		if err == nil && (record.ClientKind != consoleKind || record.Version != expected+1) {
+			t.Fatal("console write changed scope or version")
+		}
+	}
+	emptyConsole := consoleLoad(writer, codes.OK)
+	if emptyConsole.ClientKind != consoleKind || emptyConsole.Version != 0 {
+		t.Fatal("console scope is not empty")
+	}
+	for _, parent := range []context.Context{call("alice"), call("admin", "platform:admin"), call("unassigned")} {
+		consoleLoad(parent, codes.PermissionDenied)
+		consoleSave(parent, 1, 0, false, codes.PermissionDenied)
+	}
+	consoleLoad(ctx, codes.Unauthenticated)
+	for _, kind := range []control.GatewayIdentityClientKind{-1, 2, 99} {
+		if _, err := client.LoadGatewayProviderState(writer, &control.LoadGatewayProviderStateRequest{GatewayId: gateway.ID, ClientKind: kind}); status.Code(err) != codes.InvalidArgument {
+			t.Fatal("unknown read scope accepted", err)
+		}
+		if _, err := client.SaveGatewayProviderState(writer, &control.SaveGatewayProviderStateRequest{GatewayId: gateway.ID, ClientKind: kind}); status.Code(err) != codes.InvalidArgument {
+			t.Fatal("unknown write scope accepted", err)
+		}
+	}
+	consoleSave(writer, 1, 0, false, codes.OK)
+	verifyConsole := func(version, revision int64, deleted bool) {
+		t.Helper()
+		record := consoleLoad(cleaner, codes.OK)
+		if record.ClientKind != consoleKind || record.Version != version || record.ResourceVersion != revision || record.Deleted != deleted {
+			t.Fatal("console state metadata differs")
+		}
+		opened, err := protector.Open(consoleKey, version, record.SealedState)
+		if err != nil || string(opened.Reveal()) != "console checkpoint" {
+			t.Fatal("console checkpoint was not retained", err)
+		}
+		if _, err := protector.Open(stateKey, version, record.SealedState); err == nil {
+			t.Fatal("console checkpoint crossed native scope")
+		}
+	}
+	verifyConsole(1, 1, false)
+	if record := load(writer, codes.OK); record.Version != 0 {
+		t.Fatal("console write changed native version")
+	}
 	sealed := seal(1, plain)
 	for _, parent := range []context.Context{call("alice"), call("admin", "platform:admin"), call("unassigned"), cleaner} {
 		save(parent, 1, 0, sealed, false, codes.PermissionDenied)
@@ -149,6 +214,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		}
 	}
 	verify(1, 1, false, plain)
+	verifyConsole(1, 1, false)
 	save(writer, 1, 0, sealed, false, codes.Aborted)
 	// Restart uses the same database and an independent copy of the controller key.
 	stop()
@@ -161,6 +227,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	verify(1, 1, false, plain)
+	verifyConsole(1, 1, false)
 	// A desired-state change invalidates a pending state save.
 	code, _ = requestJSON(t, "PATCH", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, []byte(`{"name":"changed-provider-input"}`))
 	if code != 200 {
@@ -181,6 +248,13 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	lastEvent = eventSequence()
 	verify(2, 3, true, plain)
+	verifyConsole(1, 3, true)
+	consoleSave(writer, 3, 1, false, codes.NotFound)
+	consoleSave(writer, 3, 1, true, codes.PermissionDenied)
+	consoleSave(cleaner, 2, 1, true, codes.Aborted)
+	consoleSave(cleaner, 3, 0, true, codes.Aborted)
+	consoleSave(cleaner, 3, 1, true, codes.OK)
+	verifyConsole(2, 3, true)
 	closed := []byte(`{"provider_id":"saved-provider-id","closed":true}`)
 	last := seal(3, closed)
 	save(writer, 3, 2, last, false, codes.NotFound)
@@ -198,12 +272,14 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	}
 	save(cleaner, 3, 3, maximumSealed, true, codes.OK)
 	verify(4, 3, true, maximum)
+	verifyConsole(2, 3, true)
 	stop()
 	connection.Close()
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	_, connection = grpcClient(t, grpcAddress, apiTLS)
 	client = control.NewGatewayIdentityServiceClient(connection)
 	verify(4, 3, true, maximum)
+	verifyConsole(2, 3, true)
 	// The same private API supplies the common encrypted journal after restart.
 	journal, err := gatewayidentity.NewProviderStateJournal(client, protector, stateKey.Instance, gateway.ID, 3, true)
 	if err != nil {
