@@ -37,3 +37,17 @@ reload after recovery, and confirmed provider logout.
 Common CI, the published module check, and the deployed application check must
 pass before this candidate is qualified. Repeated generation and HTTP fixture
 checks do not prove browser SameSite behavior.
+
+The [module check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35157957548)
+passed with 83 matching archived source files and a verified image binary and
+digest. The [journal check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35157957523)
+passed all 28 required tests with no skips. The local evidence files retain
+the source revisions and artifact hashes.
+
+The [full CI run at 9087200](https://github.com/jsell-rh/hypershell-stego/actions/runs/35158172772)
+rejected stale root generation state in its core and browser jobs. The module
+dependency changed after generation, but the committed state still had the
+previous `go.mod` and `go.sum` hashes. Regeneration at `8e5a7a1` records the final
+dependency inputs. The state matched on repeated generation, and both recorded
+hashes match the actual files. This was an integration error; the application
+tests did not run past that generation gate. A new full CI result is required.
