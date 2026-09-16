@@ -25,14 +25,14 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 	for ns, target := range w.allocations {
 		if target.profile == "gateway-state" {
 			state = ns
-		} else {
+		} else if target.profile == "gateway" {
 			gateway = ns
 		}
 		if err := allocator.RequireNamespace(ctx, target.profile, ns, target.id); err != nil {
 			w.t.Fatal("namespace was not allocated", err)
 		}
 		pods, storage := "3", "768Mi"
-		if target.profile == "gateway-state" {
+		if target.profile == "gateway-state" || target.profile == "gateway-console-state" {
 			pods, storage = "0", "64Mi"
 		}
 		quota, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+ns+"/resourcequotas/stego-allocation", nil)

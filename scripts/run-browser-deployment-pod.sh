@@ -35,6 +35,7 @@ publish_image service ./out hypershell /work/image.json
 (cd console; publish_image service ./out hypershell-console /work/console-image.json)
 publish_image rpc ./out/grpcapi/processes/provisioner hypershell-provisioner /work/provisioner-image.json
 if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
+ (cd gateway-console; publish_image service ./out hypershell-gateway-console /work/gateway-console-image.json)
  for worker in namespace-allocation gateway-identity gateway-workload; do
   publish_image worker "./out/deploy/workers/$worker" "hypershell-$worker" "/work/$worker-image.json"
  done
@@ -47,6 +48,8 @@ export STEGO_TEST_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-cons
 provisioner_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/provisioner-image.json rpc)
 export STEGO_TEST_PROVISIONER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-provisioner@$provisioner_digest"
 if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
+ gateway_console_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-console-image.json service)
+ export STEGO_TEST_GATEWAY_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-console@$gateway_console_digest"
  allocation_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/namespace-allocation-image.json worker)
  export STEGO_TEST_ALLOCATION_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-namespace-allocation@$allocation_digest"
  identity_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-identity-image.json worker)

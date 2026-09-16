@@ -60,8 +60,14 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	pb.RegisterGatewayReleaseServiceServer(registrar, &releaseServer{resource: placement.Releases, source: source})
 	pb.RegisterGatewayServiceServer(registrar, &server{service: service, source: source})
 	pb.RegisterRoleBindingServiceServer(registrar, &grantServer{service: service, source: source})
-	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})
+	RegisterGatewayIdentity(registrar, service)
 	return nil
+}
+
+// RegisterGatewayIdentity exposes the domain handlers to a dedicated journal
+// listener. Each handler retains its identity and operation checks.
+func RegisterGatewayIdentity(registrar grpc.ServiceRegistrar, service *gateways.Service) {
+	control.RegisterGatewayIdentityServiceServer(registrar, &identityServer{service: service})
 }
 
 func (s *server) CreateGateway(ctx context.Context, request *pb.CreateGatewayRequest) (*pb.CreateGatewayResponse, error) {

@@ -31,6 +31,8 @@ type browserGatewayWorkload struct {
 	internalRoots       *x509.CertPool
 	publicEgressFailure func(string)
 	public              *browserPublicGateway
+	consoleProvisioner  []string
+	consoleTokenFile    string
 	t                   *testing.T
 	p                   *kubernetesBrowser
 	f                   *fixture
@@ -166,6 +168,13 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 			w.t.Fatal(err)
 		}
 		w.trackAllocation(state, p.id, "gateway-state")
+		if w.public != nil {
+			consoleState, err := gatewayworkload.ConsoleStateNamespace(p.id)
+			if err != nil {
+				w.t.Fatal(err)
+			}
+			w.trackAllocation(consoleState, p.id, "gateway-console-state")
+		}
 		w.trackAllocation(p.namespace, p.id, "gateway")
 		w.gatewayIDs = append(w.gatewayIDs, p.id)
 	}

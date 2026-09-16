@@ -9,7 +9,7 @@ import (
 func browserWorkerTelemetry(settings []string) []string {
 	var result []string
 	for _, entry := range settings {
-		if strings.HasPrefix(entry, "OTEL_") {
+		if strings.HasPrefix(entry, "OTEL_") || strings.HasPrefix(entry, "STEGO_OTEL_TOKEN_FILE=") {
 			result = append(result, entry)
 		}
 	}
@@ -33,6 +33,10 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 		w.p.settings(w.telemetry, env, files)
 		target := []string{"--worker", worker.name}
 		if worker.name == "gateway-identity" {
+			if w.public != nil {
+				domains, _ := json.Marshal(map[string]string{w.f.cluster: w.public.Domain})
+				env["HYPERSHELL_GATEWAY_CONSOLE_DOMAINS"] = string(domains)
+			}
 			env["HYPERSHELL_INSTANCE_ID"] = w.identity.instanceID
 			env["HYPERSHELL_IDENTITY_STATE_KEYS_FILE"] = "/var/run/stego/identity-state-keys.json"
 			files["identity-state-keys.json"] = w.p.read(w.identity.stateKeysFile)
@@ -56,6 +60,15 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				target = append(target, "--egress", "network-probe="+w.endpointChange.Initial)
 			}
 			if worker.name == "gateway-workload" {
+				if w.public != nil {
+					image := os.Getenv("STEGO_TEST_GATEWAY_CONSOLE_IMAGE")
+					if !strings.Contains(image, "@sha256:") || len(w.consoleProvisioner) != 3 {
+						w.t.Fatal("Gateway console image or provisioner settings are missing")
+					}
+					env["HYPERSHELL_GATEWAY_CONSOLE_DOMAIN"] = w.public.Domain
+					env["HYPERSHELL_GATEWAY_CONSOLE_IMAGE"] = image
+					w.p.settings(w.consoleProvisioner, env, files)
+				}
 				env["HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"] = "/var/run/stego/gateway-database.json"
 				files["gateway-database.json"] = w.databaseConfig
 				for _, endpoint := range w.databaseEndpoints {

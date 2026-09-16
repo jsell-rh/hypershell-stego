@@ -38,7 +38,12 @@ func startAccountStateAPI(t *testing.T, f *fixture, k *keycloakFixture, key *rsa
 	if err != nil {
 		t.Fatal(err)
 	}
-	policy, err := auth.NewGrantPolicy([]auth.Grant{{Issuer: "https://issuer.example", Subject: "account-worker", Resource: "ServiceAccount", Operation: "provider-state"}})
+	grants := []auth.Grant{{Issuer: "https://issuer.example", Subject: "account-worker", Resource: "ServiceAccount", Operation: "provider-state"}}
+	console := os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_DOMAINS") != ""
+	if console {
+		grants = append(grants, auth.Grant{Issuer: "https://issuer.example", Subject: "account-worker", Resource: "Gateway", Operation: "read.console-client"})
+	}
+	policy, err := auth.NewGrantPolicy(grants)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -61,6 +66,9 @@ func startAccountStateAPI(t *testing.T, f *fixture, k *keycloakFixture, key *rsa
 	}
 	server, err := transport.New(verifier.Authenticate, func(registrar grpc.ServiceRegistrar) error {
 		api.RegisterAccountProviderState(registrar, service)
+		if console {
+			api.RegisterGatewayIdentity(registrar, service)
+		}
 		return nil
 	})
 	if err != nil {

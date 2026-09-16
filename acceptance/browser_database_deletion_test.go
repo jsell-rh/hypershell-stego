@@ -57,6 +57,10 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	consoleState, err := gatewayworkload.ConsoleStateNamespace(id)
+	if err != nil {
+		w.t.Fatal(err)
+	}
 	for {
 		gone, err := allocator.NamespaceGone(ctx, "gateway", ns, id)
 		if err != nil {
@@ -66,12 +70,16 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 		if err != nil {
 			w.t.Fatal("Gateway state namespace read failed", err)
 		}
+		consoleGone, err := allocator.NamespaceGone(ctx, "gateway-console-state", consoleState, id)
+		if err != nil {
+			w.t.Fatal("Gateway console state namespace read failed", err)
+		}
 		var complete bool
 		err = w.f.db.QueryRowContext(ctx, `SELECT COALESCE(deleted_at IS NOT NULL AND stego_finalized_at IS NOT NULL AND stego_cleanup->>'accounts'='true' AND stego_cleanup->>'identity'='true' AND stego_cleanup_targets->'workload'->>$2='true' AND stego_cleanup_targets->'sql'->>$2='true',false) FROM gateways WHERE id=$1`, id, w.f.cluster).Scan(&complete)
 		if err != nil {
 			w.t.Fatal("Gateway cleanup read failed", err)
 		}
-		if gone && stateGone && complete {
+		if gone && stateGone && consoleGone && complete {
 			break
 		}
 		select {
@@ -80,7 +88,7 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 		case <-time.After(time.Second):
 		}
 	}
-	for _, profile := range []string{"gateway", "gateway-state"} {
+	for _, profile := range []string{"gateway", "gateway-state", "gateway-console-state"} {
 		w.checkNoAllocationBindings(ctx, allocator, profile, id)
 	}
 }
