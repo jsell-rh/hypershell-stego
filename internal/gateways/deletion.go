@@ -68,6 +68,25 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 		}
 		changed = prior != complete
 	}
+	if owner == "sql" && complete {
+		bindings, ok := tx.(store.EffectBindingStore)
+		if !ok {
+			return errors.New("SQL cleanup requires effect binding storage")
+		}
+		console, err := bindings.LoadEffectBinding(ctx, "Gateway", id, sqlStateScope(target, SQLComponentConsole))
+		if err != nil {
+			return err
+		}
+		if console.Present && console.Digest != "" {
+			done, err := bindings.LoadEffectBinding(ctx, "Gateway", id, consoleSQLCompletionScope(target))
+			if err != nil {
+				return err
+			}
+			if !console.Closed || !done.Present || !done.Closed || done.Digest != console.Digest {
+				return store.ErrEffectBindingConflict
+			}
+		}
+	}
 	if changed {
 		if target == "" {
 			writer, ok := tx.(store.CleanupWriter)

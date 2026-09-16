@@ -11,6 +11,10 @@ service GatewayIdentityService {
  rpc LoadGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc BindGatewaySQLState(BindGatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc CloseGatewaySQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc LoadGatewayConsoleSQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc BindGatewayConsoleSQLState(BindGatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc CloseGatewayConsoleSQLState(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
+ rpc CompleteGatewayConsoleSQLCleanup(GatewaySQLStateRequest) returns (GatewaySQLStateBinding);
  rpc LoadGatewayIdentityCycle(LoadGatewayIdentityCheckpointRequest) returns (GatewayIdentityCycle);
  rpc SaveGatewayIdentityCycle(SaveGatewayIdentityCycleRequest) returns (GatewayIdentityCycle);
  rpc ObserveGatewayIdentity(ObserveGatewayIdentityRequest) returns (ObserveGatewayIdentityResponse);
@@ -28,6 +32,10 @@ service GatewayIdentityService {
 // This is a public digest of retained controller state, never SQL credentials.
 // Registration requires a live Gateway and its observed resource version.
 // Closure requires deletion and prevents any later first registration.
+enum GatewaySQLComponent {
+ GATEWAY_SQL_COMPONENT_GATEWAY = 0;
+ GATEWAY_SQL_COMPONENT_CONSOLE = 1;
+}
 message GatewaySQLStateRequest { string gateway_id = 1; string cluster_id = 2; }
 message BindGatewaySQLStateRequest { string gateway_id = 1; string cluster_id = 2; string digest = 3; }
 message GatewaySQLStateBinding {
@@ -36,6 +44,7 @@ message GatewaySQLStateBinding {
  bool present = 3;
  string digest = 4;
  bool closed = 5;
+ GatewaySQLComponent component = 6;
 }
 message GetGatewayIdentityStateRequest { string id = 1; }
 message GetGatewayIdentityStateResponse {

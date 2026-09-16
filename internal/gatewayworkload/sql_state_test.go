@@ -54,13 +54,14 @@ func TestSQLBindingResponseRequiresExactIdentityAndValidState(t *testing.T) {
 	for _, value := range []*control.GatewaySQLStateBinding{
 		nil,
 		{GatewayId: "other", ClusterId: "cluster"},
+		{GatewayId: "id", ClusterId: "cluster", Component: control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE},
 		{GatewayId: "id", ClusterId: "other"},
 		{GatewayId: "id", ClusterId: "cluster", Closed: true},
 		{GatewayId: "id", ClusterId: "cluster", Digest: strings.Repeat("a", 64)},
 		{GatewayId: "id", ClusterId: "cluster", Present: true},
 		{GatewayId: "id", ClusterId: "cluster", Present: true, Digest: strings.Repeat("A", 64)},
 	} {
-		if _, err := sqlBinding(value, "id", "cluster"); err == nil {
+		if _, err := sqlBinding(value, "id", "cluster", control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY); err == nil {
 			t.Fatal("invalid SQL state response accepted")
 		}
 	}
@@ -70,7 +71,7 @@ func TestSQLBindingResponseRequiresExactIdentityAndValidState(t *testing.T) {
 		{GatewayId: "id", ClusterId: "cluster", Present: true, Digest: strings.Repeat("a", 64)},
 		{GatewayId: "id", ClusterId: "cluster", Present: true, Closed: true, Digest: strings.Repeat("a", 64)},
 	} {
-		if _, err := sqlBinding(value, "id", "cluster"); err != nil {
+		if _, err := sqlBinding(value, "id", "cluster", control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY); err != nil {
 			t.Fatal("valid SQL state response rejected", err)
 		}
 	}

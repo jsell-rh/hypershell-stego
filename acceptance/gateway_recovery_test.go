@@ -121,6 +121,39 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	if n := count(t, f.db, "stego_effect_bindings"); n != 1 {
 		t.Fatal("binding record count differs", n)
 	}
+	consoleDigest := strings.Repeat("c", 64)
+	bind.Digest = consoleDigest
+	consoleRequest := request(bound.ID)
+	for _, subject := range []string{"owner", "reader", "wrong-target"} {
+		if _, err := client.LoadGatewayConsoleSQLState(call(subject), consoleRequest); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("console SQL read lacked an exact grant", err)
+		}
+		if _, err := client.BindGatewayConsoleSQLState(versioned(subject, before), bind); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("console SQL registration lacked an exact grant", err)
+		}
+		if _, err := client.CloseGatewayConsoleSQLState(call(subject), consoleRequest); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("console SQL closure lacked an exact grant", err)
+		}
+		if _, err := client.CompleteGatewayConsoleSQLCleanup(call(subject), consoleRequest); status.Code(err) != codes.PermissionDenied {
+			t.Fatal("console SQL completion lacked an exact grant", err)
+		}
+	}
+	if _, err := client.CompleteGatewayConsoleSQLCleanup(call("sql-worker"), consoleRequest); status.Code(err) != codes.Aborted {
+		t.Fatal("live console cleanup was completed", err)
+	}
+	for range 2 {
+		value, err := client.BindGatewayConsoleSQLState(versioned("sql-worker", before), bind)
+		if err != nil || !value.GetPresent() || value.GetClosed() || value.GetDigest() != consoleDigest || value.GetComponent() != control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE {
+			t.Fatal("console SQL registration was not isolated", err)
+		}
+	}
+	gatewayState, err := client.LoadGatewaySQLState(call("sql-worker"), request(bound.ID))
+	if err != nil || gatewayState.GetDigest() != digest || gatewayState.GetComponent() != control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY {
+		t.Fatal("console registration changed Gateway SQL state", err)
+	}
+	if count(t, f.db, "stego_effect_bindings") != 2 {
+		t.Fatal("component registrations do not have separate records")
+	}
 	for _, row := range []httpapi.Gateway{early, bound} {
 		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 202 {
 			t.Fatal("Gateway deletion failed", code)
@@ -134,27 +167,76 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	defer connection.Close()
 	client = control.NewGatewayIdentityServiceClient(connection)
 	for _, row := range []httpapi.Gateway{early, bound} {
-		expected := ""
-		if row.ID == bound.ID {
-			expected = digest
-		}
-		for range 2 {
-			closed, err := client.CloseGatewaySQLState(call("sql-worker"), request(row.ID))
-			if err != nil || !closed.GetPresent() || !closed.GetClosed() || closed.GetDigest() != expected {
-				t.Fatal("restart lost SQL registration history", err)
+		for _, component := range []control.GatewaySQLComponent{control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY, control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE} {
+			expected := ""
+			if row.ID == bound.ID {
+				expected = digest
+				if component == control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE {
+					expected = consoleDigest
+				}
+			}
+			req := request(row.ID)
+			load, bindState, closeState := client.LoadGatewaySQLState, client.BindGatewaySQLState, client.CloseGatewaySQLState
+			if component == control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE {
+				load, bindState, closeState = client.LoadGatewayConsoleSQLState, client.BindGatewayConsoleSQLState, client.CloseGatewayConsoleSQLState
+			}
+			if component == control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE {
+				if _, err := client.CompleteGatewayConsoleSQLCleanup(call("sql-worker"), req); status.Code(err) != codes.FailedPrecondition {
+					t.Fatal("open console registration was completed", err)
+				}
+			}
+			for range 2 {
+				closed, err := closeState(call("sql-worker"), req)
+				if err != nil || !closed.GetPresent() || !closed.GetClosed() || closed.GetDigest() != expected || closed.GetComponent() != component {
+					t.Fatal("restart lost component SQL registration history", err)
+				}
+			}
+			bind.GatewayId = row.ID
+			if _, err := bindState(versioned("sql-worker", revision(row.ID)), bind); status.Code(err) != codes.NotFound {
+				t.Fatal("deleted Gateway accepted component SQL registration", err)
+			}
+			loaded, err := load(call("sql-worker"), req)
+			if err != nil || !loaded.GetClosed() || loaded.GetDigest() != expected || loaded.GetComponent() != component {
+				t.Fatal("closed component state changed", err)
+			}
+			if component == control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE {
+				if row.ID == bound.ID {
+					_, err := client.ObserveGatewayCleanup(versioned("sql-worker", revision(row.ID)), &control.ObserveGatewayCleanupRequest{Id: row.ID, Owner: "sql", Target: f.cluster, Complete: true})
+					if status.Code(err) != codes.FailedPrecondition {
+						t.Fatal("registration closure became external cleanup evidence", err)
+					}
+				}
+				for range 2 {
+					value, err := client.CompleteGatewayConsoleSQLCleanup(call("sql-worker"), req)
+					if err != nil || !value.GetClosed() || value.GetDigest() != expected || value.GetComponent() != component {
+						t.Fatal("console cleanup completion was not retained", err)
+					}
+				}
+			}
+			if component == control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY {
+				other := request(row.ID)
+				state, err := client.LoadGatewayConsoleSQLState(call("sql-worker"), other)
+				if err != nil || state.GetClosed() {
+					t.Fatal("Gateway closure also closed console registration", err)
+				}
 			}
 		}
-		bind.GatewayId = row.ID
-		if _, err := client.BindGatewaySQLState(versioned("sql-worker", revision(row.ID)), bind); status.Code(err) != codes.NotFound {
-			t.Fatal("deleted Gateway accepted SQL registration", err)
-		}
-		loaded, err := client.LoadGatewaySQLState(call("sql-worker"), request(row.ID))
-		if err != nil || !loaded.GetClosed() || loaded.GetDigest() != expected {
-			t.Fatal("closed state changed", err)
+	}
+	if n := count(t, f.db, "stego_effect_bindings"); n != 6 {
+		t.Fatal("component closure record count differs", n)
+	}
+
+	connection.Close()
+	stop()
+	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
+	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
+	defer connection.Close()
+	client = control.NewGatewayIdentityServiceClient(connection)
+	for _, row := range []httpapi.Gateway{early, bound} {
+		if _, err := client.ObserveGatewayCleanup(versioned("sql-worker", revision(row.ID)), &control.ObserveGatewayCleanupRequest{Id: row.ID, Owner: "sql", Target: f.cluster, Complete: true}); err != nil {
+			t.Fatal("restart lost console cleanup completion", err)
 		}
 	}
-	if n := count(t, f.db, "stego_effect_bindings"); n != 2 {
-		t.Fatal("closure record count differs", n)
-	}
-	t.Log("API restart preserved early deletion and registered SQL state; late registration and state replacement were denied")
+
+	t.Log("API restart preserved separate Gateway and console SQL state; late registration and state replacement were denied")
 }

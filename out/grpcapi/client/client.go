@@ -399,9 +399,15 @@ var errClientAborted = status.Error(codes.Internal, "RPC callback did not return
 // Only methods from the compiled contract can become telemetry attributes.
 func clientMethod(method string) string {
 	switch method {
+	case "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewayConsoleSQLState":
+		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewaySQLState":
 		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewayConsoleSQLState":
+		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewaySQLState":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/CompleteGatewayConsoleSQLCleanup":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary":
 		return method[1:]
@@ -412,6 +418,8 @@ func clientMethod(method string) string {
 	case "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs":
+		return method[1:]
+	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayConsoleSQLState":
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCheckpoint":
 		return method[1:]

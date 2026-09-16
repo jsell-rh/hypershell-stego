@@ -74,16 +74,19 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
-          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts ./internal/gatewayidentity ./internal/gateways \
-            -run '^Test(IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
+          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts ./internal/gatewayidentity ./internal/gateways ./internal/gatewayworkload \
+            -run '^Test(ConsoleSQLStateRefusesOldServerWithoutGatewayCalls|SQLComponentRejectsUnknownValues|IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
-            -run '^(TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
+            -run '^(TestGatewayDeletionBeforeWorkloadStartup|TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
             | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
           from pathlib import Path
           required = {
+              "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+              "TestSQLComponentRejectsUnknownValues",
+              "TestGatewayDeletionBeforeWorkloadStartup",
               "TestIdentityPublicationRequiresProviderSuccess",
               "TestDeletionRequiresExplicitPrivilegedState",
               "TestConsoleFailureDoesNotBlockGrantRemoval",

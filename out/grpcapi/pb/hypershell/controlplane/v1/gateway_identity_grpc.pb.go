@@ -21,24 +21,28 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	GatewayIdentityService_LoadGatewayProviderState_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayProviderState"
-	GatewayIdentityService_SaveGatewayProviderState_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayProviderState"
-	GatewayIdentityService_LoadGatewaySQLState_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewaySQLState"
-	GatewayIdentityService_BindGatewaySQLState_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewaySQLState"
-	GatewayIdentityService_CloseGatewaySQLState_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewaySQLState"
-	GatewayIdentityService_LoadGatewayIdentityCycle_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCycle"
-	GatewayIdentityService_SaveGatewayIdentityCycle_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCycle"
-	GatewayIdentityService_ObserveGatewayIdentity_FullMethodName        = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayIdentity"
-	GatewayIdentityService_LoadGatewayIdentityCheckpoint_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCheckpoint"
-	GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint"
-	GatewayIdentityService_GetGatewayCleanupSummary_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary"
-	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
-	GatewayIdentityService_SetObservedSandboxCount_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
-	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
-	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
-	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
-	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName        = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
-	GatewayIdentityService_GetGatewayIdentityState_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
+	GatewayIdentityService_LoadGatewayProviderState_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayProviderState"
+	GatewayIdentityService_SaveGatewayProviderState_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayProviderState"
+	GatewayIdentityService_LoadGatewaySQLState_FullMethodName              = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewaySQLState"
+	GatewayIdentityService_BindGatewaySQLState_FullMethodName              = "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewaySQLState"
+	GatewayIdentityService_CloseGatewaySQLState_FullMethodName             = "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewaySQLState"
+	GatewayIdentityService_LoadGatewayConsoleSQLState_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayConsoleSQLState"
+	GatewayIdentityService_BindGatewayConsoleSQLState_FullMethodName       = "/hypershell.controlplane.v1.GatewayIdentityService/BindGatewayConsoleSQLState"
+	GatewayIdentityService_CloseGatewayConsoleSQLState_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/CloseGatewayConsoleSQLState"
+	GatewayIdentityService_CompleteGatewayConsoleSQLCleanup_FullMethodName = "/hypershell.controlplane.v1.GatewayIdentityService/CompleteGatewayConsoleSQLCleanup"
+	GatewayIdentityService_LoadGatewayIdentityCycle_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCycle"
+	GatewayIdentityService_SaveGatewayIdentityCycle_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCycle"
+	GatewayIdentityService_ObserveGatewayIdentity_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayIdentity"
+	GatewayIdentityService_LoadGatewayIdentityCheckpoint_FullMethodName    = "/hypershell.controlplane.v1.GatewayIdentityService/LoadGatewayIdentityCheckpoint"
+	GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName    = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint"
+	GatewayIdentityService_GetGatewayCleanupSummary_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary"
+	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName            = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
+	GatewayIdentityService_SetObservedSandboxCount_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
+	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
+	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
+	GatewayIdentityService_ListGatewayIdentityUsers_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayIdentityUsers"
+	GatewayIdentityService_GetGatewayIdentityUser_FullMethodName           = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityUser"
+	GatewayIdentityService_GetGatewayIdentityState_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayIdentityState"
 )
 
 // GatewayIdentityServiceClient is the client API for GatewayIdentityService service.
@@ -53,6 +57,10 @@ type GatewayIdentityServiceClient interface {
 	LoadGatewaySQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
 	BindGatewaySQLState(ctx context.Context, in *BindGatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
 	CloseGatewaySQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
+	LoadGatewayConsoleSQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
+	BindGatewayConsoleSQLState(ctx context.Context, in *BindGatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
+	CloseGatewayConsoleSQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
+	CompleteGatewayConsoleSQLCleanup(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error)
 	LoadGatewayIdentityCycle(ctx context.Context, in *LoadGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCycle, error)
 	SaveGatewayIdentityCycle(ctx context.Context, in *SaveGatewayIdentityCycleRequest, opts ...grpc.CallOption) (*GatewayIdentityCycle, error)
 	ObserveGatewayIdentity(ctx context.Context, in *ObserveGatewayIdentityRequest, opts ...grpc.CallOption) (*ObserveGatewayIdentityResponse, error)
@@ -120,6 +128,46 @@ func (c *gatewayIdentityServiceClient) CloseGatewaySQLState(ctx context.Context,
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GatewaySQLStateBinding)
 	err := c.cc.Invoke(ctx, GatewayIdentityService_CloseGatewaySQLState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) LoadGatewayConsoleSQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewaySQLStateBinding)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_LoadGatewayConsoleSQLState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) BindGatewayConsoleSQLState(ctx context.Context, in *BindGatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewaySQLStateBinding)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_BindGatewayConsoleSQLState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) CloseGatewayConsoleSQLState(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewaySQLStateBinding)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_CloseGatewayConsoleSQLState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayIdentityServiceClient) CompleteGatewayConsoleSQLCleanup(ctx context.Context, in *GatewaySQLStateRequest, opts ...grpc.CallOption) (*GatewaySQLStateBinding, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GatewaySQLStateBinding)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_CompleteGatewayConsoleSQLCleanup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -268,6 +316,10 @@ type GatewayIdentityServiceServer interface {
 	LoadGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
 	BindGatewaySQLState(context.Context, *BindGatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
 	CloseGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
+	LoadGatewayConsoleSQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
+	BindGatewayConsoleSQLState(context.Context, *BindGatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
+	CloseGatewayConsoleSQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
+	CompleteGatewayConsoleSQLCleanup(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error)
 	LoadGatewayIdentityCycle(context.Context, *LoadGatewayIdentityCheckpointRequest) (*GatewayIdentityCycle, error)
 	SaveGatewayIdentityCycle(context.Context, *SaveGatewayIdentityCycleRequest) (*GatewayIdentityCycle, error)
 	ObserveGatewayIdentity(context.Context, *ObserveGatewayIdentityRequest) (*ObserveGatewayIdentityResponse, error)
@@ -305,6 +357,18 @@ func (UnimplementedGatewayIdentityServiceServer) BindGatewaySQLState(context.Con
 }
 func (UnimplementedGatewayIdentityServiceServer) CloseGatewaySQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
 	return nil, status.Error(codes.Unimplemented, "method CloseGatewaySQLState not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) LoadGatewayConsoleSQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoadGatewayConsoleSQLState not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) BindGatewayConsoleSQLState(context.Context, *BindGatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
+	return nil, status.Error(codes.Unimplemented, "method BindGatewayConsoleSQLState not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) CloseGatewayConsoleSQLState(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
+	return nil, status.Error(codes.Unimplemented, "method CloseGatewayConsoleSQLState not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) CompleteGatewayConsoleSQLCleanup(context.Context, *GatewaySQLStateRequest) (*GatewaySQLStateBinding, error) {
+	return nil, status.Error(codes.Unimplemented, "method CompleteGatewayConsoleSQLCleanup not implemented")
 }
 func (UnimplementedGatewayIdentityServiceServer) LoadGatewayIdentityCycle(context.Context, *LoadGatewayIdentityCheckpointRequest) (*GatewayIdentityCycle, error) {
 	return nil, status.Error(codes.Unimplemented, "method LoadGatewayIdentityCycle not implemented")
@@ -453,6 +517,78 @@ func _GatewayIdentityService_CloseGatewaySQLState_Handler(srv interface{}, ctx c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(GatewayIdentityServiceServer).CloseGatewaySQLState(ctx, req.(*GatewaySQLStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_LoadGatewayConsoleSQLState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GatewaySQLStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayConsoleSQLState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_LoadGatewayConsoleSQLState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).LoadGatewayConsoleSQLState(ctx, req.(*GatewaySQLStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_BindGatewayConsoleSQLState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(BindGatewaySQLStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).BindGatewayConsoleSQLState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_BindGatewayConsoleSQLState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).BindGatewayConsoleSQLState(ctx, req.(*BindGatewaySQLStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_CloseGatewayConsoleSQLState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GatewaySQLStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).CloseGatewayConsoleSQLState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_CloseGatewayConsoleSQLState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).CloseGatewayConsoleSQLState(ctx, req.(*GatewaySQLStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _GatewayIdentityService_CompleteGatewayConsoleSQLCleanup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GatewaySQLStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).CompleteGatewayConsoleSQLCleanup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_CompleteGatewayConsoleSQLCleanup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).CompleteGatewayConsoleSQLCleanup(ctx, req.(*GatewaySQLStateRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -717,6 +853,22 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CloseGatewaySQLState",
 			Handler:    _GatewayIdentityService_CloseGatewaySQLState_Handler,
+		},
+		{
+			MethodName: "LoadGatewayConsoleSQLState",
+			Handler:    _GatewayIdentityService_LoadGatewayConsoleSQLState_Handler,
+		},
+		{
+			MethodName: "BindGatewayConsoleSQLState",
+			Handler:    _GatewayIdentityService_BindGatewayConsoleSQLState_Handler,
+		},
+		{
+			MethodName: "CloseGatewayConsoleSQLState",
+			Handler:    _GatewayIdentityService_CloseGatewayConsoleSQLState_Handler,
+		},
+		{
+			MethodName: "CompleteGatewayConsoleSQLCleanup",
+			Handler:    _GatewayIdentityService_CompleteGatewayConsoleSQLCleanup_Handler,
 		},
 		{
 			MethodName: "LoadGatewayIdentityCycle",

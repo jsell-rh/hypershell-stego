@@ -43,3 +43,28 @@ check, and the authorized registration callbacks. The prior data hash is retaine
 in a test fixture to check recovery of the existing storage format. This is the
 common state mechanism to use for the separate console session state. The console
 state and its SQL schema are not yet connected.
+
+
+## Component state and cleanup
+
+The console uses separate internal SQL state methods. An older API that lacks
+those methods returns `Unimplemented`; it cannot interpret a console write as a
+Gateway write. Responses identify the component as well as the Gateway and
+cluster. The public Gateway API still has no database ID field.
+
+Both components use STEGO's retained effect bindings. Gateway state keeps its
+existing scope. Console state has a separate scope and digest. The exact cluster
+write and cleanup grants apply to both. Registration requires the current live
+Gateway revision. Deletion prevents new registration.
+
+The console worker must close registration before database deletion, then call
+`CompleteGatewayConsoleSQLCleanup` only after database removal succeeds. STEGO
+stores a separate immutable completion record in the same transaction. The API
+rejects aggregate SQL cleanup while registered console state lacks that record.
+An older worker therefore cannot complete deletion while console cleanup is
+unfinished. The console database worker is not yet connected to this protocol.
+
+The expanded API test checks separate records, denied callers, two API restarts,
+registration closure, and completion. It supplies the cleanup observation itself;
+it does not claim that a console database was removed. The live console workflow
+must prove that the worker sends this observation only after actual removal.
