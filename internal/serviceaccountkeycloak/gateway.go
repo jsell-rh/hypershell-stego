@@ -83,20 +83,21 @@ func (c *Client) EnsureGateway(ctx context.Context, id, name string, revision in
 }
 
 func (c *Client) DeleteGateway(ctx context.Context, id string, revision int64) error {
+	var consoleErr error
 	if c.consoleJournal != nil {
 		console, err := c.consoleLifecycle(id, revision, true)
-		if err != nil {
-			return err
-		}
-		if err = console.Close(ctx); err != nil {
-			return err
+		consoleErr = err
+		if err == nil {
+			consoleErr = console.Close(ctx)
 		}
 	}
+	// Each client has its own closure record. A console failure must not stop
+	// native closure. The controller retries until both clients are absent.
 	lifecycle, err := c.gatewayLifecycle(id, revision, true)
 	if err != nil {
-		return err
+		return errors.Join(consoleErr, err)
 	}
-	return lifecycle.Close(ctx)
+	return errors.Join(consoleErr, lifecycle.Close(ctx))
 }
 
 // Reads accept a complete legacy binding until its controller migrates it.
