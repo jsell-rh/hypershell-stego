@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916133021-3a6e00e15c28
+        module_version: v0.0.0-20260916133647-e1c32222f596
         vcs: git
-        revision: 3a6e00e15c28593048ed6bde5e3346762229a1d4
+        revision: e1c32222f596f5af127b84f1d87254af55fa7a9a
         source_state: clean
     service_hash: 30cc51b61963462e9e3cebd7c48c0263358b2d662818e7c0fce35c35684ff7dc
     registry_sha: gateway-workflow
-    registry_content_sha256: 25aa94883917fd16413d71e1f8e3cb755119e692178d45d1285c7431eaa86bee
+    registry_content_sha256: c65a17069fdcfa891e5793f96398f9dafaefae1417532afb67333819121f2067
     components:
         browser-telemetry:
             version: 1.0.0
@@ -179,7 +179,7 @@ last_applied:
             version: 1.1.0
             sha: gateway-workflow
         postgres-adapter:
-            version: 4.8.1
+            version: 4.9.0
             sha: gateway-workflow
         postgres-client:
             version: 1.3.0
@@ -441,9 +441,9 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 682c2261bf381cf3979aefa0a41566b9baf14e40205d9240077d0fcdc6d7502b
+        cli/command/version.go: 620c2c924062b2dc2bc7de3b9c635748f3ec492a784547e03bd056466bd539b1
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
-        contracts/storage/storage.go: d7696f312fae8ca332b5cd3b53fb9e5a61132864b35fcfd49c4e3c02aed17f45
+        contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 7ba670ca67b229c01fc94434fc7ff8f8a61d331e3bf4cebdc46ccd60b728ba75
         controller/keyed.go: 53f41a41f3e1cb3f22a7209abcbd34559e2e3ed0fbed45f0642cb733cd2fdd5b
@@ -572,11 +572,13 @@ last_applied:
         storage/migrations/000008_effect_bindings.sql: aa6ed402091e352159c9cf88401d7287ba9ebd18236ff11eb0ac7721a8191564
         storage/migrations/000009_resource_state.sql: 8a44cde312e27bafcfc1fd3cc074d75a335458d72215086100504be231c7a67d
         storage/migrations/000010_resource_state_keys.sql: c5966bc9e200137b7bcae42d3e4527a0aa392d583206336cbddb588ffbbd66d6
+        storage/migrations/000011_resource_state_scopes.sql: 992060457b1373e45369abe0c0da2e9d3b9ffc7f5e006b07fd4bf2aa8830a056
         storage/models.go: 288a5f7df12ef5e64ea153c7f29b4599dd5c7988609e89a2c89093d553f8dc7a
-        storage/resource_state.go: 9115344e03dc0163369fde6232e91f16903ab230a28af476508b25466d66fd18
+        storage/resource_state.go: d65cfaea809ec73e95f5c6c4f596793400cc6f8bc5d89a2040a7b5bd18db591f
+        storage/resource_state_scopes.go: 7f72f1b354be4b395ddc3b8c8d59496f99dcedbb92b36a2b7f1139b6a57466be
         storage/schema_generation.go: c5ce72791ab3901f15a7ebcbb734a21fe5c25b6306de286d8891c052d91c54b1
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: f46234fc41a43d3da21592319aadcfab1781aeceb1c219c12133b42388943c08
+        storage/store.go: 1328b22ea0a925f4cf298ee708985fec1d144784c72b53fdcfcc44da95b71d4d
         storage/transaction.go: a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721
         storage/versions.go: b5f08afa625736cf6b7c36d86da485ba80f6297663429098112357ed95cc76e7
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
