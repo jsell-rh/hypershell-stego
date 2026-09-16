@@ -19,7 +19,7 @@
 --- a/frontend/src/app/__tests__/AppRoutes.spec.tsx
 +++ b/frontend/src/app/__tests__/AppRoutes.spec.tsx
 @@ -42,9 +42,7 @@
- 
+
  const renderGate = () =>
    render(
 -    <MemoryRouter
@@ -38,7 +38,125 @@
 +Object.assign(globalThis, { TextDecoder, TextEncoder });
 --- a/frontend/jest.config.js
 +++ b/frontend/jest.config.js
-@@ -6,2 +6,3 @@
+@@ -6,2 +6,4 @@
    moduleNameMapper: {
++    '^@stego/browser-client$': '<rootDir>/stego/browser-client/index.js',
 +    '^@stego/browser-telemetry$': '<rootDir>/stego/browser-telemetry/index.js',
      '^~/(.*)$': '<rootDir>/src/$1',
+--- a/frontend/src/api/client.ts
++++ b/frontend/src/api/client.ts
+@@ -1,3 +1,4 @@
++import { createBrowserClient, SDKError } from '@stego/browser-client';
+ export type ApiError = Error & {
+   status: number;
+   code?: string;
+@@ -33,38 +34,29 @@
+   path: string,
+   init?: RequestInit,
+ ): Promise<T> => {
+-  const headers: Record<string, string> = {
+-    ...(init?.body ? { 'Content-Type': 'application/json' } : {}),
+-    ...((init?.headers as Record<string, string>) ?? {}),
+-  };
+-
+-  // Auth is injected by the deployment's auth proxy (ADR 0014) — no
+-  // Authorization header, no token in JS.
+-  const response = await fetch(`${apiBasePath}${path}`, { ...init, headers });
+-  if (!response.ok) {
+-    let code: string | undefined;
+-    let message = `Request failed (${response.status})`;
+-    try {
+-      const body = (await response.json()) as {
+-        code?: string;
+-        message?: string;
+-      };
+-      code = body.code;
+-      if (body.message) {
+-        message = body.message;
+-      }
+-    } catch {
+-      // Non-JSON error body.
++  try {
++    if (init && Object.keys(init).some(key => !['method', 'body', 'signal'].includes(key))) {
++      throw new Error('Unsupported browser request option');
+     }
+-
+-    if (response.status === 401) {
+-      onSessionExpired?.();
+-      throw buildError(401, code, 'Session expired');
++    if (init?.body !== undefined && (typeof init.body !== 'string' || init.body.length > (1 << 20))) {
++      throw new Error('Unsupported browser request body');
+     }
+-
+-    throw buildError(response.status, code, message);
++    const body = init?.body === undefined ? undefined : JSON.parse(init.body as string);
++    const client = createBrowserClient();
++    const result = await client.request(
++      (init?.method ?? 'GET') as Parameters<typeof client.request>[0],
++      `${apiBasePath}${path}`,
++      body,
++      init?.signal ? { signal: init.signal } : undefined,
++    );
++    return result.body as T;
++  } catch (error) {
++    if (error instanceof SDKError) {
++      if (error.status === 401) onSessionExpired?.();
++      throw buildError(error.status, error.apiCode, error.status === 401 ? 'Session expired' : `Request failed (${error.status})`);
++    }
++    throw buildError(0, undefined, 'Invalid browser API request');
+   }
+-  return (await response.json()) as T;
+ };
+
+ export const get = <T>(path: string): Promise<T> => apiFetch<T>(path);
+--- a/frontend/tsconfig.json
++++ b/frontend/tsconfig.json
+@@ -13,7 +13,8 @@
+     "noEmit": true,
+     "baseUrl": ".",
+     "paths": {
+-      "~/*": ["src/*"]
++      "~/*": ["src/*"],
++      "@stego/browser-client": ["stego/browser-client/index.d.ts"]
+     },
+     "types": ["jest"]
+   },
+--- a/frontend/src/app/AuthRequiredPage.tsx
++++ b/frontend/src/app/AuthRequiredPage.tsx
+@@ -1,6 +1,7 @@
+ import {
+   Alert,
+   Bullseye,
++  Button,
+   Card,
+   CardBody,
+   CardTitle,
+@@ -9,9 +10,11 @@
+   StackItem,
+ } from '@patternfly/react-core';
+
++import { createBrowserClient } from '@stego/browser-client';
++
+ const AuthRequiredPage: React.FC = () => (
+-  <Bullseye style={{ minHeight: '100vh' }}>
+-    <Card className="pf-v6-u-w-100" style={{ maxWidth: '28rem' }}>
++  <Bullseye>
++    <Card className="pf-v6-u-w-100">
+       <CardTitle>OpenShell Dashboard</CardTitle>
+       <CardBody>
+         <Stack hasGutter>
+@@ -27,12 +30,8 @@
+               title="Authentication required"
+               data-testid="auth-required"
+             >
+-              This deployment requires a signed-in session. For local
+-              development, run <code>make dev</code> (defaults to{' '}
+-              <code>AUTH_DISABLED=true</code>). To test with auth enabled, use{' '}
+-              <code>AUTH_DISABLED=false make dev</code> — note that the webpack
+-              dev server is not behind an auth proxy, so browser sign-in is not
+-              available without <code>make dev-full</code> and a fronting proxy.
++              Sign in to open this Gateway.
++              <Button onClick={() => createBrowserClient().login()} data-testid="dashboard-sign-in">Sign in</Button>
+             </Alert>
+           </StackItem>
+         </Stack>

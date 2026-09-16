@@ -21,7 +21,7 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
-    alias: { '~': path.resolve(__dirname, 'src') },
+    alias: { '~': path.resolve(__dirname, 'src'), '@stego/browser-client': path.resolve(__dirname, 'stego/browser-client/index.js') },
   },
   module: {
     rules: [

@@ -170,6 +170,7 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 }
 
 type httpDiagnosticCollector struct {
+	dashboard       *dashboardSignalEvidence
 	workers         *workerSignalEvidence
 	unavailable     atomic.Bool
 	rejectedMetrics atomic.Uint64
@@ -225,6 +226,7 @@ func diagnosticCollectorAt(t *testing.T, hostname, address string, authenticated
 	}
 	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		signals.workers = &workerSignalEvidence{}
+		signals.dashboard = &dashboardSignalEvidence{}
 	}
 	server := grpc.NewServer(grpc.MaxRecvMsgSize(1<<20), grpc.MaxConcurrentStreams(8), grpc.ConnectionTimeout(5*time.Second), grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
 		if authenticated {
@@ -239,6 +241,11 @@ func diagnosticCollectorAt(t *testing.T, hostname, address string, authenticated
 				signals.rejectedMetrics.Add(1)
 			}
 			return nil, status.Error(codes.Unavailable, "private-collector-fault")
+		}
+		if signals.dashboard != nil {
+			if response, handled := signals.dashboard.collect(request); handled {
+				return response, nil
+			}
 		}
 		if signals.workers != nil {
 			if response, handled := signals.workers.collect(request); handled {

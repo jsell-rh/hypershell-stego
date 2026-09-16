@@ -37,7 +37,45 @@ async function login(username){
 }
 try {
  if(phase==='close'){try{await command('',undefined,'DELETE');}catch(error){if(!error.message.includes('invalid session id'))throw error;}process.exit(0);}
- if(phase==='create'){
+ if(phase==='dashboard-create'||phase==='dashboard-reload'||phase==='dashboard-verify'){
+  const workspace='rendered-dashboard';
+  const heading=label=>until(()=>script(`return [...document.querySelectorAll('h1')].some(node=>node.textContent.trim()===arguments[0] && node.getClientRects().length>0)`,[label]),label);
+  if(phase==='dashboard-create'){
+   await newSession();
+   await command('/url',{url:input.origin+'/workspaces'});
+   await click('[data-testid="dashboard-sign-in"]');
+   await type('#username','console-alice');await type('#password','acceptance-only-user-password');await click('#kc-login');
+   await heading('Workspaces');
+   const config=await script('return JSON.parse(document.querySelector(\'meta[name="stego-runtime-config"]\').content)');
+   assert.equal(config.version,1);assert.equal(config.traces,true);assert.equal(config.logs,true);assert.equal(config.metrics,true);
+   await click('[data-testid="create-workspace"], [data-testid="create-workspace-empty"]');
+   await type('#workspace-name',workspace);await click('[data-testid="create-workspace-submit"]');
+   await click(`[data-testid="workspace-link-${workspace}"]`);
+   await heading(workspace);
+  }else{
+   await command('/refresh',{});
+   await heading(workspace);
+   assert.equal(await script('return location.pathname'),'/workspaces/'+workspace);
+  }
+  await script('window.dispatchEvent(new Event("pagehide"))');
+  await writeFile(outputPath+'.png',Buffer.from(await command('/screenshot'),'base64'));
+  if(phase==='dashboard-verify'){
+   await command('/url',{url:input.origin+'/auth/logout'});
+   await element('form[action="/auth/logout"] button[type="submit"]');
+   assert.equal(await script('return document.body.innerText.includes("Confirm sign-out")'),true);
+   await click('form[action="/auth/logout"] button[type="submit"]');
+   const stage=await until(()=>script(`if(location.origin===arguments[0] && document.querySelector('#kc-logout-confirm'))return 'provider';if(location.origin===arguments[1] && location.pathname==='/auth/logout' && document.body.innerText.includes('This console session has ended'))return 'ended';return null`,[new URL(input.identityOrigin).origin,input.origin]),'identity provider sign-out');
+   if(stage==='provider'){
+    assert.equal(await script(`return new URL(document.querySelector('#kc-logout-confirm').action).origin`),new URL(input.identityOrigin).origin);
+    await click('#kc-logout-confirm [type="submit"]');
+   }
+   await until(()=>script('return location.pathname==="/auth/logout" && document.body.innerText.includes("This console session has ended")'),'confirmed sign-out');
+   await command('/url',{url:input.origin+'/auth/login?return_to=%2Fworkspaces'});
+   await element('#username');
+   await command('',undefined,'DELETE');session=undefined;
+  }
+  await writeFile(outputPath,JSON.stringify({id:input.id,session,workspace,verified:true}));
+ }else if(phase==='create'){
   await newSession();await login('console-alice');
   const config=await script('return JSON.parse(document.querySelector(\'meta[name="stego-runtime-config"]\').content)');
   assert.equal(config.version,1);assert.equal(config.traces,true);assert.equal(config.logs,true);assert.equal(config.metrics,true);

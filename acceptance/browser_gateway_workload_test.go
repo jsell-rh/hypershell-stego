@@ -189,6 +189,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 	}
 	identities := w.checkSQLIsolation()
 	w.checkRPC(gatewayID)
+	dashboard := w.startRenderedDashboard(gatewayID)
 	if w.public != nil {
 		if w.publicEgressFailure == nil {
 			w.t.Fatal("public egress failure check is missing")
@@ -211,6 +212,10 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		w.t.Fatal("worker restart changed a database or credential identity")
 	}
 	w.checkNamespaceReplacement(gatewayID, viewer)
+	if dashboard != nil {
+		dashboard.run(w.t, "dashboard-reload")
+		dashboard.run(w.t, "dashboard-verify")
+	}
 	w.checkGatewayNetworkIsolation("after-recovery")
 	w.checkCredentialEncryption(gatewayID)
 }

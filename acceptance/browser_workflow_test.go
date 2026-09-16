@@ -342,6 +342,7 @@ func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, req
 }
 
 type renderedBrowser struct {
+	IdentityOrigin string   `json:"identityOrigin,omitempty"`
 	PublicEndpoint string   `json:"publicEndpoint,omitempty"`
 	Origin         string   `json:"origin"`
 	Pins           []string `json:"pins"`
@@ -371,10 +372,10 @@ func (b *renderedBrowser) run(t *testing.T, phase string) {
 		}
 		t.Fatalf("rendered browser %s: %v\n%s", phase, err, logs)
 	}
-	if phase == "verify" || phase == "close" {
+	if phase == "verify" || phase == "dashboard-verify" || phase == "close" {
 		b.Session = ""
 	}
-	if phase == "create" {
+	if phase == "create" || phase == "dashboard-create" {
 		data, err = os.ReadFile(output)
 		if err != nil {
 			t.Fatal(err)
@@ -669,6 +670,12 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		stopAPI()
 		stopAPI, api, rpc = startAPI(settings...)
 		workload.start(alice, bob, rpc, apiIdentity.config.CAFile, gateway.ID)
+		if workload.public != nil {
+			if signals.dashboard == nil {
+				t.Fatal("dashboard telemetry collector is missing")
+			}
+			signals.dashboard.require(t)
+		}
 		workload.checkEarlyDeletion(early)
 		if workload.public != nil && rendered != nil {
 			response := alice.api(t, "GET", "/gateways/"+gateway.ID, nil)

@@ -93,3 +93,17 @@ supplies the trace, log, and metric runtime, its signal settings, authenticated
 export, limits, and page-hide flush. The route test rejects resource names,
 query values, and fragments in telemetry. Live delivery remains a required
 part of the deployed dashboard workflow.
+
+The next source candidate uses STEGO's generated `browser/sessionclient` for
+upstream JSON requests. The bridge keeps the dashboard API paths and response
+bodies. STEGO supplies the session, CSRF, cancellation, and size checks. The
+production sign-in page calls the same generated client. It does not show local
+development instructions. The source job checks the bridge and records the
+exact generated client files with the source archive.
+
+The cluster acceptance test now includes rendered workspace creation, reload
+after namespace recovery, console and provider sign-out, and correlated
+browser logs, traces, and metrics. The source candidate must pass its build,
+then replace the captured asset bundle before that live test runs. The current
+committed asset bundle does not yet contain this bridge. No live result is
+claimed for these new checks.
