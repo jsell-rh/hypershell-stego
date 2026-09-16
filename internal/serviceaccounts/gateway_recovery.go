@@ -47,7 +47,16 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	if !ok {
 		return false, runtime.ErrScanContract
 	}
-	sourceVersion := strconv.FormatInt(gateway.ResourceGeneration, 10) + ":account-journals-v1"
+	scopes, ok := s.repository.(storage.ResourceStateScopeStore)
+	if !ok {
+		return false, runtime.ErrScanContract
+	}
+	scope := gateways.AccountProviderStateScope(id)
+	membership, err := scopes.LoadResourceStateScope(ctx, "ServiceAccount", scope)
+	if err != nil {
+		return false, err
+	}
+	sourceVersion := strconv.FormatInt(gateway.ResourceGeneration, 10) + ":" + strconv.FormatInt(membership.Revision, 10) + ":account-journals-v2"
 	access := runtime.CheckpointAccess{
 		Load: func(ctx context.Context) (runtime.Checkpoint, error) {
 			saved, err := checkpoints.LoadCheckpoint(ctx, "Gateway", id, accountCleanupScope)
@@ -165,6 +174,17 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 		complete = err == nil
 	}
 	observed := s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+		if complete {
+			scopes, ok := tx.(storage.ResourceStateScopeStore)
+			if !ok {
+				return runtime.ErrScanContract
+			}
+			// Reject a new key accepted during the scan or provider inventory. Closing
+			// registration and recording cleanup must share this transaction.
+			if _, err := scopes.SealResourceStateScope(ctx, "ServiceAccount", scope, membership.Revision); err != nil {
+				return err
+			}
+		}
 		return gateways.RecordCleanup(ctx, tx, id, gateway.ResourceVersion, "accounts", "", complete)
 	})
 	return complete && observed == nil, errors.Join(err, observed)

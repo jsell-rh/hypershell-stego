@@ -93,3 +93,24 @@ A stable key cursor is insufficient. STEGO needs a revision for each scoped key
 set and an atomic operation that closes new-key registration after a successful
 scan. Hypershell must commit that guard and its accounts cleanup result together.
 The existing application candidate remains unqualified.
+
+## Scoped closure candidate
+
+The candidate now loads STEGO's scoped key-set revision into the durable cycle
+input version. A new key makes the next pass start at the beginning. After the
+scan and provider inventory succeed, one transaction conditionally closes the
+scope and records accounts cleanup. A key accepted during that pass makes the
+closure fail. A committed closure rejects later new keys in the database while
+existing records remain writable for repeat cleanup.
+
+Compiler `e1c3222` provides the common storage guard. The application selects the
+ServiceAccount scope for this Gateway. It does not implement a counter, paging
+protocol, or database lock. The acceptance package compiles; SQL qualification
+is pending.
+
+The focused CI gate now requires seven tests. In addition to the original five,
+`TestGatewayJournalAddedAfterLastPagePreventsCompletion` inserts a key during
+provider inventory, after the final page. `TestGatewayJournalClosureRollsBackWithFinalEvent`
+requires event failure to roll back scope closure, the cleanup observation, and
+finalization. It then adds another key, retries cleanup, and checks one final
+event. The jshell API gate now requires 49 distinct checks.

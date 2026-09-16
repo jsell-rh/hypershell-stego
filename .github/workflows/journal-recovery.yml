@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/journal-recovery.yml'
       - 'acceptance/gateway*recovery_test.go'
+      - 'acceptance/gateway_journal_scope_test.go'
       - 'internal/serviceaccounts/**'
       - 'internal/serviceaccountkeycloak/**'
       - '.stego/compiler-revision'
@@ -59,7 +60,7 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/journal-recovery"
           go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
-            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
@@ -67,6 +68,8 @@ jobs:
           required = {
               "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
               "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+              "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+              "TestGatewayJournalClosureRollsBackWithFinalEvent",
               "TestGatewayCleanupRecoversJournalOmittedByProvider",
               "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
               "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
