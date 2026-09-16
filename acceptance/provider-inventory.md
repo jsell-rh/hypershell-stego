@@ -114,3 +114,21 @@ provider inventory, after the final page. `TestGatewayJournalClosureRollsBackWit
 requires event failure to roll back scope closure, the cleanup observation, and
 finalization. It then adds another key, retries cleanup, and checks one final
 event. The jshell API gate now requires 49 distinct checks.
+
+## First passing scope recovery evidence
+
+Run `35103252059`, source `4497b4d`, passed all seven focused application tests
+in 5.023 seconds. The stored JSON events contain seven test passes, a package
+pass, and no failure events. The before-cursor race now passes in 0.52 seconds.
+The last-page race passes in 0.33 seconds, and final-event rollback passes in
+0.37 seconds. The omitted-provider recovery test passes in 0.40 seconds.
+This proves the composed fixture cases, not the full deployed application.
+Evidence is retained in
+`/home/jsell/.local/state/stego/runs/gateway-cleanup-20260916/journal-scope-first-result`.
+
+The corrected CI wrapper is running in `35103462998`. The 49-check jshell API
+run is `35103602751`, source `b58d9a2`, with compiler `e1c3222`. Its dedicated
+Job is `stego-ci/gateway-api-0dbfcfc000fd`. Only one live cluster test is active.
+The full application rerun `35103696549` is queued behind `35102064260`; the
+older run does not contain scope closure. Keep application main unchanged until
+the required full checks pass.
