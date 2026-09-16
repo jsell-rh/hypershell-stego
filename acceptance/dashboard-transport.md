@@ -137,3 +137,18 @@ fixture's declared CA hash before navigation.
 Five fixture checks passed in 0.100 seconds, including separate mounts, bounds,
 CA selection, and shell syntax. The focused HTTPS probe tests passed in 0.029
 seconds. Live browser login and recovery with this trust store remain unproved.
+
+## Compiler build identity
+
+Module run `35152704589` rejected the locally generated state because its
+compiler build had no Git identity. All 77 generated module files matched.
+The local executable came from a linked worktree; its build metadata reported
+an unknown revision. CI built a standalone pinned checkout and recorded the
+actual commit. This was a state reproducibility failure, not a pass.
+
+Generation was repeated with a retained standalone checkout and an executable
+whose build metadata identifies clean commit `42c7ea13fb95995e9d24666637bceb61dbdbd591`.
+All three states repeat exactly. The states and CLI build identity are updated;
+the browser implementation is unchanged by this correction. The common compiler
+has now passed all six jobs in STEGO run `35152146945`. The module check must
+still be repeated with the corrected state.
