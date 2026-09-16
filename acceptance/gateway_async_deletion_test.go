@@ -18,6 +18,15 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func requireDeletingGateway(t *testing.T, address, bearer string) {
+	t.Helper()
+	code, data := requestJSON(t, "GET", address, bearer, nil)
+	var row httpapi.Gateway
+	if code != 200 || json.Unmarshal(data, &row) != nil || row.Phase == nil || *row.Phase != "Deleting" {
+		t.Fatal("pending Gateway is not visible as Deleting", code)
+	}
+}
+
 func TestGatewayDurableDeletionThroughGeneratedTransports(t *testing.T) {
 	for _, method := range []string{"REST", "gRPC"} {
 		t.Run(method, func(t *testing.T) {

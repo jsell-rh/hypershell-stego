@@ -229,8 +229,6 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		t.Fatal("common journal accepted a stale resource observation", err)
 	}
 	save(cleaner, 3, 2, last, true, codes.Aborted)
-	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil); code != 404 {
-		t.Fatal("recovery state restored public Gateway visibility", code)
-	}
+	requireDeletingGateway(t, address+"/api/hypershell/v1/gateways/"+gateway.ID, owner)
 	t.Log("REST resource revisions, private TLS gRPC permissions, protected database state, API restart, and retained cleanup passed")
 }

@@ -126,7 +126,5 @@ func TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime(t *testin
 	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+second.ID, bearer, nil); code != 200 {
 		t.Fatal("cleanup removed the other Gateway", code)
 	}
-	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+first.ID, bearer, nil); code != 404 {
-		t.Fatal("cleanup restored a deleted Gateway", code)
-	}
+	requireDeletingGateway(t, address+"/api/hypershell/v1/gateways/"+first.ID, bearer)
 }

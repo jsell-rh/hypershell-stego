@@ -326,9 +326,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 		t.Fatal("one resource had concurrent provider actions")
 	}
 	for _, id := range ids {
-		if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/"+endpoint+"/"+id, owner, nil); code != 404 {
-			t.Fatal("cleanup changed public deletion", code)
-		}
+		requireDeletingGateway(t, address+"/api/hypershell/v1/"+endpoint+"/"+id, owner)
 	}
 	t.Log("REST deletion, retained discovery after API restart, independent cleanup, TLS gRPC observations, and event delivery passed")
 }
