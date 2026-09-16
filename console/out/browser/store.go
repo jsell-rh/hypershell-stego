@@ -12,6 +12,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	schema "github.com/jsell-rh/hypershell-stego/console/out/browser/schema"
 	"io"
 	"time"
 )
@@ -62,12 +63,8 @@ func newStore(ctx context.Context, db *sql.DB, keys ...[]byte) (*sessionStore, e
 	}
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
-	rows, err := db.QueryContext(ctx, "SELECT id_hash,payload,state,expires_at,changed_at FROM stego_browser_sessions WHERE false")
-	if err != nil {
-		return nil, errors.New("browser session migration is required")
-	}
-	if err := rows.Close(); err != nil {
-		return nil, errSession
+	if err := schema.Verify(ctx, db); err != nil {
+		return nil, errors.New("browser session schema or permissions differ")
 	}
 	return &sessionStore{db: db, aead: readers[0], readers: readers}, nil
 }
@@ -139,7 +136,7 @@ func (s *sessionStore) create(ctx context.Context, id string, value session) err
 	if err := sessionCapacity(ctx, tx, true); err != nil {
 		return err
 	}
-	_, err = tx.ExecContext(ctx, "INSERT INTO stego_browser_sessions(id_hash,payload,state,expires_at) VALUES($1,$2,$3,$4)", hash, payload, value.Kind, time.Unix(value.Expires, 0))
+	_, err = tx.ExecContext(ctx, "INSERT INTO public.stego_browser_sessions(id_hash,payload,state,expires_at) VALUES($1,$2,$3,$4)", hash, payload, value.Kind, time.Unix(value.Expires, 0))
 	if err != nil {
 		return errStore
 	}
@@ -149,15 +146,15 @@ func (s *sessionStore) create(ctx context.Context, id string, value session) err
 	return nil
 }
 func sessionCapacity(ctx context.Context, tx *sql.Tx, login bool) error {
-	if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock(1937007983,1651666807)"); err != nil {
+	if _, err := tx.ExecContext(ctx, "SELECT pg_catalog.pg_advisory_xact_lock(1937007983,1651666807)"); err != nil {
 		return errStore
 	}
 	var count int
-	if tx.QueryRowContext(ctx, "SELECT count(*) FROM (SELECT 1 FROM stego_browser_sessions LIMIT 10000) AS retained").Scan(&count) != nil || count >= 10000 {
+	if tx.QueryRowContext(ctx, "SELECT count(*) FROM (SELECT 1 FROM public.stego_browser_sessions LIMIT 10000) AS retained").Scan(&count) != nil || count >= 10000 {
 		return errStore
 	}
 	if login {
-		if tx.QueryRowContext(ctx, "SELECT count(*) FROM (SELECT 1 FROM stego_browser_sessions WHERE state='login' LIMIT 1000) AS retained").Scan(&count) != nil || count >= 1000 {
+		if tx.QueryRowContext(ctx, "SELECT count(*) FROM (SELECT 1 FROM public.stego_browser_sessions WHERE state='login' LIMIT 1000) AS retained").Scan(&count) != nil || count >= 1000 {
 			return errStore
 		}
 	}
@@ -171,7 +168,7 @@ func (s *sessionStore) read(ctx context.Context, id string) (session, string, ti
 	var payload []byte
 	var state string
 	var changed time.Time
-	err = s.db.QueryRowContext(ctx, "SELECT payload,state,changed_at FROM stego_browser_sessions WHERE id_hash=$1 AND expires_at>CURRENT_TIMESTAMP", hash).Scan(&payload, &state, &changed)
+	err = s.db.QueryRowContext(ctx, "SELECT payload,state,changed_at FROM public.stego_browser_sessions WHERE id_hash=$1 AND expires_at>CURRENT_TIMESTAMP", hash).Scan(&payload, &state, &changed)
 	if errors.Is(err, sql.ErrNoRows) {
 		return session{}, "", time.Time{}, errSession
 	}
@@ -186,7 +183,7 @@ func (s *sessionStore) remove(ctx context.Context, id string) error {
 	if err != nil {
 		return err
 	}
-	_, err = s.db.ExecContext(ctx, "DELETE FROM stego_browser_sessions WHERE id_hash=$1", hash)
+	_, err = s.db.ExecContext(ctx, "DELETE FROM public.stego_browser_sessions WHERE id_hash=$1", hash)
 	if err != nil {
 		return errStore
 	}
@@ -198,7 +195,7 @@ func (s *sessionStore) consumeLogin(ctx context.Context, id string) (session, er
 		return session{}, err
 	}
 	var payload []byte
-	err = s.db.QueryRowContext(ctx, "DELETE FROM stego_browser_sessions WHERE id_hash=$1 AND state='login' AND expires_at>CURRENT_TIMESTAMP RETURNING payload", hash).Scan(&payload)
+	err = s.db.QueryRowContext(ctx, "DELETE FROM public.stego_browser_sessions WHERE id_hash=$1 AND state='login' AND expires_at>CURRENT_TIMESTAMP RETURNING payload", hash).Scan(&payload)
 	if errors.Is(err, sql.ErrNoRows) {
 		return session{}, errSession
 	}
@@ -230,14 +227,14 @@ func (s *sessionStore) activate(ctx context.Context, id string, value session, p
 		if err != nil {
 			return errSession
 		}
-		if _, err := tx.ExecContext(ctx, "DELETE FROM stego_browser_sessions WHERE id_hash=$1", old); err != nil {
+		if _, err := tx.ExecContext(ctx, "DELETE FROM public.stego_browser_sessions WHERE id_hash=$1", old); err != nil {
 			return errSession
 		}
 	}
 	if err := sessionCapacity(ctx, tx, false); err != nil {
 		return err
 	}
-	if _, err := tx.ExecContext(ctx, "INSERT INTO stego_browser_sessions(id_hash,payload,state,expires_at) VALUES($1,$2,'active',$3)", hash, payload, time.Unix(value.Expires, 0)); err != nil {
+	if _, err := tx.ExecContext(ctx, "INSERT INTO public.stego_browser_sessions(id_hash,payload,state,expires_at) VALUES($1,$2,'active',$3)", hash, payload, time.Unix(value.Expires, 0)); err != nil {
 		return errSession
 	}
 	if tx.Commit() != nil {
@@ -256,7 +253,7 @@ func (s *sessionStore) claimRefresh(ctx context.Context, id string) (session, er
 		return session{}, errStore
 	}
 	defer tx.Rollback()
-	err = tx.QueryRowContext(ctx, "UPDATE stego_browser_sessions SET state='refreshing',changed_at=CURRENT_TIMESTAMP WHERE id_hash=$1 AND state='active' AND expires_at>CURRENT_TIMESTAMP RETURNING payload", hash).Scan(&payload)
+	err = tx.QueryRowContext(ctx, "UPDATE public.stego_browser_sessions SET state='refreshing',changed_at=CURRENT_TIMESTAMP WHERE id_hash=$1 AND state='active' AND expires_at>CURRENT_TIMESTAMP RETURNING payload", hash).Scan(&payload)
 	if errors.Is(err, sql.ErrNoRows) {
 		return session{}, errBusy
 	}
@@ -288,7 +285,7 @@ func (s *sessionStore) finishRefresh(ctx context.Context, id string, value sessi
 	if err != nil {
 		return err
 	}
-	result, err := s.db.ExecContext(ctx, "UPDATE stego_browser_sessions SET payload=$2,state='active',changed_at=CURRENT_TIMESTAMP WHERE id_hash=$1 AND state='refreshing' AND expires_at>CURRENT_TIMESTAMP", hash, payload)
+	result, err := s.db.ExecContext(ctx, "UPDATE public.stego_browser_sessions SET payload=$2,state='active',changed_at=CURRENT_TIMESTAMP WHERE id_hash=$1 AND state='refreshing' AND expires_at>CURRENT_TIMESTAMP", hash, payload)
 	if err != nil {
 		return errSession
 	}
@@ -299,7 +296,7 @@ func (s *sessionStore) finishRefresh(ctx context.Context, id string, value sessi
 	return nil
 }
 func (s *sessionStore) sweep(ctx context.Context) error {
-	_, err := s.db.ExecContext(ctx, "WITH expired AS (SELECT id_hash FROM stego_browser_sessions WHERE expires_at<=CURRENT_TIMESTAMP ORDER BY expires_at LIMIT 1000 FOR UPDATE SKIP LOCKED) DELETE FROM stego_browser_sessions WHERE id_hash IN (SELECT id_hash FROM expired)")
+	_, err := s.db.ExecContext(ctx, "WITH expired AS (SELECT id_hash FROM public.stego_browser_sessions WHERE expires_at<=CURRENT_TIMESTAMP ORDER BY expires_at LIMIT 1000 FOR UPDATE SKIP LOCKED) DELETE FROM public.stego_browser_sessions WHERE id_hash IN (SELECT id_hash FROM expired)")
 	if err != nil {
 		return errSession
 	}

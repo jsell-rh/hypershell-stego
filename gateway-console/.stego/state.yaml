@@ -32,16 +32,16 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916171411-f6bf115fb83c
+        module_version: v0.0.0-20260916172759-d9a64189e35e
         vcs: git
-        revision: f6bf115fb83c289fe5a8b5abb600c2770d12d40b
+        revision: d9a64189e35e5673388d6f7d591ebae6cdc0c9da
         source_state: clean
     service_hash: bae682b759da4d635658d41d17fe36320940f3131a83e16f60b127c879da38dd
     registry_sha: gateway-console
-    registry_content_sha256: 10b4fcf5afeec3d5e63616f44063f75fa71b352a7b657b07f7bef13eb1f0e895
+    registry_content_sha256: 582b70c433169cce507bbeaa495dad7e8567593d42dd654be8d267b358e80fd1
     components:
         browser-backend:
-            version: 2.0.0
+            version: 2.0.1
             sha: gateway-console
         browser-telemetry:
             version: 1.2.0
@@ -102,7 +102,7 @@ last_applied:
         browser/public/assets/runtime.295dc0b6468045baa0c5.js: afb1fc506bd00b5418c1484aa019767ba67e541bd4fe06f5acc3082d1d418305
         browser/public/index.html: 30707dc08ab0902ee174c9dcc5f005cb84e451465d2a5b39b36745a2e867dc7b
         browser/schema.sql: 866311ead992bc75143cda28febcef85ababd7c2326aa6ba6376ade2db97a9eb
-        browser/schema/schema.go: 74d3a660dc8b55a8ae1660661c3a116251c75bf2d6332b2a48e8f1b200f6a826
+        browser/schema/schema.go: d6a3a0b11bfa2528722cb221aca730614fdd155ee212bb3ae9bfb80aef6bb345
         browser/socket.go: 23966994726c211fc3307e75f89460a5f8ffd4f64e6f511e5ac2b7cfb87ec085
         browser/store.go: bf934d717eea9d9dbab907719af36d224d899f0120eb6c8aae013faf62a055e1
         browser/telemetry.go: 0209700328e88a0a833491b30318656d07784398f7337599ebe3c1a53b1e3c8d

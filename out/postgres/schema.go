@@ -94,7 +94,16 @@ func WithDatabaseOwner(ctx context.Context, o Options, spec DatabaseSpec, apply 
 		return ErrDatabaseOwnership
 	}
 	if err = apply(ctx, conn, s.names); err != nil {
-		return safeError(ctx, "schema-apply", err)
+		result := safeError(ctx, "schema-apply", err).(*Error)
+		if result.cause == nil {
+			if errors.Is(err, context.Canceled) {
+				result.cause = context.Canceled
+			}
+			if errors.Is(err, context.DeadlineExceeded) {
+				result.cause = context.DeadlineExceeded
+			}
+		}
+		return result
 	}
 	if ctx.Err() != nil {
 		return safeError(ctx, "schema-apply", ctx.Err())

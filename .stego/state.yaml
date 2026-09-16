@@ -136,13 +136,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916171034-6faecee0b8c5
+        module_version: v0.0.0-20260916172759-d9a64189e35e
         vcs: git
-        revision: 6faecee0b8c58aae587c4cc30b85e4ac63032188
+        revision: d9a64189e35e5673388d6f7d591ebae6cdc0c9da
         source_state: clean
     service_hash: 78d0fba674404621d59dbc2f3e029b413faecceda343169f8fea07693fd8d421
     registry_sha: gateway-workflow
-    registry_content_sha256: ca9fee026f647141206feb2ddeae28bff7de3b0a5b797570f8cf4017d547703d
+    registry_content_sha256: d9639cf6f1efa7547f7092d70bc1a87a98898e20577c70995c7421d6891d50be
     components:
         browser-telemetry:
             version: 1.2.0
@@ -172,10 +172,10 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         keycloak-provider:
-            version: 0.17.0
+            version: 0.18.0
             sha: gateway-workflow
         kubernetes-client:
-            version: 1.12.0
+            version: 1.13.0
             sha: gateway-workflow
         kubernetes-service:
             version: 1.17.0
@@ -190,7 +190,7 @@ last_applied:
             version: 4.9.0
             sha: gateway-workflow
         postgres-client:
-            version: 1.4.0
+            version: 1.4.1
             sha: gateway-workflow
         tsl-search:
             version: 1.0.2
@@ -449,7 +449,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: a37d0dddbd90319617d06916b1e669acc438c2175f93abfd2632e269f148cd4d
+        cli/command/version.go: 4711a0a442ccaf10d1f1de53d20d73440e63da6b9e1bd85b54a3f4e8be5a89e1
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -558,7 +558,7 @@ last_applied:
         kubernetes/route.go: 2fffd9919d9e5263b068ce453bfb15af9ef8717b1e5c3da5ad4f897a8606cc0c
         kubernetes/secret_set.go: ea2455a8931f5b250e6798d1ac49c8483c352f70bd44364d9e5bf38060aa28e1
         kubernetes/secret_state.go: ba5c72dfbeac42ab3139d9c1185ced843011de478fa2ca639449e94885d8ad6f
-        kubernetes/tls_secret.go: 3b5efa36271cb9c6f66fa6794a5ac9fc59b36b4c61c3da3b3979ae543f028f07
+        kubernetes/tls_secret.go: c58d261f36022c038120ce2abacb33976b0f65689305a4f1733a585acf060ce4
         kubernetes/watch_set.go: 8806fa92102e646df48d51e4cf3ee92a85c138db688c841d784f8b862dc52a47
         main.go: 11e591994cf342d87e919f4d19667c53c6e019ad0ed01f3485610c8d1385d963
         outbox/migrations/000001_outbox.sql: dd2a63ebf5b005cdb0a6e56433c4cc3fd4f0f0bde4c52e04c8433c08125b5437
@@ -568,7 +568,7 @@ last_applied:
         outbox/worker.go: aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122
         postgres/client.go: dde40af3259df8263c647c912cbe7119442b70982007a1e6298d0041cd34f5b8
         postgres/provision.go: 6edeb4c597524f9c38abeaad67a3ddfe6e18792cc3301ff501fd7a0145c838d5
-        postgres/schema.go: 73efc260c4f4024f06f943ee6c9f5e99efe40f8ed5c31106bb4f5f76d6ef7592
+        postgres/schema.go: aa71bfe0b0de2209214542eab2fdfb2024bf518e84a9b3b62da377af50fd6b05
         sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
