@@ -121,6 +121,8 @@ overrides:
         network_peers:
           - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
+          - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19094, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     allocation_roles:
@@ -243,6 +245,7 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     network_peers:
+      - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-provisioner, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-namespace-allocation, port: 9090, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-console, port: 8443, protocol: TCP}
       - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-identity, port: 9090, protocol: TCP}

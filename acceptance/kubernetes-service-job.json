@@ -239,6 +239,12 @@
           {
             "name": "telemetry",
             "port": 19093
+          },
+          {
+            "name": "account-state",
+            "port": 19094,
+            "targetPort": 19094,
+            "protocol": "TCP"
           }
         ]
       }

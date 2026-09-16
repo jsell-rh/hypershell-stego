@@ -54,7 +54,7 @@ func TestGatewayBindingBeforeRoleLookupOrCreation(t *testing.T) {
 			if err := os.WriteFile(secret, []byte("test-secret"), 0600); err != nil {
 				t.Fatal(err)
 			}
-			client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca})
+			client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, AccountJournal: testAccountJournals(t)})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -92,7 +92,7 @@ func TestOwnershipChecksBeforeMutation(t *testing.T) {
 	secret := filepath.Join(dir, "secret")
 	os.WriteFile(ca, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: server.Certificate().Raw}), 0600)
 	os.WriteFile(secret, []byte("test-secret"), 0600)
-	c, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca})
+	c, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, AccountJournal: testAccountJournals(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -123,23 +123,13 @@ func TestOwnershipChecksBeforeMutation(t *testing.T) {
 	}
 }
 
-func TestAdministratorTokenCancellationAndFailure(t *testing.T) {
-	c := &Client{tokenGate: make(chan struct{}, 1)}
-	c.tokenGate <- struct{}{}
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	if _, err := c.adminToken(ctx); !errors.Is(err, context.Canceled) {
-		t.Fatal("token refresh ignored cancellation")
-	}
-}
-
 func TestCredentialFormattingUsesEveryVerb(t *testing.T) {
 	for _, tc := range []struct {
 		value any
 		want  string
 	}{
 		{ProvisionedServiceAccount{ClientSecret: "private-test-credential"}, "ProvisionedServiceAccount{credential redacted}"},
-		{&Client{token: "private-admin-token"}, "KeycloakClient{credentials redacted}"},
+		{&Client{secretFile: "private-credential-path"}, "KeycloakClient{credentials redacted}"},
 	} {
 		for _, verb := range []string{"%v", "%+v", "%#v", "%d", "%x", "%s", "%q"} {
 			if fmt.Sprintf(verb, tc.value) != tc.want {

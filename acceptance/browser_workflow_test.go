@@ -446,17 +446,18 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 			reportAccountProvisioningSpans(t, signals)
 		}
 	})
+	f := database(t)
 	providerLogs := func() string { return "" }
 	restartProvider := func() {}
 	if os.Getenv("STEGO_REQUIRE_BROWSER") == "1" {
 		key, providerAuth := issuer(t)
 		var providerSettings []string
 		if deployment == nil {
-			values, stop, logs := startRealProvisionerWithLogs(t, k, key, append(providerAuth, telemetry...))
+			values, stop, logs := startRealProvisionerWithLogs(t, f, k, key, append(providerAuth, telemetry...))
 			defer stop()
 			providerSettings, providerLogs = values, logs
 		} else {
-			providerSettings, providerLogs, restartProvider = deployment.startProvisioner(k, key, append(providerAuth, telemetry...))
+			providerSettings, providerLogs, restartProvider = deployment.startProvisioner(f, k, key, append(providerAuth, telemetry...))
 		}
 		settings = append(settings, providerSettings...)
 	}
@@ -484,7 +485,6 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	audience := map[string]any{"name": "api-audience", "protocol": "openid-connect", "protocolMapper": "oidc-audience-mapper", "config": map[string]string{"included.client.audience": "hypershell", "access.token.claim": "true", "id.token.claim": "false"}}
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
 	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
-	f := database(t)
 	var workload *browserGatewayWorkload
 	sessions := databaseSetup(t, false)
 	schema, err := os.ReadFile("../console/out/browser/schema.sql")

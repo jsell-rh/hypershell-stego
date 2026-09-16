@@ -45,5 +45,28 @@ domain events. The live result is pending.
 
 The authorization tests passed with the race detector in 1.021 seconds. The
 application and acceptance packages compile, and generation has no drift.
-The production provisioner does not yet use this journal. Its service-account
-lifecycle adoption and complete Keycloak workflow remain required.
+The production provisioner now uses this journal with STEGO's common
+`ServiceAccountClientLifecycle`. The complete application live result is pending.
+
+The provisioner requires `HYPERSHELL_API_GRPC_ADDR`, `HYPERSHELL_API_CA_FILE`,
+and `HYPERSHELL_API_TOKEN_FILE`. Its API identity needs the exact grant above.
+Set `HYPERSHELL_INSTANCE_ID` and `HYPERSHELL_IDENTITY_STATE_KEYS_FILE` to stable
+operator values. Retain this key file across process replacement. The API does
+not need the key file. No memory journal is available in the production process.
+
+The common lifecycle saves its provider ID, migration checkpoint, and account
+subject before it enables access. It checks the saved application ID and subject
+on repair. Cleanup saves terminal intent and retains the ID after provider
+absence. Gateway deletion closes journals for retained account rows as well as
+clients found in provider inventory. No credential is saved in the journal.
+
+Run one provisioner replica with `Recreate` deployment. Stop old writers before
+migration. STEGO serializes a client's lifecycle calls within one provider
+instance; it does not fence writers in other processes. Restore the database,
+journal keys, and provider state together. A whole-database rollback is not
+detected by the journal version.
+
+The REST and browser fixtures start a second authenticated API listener for
+journal calls. It uses the production handler and the same PostgreSQL database.
+This permits startup before the public test listener has an address. The
+separate private-API test checks the production API process and its restart.

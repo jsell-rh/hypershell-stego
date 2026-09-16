@@ -55,7 +55,7 @@ func Register(registrar grpc.ServiceRegistrar, repository gateways.Repository, s
 	}
 	// Journal RPCs use the verified machine identity and an exact grant. They
 	// do not project user profiles or role bindings during a provider callback.
-	control.RegisterServiceAccountProviderStateServiceServer(registrar, &accountProviderStateServer{service: service})
+	RegisterAccountProviderState(registrar, service)
 	registrar, err = transport.PrepareRegistrar(registrar, func(ctx context.Context) error {
 		if err := service.PrepareRequest(ctx, gateways.PrincipalFromContext(ctx)); err != nil {
 			return mapError(err)

@@ -13,8 +13,9 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (p *kubernetesBrowser) startProvisioner(k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func() string, func()) {
+func (p *kubernetesBrowser) startProvisioner(f *fixture, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func() string, func()) {
 	p.t.Helper()
+	settings = append(append([]string{}, settings...), startAccountStateAPI(p.t, f, k, key, settings, p.host("fixture"), "0.0.0.0:19094")...)
 	name := "hypershell-provisioner"
 	id := identity(p.t, p.host(name))
 	settings = append(append([]string{}, settings...), "HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile, `HYPERSHELL_PROVISIONER_SUBJECTS=["api-provisioner"]`)

@@ -49,7 +49,7 @@ func TestKeycloakGatewayAudienceBinding(t *testing.T) {
 	}
 	observeGatewayFixture(t, f, gateway.ID)
 	key, settings := issuer(t)
-	providerSettings, _ := startRealProvisioner(t, k, key, settings)
+	providerSettings, _ := startRealProvisioner(t, f, k, key, settings)
 	settings = append(settings, providerSettings...)
 	_, config := broker(t, identity(t, "localhost"))
 	binary := buildApplication(t)

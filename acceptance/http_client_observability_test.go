@@ -29,7 +29,7 @@ func TestKeycloakHTTPClientTelemetryAcrossRestart(t *testing.T) {
 	signals, exports := newHTTPDiagnosticCollector(t)
 	providerEnv := append(append([]string{}, auth...), exports...)
 	providerEnv = append(providerEnv, "OTEL_SERVICE_NAME=hypershell-keycloak-provider")
-	providerSettings, stopProvider, providerOutput := startRealProvisionerWithLogs(t, k, key, providerEnv)
+	providerSettings, stopProvider, providerOutput := startRealProvisionerWithLogs(t, f, k, key, providerEnv)
 	apiEnv := append(append([]string{}, auth...), exports...)
 	apiEnv = append(apiEnv, "OTEL_SERVICE_NAME=hypershell-keycloak-api")
 	_, config := broker(t, identity(t, "localhost"))
@@ -63,7 +63,7 @@ func TestKeycloakHTTPClientTelemetryAcrossRestart(t *testing.T) {
 	stopProvider()
 	private := []string{gateway.ID, created.ID, created.Credential.Secret, owner, "private-http-account", "acceptance-only-admin-secret"}
 	first := checkKeycloakHTTPClientSignals(t, signals, providerOutput()+apiOutput(), private, "Create")
-	providerSettings, stopProvider, providerOutput = startRealProvisionerWithLogs(t, k, key, providerEnv)
+	providerSettings, stopProvider, providerOutput = startRealProvisionerWithLogs(t, f, k, key, providerEnv)
 	stopAPI, address, _, _, apiOutput = startBothWithLogs(t, binary, f.dsn, config, append(apiEnv, providerSettings...)...)
 	if code, data := requestJSON(t, "GET", address+path+"/"+created.ID, owner, nil); code != 200 || bytes.Contains(data, []byte(created.Credential.Secret)) {
 		t.Fatal("restart read failed or exposed a secret", code)

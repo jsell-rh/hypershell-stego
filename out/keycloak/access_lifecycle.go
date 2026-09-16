@@ -15,8 +15,9 @@ import (
 var ErrAccessDisablementUnconfirmed = errors.New("Keycloak access disablement is not confirmed")
 
 type clientAccessPlan struct {
-	inspect func(context.Context, bool) error
-	repair  func(context.Context) error
+	keepDisabled bool
+	inspect      func(context.Context, bool) error
+	repair       func(context.Context) error
 }
 
 func repairableClientPolicy(err error) bool {
@@ -55,13 +56,15 @@ func (c *Client) reconcileClientAccess(work context.Context, b ClientBinding, pl
 		return ErrResponse
 	}
 	if explicitFlag(raw, "enabled", true) {
-		err = plan.inspect(work, true)
-		if err == nil {
-			complete = true
-			return nil
-		}
-		if !repairableClientPolicy(err) {
-			return err
+		if !plan.keepDisabled {
+			err = plan.inspect(work, true)
+			if err == nil {
+				complete = true
+				return nil
+			}
+			if !repairableClientPolicy(err) {
+				return err
+			}
 		}
 		if err = c.disableClient(work, b); err != nil {
 			return err
@@ -72,6 +75,10 @@ func (c *Client) reconcileClientAccess(work context.Context, b ClientBinding, pl
 	}
 	if err = plan.inspect(work, false); err != nil {
 		return err
+	}
+	if plan.keepDisabled {
+		complete = true
+		return nil
 	}
 	// Keep origins explicit: an omitted field can derive origins from callbacks.
 	body, _ := json.Marshal(struct {

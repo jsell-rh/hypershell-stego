@@ -22,7 +22,7 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 	}
 	observeGatewayFixture(t, f, gateway.ID)
 	key, auth := issuer(t)
-	providerSettings, stopProvider := startRealProvisioner(t, k, key, auth)
+	providerSettings, stopProvider := startRealProvisioner(t, f, k, key, auth)
 	_, config := broker(t, identity(t, "localhost"))
 	binary := buildApplication(t)
 	stopAPI, address := startApplication(t, binary, f.dsn, config, append(auth, providerSettings...)...)
@@ -60,6 +60,23 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 		if err != nil {
 			t.Fatal("prepare provider-only account", err)
 		}
+		// Model an orphan from the old provider. Current ownership requires its
+		// saved journal and cannot be adopted from a public name alone.
+		path := "/clients/" + created.ClientUUID
+		response := k.adminRequest(t, "GET", path, nil)
+		var live map[string]any
+		if json.Unmarshal(response.Body, &live) != nil {
+			t.Fatal("invalid orphan fixture")
+		}
+		attrs, ok := live["attributes"].(map[string]any)
+		if !ok {
+			t.Fatal("orphan attributes are missing")
+		}
+		for _, name := range []string{"hypershell.service-account", "hypershell.gateway-id", "hypershell.service-account-id"} {
+			attrs[name] = attrs["stego.owner."+name]
+			delete(attrs, "stego.owner."+name)
+		}
+		k.adminRequest(t, "PUT", path, map[string]any{"attributes": attrs})
 		return credential{created.ClientID, created.ClientSecret}
 	}
 	credentials = append(credentials, provision(gateway.ID, "gateway-audience"))
@@ -91,7 +108,7 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 		t.Fatal("outage removed Gateway", code)
 	}
 	stopAPI()
-	providerSettings, stopProvider = startRealProvisioner(t, k, key, auth)
+	providerSettings, stopProvider = startRealProvisioner(t, f, k, key, auth)
 	stopAPI, address = startApplication(t, binary, f.dsn, config, append(auth, providerSettings...)...)
 	started := time.Now()
 	if code, data := requestJSON(t, "DELETE", address+path, owner, nil); code != 204 {

@@ -325,3 +325,18 @@ run `35041366927`, provider job `104622531905`. The whole real-provider test too
 61.44 seconds. The account checks covered creation, migration, a saved subject,
 a lost journal acknowledgement, restart, signed token policy, disabled repair,
 resume, and late-create cleanup. Production provisioner adoption remains open.
+
+## Common account lifecycle integration
+
+The production account provisioner now uses STEGO provider 0.13.0 for creation,
+legacy ownership migration, saved subjects, complete access repair, and retained
+cleanup. The handwritten administrator HTTP client and token cache are removed.
+Hypershell retains Gateway ownership, OpenShell roles, account IDs, and one-time
+credential response policy. People and authorized API automation follow the
+same Gateway owner and viewer rules.
+
+The [protected journal instructions](service-account-provider-state.md) describe
+the required API identity, keys, and instance ID. The common provider passed its
+real Keycloak test in run `35042039359`. The new application integration has
+compiled and passed the small adapter race checks. Its live gates are pending.
+Earlier results in this file do not qualify this migration.

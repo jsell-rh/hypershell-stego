@@ -219,6 +219,16 @@ func (c *Client) InspectServiceAccountAccess(ctx context.Context, b ClientBindin
 // client causes no administrative writes. The caller must retain exclusive
 // reconciliation and the saved binding; remote policy updates are not atomic.
 func (c *Client) ReconcileServiceAccountAccess(ctx context.Context, b ClientBinding, p ServiceAccountAccessPolicy) error {
+	return c.reconcileServiceAccountAccess(ctx, b, p, false)
+}
+
+// ReconcileDisabledServiceAccountAccess repairs the complete policy while
+// disabled. It never enables the client or requests a client credential or
+// token. The caller must retain the same exclusive reconciliation and subject.
+func (c *Client) ReconcileDisabledServiceAccountAccess(ctx context.Context, b ClientBinding, p ServiceAccountAccessPolicy) error {
+	return c.reconcileServiceAccountAccess(ctx, b, p, true)
+}
+func (c *Client) reconcileServiceAccountAccess(ctx context.Context, b ClientBinding, p ServiceAccountAccessPolicy, disabled bool) error {
 	desired, proof, err := p.configuration(b)
 	if err != nil {
 		return err
@@ -229,6 +239,7 @@ func (c *Client) ReconcileServiceAccountAccess(ctx context.Context, b ClientBind
 	}
 	defer done()
 	return c.reconcileClientAccess(work, b, clientAccessPlan{
+		keepDisabled: disabled,
 		inspect: func(ctx context.Context, enabled bool) error {
 			return c.inspectServiceAccountAccess(ctx, b, p, desired, proof, enabled)
 		},

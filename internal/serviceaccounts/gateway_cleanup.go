@@ -31,8 +31,13 @@ func (s *Service) CleanupGateway(ctx context.Context, tx storage.Transaction, ga
 	if err != nil {
 		return gateways.ErrGatewayCleanupUnavailable
 	}
+	reader, ok := tx.(storage.CursorReader)
+	if !ok {
+		return errors.New("account cleanup requires retained cursor reads")
+	}
+	after := ""
 	for {
-		result, err := tx.List(ctx, "ServiceAccount", "gateway_id", gatewayID, storage.ListOptions{Page: 1, Size: 100})
+		result, err := reader.ReadCursor(ctx, "ServiceAccount", "gateway_id", gatewayID, storage.CursorOptions{AfterID: after, Limit: 100, Deletion: storage.CursorAll})
 		if err != nil {
 			return err
 		}
@@ -41,6 +46,19 @@ func (s *Service) CleanupGateway(ctx context.Context, tx storage.Transaction, ga
 			return errors.New("unexpected Gateway account cleanup result")
 		}
 		for _, row := range rows {
+			if row.GatewayID != gatewayID || !validID(row.ID) {
+				return errors.New("account cleanup row does not match")
+			}
+			call, cancel := context.WithTimeout(ctx, 5*time.Second)
+			err := provider.Delete(call, gatewayID, row.ID, row.ClientUuid)
+			cancel()
+			if err != nil {
+				return gateways.ErrGatewayCleanupUnavailable
+			}
+			if row.DeletedAt.Valid {
+				continue
+			}
+
 			// Keep the tombstone in the historical cleanup scan. A remote create can
 			// finish after a lost database connection released its row lock.
 			row.Status = "deleting"
@@ -61,8 +79,12 @@ func (s *Service) CleanupGateway(ctx context.Context, tx storage.Transaction, ga
 				return err
 			}
 		}
-		if len(rows) < 100 {
+		if !result.More {
 			return nil
 		}
+		if len(rows) == 0 || result.NextID == "" || result.NextID == after {
+			return errors.New("account cleanup cursor did not advance")
+		}
+		after = result.NextID
 	}
 }

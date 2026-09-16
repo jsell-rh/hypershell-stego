@@ -35,7 +35,7 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	}
 	observeGatewayFixture(t, f, gateway.ID)
 	key, issuerSettings := issuer(t)
-	providerSettings, stopProvider := startRealProvisioner(t, k, key, issuerSettings)
+	providerSettings, stopProvider := startRealProvisioner(t, f, k, key, issuerSettings)
 	defer func() { stopProvider() }()
 	_, brokerConfig := broker(t, identity(t, "localhost"))
 	apiBinary := buildApplication(t)
@@ -245,7 +245,7 @@ func TestGeneratedServiceAccountCLIWorkflow(t *testing.T) {
 	setToken(owner)
 	stopAPI()
 	stopProvider()
-	providerSettings, stopProvider = startRealProvisioner(t, k, key, issuerSettings)
+	providerSettings, stopProvider = startRealProvisioner(t, f, k, key, issuerSettings)
 	settings = append(append([]string{}, issuerSettings...), providerSettings...)
 	stopAPI, address = startApplication(t, apiBinary, f.dsn, brokerConfig, settings...)
 	backend.Store(address)

@@ -1,6 +1,7 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
 	"crypto/rand"
 	"crypto/rsa"
@@ -21,6 +22,7 @@ import (
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/provisioner/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -157,19 +159,20 @@ func (k *keycloakFixture) issue(t *testing.T, id, secret string) (web.Response, 
 	}
 	return response, result
 }
-func startRealProvisioner(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func()) {
+func startRealProvisioner(t *testing.T, f *fixture, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func()) {
 	t.Helper()
-	settings, stop, _ := startRealProvisionerWithLogs(t, k, key, settings)
+	settings, stop, _ := startRealProvisionerWithLogs(t, f, k, key, settings)
 	return settings, stop
 }
 
-func startRealProvisionerWithLogs(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func(), func() string) {
+func startRealProvisionerWithLogs(t *testing.T, f *fixture, k *keycloakFixture, key *rsa.PrivateKey, settings []string) ([]string, func(), func() string) {
 	t.Helper()
-	return startRealProvisionerAt(t, k, key, settings, "localhost", "127.0.0.1:0")
+	return startRealProvisionerAt(t, f, k, key, settings, "localhost", "127.0.0.1:0")
 }
 
-func startRealProvisionerAt(t *testing.T, k *keycloakFixture, key *rsa.PrivateKey, settings []string, host, listen string) ([]string, func(), func() string) {
+func startRealProvisionerAt(t *testing.T, f *fixture, k *keycloakFixture, key *rsa.PrivateKey, settings []string, host, listen string) ([]string, func(), func() string) {
 	t.Helper()
+	settings = append(append([]string{}, settings...), startAccountStateAPI(t, f, k, key, settings, host, "127.0.0.1:0")...)
 	binary := buildProgram(t, "./out/grpcapi/processes/provisioner")
 	identity := identity(t, host)
 	dir := filepath.Dir(identity.config.CAFile)
@@ -242,7 +245,7 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 	}
 	observeGatewayFixture(t, f, gateway.ID)
 	key, settings := issuer(t)
-	providerSettings, stopProvider := startRealProvisioner(t, k, key, settings)
+	providerSettings, stopProvider := startRealProvisioner(t, f, k, key, settings)
 	settings = append(settings, providerSettings...)
 	_, config := broker(t, identity(t, "localhost"))
 	binary := buildApplication(t)
@@ -268,6 +271,41 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 		t.Fatal(err)
 	}
 	row := rowAny.(model.ServiceAccount)
+	checkJournal := func(closed bool) {
+		t.Helper()
+		var sealed []byte
+		var version int64
+		if err := f.db.QueryRow("SELECT data,version FROM stego_resource_state WHERE entity='ServiceAccount' AND resource_id=$1 AND scope=$2", row.ID, "gateway:"+gateway.ID).Scan(&sealed, &version); err != nil {
+			t.Fatal("account journal is absent", err)
+		}
+		raw, err := os.ReadFile(k.stateKeysFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		protector, err := runtime.NewStateProtectorFromJSON(raw)
+		clear(raw)
+		if err != nil {
+			t.Fatal(err)
+		}
+		state, err := protector.Open(runtime.StateKey{Instance: k.instanceID, Entity: "ServiceAccount", ResourceID: row.ID, Scope: "gateway:" + gateway.ID}, version, sealed)
+		if err != nil {
+			t.Fatal("saved account journal did not authenticate", err)
+		}
+		plain := state.Reveal()
+		defer clear(plain)
+		var record struct {
+			Closed  bool
+			Subject string
+			Binding struct{ ID, ClientID string }
+		}
+		if json.Unmarshal(plain, &record) != nil || record.Closed != closed || record.Subject != row.Subject || record.Binding.ID != row.ClientUuid || record.Binding.ClientID != row.ClientID {
+			t.Fatal("saved account identity changed")
+		}
+		if bytes.Contains(sealed, []byte(created.Credential.Secret)) || bytes.Contains(plain, []byte(created.Credential.Secret)) {
+			t.Fatal("credential reached the recovery journal")
+		}
+	}
+	checkJournal(false)
 	response, grant := k.issue(t, row.ClientID, created.Credential.Secret)
 	if response.StatusCode != 200 {
 		t.Fatal("issued credential cannot obtain a token")
@@ -337,13 +375,8 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 	if err != nil || changed.StatusCode != 204 {
 		t.Fatal("cannot inject provider drift")
 	}
-	actualProvider, err := keycloak.NewClient(k.options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer actualProvider.Close()
 	spec := keycloak.ServiceAccountSpec{ClientID: row.ClientID, DisplayName: row.Name, GatewayClientID: "gateway-audience", GatewayID: gateway.ID, ServiceAccountID: row.ID, CreatorUserID: row.CreatedByUserID, Role: row.Role, ExpectedIssuer: k.options.ServerURL + "/realms/workflow", AccessTokenLifetimeSeconds: 300}
-	if err := actualProvider.ReconcileServiceAccount(context.Background(), spec, row.ClientUuid, row.Subject, true); err != nil {
+	if _, err := pb.NewOpenShellGatewayServiceAccountProvisionerServiceClient(connection).Reconcile(context.Background(), &pb.ReconcileRequest{Spec: &pb.ServiceAccountSpec{ClientId: spec.ClientID, DisplayName: spec.DisplayName, GatewayClientId: spec.GatewayClientID, GatewayId: spec.GatewayID, ServiceAccountId: spec.ServiceAccountID, CreatorUserId: spec.CreatorUserID, Role: spec.Role, ExpectedIssuer: spec.ExpectedIssuer, AccessTokenLifetimeSeconds: 300}, ClientUuid: row.ClientUuid, ExpectedSubject: row.Subject, Enabled: true}); err != nil {
 		t.Fatalf("repair real provider drift: %v", err)
 	}
 	repaired, err := k.http.Do(context.Background(), "GET", clientPath, adminHeaders, nil)
@@ -366,7 +399,7 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 		t.Fatal("drift group has no ID")
 	}
 	k.adminRequest(t, "PUT", "/users/"+row.Subject+"/groups/"+groupID, nil)
-	if err := actualProvider.ReconcileServiceAccount(context.Background(), spec, row.ClientUuid, row.Subject, true); err != nil {
+	if _, err := pb.NewOpenShellGatewayServiceAccountProvisionerServiceClient(connection).Reconcile(context.Background(), &pb.ReconcileRequest{Spec: &pb.ServiceAccountSpec{ClientId: spec.ClientID, DisplayName: spec.DisplayName, GatewayClientId: spec.GatewayClientID, GatewayId: spec.GatewayID, ServiceAccountId: spec.ServiceAccountID, CreatorUserId: spec.CreatorUserID, Role: spec.Role, ExpectedIssuer: spec.ExpectedIssuer, AccessTokenLifetimeSeconds: 300}, ClientUuid: row.ClientUuid, ExpectedSubject: row.Subject, Enabled: true}); err != nil {
 		t.Fatal("repair group-only service-account drift", err)
 	}
 	remainingGroups := k.adminRequest(t, "GET", "/users/"+row.Subject+"/groups?first=0&max=2", nil)
@@ -399,7 +432,7 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 		t.Fatalf("offline revoke: %d", code)
 	}
 	stopAPI()
-	providerSettings, stopProvider = startRealProvisioner(t, k, key, settings[:len(settings)-3])
+	providerSettings, stopProvider = startRealProvisioner(t, f, k, key, settings[:len(settings)-3])
 	defer stopProvider()
 	settings = append(settings[:len(settings)-3], providerSettings...)
 	stopAPI, address = startApplication(t, binary, f.dsn, config, settings...)
@@ -423,6 +456,7 @@ func TestServiceAccountsWithRealKeycloak(t *testing.T) {
 	if response.StatusCode == 200 {
 		t.Fatal("deleted client can issue tokens")
 	}
+	checkJournal(true)
 	var persisted string
 	if err := f.db.QueryRow("SELECT row_to_json(s)::text FROM service_accounts s WHERE id=$1", created.ID).Scan(&persisted); err != nil {
 		t.Fatal(err)

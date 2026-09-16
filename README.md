@@ -554,3 +554,9 @@ proves the complete-package Gateway workflow, early deletion before workers
 start, SQL fault recovery, PostgreSQL restart, and retained installation data.
 All 229 generated files match repeat generation. The broader installation,
 Sandbox, and SQL session-isolation requirements remain open.
+
+The service-account provisioner now uses STEGO's common Keycloak lifecycle and
+[protected recovery journal](acceptance/service-account-provider-state.md).
+Common code manages creation, migration, access repair, and retained cleanup.
+Hypershell supplies Gateway ownership and OpenShell role policy. This migration
+requires stable journal keys and an exact API grant; its live gates are pending.

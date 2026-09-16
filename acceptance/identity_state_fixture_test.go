@@ -62,5 +62,25 @@ func withIdentityState(t *testing.T, k *keycloakFixture) *keycloakFixture {
 			},
 		}, 60<<10)
 	}
+	k.options.AccountJournal = func(gatewayID, id string, _ bool) (*runtime.StateJournal, error) {
+		return runtime.NewStateJournal(protector, runtime.StateKey{Instance: k.instanceID, Entity: "ServiceAccount", ResourceID: id, Scope: "gateway:" + gatewayID}, runtime.StatePersistence{
+			Load: func(context.Context) (runtime.SealedStateRecord, error) {
+				mu.Lock()
+				defer mu.Unlock()
+				r := records["account:"+gatewayID+":"+id]
+				return runtime.SealedStateRecord{Version: r.Version, Data: bytes.Clone(r.Data)}, nil
+			},
+			Save: func(_ context.Context, expected int64, data []byte) (runtime.SealedStateRecord, error) {
+				mu.Lock()
+				defer mu.Unlock()
+				if records["account:"+gatewayID+":"+id].Version != expected {
+					return runtime.SealedStateRecord{}, errors.New("fixture journal conflict")
+				}
+				r := runtime.SealedStateRecord{Version: expected + 1, Data: bytes.Clone(data)}
+				records["account:"+gatewayID+":"+id] = r
+				return r, nil
+			},
+		}, 60<<10)
+	}
 	return k
 }

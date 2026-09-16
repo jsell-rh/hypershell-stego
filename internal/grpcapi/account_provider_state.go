@@ -6,6 +6,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -37,4 +38,10 @@ func (s *accountProviderStateServer) SaveServiceAccountProviderState(ctx context
 		return nil, mapError(err)
 	}
 	return accountProviderStateResponse(request.GatewayId, request.ServiceAccountId, value), nil
+}
+
+// RegisterAccountProviderState adds the private journal API without user profile
+// writes. The caller must supply the generated authenticated transport.
+func RegisterAccountProviderState(registrar grpc.ServiceRegistrar, service *gateways.Service) {
+	pb.RegisterServiceAccountProviderStateServiceServer(registrar, &accountProviderStateServer{service: service})
 }

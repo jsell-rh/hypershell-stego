@@ -73,7 +73,8 @@ func TestGatewayCleanupRetriesAfterPartialDisable(t *testing.T) {
 				w.WriteHeader(500)
 				return
 			}
-			clients[name] = next
+			current.Enabled = next.Enabled
+			clients[name] = current
 			w.WriteHeader(204)
 		case "DELETE":
 			if name == "foreign" {
@@ -103,7 +104,7 @@ func TestGatewayCleanupRetriesAfterPartialDisable(t *testing.T) {
 	if err := os.WriteFile(secret, []byte("test-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca})
+	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, AccountJournal: testAccountJournals(t)})
 	if err != nil {
 		t.Fatal(err)
 	}

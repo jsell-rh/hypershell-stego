@@ -144,7 +144,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	k := startKeycloak(t)
 	f := database(t)
 	key, settings := issuer(t)
-	providerSettings, _ := startRealProvisioner(t, k, key, settings)
+	providerSettings, _ := startRealProvisioner(t, f, k, key, settings)
 	settings = append(settings, providerSettings...)
 	tlsIdentity := identity(t, "localhost")
 	dir := filepath.Dir(tlsIdentity.config.CAFile)
