@@ -45,3 +45,22 @@ It records no blocked URLs or arbitrary browser messages. This change belongs
 to the upstream dashboard build inputs. STEGO's browser security policy is
 unchanged. Source CI must check types, the build, dependencies, and captured
 asset limits. A new live run must prove editor rendering and behavior.
+
+## Source build correction
+
+[Source CI 35160324245](https://github.com/jsell-rh/hypershell-stego/actions/runs/35160324245)
+passed the backend, frontend type and build checks, 13 UI tests, and dependency
+checks. Asset capture failed. The build produced 158 files and 9,210,535 bytes,
+including a TrueType font. STEGO permits 128 files and did not accept that font
+type. No assets or image from this failed run were adopted.
+
+The editor now imports Monaco's editor API. The locked webpack plugin applies
+to this entry and adds the selected JSON and YAML languages. The full-package
+entry also imports other language contributions. Source CI must prove the
+smaller build meets the existing asset limits.
+
+The build checks pin candidate STEGO revision
+`8e0fae6f28276e192e8497c8acad487c765f3bb5`, which adds common TrueType capture
+and HTTP serving. Compiler CI must pass before runtime adoption. Both build
+checks use this revision. Application compiler pins and deployed assets remain
+at their previous checked versions until the new source and runtime pass.
