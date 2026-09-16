@@ -1,17 +1,18 @@
 package contracts
 
 import (
+	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	"os"
-	"path/filepath"
-	"testing"
-
-	"context"
 	"encoding/json"
-	"gopkg.in/yaml.v3"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
+	"testing"
 	"time"
+
+	"gopkg.in/yaml.v3"
 )
 
 func TestGeneratedProjectInputManifest(t *testing.T) {
@@ -126,13 +127,32 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 	}
 	var config struct {
 		Registry []struct {
-			Ref string `yaml:"ref"`
+			URL    string `yaml:"url"`
+			Ref    string `yaml:"ref"`
+			Path   string `yaml:"path"`
+			Vendor string `yaml:"vendor"`
 		} `yaml:"registry"`
 	}
 	if err := yaml.Unmarshal(read(".stego/config.yaml"), &config); err != nil {
 		t.Fatal(err)
 	}
-	if len(config.Registry) != 1 || manifest.Options.RegistryRef != config.Registry[0].Ref || manifest.Options.OutputDir != "out" || manifest.Options.ModuleName != module.Path || manifest.Options.GoVersion != module.GoVersion {
+	pin := strings.TrimSpace(string(read(".stego/compiler-revision")))
+	if len(config.Registry) != 2 || config.Registry[0].URL != "https://github.com/jsell-rh/stego.git" || config.Registry[0].Ref != pin || config.Registry[0].Path != "registry" || config.Registry[0].Vendor != "" || config.Registry[1].URL != "./registry" || config.Registry[1].Ref != "application" || config.Registry[1].Path != "" || config.Registry[1].Vendor != "" {
+		t.Fatal("project must use its pinned common registry and local application composition")
+	}
+	if decoded, err := hex.DecodeString(pin); err != nil || len(decoded) != 20 || hex.EncodeToString(decoded) != pin {
+		t.Fatal("compiler and common registry need a full lowercase commit ID")
+	}
+	if _, err := os.Stat(filepath.Join(root, "registry/components")); !os.IsNotExist(err) {
+		t.Fatal("application registry must not copy common component declarations")
+	}
+	// The composed reference covers every source setting, in declaration order.
+	encoded, err := json.Marshal(config.Registry)
+	if err != nil {
+		t.Fatal(err)
+	}
+	registryHash := sha256.Sum256(encoded)
+	if manifest.Options.RegistryRef != hex.EncodeToString(registryHash[:]) || manifest.Options.OutputDir != "out" || manifest.Options.ModuleName != module.Path || manifest.Options.GoVersion != module.GoVersion {
 		t.Fatal("generation options differ from the project", manifest.Options)
 	}
 }
