@@ -76,3 +76,11 @@ application Service port. The browser image reference used only for rendering
 is an explicit example. This job does not deploy either container. Gateway
 trust and mTLS files must be supplied in the application mount before deployment.
 Published images are CI candidates, not qualified production releases.
+
+The [registry check](../../acceptance/dashboard-private-registry-evidence.json)
+passed. CI built and published the image, pulled it by digest, and compared its
+configuration and filesystem identity with the build. The saved image contains
+only the checked dashboard binary. Both source dependency checks passed. The
+generated browser built with all eight upstream document routes, repeated
+generation kept the same state, and the deployment checks passed. The live Pod,
+editor, terminal, and Gateway lifecycle checks remain open.
