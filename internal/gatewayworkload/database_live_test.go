@@ -381,6 +381,19 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 		t.Fatal("SQL cleanup did not wait for the workload", err)
 	}
 	put(workloadPath, nil)
+	consoleSecretPath := "/api/v1/namespaces/" + consoleNS + "/secrets/" + consoleStateSecret
+	mu.Lock()
+	savedConsoleState := objects[consoleSecretPath]
+	objects[consoleSecretPath] = nil
+	mu.Unlock()
+	if err := k.DeleteDatabase(ctx, first); err == nil {
+		t.Fatal("console state loss was ignored")
+	}
+	var gatewayPresent bool
+	if err := bootstrap.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)", names(first).Database).Scan(&gatewayPresent); err != nil || gatewayPresent {
+		t.Fatal("console state loss prevented independent Gateway cleanup")
+	}
+	put(consoleSecretPath, savedConsoleState)
 	if err := k.DeleteDatabase(ctx, first); err != nil {
 		t.Fatal("Gateway SQL cleanup failed", err)
 	}

@@ -102,6 +102,9 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image st
 		}
 		return err
 	}
+	if gw.GetConsoleAddress() == "" {
+		return ErrPending
+	}
 	storeFiles, err := k.prepareConsoleDatabase(ctx, gw)
 	if err != nil {
 		return err
