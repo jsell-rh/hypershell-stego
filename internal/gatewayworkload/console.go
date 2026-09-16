@@ -87,7 +87,10 @@ func consoleConfigurationDigest(id string, secrets []object) (string, error) {
 // EnsureConsole starts only after the allocator and all four controller-owned
 // dependency Secrets are ready. It provisions the retained session database
 // before it permits a rollout.
-func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image string, group uint64) error {
+func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version int64, group uint64) error {
+	if version < 1 {
+		return errors.New("console requires the observed Gateway version")
+	}
 	if !k.Handles(gw) || k.allocation == nil {
 		return errors.New("console requires its assigned namespace allocator")
 	}
@@ -105,32 +108,18 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image st
 	if gw.GetConsoleAddress() == "" {
 		return ErrPending
 	}
+	if _, err := k.consoleOrigin(gw, version); err != nil {
+		return err
+	}
 	storeFiles, err := k.prepareConsoleDatabase(ctx, gw)
 	if err != nil {
 		return err
 	}
-	dependencies := make([]object, 0, len(consoleSecretNames))
-	for _, name := range consoleSecretNames {
-		secret, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+ns+"/secrets/"+name, nil)
-		if err != nil {
-			return err
-		}
-		if code == http.StatusNotFound {
-			return ErrPending
-		}
-		if code != http.StatusOK {
-			return errors.New("console dependency read failed")
-		}
-		dependencies = append(dependencies, secret)
-	}
-	digest, err := consoleConfigurationDigest(id, dependencies)
+	digest, err := k.ensureConsoleDependencies(ctx, gw, version, storeFiles)
 	if err != nil {
 		return err
 	}
-	if err = consoleStoreDependencies(dependencies, storeFiles); err != nil {
-		return err
-	}
-	entries, err := consoleResources(gw, image, group, digest)
+	entries, err := consoleResources(gw, k.options.Console.Image, group, digest)
 	if err != nil {
 		return err
 	}

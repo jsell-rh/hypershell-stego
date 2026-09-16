@@ -114,7 +114,7 @@ func TestConsoleConfigurationRejectsInvalidDependencies(t *testing.T) {
 func TestConsoleWaitsForAssignedNamespace(t *testing.T) {
 	for _, mode := range []string{"missing", "foreign", "wrong cluster", "wrong namespace"} {
 		t.Run(mode, func(t *testing.T) {
-			gw, release := records(t)
+			gw, _ := records(t)
 			calls := 0
 			k := fixture(t, func(w http.ResponseWriter, r *http.Request) {
 				calls++
@@ -135,7 +135,7 @@ func TestConsoleWaitsForAssignedNamespace(t *testing.T) {
 			if mode == "wrong namespace" {
 				gw.Namespace = "foreign"
 			}
-			err := k.EnsureConsole(context.Background(), gw, release.Image, 65532)
+			err := k.EnsureConsole(context.Background(), gw, 1, 65532)
 			if err == nil {
 				t.Fatal("console accepted an invalid allocation")
 			}

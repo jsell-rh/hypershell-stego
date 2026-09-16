@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"errors"
+	"net/http"
 	"strings"
 
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
@@ -116,4 +117,70 @@ func (k *Kubernetes) consoleDependencyObjects(ctx context.Context, gw *pb.Gatewa
 		result[i] = object{"apiVersion": "v1", "kind": "Secret", "metadata": object{"name": consoleSecretNames[i], "namespace": ns, "labels": labels}, "type": "Opaque", "data": value}
 	}
 	return result, nil
+}
+
+// Console placement and origin come from the current Gateway and operator
+// configuration. Reject a stale origin before creating its database or TLS.
+func (k *Kubernetes) consoleOrigin(gw *pb.Gateway, version int64) (string, error) {
+	invalid := errors.New("console does not match the observed Gateway")
+	if version < 1 || !k.Handles(gw) || k.options.Console == nil {
+		return "", invalid
+	}
+	if err := checkConsoleOptions(k.options); err != nil {
+		return "", err
+	}
+	ns, err := Namespace(gw.GetMetadata().GetId())
+	if err != nil || ns != gw.GetNamespace() {
+		return "", invalid
+	}
+	origin, err := keycloak.GatewayConsoleOrigin(gw.GetMetadata().GetId(), k.options.Console.Domain)
+	if err != nil || origin != gw.GetConsoleAddress() {
+		return "", invalid
+	}
+	return origin, nil
+}
+
+func (k *Kubernetes) ensureConsoleDependencies(ctx context.Context, gw *pb.Gateway, version int64, store object) (string, error) {
+	origin, err := k.consoleOrigin(gw, version)
+	if err != nil {
+		return "", err
+	}
+	if ctx == nil || k.publicRoots == nil {
+		return "", errors.New("console TLS trust is unavailable")
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	id, ns := gw.GetMetadata().GetId(), gw.GetNamespace()
+	labels := object{}
+	for key, value := range consoleOwner(id) {
+		labels[key] = value
+	}
+	cert := object{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata": object{"name": consoleName + "-tls", "namespace": ns, "labels": labels}, "spec": object{
+		"secretName": consoleName + "-tls", "issuerRef": object{"name": k.options.PublicIssuer, "kind": "ClusterIssuer"},
+		"dnsNames": []string{strings.TrimPrefix(origin, "https://")}, "privateKey": object{"algorithm": "ECDSA", "size": 256, "rotationPolicy": "Always"},
+		"usages": []string{"server auth"}, "duration": "2160h", "renewBefore": "360h", "secretTemplate": object{"labels": labels},
+	}}
+	if _, err := k.client.Ensure(ctx, "/apis/cert-manager.io/v1/namespaces/"+ns+"/certificates", cert, consoleOwner(id)); err != nil {
+		return "", err
+	}
+	certificates := make([]object, 2)
+	for i, name := range []string{consoleName + "-tls", "openshell-client-tls"} {
+		value, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+ns+"/secrets/"+name, nil)
+		if err != nil {
+			return "", err
+		}
+		if code == http.StatusNotFound {
+			return "", ErrPending
+		}
+		if code != http.StatusOK {
+			return "", errors.New("console certificate read failed")
+		}
+		certificates[i] = value
+	}
+	desired, err := k.consoleDependencyObjects(ctx, gw, version, store, certificates[0], certificates[1])
+	if err != nil {
+		return "", err
+	}
+	return k.client.EnsureOpaqueSecretSet(ctx, ns, consoleSecretNames[:], consoleOwner(id), desired)
 }
