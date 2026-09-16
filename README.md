@@ -559,4 +559,6 @@ The service-account provisioner now uses STEGO's common Keycloak lifecycle and
 [protected recovery journal](acceptance/service-account-provider-state.md).
 Common code manages creation, migration, access repair, and retained cleanup.
 Hypershell supplies Gateway ownership and OpenShell role policy. This migration
-requires stable journal keys and an exact API grant; its live gates are pending.
+requires stable journal keys and an exact API grant. Its rendered browser
+workflow passed on commit `048ff55`; private API and full cluster qualification
+remain pending.

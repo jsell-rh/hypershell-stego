@@ -51,7 +51,12 @@ domain events. The live result is pending.
 The authorization tests passed with the race detector in 1.021 seconds. The
 application and acceptance packages compile, and generation has no drift.
 The production provisioner now uses this journal with STEGO's common
-`ServiceAccountClientLifecycle`. The complete application live result is pending.
+`ServiceAccountClientLifecycle`. The rendered browser workflow passed on commit
+`048ff55bf2a26dbfac3e238fec3352376fba6495` in
+[CI job 104635435888](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888).
+It took 104.29 seconds and included account creation, one-time credential
+delivery, verified tokens, reload, revoke, and delete. The separate private API
+and full cluster results remain pending.
 
 The provisioner requires `HYPERSHELL_API_GRPC_ADDR`, `HYPERSHELL_API_CA_FILE`,
 and `HYPERSHELL_API_TOKEN_FILE`. Its API identity needs the exact grant above.

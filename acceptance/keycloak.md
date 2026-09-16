@@ -371,3 +371,15 @@ The earlier run `35045188547` stopped at stale generation records. Those records
 were regenerated with the pinned compiler for both the application and console.
 Run `35045331844` then passed regeneration, web-console checks, and image checks.
 Its failed browser result does not qualify the account lifecycle migration.
+
+## Corrected account browser result
+
+The rendered browser workflow passed on commit
+`048ff55bf2a26dbfac3e238fec3352376fba6495` in
+[job 104635435888](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888).
+It took 104.29 seconds. The test covered real login, Gateway creation and grants,
+REST and gRPC, events, restart, session key rotation, renewal, and logout.
+Account creation, one-time credential delivery, verified token issuance, reload,
+revoke, and delete all passed with the common lifecycle and SQL journal.
+This browser fixture supplies Gateway readiness. The full cluster and private
+API results remain pending. Web-console and generated image checks also passed.
