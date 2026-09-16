@@ -18,6 +18,19 @@ class InstallationBoundary(unittest.TestCase):
     role = {"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRole",
             "metadata": {"name": namespace + ".worker"}, "rules": []}
 
+    def test_renderer_inventory_includes_imported_library(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            render = root / 'out/deploy/render'
+            render.mkdir(parents=True)
+            command = render / 'main.go'
+            command.write_text('package main')
+            self.assertEqual(installation.renderer_sources(root), [command])
+            library = root / 'out/deploy/resources.go'
+            library.write_text('package deployment')
+            (root / 'out/deploy/Containerfile').write_text('FROM scratch')
+            self.assertEqual(installation.renderer_sources(root), sorted([command, library]))
+
     def manifest(self, items):
         return json.dumps({"apiVersion": "v1", "kind": "List", "items": items}).encode()
 

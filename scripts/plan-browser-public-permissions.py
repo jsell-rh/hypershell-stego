@@ -144,7 +144,7 @@ def plan(installation, rendered, manifests, phase='initial'):
             and 1 <= len(rendered['source_sha256']) <= 32, 'Renderer source inventory differs')
     for record in (old_record, rendered):
         for name, value in record['source_sha256'].items():
-            require(re.fullmatch(r'(?:console/)?out/deploy/render/[a-zA-Z0-9_.-]+', name)
+            require(re.fullmatch(r'(?:console/)?out/deploy/(?:resources\.go|render/[a-zA-Z0-9_.-]+)', name)
                     and isinstance(value, str) and re.fullmatch('[0-9a-f]{64}', value), 'Invalid renderer source hash')
     require(old_record['namespace'] == rendered['namespace'] == NAMESPACE
             and old_record.get('policy_type_checks') == 'success'

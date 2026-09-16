@@ -19,6 +19,15 @@ from kubernetes_endpoint_bindings import kubernetes_endpoints
 from gateway_endpoint_fixture import inputs as endpoint_inputs, policy_change
 
 
+def renderer_sources(directory):
+    """Include the imported renderer body in the installation record."""
+    paths = list((directory / "out/deploy/render").iterdir())
+    library = directory / "out/deploy/resources.go"
+    if library.exists():
+        paths.append(library)
+    return sorted(path for path in paths if path.is_file())
+
+
 def cluster_items(manifest, namespace):
     if len(manifest) > 2 << 20:
         raise RuntimeError("The cluster manifest exceeds the fixture limit")
@@ -150,9 +159,8 @@ def main():
             # compilation and all workload tests stay in the bounded cluster Job.
             subprocess.run(["go", "build", "-p=1", "-mod=readonly", "-trimpath", "-o", str(binary), "./out/deploy/render"],
                            cwd=directory, env=environment, check=True, timeout=45)
-            for path in sorted((directory / "out/deploy/render").iterdir()):
-                if path.is_file():
-                    record["source_sha256"][str(path.relative_to(source))] = hashlib.sha256(path.read_bytes()).hexdigest()
+            for path in renderer_sources(directory):
+                record["source_sha256"][str(path.relative_to(source))] = hashlib.sha256(path.read_bytes()).hexdigest()
 
         targets = [("hypershell", "api", []), ("hypershell-console", "console", []),
                    ("hypershell-provisioner", "api", ["--rpc-process", "provisioner"])]

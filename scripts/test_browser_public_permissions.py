@@ -98,6 +98,21 @@ class PublicPermissionPlan(unittest.TestCase):
         self.assertEqual(json.loads(plan['proposed_installation_data']['cluster-installation.json'])['policy_type_checks'], 'pending-live-verification')
         self.assertEqual((installation, rendered, manifests), originals)
 
+    def test_imported_renderer_source_paths(self):
+        for name in ['out/deploy/resources.go', 'console/out/deploy/resources.go',
+                     'out/deploy/other.go', 'out/deploy/../resources.go']:
+            with self.subTest(name=name):
+                installation, rendered, manifests = fixture()
+                record = json.loads(installation['data']['cluster-installation.json'])
+                record['source_sha256'][name] = 'b' * 64
+                rendered['source_sha256'][name] = 'c' * 64
+                installation['data']['cluster-installation.json'] = json.dumps(record)
+                if name in ['out/deploy/resources.go', 'console/out/deploy/resources.go']:
+                    planner.plan(installation, rendered, manifests)
+                else:
+                    with self.assertRaises(ValueError):
+                        planner.plan(installation, rendered, manifests)
+
     def test_broader_permissions_and_other_changes_fail(self):
         changes = [
             lambda items: items[0]['rules'][1].pop('resourceNames'),
