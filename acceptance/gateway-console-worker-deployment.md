@@ -34,5 +34,12 @@ application test must add these parts before it can use the entry point:
 - Public TLS, login, logout, dashboard requests, restart, and telemetry delivery.
 
 Keep reusable state and migration mechanisms in STEGO. Keep Gateway placement,
-client policy, and component selection in Hypershell. Do not copy the current
-Gateway state implementation for the console.
+client policy, and component selection in Hypershell.
+
+The Gateway now uses STEGO's `LoadSecretState` for its immutable key Secret,
+public digest marker, namespace pin, and retained registration. The common
+runtime calculates the digest. Hypershell supplies key policy, the SQL absence
+check, and the authorized registration callbacks. The prior data hash is retained
+in a test fixture to check recovery of the existing storage format. This is the
+common state mechanism to use for the separate console session state. The console
+state and its SQL schema are not yet connected.

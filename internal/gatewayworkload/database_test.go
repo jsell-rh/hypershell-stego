@@ -158,3 +158,35 @@ func stateNetworkPolicyFixture(k *Kubernetes, id string) object {
 		"metadata": object{"name": "stego-allocation", "namespace": namespace, "uid": namespace + "-policy", "resourceVersion": "1", "labels": k.stateOwner(id), "annotations": object{"stego.dev/network-spec-sha256": hex.EncodeToString(digest[:])}},
 		"spec":     object{"podSelector": object{}, "policyTypes": []string{"Ingress", "Egress"}}}
 }
+
+func (k *Kubernetes) stateDefinition(kind, name, id string) object {
+	value := definition("v1", kind, name, id)
+	labels := value["metadata"].(object)["labels"].(object)
+	for key, val := range k.stateOwner(id) {
+		labels[key] = val
+	}
+	if kind != "Namespace" {
+		ns, _ := StateNamespace(id)
+		value["metadata"].(object)["namespace"] = ns
+	}
+	if kind == "Secret" {
+		value["type"] = "Opaque"
+	}
+	value["immutable"] = true
+	return value
+}
+
+// Retain the prior data hash in this fixture to check stored-state compatibility.
+func stateFingerprint(secret object) (string, error) {
+	values := secret["data"]
+	switch values.(type) {
+	case object, map[string]any:
+	default:
+		return "", errors.New("Gateway state has no data")
+	}
+	encoded, err := json.Marshal(values)
+	if err != nil {
+		return "", errors.New("Gateway state is invalid")
+	}
+	return hex.EncodeToString(sha256sum(encoded)), nil
+}

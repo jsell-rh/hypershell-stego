@@ -43,31 +43,13 @@ func OpaqueSecretSetDigest(namespace string, names []string, owner Owner, secret
 		if deletion := Nested(secret, "metadata", "deletionTimestamp"); deletion != nil && deletion != "" {
 			return "", ErrResourceObservation
 		}
-		var data map[string]any
-		switch raw := secret["data"].(type) {
-		case map[string]any:
-			data = raw
-		case Object:
-			data = raw
+		data, size, err := opaqueSecretData(secret["data"])
+		if err != nil {
+			return "", err
 		}
-		if len(data) == 0 || len(data) > 64 {
+		total += size
+		if total > 512<<10 {
 			return "", ErrResourceObservation
-		}
-		for key, value := range data {
-			encoded, ok := value.(string)
-			if !ok || !secretDataKey.MatchString(key) || len(encoded) > 128<<10 {
-				return "", ErrResourceObservation
-			}
-			total += len(key) + len(encoded)
-			if total > 512<<10 {
-				return "", ErrResourceObservation
-			}
-			decoded, err := base64.StdEncoding.Strict().DecodeString(encoded)
-			valid := err == nil && base64.StdEncoding.EncodeToString(decoded) == encoded
-			clear(decoded)
-			if !valid {
-				return "", ErrResourceObservation
-			}
 		}
 		values[i] = content{namespace, name, data}
 	}
@@ -78,4 +60,35 @@ func OpaqueSecretSetDigest(namespace string, names []string, owner Owner, secret
 	}
 	sum := sha256.Sum256(encoded)
 	return hex.EncodeToString(sum[:]), nil
+}
+
+func opaqueSecretData(value any) (map[string]any, int, error) {
+	var data map[string]any
+	switch raw := value.(type) {
+	case map[string]any:
+		data = raw
+	case Object:
+		data = raw
+	}
+	if len(data) == 0 || len(data) > 64 {
+		return nil, 0, ErrResourceObservation
+	}
+	total := 0
+	for key, value := range data {
+		encoded, ok := value.(string)
+		if !ok || !secretDataKey.MatchString(key) || len(encoded) > 128<<10 {
+			return nil, 0, ErrResourceObservation
+		}
+		total += len(key) + len(encoded)
+		if total > 512<<10 {
+			return nil, 0, ErrResourceObservation
+		}
+		decoded, err := base64.StdEncoding.Strict().DecodeString(encoded)
+		valid := err == nil && base64.StdEncoding.EncodeToString(decoded) == encoded
+		clear(decoded)
+		if !valid {
+			return nil, 0, ErrResourceObservation
+		}
+	}
+	return data, total, nil
 }

@@ -9,12 +9,12 @@ import (
 	"errors"
 	"io"
 	"net"
-	"net/http"
 	"net/url"
 	"os"
 	"strconv"
 	"syscall"
 
+	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -68,69 +68,41 @@ func (k *Kubernetes) destination(config sql.Options) string {
 	encoded, _ := json.Marshal([]string{k.options.ClusterID, config.Host, strconv.Itoa(int(config.Port)), config.Database})
 	return hex.EncodeToString(sha256sum(encoded))
 }
-func stateFingerprint(secret object) (string, error) {
-	values := secret["data"]
-	switch values.(type) {
-	case object, map[string]any:
-	default:
-		return "", errors.New("Gateway state has no data")
-	}
-	encoded, err := json.Marshal(values)
-	if err != nil {
-		return "", errors.New("Gateway state is invalid")
-	}
-	return hex.EncodeToString(sha256sum(encoded)), nil
-}
 func (k *Kubernetes) stateOwner(id string) kube.Owner {
 	own := owner(id)
 	own[allocation.MarkerLabel] = k.allocation.Marker()
 	own[allocation.ProfileLabel] = "gateway-state"
 	return own
 }
-func (k *Kubernetes) stateDefinition(kind, name, id string) object {
-	value := definition("v1", kind, name, id)
-	labels := value["metadata"].(object)["labels"].(object)
-	for key, val := range k.stateOwner(id) {
-		labels[key] = val
-	}
-	value["immutable"] = true
-	return value
-}
 func keyResourceOwned(value object, own kube.Owner) bool {
 	return own.Matches(value) && kube.String(value, "metadata", "uid") != "" && kube.String(value, "metadata", "resourceVersion") != "" && kube.String(value, "metadata", "deletionTimestamp") == ""
 }
-func (k *Kubernetes) stateNamespace(ctx context.Context, gw *pb.Gateway) (string, object, error) {
+func (k *Kubernetes) stateNamespace(ctx context.Context, gw *pb.Gateway) (string, error) {
 	if !k.Handles(gw) || k.allocation == nil {
-		return "", nil, errors.New("Gateway state requires its assigned allocator")
+		return "", errors.New("Gateway state requires its assigned allocator")
 	}
 	id := gw.GetMetadata().GetId()
 	ns, err := StateNamespace(id)
 	if err != nil {
-		return "", nil, err
+		return "", err
 	}
 	if err = k.allocation.RequireNamespace(ctx, "gateway-state", ns, id); err != nil {
 		if errors.Is(err, allocation.ErrPending) {
-			return "", nil, ErrPending
+			return "", ErrPending
 		}
-		return "", nil, err
+		return "", err
 	}
-	namespace, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+ns, nil)
-	if err != nil {
-		return "", nil, err
-	}
-	if code == 404 {
-		return "", nil, ErrPending
-	}
-	if !keyResourceOwned(namespace, k.stateOwner(id)) {
-		return "", nil, errors.New("Gateway state namespace has a different owner")
-	}
-	return ns, namespace, nil
+	return ns, nil
 }
 func (k *Kubernetes) validateState(gw *pb.Gateway, secret object, config sql.Options) error {
 	invalid := errors.New("Gateway durable state differs; restore its original records")
 	if !keyResourceOwned(secret, k.stateOwner(gw.GetMetadata().GetId())) || secret["immutable"] != true {
 		return invalid
 	}
+	return k.validateStateData(secret, config)
+}
+func (k *Kubernetes) validateStateData(secret object, config sql.Options) error {
+	invalid := errors.New("Gateway durable state differs; restore its original records")
 	if err := validateKeys(secret); err != nil {
 		return err
 	}
@@ -164,118 +136,89 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 	if k.options.SQLBindings == nil {
 		return nil, config, errors.New("SQL state registration is required")
 	}
-	binding, err := k.options.SQLBindings.Load(ctx, gw.GetMetadata().GetId(), k.options.ClusterID)
-	if err != nil {
-		return nil, config, err
-	}
-	if create && binding.Closed {
-		return nil, config, errors.New("SQL state registration is closed")
-	}
-	ns, namespace, err := k.stateNamespace(ctx, gw)
-	if err != nil {
-		return nil, config, err
+	if !k.Handles(gw) || k.allocation == nil {
+		return nil, config, errors.New("Gateway state requires its assigned allocator")
 	}
 	id := gw.GetMetadata().GetId()
-	core := "/api/v1/namespaces/" + ns
-	pinned := kube.String(namespace, "metadata", "annotations", stateAnnotation)
-	marker, markerCode, err := k.client.Request(ctx, http.MethodGet, core+"/configmaps/"+stateIdentity, nil)
+	ns, err := StateNamespace(id)
 	if err != nil {
 		return nil, config, err
 	}
-	if markerCode != 404 && (!keyResourceOwned(marker, k.stateOwner(id)) || marker["immutable"] != true) {
-		return nil, config, errors.New("Gateway state identity is invalid")
+	convert := func(value store.EffectBinding) kube.SecretStateBinding {
+		return kube.SecretStateBinding{Present: value.Present, Closed: value.Closed, Digest: value.Digest}
 	}
-	secret, code, err := k.client.Request(ctx, http.MethodGet, core+"/secrets/"+stateSecret, nil)
+	callbacks := kube.SecretStateCallbacks{
+		Load: func(operation context.Context) (kube.SecretStateBinding, error) {
+			value, err := k.options.SQLBindings.Load(operation, id, k.options.ClusterID)
+			if err != nil {
+				return kube.SecretStateBinding{}, err
+			}
+			if _, err = k.stateNamespace(operation, gw); err != nil {
+				return kube.SecretStateBinding{}, err
+			}
+			return convert(value), nil
+		},
+		Bind: func(operation context.Context, digest string) (kube.SecretStateBinding, error) {
+			value, err := k.options.SQLBindings.Bind(operation, id, k.options.ClusterID, digest)
+			return convert(value), err
+		},
+		Initialize: func(operation context.Context) (map[string]string, error) {
+			return k.newStateData(operation, gw, &config)
+		},
+		Validate: func(secret object) error { return k.validateStateData(secret, config) },
+	}
+	secret, err := k.client.LoadSecretState(ctx, kube.SecretStateOptions{Namespace: ns, Name: stateSecret, Marker: stateIdentity, Annotation: stateAnnotation, Owner: k.stateOwner(id)}, callbacks, create)
+	if errors.Is(err, kube.ErrSecretStatePending) {
+		err = ErrPending
+	}
 	if err != nil {
 		return nil, config, err
-	}
-	if code == 404 {
-		if !create || binding.Present || pinned != "" || markerCode != 404 {
-			return nil, config, errors.New("Gateway state is missing; restore the original Secret")
-		}
-		// SQL identity is pinned before the first SQL database operation. A new
-		// Secret cannot adopt old SQL data after both local key records are lost.
-		server, err := sql.DatabaseServerIdentity(ctx, config)
-		if err != nil {
-			return nil, config, err
-		}
-		config.ServerIdentity = server
-		names, err := sql.DatabaseNames(k.databaseKey(gw))
-		if err != nil {
-			return nil, config, err
-		}
-		var absent bool
-		err = sql.ReadRow(ctx, config, `SELECT NOT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1) AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$2 OR rolname=$3)`, []any{names.Database, names.Owner, names.User}, &absent)
-		if err != nil {
-			return nil, config, err
-		}
-		if !absent {
-			return nil, config, errors.New("Gateway keys are missing for existing SQL state")
-		}
-		values, err := newKeys()
-		if err != nil {
-			return nil, config, err
-		}
-		password, err := sql.NewDatabasePassword()
-		if err != nil {
-			return nil, config, err
-		}
-		for key, value := range map[string]string{"database-password": password, "database-server": server, "database-destination": k.destination(config)} {
-			values[key] = base64.StdEncoding.EncodeToString([]byte(value))
-		}
-		secret = k.stateDefinition("Secret", stateSecret, id)
-		secret["type"] = "Opaque"
-		secret["data"] = values
-		secret, _, err = k.client.Request(ctx, http.MethodPost, core+"/secrets", secret)
-		if err != nil {
-			return nil, config, err
-		}
-	}
-	if err = k.validateState(gw, secret, config); err != nil {
-		return nil, config, err
-	}
-	fingerprint, err := stateFingerprint(secret)
-	if err != nil {
-		return nil, config, err
-	}
-	if binding.Present && binding.Digest != fingerprint {
-		return nil, config, errors.New("Gateway state differs from its registered identity")
-	}
-	if pinned != "" && pinned != fingerprint {
-		return nil, config, errors.New("Gateway state differs from its namespace identity")
-	}
-	if markerCode == 404 {
-		if !create {
-			return nil, config, errors.New("Gateway state identity is missing")
-		}
-		marker = k.stateDefinition("ConfigMap", stateIdentity, id)
-		marker["data"] = object{"sha256": fingerprint}
-		marker, _, err = k.client.Request(ctx, http.MethodPost, core+"/configmaps", marker)
-		if err != nil {
-			return nil, config, err
-		}
-	}
-	if !keyResourceOwned(marker, k.stateOwner(id)) || marker["immutable"] != true || kube.String(marker, "data", "sha256") != fingerprint {
-		return nil, config, errors.New("Gateway state differs from its durable identity")
-	}
-	// The allocator must retain the public fingerprint before SQL can start.
-	if pinned != fingerprint {
-		return nil, config, ErrPending
-	}
-	if create {
-		registered, err := k.options.SQLBindings.Bind(ctx, id, k.options.ClusterID, fingerprint)
-		if err != nil {
-			return nil, config, err
-		}
-		if !registered.Present || registered.Closed || registered.Digest != fingerprint {
-			return nil, config, errors.New("SQL state registration was not confirmed")
-		}
-	} else if !binding.Present || binding.Digest != fingerprint {
-		return nil, config, errors.New("SQL state requires its registered binding")
 	}
 	server, _ := data(secret, "database-server")
 	config.ServerIdentity = string(server)
 	return secret, config, nil
+}
+
+// This callback supplies Gateway key policy. STEGO retains the resulting data
+// before the worker can create or use its external database.
+func (k *Kubernetes) newStateData(ctx context.Context, gw *pb.Gateway, config *sql.Options) (map[string]string, error) {
+	server, err := sql.DatabaseServerIdentity(ctx, *config)
+	if err != nil {
+		return nil, err
+	}
+	config.ServerIdentity = server
+	names, err := sql.DatabaseNames(k.databaseKey(gw))
+	if err != nil {
+		return nil, err
+	}
+	var absent bool
+	err = sql.ReadRow(ctx, *config, `SELECT NOT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1) AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$2 OR rolname=$3)`, []any{names.Database, names.Owner, names.User}, &absent)
+	if err != nil {
+		return nil, err
+	}
+	if !absent {
+		return nil, errors.New("Gateway keys are missing for existing SQL state")
+	}
+	keys, err := newKeys()
+	if err != nil {
+		return nil, err
+	}
+	values := map[string]string{}
+	for key, value := range keys {
+		encoded, ok := value.(string)
+		if !ok {
+			return nil, errors.New("Gateway key encoding is invalid")
+		}
+		values[key] = encoded
+	}
+	password, err := sql.NewDatabasePassword()
+	if err != nil {
+		return nil, err
+	}
+	for key, value := range map[string]string{"database-password": password, "database-server": server, "database-destination": k.destination(*config)} {
+		values[key] = base64.StdEncoding.EncodeToString([]byte(value))
+	}
+	return values, nil
 }
 func (k *Kubernetes) databaseCredentials(ctx context.Context, gw *pb.Gateway, state object, config sql.Options) (object, error) {
 	password, err := data(state, "database-password")
