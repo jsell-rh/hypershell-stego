@@ -3,6 +3,8 @@
 set -eu
 trap '[ ! -e /work/registry-auth.json ] || unlink /work/registry-auth.json' EXIT
 cd /work/application
+# Keep the compiler registry cache on the writable test volume.
+export XDG_CACHE_HOME=/work/cache
 revision=$(cat .stego/compiler-revision)
 git init -q /work/compiler
 git -C /work/compiler remote add origin https://github.com/jsell-rh/stego.git

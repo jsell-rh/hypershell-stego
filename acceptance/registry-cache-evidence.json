@@ -1,0 +1,10 @@
+{
+  "failed_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35136850437",
+  "failure": "The compiler tried to create /.cache on the read-only container root.",
+  "compiler": "23ed24401248d526694f3e874a3c37b70c5ea5bb",
+  "fix": "STEGO uses the operating system user cache. The test Job sets XDG_CACHE_HOME on its writable volume.",
+  "repeat_generation_matches": true,
+  "common_component_copies": 0,
+  "generated_runtime_change": "CLI compiler version only.",
+  "scope": "Local generation and the input manifest check passed. The failed Job was removed and cluster cleanup was checked. No rendered workflow pass is claimed."
+}
