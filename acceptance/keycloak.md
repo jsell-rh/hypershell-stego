@@ -392,3 +392,17 @@ replaced the provisioner Pod, used browser-issued credentials on real Gateways,
 and removed three provider clients before the Gateway deletion response.
 The saved cleanup record confirms that test resources and allocations are absent.
 Private state API, core-suite, and current CNPG qualification remain pending.
+
+## Legacy orphan fixture correction
+
+Core job `104635436006` finished in run `35045870530` with one failure in
+`TestGatewayDeletionWithProviderFailureAndOrphans`. The real account workflow
+passed in 53.36 seconds. The private state API test passed in 6.04 seconds.
+
+The orphan fixture omitted the current ownership keys from an attribute update.
+Keycloak patches that map, so omitted keys can remain beside the legacy keys.
+The fixture now checks rejection of mixed ownership, removes the current keys
+with explicit empty values, and reads the saved legacy attributes before it
+tests outage, restart, and cleanup. Production ownership checks are unchanged.
+The fixture compiles; its real-provider result is pending. Core CI now streams
+individual test records so failures are visible before the package finishes.

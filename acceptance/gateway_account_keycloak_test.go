@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -76,7 +77,29 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 			attrs[name] = attrs["stego.owner."+name]
 			delete(attrs, "stego.owner."+name)
 		}
+		// First reproduce the bad fixture: omitted current keys remain present.
+		// The production inventory must reject this mixed ownership.
 		k.adminRequest(t, "PUT", path, map[string]any{"attributes": attrs})
+		if _, err := provider.ListManagedClients(context.Background(), gatewayID); !errors.Is(err, keycloak.ErrNotManaged) {
+			t.Fatal("mixed orphan ownership was not rejected", err)
+		}
+		for _, name := range []string{"hypershell.service-account", "hypershell.gateway-id", "hypershell.service-account-id"} {
+			attrs["stego.owner."+name] = ""
+		}
+		k.adminRequest(t, "PUT", path, map[string]any{"attributes": attrs})
+		response = k.adminRequest(t, "GET", path, nil)
+		var confirmed struct {
+			Attributes map[string]string `json:"attributes"`
+		}
+		if json.Unmarshal(response.Body, &confirmed) != nil {
+			t.Fatal("invalid saved orphan fixture")
+		}
+		for name, want := range map[string]string{"hypershell.service-account": "true", "hypershell.gateway-id": gatewayID, "hypershell.service-account-id": id} {
+			_, current := confirmed.Attributes["stego.owner."+name]
+			if current || confirmed.Attributes[name] != want {
+				t.Fatal("orphan fixture retained mixed ownership")
+			}
+		}
 		return credential{created.ClientID, created.ClientSecret}
 	}
 	credentials = append(credentials, provision(gateway.ID, "gateway-audience"))

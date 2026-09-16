@@ -8,9 +8,9 @@ account quotas, expiry, and authorization policy.
 | Current qualification | Result and scope |
 | --- | --- |
 | Account browser workflow | [Passed on `048ff55`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888): real login, SQL journal, credential delivery, tokens, revoke, and delete |
-| Application regeneration, web console, and images | Passed on `048ff55`; the complete core suite is still running |
+| Application regeneration, web console, and images | Passed on `048ff55`; the core suite found one orphan fixture failure, which is being corrected |
 | Full Gateway cluster workflow | [Passed on `048ff55`](acceptance/common-account-lifecycle-20260916.md), including the common account lifecycle, provisioner replacement, real Gateway credentials, and verified cleanup |
-| Private account state API and restart | [Required test](acceptance/service-account-provider-state.md); live result pending |
+| Private account state API and restart | [Passed in core CI](acceptance/common-account-lifecycle-20260916.md); separate cluster gate pending |
 | CNPG | Earlier complete workflow passed; qualification of the account migration is pending |
 
 These results do not establish production capacity or complete application parity.

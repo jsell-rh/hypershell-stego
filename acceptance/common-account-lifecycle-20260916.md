@@ -37,7 +37,11 @@ operator's persistent STEGO results directory.
 
 The [rendered browser CI job](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888)
 also passed in 104.29 seconds on the same source. Web-console and image checks
-passed. The full core suite, separate private state API gate, and current CNPG
-gate still require results. This evidence does not establish production capacity,
+passed. The core suite completed with one failure in the legacy orphan fixture.
+Its real-Keycloak account test passed in 53.36 seconds. The private state API test
+passed in 6.04 seconds, including exact grants, an independent journal commit
+under the Gateway lock, ciphertext storage, API restart, and retained cleanup.
+The cluster API and current CNPG gates still require results. The orphan fixture
+is being corrected and the complete core suite will run again. This evidence does not establish production capacity,
 Gateway egress isolation, cross-process writer fencing, or database rollback
 detection. The Kata Sandbox test remains deferred.

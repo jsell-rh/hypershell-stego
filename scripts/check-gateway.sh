@@ -26,7 +26,8 @@ scripts/generate.sh --check
 case "$suite" in
   core)
     # CI runs the excluded workflow in its separate required browser job.
-    go test -v -race -count=1 -mod=readonly -timeout=25m \
+    # Stream each test result so failures are visible before the package ends.
+    go test -json -race -count=1 -mod=readonly -timeout=25m \
       -skip '^TestGeneratedBrowserGatewayWorkflow$' ./...
     ;;
   browser)
