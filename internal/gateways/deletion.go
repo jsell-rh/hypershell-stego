@@ -37,8 +37,11 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 			return model.Gateway{}, err
 		}
 		row, ok := value.(model.Gateway)
-		if !ok || row.ID != id || !row.DeletedAt.Valid {
+		if !ok || row.ID != id {
 			return model.Gateway{}, errors.New("cleanup resource does not match")
+		}
+		if !row.DeletedAt.Valid {
+			return model.Gateway{}, store.ErrResourceStateConflict
 		}
 		return row, nil
 	}
