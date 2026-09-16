@@ -1,0 +1,40 @@
+{
+  "source": "c2b0dbf47d58861be5e9db5d1289da8353239079",
+  "failed_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35135645038",
+  "prior_resource_count": 18,
+  "resource_count": 19,
+  "changes": [
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "name": "stego-service-ci.hypershell-namespace-allocation.allocation"
+    },
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "name": "stego-service-ci.hypershell-namespace-allocation.ownership"
+    },
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "name": "stego-service-ci.hypershell-namespace-allocation.resources"
+    },
+    {
+      "kind": "ClusterRole",
+      "name": "stego-service-ci.hypershell-namespace-allocation.fixture-console-state-inspector"
+    },
+    {
+      "kind": "ClusterRole",
+      "name": "stego-service-ci.hypershell-namespace-allocation"
+    },
+    {
+      "kind": "ClusterRole",
+      "name": "stego-service-ci.hypershell-namespace-allocation.fixture-gateway-inspector"
+    },
+    {
+      "kind": "ClusterRole",
+      "name": "stego-service-ci.hypershell-namespace-allocation.proof"
+    }
+  ],
+  "admission_type_checks": "passed",
+  "exact_installed_resource_check": "passed",
+  "restricted_ci_read_only_inspection": "passed",
+  "scope": "Dedicated browser CI installation and preflight only. No live dashboard workflow result is claimed."
+}

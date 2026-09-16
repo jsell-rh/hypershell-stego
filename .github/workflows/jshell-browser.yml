@@ -121,6 +121,8 @@ jobs:
             ${{ runner.temp }}/gateway-browser/job.json
             ${{ runner.temp }}/gateway-browser/job-status.json
             ${{ runner.temp }}/gateway-browser/ci-access.json
+            ${{ runner.temp }}/gateway-browser/installation-inspection/*.json
+            ${{ runner.temp }}/gateway-browser/installation-inspection/cluster-manifests/*.json
             ${{ runner.temp }}/gateway-browser/*.log
             ${{ runner.temp }}/gateway-browser/application.sha256
             ${{ runner.temp }}/gateway-browser/evidence.tar

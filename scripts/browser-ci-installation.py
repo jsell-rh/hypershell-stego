@@ -116,7 +116,7 @@ def main():
                         '--fs-group', data['fs-group'], '--results', str(args.results), '--workload', '--render-only'], cwd=root, check=True, timeout=150)
         for name in MANIFESTS:
             if (args.results / 'cluster-manifests' / (name + '.json')).read_bytes() != data[name + '.json'].encode():
-                raise RuntimeError('Generated cluster policy differs from the operator installation')
+                raise RuntimeError('Generated cluster policy differs from the operator installation: ' + name)
         (args.results / 'cluster-installation.json').write_text(data['cluster-installation.json'])
         # Each run starts with the original, narrow test Role. RBAC escalation
         # checks limit the CI identity to permissions it already has here.
