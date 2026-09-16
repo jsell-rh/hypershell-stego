@@ -213,16 +213,27 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	if row, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id}); err != nil || row.GetGateway().GetPhase() != "Deleting" {
 		t.Fatalf("pending Gateway state: %v", err)
 	}
+	// This watch fixture has no external resources. Supply each completion
+	// separately so subscribers must see updates before the final delete.
+	for _, owner := range []string{"accounts", "identity", "workload"} {
+		completeFakeGatewayOwners(t, f, id, owner)
+		expect(owners, pb.EventType_EVENT_TYPE_UPDATED, id, "external-writer")
+	}
+	completeFakeGatewayOwners(t, f, id, "sql")
+	expect(owners, pb.EventType_EVENT_TYPE_DELETED, id, "external-writer")
+	if _, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id}); status.Code(err) != codes.NotFound {
+		t.Fatalf("finalized Gateway remained visible: %v", err)
+	}
 	if _, err := client.UpdateGateway(viewerCtx, &pb.UpdateGatewayRequest{Id: anchor.ID, Name: proto.String("after-delete")}); err != nil {
 		t.Fatal(err)
 	}
 	expect([]*gatewayWatch{viewer, admin, controller}, pb.EventType_EVENT_TYPE_UPDATED, anchor.ID, "after-delete")
 	// Kafka remains the durable event path while watch streams receive live state.
 	readEvent(t, consumer, id)
-	for range 4 {
+	for range 8 {
 		readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	}
-	readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
+	readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
 	awaitQueueEmpty(t, f)
 	stop()
 	for _, watch := range all {
@@ -239,18 +250,8 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	client, _ = grpcClient(t, grpcAddress, tlsIdentity)
 	recovered := watchGateways(t, client, ownerCtx)
 	list, err = client.ListGateways(ownerCtx, &pb.ListGatewaysRequest{})
-	if err != nil || list.Metadata.Total != 2 || len(list.Items) != 2 {
+	if err != nil || list.Metadata.Total != 1 || len(list.Items) != 1 || list.Items[0].Metadata.Id != offline.ID {
 		t.Fatalf("recovery list: %v %v", list, err)
-	}
-	seen := map[string]string{}
-	for _, row := range list.Items {
-		seen[row.Metadata.Id] = row.GetPhase()
-	}
-	if len(seen) != 2 || seen[id] != "Deleting" {
-		t.Fatal("restart lost pending Gateway")
-	}
-	if _, found := seen[offline.ID]; !found {
-		t.Fatal("restart lost live Gateway")
 	}
 	if _, err := client.UpdateGateway(ownerCtx, &pb.UpdateGatewayRequest{Id: offline.ID, Name: proto.String("after-restart")}); err != nil {
 		t.Fatal(err)
@@ -264,6 +265,14 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	}
 	recovered.expect(t, pb.EventType_EVENT_TYPE_UPDATED, offline.ID, "after-restart")
 	readGatewayEvent(t, consumer, offline.ID, "Update", "gateway.updated")
+	for _, owner := range []string{"accounts", "identity", "workload"} {
+		completeFakeGatewayOwners(t, f, offline.ID, owner)
+		recovered.expect(t, pb.EventType_EVENT_TYPE_UPDATED, offline.ID, "after-restart")
+		readGatewayEvent(t, consumer, offline.ID, "Update", "gateway.updated")
+	}
+	completeFakeGatewayOwners(t, f, offline.ID, "sql")
+	recovered.expect(t, pb.EventType_EVENT_TYPE_DELETED, offline.ID, "after-restart")
+	readGatewayEvent(t, consumer, offline.ID, "Delete", "gateway.deleted")
 	awaitQueueEmpty(t, f)
 	recovered.cancel()
 	stop()

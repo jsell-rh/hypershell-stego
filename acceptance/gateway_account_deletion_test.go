@@ -204,11 +204,17 @@ func TestGatewayAccountCleanupSerializesCreation(t *testing.T) {
 	}
 }
 
-// Use only with fixtures that have no external identity, workload, or SQL
-// resources. Tests with real resources must obtain controller observations.
+// Use only with fixtures that have no resources for the selected owners.
+// Tests with real resources must obtain controller observations.
 func completeFakeGatewayOwners(t *testing.T, f *fixture, id string, owners ...string) {
 	t.Helper()
 	for _, owner := range owners {
+		if owner == "accounts" {
+			var accounts int
+			if err := f.db.QueryRow("SELECT count(*) FROM service_accounts WHERE gateway_id=$1", id).Scan(&accounts); err != nil || accounts != 0 {
+				t.Fatal("test completion cannot bypass retained accounts", err)
+			}
+		}
 		err := f.storage.WithTransaction(context.Background(), func(ctx context.Context, tx storage.Transaction) error {
 			value, err := tx.(storage.RetainedReader).GetRetained(ctx, "Gateway", id)
 			if err != nil {
