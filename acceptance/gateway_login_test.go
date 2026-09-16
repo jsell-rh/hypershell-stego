@@ -567,8 +567,16 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	waitRoles("renamed-bob", bobID, nil)
 	waitRoles("bob", replacementID, nil)
 	checkAutomationRoles(nil)
-	if condition := readSync().GetConditions()["identity"].GetConditions()["ClientReady"]; condition.GetStatus() != "Unknown" {
-		t.Fatal("console placement fault reported client readiness")
+	faultDeadline := time.Now().Add(15 * time.Second)
+	for {
+		condition := readSync().GetConditions()["identity"].GetConditions()["ClientReady"]
+		if condition.GetStatus() == "Unknown" && condition.GetReason() == "IdentityProviderUnavailable" {
+			break
+		}
+		if time.Now().After(faultDeadline) {
+			t.Fatal("console placement fault reported client readiness")
+		}
+		time.Sleep(20 * time.Millisecond)
 	}
 	stopController()
 	domainPolicy = goodDomains
