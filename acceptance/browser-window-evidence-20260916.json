@@ -19,6 +19,18 @@
     "allocations_before": 0,
     "allocations_absent": true
   },
-  "operator_cleanup": "Pending. The saved operator context returns Unauthorized. Do not start another live test before this check.",
+  "operator_cleanup": {
+    "checked_at": "2026-09-16T15:15:44.419814+00:00",
+    "context": "default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell",
+    "namespace": "stego-service-ci",
+    "allocator": "5305aa89c5f40a73316e60bd033ec8ab",
+    "runtime": [],
+    "fixture_resources": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "cnpg_runtime": [],
+    "lease": "",
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59"
+  },
   "scope": "Public Gateway workflow with bounded provider discovery. The complete per-Gateway dashboard is not part of this test."
 }
