@@ -29,8 +29,9 @@ package and preserve resource ownership. The dashboard application must use
 connection. It must not receive the browser session keys or database login.
 
 This module is an application integration candidate. The Gateway controller
-does not yet deploy it. The captured UI does not yet import the generated
-browser telemetry package. Live authentication, editor and terminal behavior,
+does not yet deploy it. The captured UI imports the generated browser telemetry package.
+The [source evidence](../acceptance/dashboard-telemetry-evidence.json) includes
+nine passing route tests and checks fixed route labels for private data. Live authentication, editor and terminal behavior,
 restart, address publication, and complete deletion remain required.
 
 The identity worker can now create the dashboard's confidential OAuth client.

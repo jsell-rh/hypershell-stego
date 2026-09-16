@@ -21,13 +21,13 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 5d3bb9f3bbd0acb7903a5d613911fa0da64001cf0c23d0195ae2f06b8c077d2c
+                sha256: bae682b759da4d635658d41d17fe36320940f3131a83e16f60b127c879da38dd
                 mode: 420
             ui/build.zip:
                 exists: true
-                sha256: a6e452c14f8ece59993c3db72535ca9981c4e0338a02cd5adfadeb7f7064104d
+                sha256: 4b495d45bacfac59ea1519485c94bea605ec7d9b8bfa004195f11867c16b9640
                 mode: 420
-        sha256: 120b743833978013c6aedfccdd2173deaccb3ff612593167759a18a81f978b20
+        sha256: c72199fd3348d900018f1697ed63a5affda0e22e4606f9ad32ed277b52742f17
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -36,7 +36,7 @@ last_applied:
         vcs: git
         revision: 1db04e6c0d2aa566b4ce027401b70155a190f3dd
         source_state: clean
-    service_hash: 5d3bb9f3bbd0acb7903a5d613911fa0da64001cf0c23d0195ae2f06b8c077d2c
+    service_hash: bae682b759da4d635658d41d17fe36320940f3131a83e16f60b127c879da38dd
     registry_sha: gateway-console
     registry_content_sha256: a9a28047c644709d03eb908acfaebd620442e7a191a266590eed28b6e23ef9b4
     components:
@@ -59,7 +59,7 @@ last_applied:
             version: 4.9.0
             sha: gateway-console
     files:
-        browser/backend.go: c1516b11d6739cba5feacf0290863cf6756c35c58dc4303b7a92cb5691caa0f9
+        browser/backend.go: f4a6c16a78298092a49df5dd7a9133c20b7afa8c8094f96aa696e3c9cfe11a3b
         browser/client/client.go: 78bf5411eee497124d78ffdc1f6ad3f001191efd6ea49d368168de2e6af5947b
         browser/client/socket.go: 4d2e33e95559d76c345d8197c7e5b77d3a00c129c5c32035ed1a4fdfbcff190e
         browser/handlers.go: cac1695cbfcd37606c31313970bbddcf402094c8def5d50c82bb025f586780aa
@@ -70,24 +70,25 @@ last_applied:
         browser/public/assets/5c15f365f5b8693ff4c4.svg: 07b9c2803dfaed92bceccef71fac48314e11ca7eb0cbfc8e61abf2566df05362
         browser/public/assets/6b3168b8404d9678f452.woff2: 69dca56dda2a2b067dee3e910323c97e54b8544f90f3d1c2192b5a37c0eb1ec3
         browser/public/assets/28fff613aa4e86f1ef6a.svg: 1a5c7354a53fb23c81c7d074f2a900998c29726fef6ed837578da5bcd601f320
-        browser/public/assets/72.102398f5adea0ec432c7.js: f724be0c68540f1566917c7bda067048c724390f4d873616213fde527e820e1a
+        browser/public/assets/72.1dcb101765f7f6cc526e.js: c138886f61fc05180d2b42f1ad49499d3df376e16d1f731a10f6d46216c569ad
         browser/public/assets/156.59bef7674a64c9eb9d3c.css: 7b7a8a59b4037f0497dfc4b0e82d1f74f7ac0f78254cc84d0e0c3c097efe6457
         browser/public/assets/293.20218cae3020c58471cd.css: 10d44ceb77ce0ba269ee179a2689ca101f631e750db6713c7316a05a696bbaa7
-        browser/public/assets/356.fb1f145b761b51f70f8b.js: 84f004eeaf278099a1c3f5b8d82de3236b007cf544508653327857ee0200589e
-        browser/public/assets/405.b9986b1388b6a922acf9.js: ae06e05dd36513ed6348b9aa0b9a856f10dff2c4044d60c1cb0fb2b0a65654bb
-        browser/public/assets/408.2852d95f45d180164086.js: bdecf877a4afea0a9d840000156c0160e22f1639420db357b2c842ec22281635
+        browser/public/assets/356.d8b739fd038d25bee99f.js: 35e912d953b5f13b941b82028575cc5438b09688414a3bc204dccf9f1ca57e6e
+        browser/public/assets/405.5bea29f0d8c10533221a.js: ebba0e3fa695c4d3466ff2c094a85cdb86572e39fb7936193a5ef030ab225c1b
+        browser/public/assets/408.9ac405bd9b5cd53ea034.js: 8c19fb23bb0bfc68b89e6dcd5859947c60f96dc10eac9284b5904a9c3356f416
         browser/public/assets/463d4ddeac4dae277fc4.woff2: 322295638da2105dffff0eb18ee10ccffcac38888778b7b1b4624772d513e65d
-        browser/public/assets/492.f4f2728043e0ed2b1c57.js: 104b1393ab269f5cf33eae42cac57b1cf87dcd526a849e77e491d42cd7b4bb20
-        browser/public/assets/514.0d3dd10b88b00538a874.js: a7e4b8801cfa5f9f211663d1931aa37d366488bb574a590ab9d8897ef3a6f6f2
+        browser/public/assets/492.7975e6139b89fc38ebac.js: 7ccc0aeb9e4693ef19ef7b1355217534581d3ef88abdd1e42e4444327c7385bf
+        browser/public/assets/514.8e117613b0963b4747a5.js: e2ecade11b07a05869c7e077d3e99282ffe57163b2ecdcc21221aee1e59ace4a
         browser/public/assets/592.5929010f52c4edc46198.css: 5f130a4132d08fd0fcdcbb23d057e56878111fe13bcdfa93ee8e2059238080bd
         browser/public/assets/626a0a2c291238b85c36.svg: a738f3d9b2717f4e4eba8f61f250dc0fd633e02e199047175ce3496c1b7cc10d
+        browser/public/assets/724.95fa1df758aa4478666b.js: e5f41e0a9c42c6f4ad3d2eb0123e8a35ee2a61cd8dc0fbc930a78ea1dc570bfb
         browser/public/assets/820.a6dc842a9807bd83b851.css: 1c81f616d6b8b06179e3e84d203674329e85c246ef58f5bbf455f7f1ddcbe350
-        browser/public/assets/825.8aea104081072b9a3fad.js: 430d63875af1b214fffd3255011f7f1e29c9c92b3355354b6a1335c9fd0541c0
-        browser/public/assets/871.613ad35ab802dcf74e10.js: c5803b1fd745096f34f90b387289e19324d243e6391fec6cfccc32095654d15f
+        browser/public/assets/825.d6cbf9e1cc9824141aee.js: 601cd2c34bb97a47a243cff00ef29a04d5f1b43accc0615f29753d40f1ce7ac9
+        browser/public/assets/871.1dc8fa8748573b3de927.js: 52f8a9904810a85e4331a285608cc2faf0f2f77a19ea95248b3f1cdb5888f280
         browser/public/assets/871.e8966fb7ce66411b9cba.css: 4a3a3f1eb52c18e951909ba4c3de0e127c584f62bf1f04e658eb7c84f3b1b9c5
         browser/public/assets/890.e229d06d2d505b2d0327.css: 6fc2e3efa3ef9f2ec6c052ed5d7261ad4c77fb684026ab8151b631d1fb19e06f
-        browser/public/assets/901.b963ef5b8051cb17c8a9.js: 769deeb0245712c20d7b1a48d434bc69617079487a25155ed6e78b515007836b
-        browser/public/assets/966.d5b89cc475b16927e8a4.js: 4a11146481c895b588ac350a86bdf6ae420cbc62ba29d7c54193baf53024de04
+        browser/public/assets/901.a0492f686e324c9e11f4.js: 421b4e453dd7eb9d6da12feb9ca969f97bfc9aecb5c073377f61baaa3545954a
+        browser/public/assets/966.f52c7061359314ef54e0.js: d38b31d517ce9f21a4bd52d2c66f99848eff5988e2c51c93b7f1f2b1df144740
         browser/public/assets/4604a01958f9a5189864.svg: ea9e447d24f596a8c72e2afbd71aff3a3d81355100919b2715224ef5a627ca77
         browser/public/assets/08353c574d1a892b1231.woff2: 1a5c9a8a88447c5b171ae99dab5daa4c1d49e3502db0fdc0da65d59fc5603feb
         browser/public/assets/93705a3204b578afedce.woff2: d5d585590a2439bbb5429863b2c11bc76512bfb37e60fc5696462e1866bfc2c1
@@ -97,9 +98,9 @@ last_applied:
         browser/public/assets/editor.669bd6b36fd05cbfa4edb36ea7e8b1fb.worker.js: 7f9a7d71150da3b4e27145dd1251a2001ad34cbc0b2a67936c399c6c03e35994
         browser/public/assets/favicon.svg: 4764778877da1696b18f0b480c0a3c88b4967e943649e4f1f4343be1b2157be4
         browser/public/assets/json.b4f4ced3cf7e993ce70804117817bcc5.worker.js: 545d6095e09d662cfc5bc5186b557abbfe5cb57697b1396f1b0790fe79385165
-        browser/public/assets/main.886369cac14f82eda6e0.js: 1417375adf7036c5573ebe984dd2d3eb86fad8cbaf7ce0f6e96a873a63478279
+        browser/public/assets/main.834d547c2cab6dda3748.js: 34e0373f3c26dd57c89d2b5715ea89ebf02b57293e273c0fd3eed31234a65b6e
         browser/public/assets/runtime.295dc0b6468045baa0c5.js: afb1fc506bd00b5418c1484aa019767ba67e541bd4fe06f5acc3082d1d418305
-        browser/public/index.html: 5ca1f3aa420cd2fe731d3706c6c1dac2cf058c23b7a802ef4fe9e5c3cfd32d98
+        browser/public/index.html: 30707dc08ab0902ee174c9dcc5f005cb84e451465d2a5b39b36745a2e867dc7b
         browser/schema.sql: b1a40fc315f56a010e97c027fba1c93c66fbfb845bbbfd658aaac87758a96139
         browser/socket.go: 23966994726c211fc3307e75f89460a5f8ffd4f64e6f511e5ac2b7cfb87ec085
         browser/store.go: 3474166e404b286c891402ae4d71c319f27ab52d410b7ce526d4172c5d088d7a
@@ -110,7 +111,7 @@ last_applied:
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
         deploy/render/main.go: 11e2657cd8832093df4bd49dbf6e545edd90c6e7aaa8fc938151d36c23e05068
-        deploy/render/manifest.json.tmpl: 0876890671f908a913dc66e184a1a9a2f1866fc3396aa79a56ae4c6b48454cdb
+        deploy/render/manifest.json.tmpl: d868fd70d46259ba7b66d52b2f78e90a28787ac46c6ea0265003ce69c6135034
         deploy/resources.go: 49befbd30808a9288737673fa4d6442d888e4ffb0bba7390cdac37130f48b7c2
         health/application.go: 65f6bc7958fe139c548dc696ed86468d0064130712a8478c55592cff6e44fd4f
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb

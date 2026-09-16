@@ -1,0 +1,42 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35120870893",
+  "source": "5d1688e2a79b3ba0aa36b9c0755affca0b9dc429",
+  "upstream": "07f1b13ebd9e1826afe943b831b092be8bf92498",
+  "outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "router_tests_passed": 9,
+  "privacy_test": "document signals use fixed routes and contain no resource identifiers",
+  "repeated_asset_bundle_equal": true,
+  "runtime_npm_vulnerabilities": 0,
+  "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6709e946c23c5e286c30b73219ab51b81005e99b3a33f2fa72062d9b5197525c",
+  "registry_verification": {
+    "image_id": "sha256:231a74f31dc65ff151e488071e251f05b2130aeb74b98687fa9a5ef7b22d7b92",
+    "pulled_digest_matches_build": true
+  },
+  "deployment_verification": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6709e946c23c5e286c30b73219ab51b81005e99b3a33f2fa72062d9b5197525c",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "common_browser_runtime_sha256": {
+    "index.d.ts": "7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8",
+    "index.js": "8c8b4bbcb161aee03071934aa5f62a6f616ddcb0b1cb2ce9f270bbbe3075e172",
+    "package.json": "6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90"
+  },
+  "sha256": {
+    "build.zip": "4b495d45bacfac59ea1519485c94bea605ec7d9b8bfa004195f11867c16b9640",
+    "build-source.tar": "1b6658639199ecea2cdf462599f934d1739d220dbdbe107983118b16cad7f0d4",
+    "router-results.json": "c2c197cab7592cbe48274cdb0198e3a395857fd06715f2d4e70db49542ffbeae",
+    "browser-telemetry.sha256": "5c83e12c0e197505d6127b6d692661d7e8794bdfd6df4755eaf2d42f35b0e7e4",
+    "npm-audit.json": "60c6be04826df406628958c838570d8f45f4f2903dd85e808fb092217381bd55",
+    "go-vulnerabilities.log": "e3c47feabb6539b35ab204e3a2071443f1eb54809a835b43a0550d430c6e8c99"
+  },
+  "scope": "Source, image, fixed route privacy, and generated deployment checks passed. Live dashboard telemetry delivery, editor, terminal, and Gateway deployment remain open."
+}

@@ -1,4 +1,4 @@
-"use strict";(self.webpackChunkopenshell_dashboard=self.webpackChunkopenshell_dashboard||[]).push([[492],{5492(e,t,i){i.d(t,{B:()=>ao});
+"use strict";(self.webpackChunkopenshell_dashboard=self.webpackChunkopenshell_dashboard||[]).push([[492],{95492(e,t,i){i.d(t,{B:()=>ao});
 /**
  * Copyright (c) 2014-2024 The xterm.js authors. All rights reserved.
  * @license MIT
