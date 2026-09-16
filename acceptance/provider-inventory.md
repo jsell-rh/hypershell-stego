@@ -1,5 +1,25 @@
 # Provider inventory recovery
 
+## Current qualification
+
+The common provider and recovery changes passed the complete application,
+API, public Gateway, SQL, and CNPG checks. The [current repository table](../README.md#verification-state)
+links each exact source and result. The latest CNPG workflow passed all ten
+required tests at `e8ace19`; independent operator reads confirmed removal of
+runtime resources, allocated namespaces, private fixtures, and both saved
+volumes. The shared test Lease is empty.
+
+The current runtime matches `85706c6` with compiler `af67e7b`. The later source
+adds tests and evidence. These results qualify the deletion and bounded
+provider discovery changes for the default branch. They do not close the
+separate per-Gateway dashboard, production capacity, backup restoration, or
+cross-process writer fencing requirements.
+
+## Historical failures and changes
+
+The following entries describe their named revisions. A statement that a test
+was pending applies to that entry, not to the current qualification above.
+
 The deletion candidate does not yet prove safe completion after a partial
 provider list. The regression
 `TestGatewayCleanupDoesNotForgetJournalAfterProviderOmission` failed against
