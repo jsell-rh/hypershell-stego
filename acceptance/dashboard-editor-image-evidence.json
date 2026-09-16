@@ -1,0 +1,39 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35160712345",
+  "source": "bc681d848de1a9a0657a0d4d7259c2676509cfed",
+  "private_compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:c8959418c35ece701387accceb9cf2f8110d7f44489c2ee2c7f72b8000cf2814",
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "image_user": "65532:65532",
+  "image_binary_matches_checked_source": true,
+  "only_regular_image_file": "dashboard",
+  "registry_verification": {
+    "image_id": "sha256:bc87ac3d836daf4a8f04d62e371f6811d6baf5e326b61abc89b4d3d198c1a860",
+    "pulled_digest_matches_build": true
+  },
+  "repeated_generation_state_equal": true,
+  "declared_document_routes": 8,
+  "deployment_verification": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:c8959418c35ece701387accceb9cf2f8110d7f44489c2ee2c7f72b8000cf2814",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "CI built and published the upstream image, then pulled it by digest and compared it with the checked build. The generated private browser built with all eight document routes. Live Pod, rendered editor, terminal, and Gateway lifecycle checks remain open.",
+  "sha256": {
+    "dashboard-image.tar": "a60ff7dcc4a61a305cdd4d36d947b5a3a7c3208976c684c3739d66e4fa706277",
+    "generated-source.tar": "806a6f22cc660a3bade93d5bd85040b1ede79c5dbe2542b182936f168bbe31e7",
+    "generated-browser": "a507d600bc79fc511f314cfdba8c0875f4cad2d4857b0d5eddf30554f6a45082",
+    "deployment.json": "03fa3133cf59cae6743defe40acd5159373686ba55aadb37a43c30a82326dc45",
+    "generation.log": "9ab998371add91802fd2b272d463f50ab1bcba007a09e9daac10ce2ea7f0471b",
+    "published-image-inspect.json": "0cd35bd4294fa815ee6c8984af170cf6676e21848d16f51af11e5c5047ae9e34",
+    "registry-verification.json": "65a07c198b4afe95d07e76ef8f83e7f30cd58d49b9ba9d3c682246719e77a4fc"
+  }
+}

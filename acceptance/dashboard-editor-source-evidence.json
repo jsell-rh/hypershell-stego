@@ -1,0 +1,34 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35160712345",
+  "source": "bc681d848de1a9a0657a0d4d7259c2676509cfed",
+  "build_tree": "d3c781fb595bfe71dc5a6e34f47c5aa12e8968ea",
+  "source_matches_application_inputs": true,
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "passed_ui_tests": 13,
+  "session_client_tests": 4,
+  "common_browser_files_sha256": {
+    "gateway-console/out/browser/sessionclient/index.d.ts": "b1fc960fd59cd1da7d1d549f6234076bdae8a85139010926d12d83ddd5b7eef1",
+    "gateway-console/out/browser/sessionclient/index.js": "6385d0d4020e51655dcc447097fde56cca6b9a7087296fbbb049fdde24a22fd0",
+    "gateway-console/out/browser/sessionclient/package.json": "476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080",
+    "gateway-console/out/browsertelemetry/index.d.ts": "7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8",
+    "gateway-console/out/browsertelemetry/index.js": "8c8b4bbcb161aee03071934aa5f62a6f616ddcb0b1cb2ce9f270bbbe3075e172",
+    "gateway-console/out/browsertelemetry/package.json": "6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90"
+  },
+  "asset_bundle_sha256": "d33d5b3e7ab0f05c5311fbd960872729f0d99b43b757b3f77c986eb25e0b7a2d",
+  "repeated_asset_capture_matches": true,
+  "asset_files": 74,
+  "compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "scope": "Source, dependencies, assets, and generated backend checks passed. No live browser or cluster result is claimed.",
+  "asset_bundle_bytes": 2200732,
+  "asset_expanded_bytes": 8573290,
+  "generated_font_media_type": "font/ttf",
+  "previous_failed_source_run": 35160324245,
+  "previous_asset_files": 158,
+  "full_ci_log_sha256": "898d7262bf715f900fbde2d49d928a2237ff36be699980f3c69c13760e625551"
+}
