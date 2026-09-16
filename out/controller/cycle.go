@@ -13,8 +13,14 @@ import (
 
 var ErrCycleFailed = errors.New("scan cycle contains failed actions")
 
+// ErrScanWindowLimit ends a bounded source window without proving completion.
+// A source can return it to require a later full scan from the beginning. The
+// current cycle is saved as complete and failed, and always returns an error.
+// An emitter cannot use this error to end the source window.
+var ErrScanWindowLimit = errors.New("scan source window limit reached")
+
 // CycleState retains failure evidence across bounded passes. Complete means the
-// source ended. A successful cycle also requires Failed=false and a successful
+// source ended or reached an explicit window limit. A successful cycle also requires Failed=false and a successful
 // conditional save. Source identifies all desired inputs relevant to the work.
 type CycleState struct {
 	Source, After    string
@@ -116,9 +122,13 @@ func ScanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 			result = prior
 		}
 		loaded = true
+		windowEnded := false
 		progress, err := ScanFrom(work, result.After, func(pageContext context.Context, after string, limit int) (CursorPage[T], error) {
 			page, err := source(pageContext, after, limit)
 			if err != nil {
+				if errors.Is(err, ErrScanWindowLimit) && observationContextError(pageContext) == nil {
+					windowEnded = true
+				}
 				return page, err
 			}
 			// Validate persistence bounds for the entire page before its first effect.
@@ -144,6 +154,10 @@ func ScanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 		}, scan)
 		result.After = progress.After
 		result.Complete = progress.Complete
+		if windowEnded && observationContextError(work) == nil {
+			result.Complete = true
+			result.Failed = true
+		}
 		return err
 	}, func(commit context.Context, _ error) error {
 		if !loaded {

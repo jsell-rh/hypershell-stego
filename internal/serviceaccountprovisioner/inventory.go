@@ -35,6 +35,9 @@ func (s *Server) ReadPage(ctx context.Context, r *pb.GatewayAccountInventoryPage
 		return nil, err
 	}
 	page, err := s.provider.GatewayInventoryPage(ctx, r.GetGatewayId(), r.GetSourceVersion(), r.GetAfter(), int(r.GetLimit()))
+	if errors.Is(err, provider.ErrClientInventoryLimit) {
+		return &pb.GatewayAccountInventoryPage{WindowLimit: true}, nil
+	}
 	if err != nil {
 		return nil, inventoryError(err)
 	}

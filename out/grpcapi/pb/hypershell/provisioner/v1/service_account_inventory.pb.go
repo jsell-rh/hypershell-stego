@@ -232,9 +232,11 @@ func (x *GatewayAccountInventoryCandidate) GetProviderId() string {
 }
 
 type GatewayAccountInventoryPage struct {
-	state         protoimpl.MessageState              `protogen:"open.v1"`
-	Candidates    []*GatewayAccountInventoryCandidate `protobuf:"bytes,1,rep,name=candidates,proto3" json:"candidates,omitempty"`
-	More          bool                                `protobuf:"varint,2,opt,name=more,proto3" json:"more,omitempty"`
+	state      protoimpl.MessageState              `protogen:"open.v1"`
+	Candidates []*GatewayAccountInventoryCandidate `protobuf:"bytes,1,rep,name=candidates,proto3" json:"candidates,omitempty"`
+	More       bool                                `protobuf:"varint,2,opt,name=more,proto3" json:"more,omitempty"`
+	// A failed boundary requires another full scan. It is never an empty end.
+	WindowLimit   bool `protobuf:"varint,3,opt,name=window_limit,json=windowLimit,proto3" json:"window_limit,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -279,6 +281,13 @@ func (x *GatewayAccountInventoryPage) GetCandidates() []*GatewayAccountInventory
 func (x *GatewayAccountInventoryPage) GetMore() bool {
 	if x != nil {
 		return x.More
+	}
+	return false
+}
+
+func (x *GatewayAccountInventoryPage) GetWindowLimit() bool {
+	if x != nil {
+		return x.WindowLimit
 	}
 	return false
 }
@@ -406,12 +415,13 @@ const file_hypershell_provisioner_v1_service_account_inventory_proto_rawDesc = "
 	" GatewayAccountInventoryCandidate\x12\x16\n" +
 	"\x06cursor\x18\x01 \x01(\tR\x06cursor\x12\x1f\n" +
 	"\vprovider_id\x18\x02 \x01(\tR\n" +
-	"providerId\"\x8e\x01\n" +
+	"providerId\"\xb1\x01\n" +
 	"\x1bGatewayAccountInventoryPage\x12[\n" +
 	"\n" +
 	"candidates\x18\x01 \x03(\v2;.hypershell.provisioner.v1.GatewayAccountInventoryCandidateR\n" +
 	"candidates\x12\x12\n" +
-	"\x04more\x18\x02 \x01(\bR\x04more\"\x8e\x01\n" +
+	"\x04more\x18\x02 \x01(\bR\x04more\x12!\n" +
+	"\fwindow_limit\x18\x03 \x01(\bR\vwindowLimit\"\x8e\x01\n" +
 	"%PrepareGatewayAccountCandidateRequest\x12\x1d\n" +
 	"\n" +
 	"gateway_id\x18\x01 \x01(\tR\tgatewayId\x12%\n" +

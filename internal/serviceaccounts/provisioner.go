@@ -88,6 +88,15 @@ func (p *rpcProvisioner) InventoryPage(ctx context.Context, id, version, after s
 	if err != nil {
 		return result, ErrUnavailable
 	}
+	if value == nil {
+		return result, runtime.ErrScanContract
+	}
+	if value.GetWindowLimit() {
+		if len(value.GetCandidates()) != 0 || value.GetMore() {
+			return result, runtime.ErrScanContract
+		}
+		return result, runtime.ErrScanWindowLimit
+	}
 	if len(value.GetCandidates()) > limit {
 		return result, runtime.ErrScanContract
 	}

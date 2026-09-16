@@ -29,6 +29,7 @@ REQUIRED = [
     "TestGatewayJournalClosureRollsBackWithFinalEvent",
     "TestGatewayCleanupRecoversJournalOmittedByProvider",
     "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+    "TestGatewayInventoryLimitRequiresAnotherFullCycle",
     "TestGatewayCleanupObservationDoesNotRepeatEvents",
     "TestGatewayDeletingPhaseMatchesSearch",
     "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",

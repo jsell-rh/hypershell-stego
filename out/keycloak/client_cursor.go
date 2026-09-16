@@ -7,14 +7,14 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 )
 
-var ErrClientInventoryLimit = errors.New("Keycloak client inventory reached its limit")
+var ErrClientInventoryLimit = fmt.Errorf("Keycloak client inventory reached its limit: %w", runtime.ErrScanWindowLimit)
 
 // ClientNameCursorSource adapts one bounded name query to the controller scan.
 // Its cursor records an offset, not a snapshot. Deletions can move later clients

@@ -32,13 +32,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916135845-b6efc0fbc1a8
+        module_version: v0.0.0-20260916140402-af67e7b8aae8
         vcs: git
-        revision: b6efc0fbc1a83ddbc5b7d2c37cd97dc55b582ca7
+        revision: af67e7b8aae896b62c5b005ae6152862ee199cda
         source_state: clean
     service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
     registry_sha: browser-workflow
-    registry_content_sha256: 2129b405c49e667775a01c8c7c17202a92813652d411b2e6d6aeb441c0ef6e2b
+    registry_content_sha256: 33617165e1b92379a1a297e405948af03de1e87b1cfca31ebbc1499a660a42c2
     components:
         browser-backend:
             version: 1.6.1

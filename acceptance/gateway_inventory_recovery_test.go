@@ -6,6 +6,7 @@ import (
 	"crypto/rand"
 	"encoding/json"
 	"encoding/pem"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -214,4 +215,68 @@ func inventorySQLClient(t *testing.T, store *model.Store, gatewayID string, serv
 		t.Fatal(err)
 	}
 	return client
+}
+
+type inventoryBoundaryProvider struct {
+	*accountProvider
+	cursors []string
+}
+
+func (p *inventoryBoundaryProvider) InventoryPage(_ context.Context, _ string, _ string, after string, _ int) (runtime.CursorPage[string], error) {
+	p.cursors = append(p.cursors, after)
+	if after == "1.10000" {
+		return runtime.CursorPage[string]{}, runtime.ErrScanWindowLimit
+	}
+	return runtime.CursorPage[string]{}, nil
+}
+func TestGatewayInventoryLimitRequiresAnotherFullCycle(t *testing.T) {
+	f := database(t)
+	_, gateway := accountService(t, f, newAccountProvider())
+	ctx := context.Background()
+	if err := f.storage.Delete(ctx, "Gateway", gateway.ID); err != nil {
+		t.Fatal(err)
+	}
+	value, err := f.storage.GetRetained(ctx, "Gateway", gateway.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	current := value.(model.Gateway)
+	provider := &inventoryBoundaryProvider{accountProvider: newAccountProvider()}
+	source, err := provider.InventorySource(ctx, gateway.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	version := strconv.FormatInt(current.ResourceGeneration, 10) + ":" + source + ":inventory-v1"
+	encoded, err := runtime.EncodeCycle(runtime.CycleState{Source: version, After: "1.10000"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = f.storage.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+		_, err := tx.(storage.CheckpointStore).SaveCheckpoint(ctx, "Gateway", gateway.ID, "gateway-provider-inventory", 0, encoded)
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	service, err := serviceaccounts.New(f.storage, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if complete, err := service.RecoverGatewayCleanup(ctx, gateway.ID); complete || !errors.Is(err, runtime.ErrScanWindowLimit) {
+		t.Fatal("inventory limit became cleanup completion", complete, err)
+	}
+	saved, err := f.storage.LoadCheckpoint(ctx, "Gateway", gateway.ID, "gateway-provider-inventory")
+	if err != nil {
+		t.Fatal(err)
+	}
+	state, err := runtime.DecodeCycle(saved.After)
+	if err != nil || !state.Failed || !state.Complete {
+		t.Fatal("limit did not retain a failed cycle", state, err)
+	}
+	if complete, err := service.RecoverGatewayCleanup(ctx, gateway.ID); !complete || err != nil {
+		t.Fatal("later full scan did not complete", complete, err)
+	}
+	if len(provider.cursors) != 2 || provider.cursors[0] != "1.10000" || provider.cursors[1] != "" {
+		t.Fatal("limit did not restart at the beginning", provider.cursors)
+	}
 }

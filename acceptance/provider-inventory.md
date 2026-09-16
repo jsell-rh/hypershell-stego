@@ -246,3 +246,26 @@ it checks failed first reads, independent later registration, saved cursors,
 service and store reconstruction, shifted pages, foreign clients, and final
 scope closure. Its CI result is pending. The focused gate now requires eight
 SQL tests and two boundary tests. The jshell API gate requires 50 checks.
+
+Run `35105755539`, source `5753c33`, passed all ten required checks: eight SQL
+recovery tests and two boundary tests. The stored JSON has no failures or skips.
+The acceptance package passed in 5.832 seconds. The new HTTPS and PostgreSQL
+fixture proves independent registration after a failed read, retained scan
+failure, recovery after store reconstruction, shifted-page recovery, foreign
+client preservation, and final scope closure. Evidence is in
+`provider-discovery-first-sql-result`. This run does not include the later
+maximum-offset recovery change.
+
+Compiler `af67e7b` adds the explicit failed scan-window boundary. The worker
+returns a typed window marker for the provider inventory limit. The API rejects
+a marker that also carries items or continuation. It converts a valid marker
+to STEGO's failed boundary, preserving the error and restarting the next cycle.
+An ordinary transport resource error does not reset the cursor. A missing RPC
+response is an error. The new SQL limit test starts with a saved maximum offset
+and requires failure before another full cycle can complete.
+
+The focused gate now requires nine SQL tests and three boundary tests. The
+jshell API gate requires 51 checks. These new limit checks still need CI
+qualification. Both generated targets have no drift, and the acceptance package
+compiles. Full application run `35104550272` and public browser run `35104667835`
+use earlier source `550b2b7`; neither can qualify this discovery change.

@@ -61,11 +61,11 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
-          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner \
-            -run '^Test(GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller)$' \
+          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts \
+            -run '^Test(GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
-            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|InventoryRecoveryAcrossReadFailureAndPageShift|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
             | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
@@ -73,7 +73,9 @@ jobs:
           required = {
               "TestGatewayInventoryRegistersPastFailedClientRead",
               "TestInventoryRPCsDenyUnverifiedCaller",
+              "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
               "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+              "TestGatewayInventoryLimitRequiresAnotherFullCycle",
               "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
               "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
               "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
