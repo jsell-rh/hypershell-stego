@@ -88,6 +88,7 @@ type Gateway struct {
 	ResourceVersion     int64           `json:"-" gorm:"column:stego_revision;type:bigint;not null;default:1;->"`
 	ConditionState      datatypes.JSON  `json:"-" gorm:"column:stego_conditions;type:jsonb;not null;default:'{}';->"`
 	CleanupState        datatypes.JSON  `json:"-" gorm:"column:stego_cleanup;type:jsonb;not null;default:'{}';->"`
+	DeletionFinalizedAt *time.Time      `json:"-" gorm:"column:stego_finalized_at;->;-:migration"`
 	CleanupTargetState  datatypes.JSON  `json:"-" gorm:"column:stego_cleanup_targets;type:jsonb;not null;default:'{}';->"`
 	ResourceGeneration  int64           `json:"-" gorm:"column:stego_generation;type:bigint;not null;default:1;->"`
 	ObservedGenerations datatypes.JSON  `json:"-" gorm:"column:stego_observations;type:jsonb;not null;default:'{}';->"`

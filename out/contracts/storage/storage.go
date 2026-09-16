@@ -14,6 +14,7 @@ import (
 
 var ErrNotFound = errors.New("entity not found")
 var ErrConflict = errors.New("storage conflict")
+var ErrDeletionVisibility = errors.New("invalid deletion visibility")
 var ErrVersionConflict = errors.New("resource version changed or resource is absent")
 
 // RetainedReader reads one versioned resource, including its retained deletion
@@ -29,6 +30,14 @@ type RetainedReader interface {
 // external work that is still in progress.
 type CleanupWriter interface {
 	ObserveCleanupIfVersion(context.Context, string, string, int64, string, bool) error
+}
+
+// DeletionFinalizer permanently closes a deleted resource at its exact revision
+// after every declared cleanup owner and target has completed. Authorize first
+// and commit the final event in the same transaction. Retained cleanup can still
+// remove late effects; it cannot reverse finalization.
+type DeletionFinalizer interface {
+ FinalizeDeletionIfVersion(context.Context, string, string, int64) error
 }
 
 // CleanupSummaryReader reads pending deleted resources for an owner and target.
@@ -126,6 +135,12 @@ type ListOptions struct {
 	// OnlyDeleted selects deleted root rows before counting and paging. It
 	// takes precedence over IncludeDeleted. Related rows must still be live.
 	OnlyDeleted bool
+ // IncludeDeleting selects live rows and deleted rows without finalization.
+ // OnlyDeleting selects only deleted rows without finalization. Both require
+ // declared cleanup owners. Neither can combine with another deletion option.
+ // Related access grants remain live. These options do not grant access.
+ IncludeDeleting bool
+ OnlyDeleting bool
 }
 
 // RelatedFilter requires a live related row before counting or pagination.
@@ -184,6 +199,10 @@ const (
 	CursorLive CursorDeletion = iota
 	CursorAll
 	CursorDeleted
+ // CursorVisible includes live rows and unfinalized deletion requests.
+ CursorVisible
+ // CursorDeleting includes only unfinalized deletion requests.
+ CursorDeleting
 )
 
 // CursorOptions has no caller-selected order or offset. AfterID is a bound SQL

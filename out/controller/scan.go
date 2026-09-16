@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 	"unicode/utf8"
 )
@@ -69,7 +70,7 @@ func ScanFrom[T any](ctx context.Context, after string, source CursorSource[T], 
 	if ctx == nil || source == nil || emit == nil {
 		return progress, scanError("context, source, and emitter are required")
 	}
-	if len(after) > 1024 || !utf8.ValidString(after) {
+	if len(after) > 1024 || !utf8.ValidString(after) || strings.IndexByte(after, 0) >= 0 {
 		return progress, scanError("initial cursor is invalid")
 	}
 	if options.PageSize < 1 || options.PageSize > 1000 {
@@ -124,7 +125,7 @@ func validateCursorPage[T any](page CursorPage[T], after string, limit int) erro
 	}
 	seen := make(map[string]bool, len(page.Items))
 	for _, item := range page.Items {
-		if len(item.Cursor) == 0 || len(item.Cursor) > 1024 || !utf8.ValidString(item.Cursor) || item.Cursor == after || seen[item.Cursor] {
+		if len(item.Cursor) == 0 || len(item.Cursor) > 1024 || !utf8.ValidString(item.Cursor) || strings.IndexByte(item.Cursor, 0) >= 0 || item.Cursor == after || seen[item.Cursor] {
 			return errors.New("page cursor is invalid or duplicated")
 		}
 		seen[item.Cursor] = true

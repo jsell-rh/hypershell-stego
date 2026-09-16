@@ -650,6 +650,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "User":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "username": true, "issuer": true, "subject": true, "email": true, "name": true}
 		query := s.db.WithContext(ctx).Model(&User{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -737,6 +743,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "Role":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "display_name": true, "description": true, "permissions": true, "built_in": true}
 		query := s.db.WithContext(ctx).Model(&Role{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -824,6 +836,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "ManagedCluster":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "provider": true, "region": true, "kubeconfig_secret": true, "status": true, "api_server_url": true}
 		query := s.db.WithContext(ctx).Model(&ManagedCluster{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -911,6 +929,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "GatewayRelease":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "image": true, "rollout_strategy": true, "canary_percent": true, "canary_duration": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&GatewayRelease{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -998,6 +1022,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "GatewayNetwork":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "topology": true, "tunnel_mode": true, "hub_gateway_id": true, "status": true}
 		query := s.db.WithContext(ctx).Model(&GatewayNetwork{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1085,7 +1115,16 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "Gateway":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "name": true, "cluster_id": true, "release_id": true, "namespace": true, "external_dns": true, "tls_mode": true, "service_type": true, "status": true, "phase": true, "image": true, "supervisor_image": true, "server_dns_names": true, "route_address": true, "console_address": true, "oidc": true, "route": true, "credential_driver": true, "active_sandbox_count": true}
 		query := s.db.WithContext(ctx).Model(&Gateway{})
-		query = query.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'endpoint')='number' AND stego_observations ->> E'endpoint' = stego_generation::text THEN \"route_address\" ELSE E'' END AS \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
+		query = query.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_finalized_at\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'endpoint')='number' AND stego_observations ->> E'endpoint' = stego_generation::text THEN \"route_address\" ELSE E'' END AS \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			query = query.Unscoped().Where("stego_finalized_at IS NULL")
+		}
+		if opts.OnlyDeleting {
+			query = query.Where("deleted_at IS NOT NULL")
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1149,7 +1188,7 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 			// Always include id; add requested fields that exist.
 			selectCols := []string{"id"}
 			selectCols = append(selectCols, "stego_revision")
-			selectCols = append(selectCols, "stego_cleanup", "deleted_at")
+			selectCols = append(selectCols, "stego_cleanup", "deleted_at", "stego_finalized_at")
 			selectCols = append(selectCols, "stego_cleanup_targets")
 			selectCols = append(selectCols, "cluster_id")
 			selectCols = append(selectCols, "cluster_id")
@@ -1179,6 +1218,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "RoleBinding":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "user_id": true, "role_id": true, "gateway_id": true, "scope": true}
 		query := s.db.WithContext(ctx).Model(&RoleBinding{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1266,6 +1311,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "ServiceAccount":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "gateway_id": true, "active_name": true, "name": true, "description": true, "credential_type": true, "role": true, "status": true, "created_by_user_id": true, "client_id": true, "client_uuid": true, "subject": true, "expires_at": true, "revoked_at": true, "last_error": true, "active": true}
 		query := s.db.WithContext(ctx).Model(&ServiceAccount{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1353,6 +1404,12 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 	case "ServiceAccountAudit":
 		validCols := map[string]bool{"id": true, "created_time": true, "updated_time": true, "service_account_id": true, "gateway_id": true, "actor_user_id": true, "creator_user_id": true, "action": true, "outcome": true, "role": true, "expires_at": true}
 		query := s.db.WithContext(ctx).Model(&ServiceAccountAudit{})
+		if (opts.IncludeDeleting || opts.OnlyDeleting) && (opts.IncludeDeleted || opts.OnlyDeleted || (opts.IncludeDeleting && opts.OnlyDeleting)) {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
+		if opts.IncludeDeleting || opts.OnlyDeleting {
+			return stegostorage.ListResult{}, stegostorage.ErrDeletionVisibility
+		}
 		if opts.IncludeDeleted || opts.OnlyDeleted {
 			query = query.Unscoped()
 		}
@@ -1601,7 +1658,7 @@ func (s *Store) relatedExpression(ctx context.Context, target string, filter ste
 		related = s.db.WithContext(ctx).Model(&GatewayNetwork{}).Select(filter.ForeignField)
 	case "Gateway":
 		related = s.db.WithContext(ctx).Model(&Gateway{}).Select(filter.ForeignField)
-		related = related.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'endpoint')='number' AND stego_observations ->> E'endpoint' = stego_generation::text THEN \"route_address\" ELSE E'' END AS \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
+		related = related.Table("(SELECT \"id\", \"created_time\", \"updated_time\", \"deleted_at\", \"stego_revision\", \"stego_generation\", \"stego_observations\", \"stego_conditions\", \"stego_cleanup\", \"stego_finalized_at\", \"stego_cleanup_targets\", \"name\", \"cluster_id\", \"release_id\", \"namespace\", \"external_dns\", \"tls_mode\", \"service_type\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"status\" ELSE E'ObservationPending' END AS \"status\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'workload')='number' AND stego_observations ->> E'workload' = stego_generation::text THEN \"phase\" ELSE E'Provisioning' END AS \"phase\", \"image\", \"supervisor_image\", \"server_dns_names\", CASE WHEN stego_generation>0 AND jsonb_typeof(stego_observations -> E'endpoint')='number' AND stego_observations ->> E'endpoint' = stego_generation::text THEN \"route_address\" ELSE E'' END AS \"route_address\", \"console_address\", \"oidc\", \"route\", \"credential_driver\", \"active_sandbox_count\" FROM \"gateways\") AS \"gateways\"")
 	case "RoleBinding":
 		related = s.db.WithContext(ctx).Model(&RoleBinding{}).Select(filter.ForeignField)
 	case "ServiceAccount":
