@@ -12,10 +12,14 @@ import re
 from network_peer_fixture import peer_namespace
 
 
-def read_json(path):
+FIXTURE_RECORD_LIMIT = 256 << 10
+INSPECTION_RECORD_LIMIT = 1 << 20
+
+
+def read_json(path, *, limit=FIXTURE_RECORD_LIMIT):
     with Path(path).open('rb') as source:
-        data = source.read((256 << 10) + 1)
-    if len(data) > 256 << 10:
+        data = source.read(limit + 1)
+    if len(data) > limit:
         raise ValueError('The endpoint fixture record exceeds its limit')
     return json.loads(data)
 
@@ -24,7 +28,7 @@ def enabled(source):
     record = Path(source) / 'acceptance/browser-inspection-source.json'
     if not record.exists():
         return False
-    value = read_json(record)
+    value = read_json(record, limit=INSPECTION_RECORD_LIMIT)
     declaration = value.get('network_endpoint_change')
     if declaration is None:
         return False

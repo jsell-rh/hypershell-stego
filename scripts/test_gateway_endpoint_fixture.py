@@ -27,6 +27,17 @@ class EndpointBoundary(unittest.TestCase):
         (self.root / 'network-peer.json').write_text(json.dumps(record))
         return fixture.inputs(self.root, self.root, self.control)
 
+    def test_source_manifest_has_a_separate_bounded_size(self):
+        record = {'network_endpoint_change': {'endpoint': 'network-probe'},
+                  'source_sha256': {'file': 'a' * fixture.FIXTURE_RECORD_LIMIT}}
+        self.source.write_text(json.dumps(record))
+        self.assertTrue(fixture.enabled(self.root))
+        with self.assertRaises(ValueError):
+            fixture.read_json(self.source)
+        self.source.write_text(json.dumps({'padding': 'a' * fixture.INSPECTION_RECORD_LIMIT}))
+        with self.assertRaises(ValueError):
+            fixture.enabled(self.root)
+
     def test_two_owned_listeners_supply_the_fixed_change(self):
         value = self.read(self.record)
         self.assertEqual(value['initial'], '192.0.2.10:8080')

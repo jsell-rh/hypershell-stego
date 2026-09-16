@@ -14,6 +14,16 @@ import shutil
 import subprocess
 import tempfile
 
+from gateway_endpoint_fixture import INSPECTION_RECORD_LIMIT
+
+
+def write_inspection_record(path, record):
+    data = (json.dumps(record, indent=2) + "\n").encode("utf-8")
+    if len(data) > INSPECTION_RECORD_LIMIT:
+        raise ValueError("The source inspection record exceeds its limit")
+    Path(path).write_bytes(data)
+
+
 ROLES = '''      - name: fixture-gateway-inspector
         scope: namespace
         rules:
@@ -370,7 +380,7 @@ def main():
         record['cnpg_installation'] = {'namespace': args.cnpg_database_namespace, 'cluster': 'gateway-database', 'scope': 'One database namespace and Pod selector on TCP port 5432 for the worker and allocated Gateways; no added Kubernetes permission.'}
     if args.network_endpoint_change:
         record['network_endpoint_change'] = {'endpoint': 'network-probe', 'scope': 'One operator-bound endpoint name in the Gateway allocation profile; no added Kubernetes permission.'}
-    (destination / 'acceptance/browser-inspection-source.json').write_text(json.dumps(record, indent=2) + '\n')
+    write_inspection_record(destination / 'acceptance/browser-inspection-source.json', record)
     print('Prepared frozen inspection fixture: ' + str(destination))
 
 

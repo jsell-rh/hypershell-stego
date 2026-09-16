@@ -3,6 +3,7 @@ import copy
 import importlib.util
 import json
 from pathlib import Path
+import tempfile
 import unittest
 
 spec = importlib.util.spec_from_file_location('inspection', Path(__file__).with_name('prepare-browser-inspection.py'))
@@ -205,6 +206,18 @@ class InspectionBoundary(unittest.TestCase):
             {'apiGroups': ['rbac.authorization.k8s.io'], 'resources': ['clusterrolebindings'], 'verbs': ['get', 'list']},
         ])
         self.assertEqual(binding['subjects'], [{'kind': 'ServiceAccount', 'name': 'service-check', 'namespace': '@NAMESPACE@'}])
+
+
+class InspectionRecordBounds(unittest.TestCase):
+    def test_writer_rejects_oversize_before_creating_a_record(self):
+        with tempfile.TemporaryDirectory() as directory:
+            target = Path(directory) / 'record.json'
+            with self.assertRaises(ValueError):
+                inspection.write_inspection_record(target, {'padding': 'a' * inspection.INSPECTION_RECORD_LIMIT})
+            self.assertFalse(target.exists())
+            inspection.write_inspection_record(target, {'source_sha256': {'file': 'a' * (256 << 10)}})
+            self.assertGreater(target.stat().st_size, 256 << 10)
+            self.assertLess(target.stat().st_size, inspection.INSPECTION_RECORD_LIMIT)
 
 
 if __name__ == '__main__':
