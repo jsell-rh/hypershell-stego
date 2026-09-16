@@ -1,5 +1,24 @@
 This repository is the test bed for a STEGO-based Hypershell variant.
 
+The current account integration uses STEGO compiler `3e0bc22401729eb95bc1bd304455799a6d378b65`
+and Keycloak provider `0.13.0`. The common lifecycle replaces the application's
+administrator HTTP client and token cache. Hypershell retains Gateway roles,
+account quotas, expiry, and authorization policy.
+
+| Current qualification | Result and scope |
+| --- | --- |
+| Account browser workflow | [Passed on `048ff55`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888): real login, SQL journal, credential delivery, tokens, revoke, and delete |
+| Application regeneration, web console, and images | Passed on `048ff55`; the complete core suite is still running |
+| Full Gateway cluster workflow | [Passed on `6354a23`](acceptance/native-lifecycle-browser-evidence.json); the later account migration still needs a complete cluster result |
+| Private account state API and restart | [Required test](acceptance/service-account-provider-state.md); live result pending |
+| CNPG | Earlier complete workflow passed; qualification of the account migration is pending |
+
+These results do not establish production capacity or complete application parity.
+Use one provisioner replica with `Recreate`, stable journal keys, and the exact
+private API grant. Stop old writers before migration. Cross-process writer
+fencing and detection of a whole-database rollback remain open. See the
+[provider boundary and results](acceptance/keycloak.md).
+
 The required [Gateway namespace network isolation](acceptance/gateway-network-isolation.md)
 is not enabled in the application. STEGO supplies an optional deny-all policy
 and admission protection. Allowed Gateway traffic and live network enforcement
@@ -462,7 +481,8 @@ controller. The current installation owns CNPG or RDS infrastructure. Its
 Gateway controller manages logical SQL resources through STEGO. The
 [supplied CNPG workflow](acceptance/cnpg-installation.md) passed its application
 checks. Its final cleanup read failed; separate checks confirmed cleanup.
-Unattended CNPG CI remains open.
+The later unattended CNPG result linked above supersedes this cleanup result;
+it does not qualify the current account migration.
 
 Generated [process failure records](acceptance/process-failure-privacy.md) report
 the failed step without private database or component error text. A Gateway
@@ -521,11 +541,13 @@ API and backend restart. See the linked record for the scope and remaining gates
 The [rendered service-account check](acceptance/browser-service-accounts.md)
 uses the console and real Keycloak to check one-time credential delivery, token
 claims, reload, revocation, and deletion. It uses a Gateway readiness fixture.
-Full Gateway workload provisioning through the console remains open.
+This readiness fixture does not prove workload provisioning. The separate full
+Gateway workflow linked above supplies that evidence for its recorded revision.
 
 The [RPC process check](acceptance/rpc-process.md) replaces the handwritten
-provisioner entry point with STEGO output. Hypershell keeps the Keycloak provider
-and caller policy. STEGO supplies authentication, telemetry, signals, and cleanup.
+provisioner entry point with STEGO output. Hypershell keeps Gateway policy and
+the allowed callers. STEGO supplies the common Keycloak provider, authentication,
+telemetry, signals, and cleanup.
 The [RPC deployment check](acceptance/rpc-deployment.md) adds a generated
 provisioner Deployment and replaces its Pod during the rendered account workflow.
 
