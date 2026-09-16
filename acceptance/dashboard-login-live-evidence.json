@@ -1,0 +1,29 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35159150673",
+  "source": "55d66c267c68d27f7f242f54df00df4ad87d05e4",
+  "compiler": "883ca13a1f147f1c6778f628ebcd7e2f3d8bb053",
+  "result": "failure",
+  "failed_test": "TestGeneratedKubernetesBrowserGatewayWorkflow",
+  "seconds": 275.33,
+  "failed_requirement": "The rendered global policy editor input did not appear.",
+  "proved": [
+    "Verified HTTPS and the protected-document redirect.",
+    "The browser completed the login callback and reached the upstream Workspaces page.",
+    "Workspace creation returned HTTP 201 and the detail request returned HTTP 200.",
+    "The global policy dialog rendered, but its editor area was blank."
+  ],
+  "not_proved": [
+    "Rendered editor behavior.",
+    "The later same-session recovery, viewer access, telemetry correlation, and deletion assertions."
+  ],
+  "generation_files_match": 366,
+  "generation_manifest_sha256": "34be1611a1030946a858c701c1546132d735cdb67f9eb06687ad8b2962dedfa1",
+  "artifacts_sha256": {
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.png": "963bb2c574f03f514f778cc9cab1bcee81b135ca0c0330777dec541cf24e204d",
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.txt": "238425f72b2869e74e43e4c2eb447f9ea2477b420885b0b06340d80c5646505f",
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.network.json": "71975568181e78931a2faf0546627f39f86431913aedf2634f91bf4fc1914a0c"
+  },
+  "cleanup_checked_at": "2026-09-16T22:59:48.769861+00:00",
+  "cleanup_empty": true,
+  "cause_scope": "The locked loader defaults to a CDN, and the build omitted the documented local Monaco registration. The exact browser exclusion reason was not captured."
+}
