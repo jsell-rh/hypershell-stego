@@ -3,6 +3,8 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -10,7 +12,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
-	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 )
 
 func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrowser {
@@ -32,24 +33,9 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 		w.t.Fatal(err)
 	}
 	// Check the route from the browser fixture, not only from the controller Pod.
-	probe, err := web.New(web.Options{BaseURL: origin, CAFile: ca})
-	if err != nil {
-		w.t.Fatal("dashboard fixture HTTPS client setup failed")
-	}
-	defer probe.Close()
-	for _, check := range []struct {
-		path   string
-		status int
-	}{{"/readyz", http.StatusOK}, {"/workspaces", http.StatusSeeOther}} {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-		result, err := probe.Do(ctx, http.MethodGet, check.path, http.Header{"Sec-Fetch-Site": {"none"}}, nil)
-		cancel()
-		if err != nil || result.StatusCode != check.status {
-			w.t.Fatal("dashboard fixture HTTPS route check failed", check.path, result.StatusCode)
-		}
-		if check.path == "/readyz" && string(result.Body) != "ok\n" || check.path == "/workspaces" && result.Header.Get("Location") != "/auth/login?return_to=%2Fworkspaces" {
-			w.t.Fatal("dashboard fixture HTTPS response differs from the generated contract", check.path)
-		}
+	probe := newConsoleBrowser(w.t, origin, ca)
+	if err := checkDashboardRoute(context.Background(), probe.client, origin); err != nil {
+		w.t.Fatal(err)
 	}
 	w.t.Log("Dashboard route passed verified HTTPS and protected-document redirect checks from the browser fixture")
 	browser := newRenderedBrowser(w.t, origin, ca, w.identity.certificate)
@@ -64,4 +50,43 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 	}
 	browser.run(w.t, "dashboard-create")
 	return browser
+}
+
+// Inspect redirects without following them. The service client deliberately
+// rejects these responses, so this check uses the browser fixture transport.
+func checkDashboardRoute(ctx context.Context, browser *http.Client, origin string) error {
+	client := *browser
+	client.Timeout = 5 * time.Second
+	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
+	for _, check := range []struct {
+		path   string
+		status int
+	}{{"/readyz", http.StatusOK}, {"/workspaces", http.StatusSeeOther}} {
+		err := func() error {
+			call, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			request, err := http.NewRequestWithContext(call, http.MethodGet, origin+check.path, nil)
+			if err != nil {
+				return fmt.Errorf("dashboard fixture HTTPS request is invalid")
+			}
+			request.Header.Set("Sec-Fetch-Site", "none")
+			response, err := client.Do(request)
+			if err != nil {
+				return fmt.Errorf("dashboard fixture HTTPS request failed: %s", check.path)
+			}
+			defer response.Body.Close()
+			body, err := io.ReadAll(io.LimitReader(response.Body, 1025))
+			if err != nil || len(body) > 1024 || response.StatusCode != check.status {
+				return fmt.Errorf("dashboard fixture HTTPS response differs: %s", check.path)
+			}
+			if check.path == "/readyz" && string(body) != "ok\n" || check.path == "/workspaces" && response.Header.Get("Location") != "/auth/login?return_to=%2Fworkspaces" {
+				return fmt.Errorf("dashboard fixture HTTPS response differs: %s", check.path)
+			}
+			return nil
+		}()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

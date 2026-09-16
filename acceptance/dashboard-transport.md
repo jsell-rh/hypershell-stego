@@ -31,3 +31,24 @@ inspection at `2026-09-16T20:35:13.920529Z` confirmed that the test runtime,
 fixture resources, and allocated namespaces were absent and the test lease was
 empty. An earlier inspection occurred during cleanup and did not pass. The
 subsequent complete inspection supplies the cleanup result.
+
+## Redirect probe correction
+
+Run `35147622468` at `137d375` passed the readiness request from the browser
+fixture, then failed its new `/workspaces` check. That check used the generated
+service client, which rejects all redirects other than HTTP 304. It cannot
+return the HTTP 303 response that the test requires. The check was incorrect.
+Its zero response status does not establish another connection failure.
+
+The probe now uses the existing browser fixture transport with verified TLS.
+It sets a five-second request deadline, limits each response to 1 KiB, and
+returns redirects without following them. It still checks the exact readiness
+body, redirect status, destination, and return path. The service client's
+redirect restriction remains unchanged.
+
+A focused TLS-server test passed in 0.027 seconds. It covers the valid response,
+foreign redirects, changed return paths, oversized responses, wrong readiness
+and status, and caller cancellation. It also proves that the probe does not
+follow a redirect or call the original client's redirect handler. The live
+workflow must be repeated after complete cleanup. The earlier Chromium
+`ERR_CONNECTION_CLOSED` remains unresolved.
