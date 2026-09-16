@@ -189,6 +189,12 @@ func TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
 }
 
 func TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
+	testGatewayJournalCleanupRecovery(t, false)
+}
+func TestGatewayJournalRegistrationDuringScanPreventsCompletion(t *testing.T) {
+	testGatewayJournalCleanupRecovery(t, true)
+}
+func testGatewayJournalCleanupRecovery(t *testing.T, concurrentRegistration bool) {
 	f := database(t)
 	original := newAccountProvider()
 	_, gateway := accountService(t, f, original)
@@ -219,6 +225,20 @@ func TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
 	if err != nil || complete || len(provider.confirmed) != 100 || provider.inventory != 0 {
 		t.Fatal("first journal page differs", complete, len(provider.confirmed), err)
 	}
+	if concurrentRegistration {
+		earlier, err := ksuid.NewRandomWithTime(time.Now().Add(-time.Hour))
+		if err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, earlier.String())
+		err = f.storage.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+			_, err := tx.(storage.ResourceStateStore).SaveResourceState(ctx, "ServiceAccount", earlier.String(), gateways.AccountProviderStateScope(gateway.ID), 0, nil)
+			return err
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
 	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatal(err)
@@ -232,6 +252,18 @@ func TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
 		t.Fatal(err)
 	}
 	complete, err = accounts.RecoverGatewayCleanup(ctx, gateway.ID)
+	if concurrentRegistration {
+		if complete || provider.inventory != 0 {
+			t.Fatal("a journal inserted before the saved cursor permitted completion", complete, len(provider.confirmed), err)
+		}
+		for attempt := 0; attempt < 3 && !complete; attempt++ {
+			complete, err = accounts.RecoverGatewayCleanup(ctx, gateway.ID)
+		}
+		if err != nil || !complete || len(provider.confirmed) != len(ids) {
+			t.Fatal("new journal did not recover", complete, len(provider.confirmed), err)
+		}
+		return
+	}
 	if err != nil || !complete || len(provider.confirmed) != len(ids) || provider.inventory != 1 {
 		t.Fatal("resumed journal page differs", complete, len(provider.confirmed), err)
 	}

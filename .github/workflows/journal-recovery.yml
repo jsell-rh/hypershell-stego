@@ -1,0 +1,64 @@
+name: Journal recovery checks
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: journal-recovery-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GOMAXPROCS: '2'
+  GOMEMLIMIT: 768MiB
+  GOFLAGS: -p=2
+  GOWORK: 'off'
+  STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK: '1'
+  STEGO_REQUIRE_POSTGRES: '1'
+
+jobs:
+  journal-recovery:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+        env:
+          POSTGRES_PASSWORD: stego_test
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --cpus=1 --memory=512m --pids-limit=256
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Enable database TLS
+        run: scripts/enable-test-postgres-tls.sh "$POSTGRES_CONTAINER" "$RUNNER_TEMP/postgres-tls"
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+      - name: Check generated source
+        run: scripts/generate.sh --check
+      - name: Check retained journal recovery
+        env:
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
+        run: |
+          mkdir -p "$RUNNER_TEMP/journal-recovery"
+          go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
+            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+            | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
+      - name: Save test results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: journal-recovery
+          path: ${{ runner.temp }}/journal-recovery
+          retention-days: 14
+          if-no-files-found: error
