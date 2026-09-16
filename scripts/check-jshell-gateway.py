@@ -20,6 +20,15 @@ import uuid
 from ci_credentials import API_SECONDS, require_credentials
 
 REQUIRED = [
+    "TestGatewayDurableDeletionThroughGeneratedTransports",
+    "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+    "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayCleanupObservationDoesNotRepeatEvents",
+    "TestGatewayDeletingPhaseMatchesSearch",
+    "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",
+    "TestGatewayAccountCleanupSerializesCreation",
+    "TestServiceAccountCreationSerializesGatewayDeletion",
+    "TestGatewayDeletionRemovesServiceAccounts",
     "TestServiceAccountProviderStateAcrossLockAndRestart",
     "TestGatewayProviderStateAcrossGRPCAndRestart",
     "TestGatewayDatabasePoolWaitCancellationAndRestart",
