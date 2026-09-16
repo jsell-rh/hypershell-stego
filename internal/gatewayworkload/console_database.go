@@ -42,8 +42,16 @@ func (k *Kubernetes) consoleStateOwner(id string) kube.Owner {
 }
 func (k *Kubernetes) validateConsoleState(secret object, config postgres.Options) error {
 	invalid := errors.New("console database state differs; restore its original records")
-	values, ok := secret["data"].(map[string]any)
-	if !ok || len(values) != 4 {
+	count := 0
+	switch values := secret["data"].(type) {
+	case object:
+		count = len(values)
+	case map[string]any:
+		count = len(values)
+	default:
+		return invalid
+	}
+	if count != 4 {
 		return invalid
 	}
 	for _, key := range []string{"database-password", "database-server"} {

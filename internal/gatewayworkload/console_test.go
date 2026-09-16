@@ -5,11 +5,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 	"testing"
 
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
 
 func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
@@ -177,5 +179,41 @@ func TestConsoleStoreDependenciesMatchRetainedState(t *testing.T) {
 				t.Fatal("console storage boundary differs", mode, err)
 			}
 		})
+	}
+}
+
+func TestConsoleStateValidatesNewAndStoredData(t *testing.T) {
+	k := &Kubernetes{options: Options{ClusterID: testClusterID}}
+	config := postgres.Options{Host: "database.example", Port: 5432, Database: "ledger"}
+	encode := func(s string) string { return base64.StdEncoding.EncodeToString([]byte(s)) }
+	fresh := object{"data": object{"database-password": encode(strings.Repeat("a", 64)), "database-server": encode(strings.Repeat("b", 64)), "database-destination": encode(k.destination(config)), "session-key": encode(strings.Repeat("k", 32))}}
+	for _, stored := range []bool{false, true} {
+		for _, mode := range []string{"valid", "extra", "missing", "short key", "wrong destination"} {
+			t.Run(fmt.Sprintf("stored=%t/%s", stored, mode), func(t *testing.T) {
+				raw, _ := json.Marshal(fresh)
+				var value object
+				if err := json.Unmarshal(raw, &value); err != nil {
+					t.Fatal(err)
+				}
+				fields := value["data"].(map[string]any)
+				switch mode {
+				case "extra":
+					fields["other"] = encode("other")
+				case "missing":
+					delete(fields, "database-server")
+				case "short key":
+					fields["session-key"] = encode("short")
+				case "wrong destination":
+					fields["database-destination"] = encode("other")
+				}
+				if !stored {
+					value["data"] = object(fields)
+				}
+				err := k.validateConsoleState(value, config)
+				if (err == nil) != (mode == "valid") {
+					t.Fatal("console state validation differs", err)
+				}
+			})
+		}
 	}
 }
