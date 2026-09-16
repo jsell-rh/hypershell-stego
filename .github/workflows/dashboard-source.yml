@@ -59,6 +59,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          python3 scripts/check-dashboard-routes.py \
+            upstream-dashboard/frontend/src/app/AuthenticatedRoutes.tsx \
+            components/gateway-dashboard/generation-service.yaml \
+            components/gateway-dashboard/private-service.yaml
           cp components/gateway-dashboard/backend/go.mod components/gateway-dashboard/backend/go.sum upstream-dashboard/backend/
           cp components/gateway-dashboard/frontend/package.json components/gateway-dashboard/frontend/package-lock.json upstream-dashboard/frontend/
           cp components/gateway-dashboard/frontend/webpack.stego.cjs upstream-dashboard/frontend/
