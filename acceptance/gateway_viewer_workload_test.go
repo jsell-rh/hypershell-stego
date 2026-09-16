@@ -152,9 +152,15 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 	if _, err := call("CreateWorkspace", ownerGateway, `{"name":"owner-private"}`); err != nil {
 		t.Fatal("create owner-only workspace", err)
 	}
-	if names := workspaceNames(ownerGateway); !slices.Equal(names, []string{"default", "owner-private"}) {
+	ownerWorkspaces := []string{"default", "owner-private"}
+	if w.public != nil {
+		ownerWorkspaces = append(ownerWorkspaces, "rendered-dashboard")
+	}
+	if names := workspaceNames(ownerGateway); !slices.Equal(names, ownerWorkspaces) {
 		t.Fatal("owner workspace setup", names)
 	}
+	dashboard := w.newDashboardViewer(id)
+	w.checkDashboardViewer(dashboard, false)
 	addMember(ownerGateway)
 	checkViewer := func(bearer string) {
 		t.Helper()
@@ -202,6 +208,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		if code, _ := viewerAPI("POST", "/gateways", create); code != 403 {
 			t.Fatal("viewer created a Hypershell Gateway", code)
 		}
+		w.checkDashboardViewer(dashboard, true)
 	}
 	checkViewer(viewer)
 	return func(owner string) {
@@ -215,6 +222,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		if names := workspaceNames(viewer); len(names) != 0 {
 			t.Fatal("removed membership remained in workspace list", names)
 		}
+		w.checkDashboardViewer(dashboard, false)
 		if code, _ := viewerAPI("GET", "/gateways/"+gateway.ID, nil); code != 200 {
 			t.Fatal("workspace removal changed the separate Hypershell grant", code)
 		}
@@ -230,6 +238,11 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		if _, err := call("GetProvider", fresh, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("new token retained removed Gateway role", err)
 		}
+		if freshDashboard := w.newDashboardViewer(id); freshDashboard != nil {
+			if response := freshDashboard.api(t, "GET", "/workspaces/default", nil); response.StatusCode != 403 {
+				t.Fatal("new dashboard session retained the removed Gateway role", response.StatusCode)
+			}
+		}
 		// The reference accepts an issued token until expiry. Removing workspace
 		// membership must deny that same token without waiting for its expiry.
 		if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); err != nil {
@@ -238,6 +251,11 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		removeMember(owner)
 		if _, err := call("GetProvider", viewer, `{"name":"browser-provider"}`); status.Code(err) != codes.PermissionDenied {
 			t.Fatal("old token bypassed workspace revocation", err)
+		}
+		if dashboard != nil {
+			if response := dashboard.api(t, "GET", "/workspaces/default", nil); response.StatusCode != 403 {
+				t.Fatal("existing dashboard session bypassed workspace revocation", response.StatusCode)
+			}
 		}
 		t.Log("Viewer grant and workspace membership survived namespace replacement; filtered lists, denied writes, and both access-removal paths passed")
 	}

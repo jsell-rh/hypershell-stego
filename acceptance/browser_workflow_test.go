@@ -165,9 +165,10 @@ func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, 
 }
 
 type consoleBrowser struct {
-	client *http.Client
-	origin string
-	csrf   string
+	client    *http.Client
+	origin    string
+	csrf      string
+	apiPrefix string
 }
 
 func newConsoleBrowser(t *testing.T, origin string, caFiles ...string) *consoleBrowser {
@@ -185,7 +186,7 @@ func newConsoleBrowser(t *testing.T, origin string, caFiles ...string) *consoleB
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &consoleBrowser{origin: origin, client: &http.Client{Transport: transport, Jar: jar, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
+	return &consoleBrowser{origin: origin, apiPrefix: "/api/hypershell/v1", client: &http.Client{Transport: transport, Jar: jar, Timeout: 15 * time.Second, CheckRedirect: func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }}}
 }
 func (b *consoleBrowser) request(t *testing.T, method, address string, body []byte, headers http.Header) web.Response {
 	t.Helper()
@@ -227,7 +228,11 @@ func (b *consoleBrowser) session(t *testing.T) web.Response {
 }
 func (b *consoleBrowser) login(t *testing.T, k *keycloakFixture, username string) {
 	t.Helper()
-	response := b.request(t, "GET", b.origin+"/auth/login?return_to=%2Fgateways%2Fnew", nil, http.Header{"Sec-Fetch-Site": {"same-origin"}})
+	b.loginTo(t, k, username, "/gateways/new")
+}
+func (b *consoleBrowser) loginTo(t *testing.T, k *keycloakFixture, username, returnTo string) {
+	t.Helper()
+	response := b.request(t, "GET", b.origin+"/auth/login?"+url.Values{"return_to": {returnTo}}.Encode(), nil, http.Header{"Sec-Fetch-Site": {"same-origin"}})
 	if response.StatusCode != 302 {
 		t.Fatal("console login did not redirect", response.StatusCode)
 	}
@@ -260,7 +265,7 @@ func (b *consoleBrowser) login(t *testing.T, k *keycloakFixture, username string
 		t.Fatal("provider did not return to console", response.StatusCode)
 	}
 	response = b.request(t, "GET", callback.String(), nil, http.Header{"Sec-Fetch-Site": {"cross-site"}})
-	if response.StatusCode != 303 || response.Header.Get("Location") != "/gateways/new" {
+	if response.StatusCode != 303 || response.Header.Get("Location") != returnTo {
 		t.Fatal("console callback failed", response.StatusCode)
 	}
 	found := false
@@ -285,7 +290,7 @@ func (b *consoleBrowser) api(t *testing.T, method, path string, body []byte) web
 		headers.Set("X-CSRF-Token", b.csrf)
 		headers.Set("Content-Type", "application/json")
 	}
-	return b.request(t, method, b.origin+"/api/hypershell/v1"+path, body, headers)
+	return b.request(t, method, b.origin+b.apiPrefix+path, body, headers)
 }
 
 func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, request any) string {
