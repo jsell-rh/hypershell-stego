@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            registry_ref: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: 537f630841c2b4711e3ee74e3a97855fe03f84e211977490d8bf8517d1f8b4b9
+                sha256: 2b2ffaa8968912fdfb88e11dbbb8d6a1bd4c41c0259d64d3048c031513db1647
                 mode: 420
             go.mod:
                 exists: true
@@ -27,34 +27,34 @@ last_applied:
                 exists: true
                 sha256: 6c51a7b54da532726045ba98d18ec5f3e9a4d1fa20f42ce93aa6cc0af294b05f
                 mode: 420
-        sha256: c4e0f09683c4978bbe15a518f9dce9c7f1905a30ecfde0513f7c0cef59c1cb6d
+        sha256: 2926355092a37633f7e20608fd8bac619cea4cce5820238849dc0d6fca6e53c8
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916181007-cf430f4b4af4
-        vcs: git
-        revision: cf430f4b4af448864d0f1309dd538aee42df4684
-        source_state: clean
+        module_version: (devel)
+        vcs: unknown
+        revision: unknown
+        source_state: unknown
     service_hash: 7456b6c9bcf2e57b96f237fc5a9e62649da552ae5bad56d7be0b219fe3095b6e
-    registry_sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
-    registry_content_sha256: fa54034d412ae21c61f9bad838f0277a4a469121ffca9024cabb469969f9fb35
+    registry_sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
+    registry_content_sha256: e50050b9682b0e0bf9f8cb7bccbfe49a22c360b572253b70c60eed1bb78b768c
     components:
         browser-backend:
-            version: 2.1.0
-            sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            version: 2.2.0
+            sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
         health-check:
             version: 1.1.0
-            sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
         kubernetes-service:
             version: 1.17.0
-            sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
         otel-tracing:
             version: 1.15.0
-            sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
         postgres-adapter:
             version: 4.9.0
-            sha: 20350fde0818247b82eea313351e33cf17fde7390dc8175f4176911739a70c45
+            sha: fc5f569a505282e5181f485e77b9e081a4c074b1579850da167e236e312e3a31
     files:
         browser/backend.go: fbda706a78ba289b505bef5dcf4ce7f4b8bf912d170b342d8866060e2113134d
         browser/client/client.go: 749417cae296bbe6173551ad4725c00b1c0a4b486d7bfa22dc514355ee3fe65e
@@ -117,6 +117,9 @@ last_applied:
         browser/public/index.html: 7e28f15940c11ab28d3d25271c1a762fb0accc0eaa652589c96abed135939c42
         browser/schema.sql: 866311ead992bc75143cda28febcef85ababd7c2326aa6ba6376ade2db97a9eb
         browser/schema/schema.go: d6a3a0b11bfa2528722cb221aca730614fdd155ee212bb3ae9bfb80aef6bb345
+        browser/sessionclient/index.d.ts: b1fc960fd59cd1da7d1d549f6234076bdae8a85139010926d12d83ddd5b7eef1
+        browser/sessionclient/index.js: 6a74d57e2c4ea35b4495f232dd3d3c57259a5b4a6cdd8c61c3518647f458836b
+        browser/sessionclient/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080
         browser/store.go: 4cc5f9e20004cd0a68194e71ca5d768743a94acd27f06b2f693c92a699e0a6a2
         browser/telemetry.go: 79b271b67532c00450391587f0326b552a4f15a96b2e8f2ae7c0580932285881
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
