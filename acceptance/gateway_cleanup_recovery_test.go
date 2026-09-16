@@ -78,7 +78,7 @@ func TestGatewayAccountCleanupRecoveryReachesTailAfterRestart(t *testing.T) {
 		t.Fatal("deleted Gateway accepted an account", err)
 	}
 	provider.stall = true
-	for attempt := 0; attempt < 3; attempt++ {
+	for attempt := 0; attempt < 1; attempt++ {
 		orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 		if err != nil {
 			t.Fatal(err)
@@ -97,18 +97,25 @@ func TestGatewayAccountCleanupRecoveryReachesTailAfterRestart(t *testing.T) {
 			t.Fatal("interrupted cycle claimed completion", complete, err)
 		}
 	}
-	if len(provider.confirmed) != len(ids) {
-		t.Fatalf("restart scan reached %d of %d retained IDs", len(provider.confirmed), len(ids))
+	if len(provider.confirmed) != len(ids)-1 {
+		t.Fatalf("a failed account stopped independent cleanup: reached %d of %d IDs", len(provider.confirmed), len(ids))
 	}
 	if provider.inventory != 0 {
 		t.Fatal("failed retained cycle ran inventory completion")
 	}
 	provider.stall = false
+	accounts, err = serviceaccounts.New(f.storage, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID); err != nil || !complete {
 		t.Fatal("successful cleanup did not complete", complete, err)
 	}
 	if complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID); err != nil || !complete {
 		t.Fatal("repeated cleanup", complete, err)
+	}
+	if len(provider.confirmed) != len(ids) {
+		t.Fatalf("restarted cleanup reached %d of %d retained IDs", len(provider.confirmed), len(ids))
 	}
 	if provider.inventory != 2 {
 		t.Fatal("completion omitted repeated provider inventory")
@@ -118,4 +125,64 @@ func TestGatewayAccountCleanupRecoveryReachesTailAfterRestart(t *testing.T) {
 		t.Fatal("cleanup audit was lost or duplicated", audits, err)
 	}
 	t.Logf("Restarted cleanup reached all %d retained IDs; the live account has one cleanup audit", len(ids))
+}
+
+// The fixture has one more row than a scan page. This checks the page boundary;
+// it does not measure capacity or load the workstation.
+func TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint(t *testing.T) {
+	f := database(t)
+	original := newAccountProvider()
+	accounts, gateway := accountService(t, f, original)
+	live, err := accounts.Create(context.Background(), principal("alice"), gateway.ID, accountInput("page-source"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	ids := []string{live.Account.ID}
+	for i := 0; i < 100; i++ {
+		id := ksuid.New().String()
+		row := model.ServiceAccount{Meta: model.Meta{ID: id}, GatewayID: gateway.ID, Name: fmt.Sprintf("retained-%d", i), CredentialType: "client_secret", Role: serviceaccounts.RoleUser, Status: "error", CreatedByUserID: live.Account.CreatedByUserID, ClientID: "hs-sa-" + gateway.ID + "-" + id, ExpiresAt: time.Now().Add(time.Hour)}
+		if err := f.storage.Create(context.Background(), "ServiceAccount", row); err != nil {
+			t.Fatal(err)
+		}
+		ids = append(ids, id)
+	}
+	for _, id := range ids {
+		if err := f.storage.Delete(context.Background(), "ServiceAccount", id); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := f.storage.Delete(context.Background(), "Gateway", gateway.ID); err != nil {
+		t.Fatal(err)
+	}
+	provider := &boundedCleanupProvider{accountProvider: original, confirmed: map[string]int{}}
+	accounts, err = serviceaccounts.New(f.storage, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete, err := accounts.RecoverGatewayCleanup(context.Background(), gateway.ID)
+	if err != nil || complete || len(provider.confirmed) != 100 || provider.inventory != 0 {
+		t.Fatal("first bounded page", complete, len(provider.confirmed), err)
+	}
+	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatal(err)
+	}
+	restarted, err := model.NewStore(orm)
+	if err != nil {
+		t.Fatal(err)
+	}
+	accounts, err = serviceaccounts.New(restarted, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	complete, err = accounts.RecoverGatewayCleanup(context.Background(), gateway.ID)
+	if err != nil || !complete || len(provider.confirmed) != len(ids) || provider.inventory != 1 {
+		t.Fatal("resumed page", complete, len(provider.confirmed), err)
+	}
+	for id, count := range provider.confirmed {
+		if count != 1 {
+			t.Fatal("completed prefix repeated after restart", id, count)
+		}
+	}
+	t.Log("The first pass saved 100 retained IDs; a reconstructed service completed the last ID")
 }

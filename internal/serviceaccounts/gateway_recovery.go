@@ -129,13 +129,17 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 }
 
 func (s *Service) cleanupGatewayAccount(ctx context.Context, row model.ServiceAccount) error {
-	if err := s.provider.Delete(ctx, row.GatewayID, row.ID, row.ClientUuid); err != nil {
+	// One provider timeout must leave work time for independent later accounts.
+	call, cancel := context.WithTimeout(ctx, 750*time.Millisecond)
+	err := errors.Join(s.provider.Delete(call, row.GatewayID, row.ID, row.ClientUuid), call.Err())
+	cancel()
+	if err != nil {
 		return err
 	}
 	if row.DeletedAt.Valid {
 		return nil
 	}
-	err := s.repository.WithLockedResource(ctx, "ServiceAccount", "id", row.ID, func(ctx context.Context, tx storage.Transaction, value any) error {
+	err = s.repository.WithLockedResource(ctx, "ServiceAccount", "id", row.ID, func(ctx context.Context, tx storage.Transaction, value any) error {
 		current, ok := value.(model.ServiceAccount)
 		if !ok || current.ID != row.ID || current.GatewayID != row.GatewayID {
 			return runtime.ErrScanContract
