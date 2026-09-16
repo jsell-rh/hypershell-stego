@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -203,6 +204,30 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	_, connection = grpcClient(t, grpcAddress, apiTLS)
 	client = control.NewGatewayIdentityServiceClient(connection)
 	verify(4, 3, true, maximum)
+	// The same private API supplies the common encrypted journal after restart.
+	journal, err := gatewayidentity.NewProviderStateJournal(client, protector, stateKey.Instance, gateway.ID, 3, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := journal.Load(cleaner)
+	if err != nil || snapshot.Version() != 4 || !bytes.Equal(snapshot.Reveal(), maximum) {
+		t.Fatal("common journal did not recover the largest record", err)
+	}
+	updated, err := journal.Save(cleaner, snapshot, closed)
+	if err != nil || updated.Version() != 5 || !bytes.Equal(updated.Reveal(), closed) {
+		t.Fatal("common journal save failed", err)
+	}
+	verify(5, 3, true, closed)
+	if _, err := journal.Save(cleaner, snapshot, closed); status.Code(err) != codes.Aborted {
+		t.Fatal("common journal accepted a stale snapshot", err)
+	}
+	stale, err := gatewayidentity.NewProviderStateJournal(client, protector, stateKey.Instance, gateway.ID, 2, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := stale.Load(cleaner); status.Code(err) != codes.Aborted {
+		t.Fatal("common journal accepted a stale resource observation", err)
+	}
 	save(cleaner, 3, 2, last, true, codes.Aborted)
 	if code, _ := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil); code != 404 {
 		t.Fatal("recovery state restored public Gateway visibility", code)

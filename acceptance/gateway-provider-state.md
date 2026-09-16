@@ -40,3 +40,16 @@ for those checks. The test now captures the event sequence after access checks
 and compares it across state operations. This also detects an event that the
 runtime has already delivered. A new runtime run is required for the remaining
 restart and cleanup assertions. The other required API tests passed in that run.
+
+Compiler `aa75def93e5673578c165a3fbd78ea7b243d0395` adds the common
+`StateJournal`. The Gateway adapter fixes the identity scope, resource ID,
+observed revision, and cleanup mode. It rejects a mismatched response before the
+journal can return usable state. STEGO supplies encryption, bounds, version
+checks, and exact save-response checks. The adapter contains no encryption or
+write-retry mechanism.
+
+The acceptance test now loads the largest retained record through this journal
+after API restart, saves the next protected version through TLS gRPC, and rejects
+both a stale state snapshot and a stale Gateway observation. Local compilation
+passed. Runtime results for this extension remain pending. The production
+Keycloak controller still needs the common provider lifecycle and key setup.
