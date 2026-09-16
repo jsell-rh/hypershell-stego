@@ -486,14 +486,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	roles := map[string]any{"name": "console-roles", "protocol": "openid-connect", "protocolMapper": "oidc-usermodel-client-role-mapper", "config": map[string]string{"usermodel.clientRoleMapping.clientId": "hypershell", "claim.name": "resource_access.hypershell.roles", "jsonType.label": "String", "multivalued": "true", "access.token.claim": "true", "id.token.claim": "true"}}
 	k.adminRequest(t, "POST", "/clients", map[string]any{"clientId": "hypershell-console", "protocol": "openid-connect", "publicClient": false, "secret": "acceptance-only-console-secret", "enabled": true, "standardFlowEnabled": true, "directAccessGrantsEnabled": false, "fullScopeAllowed": true, "redirectUris": []string{address + "/auth/callback"}, "defaultClientScopes": []string{"basic", "profile", "roles", "email"}, "attributes": map[string]string{"pkce.code.challenge.method": "S256", "access.token.lifespan": "20", "post.logout.redirect.uris": address + "/auth/logout"}, "protocolMappers": []any{audience, roles}})
 	var workload *browserGatewayWorkload
-	sessions := databaseSetup(t, false)
-	schema, err := os.ReadFile("../console/out/browser/schema.sql")
-	if err != nil {
-		t.Fatal(err)
-	}
-	if _, err := sessions.db.Exec(string(schema)); err != nil {
-		t.Fatal(err)
-	}
+	sessions := browserDatabase(t)
 	if deployment != nil && os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		workload, settings = prepareBrowserGatewayWorkload(t, deployment, f, sessions, k, settings)
 	}

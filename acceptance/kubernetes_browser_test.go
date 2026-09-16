@@ -193,6 +193,20 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 	if err != nil {
 		p.t.Fatal(err)
 	}
+	if console {
+		// The console fixture already has its own limited runtime login.
+		// Change only the address and CA path for the generated Pod.
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		var hasDomain bool
+		if err := f.db.QueryRowContext(ctx, "SELECT to_regclass('public.gateways') IS NOT NULL").Scan(&hasDomain); err != nil || hasDomain {
+			p.t.Fatal("console database contains API tables", err)
+		}
+		dsn := &url.URL{Scheme: "postgres", Host: p.host("fixture") + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(cfg.User, cfg.Password)}
+		dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}}.Encode()
+		p.databases[f.dsn] = dsn.String()
+		return dsn.String()
+	}
 	role := "browser_" + strings.TrimPrefix(cfg.Database, "hypershell_test_")
 	id := pgx.Identifier{role}.Sanitize()
 	password := hex.EncodeToString(makeRandom(p.t, 24))
@@ -210,11 +224,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 		}
 	})
 	grants := []string{"GRANT CONNECT ON DATABASE " + pgx.Identifier{cfg.Database}.Sanitize() + " TO " + id, "GRANT USAGE ON SCHEMA public TO " + id}
-	if console {
-		grants = append(grants, "GRANT SELECT, INSERT, UPDATE, DELETE ON stego_browser_sessions TO "+id)
-	} else {
-		grants = append(grants, "GRANT USAGE ON SCHEMA stego_schema TO "+id, "GRANT SELECT ON stego_schema.generation TO "+id, "GRANT USAGE ON SCHEMA stego_outbox TO "+id, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO "+id, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO "+id)
-	}
+	grants = append(grants, "GRANT USAGE ON SCHEMA stego_schema TO "+id, "GRANT SELECT ON stego_schema.generation TO "+id, "GRANT USAGE ON SCHEMA stego_outbox TO "+id, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO "+id, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO "+id)
 	for _, statement := range grants {
 		if _, err := f.db.ExecContext(ctx, statement); err != nil {
 			p.t.Fatal(err)
@@ -230,12 +240,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 			p.t.Fatal("runtime role must have read-only schema-generation access", err)
 		}
 	}
-	if console {
-		var canReadDomain bool
-		if err := f.db.QueryRowContext(ctx, "SELECT has_table_privilege($1,'gateways','SELECT')", role).Scan(&canReadDomain); err != nil || canReadDomain {
-			p.t.Fatal("console role can read domain data", err)
-		}
-	}
+
 	dsn := &url.URL{Scheme: "postgres", Host: p.host("fixture") + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(role, password)}
 	dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}}.Encode()
 	p.databases[f.dsn] = dsn.String()
