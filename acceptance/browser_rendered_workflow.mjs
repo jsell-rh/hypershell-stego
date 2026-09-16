@@ -61,7 +61,9 @@ async function dashboardEditor(workspace,heading){
   {type:'keyUp',value:'a'},{type:'keyUp',value:'\uE009'},
   {type:'keyDown',value:'\uE017'},{type:'keyUp',value:'\uE017'},
  ]}]});
- await type('.monaco-editor textarea.inputarea','{');
+ // An opening brace alone becomes valid JSON when the editor adds its pair.
+ await type('.monaco-editor textarea.inputarea','{invalid');
+ await until(()=>script(`return document.querySelector('.monaco-editor .view-lines')?.innerText.includes('invalid');`),'invalid policy input');
  await until(()=>script(`return document.body.innerText.includes('Invalid JSON') && document.querySelector('[data-testid="confirm-global-policy"]')?.disabled;`),'invalid policy rejection');
  assert.deepEqual(await script('return window.stegoEditorPolicyViolations'),[],'editor violated the browser content policy');
  await writeFile(outputPath+'.editor.png',Buffer.from(await command('/screenshot'),'base64'));

@@ -94,3 +94,23 @@ input, invalid JSON rejection, later recovery and revocation, full telemetry
 correlation, and deletion. Independent cleanup passed at
 `2026-09-16T23:32:38.175068+00:00`. A new live run must check the revised
 interaction and retain the early policy result.
+
+## Keyboard input and blocked styles
+
+[Live run 35162964198](https://github.com/jsell-rh/hypershell-stego/actions/runs/35162964198)
+confirmed native keyboard focus. It failed after 279.95 seconds because the
+invalid-JSON message did not appear. The screenshot and page text show `{}`:
+the editor added a closing brace to the test's opening brace. This is valid
+JSON. The test now enters `{invalid` and checks that the text is visible before
+it checks the error message and disabled submission.
+
+The early policy listener also recorded `style-src-elem` and `style-src-attr`
+violations. The screenshot shows incomplete editor styling. The revised input
+does not fix those violations. The common browser runtime and the application's
+dependency integration need a checked solution for dynamic styles before the
+application gate can pass. No content-policy rule changed in this test fix.
+
+Later recovery, viewer revocation, complete telemetry correlation, and deletion
+checks did not run. All 404 repeated-generation hashes matched. CI retained the
+failure artifacts, and an independent operator check confirmed complete test
+cleanup and an empty lease. No deployed workflow pass is claimed.
