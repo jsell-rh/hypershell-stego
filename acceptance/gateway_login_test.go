@@ -70,10 +70,17 @@ func (k *keycloakFixture) human(t *testing.T, name string) string {
 // Passwords go only to the provider form. The OAuth password grant is not used.
 func (k *keycloakFixture) browserLogin(t *testing.T, clientID, username string) string {
 	t.Helper()
+	return k.browserLoginAt(t, clientID, username, "http://127.0.0.1:7777/callback", "")
+}
+func (k *keycloakFixture) browserLoginAt(t *testing.T, clientID, username, callback, clientSecret string) string {
+	t.Helper()
+	expectedCallback, err := url.Parse(callback)
+	if err != nil || expectedCallback.User != nil || expectedCallback.RawQuery != "" || expectedCallback.Fragment != "" {
+		t.Fatal("invalid fixture callback")
+	}
 	verifier := base64.RawURLEncoding.EncodeToString(makeRandom(t, 32))
 	challenge := sha256.Sum256([]byte(verifier))
 	state := base64.RawURLEncoding.EncodeToString(makeRandom(t, 24))
-	callback := "http://127.0.0.1:7777/callback"
 	query := url.Values{"client_id": {clientID}, "redirect_uri": {callback}, "response_type": {"code"}, "scope": {"openid"}, "code_challenge_method": {"S256"}, "code_challenge": {base64.RawURLEncoding.EncodeToString(challenge[:])}, "state": {state}}
 	ca, err := os.ReadFile(k.options.CAFile)
 	if err != nil {
@@ -135,10 +142,14 @@ func (k *keycloakFixture) browserLogin(t *testing.T, clientID, username string) 
 	}
 	response = request("POST", target.RequestURI(), []byte(url.Values{"username": {username}, "password": {"acceptance-only-user-password"}, "credentialId": {""}}.Encode()))
 	redirect, err := url.Parse(response.Header.Get("Location"))
-	if response.StatusCode != 302 || err != nil || redirect.Scheme != "http" || redirect.Host != "127.0.0.1:7777" || redirect.Path != "/callback" || redirect.Query().Get("state") != state || redirect.Query().Get("code") == "" {
+	if response.StatusCode != 302 || err != nil || redirect.Scheme != expectedCallback.Scheme || redirect.Host != expectedCallback.Host || redirect.Path != expectedCallback.Path || redirect.User != nil || redirect.Fragment != "" || redirect.Query().Get("state") != state || redirect.Query().Get("code") == "" {
 		t.Fatalf("browser login did not return an authorization code: %d", response.StatusCode)
 	}
-	response = request("POST", "/realms/workflow/protocol/openid-connect/token", []byte(url.Values{"grant_type": {"authorization_code"}, "client_id": {clientID}, "redirect_uri": {callback}, "code": {redirect.Query().Get("code")}, "code_verifier": {verifier}}.Encode()))
+	exchange := url.Values{"grant_type": {"authorization_code"}, "client_id": {clientID}, "redirect_uri": {callback}, "code": {redirect.Query().Get("code")}, "code_verifier": {verifier}}
+	if clientSecret != "" {
+		exchange.Set("client_secret", clientSecret)
+	}
+	response = request("POST", "/realms/workflow/protocol/openid-connect/token", []byte(exchange.Encode()))
 	var token struct {
 		AccessToken string `json:"access_token"`
 	}
@@ -258,7 +269,14 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 		t.Fatal("real login returned a database catalog field")
 	}
 	recipient := currentUser(t, root, bob)
-	stopController, logs := startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	domainPolicy, err := json.Marshal(map[string]string{f.cluster: "console.example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	startConsoleController := func() (func(), func() string) {
+		return startIdentityControllerWithExit(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken, 0, "HYPERSHELL_GATEWAY_CONSOLE_DOMAINS="+string(domainPolicy))
+	}
+	stopController, logs := startConsoleController()
 	defer stopController()
 	gatewayClient, _ := keycloak.GatewayClientID(gateway.ID)
 	deadline := time.Now().Add(15 * time.Second)
@@ -314,6 +332,23 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 		}
 		return value
 	}
+	consoleClient := k.namedIdentityClient(t, "hs-console-"+gateway.ID)
+	if consoleClient == nil {
+		t.Fatal("console client is absent")
+	}
+	secretResponse := k.adminRequest(t, "GET", "/clients/"+url.PathEscape(consoleClient["id"].(string))+"/client-secret", nil)
+	var consoleSecret struct{ Value string }
+	if json.Unmarshal(secretResponse.Body, &consoleSecret) != nil || consoleSecret.Value == "" {
+		t.Fatal("console credential is absent")
+	}
+	consoleOrigin, err := keycloak.GatewayConsoleOrigin(gateway.ID, "console.example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	consoleLogin := func(username string) string {
+		t.Helper()
+		return k.browserLoginAt(t, "hs-console-"+gateway.ID, username, consoleOrigin+"/auth/callback", consoleSecret.Value)
+	}
 	waitRoles := func(username, subject string, want []string) string {
 		t.Helper()
 		deadline := time.Now().Add(20 * time.Second)
@@ -323,7 +358,15 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 			if identity.UserID != subject {
 				t.Fatal("Gateway login changed subject")
 			}
-			if equalStringSet(identity.Roles, want) {
+			consoleToken := consoleLogin(username)
+			consoleIdentity := verify(consoleToken)
+			if consoleIdentity.UserID != subject {
+				t.Fatal("console login changed subject")
+			}
+			if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: "hypershell"}, consoleToken, jwks); err == nil {
+				t.Fatal("console token acquired API audience")
+			}
+			if equalStringSet(identity.Roles, want) && equalStringSet(consoleIdentity.Roles, want) {
 				waitSync()
 				return raw
 			}
@@ -334,6 +377,9 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 		}
 	}
 	ownerGatewayToken := waitRoles("alice", aliceID, []string{keycloak.RoleAdmin, keycloak.RoleUser})
+	if code, _ := requestJSON(t, "GET", root+"/gateways", consoleLogin("alice"), nil); code != 401 {
+		t.Fatal("console token reached control-plane API", code)
+	}
 	// Grant synchronization must not add Gateway audiences to a new API token.
 	freshAPIToken := k.browserLogin(t, "hypershell", "alice")
 	if _, err := auth.VerifyWithJWKS(auth.Config{Issuer: k.options.ServerURL + "/realms/workflow", Audience: "hypershell", RolesClaim: "resource_access.hypershell.roles"}, freshAPIToken, jwks); err != nil {
@@ -510,7 +556,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if value := readSync().GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]; value.GetStatus() != "Unknown" || value.GetLastTransitionTime() != revokedCondition.GetLastTransitionTime() {
 		t.Fatal("API restart lost invalidated grant condition", value)
 	}
-	stopController, logs = startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
+	stopController, logs = startConsoleController()
 	defer stopController()
 	waitRoles("renamed-bob", bobID, nil)
 	waitRoles("bob", replacementID, nil)
