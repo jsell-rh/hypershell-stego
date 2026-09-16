@@ -193,9 +193,13 @@ func TestIdentityConditionDuringProviderTimeoutAndDesiredChange(t *testing.T) {
 	// Parent cancellation cannot turn an unfinished provider call into a failure
 	// observation. Stop only after the next provider call has begun.
 	canceled := provider.next(t)
+	beforeCancel := read()
+	if beforeCancel.ResourceVersion != canceled.revision || beforeCancel.ResourceGeneration != recovered.ResourceGeneration || beforeCancel.Gateway.GetOidc() != recovered.Gateway.GetOidc() || !proto.Equal(condition(beforeCancel), condition(recovered)) {
+		t.Fatal("paused provider changed recovered identity evidence", beforeCancel)
+	}
 	stopController()
 	stable := read()
-	if !errors.Is(canceled.ctx.Err(), context.Canceled) || stable.ResourceVersion != recovered.ResourceVersion || condition(stable).Reason != "IdentityClientReady" {
+	if !errors.Is(canceled.ctx.Err(), context.Canceled) || !proto.Equal(stable, beforeCancel) {
 		t.Fatal("parent cancellation changed condition evidence", stable)
 	}
 	t.Log("Provider timeout, event delivery, API restart, concurrent REST change, fresh retry, and parent cancellation passed")
