@@ -1,7 +1,9 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -10,7 +12,7 @@ import (
 )
 
 func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
-	for _, scenario := range []string{"valid", "foreign redirect", "wrong return path", "oversized response", "wrong readiness", "wrong status", "canceled"} {
+	for _, scenario := range []string{"valid", "foreign redirect", "wrong return path", "oversized response", "wrong readiness", "wrong status", "canceled", "unverified peer"} {
 		t.Run(scenario, func(t *testing.T) {
 			var followed atomic.Int32
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -48,6 +50,13 @@ func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
 			}))
 			defer server.Close()
 			client := server.Client()
+			if scenario == "unverified peer" {
+				transport := client.Transport.(*http.Transport).Clone()
+				// This negative test must not produce a usable browser pin.
+				transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: true}
+				defer transport.CloseIdleConnections()
+				client = &http.Client{Transport: transport}
+			}
 			client.CheckRedirect = func(*http.Request, []*http.Request) error {
 				followed.Add(1)
 				return nil
@@ -57,13 +66,43 @@ func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
 			if scenario == "canceled" {
 				cancel()
 			}
-			err := checkDashboardRoute(ctx, client, server.URL)
+			certificate, err := checkDashboardRoute(ctx, client, server.URL)
 			if (err == nil) != (scenario == "valid") {
 				t.Fatal("unexpected route probe result", err)
+			}
+			if err == nil && !bytes.Equal(certificate, server.Certificate().Raw) || err != nil && certificate != nil {
+				t.Fatal("probe returned an incorrect or unverified browser certificate")
 			}
 			if followed.Load() != 0 {
 				t.Fatal("probe followed a redirect or called the original redirect handler")
 			}
 		})
+	}
+}
+
+func TestDashboardRouteProbeReturnsVerifiedLeafWithoutRootInServerChain(t *testing.T) {
+	id := identity(t, "localhost")
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/readyz":
+			_, _ = w.Write([]byte("ok\n"))
+		case "/workspaces":
+			http.Redirect(w, r, "/auth/login?return_to=%2Fworkspaces", http.StatusSeeOther)
+		default:
+			w.WriteHeader(http.StatusBadRequest)
+		}
+	}))
+	server.TLS = id.server.Clone()
+	server.TLS.MinVersion = tls.VersionTLS13
+	server.TLS.ClientAuth = tls.NoClientCert
+	server.StartTLS()
+	defer server.Close()
+	if len(server.TLS.Certificates[0].Certificate) != 1 {
+		t.Fatal("fixture must omit the CA from its served chain")
+	}
+	probe := newConsoleBrowser(t, server.URL, id.config.CAFile)
+	certificate, err := checkDashboardRoute(context.Background(), probe.client, server.URL)
+	if err != nil || !bytes.Equal(certificate, server.TLS.Certificates[0].Certificate[0]) {
+		t.Fatal("probe did not return the CA-verified leaf certificate", err)
 	}
 }

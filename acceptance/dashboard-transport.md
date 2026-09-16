@@ -52,3 +52,27 @@ and status, and caller cancellation. It also proves that the probe does not
 follow a redirect or call the original client's redirect handler. The live
 workflow must be repeated after complete cleanup. The earlier Chromium
 `ERR_CONNECTION_CLOSED` remains unresolved.
+
+## Verified browser certificate
+
+Run `35149129268` at `b63eca8` passed both HTTPS probe requests from the
+browser fixture. The browser then reported `net::ERR_CERT_AUTHORITY_INVALID`
+for `/workspaces`. Independent operator checks found that both public console
+hosts passed CA and hostname verification. Each host sent its configured leaf
+certificate without the root CA. The test had supplied the CA's public-key
+hash to Chromium instead of the leaf's hash.
+
+Chromium checks the supplied hashes against the certificates that the server
+sends. See its [certificate verifier](https://chromium.googlesource.com/chromium/src/+/5bbf537b285f8b2e09858d7e8c2bcceb1cd656f0/services/network/ignore_errors_cert_verifier.cc).
+The absent CA could not match. This explains the certificate error in this
+run. It does not establish the cause of the earlier connection-closed error.
+
+The test now obtains the leaf certificate from the verified HTTPS probe and
+uses that certificate for its browser pin. Both probe requests must verify
+the same leaf. A failed response, unverified peer, changed certificate, or
+certificate larger than 16 KiB returns no certificate. Production TLS and
+the browser's existing test-pin mechanism are unchanged.
+
+Focused tests passed in 0.028 seconds. They include an unverified-peer
+rejection and a CA-signed server that omits the root from its chain. A live
+result for this correction is still required.

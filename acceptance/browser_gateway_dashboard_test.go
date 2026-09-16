@@ -1,8 +1,10 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -34,11 +36,16 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 	}
 	// Check the route from the browser fixture, not only from the controller Pod.
 	probe := newConsoleBrowser(w.t, origin, ca)
-	if err := checkDashboardRoute(context.Background(), probe.client, origin); err != nil {
+	certificate, err := checkDashboardRoute(context.Background(), probe.client, origin)
+	if err != nil {
 		w.t.Fatal(err)
 	}
 	w.t.Log("Dashboard route passed verified HTTPS and protected-document redirect checks from the browser fixture")
-	browser := newRenderedBrowser(w.t, origin, ca, w.identity.certificate)
+	leafFile := filepath.Join(w.t.TempDir(), "verified-console-leaf.pem")
+	if err := os.WriteFile(leafFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate}), 0600); err != nil {
+		w.t.Fatal("verified dashboard certificate cannot be saved")
+	}
+	browser := newRenderedBrowser(w.t, origin, leafFile, w.identity.certificate)
 	if browser == nil {
 		w.t.Fatal("public Gateway workflow requires a rendered browser")
 	}
@@ -54,7 +61,8 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 
 // Inspect redirects without following them. The service client deliberately
 // rejects these responses, so this check uses the browser fixture transport.
-func checkDashboardRoute(ctx context.Context, browser *http.Client, origin string) error {
+func checkDashboardRoute(ctx context.Context, browser *http.Client, origin string) ([]byte, error) {
+	var certificate []byte
 	client := *browser
 	client.Timeout = 5 * time.Second
 	client.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
@@ -75,6 +83,14 @@ func checkDashboardRoute(ctx context.Context, browser *http.Client, origin strin
 				return fmt.Errorf("dashboard fixture HTTPS request failed: %s", check.path)
 			}
 			defer response.Body.Close()
+			if response.TLS == nil || len(response.TLS.VerifiedChains) == 0 || len(response.TLS.VerifiedChains[0]) == 0 || len(response.TLS.PeerCertificates) == 0 || !response.TLS.VerifiedChains[0][0].Equal(response.TLS.PeerCertificates[0]) {
+				return fmt.Errorf("dashboard fixture peer certificate was not verified")
+			}
+			leaf := response.TLS.PeerCertificates[0].Raw
+			if len(leaf) == 0 || len(leaf) > 16<<10 || certificate != nil && !bytes.Equal(certificate, leaf) {
+				return fmt.Errorf("dashboard fixture peer certificate changed or exceeds its limit")
+			}
+			certificate = append([]byte(nil), leaf...)
 			body, err := io.ReadAll(io.LimitReader(response.Body, 1025))
 			if err != nil || len(body) > 1024 || response.StatusCode != check.status {
 				return fmt.Errorf("dashboard fixture HTTPS response differs: %s", check.path)
@@ -85,8 +101,8 @@ func checkDashboardRoute(ctx context.Context, browser *http.Client, origin strin
 			return nil
 		}()
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return nil
+	return certificate, nil
 }
