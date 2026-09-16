@@ -90,10 +90,18 @@ jobs:
           set -euo pipefail
           npm ci --ignore-scripts --no-audit --no-fund 2>&1 | tee "$RUNNER_TEMP/dashboard-source/npm-install.log"
           npm run typecheck 2>&1 | tee "$RUNNER_TEMP/dashboard-source/typecheck.log"
-          npm test -- --runInBand src/app/__tests__/AppRoutes.spec.tsx src/pages/__tests__/SandboxListPage.spec.tsx 2>&1 | tee "$RUNNER_TEMP/dashboard-source/router-tests.log"
           ./node_modules/.bin/webpack --config webpack.stego.cjs 2>&1 | tee "$RUNNER_TEMP/dashboard-source/ui-build.log"
           cp public/favicon.svg dist/assets/favicon.svg
           git diff --exit-code
+      - name: Check the upstream router behavior
+        id: router
+        if: steps.frontend.outcome == 'success'
+        continue-on-error: true
+        shell: bash
+        working-directory: upstream-dashboard/frontend
+        run: |
+          set -euo pipefail
+          npm test -- --runInBand src/app/__tests__/AppRoutes.spec.tsx src/pages/__tests__/SandboxListPage.spec.tsx 2>&1 | tee "$RUNNER_TEMP/dashboard-source/router-tests.log"
       - name: Check runtime JavaScript dependencies
         id: dependencies
         if: always() && steps.frontend.outcome != 'skipped'
@@ -121,12 +129,13 @@ jobs:
         env:
           BACKEND: ${{ steps.backend.outcome }}
           FRONTEND: ${{ steps.frontend.outcome }}
+          ROUTER: ${{ steps.router.outcome }}
           DEPENDENCIES: ${{ steps.dependencies.outcome }}
           ASSETS: ${{ steps.assets.outcome }}
         run: |
           python3 - <<'PY'
           import json, os, pathlib
-          outcomes = {name.lower(): os.environ[name] for name in ("BACKEND", "FRONTEND", "DEPENDENCIES", "ASSETS")}
+          outcomes = {name.lower(): os.environ[name] for name in ("BACKEND", "FRONTEND", "ROUTER", "DEPENDENCIES", "ASSETS")}
           target = pathlib.Path(os.environ["RUNNER_TEMP"]) / "dashboard-source"
           target.mkdir(exist_ok=True)
           (target / "outcomes.json").write_text(json.dumps(outcomes, indent=2) + "\n")
