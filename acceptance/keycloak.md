@@ -250,8 +250,10 @@ A new real-provider test reproduced the failure in STEGO CI run
 The regression uses client roles only, the Hypershell permission set, distinct
 provider and public client IDs, and legacy ownership keys. Both generated unit
 variants pass after the fix, with the race detector, in 14.373 seconds. The
-Hypershell adapter suite passes in 1.328 seconds. Real-provider and rendered
-application reruns are still required before this fix is qualified.
+Hypershell adapter suite passes in 1.328 seconds. The real-provider suite passed in 63.85 seconds in STEGO CI run
+[35038752735](https://github.com/jsell-rh/stego/actions/runs/35038752735).
+The restricted client-role operation and inspection took 543 milliseconds.
+The rendered application rerun is still required.
 
 Browser test failures now retain only the fixed provisioning operation's status,
 duration, and transport side from generated OTEL spans. The test does not print

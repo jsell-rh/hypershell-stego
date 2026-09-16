@@ -277,7 +277,7 @@ func (c *Client) NewStream(parent context.Context, desc *grpc.StreamDesc, method
 		return nil, err
 	}
 	handedOff = true
-	return &boundedStream{ClientStream: stream, ctx: ctx, handshake: handshake}, nil
+	return &boundedStream{ClientStream: stream, ctx: ctx, handshake: handshake, finish: finish}, nil
 }
 
 type boundedStream struct {
@@ -287,14 +287,30 @@ type boundedStream struct {
 	headerOnce sync.Once
 	header     metadata.MD
 	headerErr  error
+	finish     func(error)
 }
 
+// Terminal methods can return before gRPC invokes OnFinish. Complete telemetry
+// synchronously so the caller can close its runtime after the operation ends.
+// TraceClientRPC supplies the same once-only finish function to both paths.
+func (s *boundedStream) recordTerminal(err error) {
+	if err == nil || s.finish == nil {
+		return
+	}
+	if err == io.EOF {
+		err = nil
+	}
+	s.finish(err)
+}
 func (s *boundedStream) Context() context.Context { return s.ctx }
 func (s *boundedStream) Header() (metadata.MD, error) {
 	s.headerOnce.Do(func() { s.header, s.headerErr = s.ClientStream.Header(); s.handshake.Stop() })
 	if context.Cause(s.ctx) == context.DeadlineExceeded {
-		return nil, status.Error(codes.DeadlineExceeded, "RPC stream deadline exceeded")
+		err := status.Error(codes.DeadlineExceeded, "RPC stream deadline exceeded")
+		s.recordTerminal(err)
+		return nil, err
 	}
+	s.recordTerminal(s.headerErr)
 	// A nil header means the RPC ended before headers. The caller must receive
 	// its terminal status. metadata.MD.Copy turns nil into a non-nil empty map.
 	if s.header == nil {
@@ -308,8 +324,9 @@ func (s *boundedStream) RecvMsg(message any) error {
 	}
 	err := s.ClientStream.RecvMsg(message)
 	if context.Cause(s.ctx) == context.DeadlineExceeded {
-		return status.Error(codes.DeadlineExceeded, "RPC stream deadline exceeded")
+		err = status.Error(codes.DeadlineExceeded, "RPC stream deadline exceeded")
 	}
+	s.recordTerminal(err)
 	return err
 }
 

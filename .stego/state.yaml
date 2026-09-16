@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916000851-688d91bc5975
+        module_version: v0.0.0-20260916001440-3e39fd288d9d
         vcs: git
-        revision: 688d91bc597589a42bc651d0957688ac3a064b5a
+        revision: 3e39fd288d9d12ddf03c6e11d9d99e82ab433a53
         source_state: clean
     service_hash: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
     registry_sha: gateway-workflow
-    registry_content_sha256: 8be21ba3fdba5521d620e5e8a6b57b13c3cf6c36f06b689c6a9958b916a9ca05
+    registry_content_sha256: 5614df5e11d53fbfe5ac3ad233504923e502313b9619765ef9066ae6d0638989
     components:
         browser-telemetry:
             version: 1.0.0
@@ -149,7 +149,7 @@ last_applied:
             version: 2.0.2
             sha: gateway-workflow
         grpc-application:
-            version: 1.12.2
+            version: 1.12.3
             sha: gateway-workflow
         health-check:
             version: 1.0.0
@@ -441,7 +441,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 458fc086301347daf0016375a910624ab23df7ef46ded43360f10faf61c8a7f9
+        cli/command/version.go: 59b0bb87b20579ddb2b05e7053ec26b8108c3f7c76b6046023ff8f5ee8642de0
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: e1b300527a9e97515f6dc5e517f4928da692602d7aaddb88a32b4d63594933f2
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -485,7 +485,7 @@ last_applied:
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
-        grpcapi/client/client.go: 301ae39741a4a2bf6ae8b18a1479ea2d76e79f48854c9ca7fbc53e778b1c6caa
+        grpcapi/client/client.go: 0943d1f1aedeb9941eca8d774073a83cdb3d79f92347742d028606ac238a94ea
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
         grpcapi/pb/datamodel.pb.go: c6caf936644ead4b030c774ab28e36bf00717b54c70dcdc46088e7da13154294
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: eb716ebc004ebbe41e0b5bac6f9cce76d3b7a0dd5e0585925c8bb26926063e3d
