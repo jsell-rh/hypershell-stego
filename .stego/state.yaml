@@ -128,13 +128,13 @@ last_applied:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916133647-e1c32222f596
+        module_version: v0.0.0-20260916134851-dfc9a1efa4c3
         vcs: git
-        revision: e1c32222f596f5af127b84f1d87254af55fa7a9a
+        revision: dfc9a1efa4c33d25896e4f97852519024b18a23f
         source_state: clean
     service_hash: 30cc51b61963462e9e3cebd7c48c0263358b2d662818e7c0fce35c35684ff7dc
     registry_sha: gateway-workflow
-    registry_content_sha256: c65a17069fdcfa891e5793f96398f9dafaefae1417532afb67333819121f2067
+    registry_content_sha256: 81e0cd2d56a9f1f9ac8afa7d59b7ba576d524d5a949076c27dd7881a2f9f08dc
     components:
         browser-telemetry:
             version: 1.0.0
@@ -164,7 +164,7 @@ last_applied:
             version: 1.0.4
             sha: gateway-workflow
         keycloak-provider:
-            version: 0.14.0
+            version: 0.15.0
             sha: gateway-workflow
         kubernetes-client:
             version: 1.9.0
@@ -441,7 +441,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 620c2c924062b2dc2bc7de3b9c635748f3ec492a784547e03bd056466bd539b1
+        cli/command/version.go: 1cd93011f73b00ac23e8cf18c4893e1061b59a351e503d0be1794115c8e57b0d
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -519,7 +519,7 @@ last_applied:
         keycloak/access_lifecycle.go: 305fd5a8b98dfa17a2cc357cac9aec28c1955c44822cb9455f443bd80caabcfe
         keycloak/client.go: da06c0e730edc9178d615d80014ceef065880fa6d900007fc50ce0c7b0c74a7f
         keycloak/client_configuration.go: 45388a20847e81d10a7853dca0525b9eb4a50cf197d905246bf0ec332837f38c
-        keycloak/client_lifecycle.go: 29574cb12b54cf3164a7af93e6c15d6a9c8144482e20d56b3a61af73f4afb974
+        keycloak/client_lifecycle.go: b7eedf3cdd6ea22296409945d0a4bc17fa5603545ea59787031581cbd7ad3c47
         keycloak/clients.go: a90eeb173833ff8536030f9abf9fc1cbb848d80be63c412dcf975593479a57ae
         keycloak/lifecycle_gate.go: af8c5f51bfbddd596a18b7dd8cbbdbf2cdaf45ddb899abda27ca8939d878a716
         keycloak/mappers.go: d75fe4aa5dc483b400da4a81ad32309a053d97ec98a049316ec765b62f957565
@@ -531,7 +531,7 @@ last_applied:
         keycloak/roles.go: dace6ae663d48a338f3e0f90aff7a5ce44ac335a78481cebd5a76fd57e41120d
         keycloak/scopes.go: 7d12d8455d93facac6f157effd4dfba2dffd72d396cb2357bc85035bcba6c275
         keycloak/service_account_access.go: 2941eb5e6c36ec48573335dce51bb5f2f50002f79b76bfa2e8f3e78261b9dffd
-        keycloak/service_account_lifecycle.go: f9ff11f0d3926ffeaef609a4a2493e401acc1a13418fa6ae241391f501f1b391
+        keycloak/service_account_lifecycle.go: 3ade8e89de54270c4f323dfbf1ba1f9f02d17918f7279b5ffbc85c89a1b1335e
         keycloak/service_account_tokens.go: 8b272f9f9dc0a0d671c8022d34531a41774d4f71d64bca3bedd12231d1ec069d
         keycloak/service_accounts.go: 7f734e63a2fec18e23e94aca53d0afdf81bdea985d1be443a8fc2301eaa96e94
         kubernetes/client.go: 71dadddfbdf51c689d7631f49242f74f7d374fef5f97f36266ce87f85d97613a

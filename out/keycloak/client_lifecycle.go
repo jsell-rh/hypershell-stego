@@ -309,33 +309,9 @@ func (l *clientLifecycle) close(ctx context.Context, expectedID string) error {
 	}
 	defer done()
 	ctx = work
-	snapshot, record, err := l.load(ctx)
+	snapshot, record, err := l.prepareClose(ctx, expectedID)
 	if err != nil {
 		return err
-	}
-	if snapshot.Version() == 0 {
-		if expectedID != "" {
-			record = clientLifecycleRecord{Version: 1, Kind: l.kind, Phase: "bound", Binding: l.identity.binding(expectedID)}
-			if len(l.identity.LegacyAttributes) != 0 {
-				record.Phase = "legacy"
-				record.Binding.Attributes = maps.Clone(l.identity.LegacyAttributes)
-			}
-		} else {
-			record, err = l.discover(ctx)
-			if err != nil {
-				return err
-			}
-		}
-	}
-	if expectedID != "" && record.Binding.ID != expectedID {
-		return ErrClientLifecycle
-	}
-	if !record.Closed {
-		record.Closed = true
-		snapshot, err = l.save(ctx, snapshot, record)
-		if err != nil {
-			return err
-		}
 	}
 	if record.Phase == "migration" {
 		plan, err := RestoreOwnershipMigration(record.Migration)
@@ -357,4 +333,38 @@ func (l *clientLifecycle) close(ctx context.Context, expectedID string) error {
 		}
 	}
 	return l.provider.DeleteClient(ctx, record.Binding)
+}
+
+// prepareClose requires the caller to hold the lifecycle writer gate.
+// It saves closure intent without a provider change.
+func (l *clientLifecycle) prepareClose(ctx context.Context, expectedID string) (runtime.StateSnapshot, clientLifecycleRecord, error) {
+	snapshot, record, err := l.load(ctx)
+	if err != nil {
+		return runtime.StateSnapshot{}, clientLifecycleRecord{}, err
+	}
+	if snapshot.Version() == 0 {
+		if expectedID != "" {
+			record = clientLifecycleRecord{Version: 1, Kind: l.kind, Phase: "bound", Binding: l.identity.binding(expectedID)}
+			if len(l.identity.LegacyAttributes) != 0 {
+				record.Phase = "legacy"
+				record.Binding.Attributes = maps.Clone(l.identity.LegacyAttributes)
+			}
+		} else {
+			record, err = l.discover(ctx)
+			if err != nil {
+				return runtime.StateSnapshot{}, clientLifecycleRecord{}, err
+			}
+		}
+	}
+	if expectedID != "" && record.Binding.ID != expectedID {
+		return runtime.StateSnapshot{}, clientLifecycleRecord{}, ErrClientLifecycle
+	}
+	if !record.Closed {
+		record.Closed = true
+		snapshot, err = l.save(ctx, snapshot, record)
+		if err != nil {
+			return runtime.StateSnapshot{}, clientLifecycleRecord{}, err
+		}
+	}
+	return snapshot, record, nil
 }

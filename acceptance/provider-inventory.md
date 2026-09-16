@@ -132,3 +132,36 @@ Job is `stego-ci/gateway-api-0dbfcfc000fd`. Only one live cluster test is active
 The full application rerun `35103696549` is queued behind `35102064260`; the
 older run does not contain scope closure. Keep application main unchanged until
 the required full checks pass.
+
+## Save discovered clients before provider changes
+
+Source `22e497d` uses STEGO's bounded client-name query for a specified Gateway.
+It still reads each current client and checks exact ownership. A denied query
+has no fallback. The empty-Gateway internal list contract remains unchanged.
+The small HTTPS test checks query parameters, foreign candidates, invalid IDs,
+changed names, and denied requests.
+
+The partial-disable regression failed before provider 0.15.0: no discovered
+client had a saved closure when the second disable failed. Compiler `dfc9a1e`
+provides `PrepareCloseExisting`. Hypershell now saves all validated candidates
+before the first provider mutation. STEGO owns the journal format, encryption,
+version checks, writer gate, and irreversible closure rule. Hypershell supplies
+the Gateway and account IDs and retains the disable-before-delete ordering.
+
+The regression and query tests passed with the race detector in 1.067 seconds.
+Independent recovery of an omitted journal target also passed in 1.038 seconds.
+Logs are `prepare-closure-app-focused.log` and
+`prepare-closure-omitted-focused.log` in the persistent Gateway cleanup run
+directory. Both generated targets have no drift. Full application qualification
+for this provider update is pending.
+
+Run `35103462998` also passed all seven SQL recovery checks with the strict CI
+wrapper. Its stored JSON contains no failures or skips and includes the package
+pass. Evidence is in `journal-strict-wrapper-result`. That run uses the earlier
+compiler `e1c3222`; it does not qualify the new preparation operation.
+
+Large legacy inventories still need bounded discovery progress. The current
+bulk helper reads the complete candidate list before it saves these records.
+A provider deadline during that read can still prevent progress. Saved account
+and journal scans are bounded and have checkpoints; provider discovery must
+meet the same recovery requirement before this work is complete.

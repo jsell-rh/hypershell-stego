@@ -104,13 +104,32 @@ func TestGatewayCleanupRetriesAfterPartialDisable(t *testing.T) {
 	if err := os.WriteFile(secret, []byte("test-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, AccountJournal: testAccountJournals(t)})
+	journals := testAccountJournals(t)
+	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, AccountJournal: journals})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
 	if err := client.DeleteGatewayServiceAccounts(context.Background(), gatewayID); err == nil || strings.Contains(err.Error(), "private") {
 		t.Fatal("partial provider failure was lost or exposed", err)
+	}
+	// A failed disable must not keep later discovered clients out of durable
+	// recovery. Register the whole candidate set before its first mutation.
+	for _, name := range names[:3] {
+		mu.Lock()
+		accountID := clients[name].Attributes[serviceAccountIDAttribute]
+		mu.Unlock()
+		journal, err := journals(gatewayID, accountID, true)
+		if err != nil {
+			t.Fatal(err)
+		}
+		saved, err := journal.Load(context.Background())
+		var closed struct {
+			Closed bool `json:"closed"`
+		}
+		if err != nil || saved.Version() == 0 || json.Unmarshal(saved.Reveal(), &closed) != nil || !closed.Closed {
+			t.Error("discovered client has no retained closure before disable failure", name, err)
+		}
 	}
 	mu.Lock()
 	if deletes != 0 || clients["first"].Enabled || !clients["second"].Enabled {

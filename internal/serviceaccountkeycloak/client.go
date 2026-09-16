@@ -308,6 +308,16 @@ func (c *Client) DeleteGatewayServiceAccounts(ctx context.Context, gatewayID str
 	if err != nil {
 		return err
 	}
+	// Save every discovered target before a provider error can stop this batch.
+	for _, client := range clients {
+		lifecycle, err := c.accountLifecycle(gatewayID, client.ServiceAccountID, true)
+		if err != nil {
+			return err
+		}
+		if err = lifecycle.PrepareCloseExisting(ctx, client.UUID); err != nil {
+			return err
+		}
+	}
 	for _, client := range clients {
 		if err = c.DisableServiceAccount(ctx, client.UUID, gatewayID, client.ServiceAccountID); err != nil {
 			return err
