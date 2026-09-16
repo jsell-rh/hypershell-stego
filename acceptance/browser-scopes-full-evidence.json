@@ -1,0 +1,23 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35153115321",
+  "source": "f182ec538e87a54fa154a4187f0e6db28198c22a",
+  "compiler": "42c7ea13fb95995e9d24666637bceb61dbdbd591",
+  "passed_top_level_test_count": 301,
+  "failed_tests": [],
+  "skipped_tests": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes"
+  ],
+  "log_sha256": "936709dad03f67907fe8399f8460f92d361cce9e87fc48d8d7b5bea9d78127c2",
+  "jobs": {
+    "acceptance (browser)": "success",
+    "web-console": "success",
+    "service-image": "success",
+    "acceptance (core)": "success",
+    "sandbox-workload": "skipped",
+    "cnpg-gateway-workflow": "skipped"
+  },
+  "scope": "The core, rendered management browser, management UI, and service image checks passed at the stated source. Four tests require separate live fixtures and were skipped here. The CNPG and Sandbox jobs were not run. This result does not prove the live per-Gateway dashboard workflow."
+}
