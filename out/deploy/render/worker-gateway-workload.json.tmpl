@@ -74,6 +74,28 @@
                 },
                 "podSelector": {
                   "matchLabels": {
+                    "app.kubernetes.io/name": "hypershell-provisioner"
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "ports": [
+              {
+                "port": 9090,
+                "protocol": "TCP"
+              }
+            ],
+            "to": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
                     "app.kubernetes.io/name": "hypershell"
                   }
                 }

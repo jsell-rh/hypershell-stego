@@ -125,6 +125,7 @@ overrides:
         component: grpc-application
         process: provisioner
         network_peers:
+          - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-workload, port: 9090, protocol: TCP}
           - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: ingress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
@@ -178,21 +179,26 @@ overrides:
           - {direction: egress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 5432, protocol: TCP}
           - {direction: egress, namespace: control, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
+          - {direction: ingress, namespace: external, external_namespace: openshift-ingress, pod_label: ingresscontroller.operator.openshift.io/deployment-ingresscontroller, pod_value: default, port: 8443, protocol: TCP}
+          - {direction: ingress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
+          - {direction: ingress, namespace: allocated, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-console, port: 8080, protocol: TCP}
+          - {direction: egress, namespace: allocated, pod_label: app.kubernetes.io/name, pod_value: openshell-gateway, port: 8080, protocol: TCP}
         namespace_prefix: openshell-
         suffix_length: 16
         owner_label: hypershell.redhat.io/gateway-id
         manager: hypershell-gateway-controller
         quota:
-          - {resource: pods, value: "2"}
-          - {resource: limits.cpu, value: "1"}
-          - {resource: limits.memory, value: 1Gi}
-          - {resource: limits.ephemeral-storage, value: 512Mi}
+          - {resource: pods, value: "3"}
+          - {resource: limits.cpu, value: "4500m"}
+          - {resource: limits.memory, value: 2560Mi}
+          - {resource: limits.ephemeral-storage, value: 768Mi}
           - {resource: requests.storage, value: 2Gi}
         bindings:
           - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}
           - {role: gateway-runtime, service_account: openshell-gateway, namespace: allocated}
           - {role: gateway-reviews, service_account: openshell-gateway, namespace: allocated}
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
+          - {external_role: "system:openshift:scc:nonroot-v2", service_account: hypershell-gateway-console, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
       - name: gateway-state
         network_isolation: true
@@ -248,6 +254,7 @@ overrides:
         optional_external_endpoints: [gateway-public]
         files_secret: hypershell-gateway-workload-files
         network_peers:
+          - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-provisioner, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
       - name: sandbox-count

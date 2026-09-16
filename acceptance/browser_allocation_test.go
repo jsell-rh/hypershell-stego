@@ -31,7 +31,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		if err := allocator.RequireNamespace(ctx, target.profile, ns, target.id); err != nil {
 			w.t.Fatal("namespace was not allocated", err)
 		}
-		pods, storage := "2", "512Mi"
+		pods, storage := "3", "768Mi"
 		if target.profile == "gateway-state" {
 			pods, storage = "0", "64Mi"
 		}

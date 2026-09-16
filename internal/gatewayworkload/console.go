@@ -84,9 +84,8 @@ func consoleConfigurationDigest(id string, secrets []object) (string, error) {
 	return kube.OpaqueSecretSetDigest(ns, consoleSecretNames[:], consoleOwner(id), secrets)
 }
 
-// EnsureConsole starts only after the allocator and all four controller-owned
-// dependency Secrets are ready. It provisions the retained session database
-// before it permits a rollout.
+// EnsureConsole requires the assigned namespace, retained database, verified
+// credentials and certificates, available deployment, and public HTTPS checks.
 func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version int64, group uint64) error {
 	if version < 1 {
 		return errors.New("console requires the observed Gateway version")
@@ -145,7 +144,7 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 	if !ready {
 		return ErrPending
 	}
-	return nil
+	return k.ensureConsolePublicRoute(ctx, gw, version)
 }
 
 // Only the browser backend receives its database URL and session key.

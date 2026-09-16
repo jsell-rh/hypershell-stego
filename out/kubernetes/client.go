@@ -287,6 +287,9 @@ func (c *Client) Ensure(ctx context.Context, collection string, desired Object, 
 		created, _, err := c.Request(ctx, http.MethodPost, collection, want)
 		return created, err
 	}
+	if String(old, "metadata", "name") != name || (String(want, "metadata", "namespace") != "" && String(old, "metadata", "namespace") != String(want, "metadata", "namespace")) {
+		return nil, errors.New("Kubernetes resource has a different name or namespace")
+	}
 	if !owner.Matches(old) || !identity(old) || String(old, "metadata", "deletionTimestamp") != "" {
 		return nil, errors.New("Kubernetes resource has a different owner, has no identity, or is being deleted")
 	}

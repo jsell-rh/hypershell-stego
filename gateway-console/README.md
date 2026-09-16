@@ -30,7 +30,9 @@ package and preserve resource ownership. The dashboard application must use
 connection. It must not receive the browser session keys or database login.
 
 This module is an application integration candidate. The Gateway controller
-does not yet deploy it. The captured UI imports the generated browser telemetry package.
+now has a deployment path that requires verified credentials, TLS, deployment
+availability, and public browser checks. The captured UI imports the generated
+browser telemetry package.
 The [source evidence](../acceptance/dashboard-telemetry-evidence.json) includes
 nine passing route tests and checks fixed route labels for private data. Live authentication, editor and terminal behavior,
 restart, address publication, and complete deletion remain required.
@@ -46,9 +48,9 @@ creates no second set of grants. STEGO controls client repair and deletion.
 The API stores its encrypted recovery record in a separate fixed scope. It
 uses the same assigned identity controller and cleanup grants, with resource
 and record version checks. Cleanup attempts both client closures and retains any error for retry. A console
-failure must not leave native closure open. This change does not yet supply
-credentials to a dashboard Pod. The deployed application workflow still
-requires that step.
+failure must not leave native closure open. The workload controller obtains the current console credentials through the
+private provisioner RPC. It writes exact, separate browser and dashboard Secret
+sets through STEGO. The deployed application workflow remains unverified.
 
 The [identity evidence](../acceptance/console-identity-evidence.json) records 21
 passing checks against real Keycloak and PostgreSQL. It includes PKCE console
@@ -76,3 +78,20 @@ records real PostgreSQL creation, limited console access, session state across
 restart, and independent cleanup of Gateway and console databases. It also
 records all 51 required API tests and verified cluster cleanup. This is not a
 rendered dashboard result.
+
+To enable the workload path, set `HYPERSHELL_GATEWAY_CONSOLE_DOMAIN` and
+`HYPERSHELL_GATEWAY_CONSOLE_IMAGE` on the assigned workload worker. The image
+must have a digest. The domain must agree with the identity worker's domain
+for that cluster. Supply the provisioner address, CA file, and token file with
+the `HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_` prefix. Its token identity needs
+the exact console credential grant described above. If both console settings
+are absent, the worker retains the existing Gateway-only path. A partial
+configuration is an error.
+
+The allocated namespace permits the console to reach its Gateway and approved
+operator services. Its quota includes a Gateway and two console Pods during a
+rollout. Only the browser Service exposes the public console port. A Gateway
+cannot report successful workload reconciliation while its enabled console is
+pending or fails its public checks. The probe checks the exact TLS leaf, browser
+readiness, anonymous session response, and denied anonymous API access. It does
+not replace the required rendered login, editor, terminal, and telemetry tests.

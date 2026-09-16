@@ -5,8 +5,6 @@ import (
 	"crypto/sha256"
 	"encoding/pem"
 	"errors"
-	"net"
-	"net/http"
 
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	protocol "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb"
@@ -45,38 +43,14 @@ func (k *Kubernetes) ensurePublicRoute(ctx context.Context, gw *pb.Gateway, cert
 		return nil
 	}
 	host := publicHostname(ns, k.options.PublicDomain)
-	target := kube.PassthroughRouteTarget{Host: host, Service: Name, Port: "grpc", Router: k.options.PublicRouter}
-	route := definition("route.openshift.io/v1", "Route", Name, id)
-	route["spec"] = object{"host": host, "wildcardPolicy": "None", "to": object{"kind": "Service", "name": Name, "weight": 100}, "port": object{"targetPort": "grpc"}, "tls": object{"termination": "passthrough", "insecureEdgeTerminationPolicy": "None"}}
-	observed, err := k.ensure(ctx, collection, route, id)
-	if err != nil {
-		return err
-	}
-	admitted, err := kube.PassthroughRouteAdmitted(observed, owner(id), target)
-	if err != nil {
-		return err
-	}
-	if !admitted {
-		return ErrPending
-	}
 	if probe == nil {
 		return errors.New("public Gateway probe is unavailable")
 	}
-	if err := probe(ctx, net.JoinHostPort(host, "443"), certificate); err != nil {
-		return err
-	}
-	current, code, err := k.client.Request(ctx, http.MethodGet, path, nil)
+	ready, err := k.client.EnsurePassthroughRoute(ctx, ns, Name, owner(id), kube.PassthroughRouteTarget{Host: host, Service: Name, Port: "grpc", Router: k.options.PublicRouter}, func(ctx context.Context, address string) error { return probe(ctx, address, certificate) })
 	if err != nil {
 		return err
 	}
-	if code == http.StatusNotFound || kube.String(current, "metadata", "uid") != kube.String(observed, "metadata", "uid") || kube.String(current, "metadata", "resourceVersion") != kube.String(observed, "metadata", "resourceVersion") {
-		return ErrPending
-	}
-	admitted, err = kube.PassthroughRouteAdmitted(current, owner(id), target)
-	if err != nil {
-		return err
-	}
-	if !admitted {
+	if !ready {
 		return ErrPending
 	}
 	return nil

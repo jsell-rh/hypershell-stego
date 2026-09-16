@@ -234,7 +234,13 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if err := k.deploymentAvailable(ctx, id, ns); err != nil {
 		return err
 	}
-	return k.ensurePublicRoute(ctx, gw, publicCertificate, k.probePublicGateway)
+	if err := k.ensurePublicRoute(ctx, gw, publicCertificate, k.probePublicGateway); err != nil {
+		return err
+	}
+	if k.options.Console != nil {
+		return k.EnsureConsole(ctx, gw, version, 1000)
+	}
+	return nil
 }
 
 func (k *Kubernetes) deploymentAvailable(ctx context.Context, id, namespace string) error {
