@@ -163,7 +163,7 @@ def inspection_roles():
     network = [rule('networking.k8s.io', 'networkpolicies', ['get'], ['stego-allocation']), rule('networking.k8s.io', 'networkpolicies', ['list'])]
     return [
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls', 'hypershell-gateway-console-files']),
+            rule('', 'secrets', ['get'], ['hypershell-gateway-console-files', 'openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
             quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']), rule('', 'pods/log', ['get']),
             rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway']),
             rule('cert-manager.io', 'certificates', ['get'], ['openshell-public-tls']),
