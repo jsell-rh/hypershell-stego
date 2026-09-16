@@ -1,0 +1,32 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35134370448",
+  "source": "3f3e735d9119f2b4260d88905d655cc71075d39f",
+  "compiler": "305bbf99ff2baefa452ad6c017ba8394a9580893",
+  "source_archive_sha256": "aabb6d75a975c2ade2dac87bc83a9169ea0aac2b2430741700a7908d558d162c",
+  "asset_bundle_sha256": "677404ba290aa54e40fe78e656a6cbd31df273820036e7453b2cbd24eaaac6ec",
+  "current_build_inputs_match": true,
+  "checked_input_paths": [
+    "components/web-console",
+    "packages",
+    "package.json",
+    "pnpm-lock.yaml",
+    "pnpm-workspace.yaml",
+    ".npmrc",
+    "tsconfig.json",
+    "out/tssdk",
+    "out/browsertelemetry",
+    ".stego/compiler-revision"
+  ],
+  "added_assets": [
+    "assets/application-CSFjmbG3.js",
+    "assets/manifest-e3a7ed15.js"
+  ],
+  "removed_assets": [
+    "assets/application-CAH_KtRT.js",
+    "assets/manifest-e71f0024.js"
+  ],
+  "changed_assets": [
+    "index.html"
+  ],
+  "scope": "The bounded CI asset build and its UI package tests passed. Build inputs match the current application. Full console checks and live behavior still require their own results."
+}
