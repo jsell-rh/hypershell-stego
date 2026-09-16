@@ -40,8 +40,10 @@ check confirmed absence and released the same Lease. Preserve the wrapper failur
 The transport gate uses a test account provider and explicit observations for
 identity, workload, and SQL. It does not qualify real providers. Source `7836bdc`
 removes the old synchronous cleanup path and the unused gRPC provider connection.
-Its cancellation, restart, concurrent-account, and late-provider checks are running
-in Job `gateway-api-d78167024077`.
+Its cancellation, restart, concurrent-account, and late-provider checks passed
+in Job `gateway-api-d78167024077`. All five selected tests passed, both generation
+passes matched, and the Job, Pods, fixtures, and Lease holder were removed.
+The result is in `retired-result`.
 
 The console candidate from `5af38b8` passed 166 tests in CI run `35094901951`.
 Its source, compiler, source archive, and asset hashes matched before adoption in
@@ -51,8 +53,8 @@ that failure. The rendered browser check remains required.
 
 Source `6d85104` includes the CLI empty-202 contract and updated deletion tests.
 CI run `35095289920` checks core acceptance, the rendered browser, the console,
-and the service image. Full CNPG and external PostgreSQL cluster workflows must
-also pass before this branch can replace the default branch. Kata remains deferred
+and the service image. The CNPG workflow is running in CI run `35095613420` at `d7ff741`.
+Full CNPG and external PostgreSQL cluster workflows must also pass before this branch can replace the default branch. Kata remains deferred
 by the user. Large provider inventories remain open: the inventory call still
 uses a bounded full scan. This application retains its fresh-schema gate; no
 in-place application upgrade is claimed.

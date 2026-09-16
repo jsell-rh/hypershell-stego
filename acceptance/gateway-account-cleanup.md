@@ -1,4 +1,9 @@
-# Gateway account cleanup
+# Historical Gateway account cleanup
+
+This record describes the synchronous contract before the HTTP 202 decision on
+2026-09-16. Its implementation description and test results apply to that earlier
+contract. See [durable asynchronous deletion](asynchronous-deletion.md) for the
+current implementation, tests, and open qualification gates.
 
 Deleting a Gateway also removes its automation identities. REST and gRPC use
 the same domain operation and generated row lock. Authorization precedes all

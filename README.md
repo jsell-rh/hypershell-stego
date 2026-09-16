@@ -219,11 +219,17 @@ ManagedCluster ID. The workload controller uses its installation-supplied
 PostgreSQL credentials for SQL operations. Those credentials do not grant API
 access. See the [current database contract](acceptance/controller-local-database.md).
 
-Gateway deletion removes related provider clients before it commits the Gateway,
-account metadata, cleanup audits, and deletion event. The Gateway row lock
-prevents concurrent account creation from escaping cleanup. Provider failure
-returns HTTP 503 or gRPC `Unavailable` and keeps the Gateway. See the
-[Gateway account cleanup workflow](acceptance/gateway-account-cleanup.md).
+Gateway DELETE returns HTTP 202 after it commits an authorized deletion request.
+gRPC reports successful acceptance with its existing empty response. The request
+blocks new account reservations. The Gateway remains visible as `Deleting` while
+controllers remove accounts, identity state, workloads, and SQL resources.
+Provider failure leaves cleanup pending; it does not change an accepted request
+into an error. STEGO supplies durable scans, checkpoints, conditional observations,
+and permanent finalization. Account metadata and its cleanup audit share one
+commit. Finalization and the final delete event share another commit after all
+owners and targets complete. See the [current contract and qualification status](acceptance/asynchronous-deletion.md).
+The [earlier account cleanup record](acceptance/gateway-account-cleanup.md) describes
+the replaced synchronous contract.
 
 The gRPC `AdjustActiveSandboxCount`, `SetActiveSandboxCount`, and private
 `SetObservedSandboxCount` methods use STEGO's resource-locking transaction.
