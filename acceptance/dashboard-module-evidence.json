@@ -1,0 +1,22 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35117250309",
+  "source": "36cd9499f854feda28235ab5b18ecc496287c6df",
+  "compiler": "1db04e6c0d2aa566b4ce027401b70155a190f3dd",
+  "jobs": {
+    "module": "success"
+  },
+  "captured_files_equal_to_repository": 83,
+  "repeated_generation_equal": true,
+  "dependency_check": "No vulnerabilities found.",
+  "backend_sha256": "b763599d0e7304ed28bad31cfb19a00ec909c0bcc1f04ad56940aae3a1291cb4",
+  "renderer_sha256": "8ef514bbad84e2e8f20a49ad5ad7d27e4c8b25c6e9af783a1fa0ec1561ae4546",
+  "generated_source_sha256": "88ca331e797e86c0d61f38536b69fb510766afefd78b38b489639a7492f4215a",
+  "deployment": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:f4d80232a7609b038d5725c6c80eeb9aea04741d94312a91f785b914683f1275",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "The actual generated Gateway console module builds and regenerates with its checked upstream image and assets. No live Pod, Gateway controller integration, rendered editor, terminal, or browser telemetry import result is claimed."
+}
