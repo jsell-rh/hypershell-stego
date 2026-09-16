@@ -52,15 +52,18 @@ class InspectionBoundary(unittest.TestCase):
         self.fixture = copy.deepcopy(self.original)
         self.fixture['Roles'] = inspection.inspection_roles() + self.fixture['Roles']
         for profile in self.fixture['Profiles']:
-            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}.get(profile['Name'])
+            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector', 'gateway-console-state': 'fixture-console-state-inspector'}.get(profile['Name'])
             if role is None:
                 continue
             profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
 
-    def test_console_state_gets_no_fixture_credentials_grant(self):
+    def test_console_state_gets_only_its_named_read_grant(self):
         original = next(p for p in self.original['Profiles'] if p['Name'] == 'gateway-console-state')
         fixture = next(p for p in self.fixture['Profiles'] if p['Name'] == 'gateway-console-state')
-        self.assertEqual(original, fixture)
+        self.assertEqual(original['Bindings'], fixture['Bindings'][:-1])
+        role = next(r for r in self.fixture['Roles'] if r['Name'] == 'fixture-console-state-inspector')
+        self.assertEqual(role['Rules'], [{'apiGroups': [''], 'resources': ['secrets'], 'resourceNames': ['gateway-console-state'], 'verbs': ['get']}])
+        self.assertEqual(fixture['Bindings'][-1]['Role'], role['Name'])
         fixture['Bindings'].append(copy.deepcopy(self.fixture['Profiles'][0]['Bindings'][-1]))
         with self.assertRaises(ValueError):
             inspection.verify_runtime(go(self.original), go(self.fixture))

@@ -28,7 +28,7 @@ class BrowserCI(unittest.TestCase):
                 resources, data, inventory = {}, {}, []
                 for name in installation.MANIFESTS:
                     objects = []
-                    for index in range(3):
+                    for index in range(4 if name == 'hypershell-namespace-allocation' else 3):
                         identity = name + '-' + str(index)
                         obj = {'apiVersion': 'rbac.authorization.k8s.io/v1', 'kind': 'ClusterRole',
                                'metadata': {'name': identity, 'uid': identity}, 'rules': []}

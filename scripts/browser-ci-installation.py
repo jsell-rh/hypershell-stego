@@ -103,7 +103,7 @@ def main():
             if key in observed or key not in ids or actual['metadata']['uid'] != ids[key] or normalize(actual) != normalize(expected):
                 raise RuntimeError('An installed cluster resource changed: ' + key[0] + '/' + key[1])
             observed.add(key)
-    if observed != set(ids) or len(ids) != 18:
+    if observed != set(ids) or len(ids) != 19:
         raise RuntimeError('The cluster installation inventory differs')
     if args.action in {'inspect', 'prepare'}:
         for name in ['kubernetes-endpoints.json', 'kubernetes-service.json']:

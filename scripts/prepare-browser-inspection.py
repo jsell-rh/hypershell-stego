@@ -27,7 +27,7 @@ def write_inspection_record(path, record):
 ROLES = '''      - name: fixture-gateway-inspector
         scope: namespace
         rules:
-          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls], verbs: [get]}
+          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls, hypershell-gateway-console-files], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
@@ -43,16 +43,22 @@ ROLES = '''      - name: fixture-gateway-inspector
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+      - name: fixture-console-state-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], resource_names: [gateway-console-state], verbs: [get]}
 '''
 BINDINGS = [
     ('          - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}\n',
      '          - {role: fixture-gateway-inspector, service_account: service-check, namespace: control}\n'),
     ('          - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}\n',
      '          - {role: fixture-state-inspector, service_account: service-check, namespace: control}\n'),
+    ('          - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}\n',
+     '          - {role: fixture-console-state-inspector, service_account: service-check, namespace: control}\n'),
 ]
 
 def declaration(source):
-    if 'fixture-gateway-inspector' in source or 'fixture-state-inspector' in source:
+    if any(role in source for role in ('fixture-gateway-inspector', 'fixture-state-inspector', 'fixture-console-state-inspector')):
         raise ValueError('The source already contains fixture inspection roles')
     if source.count('    allocation_roles:\n') != 1 or source.count('    allocation_profiles:\n') != 1 or source.count('    workers:\n') != 1:
         raise ValueError('The production profile boundary changed')
@@ -60,7 +66,7 @@ def declaration(source):
     profiles, after = profiles.split('    workers:\n', 1)
     # Append each inspection binding inside its own profile. Other state
     # profiles keep their existing permissions and binding indices.
-    for name, (anchor, addition) in zip(('gateway', 'gateway-state'), BINDINGS, strict=True):
+    for name, (anchor, addition) in zip(('gateway', 'gateway-state', 'gateway-console-state'), BINDINGS, strict=True):
         pattern = r'^      - name: ' + re.escape(name) + r'\n.*?(?=^      - name: |\Z)'
         matches = list(re.finditer(pattern, profiles, re.MULTILINE | re.DOTALL))
         if len(matches) != 1 or matches[0].group().count(anchor) != 1:
@@ -157,13 +163,15 @@ def inspection_roles():
     network = [rule('networking.k8s.io', 'networkpolicies', ['get'], ['stego-allocation']), rule('networking.k8s.io', 'networkpolicies', ['list'])]
     return [
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
+            rule('', 'secrets', ['get'], ['openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls', 'hypershell-gateway-console-files']),
             quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']), rule('', 'pods/log', ['get']),
             rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway']),
             rule('cert-manager.io', 'certificates', ['get'], ['openshell-public-tls']),
             rule('cert-manager.io', 'certificates/status', ['update'], ['openshell-public-tls'])]},
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota, *network]},
+        {'Name': 'fixture-console-state-inspector', 'Scope': 'namespace', 'Rules': [
+            rule('', 'secrets', ['get'], ['gateway-console-state'])]},
     ]
 
 
@@ -189,7 +197,7 @@ def verify_runtime(before, after, cnpg_namespace=None):
     original, fixture = allocation_config(before), allocation_config(after)
     if cnpg_namespace is not None:
         remove_cnpg_peer(fixture, cnpg_namespace)
-    additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state'}
+    additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state', 'fixture-console-state-inspector': 'gateway-console-state'}
     roles = [r for r in fixture['Roles'] if r['Name'] in additions]
     if roles != inspection_roles():
         raise ValueError('The generated inspection permissions differ from the fixed contract')
@@ -272,7 +280,7 @@ def check_render(source, destination, env, cnpg_namespace=None, network_baseline
             verify_cnpg_manifests(*cnpg_renders, cnpg_namespace)
         record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
                   'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
-                  'scope': 'Two namespace roles, allocator bind names, and declared namespace binding cases only.'}
+                  'scope': 'Three namespace roles, allocator bind names, and declared namespace binding cases only.'}
         if endpoint_change:
             from gateway_endpoint_fixture import policy_change
             transitions = []
@@ -375,7 +383,7 @@ def main():
     record = {'compiler_revision': revision, 'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip(),
               'source_sha256': hashes, 'fixture_sha256': {name: hashlib.sha256((destination / name).read_bytes()).hexdigest() for name in hashes},
               'changed_files': sorted(changed), 'inspection_roles': roles, 'render': render,
-              'scope': 'Production source with two namespace inspection roles and two appended bindings. Production binding indices and runtime code are unchanged.'}
+              'scope': 'Production source with three namespace inspection roles and three appended bindings. Production binding indices and runtime code are unchanged.'}
     if args.cnpg_database_namespace:
         record['cnpg_installation'] = {'namespace': args.cnpg_database_namespace, 'cluster': 'gateway-database', 'scope': 'One database namespace and Pod selector on TCP port 5432 for the worker and allocated Gateways; no added Kubernetes permission.'}
     if args.network_endpoint_change:

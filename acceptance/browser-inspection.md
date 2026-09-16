@@ -9,7 +9,7 @@ The production declaration does not contain the inspection roles. Run
 --destination <new-directory>` before the workload check. The compiler binary
 must have clean Git build metadata at `.stego/compiler-revision`. Preparation
 copies regular source files to a new directory outside the repository. It adds
-only two namespace roles and one binding at the end of each allocation profile,
+three namespace roles and one binding at the end of each corresponding profile,
 then runs bounded STEGO generation and drift checks. The source repository stays
 unchanged. The generated inspection images are test artifacts, not release images.
 
@@ -21,24 +21,29 @@ The preparation check requires these four changed files:
 - `out/deploy/render/worker-namespace-allocation.json.tmpl`: matching roles and
   admission rules.
 
-The check removes the two inspection roles and bindings from the generated
+The check removes the three inspection roles and bindings from the generated
 configuration and compares it with production. Production roles, quotas,
 identities, binding indices, and executable allocator code must match exactly.
 The generated inspection permissions must also match a fixed allowlist. A
-bounded build of the standard-library renderer checks that only the two roles,
+bounded build of the standard-library renderer checks that only the three roles,
 allocator bind names, and namespace binding cases change in the manifest. A file
 outside this list that changes, appears, or disappears stops preparation. The
 compiler's local lock file is excluded. `acceptance/browser-inspection-source.json`
 records both complete source hash sets and the permitted differences.
 
-In a Gateway namespace, the test identity can read only three named Secrets,
-read its allocation quota, observe the named Gateway Deployment, and observe or
-delete Pods for the restart check. In a retained-state namespace, it can read
-only the named state Secret and allocation quota. It cannot list Secrets, change
-Secrets, run Pod commands, or create workloads in either namespace. The generated
-allocator owns all inspection bindings. Its admission policy prevents the test
-identity from adding or changing them. Production permission checks still use
-the three actual worker identities.
+In a Gateway namespace, the test identity can read five named Secrets: the
+Gateway database credential, Gateway keys, public and internal server TLS, and
+the console runtime files. It can also read its quota and network policies,
+observe the Gateway Deployment, and create or remove bounded probe Pods. In a
+Gateway state namespace, it can read the named state Secret and allocation
+policy. In a console state namespace, it can only read `gateway-console-state`.
+These reads compare retained credentials and session keys with the running
+application. Private values remain in memory and do not enter result records.
+
+The test identity cannot list or change Secrets. The generated allocator owns
+all inspection bindings. Its admission policy prevents the test identity from
+adding or changing them. Production permission checks still use the three
+actual worker identities.
 
 The six admission probes now use the allocator identity. Namespace writes by
 the test identity must fail at authorization. Fingerprint changes must still
