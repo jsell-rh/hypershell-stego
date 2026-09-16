@@ -60,7 +60,8 @@ class BrowserCI(unittest.TestCase):
                     self.assertEqual(command[0], 'python3')
                     self.assertTrue(command[1].endswith('/prepare-browser-cluster.py'))
                     self.assertIn('--render-only', command)
-                    path = results / 'cluster-manifests'; path.mkdir()
+                    rendered = Path(command[command.index('--results') + 1])
+                    path = rendered / 'cluster-manifests'; path.mkdir()
                     for name in installation.MANIFESTS:
                         content = '{}' if mismatch else data[name + '.json']
                         (path / (name + '.json')).write_text(content)
@@ -77,6 +78,10 @@ class BrowserCI(unittest.TestCase):
                 self.assertTrue(observed)
                 self.assertFalse((results / 'ci-token').exists())
                 self.assertFalse((results / 'allocation-cleanup').exists())
+                self.assertFalse((results / 'cluster-manifests').exists())
+                self.assertFalse((results / 'cluster-installation.json').exists())
+                if not mismatch:
+                    self.assertTrue((results / 'installation-inspection' / 'cluster-installation.json').exists())
 
     def test_fixture_receiver_policy_must_match_the_current_source(self):
         body, objects = self.objects()

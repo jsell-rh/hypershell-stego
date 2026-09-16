@@ -66,6 +66,11 @@ def main():
     parser.add_argument('--context', required=True)
     parser.add_argument('--results', required=True, type=Path)
     args = parser.parse_args()
+    if args.action == 'inspect':
+        # Preflight runs before prepare in the same result directory. Preserve
+        # its evidence without creating prepare's manifests or cleanup journal.
+        args.results = args.results / 'installation-inspection'
+        args.results.mkdir(mode=0o700)
     root = Path(__file__).resolve().parent.parent
     def oc(*words):
         return subprocess.run(['oc', '--context=' + args.context, '--request-timeout=20s', *words], capture_output=True, check=True, timeout=30).stdout

@@ -238,3 +238,11 @@ Use the [public permission plan](browser-ci-public-permissions.md) to compare
 saved installation state with a fresh frozen render. The live operator update passed on 2026-09-15. The
 [live update record](browser-public-permission-update.json) contains the resource
 checks and new installation identity. The complete public workflow remains required.
+
+The installation inspection now writes under `installation-inspection` in the
+run's evidence directory. Preparation keeps its own manifest directory and
+cleanup journal. This fixes the directory collision in CNPG run 35037415647,
+which stopped before the browser Job started. The outer CNPG cleanup record
+confirmed removal of the runtime, volumes, and private fixture. The regression
+test failed before the change. All eight fixed-installation unit checks pass
+after the change. A new cluster run must still prove the complete sequence.
