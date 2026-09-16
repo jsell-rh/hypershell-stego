@@ -25,14 +25,34 @@ record lacked Git metadata. The corrected build came from a clean clone with
 its revision verified. Preserve both attempts. Results and frozen source are in
 `/home/jsell/.local/state/stego/runs/gateway-cleanup-20260916`.
 
-Source `31c8646` enables durable deletion in REST and gRPC and connects the account
-worker to STEGO's scheduler. Source `9386f88` avoids repeated events for unchanged
-cleanup state. The new process gate must prove request and final-event rollback,
-access filtering, account rejection, pending reads, process replacement, final
-visibility, and event delivery. It is still running on the earlier source.
+Source `31c8646` passed the generated REST and gRPC deletion gate in 53 seconds.
+It proved request and final-event rollback, denied access, filtered lists, account
+rejection, pending reads, process replacement, permanent finalization, and Kafka
+event delivery. Source `8856413` passed that gate again, both recovery checks,
+unchanged-observation event checks, and phase-search checks. STEGO now supplies
+the declared deleting phase before filtering, ordering, and pagination.
 
-The console, earlier synchronous-deletion tests, and field search must be aligned
-before this branch can replace the default branch. In particular, phase search
-must agree with the public `Deleting` value. Real Keycloak, browser, CNPG, and
-regeneration gates must then pass. Large provider inventories remain an open
-requirement; the existing inventory call still uses a bounded full scan.
+Generation hashes matched in `projected-result`. Job `gateway-api-5c335707fdf0`,
+Pods, and private fixtures are absent. The wrapper failed during Lease release,
+after it collected successful tests and removed resources. A separate operator
+check confirmed absence and released the same Lease. Preserve the wrapper failure.
+
+The transport gate uses a test account provider and explicit observations for
+identity, workload, and SQL. It does not qualify real providers. Source `7836bdc`
+removes the old synchronous cleanup path and the unused gRPC provider connection.
+Its cancellation, restart, concurrent-account, and late-provider checks are running
+in Job `gateway-api-d78167024077`.
+
+The console candidate from `5af38b8` passed 166 tests in CI run `35094901951`.
+Its source, compiler, source archive, and asset hashes matched before adoption in
+`9e6474d`. It retains pending Gateways, polls their state, and disables incompatible
+actions. The earlier candidate failed one old confirmation-text assertion; retain
+that failure. The rendered browser check remains required.
+
+Source `6d85104` includes the CLI empty-202 contract and updated deletion tests.
+CI run `35095289920` checks core acceptance, the rendered browser, the console,
+and the service image. Full CNPG and external PostgreSQL cluster workflows must
+also pass before this branch can replace the default branch. Kata remains deferred
+by the user. Large provider inventories remain open: the inventory call still
+uses a bounded full scan. This application retains its fresh-schema gate; no
+in-place application upgrade is claimed.
