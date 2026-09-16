@@ -1,0 +1,33 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35161331243",
+  "source": "b875ab220442486fd144675ec69adaa4eec07e6e",
+  "compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "source_files_match": 121,
+  "repeated_generation_matches": true,
+  "browser_image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:1b57d0bce9f0bbefe0c1d4d96844d49f627ed964936b9f12ae6ea6e5f360031c",
+  "image_id": "sha256:96f9c5098caa39d15c32f56bffac4a04c7704e91bfc2c0c3bc5df7e886ff2a88",
+  "binary_sha256": "77cf20eb958fdaffaf02349567cecb9edc6e7738f7f02b51e368f3aea17db5f5",
+  "generated_source_sha256": "60aea488f40bbd7cb2a92d019984c0888d61c5bf955722783a49803f7ab5a2d3",
+  "nonroot_user": "65532:65532",
+  "entrypoint": [
+    "/service"
+  ],
+  "binary_matches_module": true,
+  "pulled_digest_matches_build": true,
+  "scope": "Generated source, dependency scan, module builds, exact image binary, and published image digest passed. This does not prove a running Gateway dashboard or anonymous image pull access.",
+  "module_download": {
+    "module": "github.com/jsell-rh/hypershell-stego/gateway-console",
+    "version": "v0.0.0-20260916231319-b875ab220442",
+    "sum": "h1:ONK9mDwvU3q31CpCkzMCyyDuYZ+pTC4JtNpTG76mHWk=",
+    "go_mod_sum": "h1:bYK/CJYelVUBBzEMRaKTitU2L2MsEuKFt23bRb5j+Ck=",
+    "source": "b875ab220442486fd144675ec69adaa4eec07e6e",
+    "downloaded_files_match": 116
+  },
+  "final_root_generation": [
+    {
+      "target": "/home/jsell/code/scratch/hypershell-dashboard-20260916",
+      "repeated_state_equal": true,
+      "state_sha256": "8094e2033312df49d26020a884fa184a77c903da32ab585c1427955b58de34cb"
+    }
+  ]
+}
