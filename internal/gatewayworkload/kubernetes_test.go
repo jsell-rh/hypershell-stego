@@ -91,7 +91,7 @@ func TestInvalidGatewayCannotWriteResources(t *testing.T) {
 				t.Error("invalid Gateway reached Kubernetes")
 				w.WriteHeader(500)
 			})
-			if err := k.Ensure(context.Background(), gw, release); err == nil {
+			if err := k.Ensure(context.Background(), gw, release, 1); err == nil {
 				t.Fatal("invalid Gateway accepted")
 			}
 		})

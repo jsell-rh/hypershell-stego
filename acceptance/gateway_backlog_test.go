@@ -19,7 +19,7 @@ type backlogProvider struct{ cluster, failed string }
 func (p *backlogProvider) Handles(*pb.Gateway) bool                     { return true }
 func (p *backlogProvider) CleanupTarget() string                        { return p.cluster }
 func (p *backlogProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *backlogProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
+func (p *backlogProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease, int64) error {
 	return nil
 }
 func (p *backlogProvider) Delete(ctx context.Context, gw *pb.Gateway) error {

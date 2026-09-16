@@ -26,7 +26,7 @@ const observationCommitTimeout = 2 * time.Second
 type Provider interface {
 	Handles(*pb.Gateway) bool
 	CleanupTarget() string
-	Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error
+	Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease, int64) error
 	Delete(context.Context, *pb.Gateway) error
 	DeleteDatabase(context.Context, *pb.Gateway) error
 	GatewayIDs(context.Context) ([]string, error)
@@ -195,7 +195,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		if err != nil {
 			return err
 		}
-		return c.provider.Ensure(writeContext, gw, release.GetGatewayRelease())
+		return c.provider.Ensure(writeContext, gw, release.GetGatewayRelease(), state.ResourceVersion)
 	}, func(commit context.Context, observation error) error {
 		phase, desired := "Running", "Healthy"
 		if errors.Is(observation, ErrPending) {

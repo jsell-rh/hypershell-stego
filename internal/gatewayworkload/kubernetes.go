@@ -22,6 +22,7 @@ import (
 
 type object = kube.Object
 type Options struct {
+	Console                                                *ConsoleOptions
 	InternalCAFile                                         string
 	PublicDomain, PublicIssuer, PublicCAFile, PublicRouter string
 	SQLBindings                                            SQLBindings
@@ -39,10 +40,14 @@ type Kubernetes struct {
 	trust         string
 	publicRoots   *x509.CertPool
 	internalRoots *x509.CertPool
+	internalTrust []byte
 	allocation    *allocation.Allocator
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
+	if err := checkConsoleOptions(o); err != nil {
+		return nil, err
+	}
 	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" || o.SQLBindings == nil || o.ConsoleSQLBindings == nil {
 		return nil, errors.New("Gateway controller requires a database file, control namespace, and SQL state client")
 	}
@@ -69,7 +74,7 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	if err != nil {
 		return nil, err
 	}
-	internalRoots, err := gatewayTrustFile(o.InternalCAFile)
+	internalTrust, internalRoots, err := gatewayTrustMaterial(o.InternalCAFile)
 	if err != nil {
 		return nil, errors.New("Gateway internal TLS requires an explicit CA file")
 	}
@@ -89,7 +94,7 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 			return nil, err
 		}
 	}
-	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator, publicRoots: publicRoots, internalRoots: internalRoots}, nil
+	return &Kubernetes{client: c, options: o, trust: string(trust), allocation: allocator, publicRoots: publicRoots, internalRoots: internalRoots, internalTrust: internalTrust}, nil
 }
 
 // Only certificates can enter the public ConfigMap. Never copy a private key
@@ -132,7 +137,10 @@ func (k *Kubernetes) ensure(ctx context.Context, path string, desired object, id
 	return k.client.Ensure(ctx, path, desired, owner(id))
 }
 
-func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.GatewayRelease) error {
+func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.GatewayRelease, version int64) error {
+	if version < 1 {
+		return errors.New("Gateway workload requires its observed resource version")
+	}
 	if !k.Handles(gw) {
 		return errors.New("Gateway belongs to a different managed cluster")
 	}

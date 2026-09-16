@@ -43,23 +43,28 @@ func publicTrust(o Options) (*x509.CertPool, error) {
 }
 
 func gatewayTrustFile(name string) (*x509.CertPool, error) {
+	_, roots, err := gatewayTrustMaterial(name)
+	return roots, err
+}
+
+func gatewayTrustMaterial(name string) ([]byte, *x509.CertPool, error) {
 	if !filepath.IsAbs(name) {
-		return nil, errors.New("Gateway CA file must be absolute")
+		return nil, nil, errors.New("Gateway CA file must be absolute")
 	}
 	file, err := os.Open(name)
 	if err != nil {
-		return nil, errors.New("Gateway CA file is unavailable")
+		return nil, nil, errors.New("Gateway CA file is unavailable")
 	}
 	defer file.Close()
 	raw, err := io.ReadAll(io.LimitReader(file, (512<<10)+1))
 	if err != nil || len(raw) > 512<<10 {
-		return nil, errors.New("Gateway CA file is invalid")
+		return nil, nil, errors.New("Gateway CA file is invalid")
 	}
 	roots, err := kube.ParseServerTLSRoots(raw)
 	if err != nil {
-		return nil, errors.New("Gateway CA file is invalid")
+		return nil, nil, errors.New("Gateway CA file is invalid")
 	}
-	return roots, nil
+	return raw, roots, nil
 }
 
 // The pinned Gateway image selects this certificate only for the public SNI.

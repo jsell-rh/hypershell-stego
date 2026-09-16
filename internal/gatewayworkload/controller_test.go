@@ -63,6 +63,7 @@ type providerFixture struct {
 	target           string
 	unassigned       bool
 	creates, deletes int
+	ensuredVersion   int64
 	sqlDeletes       int
 	err              error
 	endpoint         *string
@@ -95,7 +96,8 @@ func (f *stateFixture) ObserveGatewayCleanup(ctx context.Context, r *control.Obs
 }
 func (f *providerFixture) Handles(*pb.Gateway) bool { return !f.unassigned }
 
-func (f *providerFixture) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
+func (f *providerFixture) Ensure(_ context.Context, _ *pb.Gateway, _ *pb.GatewayRelease, version int64) error {
+	f.ensuredVersion = version
 	f.creates++
 	return f.err
 }
@@ -359,7 +361,7 @@ func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 1 {
+	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 1 || provider.ensuredVersion != state.ResourceVersion {
 		t.Fatal("unchanged status skipped a new generation", err)
 	}
 	state.ObservedGeneration = 2

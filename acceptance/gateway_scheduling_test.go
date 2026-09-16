@@ -44,7 +44,7 @@ type blockedCleanupProvider struct {
 func (p *blockedCleanupProvider) Handles(*pb.Gateway) bool                     { return true }
 func (p *blockedCleanupProvider) CleanupTarget() string                        { return p.cluster }
 func (p *blockedCleanupProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
+func (p *blockedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease, int64) error {
 	return nil
 }
 func (p *blockedCleanupProvider) Delete(ctx context.Context, gw *pb.Gateway) error {

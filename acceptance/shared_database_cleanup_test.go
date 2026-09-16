@@ -27,7 +27,7 @@ type sharedCleanupProvider struct {
 func (p *sharedCleanupProvider) Handles(gw *pb.Gateway) bool                  { return gw.GetClusterId() == p.cluster }
 func (p *sharedCleanupProvider) CleanupTarget() string                        { return p.cluster }
 func (p *sharedCleanupProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
-func (p *sharedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease) error {
+func (p *sharedCleanupProvider) Ensure(context.Context, *pb.Gateway, *pb.GatewayRelease, int64) error {
 	return nil
 }
 func (p *sharedCleanupProvider) DeleteDatabase(_ context.Context, gw *pb.Gateway) error {

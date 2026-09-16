@@ -24,7 +24,7 @@ type deadlineObservationProvider struct {
 	timedOut chan struct{}
 }
 
-func (p *deadlineObservationProvider) Ensure(ctx context.Context, _ *pb.Gateway, _ *pb.GatewayRelease) error {
+func (p *deadlineObservationProvider) Ensure(ctx context.Context, _ *pb.Gateway, _ *pb.GatewayRelease, _ int64) error {
 	return p.observe(ctx)
 }
 func (p *deadlineObservationProvider) Delete(ctx context.Context, _ *pb.Gateway) error {
