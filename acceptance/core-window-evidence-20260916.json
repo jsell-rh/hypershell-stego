@@ -1,0 +1,76 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35106305055",
+  "source": "85706c6b2127544df1f7db620b26da3597d00df2",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "passes": 483,
+  "failures": [],
+  "selection_skips": 4,
+  "packages": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed": 102.033
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+      "elapsed": 1.024
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/cli",
+      "elapsed": 1.04
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gateways",
+      "elapsed": 1.042
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/contracts",
+      "elapsed": 2.151
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/httpapi",
+      "elapsed": 1.032
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+      "elapsed": 1.042
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "elapsed": 11.855
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/sandboxcount",
+      "elapsed": 10.049
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner",
+      "elapsed": 1.051
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "elapsed": 1.807
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccounts",
+      "elapsed": 1.031
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayidentity",
+      "elapsed": 22.57
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed": 1437.749
+    }
+  ],
+  "jobs": {
+    "acceptance (browser)": "success",
+    "acceptance (core)": "success",
+    "web-console": "success",
+    "service-image": "success",
+    "cnpg-gateway-workflow": "skipped",
+    "sandbox-workload": "skipped"
+  },
+  "log_sha256": "e9eb3cac75ae8b843046ea69e7c2cb6b0c77602d11c5b6c3d5d9ea3811bd0934",
+  "scope": "Full core, browser, web-console, and image checks after bounded provider discovery. CNPG is not selected here. Live Kata remains deferred."
+}
