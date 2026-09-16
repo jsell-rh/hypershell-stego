@@ -70,6 +70,7 @@ jobs:
           cp components/gateway-dashboard/frontend/package.json components/gateway-dashboard/frontend/package-lock.json upstream-dashboard/frontend/
           cp components/gateway-dashboard/frontend/webpack.stego.cjs upstream-dashboard/frontend/
           cp components/gateway-dashboard/frontend/index.stego.html upstream-dashboard/frontend/public/
+          cp components/gateway-dashboard/frontend/editor.stego.ts upstream-dashboard/frontend/src/
           mkdir -p upstream-dashboard/frontend/stego/browser-telemetry upstream-dashboard/frontend/stego/browser-client
           cp gateway-console/out/browser/sessionclient/* upstream-dashboard/frontend/stego/browser-client/
           cmp gateway-console/out/browser/sessionclient/index.js upstream-dashboard/frontend/stego/browser-client/index.js
@@ -81,7 +82,7 @@ jobs:
           cmp gateway-console/out/browsertelemetry/index.js upstream-dashboard/frontend/stego/browser-telemetry/index.js
           sha256sum gateway-console/out/browsertelemetry/* > "$RUNNER_TEMP/dashboard-source/browser-telemetry.sha256"
           git -C upstream-dashboard apply --index "$GITHUB_WORKSPACE/components/gateway-dashboard/router.patch"
-          git -C upstream-dashboard add backend/go.mod backend/go.sum frontend/package.json frontend/package-lock.json frontend/webpack.stego.cjs frontend/public/index.stego.html frontend/stego/browser-telemetry frontend/stego/browser-client frontend/src/app/telemetry.stego.tsx frontend/src/app/__tests__/telemetry.stego.spec.tsx frontend/src/api/__tests__/client.stego.spec.ts
+          git -C upstream-dashboard add backend/go.mod backend/go.sum frontend/package.json frontend/package-lock.json frontend/webpack.stego.cjs frontend/public/index.stego.html frontend/stego/browser-telemetry frontend/stego/browser-client frontend/src/editor.stego.ts frontend/src/app/telemetry.stego.tsx frontend/src/app/__tests__/telemetry.stego.spec.tsx frontend/src/api/__tests__/client.stego.spec.ts
           git -C upstream-dashboard diff --cached --binary > "$RUNNER_TEMP/dashboard-source/build-overlay.patch"
           build_tree=$(git -C upstream-dashboard write-tree)
           printf '%s\n' "$build_tree" > "$RUNNER_TEMP/dashboard-source/build-tree"

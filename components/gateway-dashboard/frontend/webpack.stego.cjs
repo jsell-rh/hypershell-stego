@@ -10,7 +10,7 @@ const packageJson = require('./package.json');
 // bounded assets. It does not permit inline scripts or add external origins.
 module.exports = {
   mode: 'production',
-  entry: './src/index.tsx',
+  entry: ['./src/editor.stego.ts', './src/index.tsx'],
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'assets/[name].[contenthash].js',
