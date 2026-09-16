@@ -7,6 +7,7 @@ on:
       - .github/workflows/dashboard-source.yml
       - components/gateway-dashboard/**
       - gateway-console/out/browsertelemetry/**
+      - gateway-console/out/browser/sessionclient/**
 
 permissions:
   contents: read
