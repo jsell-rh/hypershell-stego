@@ -58,6 +58,7 @@ entities:
     observations:
       workload: [phase, status]
       endpoint: [route_address]
+      console: [console_address]
     fields:
       - { name: name, type: string, min_length: 1, max_length: 255 }
       - { name: cluster_id, type: ref, to: ManagedCluster }
@@ -72,7 +73,7 @@ entities:
       - { name: supervisor_image, type: string, optional: true }
       - { name: server_dns_names, type: jsonb, optional: true }
       - { name: route_address, type: string, optional: true, unobserved: "" }
-      - { name: console_address, type: string, optional: true }
+      - { name: console_address, type: string, optional: true, unobserved: "" }
       - { name: oidc, type: string, optional: true }
       - { name: route, type: string, optional: true }
       - { name: credential_driver, type: string, optional: true }

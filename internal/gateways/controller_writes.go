@@ -11,27 +11,20 @@ import (
 // required. Configuration fields cannot be mixed with observations.
 func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch PatchRequest, console, route *string) error {
 	operation, target := "", ""
-	workloadWithEndpoint := false
+	workload := patch.Phase != nil || patch.Status != nil
 	rest := patch
 	switch {
+	case workload:
+		if patch.Phase == nil || patch.Status == nil {
+			return ErrInvalid
+		}
+		operation, target = "observe.workload", cluster
+		rest.Phase, rest.Status = nil, nil
 	case route != nil:
 		if console != nil {
 			return ErrInvalid
 		}
 		operation, target = "observe.endpoint", cluster
-		if patch.Phase != nil || patch.Status != nil {
-			if patch.Phase == nil || patch.Status == nil {
-				return ErrInvalid
-			}
-			workloadWithEndpoint = true
-			rest.Phase, rest.Status = nil, nil
-		}
-	case patch.Phase != nil || patch.Status != nil:
-		if patch.Phase == nil || patch.Status == nil || console != nil {
-			return ErrInvalid
-		}
-		operation, target = "observe.workload", cluster
-		rest.Phase, rest.Status = nil, nil
 	case patch.OIDC != nil:
 		if console != nil {
 			return ErrInvalid
@@ -50,8 +43,13 @@ func (s *Service) authorizeControllerWrite(p Principal, cluster string, patch Pa
 	if err := s.AuthorizeControllerWrite(p, "Gateway", operation, target); err != nil {
 		return err
 	}
-	if workloadWithEndpoint {
-		return s.AuthorizeControllerWrite(p, "Gateway", "observe.workload", cluster)
+	if workload && route != nil {
+		if err := s.AuthorizeControllerWrite(p, "Gateway", "observe.endpoint", cluster); err != nil {
+			return err
+		}
+	}
+	if workload && console != nil {
+		return s.AuthorizeControllerWrite(p, "Gateway", "configure.console", cluster)
 	}
 	return nil
 }

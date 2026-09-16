@@ -37,6 +37,7 @@ type apiFixture struct {
 	phase    string
 	err      error
 	endpoint *string
+	console  *string
 	version  string
 }
 
@@ -45,6 +46,7 @@ func (f *apiFixture) UpdateGateway(ctx context.Context, r *pb.UpdateGatewayReque
 	f.desired = r.GetStatus()
 	f.phase = r.GetPhase()
 	f.endpoint = r.RouteAddress
+	f.console = r.ConsoleAddress
 	md, _ := metadata.FromOutgoingContext(ctx)
 	f.version = strings.Join(md.Get("if-resource-version"), ",")
 	return &pb.UpdateGatewayResponse{}, f.err
@@ -67,9 +69,11 @@ type providerFixture struct {
 	sqlDeletes       int
 	err              error
 	endpoint         *string
+	console          *string
 }
 
-func (f *providerFixture) DesiredEndpoint(*pb.Gateway) *string { return f.endpoint }
+func (f *providerFixture) DesiredEndpoint(*pb.Gateway) *string        { return f.endpoint }
+func (f *providerFixture) DesiredConsoleEndpoint(*pb.Gateway) *string { return f.console }
 
 func workloadHistory(target string) map[string]*control.CleanupTargetObservations {
 	return map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{target: false}}, "sql": {Targets: map[string]bool{target: true}}}

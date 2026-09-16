@@ -17,6 +17,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
@@ -128,7 +129,11 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		w.tokens[name] = k.browserLogin(t, "hypershell", username)
 
 	}
-	settings = withControllerWriteGrants(t, settings, writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster), writeGrant(ids["workload"], "observe.endpoint", f.cluster), writeGrant(ids["workload"], "configure.sql", f.cluster))
+	grants := []auth.Grant{writeGrant(ids["identity"], "configure.identity", ""), writeGrant(ids["workload"], "observe.workload", f.cluster), writeGrant(ids["workload"], "observe.endpoint", f.cluster), writeGrant(ids["workload"], "configure.sql", f.cluster)}
+	if w.public != nil {
+		grants = append(grants, writeGrant(ids["workload"], "configure.console", f.cluster))
+	}
+	settings = withControllerWriteGrants(t, settings, grants...)
 	settings = withCleanupGrants(t, settings, cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
 	encoded, _ := json.Marshal(subjects)
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(encoded))

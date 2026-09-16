@@ -37,6 +37,9 @@ type Provider interface {
 type EndpointProvider interface {
 	DesiredEndpoint(*pb.Gateway) *string
 }
+type ConsoleEndpointProvider interface {
+	DesiredConsoleEndpoint(*pb.Gateway) *string
+}
 type Controller struct {
 	gateways pb.GatewayServiceClient
 	state    control.GatewayIdentityServiceClient
@@ -186,6 +189,13 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			endpoint = &value
 		}
 	}
+	var consoleEndpoint *string
+	if provider, ok := c.provider.(ConsoleEndpointProvider); ok {
+		if desired := provider.DesiredConsoleEndpoint(gw); desired != nil {
+			value := *desired
+			consoleEndpoint = &value
+		}
+	}
 	return runtime.RunObservation(ctx, func(operation context.Context) error {
 		release, err := c.releases.GetGatewayRelease(operation, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
 		if err != nil {
@@ -207,18 +217,23 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			phase, desired = "Degraded", "WorkloadUnavailable"
 		}
 		published := endpoint
+		publishedConsole := consoleEndpoint
 		if observation != nil && endpoint != nil {
 			empty := ""
 			published = &empty
 		}
-		if gw.GetStatus() == desired && gw.GetPhase() == phase && state.GetObservedGeneration() == state.GetResourceGeneration() && (published == nil || gw.GetRouteAddress() == *published) {
+		if observation != nil && consoleEndpoint != nil {
+			empty := ""
+			publishedConsole = &empty
+		}
+		if gw.GetStatus() == desired && gw.GetPhase() == phase && state.GetObservedGeneration() == state.GetResourceGeneration() && (published == nil || gw.GetRouteAddress() == *published) && (publishedConsole == nil || gw.GetConsoleAddress() == *publishedConsole) {
 			return nil
 		}
 		writeContext, err := rpc.WithResourceVersion(commit, state.ResourceVersion)
 		if err != nil {
 			return err
 		}
-		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired, RouteAddress: published})
+		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired, RouteAddress: published, ConsoleAddress: publishedConsole})
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
 }

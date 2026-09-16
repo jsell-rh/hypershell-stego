@@ -107,7 +107,7 @@ type Gateway struct {
 	SupervisorImage     *string         `json:"supervisor_image,omitempty" gorm:"column:supervisor_image"`
 	ServerDnsNames      datatypes.JSON  `json:"server_dns_names,omitempty" gorm:"column:server_dns_names;type:jsonb"`
 	RouteAddress        *string         `json:"route_address,omitempty" gorm:"column:route_address;->"`
-	ConsoleAddress      *string         `json:"console_address,omitempty" gorm:"column:console_address"`
+	ConsoleAddress      *string         `json:"console_address,omitempty" gorm:"column:console_address;->"`
 	Oidc                *string         `json:"oidc,omitempty" gorm:"column:oidc"`
 	Route               *string         `json:"route,omitempty" gorm:"column:route"`
 	CredentialDriver    *string         `json:"credential_driver,omitempty" gorm:"column:credential_driver"`

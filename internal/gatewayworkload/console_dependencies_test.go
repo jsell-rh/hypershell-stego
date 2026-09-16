@@ -28,7 +28,7 @@ func (f consoleCredentialFixture) GetCredentials(ctx context.Context, r *provisi
 func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T) {
 	for _, scenario := range []string{"valid", "telemetry", "unsafe telemetry", "wrong version", "foreign origin", "foreign client", "short secret", "unknown response", "missing TLS identity", "denied", "canceled"} {
 		t.Run(scenario, func(t *testing.T) {
-			gw, _ := records(t)
+			gw, release := records(t)
 			origin, err := keycloak.GatewayConsoleOrigin(gw.Metadata.Id, "example.test")
 			if err != nil {
 				t.Fatal(err)
@@ -65,6 +65,8 @@ func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T)
 			}
 			reads := 0
 			k := &Kubernetes{options: Options{ClusterID: gw.ClusterId, Issuer: "https://issuer.example.test/realm", Console: &ConsoleOptions{Domain: "example.test"}}, trust: string(public), internalTrust: internal, internalRoots: x509.NewCertPool(), publicRoots: x509.NewCertPool()}
+			k.options.PublicDomain, k.options.PublicIssuer, k.options.PublicRouter = "example.test", "public-issuer", "default"
+			k.options.Console.Image = release.Image
 			k.internalRoots.AppendCertsFromPEM(internal)
 			k.publicRoots.AppendCertsFromPEM(public)
 			k.options.Console.Credentials = consoleCredentialFixture{read: func(ctx context.Context, r *provisioner.GatewayConsoleCredentialRequest) (*provisioner.GatewayConsoleCredentialResponse, error) {

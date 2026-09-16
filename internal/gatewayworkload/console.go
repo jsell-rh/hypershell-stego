@@ -104,9 +104,6 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 		}
 		return err
 	}
-	if gw.GetConsoleAddress() == "" {
-		return ErrPending
-	}
 	if _, err := k.consoleOrigin(gw, version); err != nil {
 		return err
 	}

@@ -18,7 +18,7 @@ import (
 )
 
 func TestConsoleReconciliationCreatesVerifiedDependencies(t *testing.T) {
-	for _, mode := range []string{"valid", "server pending", "client pending", "foreign origin", "wrong version", "extra data", "credential denied", "untrusted server"} {
+	for _, mode := range []string{"valid", "unpublished", "server pending", "client pending", "foreign origin", "wrong version", "extra data", "credential denied", "untrusted server"} {
 		t.Run(mode, func(t *testing.T) {
 			gw, release := records(t)
 			origin, err := keycloak.GatewayConsoleOrigin(gw.Metadata.Id, "example.test")
@@ -26,6 +26,9 @@ func TestConsoleReconciliationCreatesVerifiedDependencies(t *testing.T) {
 				t.Fatal(err)
 			}
 			gw.ConsoleAddress = &origin
+			if mode == "unpublished" {
+				gw.ConsoleAddress = nil
+			}
 			public, serverCert, serverKey := publicTestCertificate(t, strings.TrimPrefix(origin, "https://"), time.Now().Add(time.Hour), x509.ExtKeyUsageServerAuth)
 			internal, clientCert, clientKey := publicTestCertificate(t, Name+"."+gw.Namespace+".svc.cluster.local", time.Now().Add(time.Hour), x509.ExtKeyUsageClientAuth)
 			encode := func(value []byte) string { return base64.StdEncoding.EncodeToString(value) }
@@ -125,7 +128,7 @@ func TestConsoleReconciliationCreatesVerifiedDependencies(t *testing.T) {
 			}
 			store := object{"database-url": encode([]byte("private-database-url")), "database-ca.pem": encode(public), "session-key": encode([]byte("retained-key"))}
 			digest, err := k.ensureConsoleDependencies(context.Background(), gw, version, store)
-			if mode != "valid" {
+			if mode != "valid" && mode != "unpublished" {
 				if err == nil || digest != "" {
 					t.Fatal("unverified dependencies accepted")
 				}

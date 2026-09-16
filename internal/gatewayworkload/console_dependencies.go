@@ -44,8 +44,8 @@ func (k *Kubernetes) consoleDependencyObjects(ctx context.Context, gw *pb.Gatewa
 	if err != nil || ns != expectedNS {
 		return nil, invalid
 	}
-	origin, err := keycloak.GatewayConsoleOrigin(id, k.options.Console.Domain)
-	if err != nil || gw.GetConsoleAddress() != origin {
+	origin, err := k.consoleOrigin(gw, version)
+	if err != nil {
 		return nil, invalid
 	}
 	host := strings.TrimPrefix(origin, "https://")
@@ -150,10 +150,23 @@ func (k *Kubernetes) consoleOrigin(gw *pb.Gateway, version int64) (string, error
 		return "", invalid
 	}
 	origin, err := keycloak.GatewayConsoleOrigin(gw.GetMetadata().GetId(), k.options.Console.Domain)
-	if err != nil || origin != gw.GetConsoleAddress() {
+	if err != nil || (gw.GetConsoleAddress() != "" && origin != gw.GetConsoleAddress()) {
 		return "", invalid
 	}
 	return origin, nil
+}
+
+// The operator's domain defines the desired address before public observation.
+// The controller publishes it only after Ensure verifies the complete endpoint.
+func (k *Kubernetes) DesiredConsoleEndpoint(gw *pb.Gateway) *string {
+	if k.options.Console == nil || !k.Handles(gw) {
+		return nil
+	}
+	origin, err := keycloak.GatewayConsoleOrigin(gw.GetMetadata().GetId(), k.options.Console.Domain)
+	if err != nil {
+		return nil
+	}
+	return &origin
 }
 
 func (k *Kubernetes) ensureConsoleDependencies(ctx context.Context, gw *pb.Gateway, version int64, store object) (string, error) {

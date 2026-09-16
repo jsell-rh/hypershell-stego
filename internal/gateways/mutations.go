@@ -97,33 +97,41 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 		if current.ClusterID != previousClusterID {
 			return store.ErrConflict
 		}
-		if patch.Phase != nil || routeAddress != nil {
+		if patch.Phase != nil || routeAddress != nil || consoleAddress != nil {
 			writer, ok := tx.(store.ObservationWriter)
 			if !ok {
 				return errors.New("Gateway storage does not support observations")
 			}
 			observationVersion := version
-			if patch.Phase != nil {
-				if err := writer.ObserveIfVersion(ctx, "Gateway", id, version, "workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status}); err != nil {
+			observe := func(owner string, fields map[string]any) error {
+				if err := writer.ObserveIfVersion(ctx, "Gateway", id, observationVersion, owner, fields); err != nil {
 					return err
 				}
-				if routeAddress != nil {
-					// This is our own write in the same serializable transaction.
-					// The first write checked the original external observation
-					// revision and retains the row lock until both groups commit.
-					value, err := tx.Get(ctx, "Gateway", id)
-					if err != nil {
-						return err
-					}
-					written, ok := value.(model.Gateway)
-					if !ok || written.ResourceVersion <= version {
-						return errors.New("Gateway observation revision is invalid")
-					}
-					observationVersion = written.ResourceVersion
+				// Read our own write under the transaction's retained row lock.
+				// The first observation checked the external resource version.
+				value, err := tx.Get(ctx, "Gateway", id)
+				if err != nil {
+					return err
+				}
+				written, ok := value.(model.Gateway)
+				if !ok || written.ResourceVersion <= observationVersion {
+					return errors.New("Gateway observation revision is invalid")
+				}
+				observationVersion = written.ResourceVersion
+				return nil
+			}
+			if patch.Phase != nil {
+				if err := observe("workload", map[string]any{"phase": *patch.Phase, "status": *patch.Status}); err != nil {
+					return err
 				}
 			}
 			if routeAddress != nil {
-				err = writer.ObserveIfVersion(ctx, "Gateway", id, observationVersion, "endpoint", map[string]any{"route_address": *routeAddress})
+				if err := observe("endpoint", map[string]any{"route_address": *routeAddress}); err != nil {
+					return err
+				}
+			}
+			if consoleAddress != nil {
+				err = observe("console", map[string]any{"console_address": *consoleAddress})
 			}
 		} else if version > 0 {
 			writer, ok := tx.(store.VersionedWriter)

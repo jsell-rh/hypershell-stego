@@ -129,9 +129,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 32274ae72abf522d8b34f22bc17a88b2489ea0cb7a6183f2e2b902276f60d5da
+                sha256: dc03b707d77507f25cbaf08f91ee32621a17d2137bb0e3fb3354db5f6eee337f
                 mode: 420
-        sha256: 056407d491e914edf54b32f1b8890d0c302f3d6a822db2a62ce7462bb4d5a863
+        sha256: f8ea19b22e68b3cdeec9f7a22f6b438d66965a7d932d8634278fb40d3deb098b
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -140,7 +140,7 @@ last_applied:
         vcs: git
         revision: cf430f4b4af448864d0f1309dd538aee42df4684
         source_state: clean
-    service_hash: 32274ae72abf522d8b34f22bc17a88b2489ea0cb7a6183f2e2b902276f60d5da
+    service_hash: dc03b707d77507f25cbaf08f91ee32621a17d2137bb0e3fb3354db5f6eee337f
     registry_sha: 5684834a25c0b7ccf5286fbfe776d2970e49ce6a27698f0dd8573fdafaff2d6b
     registry_content_sha256: fa54034d412ae21c61f9bad838f0277a4a469121ffca9024cabb469969f9fb35
     components:
@@ -241,7 +241,7 @@ last_applied:
               hash: 3bb976bd576e3f3b40b7fa9b2fa48215e3aa520f173290ccc3d64215287e4d9d
             - name: console_address
               type: string
-              hash: 99fe88a41c2948760263798ebf194a04cb536cb16330f8b5c8034638cdd23144
+              hash: 541e429a26861b457a492ef6cd86b7400b76b9a06c06c3c9026b1c68ed95301b
             - name: oidc
               type: string
               hash: 6c0f44b071db47bafe9f3f009630f13e7aec0d650171dd61b715ad3fb69cf726
@@ -576,31 +576,31 @@ last_applied:
         search/field_map.go: 58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: 75df704470c3ddc5dd4ba29ff9b73acedf4a3fde7885600b52db656af03206fd
-        storage/cleanup_summary.go: 90a7e96341e7781f3a2e364887c73fc67e9f70267f555bf3f843230fbbef1267
+        storage/cleanup_summary.go: 61f88bd5862778f4e59e49a47aa25a8c8459a942db81bb9193cba4f0ab737732
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
         storage/cursor.go: c4394d4806780845e6dcffb3dea876b9790f36a6f635360a9753646e006ae436
         storage/database.go: 280f46b5c6e04748a3d4c284545bcc46a0c3d0b966d9019469e60030b0e12e24
         storage/effects.go: 0b5f33ca973f779fed4c28c19af62a6fd079e3b3daacf211ec7344e24944fb37
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 752a082bf74ffbcbe2ef740849cccbf3e4eb044fe40d19a368841974fa0d2ff3
-        storage/migrations/000002_resource_versions.sql: 8ec1a735c6e423278ba614b9de9296f74bad50e514093a84d79c5033b9fc4251
-        storage/migrations/000003_resource_generations.sql: 8ec1a735c6e423278ba614b9de9296f74bad50e514093a84d79c5033b9fc4251
-        storage/migrations/000004_resource_cleanup.sql: 8ec1a735c6e423278ba614b9de9296f74bad50e514093a84d79c5033b9fc4251
-        storage/migrations/000005_cleanup_targets.sql: 8ec1a735c6e423278ba614b9de9296f74bad50e514093a84d79c5033b9fc4251
+        storage/migrations/000002_resource_versions.sql: 812b35112cb8c5d3cdf5153a17e8470a4100ba06f182f051a5b94efea6f5240b
+        storage/migrations/000003_resource_generations.sql: 812b35112cb8c5d3cdf5153a17e8470a4100ba06f182f051a5b94efea6f5240b
+        storage/migrations/000004_resource_cleanup.sql: 812b35112cb8c5d3cdf5153a17e8470a4100ba06f182f051a5b94efea6f5240b
+        storage/migrations/000005_cleanup_targets.sql: 812b35112cb8c5d3cdf5153a17e8470a4100ba06f182f051a5b94efea6f5240b
         storage/migrations/000006_scan_checkpoints.sql: 148a9b3aa6ac989ce458b5d878e6f5b250ecc1f10762331dd1df0adcc82e9f95
-        storage/migrations/000007_resource_conditions.sql: 8ec1a735c6e423278ba614b9de9296f74bad50e514093a84d79c5033b9fc4251
+        storage/migrations/000007_resource_conditions.sql: 812b35112cb8c5d3cdf5153a17e8470a4100ba06f182f051a5b94efea6f5240b
         storage/migrations/000008_effect_bindings.sql: aa6ed402091e352159c9cf88401d7287ba9ebd18236ff11eb0ac7721a8191564
         storage/migrations/000009_resource_state.sql: 8a44cde312e27bafcfc1fd3cc074d75a335458d72215086100504be231c7a67d
         storage/migrations/000010_resource_state_keys.sql: c5966bc9e200137b7bcae42d3e4527a0aa392d583206336cbddb588ffbbd66d6
         storage/migrations/000011_resource_state_scopes.sql: 992060457b1373e45369abe0c0da2e9d3b9ffc7f5e006b07fd4bf2aa8830a056
-        storage/models.go: 288a5f7df12ef5e64ea153c7f29b4599dd5c7988609e89a2c89093d553f8dc7a
+        storage/models.go: c17b7cb0db9dc0745cd2e80218e6648f54b6c2e29a4213d36238d3e110cfdbc6
         storage/resource_state.go: d65cfaea809ec73e95f5c6c4f596793400cc6f8bc5d89a2040a7b5bd18db591f
         storage/resource_state_scopes.go: 7f72f1b354be4b395ddc3b8c8d59496f99dcedbb92b36a2b7f1139b6a57466be
-        storage/schema_generation.go: c5ce72791ab3901f15a7ebcbb734a21fe5c25b6306de286d8891c052d91c54b1
+        storage/schema_generation.go: 6315b192be1fb05b6295aace91b5b207856b0a1a411037f546f39fd869d20ea8
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
-        storage/store.go: 1328b22ea0a925f4cf298ee708985fec1d144784c72b53fdcfcc44da95b71d4d
+        storage/store.go: a8f0bd72d541a34aa7b5ce22dd08e65fb0096a3de2eff3084292e78cbed6573d
         storage/transaction.go: a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721
-        storage/versions.go: b5f08afa625736cf6b7c36d86da485ba80f6297663429098112357ed95cc76e7
+        storage/versions.go: 40bef81cdf36ddf56b39ad2e1172db1f908b70b0e2b9f53359c4ae77164ba203
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812

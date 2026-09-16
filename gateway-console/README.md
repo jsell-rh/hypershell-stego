@@ -102,3 +102,12 @@ validated CA and optional `STEGO_OTEL_TOKEN_FILE` into the browser's private
 files and selects the console service name. It does not copy those files to the
 upstream dashboard container. Token changes produce a new configuration digest
 and rollout. The collector must be an approved network destination.
+
+The assigned workload controller derives the desired console host from the
+operator's domain. It does not require a published address to create the
+private deployment. It publishes `console_address` with the workload and
+Gateway endpoint observations only after all readiness and HTTPS checks pass.
+A failed or pending check clears the published address. The write uses the
+observed resource version and requires `observe.workload`, `observe.endpoint`,
+and `configure.console` grants for the same managed cluster. STEGO stores the
+three observation groups in one transaction with one application event.

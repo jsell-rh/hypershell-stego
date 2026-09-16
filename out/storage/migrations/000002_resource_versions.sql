@@ -86,7 +86,7 @@ BEGIN
    NEW.stego_observations := OLD.stego_observations;
   END IF;
  END IF;
- -- generation contract 15f6f581c3e13c48978f4bdd4f58c71253d6e3d90e00b2b401eb0a9440e2fbec
+ -- generation contract 106b63fe1c49e3a73ebc758659a8ea75412d46e8d7ebc5ea0f5ee09cff857cfc
  IF TG_OP = ''INSERT'' THEN NEW.stego_conditions := ''{}''::jsonb; END IF;
  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM ''object'' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E''identity'',E''identity_users'']::text[] <> ''{}''::jsonb THEN
  RAISE EXCEPTION ''invalid resource conditions'' USING ERRCODE=''23514''; END IF;
@@ -130,7 +130,7 @@ BEGIN
    END IF;
   END IF;
  END IF;
- -- cleanup fields a9db63598abeaf341479a33068e81996b8b1fbcce6874ff92344ba8e0873aeb3
+ -- cleanup fields 2647d52af6f5a8d9a8c5550b6b7f5b46e46f3be488550682d5c898724e44e1da
 
  target_reset := TG_OP = ''INSERT'';
  IF TG_OP = ''INSERT'' THEN
@@ -230,7 +230,7 @@ BEGIN
    NEW.stego_observations := OLD.stego_observations;
   END IF;
  END IF;
- -- generation contract 15f6f581c3e13c48978f4bdd4f58c71253d6e3d90e00b2b401eb0a9440e2fbec
+ -- generation contract 106b63fe1c49e3a73ebc758659a8ea75412d46e8d7ebc5ea0f5ee09cff857cfc
  IF TG_OP = 'INSERT' THEN NEW.stego_conditions := '{}'::jsonb; END IF;
  IF jsonb_typeof(NEW.stego_conditions) IS DISTINCT FROM 'object' OR octet_length(NEW.stego_conditions::text)>65536 OR NEW.stego_conditions - ARRAY[E'identity',E'identity_users']::text[] <> '{}'::jsonb THEN
  RAISE EXCEPTION 'invalid resource conditions' USING ERRCODE='23514'; END IF;
@@ -274,7 +274,7 @@ BEGIN
    END IF;
   END IF;
  END IF;
- -- cleanup fields a9db63598abeaf341479a33068e81996b8b1fbcce6874ff92344ba8e0873aeb3
+ -- cleanup fields 2647d52af6f5a8d9a8c5550b6b7f5b46e46f3be488550682d5c898724e44e1da
 
  target_reset := TG_OP = 'INSERT';
  IF TG_OP = 'INSERT' THEN
