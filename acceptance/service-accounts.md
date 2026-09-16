@@ -87,10 +87,13 @@ The [discovery workflow](service-account-discovery.md) covers search, status
 filters, and custom ordering. Configurable expiration policy, deployment
 manifests, SDKs, the STEGO CLI port, and web-console workflows remain open.
 
-Gateway deletion now removes stored and orphan provider clients before it
-commits account tombstones, cleanup audits, the Gateway tombstone, and its event.
-The Gateway lock closes the race with account creation. See the
-[cleanup workflow](gateway-account-cleanup.md) for failure and restart behavior.
+Gateway DELETE now commits a deletion request and returns HTTP 202. That commit
+blocks new account reservations. The account worker then removes stored and
+orphan provider clients and commits account tombstones and cleanup audits.
+The Gateway remains visible as `Deleting` until all cleanup owners and targets
+complete. See the [current contract](asynchronous-deletion.md). The earlier
+[cleanup workflow](gateway-account-cleanup.md) records the replaced synchronous
+contract.
 Production migration management and upgrades from the reference table layout
 remain open.
 
@@ -101,7 +104,8 @@ transactions, audit writes, and terminal provider calls. It used Go 1.26.8,
 PostgreSQL 18.6, and an Intel Core Ultra 9 185H. Process startup is outside the timed loop. The first cycle includes connection
 setup. This is a local workflow baseline. It does not
 measure Keycloak, concurrent capacity, latency percentiles, or server memory.
-Run `go test -run '^$' -bench '^BenchmarkServiceAccountLifecycle$' -benchtime=100x ./acceptance`.
+This is historical evidence. Do not repeat this benchmark on the developer
+workstation. Use bounded CI or jshell resources for performance checks.
 
 Service-account recovery now uses STEGO's generated `RunSweep`. Hypershell declares
 nine state groups and twelve streams, plus their storage filters and domain
