@@ -58,11 +58,24 @@ jobs:
           root="$RUNNER_TEMP/gateway-console"
           "$root/render" --namespace=dashboard-check --fs-group=65532 \
             --image=registry.example.test/browser@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa > "$root/deployment.json"
+          "$root/render" --namespace=dashboard-check --fs-group=65532 \
+            --image=registry.example.test/browser@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa \
+            --image-pull-secret=dashboard-images > "$root/deployment-pull-secret.json"
           python3 - <<'PY'
           import json, os
           from pathlib import Path
           root = Path(os.environ['RUNNER_TEMP']) / 'gateway-console'
           source = json.loads(Path('gateway-console/upstream.json').read_text())
+          original = json.loads((root / 'deployment.json').read_text())
+          private = json.loads((root / 'deployment-pull-secret.json').read_text())
+          deployments = [item for item in private['items'] if item['kind'] == 'Deployment']
+          if len(deployments) != 1:
+              raise SystemExit('Expected one dashboard deployment')
+          pod = deployments[0]['spec']['template']['spec']
+          if pod.pop('imagePullSecrets', None) != [{'name': 'dashboard-images'}]:
+              raise SystemExit('The dashboard image pull reference differs')
+          if private != original:
+              raise SystemExit('The pull reference changed other dashboard resources')
           (root / 'application-image').write_text(source['image'] + '\n')
           PY
           python3 scripts/check-dashboard-deployment.py "$root"
