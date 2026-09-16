@@ -1,0 +1,11 @@
+# This declaration checks captured assets and generation. It is not the
+# per-Gateway deployment declaration.
+kind: service
+name: dashboard-build-check
+archetype: browser-service
+language: go
+overrides:
+  browser-backend:
+    api_prefix: /api
+    routes: [/]
+    asset_bundle: ui/build.zip

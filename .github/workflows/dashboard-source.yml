@@ -119,11 +119,39 @@ jobs:
         run: |
           set -euo pipefail
           find upstream-dashboard/frontend/dist -type f -printf '%P %s\n' | sort > "$RUNNER_TEMP/dashboard-source/assets.txt"
-          revision=$(cat .stego/compiler-revision)
+          tar -C upstream-dashboard/frontend/dist -cf "$RUNNER_TEMP/dashboard-source/assets.tar" .
+          revision=$(cat components/gateway-dashboard/compiler-revision)
           [[ $revision =~ ^[0-9a-f]{40}$ ]]
-          go run "github.com/jsell-rh/stego/cmd/stego@$revision" assets \
+          printf '%s\n' "$revision" > "$RUNNER_TEMP/dashboard-source/compiler-revision"
+          git init -q "$RUNNER_TEMP/dashboard-compiler"
+          git -C "$RUNNER_TEMP/dashboard-compiler" remote add origin https://github.com/jsell-rh/stego.git
+          git -C "$RUNNER_TEMP/dashboard-compiler" fetch -q --depth=1 origin "$revision"
+          git -C "$RUNNER_TEMP/dashboard-compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
+          test "$(git -C "$RUNNER_TEMP/dashboard-compiler" rev-parse HEAD)" = "$revision"
+          (cd "$RUNNER_TEMP/dashboard-compiler"; go build -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/dashboard-stego" ./cmd/stego)
+          "$RUNNER_TEMP/dashboard-stego" assets \
             --directory upstream-dashboard/frontend/dist \
             --output "$RUNNER_TEMP/dashboard-source/build.zip" 2>&1 | tee "$RUNNER_TEMP/dashboard-source/asset-contract.log"
+          "$RUNNER_TEMP/dashboard-stego" assets \
+            --directory upstream-dashboard/frontend/dist \
+            --output "$RUNNER_TEMP/dashboard-source/repeated.zip"
+          cmp "$RUNNER_TEMP/dashboard-source/build.zip" "$RUNNER_TEMP/dashboard-source/repeated.zip"
+          export STEGO_REGISTRY="$RUNNER_TEMP/dashboard-compiler/registry"
+          mkdir -p "$RUNNER_TEMP/dashboard-build-check/ui"
+          cd "$RUNNER_TEMP/dashboard-build-check"
+          "$RUNNER_TEMP/dashboard-stego" init --archetype browser-service
+          cp "$GITHUB_WORKSPACE/components/gateway-dashboard/generation-service.yaml" service.yaml
+          cp "$RUNNER_TEMP/dashboard-source/build.zip" ui/build.zip
+          printf 'module example.test/dashboard\n\ngo 1.26.8\n' > go.mod
+          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee "$RUNNER_TEMP/dashboard-source/generation.log"
+          "$RUNNER_TEMP/dashboard-stego" deps 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          cp .stego/state.yaml "$RUNNER_TEMP/dashboard-source/first-state.yaml"
+          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          cmp .stego/state.yaml "$RUNNER_TEMP/dashboard-source/first-state.yaml"
+          "$RUNNER_TEMP/dashboard-stego" drift 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          go build -mod=readonly -o "$RUNNER_TEMP/dashboard-source/generated-browser" ./out 2>&1 | tee "$RUNNER_TEMP/dashboard-source/generated-build.log"
+          tar -cf "$RUNNER_TEMP/dashboard-source/generated-source.tar" service.yaml go.mod go.sum .stego out
       - name: Require all source checks
         if: always()
         env:

@@ -1,0 +1,32 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35109019035",
+  "application_source": "120effb6d2896bc568144a05dcbe89f828c27735",
+  "outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "failure"
+  },
+  "router_test_passes": 8,
+  "runtime_npm_vulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "asset_files": 35,
+  "expanded_asset_bytes": 4702076,
+  "largest_asset_bytes": 783909,
+  "remaining_failure": "The captured ZIP exceeds the former 1 MiB STEGO limit. No complete rendered dashboard result is claimed.",
+  "logs_sha256": {
+    "go-vulnerabilities.log": "e3c47feabb6539b35ab204e3a2071443f1eb54809a835b43a0550d430c6e8c99",
+    "npm-audit.json": "c22395adf2874772accf5270e690351f8e72fa4902a0ab6ba30770a56d5e1a84",
+    "router-tests.log": "3dfa335043bf8295bb9fd296a26302e4fee5937fbe51e6e1f0d35847c25041f6",
+    "ui-build.log": "573e26309e5c38e9f7af7f0520569ee23f14eb149f6d2286d7e9f0f1758c4442",
+    "asset-contract.log": "b59c1e08effc6b8effd33336c4fa9d4a57cfe68407548346b25f25af42309ac6",
+    "assets.txt": "f1b6390c5ad5d0b4289011a92b6e3028f5c56c2eb51e18524e321283b9af3b9f"
+  }
+}

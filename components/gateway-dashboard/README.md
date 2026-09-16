@@ -44,3 +44,13 @@ candidate now uses 7.18.4. The tests stopped before execution because jsdom did
 not supply `TextEncoder`. The test setup now supplies Node's standard encoder
 and decoder. No application authentication or router behavior is mocked by
 this change. The tests and complete asset check must still pass in CI.
+
+The [next run](../../acceptance/dashboard-packaging-evidence.json) passed both
+dependency checks, UI types and build, and all eight selected router tests.
+The remaining failure was STEGO's former 1 MiB captured ZIP limit. The compiler
+candidate now has typed input limits: 4 MiB for assets, 1 MiB for protocol and
+callback files, and the existing 8 MiB combined limit. The build-only compiler
+pin is in `compiler-revision`; it does not change the main application's pin.
+The next CI run must capture the actual assets twice, generate a fresh browser
+backend, check repeated generation, and build that backend. The small
+`generation-service.yaml` is a compiler check, not a deployment declaration.
