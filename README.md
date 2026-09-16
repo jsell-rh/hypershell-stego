@@ -43,13 +43,16 @@ separate qualification requirement.
 
 | Source and check | Result and scope |
 | --- | --- |
-| `b58d9a2`, [API run 35103602751](https://github.com/jsell-rh/hypershell-stego/actions/runs/35103602751) | All 49 required checks passed. REST, gRPC, transactional events, retained cleanup, concurrent journal registration, and regeneration passed. Test cleanup was independently checked. |
-| `5753c33`, [discovery run 35105755539](https://github.com/jsell-rh/hypershell-stego/actions/runs/35105755539) | Eight SQL and two boundary tests passed. They include a failed first read, independent later clients, store reconstruction, shifted pages, and foreign-client preservation. |
-| `d1ec34c`, [full run 35102064260](https://github.com/jsell-rh/hypershell-stego/actions/runs/35102064260) | Core, rendered browser, image, and console checks passed. This source predates the scope guard and bounded provider discovery. CNPG and Sandbox were not selected. |
-| `bceea63`, [CNPG run 35100459235](https://github.com/jsell-rh/hypershell-stego/actions/runs/35100459235) | Complete Gateway workflow passed with primary replacement, stable SQL identities and data, regeneration, and verified cleanup. This source predates journal enumeration. |
-| `550b2b7`, [public browser workflow](acceptance/browser-closure-evidence-20260916.json) | Passed in 501.24 seconds with 266 stable generation hashes and verified cleanup. [Full run 35104550272](acceptance/core-closure-evidence-20260916.json) also passed core, browser, image, and console checks. This source predates bounded discovery. |
-| `85706c6`, [maximum-offset recovery](acceptance/provider-window-sql-evidence.json) | All twelve required checks passed in `35106173055`. The latest full run `35106305055` is active. |
-| `120711a`, [API discovery workflow](acceptance/api-window-evidence-20260916.json) | All 51 required checks passed. No failures or skips; all four generation snapshots matched. Independent checks confirmed resource and Lease cleanup. |
+| `85706c6`, [full application](acceptance/core-window-evidence-20260916.json) | Core, rendered browser, image, and console jobs passed. The saved log has 483 passes and four named test exclusions. CNPG and Sandbox were not selected. |
+| `120711a`, [API workflow](acceptance/api-window-evidence-20260916.json) | All 51 required checks passed, with no failures or skips. All four generation snapshots matched. Independent checks confirmed resource and Lease cleanup. |
+| `d53f843`, [public Gateway workflow](acceptance/browser-window-evidence-20260916.json) | Passed in 498.58 seconds. All 269 generation hashes matched. Test and independent operator cleanup checks passed. |
+| `e8ace19`, [CNPG Gateway workflow](acceptance/cnpg-window-evidence-20260916.json) | All ten required tests passed. The complete browser workflow took 470.85 seconds. Primary replacement preserved SQL identities, keys, credentials, and data. Regeneration and independent cleanup checks passed. |
+| [SQL discovery recovery](acceptance/provider-window-sql-evidence.json) and [TLS provisioner recovery](acceptance/provider-wire-sql-evidence.json) | Both twelve-test gates passed. They cover failed inventory windows, protected state, recovery, and closure through the authenticated generated transport. |
+
+These application revisions share the runtime from `85706c6` and compiler
+`af67e7b`. Later changes add tests and evidence. They qualify the current
+Gateway deletion and provider recovery changes. Historical results remain in
+[the repository record](acceptance/repository-history-20260916.md).
 
 These results do not establish complete parity, production capacity, backup and
 restore, or every deployment recovery case. The user deferred the live Kata

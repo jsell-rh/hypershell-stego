@@ -1,0 +1,79 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35114192951",
+  "source": "e8ace192a0b449bbc05027e0e81ea2b37baa17a9",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "passes": {
+    "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion": "7.40",
+    "TestControllerLocalSchemaHasNoDatabaseCatalog": "0.18",
+    "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites": "0.41",
+    "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration": "0.16",
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart": "10.20",
+    "TestGatewayDeletionBeforeWorkloadStartup": "5.68",
+    "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart": "6.53",
+    "TestKubernetesWriteFailurePrivacy": "0.00",
+    "TestGeneratedWorkloadWorkerStartupPrivacy": "7.07",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow": "470.85"
+  },
+  "generation_equal": true,
+  "generated_files": 269,
+  "archive_sha256": "e6e1f76cb766266b36a7bde4cd9d48115561994b06e995e72bea8e739b7b06e8",
+  "runtime_log_sha256": "e0be14ba0b7a720a82f7bc416d532f2851cf868f685d1524691e49f0ca3bf57d",
+  "restart": {
+    "cluster_spec_unchanged": true,
+    "cluster_uid": "a6a82f06-e083-4ccf-8355-4d37f96f5a61",
+    "gateway_credentials_and_keys_unchanged": true,
+    "installation_data_unchanged": true,
+    "namespace": "stego-cnpg-database-ci",
+    "namespace_uid": "d57b0776-5a99-45d6-a1cc-7b031a555359",
+    "new_primary": "gateway-database-2",
+    "new_primary_pod_uid": "4fefc84d-9a12-4c84-bc93-96a2a9880b76",
+    "old_pod_uid": "bb603db7-21bf-4f80-a140-e68498bc4523",
+    "old_primary": "gateway-database-1",
+    "primary_changed": true,
+    "provider_data_unchanged": true,
+    "ready_instances": 2,
+    "seconds": 69.362347526,
+    "sql_object_ids_unchanged": true
+  },
+  "cleanup": {
+    "runtime_absent": true,
+    "volumes_absent": true,
+    "private_fixture_absent": true,
+    "installation_retained": true
+  },
+  "browser_cleanup": {
+    "namespace_retained": "stego-service-ci",
+    "test_resources_absent": true,
+    "allocations_absent": true
+  },
+  "allocation_cleanup": {
+    "allocations_before": 0,
+    "allocations_absent": true
+  },
+  "operator_cleanup": {
+    "checked_at": "2026-09-16T15:36:49.516000+00:00",
+    "context": "default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell",
+    "namespace": "stego-service-ci",
+    "allocator": "5305aa89c5f40a73316e60bd033ec8ab",
+    "runtime": [],
+    "fixture_resources": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "cnpg_runtime": [],
+    "cnpg_children": [],
+    "private_fixture": [],
+    "volumes_checked": [
+      {
+        "name": "pvc-486accdd-75cc-4ed4-98a5-8b079d0faac9",
+        "uid": "62041214-ce2c-4ffc-b473-3f111a50f02a"
+      },
+      {
+        "name": "pvc-fa4ff9da-70d8-4812-839f-d4b7f9fecb42",
+        "uid": "b6efccad-0357-4ba0-8180-614062d1d632"
+      }
+    ],
+    "lease": "",
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59"
+  },
+  "scope": "Complete CNPG Gateway workflow with bounded provider discovery. This does not prove the separate per-Gateway dashboard, live Kata isolation, backup restoration, or production capacity."
+}

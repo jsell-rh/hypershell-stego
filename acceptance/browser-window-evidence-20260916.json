@@ -1,0 +1,36 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35107987220",
+  "source": "d53f843ccf8b30e5215fbaa471879fa470323d31",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "archive_sha256": "3e3b9a4e3ba7820a9980bbbe6694a68aecb12d2813fba4f4b60138e1d37224fb",
+  "exit": "0",
+  "generation_equal": true,
+  "generated_files": 269,
+  "workflow_passes": [
+    "498.58s"
+  ],
+  "failed_tests": [],
+  "cleanup": {
+    "namespace_retained": "stego-service-ci",
+    "test_resources_absent": true,
+    "allocations_absent": true
+  },
+  "allocation_cleanup": {
+    "allocations_before": 0,
+    "allocations_absent": true
+  },
+  "operator_cleanup": {
+    "checked_at": "2026-09-16T15:15:44.419814+00:00",
+    "context": "default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell",
+    "namespace": "stego-service-ci",
+    "allocator": "5305aa89c5f40a73316e60bd033ec8ab",
+    "runtime": [],
+    "fixture_resources": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "cnpg_runtime": [],
+    "lease": "",
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59"
+  },
+  "scope": "Public Gateway workflow with bounded provider discovery. The complete per-Gateway dashboard is not part of this test."
+}
