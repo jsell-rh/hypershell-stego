@@ -188,3 +188,12 @@ Full run `35104550272` now targets `550b2b7`, which includes provider closure
 preparation. The complete public browser workflow `35104667835` targets the
 same source and is the only live cluster run. The earlier API result does not
 qualify that later provider change. Application main remains unchanged.
+
+## Next failing discovery gate
+
+`TestGatewayInventoryRegistersPastFailedClientRead` fails against `550b2b7`.
+The first candidate returns a provider read error. The later valid client gets
+no closure journal. The two-client HTTPS fixture fails in 0.01 seconds; its
+result is `provider-read-progress-probe.log`. Keep this regression as a required
+check for the next bounded discovery change. The passing scope, closure, and
+API results above do not resolve this fault.
