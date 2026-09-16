@@ -115,7 +115,7 @@ func (k *Kubernetes) consoleDependencyObjects(ctx context.Context, gw *pb.Gatewa
 	for name, value := range map[string]string{
 		"AUTH_DISABLED": "false", "AUTH_TOKEN_HEADER": "x-forwarded-access-token", "AUTH_USER_HEADER": "x-auth-request-user",
 		"ADMIN_ROLE": keycloak.RoleAdmin, "LOGOUT_URL": "/auth/logout",
-		"OPENSHELL_GATEWAY_URL": gatewayHost + ":8080",
+		"OPENSHELL_GATEWAY_URL": "https://" + gatewayHost + ":8080",
 		"GATEWAY_CA_CERT":       "/var/run/stego-application/gateway-ca.pem",
 		"GATEWAY_CLIENT_CERT":   "/var/run/stego-application/client.crt",
 		"GATEWAY_CLIENT_KEY":    "/var/run/stego-application/client.key",

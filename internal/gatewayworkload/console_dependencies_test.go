@@ -122,6 +122,9 @@ func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T)
 			if err := consoleStoreDependencies(got, store); err != nil {
 				t.Fatal(err)
 			}
+			if got[2]["data"].(object)["OPENSHELL_GATEWAY_URL"] != encode("https://"+Name+"."+gw.Namespace+".svc.cluster.local:8080") {
+				t.Fatal("dashboard Gateway URL does not select verified TLS")
+			}
 			for _, s := range got[2:] {
 				for _, value := range s["data"].(object) {
 					if value == store["database-url"] || value == store["session-key"] || value == encode("console-test-client-secret") {
