@@ -299,7 +299,7 @@ describe("gateway shell pages", () => {
     });
     expect(
       within(dialog).getByText(
-        "Deleting Team gateway will permanently remove the gateway. This action cannot be undone.",
+        "Deleting Team gateway starts permanent cleanup. New service accounts are blocked. The gateway stays visible until cleanup is complete.",
       ),
     ).toBeTruthy();
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
