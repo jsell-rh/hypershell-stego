@@ -8,7 +8,8 @@ those Pod and Service definitions.
 `Kubernetes.EnsureConsole` requires the assigned Gateway namespace and its
 allocator-owned network policy. It reads four controller-owned Secrets. Each
 Secret must have the expected name, namespace, type, owner, UID, and version.
-The worker rejects a Secret that is being deleted or has invalid data. A hash of
+STEGO checks the Secret identities and bounds their data through
+`OpaqueSecretSetDigest`. The worker rejects a Secret that is being deleted or has invalid data. A hash of
 all four data maps causes a new rollout after a credential change. Metadata-only
 changes do not cause a rollout.
 

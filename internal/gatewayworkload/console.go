@@ -2,13 +2,9 @@ package gatewayworkload
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/base64"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"net/http"
-	"regexp"
 
 	deployment "github.com/jsell-rh/hypershell-stego/gateway-console/out/deploy"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
@@ -18,8 +14,6 @@ import (
 
 const consoleName = "hypershell-gateway-console"
 const consoleComponentLabel = "hypershell.redhat.io/component"
-
-var consoleDataKey = regexp.MustCompile(`^[A-Za-z0-9._-]{1,253}$`)
 
 var consoleSecretNames = [...]string{consoleName + "-runtime", consoleName + "-files", "dashboard-application-env", "dashboard-application-files"}
 
@@ -84,45 +78,10 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest string)
 // A rollout depends on credential contents, not Secret metadata updates.
 func consoleConfigurationDigest(id string, secrets []object) (string, error) {
 	ns, err := Namespace(id)
-	if err != nil || len(secrets) != len(consoleSecretNames) {
-		return "", errors.New("console dependencies are incomplete")
+	if err != nil {
+		return "", err
 	}
-	content := make([]any, len(secrets))
-	for i, secret := range secrets {
-		if kube.String(secret, "apiVersion") != "v1" || kube.String(secret, "kind") != "Secret" || kube.String(secret, "metadata", "namespace") != ns || !keyResourceOwned(secret, consoleOwner(id)) || kube.String(secret, "metadata", "name") != consoleSecretNames[i] || kube.String(secret, "type") != "Opaque" {
-			return "", errors.New("console dependency has a different identity")
-		}
-		var values map[string]any
-		switch data := secret["data"].(type) {
-		case map[string]any:
-			values = data
-		case object:
-			values = data
-		}
-		if len(values) == 0 || len(values) > 64 {
-			return "", errors.New("console dependency data is invalid")
-		}
-		for key, value := range values {
-			encoded, ok := value.(string)
-			if !ok || !consoleDataKey.MatchString(key) || len(encoded) > 128<<10 {
-				return "", errors.New("console dependency entry is invalid")
-			}
-			decoded, err := base64.StdEncoding.Strict().DecodeString(encoded)
-			valid := err == nil && base64.StdEncoding.EncodeToString(decoded) == encoded
-			clear(decoded)
-			if !valid {
-				return "", errors.New("console dependency entry is invalid")
-			}
-		}
-		content[i] = values
-	}
-	encoded, err := json.Marshal(content)
-	if err != nil || len(encoded) > 512<<10 {
-		return "", errors.New("console dependency data exceeds its bound")
-	}
-	defer clear(encoded)
-	sum := sha256.Sum256(encoded)
-	return hex.EncodeToString(sum[:]), nil
+	return kube.OpaqueSecretSetDigest(ns, consoleSecretNames[:], consoleOwner(id), secrets)
 }
 
 // EnsureConsole starts only after the allocator and all four controller-owned
