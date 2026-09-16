@@ -10,17 +10,18 @@ git -C /work/compiler fetch -q --depth=1 origin "$revision"
 git -C /work/compiler -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
 test "$(git -C /work/compiler rev-parse HEAD)" = "$revision"
 (cd /work/compiler && go build -mod=readonly -trimpath -buildvcs=true -o /work/stego ./cmd/stego)
+STEGO_GENERATION_ROOT=/work/generation bash scripts/generate-gateway-console.sh
 for pass in first second; do
  for target in . console; do
   (cd "$target"; /work/stego apply; /work/stego deps; /work/stego apply; /work/stego drift)
  done
- find out console/out -type f -print > /work/generated-files
- printf '%s\n' .stego/state.yaml go.mod go.sum console/.stego/state.yaml console/go.mod console/go.sum >> /work/generated-files
+ find out console/out gateway-console/out -type f -print > /work/generated-files
+ printf '%s\n' .stego/state.yaml go.mod go.sum console/.stego/state.yaml console/go.mod console/go.sum gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum >> /work/generated-files
  sort -o /work/generated-files /work/generated-files
  xargs sha256sum < /work/generated-files > "/work/$pass.sha256"
 done
 cmp /work/first.sha256 /work/second.sha256
-tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum
+tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum gateway-console/out gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum
 node /work/node/npm/bin/npm-cli.js --cache /work/npm-cache ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
 go test -race -mod=readonly -count=1 -timeout=3m ./contracts -run '^(TestGeneratedProjectInputManifest|TestConsoleDeploymentIsolation)$'
 go test -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/namespaceallocationapp
@@ -58,4 +59,4 @@ export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 go test -v -race -mod=readonly -count=1 -timeout=15m -run '^TestGeneratedKubernetesBrowserGatewayWorkflow$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
-tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum
+tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum gateway-console/out gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum

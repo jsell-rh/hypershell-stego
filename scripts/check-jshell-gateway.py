@@ -131,9 +131,10 @@ while [ ! -f /work/start ]; do sleep 1; done
 cd /work/application
 (
 set -e
+export STEGO_GENERATION_ROOT=/work/generation
 snapshot() {
-  find out console/out -type f | sort > /work/current-files
-  printf '%s\n' .stego/state.yaml console/.stego/state.yaml go.mod go.sum console/go.mod console/go.sum >> /work/current-files
+  find out console/out gateway-console/out -type f | sort > /work/current-files
+  printf '%s\n' .stego/state.yaml console/.stego/state.yaml go.mod go.sum console/go.mod console/go.sum gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum >> /work/current-files
   if [ -f /work/generated-files ]; then cmp /work/generated-files /work/current-files; else cp /work/current-files /work/generated-files; fi
   xargs sha256sum < /work/generated-files > "/work/$1.sha256"
 }

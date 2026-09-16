@@ -1,3 +1,6 @@
 console/out/browser/public/** linguist-generated=true
 console/out/browser/public/index.html whitespace=-blank-at-eol
 console/ui/build.zip binary
+gateway-console/out/** linguist-generated=true
+gateway-console/out/browser/public/assets/*.css whitespace=-blank-at-eol,-blank-at-eof
+gateway-console/ui/build.zip binary
