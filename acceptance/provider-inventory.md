@@ -71,3 +71,25 @@ Before release, also test a journal registration that occurs during a scan.
 Key pages are not a snapshot. Completion must not miss a new key before the
 saved cursor. Current application checks cover a saved journal that exists
 before the recovery cycle; they do not yet prove this concurrent case.
+
+## Concurrent registration failure
+
+Focused CI run `35102352727`, source
+`1663e167bee27b39c9af5ca19d86c4da9f08275f`, returned four passing tests and one
+failure in 2.669 seconds. Retained account retry and page continuation passed.
+Journal-only page continuation passed. The composed omitted-provider test
+passed in 0.31 seconds with generated PostgreSQL storage and encrypted journals.
+
+`TestGatewayJournalRegistrationDuringScanPreventsCompletion` failed in
+0.36 seconds. After the first 100 IDs were saved in a checkpoint, the test
+inserted an earlier ID. The reconstructed service visited the remaining old ID
+and reported completion with only 101 of 102 saved IDs visited. This is a real
+false-completion defect. The test uses a recording provider and empty state
+records to isolate key coverage; it does not claim a provider process race.
+
+The result is retained in
+`/home/jsell/.local/state/stego/runs/gateway-cleanup-20260916/journal-race-baseline`.
+A stable key cursor is insufficient. STEGO needs a revision for each scoped key
+set and an atomic operation that closes new-key registration after a successful
+scan. Hypershell must commit that guard and its accounts cleanup result together.
+The existing application candidate remains unqualified.
