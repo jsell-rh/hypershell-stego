@@ -14,6 +14,7 @@ import { FormattedMessage, useIntl } from "react-intl";
 import { messages } from "../messages";
 import {
   buildGatewayAddCommand,
+  isGatewayDeleting,
   type GatewayConnection,
 } from "./gateway-connections";
 import { GatewayDeleteDialog } from "./gateway-delete-dialog";
@@ -22,11 +23,11 @@ import styles from "./gateway-row-actions.module.css";
 
 export function GatewayRowActions({
   gateway,
-  onDeleted,
+  onDeletionAccepted,
   onRenamed,
 }: {
   gateway: GatewayConnection;
-  onDeleted: () => void;
+  onDeletionAccepted: () => void;
   onRenamed: (gatewayName: string) => void;
 }) {
   const intl = useIntl();
@@ -51,7 +52,7 @@ export function GatewayRowActions({
   return (
     <>
       <Dropdown
-        isOpen={isOpen}
+        isOpen={isOpen && !isGatewayDeleting(gateway)}
         onOpenChange={setIsOpen}
         onSelect={() => {
           setIsOpen(false);
@@ -63,6 +64,7 @@ export function GatewayRowActions({
             aria-label={intl.formatMessage(messages.gatewayRowActions, {
               gatewayName: gateway.name,
             })}
+            isDisabled={isGatewayDeleting(gateway)}
             isExpanded={isOpen}
             onClick={() => {
               setIsOpen((open) => !open);
@@ -128,13 +130,13 @@ export function GatewayRowActions({
         activeSandboxCount={gateway.activeSandboxCount}
         gatewayId={gateway.id}
         gatewayName={gateway.name}
-        isOpen={isDeleteOpen}
+        isOpen={isDeleteOpen && !isGatewayDeleting(gateway)}
         onClose={() => {
           setIsDeleteOpen(false);
         }}
-        onDeleted={() => {
+        onDeletionAccepted={() => {
           setIsDeleteOpen(false);
-          onDeleted();
+          onDeletionAccepted();
         }}
       />
       {copyResult ? (

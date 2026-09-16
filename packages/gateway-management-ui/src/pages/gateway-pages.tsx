@@ -30,7 +30,10 @@ import {
 } from "../application/gateway-types";
 import { useGatewayLink, useGatewayUi } from "../gateway-ui-provider";
 import { useConsoleWaitTracker } from "../gateways/console-wait-tracker";
-import { type GatewayConnection } from "../gateways/gateway-connections";
+import {
+  isGatewayDeleting,
+  type GatewayConnection,
+} from "../gateways/gateway-connections";
 import { GatewayConnectionSteps } from "../gateways/gateway-connection-steps";
 import {
   GatewayDetailHeader,
@@ -494,7 +497,7 @@ export function GatewaysPage({
           renderRowAction={(gateway) => (
             <GatewayRowActions
               gateway={gateway}
-              onDeleted={() => {
+              onDeletionAccepted={() => {
                 setDeletedGatewayName(gateway.name);
               }}
               onRenamed={setRenamedGatewayName}
@@ -529,7 +532,7 @@ export interface GatewayPageProps {
   activeTab?: GatewayDetailTab;
   gateway?: GatewayRecord;
   gatewayId: string;
-  onDeleted?: (gatewayName: string) => Promise<void> | void;
+  onDeletionAccepted?: (gatewayName: string) => Promise<void> | void;
   onLeaveGuardChange?: (guard: ServiceAccountLeaveGuard | null) => void;
   onServiceAccountCollectionStateChange?: (
     state: OpenShellGatewayServiceAccountListRequest,
@@ -543,7 +546,7 @@ export function GatewayPage({
   activeTab,
   gateway,
   gatewayId,
-  onDeleted,
+  onDeletionAccepted,
   onLeaveGuardChange,
   onServiceAccountCollectionStateChange,
   onTabChange,
@@ -638,9 +641,9 @@ export function GatewayPage({
         <GatewayDetailHeader
           consoleWaitStartedAt={consoleWaitStartedAt}
           gateway={connection}
-          onDeleted={() => {
-            if (onDeleted) {
-              void onDeleted(connection.name);
+          onDeletionAccepted={() => {
+            if (onDeletionAccepted) {
+              void onDeletionAccepted(connection.name);
             } else {
               void navigation.navigate(navigation.collectionHref, {
                 state: { deletedGatewayName: connection.name },
@@ -671,6 +674,7 @@ export function GatewayPage({
             <Content component="p">
               <Button
                 isInline
+                isDisabled={isGatewayDeleting(connection)}
                 onClick={() => {
                   changeTab("service-accounts");
                 }}
@@ -683,20 +687,25 @@ export function GatewayPage({
           </Tab>
           <Tab
             eventKey="service-accounts"
+            isDisabled={isGatewayDeleting(connection)}
             title={
               <TabTitleText>
                 <FormattedMessage {...messages.serviceAccountsTab} />
               </TabTitleText>
             }
           >
-            <ServiceAccountsPage
-              collectionState={serviceAccountCollectionState}
-              gatewayId={gatewayId}
-              isActive={currentTab === "service-accounts"}
-              key={gatewayId}
-              onCollectionStateChange={onServiceAccountCollectionStateChange}
-              registerLeaveGuard={registerLeaveGuard}
-            />
+            {isGatewayDeleting(connection) ? (
+              <Alert isInline title={connection.status} variant="info" />
+            ) : (
+              <ServiceAccountsPage
+                collectionState={serviceAccountCollectionState}
+                gatewayId={gatewayId}
+                isActive={currentTab === "service-accounts"}
+                key={gatewayId}
+                onCollectionStateChange={onServiceAccountCollectionStateChange}
+                registerLeaveGuard={registerLeaveGuard}
+              />
+            )}
           </Tab>
           <Tab
             eventKey="details"
@@ -753,7 +762,6 @@ export function GatewayPage({
                   {visibleGateway.releaseId}
                 </DescriptionListDescription>
               </DescriptionListGroup>
-
             </DescriptionList>
           </Tab>
         </Tabs>

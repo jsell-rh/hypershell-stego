@@ -82,6 +82,9 @@ describe("gateway presentation data", () => {
       true,
     );
     expect(gatewayNeedsStatusPolling(gateway({ phase: "Pending" }))).toBe(true);
+    expect(gatewayNeedsStatusPolling(gateway({ phase: "Deleting" }))).toBe(
+      true,
+    );
     expect(gatewayNeedsStatusPolling(gateway({ phase: "Provisioning" }))).toBe(
       true,
     );

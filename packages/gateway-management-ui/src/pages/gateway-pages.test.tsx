@@ -146,6 +146,45 @@ function renderPage(Page: () => React.ReactNode) {
 }
 
 describe("gateway shell pages", () => {
+  it("keeps a deleting gateway visible and disables its actions", () => {
+    renderPage(() => (
+      <GatewaysPage
+        gateways={[
+          { ...previewGateway, phase: "Deleting", status: "Deleting" },
+        ]}
+      />
+    ));
+    expect(screen.getByText("Deleting")).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: "Actions for openshell-gateway-test" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+  });
+
+  it("does not load account actions while Gateway deletion is pending", () => {
+    renderPage(() => (
+      <GatewayPage
+        activeTab="service-accounts"
+        gateway={{
+          ...gatewayResponse("gateway-1", "Team gateway"),
+          phase: "Deleting",
+          status: "Gateway cleanup is in progress",
+        }}
+        gatewayId="gateway-1"
+      />
+    ));
+    expect(
+      screen.getByRole("button", { name: "Actions" }).hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      gatewayOperations.listOpenShellGatewayServiceAccounts,
+    ).not.toHaveBeenCalled();
+    expect(
+      screen.queryByRole("button", { name: "Create service account" }),
+    ).toBeNull();
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });
@@ -765,10 +804,12 @@ describe("gateway shell pages", () => {
     ));
 
     expect(
-      await screen.findByText("Gateway Team gateway deleted"),
+      await screen.findByText("Deletion requested for gateway Team gateway"),
     ).toBeTruthy();
     await user.click(screen.getByRole("button", { name: "Close" }));
-    expect(screen.queryByText("Gateway Team gateway deleted")).toBeNull();
+    expect(
+      screen.queryByText("Deletion requested for gateway Team gateway"),
+    ).toBeNull();
   });
 
   it("loads the gateway list from the API", async () => {
@@ -1398,7 +1439,9 @@ describe("gateway shell pages", () => {
       expect(deleteGatewayMock).toHaveBeenCalledWith("openshell-gateway-test");
     });
     expect(
-      await screen.findByText("Gateway openshell-gateway-test deleted"),
+      await screen.findByText(
+        "Deletion requested for gateway openshell-gateway-test",
+      ),
     ).toBeTruthy();
   });
 
@@ -1421,10 +1464,12 @@ describe("gateway shell pages", () => {
     );
 
     expect(
-      await within(dialog).findByText("Gateway could not be deleted"),
+      await within(dialog).findByText("Deletion request failed"),
     ).toBeTruthy();
     expect(
-      within(dialog).getByText("No changes were made. Try again."),
+      within(dialog).getByText(
+        "Refresh the gateway to check its state. You can send the request again.",
+      ),
     ).toBeTruthy();
     await user.click(within(dialog).getByRole("button", { name: "Cancel" }));
     expect(

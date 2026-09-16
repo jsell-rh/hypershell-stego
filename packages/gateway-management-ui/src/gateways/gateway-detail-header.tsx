@@ -27,6 +27,7 @@ import {
   buildGatewayAddCommand,
   type GatewayConnection,
   isGatewayReadyToConnect,
+  isGatewayDeleting,
 } from "./gateway-connections";
 import { isGatewayConsolePastDeadline } from "./gateway-data";
 import { GatewayDeleteDialog } from "./gateway-delete-dialog";
@@ -107,12 +108,12 @@ export function GatewayEndpointCopy({
 function GatewayDetailActions({
   consoleWaitStartedAt,
   gateway,
-  onDeleted,
+  onDeletionAccepted,
   onRenamed,
 }: {
   consoleWaitStartedAt?: number;
   gateway: GatewayConnection;
-  onDeleted: () => void;
+  onDeletionAccepted: () => void;
   onRenamed: (gatewayName: string) => void;
 }) {
   const intl = useIntl();
@@ -166,7 +167,7 @@ function GatewayDetailActions({
         ) : null}
         <ActionListItem>
           <Dropdown
-            isOpen={isActionsOpen}
+            isOpen={isActionsOpen && !isGatewayDeleting(gateway)}
             onOpenChange={setIsActionsOpen}
             onSelect={() => {
               setIsActionsOpen(false);
@@ -175,6 +176,7 @@ function GatewayDetailActions({
             toggle={(toggleRef) => (
               <MenuToggle
                 className={styles.actionsToggle}
+                isDisabled={isGatewayDeleting(gateway)}
                 isExpanded={isActionsOpen}
                 onClick={() => {
                   setIsActionsOpen((open) => !open);
@@ -224,13 +226,13 @@ function GatewayDetailActions({
         activeSandboxCount={gateway.activeSandboxCount}
         gatewayId={gateway.id}
         gatewayName={gateway.name}
-        isOpen={isDeleteOpen}
+        isOpen={isDeleteOpen && !isGatewayDeleting(gateway)}
         onClose={() => {
           setIsDeleteOpen(false);
         }}
-        onDeleted={() => {
+        onDeletionAccepted={() => {
           setIsDeleteOpen(false);
-          onDeleted();
+          onDeletionAccepted();
         }}
       />
     </>
@@ -241,13 +243,13 @@ export function GatewayDetailHeader({
   consoleWaitStartedAt,
   description,
   gateway,
-  onDeleted,
+  onDeletionAccepted,
   onRenamed,
 }: {
   consoleWaitStartedAt?: number;
   description?: ReactNode;
   gateway: GatewayConnection;
-  onDeleted: () => void;
+  onDeletionAccepted: () => void;
   onRenamed: (gatewayName: string) => void;
 }) {
   return (
@@ -273,7 +275,7 @@ export function GatewayDetailHeader({
         <GatewayDetailActions
           consoleWaitStartedAt={consoleWaitStartedAt}
           gateway={gateway}
-          onDeleted={onDeleted}
+          onDeletionAccepted={onDeletionAccepted}
           onRenamed={onRenamed}
         />
       </FlexItem>

@@ -203,7 +203,7 @@ export const messages = defineMessages({
   deleteGatewayConfirmation: {
     id: "app.gateway.delete.confirmation",
     defaultMessage:
-      "Deleting {gatewayName} will permanently remove the gateway. This action cannot be undone.",
+      "Deleting {gatewayName} starts permanent cleanup. New service accounts are blocked. The gateway stays visible until cleanup is complete.",
     description: "Warning shown before permanently deleting a gateway.",
   },
   deleteGatewayTitle: {
@@ -213,8 +213,8 @@ export const messages = defineMessages({
   },
   deletingGateway: {
     id: "app.gateway.delete.pending",
-    defaultMessage: "Deleting gateway",
-    description: "Accessible progress text while a gateway is being deleted.",
+    defaultMessage: "Sending deletion request",
+    description: "Progress text while a deletion request is sent.",
   },
   detailsTab: {
     id: "app.gateway.detailsTab",
@@ -256,17 +256,18 @@ export const messages = defineMessages({
   },
   gatewayDeleted: {
     id: "app.gateway.deleted",
-    defaultMessage: "Gateway {gatewayName} deleted",
-    description: "Success notification after deleting a gateway.",
+    defaultMessage: "Deletion requested for gateway {gatewayName}",
+    description: "Confirmation that a Gateway deletion request was accepted.",
   },
   gatewayDeleteError: {
     id: "app.gateway.delete.error.title",
-    defaultMessage: "Gateway could not be deleted",
+    defaultMessage: "Deletion request failed",
     description: "Title shown when gateway deletion fails.",
   },
   gatewayDeleteErrorBody: {
     id: "app.gateway.delete.error.body",
-    defaultMessage: "No changes were made. Try again.",
+    defaultMessage:
+      "Refresh the gateway to check its state. You can send the request again.",
     description: "Recovery guidance when gateway deletion fails.",
   },
   gatewayDescription: {

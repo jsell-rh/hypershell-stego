@@ -23,7 +23,7 @@ interface GatewayDeleteDialogProps {
   gatewayName: string;
   isOpen: boolean;
   onClose: () => void;
-  onDeleted: () => void;
+  onDeletionAccepted: () => void;
 }
 
 export function GatewayDeleteDialog({
@@ -32,7 +32,7 @@ export function GatewayDeleteDialog({
   gatewayName,
   isOpen,
   onClose,
-  onDeleted,
+  onDeletionAccepted,
 }: GatewayDeleteDialogProps) {
   const intl = useIntl();
   const { gateways } = useGatewayUi();
@@ -42,14 +42,14 @@ export function GatewayDeleteDialog({
   const deletion = useMutation({
     mutationFn: () => gateways.removeGateway(gatewayId),
     onSuccess: async () => {
-      queryClient.removeQueries({
-        exact: true,
-        queryKey: gatewayQueryKey(gatewayId),
-      });
-      onDeleted();
-      await queryClient.invalidateQueries({
-        queryKey: gatewayListQueryRoot,
-      });
+      onDeletionAccepted();
+      await Promise.all([
+        queryClient.invalidateQueries({
+          exact: true,
+          queryKey: gatewayQueryKey(gatewayId),
+        }),
+        queryClient.invalidateQueries({ queryKey: gatewayListQueryRoot }),
+      ]);
     },
   });
 

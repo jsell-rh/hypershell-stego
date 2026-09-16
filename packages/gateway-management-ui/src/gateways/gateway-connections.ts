@@ -33,6 +33,10 @@ export function isGatewayReadyToConnect(gateway: GatewayConnection): boolean {
   );
 }
 
+export function isGatewayDeleting(gateway: GatewayConnection): boolean {
+  return gateway.phase?.trim().toLocaleLowerCase() === "deleting";
+}
+
 const safeShellArgument = /^[A-Za-z0-9_./:@%+=,-]+$/;
 
 export function shellArgument(value: string) {
