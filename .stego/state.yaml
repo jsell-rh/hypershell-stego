@@ -117,13 +117,13 @@ last_applied:
                 mode: 420
             internal/serviceaccountprovisioner/rpc.go:
                 exists: true
-                sha256: 42959a67bc196452a2b5b6a68b23814d97b885436971535de76539de92227400
+                sha256: a885bfbfad46ef4952210d94c03b14df21c2657b573eede3e6f491f9e8d81a37
                 mode: 420
             service.yaml:
                 exists: true
                 sha256: fe1edd564dbe3780240e6920f01dbc0f6a79f937629956c5f972d14c3145a91b
                 mode: 420
-        sha256: 2557f08a0fb29de6bd0860ab162c30628f0889fae5953d03ba4a9ed256f6739c
+        sha256: f1d167740067b2b6b00a3ccb969db06e2b15ebee1f36019f9568b54209ed7040
     compiler_build:
         go_version: go1.26.8
         goos: linux
