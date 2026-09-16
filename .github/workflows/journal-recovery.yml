@@ -71,7 +71,7 @@ jobs:
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
           go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts ./internal/gatewayidentity \
-            -run '^Test(ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
+            -run '^Test(IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
             -run '^TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
@@ -80,6 +80,9 @@ jobs:
           import json, sys
           from pathlib import Path
           required = {
+              "TestIdentityPublicationRequiresProviderSuccess",
+              "TestDeletionRequiresExplicitPrivilegedState",
+              "TestConsoleFailureDoesNotBlockGrantRemoval",
               "TestConsoleDomainPolicy",
               "TestConsoleProviderStateJournalSeparatesNativeScope",
               "TestProviderStateJournalScopeAndObservation",

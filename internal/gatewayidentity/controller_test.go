@@ -385,3 +385,43 @@ func TestMissingGrantConditionContractStopsProviderWork(t *testing.T) {
 		})
 	}
 }
+
+// Client repair and grant synchronization have independent outcomes.
+type consoleFailureProvider struct {
+	*userProviderFixture
+	cluster                  string
+	consoleCalls             int
+	grantRemovedBeforeRepair bool
+}
+
+func (f *consoleFailureProvider) EnsureGatewayWithConsole(_ context.Context, _, _, cluster string, revision int64) (string, error) {
+	f.consoleCalls++
+	f.cluster = cluster
+	f.revision = revision
+	f.grantRemovedBeforeRepair = f.writes == 1
+	return "", errors.New("console repair failed")
+}
+func TestConsoleFailureDoesNotBlockGrantRemoval(t *testing.T) {
+	state := &userStateFixture{stateFixture: &stateFixture{state: &control.GetGatewayIdentityStateResponse{
+		ResourceVersion: 1, ResourceGeneration: 1,
+		Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: "gateway"}, Name: "gateway", ClusterId: "cluster"},
+		Conditions: map[string]*control.ResourceConditions{
+			"identity":       {Conditions: map[string]*control.ResourceCondition{"ClientReady": {Status: "Unknown", Reason: "ObservationPending"}}},
+			"identity_users": {Conditions: map[string]*control.ResourceCondition{"GrantsSynchronized": {Status: "Unknown", Reason: "ObservationPending"}}},
+		},
+	}}, response: &control.GetGatewayIdentityUserResponse{GatewayId: "gateway", UserId: "user", Issuer: "https://issuer.example", Subject: "subject", Role: ""}}
+	provider := &consoleFailureProvider{userProviderFixture: &userProviderFixture{providerFixture: new(providerFixture)}}
+	controller, err := New(new(apiFixture), state, provider)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := controller.reconcile(context.Background(), "gateway"); err == nil {
+		t.Fatal("console failure was lost")
+	}
+	if provider.writes != 1 || provider.role != "" || provider.consoleCalls != 1 || !provider.grantRemovedBeforeRepair || provider.cluster != "cluster" || provider.revision != 1 {
+		t.Fatal("grant removal or observed console placement differs", provider)
+	}
+	if state.state.Gateway.Oidc != nil || state.state.Conditions["identity"].Conditions["ClientReady"].Status != "Unknown" {
+		t.Fatal("failed console repair published identity")
+	}
+}

@@ -151,6 +151,21 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	if !declared || grants == nil || grants.GetConditions()["GrantsSynchronized"] == nil {
 		return runtime.ErrObservationContract
 	}
+	// Apply current grants before client repair can consume the work deadline.
+	// A client failure must not prevent removal of a stored user grant.
+	userErr := c.reconcileUsers(ctx, id)
+	if errors.Is(userErr, runtime.ErrScanContract) || errors.Is(userErr, runtime.ErrObservationContract) || status.Code(userErr) == codes.PermissionDenied || status.Code(userErr) == codes.Unauthenticated || ctx.Err() != nil {
+		return errors.Join(userErr, ctx.Err())
+	}
+	// Grant observations can advance the resource revision. Retry from current
+	// state before any client operation uses the earlier observation.
+	current, readErr := c.state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
+	if readErr != nil {
+		return errors.Join(userErr, readErr)
+	}
+	if current.GetGateway().GetMetadata().GetId() != id || current.GetResourceVersion() != state.ResourceVersion || current.GetResourceGeneration() != state.ResourceGeneration || current.GetDeleted() {
+		return errors.Join(userErr, status.Error(codes.Aborted, "Gateway changed during grant synchronization"))
+	}
 	var oidc string
 	err = runtime.RunObservation(ctx, func(operation context.Context) error {
 		var err error
@@ -187,10 +202,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		}
 		return err
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
-	if err != nil {
-		return err
-	}
-	return c.reconcileUsers(ctx, id)
+	return errors.Join(userErr, err)
 }
 
 // Common scan progress uses grant IDs. A failed provider operation remains

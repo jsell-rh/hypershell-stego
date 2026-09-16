@@ -556,11 +556,25 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if value := readSync().GetConditions()["identity_users"].GetConditions()["GrantsSynchronized"]; value.GetStatus() != "Unknown" || value.GetLastTransitionTime() != revokedCondition.GetLastTransitionTime() {
 		t.Fatal("API restart lost invalidated grant condition", value)
 	}
+	// A console placement fault must not block revoked native or console grants.
+	goodDomains := domainPolicy
+	domainPolicy, err = json.Marshal(map[string]string{f.release: "console.example.com"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	stopController, logs = startConsoleController()
 	defer stopController()
 	waitRoles("renamed-bob", bobID, nil)
 	waitRoles("bob", replacementID, nil)
 	checkAutomationRoles(nil)
+	if condition := readSync().GetConditions()["identity"].GetConditions()["ClientReady"]; condition.GetStatus() != "Unknown" {
+		t.Fatal("console placement fault reported client readiness")
+	}
+	stopController()
+	domainPolicy = goodDomains
+	stopController, logs = startConsoleController()
+	defer stopController()
+	waitRoles("alice", aliceID, []string{keycloak.RoleAdmin, keycloak.RoleUser})
 	if code, _ := requestJSON(t, "GET", root+"/gateways/"+gateway.ID, automationToken, nil); code != 404 {
 		t.Fatal("API retained removed automation access after restart", code)
 	}
