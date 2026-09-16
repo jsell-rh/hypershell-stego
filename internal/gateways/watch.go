@@ -25,7 +25,7 @@ func (s *Service) EventGateway(ctx context.Context, p Principal, id string, dele
 	if !ok {
 		return model.Gateway{}, errors.New("unexpected Gateway storage result")
 	}
-	if len(rows) != 1 || rows[0].DeletedAt.Valid != deleted {
+	if len(rows) != 1 || (rows[0].DeletionFinalizedAt != nil) != deleted {
 		return model.Gateway{}, store.ErrNotFound
 	}
 	return rows[0], nil

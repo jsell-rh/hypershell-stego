@@ -76,7 +76,7 @@ func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after string) (
 	return ids, nil
 }
 
-// ObserveCleanup commits the observation and its deletion notice together.
+// ObserveCleanup authorizes a controller observation before its atomic commit.
 func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, version int64, owner, target string, complete bool) error {
 	if err := validatePrincipal(p); err != nil {
 		return err
@@ -94,23 +94,6 @@ func (s *Service) ObserveCleanup(ctx context.Context, p Principal, id string, ve
 		return ErrObservationRequired
 	}
 	return s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
-		if owner == "workload" || owner == "sql" {
-			writer, ok := tx.(store.TargetCleanupWriter)
-			if !ok {
-				return errors.New("Gateway storage does not support target cleanup")
-			}
-			if err := writer.ObserveTargetCleanupIfVersion(ctx, "Gateway", id, version, owner, target, complete); err != nil {
-				return err
-			}
-			return notifyGateway(tx, id, "Delete", "gateway.deleted")
-		}
-		writer, ok := tx.(store.CleanupWriter)
-		if !ok {
-			return errors.New("Gateway storage does not support cleanup observations")
-		}
-		if err := writer.ObserveCleanupIfVersion(ctx, "Gateway", id, version, owner, complete); err != nil {
-			return err
-		}
-		return notifyGateway(tx, id, "Delete", "gateway.deleted")
+		return RecordCleanup(ctx, tx, id, version, owner, target, complete)
 	})
 }

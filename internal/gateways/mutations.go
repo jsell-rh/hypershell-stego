@@ -154,11 +154,9 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 	return row, nil
 }
 
-// Delete locks the Gateway against concurrent service-account reservations.
-// A service without a cleaner refuses live account metadata. Configured APIs
-// remove provider identities before they commit metadata and Gateway deletion.
+// Delete commits a durable request. The soft deletion blocks new account
+// reservations. Cleanup and final deletion run after this request returns.
 var ErrGatewayCleanupUnavailable = errors.New("Gateway service-account cleanup is unavailable")
-
 var ErrServiceAccountsExist = errors.New("service accounts require cleanup before Gateway deletion")
 
 func (s *Service) Delete(ctx context.Context, p Principal, id string) error {
@@ -168,37 +166,31 @@ func (s *Service) Delete(ctx context.Context, p Principal, id string) error {
 	if !validID(id) {
 		return store.ErrNotFound
 	}
-	return s.repository.WithLockedResource(ctx, "Gateway", "id", id, func(ctx context.Context, tx store.Transaction, _ any) error {
-		if _, err := s.mutationTarget(ctx, tx, p, id, true); err != nil {
+	return s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		row, err := s.mutationTargetWithVisibility(ctx, tx, p, id, true, true)
+		if err != nil {
 			return err
 		}
-		if s.accountCleaner != nil {
-			if err := s.accountCleaner.CleanupGateway(ctx, tx, id); err != nil {
-				return err
-			}
-		} else {
-			accounts, err := tx.List(ctx, "ServiceAccount", "gateway_id", id, store.ListOptions{Page: 1, Size: 0, CountOnly: true})
-			if err != nil {
-				return err
-			}
-			if accounts.Total != 0 {
-				return ErrServiceAccountsExist
-			}
+		if row.DeletedAt.Valid {
+			return nil
 		}
 		if err := tx.Delete(ctx, "Gateway", id); err != nil {
 			return err
 		}
-		return notifyGateway(tx, id, "Delete", "gateway.deleted")
+		return notifyGateway(tx, id, "Update", "gateway.updated")
 	})
 }
 
 // The access check and mutation share the same serializable transaction.
 func (s *Service) mutationTarget(ctx context.Context, tx store.Transaction, p Principal, id string, allowAdmin bool) (model.Gateway, error) {
+	return s.mutationTargetWithVisibility(ctx, tx, p, id, allowAdmin, false)
+}
+func (s *Service) mutationTargetWithVisibility(ctx context.Context, tx store.Transaction, p Principal, id string, allowAdmin, includeDeleting bool) (model.Gateway, error) {
 	user, err := syncUser(ctx, tx, p)
 	if err != nil {
 		return model.Gateway{}, err
 	}
-	opts := store.ListOptions{Page: 1, Size: 1}
+	opts := store.ListOptions{Page: 1, Size: 1, IncludeDeleting: includeDeleting}
 	if !s.isControlPlane(p) && !(allowAdmin && slices.Contains(p.Roles, "platform:admin")) {
 		role, err := findRole(ctx, tx, "gateway:owner")
 		if err != nil {

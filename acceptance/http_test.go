@@ -73,7 +73,8 @@ func requestJSON(t testing.TB, method, address, bearer string, body []byte) (int
 	if err != nil {
 		t.Fatal(err)
 	}
-	if (response.StatusCode != 204 && response.Header.Get("Content-Type") != "application/json") || (response.StatusCode == 204 && (response.Header.Get("Content-Type") != "" || len(data) != 0)) || response.Header.Get("Cache-Control") != "no-store" {
+	empty := response.StatusCode == 204 || response.StatusCode == 202 && len(data) == 0
+	if (!empty && response.Header.Get("Content-Type") != "application/json") || (empty && (response.Header.Get("Content-Type") != "" || len(data) != 0)) || response.Header.Get("Cache-Control") != "no-store" {
 		t.Fatalf("response headers: %v", response.Header)
 	}
 	return response.StatusCode, data

@@ -29,7 +29,7 @@ last_applied:
                 mode: 420
             contracts/extensions/openapi.gateways.yaml:
                 exists: true
-                sha256: e1cc531f9502bf9ee9e92755226d3ce7e83262b5c5464d074b8b832fdb5e3479
+                sha256: e2ae9c840ee6769818d2c364e67cb46955bfe0b59244ea04b1ff9324f6af120c
                 mode: 420
             contracts/extensions/openapi.managedClusters.yaml:
                 exists: true
@@ -121,20 +121,20 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: fe1edd564dbe3780240e6920f01dbc0f6a79f937629956c5f972d14c3145a91b
+                sha256: 33b7ae3868e43b0db3addccfff21db82139a599d351170f64657c1e28b66069f
                 mode: 420
-        sha256: f1d167740067b2b6b00a3ccb969db06e2b15ebee1f36019f9568b54209ed7040
+        sha256: 9044e2344cae7d76303f61c9e017a94d76acc850c927f2357f82c30d83a74877
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916115324-0feba05e784d
+        module_version: v0.0.0-20260916120118-cd08dc6d84ad
         vcs: git
-        revision: 0feba05e784d8d70b901f6ef0566f98c12d7213d
+        revision: cd08dc6d84adc328a3a175c2a66b78bff5c15bd6
         source_state: clean
-    service_hash: fe1edd564dbe3780240e6920f01dbc0f6a79f937629956c5f972d14c3145a91b
+    service_hash: 33b7ae3868e43b0db3addccfff21db82139a599d351170f64657c1e28b66069f
     registry_sha: gateway-workflow
-    registry_content_sha256: b13f9cd904745fc68081fdbfe9fa55d2cb1d187209f36cb8b675d889275e60a5
+    registry_content_sha256: 31ae75fd499f7d3fda5489380afd0e45f7e5a5f76bdcc766122cad937c0c20f6
     components:
         browser-telemetry:
             version: 1.0.0
@@ -155,7 +155,7 @@ last_applied:
             version: 1.0.0
             sha: gateway-workflow
         http-application:
-            version: 1.5.2
+            version: 1.7.0
             sha: gateway-workflow
         jwt-auth:
             version: 2.2.2
@@ -419,7 +419,7 @@ last_applied:
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
         application/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
-        application/transport/endpoint.go: 49511b81fe28d4fcdf2f4e50df68b847c8c67ff9074c6e544d49b4ead1783168
+        application/transport/endpoint.go: 841ad88d9b25514f127043ef0114f8f888602440d3a1b3ec61c6714ba7009d0d
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
         auth/jwks.go: a8112269eb448cd7162747c7c97755f6e6f40d8360243e4939399d842726ab09
@@ -441,7 +441,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: b8cea022916768fcffbeadf2f04a2f561c8aa3404624d6e6f43086a7b5207761
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 4ceea0f9b95dabb91f044b463add2bad4c7f7270b1984e414bd453942189d96c
+        cli/command/version.go: 33b99aa45b5d922e2ca1c82dbdef38a87b63d1a478cebb2a96ef81768d58fb7d
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: 463720b4d307166ad9f52cf610880494fec63b83944754ad01b6905c77a64841
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -551,32 +551,32 @@ last_applied:
         sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
-        sdk/internal/wire/api.go: 947db7411c300e12bbbb1415eb2769ae35d7cb9eb385258330335d8a653cbfc0
+        sdk/internal/wire/api.go: 9b53925730ce1e4b6f2419d240fa8e4148f6e8986d3cc4a7bdda6e75a86f76da
         search/field_map.go: 58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: 75df704470c3ddc5dd4ba29ff9b73acedf4a3fde7885600b52db656af03206fd
-        storage/cleanup_summary.go: 8c4c1324323ec51a917c7a058244bc89afcff2628149161126bdfc0a29b5c9c5
+        storage/cleanup_summary.go: 90a7e96341e7781f3a2e364887c73fc67e9f70267f555bf3f843230fbbef1267
         storage/conditions.go: 52356e69be753ef1ea8e4185a8b51218cca0ebdd75815cde6fac34e8c7b5c2dd
         storage/cursor.go: c4394d4806780845e6dcffb3dea876b9790f36a6f635360a9753646e006ae436
         storage/database.go: 280f46b5c6e04748a3d4c284545bcc46a0c3d0b966d9019469e60030b0e12e24
         storage/effects.go: 0b5f33ca973f779fed4c28c19af62a6fd079e3b3daacf211ec7344e24944fb37
         storage/generic_dao.go: c578166d1b47439fb19fcdd817315f5d5b2818dd798b90734a91a12f2dab8b8c
         storage/migrate.go: 752a082bf74ffbcbe2ef740849cccbf3e4eb044fe40d19a368841974fa0d2ff3
-        storage/migrations/000002_resource_versions.sql: 5e2dd22ca9d6df6d74a6c37204ac7a42fcda789f18804de9cce54b5f7c6b67f3
-        storage/migrations/000003_resource_generations.sql: 5e2dd22ca9d6df6d74a6c37204ac7a42fcda789f18804de9cce54b5f7c6b67f3
-        storage/migrations/000004_resource_cleanup.sql: 5e2dd22ca9d6df6d74a6c37204ac7a42fcda789f18804de9cce54b5f7c6b67f3
-        storage/migrations/000005_cleanup_targets.sql: 5e2dd22ca9d6df6d74a6c37204ac7a42fcda789f18804de9cce54b5f7c6b67f3
+        storage/migrations/000002_resource_versions.sql: 15db51b8358eda087f593f7f8895a9c562bcf5d6cd674cb3b4504c6160b1734c
+        storage/migrations/000003_resource_generations.sql: 15db51b8358eda087f593f7f8895a9c562bcf5d6cd674cb3b4504c6160b1734c
+        storage/migrations/000004_resource_cleanup.sql: 15db51b8358eda087f593f7f8895a9c562bcf5d6cd674cb3b4504c6160b1734c
+        storage/migrations/000005_cleanup_targets.sql: 15db51b8358eda087f593f7f8895a9c562bcf5d6cd674cb3b4504c6160b1734c
         storage/migrations/000006_scan_checkpoints.sql: 148a9b3aa6ac989ce458b5d878e6f5b250ecc1f10762331dd1df0adcc82e9f95
-        storage/migrations/000007_resource_conditions.sql: 5e2dd22ca9d6df6d74a6c37204ac7a42fcda789f18804de9cce54b5f7c6b67f3
+        storage/migrations/000007_resource_conditions.sql: 15db51b8358eda087f593f7f8895a9c562bcf5d6cd674cb3b4504c6160b1734c
         storage/migrations/000008_effect_bindings.sql: aa6ed402091e352159c9cf88401d7287ba9ebd18236ff11eb0ac7721a8191564
         storage/migrations/000009_resource_state.sql: 8a44cde312e27bafcfc1fd3cc074d75a335458d72215086100504be231c7a67d
         storage/models.go: 288a5f7df12ef5e64ea153c7f29b4599dd5c7988609e89a2c89093d553f8dc7a
         storage/resource_state.go: e34273119e51863ad15337ddbae184a24f27f1290d934c27699272626379124b
-        storage/schema_generation.go: 6a88ff683bfae4a78f303faf5eb25c1685c66ed559729629d2e16b98b57983ca
+        storage/schema_generation.go: 6395526ab8e02c52a32a293e027f7a0500b8a6471141cb44916c7344774ac42d
         storage/session_factory.go: e929bc9b643da0d29536723ed063986af2afbb89bab793daf2b00606909f05cc
         storage/store.go: 3d80b164a4a74c1b99051013682a334a03a8495ceda180f40bc9c794cec66191
         storage/transaction.go: a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721
-        storage/versions.go: fbfa8e7dc827a39856988eac4a2730adbfd95acbc167b8db5797412c259a3a32
+        storage/versions.go: 8515069f78b75e3e3c9ea401c32f1421c64cb0777160e3d4ae4079c1d7f1888a
         tracing/browser.go: 4dd18324aae16bde4bea32a8a054b7fc41215602e6a0c9b46c3107e0a7be5c9e
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
@@ -589,5 +589,5 @@ last_applied:
         tracing/service.go: 59fdee10ad51bd5f51644c8c4fecdfdae74bc5a315d2799a1131abdb92d98b38
         tracing/signals.go: 3555488a11cab6bfc7c31a9017cb574a3d188b51773bb218a53f896e79d22bb2
         tssdk/index.d.ts: de345a064fd04eb995816712ab4285be1403b64e99ac9f3cab91a07451f617ee
-        tssdk/index.js: a9e1a00a9af5c0c946bb77035e68ce1034a89988a8abd6befd4b28ff4bc30554
+        tssdk/index.js: 832538d701adbee4a0fe4acdcedb7c5cbbe11397172995767e32bf3483d0f53d
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080

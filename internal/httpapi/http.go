@@ -211,7 +211,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		return r.PathValue("id"), nil
 	}, func(ctx context.Context, id string) (transport.NoContent, error) {
 		return transport.NoContent{}, service.Delete(ctx, gateways.PrincipalFromContext(ctx), id)
-	}, http.StatusNoContent, writeError)
+	}, http.StatusAccepted, writeError)
 	if err != nil {
 		return nil, err
 	}
@@ -245,7 +245,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 }
 
 func present(row model.Gateway, creator string) (Gateway, error) {
-	row = row.CurrentObservations()
+	row = gateways.PublicState(row)
 	var names []string
 	if len(row.ServerDnsNames) > 0 {
 		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {

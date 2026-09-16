@@ -193,7 +193,7 @@ func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysReque
 	return response, nil
 }
 func present(row model.Gateway) (*pb.Gateway, error) {
-	row = row.CurrentObservations()
+	row = gateways.PublicState(row)
 	var names []string
 	if len(row.ServerDnsNames) > 0 {
 		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {

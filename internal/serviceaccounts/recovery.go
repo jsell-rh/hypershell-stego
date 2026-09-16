@@ -12,8 +12,9 @@ import (
 )
 
 type recoveryTask struct {
-	row     model.ServiceAccount
-	deleted bool
+	gatewayID string
+	row       model.ServiceAccount
+	deleted   bool
 }
 
 // Run supplies account rules to the generated page scheduler. It never provisions
@@ -34,8 +35,9 @@ func (s *Service) Run(ctx context.Context) error {
 		}
 		groups = append(groups, runtime.SweepGroup[recoveryTask]{Name: state, Streams: streams})
 	}
+	groups = append(groups, runtime.SweepGroup[recoveryTask]{Name: "gateway-cleanup", Streams: []runtime.SweepStream[recoveryTask]{s.gatewayCleanupStream()}})
 	return runtime.RunSweep(ctx, groups, s.recoverTask, runtime.SweepOptions{
-		Workers: 8, PageSize: 100, MaxPagesPerCycle: 10000, PassTimeout: 4 * time.Second, Interval: time.Second,
+		Workers: 8, PageSize: 100, MaxPagesPerCycle: 10000, PassTimeout: 10 * time.Second, Interval: time.Second,
 		// Provider and storage outages remain retryable. Invalid source data stops
 		// the worker. Recovery actions still enforce their current access rules.
 		Terminal: func(err error) bool { return errors.Is(err, runtime.ErrSweepContract) },
@@ -92,6 +94,15 @@ func (s *Service) recoveryStream(state string, deleted bool) runtime.SweepStream
 	}}
 }
 func (s *Service) recoverTask(ctx context.Context, task recoveryTask) error {
+	if task.gatewayID != "" {
+		complete, err := s.RecoverGatewayCleanup(ctx, task.gatewayID)
+		if err == nil && !complete {
+			return ErrBusy
+		}
+		return err
+	}
+	ctx, cancel := context.WithTimeout(ctx, 4*time.Second)
+	defer cancel()
 	row := task.row
 	// Only the stream for the stored deletion state can act.
 	if row.DeletedAt.Valid != task.deleted {
@@ -103,4 +114,31 @@ func (s *Service) recoverTask(ctx context.Context, task recoveryTask) error {
 		return s.provider.Delete(ctx, row.GatewayID, row.ID, "")
 	}
 	return s.Recover(ctx, row.GatewayID, row.ID)
+}
+
+// Retained Gateways stay eligible after finalization to remove late effects.
+func (s *Service) gatewayCleanupStream() runtime.SweepStream[recoveryTask] {
+	return runtime.SweepStream[recoveryTask]{Name: "deleted", Page: func(ctx context.Context, after string, limit int) (runtime.SweepPage[recoveryTask], error) {
+		page := runtime.SweepPage[recoveryTask]{}
+		reader, ok := s.repository.(storage.CursorReader)
+		if !ok {
+			return page, runtime.ErrSweepContract
+		}
+		result, err := reader.ReadCursor(ctx, "Gateway", "", "", storage.CursorOptions{AfterID: after, Limit: limit, Deletion: storage.CursorDeleted, Fields: []string{"id"}})
+		if err != nil {
+			return page, err
+		}
+		rows, ok := result.Items.([]model.Gateway)
+		if !ok {
+			return page, runtime.ErrSweepContract
+		}
+		for _, row := range rows {
+			if !validID(row.ID) || !row.DeletedAt.Valid {
+				return page, runtime.ErrSweepContract
+			}
+			page.Items = append(page.Items, runtime.SweepItem[recoveryTask]{Cursor: row.ID, Value: recoveryTask{gatewayID: row.ID}})
+		}
+		page.More = result.More
+		return page, nil
+	}}
 }

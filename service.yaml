@@ -46,7 +46,7 @@ entities:
   - name: Gateway
     versioned: true
     conditions: {identity: [ClientReady], identity_users: [GrantsSynchronized]}
-    cleanup_owners: [identity, workload, sql]
+    cleanup_owners: [identity, workload, sql, accounts]
     cleanup_targets: {workload: cluster_id, sql: cluster_id}
     generation_fields: [name, cluster_id, release_id, namespace, external_dns, tls_mode, service_type, image, supervisor_image, server_dns_names, oidc, route, credential_driver]
     observations:

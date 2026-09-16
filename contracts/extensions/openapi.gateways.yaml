@@ -187,8 +187,8 @@ paths:
       security:
         - Bearer: []
       responses:
-        '204':
-          description: Gateway deleted successfully
+        '202':
+          description: Deletion request committed; cleanup is pending
         '401':
           description: Auth token is invalid
           content:

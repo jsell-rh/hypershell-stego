@@ -221,6 +221,7 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 		}
 		opts := store.ListOptions{Page: page, Size: size, CountOnly: size == 0, Search: search, OrderBy: ordering}
 		opts.IncludeDeleted = includeDeleted
+		opts.IncludeDeleting = !includeDeleted
 		if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "platform:admin") {
 			owner, err := findRole(ctx, tx, "gateway:owner")
 			if err != nil {

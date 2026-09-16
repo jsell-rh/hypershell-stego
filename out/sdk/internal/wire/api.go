@@ -7836,7 +7836,7 @@ func ParseDeleteGatewayResponse(rsp *http.Response) (*DeleteGatewayResponse, err
 	}
 
 	switch {
-	case rsp.StatusCode == 204:
+	case rsp.StatusCode == 202:
 		break // No content-type
 
 	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 401:

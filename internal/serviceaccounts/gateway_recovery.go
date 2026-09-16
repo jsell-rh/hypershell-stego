@@ -6,6 +6,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -115,17 +116,18 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	}, s.cleanupGatewayAccount, func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) },
 		runtime.ScanOptions{PageSize: 100, MaxPages: 1, PageTimeout: time.Second},
 		runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second})
-	if err != nil || !progress.Complete {
-		return false, err
+	complete := err == nil && progress.Complete
+	if complete {
+		// Inventory has a separate budget and cannot replace the retained scan.
+		call, cancel := context.WithTimeout(ctx, 5*time.Second)
+		err = errors.Join(s.provider.DeleteGateway(call, id), call.Err())
+		cancel()
+		complete = err == nil
 	}
-	// Inventory has a separate budget. A failed inventory check does not discard
-	// the retained-account checkpoint. It cannot authorize completion by itself.
-	call, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-	if err := s.provider.DeleteGateway(call, id); err != nil {
-		return false, err
-	}
-	return true, nil
+	observed := s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
+		return gateways.RecordCleanup(ctx, tx, id, gateway.ResourceVersion, "accounts", "", complete)
+	})
+	return complete && observed == nil, errors.Join(err, observed)
 }
 
 func (s *Service) cleanupGatewayAccount(ctx context.Context, row model.ServiceAccount) error {
