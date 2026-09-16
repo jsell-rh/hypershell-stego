@@ -62,3 +62,17 @@ and repeated generation had no drift. The Go check found no vulnerabilities;
 the production JavaScript audit also found none. All eight selected router tests
 passed. This is source and generation evidence. The per-Gateway deployment and
 rendered editor and terminal tests remain open.
+
+The next CI job builds a rootless, read-only test image from the checked upstream
+binary, then publishes it under `hypershell-stego-dashboard-ci`. It records the
+registry digest and keeps the image archive. Package publication is limited to
+this job; the source job has read-only permissions. A separate compiler pin in
+`private-compiler-revision` selects the private application candidate.
+
+The job inserts that real image digest into `private-service.yaml`, generates
+and builds the browser backend, and checks the resulting two-container deployment.
+It checks stable generation, secret separation, and absence of a direct
+application Service port. The browser image reference used only for rendering
+is an explicit example. This job does not deploy either container. Gateway
+trust and mTLS files must be supplied in the application mount before deployment.
+Published images are CI candidates, not qualified production releases.

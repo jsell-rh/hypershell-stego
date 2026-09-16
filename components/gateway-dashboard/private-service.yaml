@@ -1,0 +1,22 @@
+# This CI declaration checks the real upstream image and captured UI together.
+# The workflow inserts the digest of the image it built. It does not deploy it.
+kind: service
+name: dashboard-private-check
+archetype: browser-service
+language: go
+overrides:
+  health-check:
+    database: true
+  browser-backend:
+    api_prefix: /api/v1
+    routes: [/]
+    asset_bundle: ui/build.zip
+  kubernetes-service:
+    local_applications:
+      - port: 8000
+        image: IMAGE_FROM_CHECKED_BUILD
+        listen_env: LISTEN_ADDRESS
+        port_env: PORT
+        env_secret: dashboard-application-env
+        files_secret: dashboard-application-files
+        health_path: /api/v1/readyz

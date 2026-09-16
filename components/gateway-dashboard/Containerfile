@@ -1,0 +1,6 @@
+# The source job builds this binary with CGO disabled and checks its dependencies.
+# Gateway trust and client certificates come from the private application mount.
+FROM scratch
+COPY --chmod=0555 dashboard /dashboard
+USER 65532:65532
+ENTRYPOINT ["/dashboard"]
