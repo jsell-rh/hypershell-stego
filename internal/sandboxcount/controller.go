@@ -166,7 +166,22 @@ func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) er
 				return errors.New("Gateway count catalog exceeds its limit")
 			}
 			if gw.GetClusterId() == c.cluster {
+				// Public lists retain pending deletions. Only stored control-plane
+				// state can decide whether this namespace still needs a watch.
 				call, stop := context.WithTimeout(ctx, 5*time.Second)
+				state, err := c.counts.GetGatewayIdentityState(call, &control.GetGatewayIdentityStateRequest{Id: id})
+				stop()
+				if err != nil {
+					return err
+				}
+				current := state.GetGateway()
+				if state == nil || state.GetResourceVersion() < 1 || current.GetMetadata().GetId() != id || current.GetNamespace() != ns {
+					return fmt.Errorf("%w: Gateway state identity could not be verified", kube.ErrWatchSetContract)
+				}
+				if state.GetDeleted() || current.GetClusterId() != c.cluster {
+					continue
+				}
+				call, stop = context.WithTimeout(ctx, 5*time.Second)
 				uid, err := c.allocation.NamespaceUID(call, "gateway", ns, id)
 				stop()
 				if errors.Is(err, allocation.ErrPending) {

@@ -14,6 +14,7 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"github.com/segmentio/ksuid"
+	"google.golang.org/protobuf/proto"
 )
 
 type countWrite struct {
@@ -86,11 +87,13 @@ func takeNamespace[T any](t *testing.T, ch <-chan T) T {
 func TestCountWatchesFollowVerifiedNamespaces(t *testing.T) {
 	cluster := ksuid.New().String()
 	one, two, three, foreign := gateway(cluster), gateway(cluster), gateway(cluster), gateway(ksuid.New().String())
-	api := &apiFixture{rows: []*pb.Gateway{one, two, three, foreign}}
+	// Display text cannot stop a live namespace watch.
+	one.Phase = proto.String("Deleting")
+	api := &apiFixture{rows: []*pb.Gateway{one, two, three, foreign}, deleted: map[string]bool{}}
 	proof := &namespaceProof{uids: map[string]string{one.Namespace: "uid-one", two.Namespace: "uid-two"}, calls: map[string]int{}}
 	source := &namespacePods{opened: make(chan openedNamespace, 16)}
 	writes := make(chan countWrite, 128)
-	c, err := New(source, proof, api, &writerFixture{write: func(r *control.SetObservedSandboxCountRequest) error {
+	c, err := New(source, proof, api, &writerFixture{state: api, write: func(r *control.SetObservedSandboxCountRequest) error {
 		writes <- countWrite{Namespace: r.Namespace, ClusterId: r.ClusterId, Count: r.Count}
 		return nil
 	}}, cluster, time.Second)
@@ -160,7 +163,8 @@ func TestCountWatchesFollowVerifiedNamespaces(t *testing.T) {
 	}
 	waitCount(one.Namespace, 0)
 	api.mu.Lock()
-	api.rows = []*pb.Gateway{one, three, foreign}
+	// Keep the pending Gateway in the public list until finalization.
+	api.deleted[two.GetMetadata().GetId()] = true
 	api.mu.Unlock()
 	takeNamespace(t, opened[two.Namespace].stopped)
 	if err := opened[two.Namespace].apply(kube.Change{Type: "ADDED", Object: record("late", two.Namespace, "Running", "3")}); err == nil {
@@ -189,7 +193,7 @@ func TestCountStopsWhenAllocationIdentityCannotBeVerified(t *testing.T) {
 	api := &apiFixture{rows: []*pb.Gateway{row}}
 	proof := &namespaceProof{uids: map[string]string{row.Namespace: "uid-one"}, calls: map[string]int{}}
 	source := &namespacePods{opened: make(chan openedNamespace, 1)}
-	c, err := New(source, proof, api, &writerFixture{write: func(*control.SetObservedSandboxCountRequest) error { return nil }}, cluster, time.Second)
+	c, err := New(source, proof, api, &writerFixture{state: api, write: func(*control.SetObservedSandboxCountRequest) error { return nil }}, cluster, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}

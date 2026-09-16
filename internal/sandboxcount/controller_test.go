@@ -16,6 +16,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 func record(uid, ns, phase, version string) kube.Object {
@@ -123,8 +124,9 @@ func (namespaceFixture) NamespaceUID(_ context.Context, profile, name, id string
 
 type apiFixture struct {
 	pb.GatewayServiceClient
-	mu   sync.Mutex
-	rows []*pb.Gateway
+	mu      sync.Mutex
+	rows    []*pb.Gateway
+	deleted map[string]bool
 }
 
 func (a *apiFixture) ListGateways(_ context.Context, r *pb.ListGatewaysRequest, _ ...grpc.CallOption) (*pb.ListGatewaysResponse, error) {
@@ -138,7 +140,19 @@ func (a *apiFixture) ListGateways(_ context.Context, r *pb.ListGatewaysRequest, 
 
 type writerFixture struct {
 	control.GatewayIdentityServiceClient
+	state *apiFixture
 	write func(*control.SetObservedSandboxCountRequest) error
+}
+
+func (w *writerFixture) GetGatewayIdentityState(_ context.Context, r *control.GetGatewayIdentityStateRequest, _ ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
+	w.state.mu.Lock()
+	defer w.state.mu.Unlock()
+	for _, row := range w.state.rows {
+		if row.GetMetadata().GetId() == r.GetId() {
+			return &control.GetGatewayIdentityStateResponse{Gateway: proto.Clone(row).(*pb.Gateway), Deleted: w.state.deleted[r.GetId()], ResourceVersion: 1}, nil
+		}
+	}
+	return nil, status.Error(codes.NotFound, "absent")
 }
 
 func (w *writerFixture) SetObservedSandboxCount(_ context.Context, r *control.SetObservedSandboxCountRequest, _ ...grpc.CallOption) (*control.SetObservedSandboxCountResponse, error) {
@@ -190,7 +204,7 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 	stored := int32(7)
 	number := 0
 	failed := false
-	writer := &writerFixture{write: func(r *control.SetObservedSandboxCountRequest) error {
+	writer := &writerFixture{state: api, write: func(r *control.SetObservedSandboxCountRequest) error {
 		if r.Namespace != ns || r.ClusterId != cluster {
 			t.Error("wrong count assignment", r)
 		}
@@ -279,7 +293,8 @@ func TestCountAccessLossStopsWatch(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
 	source := &sourceFixture{make(chan func(kube.Change) error, 1)}
-	c, err := New(source, namespaceFixture{}, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, &writerFixture{write: func(*control.SetObservedSandboxCountRequest) error {
+	api := &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}
+	c, err := New(source, namespaceFixture{}, api, &writerFixture{state: api, write: func(*control.SetObservedSandboxCountRequest) error {
 		return status.Error(codes.PermissionDenied, "denied")
 	}}, cluster, time.Second)
 	if err != nil {
@@ -314,8 +329,9 @@ func TestCountWaitsForReplacementAfterReset(t *testing.T) {
 	var once sync.Once
 	unblock := func() { once.Do(func() { close(release) }) }
 	defer unblock()
+	api := &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}
 	number := 0
-	writer := &writerFixture{write: func(r *control.SetObservedSandboxCountRequest) error {
+	writer := &writerFixture{state: api, write: func(r *control.SetObservedSandboxCountRequest) error {
 		number++
 		calls <- r.Count
 		if number == 1 {
@@ -323,7 +339,7 @@ func TestCountWaitsForReplacementAfterReset(t *testing.T) {
 		}
 		return nil
 	}}
-	c, err := New(source, namespaceFixture{}, &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}, writer, cluster, time.Second)
+	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second)
 	if err != nil {
 		t.Fatal(err)
 	}
