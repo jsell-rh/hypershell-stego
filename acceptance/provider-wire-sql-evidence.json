@@ -1,0 +1,41 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35107104565",
+  "source": "e007cc1351c661d438fe10c9c8d669f1e803e914",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "tests_sha256": "fc59148b603f78421a4b1954246d1772f4fa377ce9e393dead91d5b73295b429",
+  "required_passes": [
+    "TestGatewayInventoryRegistersPastFailedClientRead",
+    "TestInventoryRPCsDenyUnverifiedCaller",
+    "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+    "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+    "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+    "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+    "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+    "TestGatewayCleanupRecoversJournalOmittedByProvider",
+    "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+    "TestGatewayJournalClosureRollsBackWithFinalEvent"
+  ],
+  "failures": [],
+  "skips": [],
+  "package_passes": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "elapsed_seconds": 1.036
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner",
+      "elapsed_seconds": 1.035
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccounts",
+      "elapsed_seconds": 1.025
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed_seconds": 6.2
+    }
+  ],
+  "scope": "Nine PostgreSQL recovery tests and three boundary tests. Discovery uses the real provisioner service over generated TLS gRPC, an HTTPS provider fixture, and encrypted journals. The test replaces the service, transport, provider client, and store. It checks denied caller and changed source versions before provider access. This is not a complete deployed workflow or a database-server restart."
+}

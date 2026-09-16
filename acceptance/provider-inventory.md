@@ -301,3 +301,11 @@ discovery. After its cleanup was verified, the 51-check API run `35106819091`
 started at `120711a`, which has the same production code as `85706c6`. It is the
 only active live cluster test. The latest full application run `35106305055`
 is queued behind the earlier full run.
+
+
+The stronger transport test passed in run `35107104565`, source `e007cc1`.
+All twelve required checks passed, with no failures or skips. The acceptance
+package took 6.2 seconds. The [verification record](provider-wire-sql-evidence.json)
+contains the test names, source, compiler, and raw result hash. This test uses
+the real provisioner service over generated TLS gRPC. Full deployed workflow
+qualification remains separate.
