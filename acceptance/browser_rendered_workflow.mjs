@@ -67,7 +67,8 @@ try {
   if(phase==='dashboard-create'){
    await newSession();
    await command('/url',{url:input.origin+'/workspaces'});
-   await click('[data-testid="dashboard-sign-in"]');
+   // The generated backend protects the document and starts login before UI code runs.
+   await until(()=>script('return location.origin===arguments[0] && document.querySelector("#username")!==null;',[new URL(input.identityOrigin).origin]),'dashboard identity provider login');
    await type('#username','console-alice');await type('#password','acceptance-only-user-password');await click('#kc-login');
    await heading('Workspaces');
    const config=await script('return JSON.parse(document.querySelector(\'meta[name="stego-runtime-config"]\').content)');
