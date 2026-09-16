@@ -1,0 +1,57 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35162964198",
+  "source": "7c08e612da72fde2bb03f9910c8fc2bc768df3fa",
+  "compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "result": "failure",
+  "test_seconds": 279.95,
+  "failure": "The test expected invalid JSON, but editor pairing produced the valid value {}.",
+  "editor": {
+    "visible": true,
+    "native_keyboard_focus": true,
+    "input_visible_in_screenshot": "{}",
+    "invalid_json_rejection_proved": false,
+    "screenshot_viewed": true,
+    "content_policy_violations": [
+      "style-src-elem",
+      "style-src-attr"
+    ],
+    "scope": "Policy events came from the dashboard document. This result does not establish worker behavior."
+  },
+  "not_proved": [
+    "Complete editor styling and content-policy compliance",
+    "Later dashboard recovery and viewer revocation",
+    "Authenticated correlation of all three telemetry signals",
+    "Final Gateway deletion"
+  ],
+  "repeated_generation_file_hashes": 404,
+  "repeated_generation_matches": true,
+  "job_uid": "9a542ad0-ecd7-4815-a24c-68bb1160a212",
+  "actual_limits_checked": true,
+  "actual_browser_trust_checked": true,
+  "cleanup_checked_at": "2026-09-16T23:51:44.244591+00:00",
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "0aa2990bbce260bb440181b7beb4c46c8e47a21178d50d46fa34af8516065145",
+  "artifact_files": {
+    "first.sha256": {
+      "bytes": 44687,
+      "sha256": "673606eacf2a1447a16a6e85c589cc36f12fa539e3379099a5c330763d6aaf01"
+    },
+    "second.sha256": {
+      "bytes": 44687,
+      "sha256": "673606eacf2a1447a16a6e85c589cc36f12fa539e3379099a5c330763d6aaf01"
+    },
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.network.json": {
+      "bytes": 10625,
+      "sha256": "964847c875a2e0567119331fd2e6cef4576de203cce61952dfceb3fb171c18a9"
+    },
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.txt": {
+      "bytes": 474,
+      "sha256": "ed25b0849cb710007d93ae8d7158bec61f741705e954c17d1e957bc8959e5908"
+    },
+    "browser-artifacts/gateway-dashboard/dashboard-create.json.png": {
+      "bytes": 34688,
+      "sha256": "ada3b0eff0b376b575b2977c02fc5d8945657012948cca2e1dfd4f726c2ea6f8"
+    }
+  },
+  "scope": "This failed run exposes a test input error and blocked dynamic styles. The input correction does not resolve the style violations. No complete deployed workflow pass is claimed."
+}
