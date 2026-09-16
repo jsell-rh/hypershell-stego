@@ -93,3 +93,15 @@ This CNPG result precedes the count-watch fix. Full CI `35098200160` and the
 external-PostgreSQL browser run `35098646742` use source `371c230`, which includes
 that fix. Their results are still pending. The newer source still needs CNPG
 qualification before the default branch changes.
+
+The external-PostgreSQL run `35098646742` passed at `371c230`. The complete
+Kubernetes browser workflow took 492.27 seconds. Generated hashes matched before
+and after testing. It proved supplied-server retention, separate Gateway SQL
+resources, denied cleanup, restart, recovery, final cleanup, access rules,
+credential use, and worker telemetry. The Job, private fixtures, namespace
+allocations, and Lease holder are absent. Evidence is in `external-result`.
+
+The final CNPG run `35100459235` uses `bceea63`, which has the same application
+code as `371c230`. It started after external-workflow cleanup was verified.
+Full core run `35098200160` remains active. Both results are required before the
+Hypershell default branch changes.
