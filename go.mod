@@ -43,7 +43,7 @@ require (
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/google/uuid v1.6.0
 	github.com/jackc/pgx/v5 v5.11.0
-	github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916195647-ee4ec91bdc5a
+	github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916213115-1547331f8c79
 	github.com/oapi-codegen/nullable v1.1.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/oasdiff/yaml v0.1.1 // indirect

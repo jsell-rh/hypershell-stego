@@ -152,3 +152,11 @@ All three states repeat exactly. The states and CLI build identity are updated;
 the browser implementation is unchanged by this correction. The common compiler
 has now passed all six jobs in STEGO run `35152146945`. The module check must
 still be repeated with the corrected state.
+
+The corrected module at `1547331` passed [run 35152843228](https://github.com/jsell-rh/hypershell-stego/actions/runs/35152843228).
+All 83 archived source files match the local module. Dependency checks, both
+entry-point builds, private deployment checks, and published image verification
+passed. The control plane now pins that module revision. Repeated generation
+and state checks passed again after the dependency update. The
+[module evidence](browser-scopes-module-evidence.json) records the source and
+archive hash. A new live result is still required.
