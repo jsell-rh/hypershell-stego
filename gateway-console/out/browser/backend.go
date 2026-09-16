@@ -56,7 +56,7 @@ type Backend struct {
 }
 
 // NewBrowserBackend uses compiler-owned database, HTTP, and telemetry resources.
-// Apply schema.sql before startup. OAuth tokens remain in encrypted server state.
+// Use schema.Bootstrap before startup. OAuth tokens stay in encrypted server state.
 func NewBrowserBackend(ctx context.Context, db *sql.DB) (*Backend, error) {
 	if os.Getenv("STEGO_HTTP_TLS_CERT") == "" || os.Getenv("STEGO_HTTP_TLS_KEY") == "" {
 		return nil, errors.New("browser backend requires HTTPS")
