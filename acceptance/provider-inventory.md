@@ -269,3 +269,12 @@ jshell API gate requires 51 checks. These new limit checks still need CI
 qualification. Both generated targets have no drift, and the acceptance package
 compiles. Full application run `35104550272` and public browser run `35104667835`
 use earlier source `550b2b7`; neither can qualify this discovery change.
+
+
+Run `35106173055`, source `85706c6`, passed all twelve required checks with no
+failures or skips. The acceptance package took 5.905 seconds. It includes the
+maximum-offset SQL recovery case and the typed RPC boundary cases. The
+[verification record](provider-window-sql-evidence.json) contains the exact
+source, compiler, required tests, package results, and raw test hash. Raw results
+are in `provider-window-sql-result` under the persistent Gateway cleanup run
+directory. Full deployed qualification remains separate.

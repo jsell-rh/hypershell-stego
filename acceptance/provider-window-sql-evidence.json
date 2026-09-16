@@ -1,0 +1,41 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35106173055",
+  "source": "85706c6b2127544df1f7db620b26da3597d00df2",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "tests_sha256": "c47a5d4746630ff94e6f0c4a51f094518438d872f0bd74e2964593db822d10fe",
+  "required_passes": [
+    "TestGatewayInventoryRegistersPastFailedClientRead",
+    "TestInventoryRPCsDenyUnverifiedCaller",
+    "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+    "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+    "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+    "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+    "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+    "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+    "TestGatewayCleanupRecoversJournalOmittedByProvider",
+    "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+    "TestGatewayJournalClosureRollsBackWithFinalEvent"
+  ],
+  "failures": [],
+  "skips": [],
+  "package_passes": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "elapsed_seconds": 1.036
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner",
+      "elapsed_seconds": 1.027
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccounts",
+      "elapsed_seconds": 1.023
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed_seconds": 5.905
+    }
+  ],
+  "scope": "Nine PostgreSQL recovery tests and three boundary tests. HTTPS provider fixture; reconstructed store and service. This is not a complete deployed workflow or a database-server restart."
+}
