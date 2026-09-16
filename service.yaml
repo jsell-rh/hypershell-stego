@@ -2,6 +2,12 @@ kind: service
 name: hypershell
 archetype: service-core
 language: go
+component_namespaces:
+  jwt-auth: auth
+  kafka-producer: events
+  outbox: outbox
+  postgres-adapter: storage
+  tsl-search: search
 base_path: /api/hypershell/v1
 
 entities:

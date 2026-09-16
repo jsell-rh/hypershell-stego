@@ -9,10 +9,11 @@ mounts. Browser JavaScript receives no OAuth token.
 
 [upstream.json](upstream.json) pins the checked upstream build, container image,
 and captured assets. The [build inputs](../components/gateway-dashboard) retain
-the dependency changes and upstream license. The local registry contains exact
-common component metadata from [.stego/compiler-revision](.stego/compiler-revision).
-Its browser archetype adds the common browser telemetry component. It contains
-no new runtime implementation.
+the dependency changes and upstream license. [.stego/config.yaml](.stego/config.yaml)
+combines the pinned common STEGO registry with the local application archetype.
+The compiler and common registry use the same full commit SHA. The local
+archetype adds browser telemetry; it contains no copied component metadata or
+new runtime implementation.
 
 Run `scripts/generate-gateway-console.sh` from the repository to regenerate.
 Use `--check` to reject differences from committed output. The script retains
@@ -46,8 +47,8 @@ The API stores its encrypted recovery record in a separate fixed scope. It
 uses the same assigned identity controller and cleanup grants, with resource
 and record version checks. Cleanup attempts both client closures and retains any error for retry. A console
 failure must not leave native closure open. This change does not yet supply
-credentials to a dashboard Pod or publish `console_address`. The application
-workflow still requires those steps.
+credentials to a dashboard Pod. The deployed application workflow still
+requires that step.
 
 The [identity evidence](../acceptance/console-identity-evidence.json) records 21
 passing checks against real Keycloak and PostgreSQL. It includes PKCE console
@@ -69,3 +70,9 @@ grant permits only console journal reads. It does not permit native journal
 reads, journal writes, or cleanup. The provisioner uses the instance's identity
 state keys and console domain policy. Gateway Pods receive no administrator
 credential or state key through this interface.
+
+The [database workflow evidence](../acceptance/console-database-workflow-evidence.json)
+records real PostgreSQL creation, limited console access, session state across
+restart, and independent cleanup of Gateway and console databases. It also
+records all 51 required API tests and verified cluster cleanup. This is not a
+rendered dashboard result.

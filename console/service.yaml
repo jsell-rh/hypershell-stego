@@ -2,6 +2,8 @@ kind: service
 name: hypershell-console
 archetype: browser-service
 language: go
+component_namespaces:
+  postgres-adapter: storage
 overrides:
   kubernetes-service:
     dns_namespace: openshift-dns

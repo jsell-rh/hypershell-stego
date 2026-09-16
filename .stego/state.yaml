@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego
             go_version: 1.26.8
             output_dir: out
-            registry_ref: gateway-workflow
+            registry_ref: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: 503141e16fef9afbe4279e7eaf894724150401dcd39745d6e6f1a78322944502
+                sha256: 415019249a5dc56d5d3cd8fb716584ed46b5d8cf373cb201870b1126bffe9404
                 mode: 420
             contracts/controlplane/gateway_identity.proto:
                 exists: true
@@ -129,75 +129,75 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 78d0fba674404621d59dbc2f3e029b413faecceda343169f8fea07693fd8d421
+                sha256: 6b5b9c07acbd81fab30ee0bd51b87508e04e8f2521dda625c80d90ac5a9a1930
                 mode: 420
-        sha256: c0f7ef4061017e295dd56ede6358a19534e30f559eb228f3bb2d3c3d9d0538ac
+        sha256: 39ef390c191e3ac000451c0bf0a2ac0cfce1abf1dd7adf507a7713897552898a
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916172759-d9a64189e35e
+        module_version: v0.0.0-20260916174755-6e80eca6c65e
         vcs: git
-        revision: d9a64189e35e5673388d6f7d591ebae6cdc0c9da
+        revision: 6e80eca6c65ed3528bf81d7176d925417b4e46e0
         source_state: clean
-    service_hash: 78d0fba674404621d59dbc2f3e029b413faecceda343169f8fea07693fd8d421
-    registry_sha: gateway-workflow
-    registry_content_sha256: d9639cf6f1efa7547f7092d70bc1a87a98898e20577c70995c7421d6891d50be
+    service_hash: 6b5b9c07acbd81fab30ee0bd51b87508e04e8f2521dda625c80d90ac5a9a1930
+    registry_sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
+    registry_content_sha256: 3998acb15a63a97f65f0f13ca9f21059eda920af068fbe11483519131e0edbba
     components:
         browser-telemetry:
             version: 1.2.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         cli-application:
-            version: 1.8.0
-            sha: gateway-workflow
+            version: 1.8.1
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         controller:
             version: 1.21.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         go-sdk:
-            version: 2.0.3
-            sha: gateway-workflow
+            version: 2.0.4
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         grpc-application:
             version: 1.12.3
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         health-check:
             version: 1.1.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         http-application:
-            version: 1.7.0
-            sha: gateway-workflow
+            version: 1.8.0
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         jwt-auth:
             version: 2.3.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         kafka-producer:
             version: 1.0.4
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         keycloak-provider:
             version: 0.18.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         kubernetes-client:
             version: 1.13.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         kubernetes-service:
             version: 1.17.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         otel-tracing:
             version: 1.14.3
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         outbox:
             version: 1.1.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         postgres-adapter:
             version: 4.9.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         postgres-client:
             version: 1.4.1
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         tsl-search:
             version: 1.0.2
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
         typescript-sdk:
             version: 1.2.0
-            sha: gateway-workflow
+            sha: d269a821561095cb76c3021b1ca53020297c6265862c9a2d23da08a4ad95992c
     entities:
         Gateway:
             - name: name
@@ -426,7 +426,7 @@ last_applied:
               hash: 0acc3f95b0e60ff727c1b716af447f55243ad638eeedbfce59c32f34b8230cf6
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
-        application/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
+        application/client/client.go: 9b735a6185b24b47c702aececc5b78d8f3faa03590579a62d6179e09a50088c5
         application/transport/endpoint.go: 841ad88d9b25514f127043ef0114f8f888602440d3a1b3ec61c6714ba7009d0d
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
@@ -437,7 +437,7 @@ last_applied:
         browsertelemetry/index.js: 4970c3eef898c9996b4e56f6340dcfbefd8f2756411daca9870ab741e8b8eca1
         browsertelemetry/package.json: 6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90
         cli/buildidentity/runtime.go: 5f78ba8309357100e3160bb4a97dcbf50c20d2d1e0622fb7144e24cc24c27911
-        cli/client/client.go: 3680fde6a2392800f43c3abd486a4df6028e3e31514518b8a461c669648075a1
+        cli/client/client.go: 9b735a6185b24b47c702aececc5b78d8f3faa03590579a62d6179e09a50088c5
         cli/cmd/main.go: 28174ab7e7443ef442cc2c708d10c901ea19e2e68afb8f60ac42270e862eb424
         cli/command/apply.go: bcd632e752e05e53ffc517dee9d1479485dc0cce2cd60e1f4effd7d0770d6007
         cli/command/apply_immutable.go: a1954d710b1821ae3d1a2375f4d0a9dd143cb33257bfe21d147b7056aa6c05dc
@@ -449,7 +449,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: 4711a0a442ccaf10d1f1de53d20d73440e63da6b9e1bd85b54a3f4e8be5a89e1
+        cli/command/version.go: 0046e4a7979bf2ee952f48984b28667bcf56b92e8d1d974d903576f8433e7c57
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -571,7 +571,7 @@ last_applied:
         postgres/schema.go: aa71bfe0b0de2209214542eab2fdfb2024bf518e84a9b3b62da377af50fd6b05
         sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
-        sdk/internal/transport/client.go: 44473c4cd533d6f77501891ce47b77c5063249331d323e1d324e1daf83ac4877
+        sdk/internal/transport/client.go: 01f8acf80ba62a9cfcf33db22d92782198dc30bc90f61b6e75ad01facc5bdb76
         sdk/internal/wire/api.go: 9b53925730ce1e4b6f2419d240fa8e4148f6e8986d3cc4a7bdda6e75a86f76da
         search/field_map.go: 58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b

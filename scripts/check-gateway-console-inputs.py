@@ -13,17 +13,16 @@ if hashlib.sha256((module / "ui/build.zip").read_bytes()).hexdigest() != record[
     raise SystemExit("Gateway dashboard assets differ from their checked build")
 if (module / "service.yaml").read_text().count("image: " + record["image"]) != 1:
     raise SystemExit("Gateway dashboard image differs from its checked build")
-expected = {"postgres-adapter", "otel-tracing", "health-check", "browser-backend", "browser-telemetry", "kubernetes-service"}
-actual = {p.name for p in (module / "registry/components").iterdir()}
-if actual != expected:
-    raise SystemExit("Gateway console component set differs")
-for name in sorted(expected):
-    relative = Path("registry/components") / name / "component.yaml"
-    if (module / relative).read_bytes() != (compiler / relative).read_bytes():
-        raise SystemExit("Gateway console component metadata differs from its compiler: " + name)
+revision = (module / ".stego/compiler-revision").read_text().strip()
+expected_config = ("registry:\n  - url: https://github.com/jsell-rh/stego.git\n    ref: " + revision +
+                   "\n    path: registry\n  - url: registry\n    ref: application\n")
+if (module / ".stego/config.yaml").read_text() != expected_config:
+    raise SystemExit("Gateway console must use its pinned common registry and local composition")
+if (module / "registry/components").exists():
+    raise SystemExit("Gateway console must not copy common component metadata")
 relative = Path("registry/archetypes/browser-service/archetype.yaml")
 common = (compiler / relative).read_text()
-expected_archetype = common.replace("  - browser-backend\n", "  - browser-backend\n  - browser-telemetry\n")
-if (module / relative).read_text() != expected_archetype:
+expected_archetype = common.replace("name: browser-service", "name: hypershell-gateway-browser", 1).replace("  - browser-backend\n", "  - browser-backend\n  - browser-telemetry\n")
+if (module / "registry/archetypes/hypershell-gateway-browser/archetype.yaml").read_text() != expected_archetype:
     raise SystemExit("Gateway console composition differs from the checked browser archetype")
 print("Gateway console inputs match their recorded build and compiler.")

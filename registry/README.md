@@ -1,30 +1,18 @@
-This registry composes common STEGO components for the Gateway acceptance work.
-Component metadata comes from the revision in `.stego/compiler-revision`.
-Output namespaces are public packages so application code and acceptance tests
-can use generated models and runtime constructors. The service-core archetype
-generates storage, authentication, an outbox, and one HTTP/event process.
-The HTTP application factory is outside generated output. It selects verifier
-mode and external migrations. Gateway response mapping and the query for the
-earliest owner name remain domain code.
+# Hypershell application composition
 
-The compiler contains no Hypershell entity names or access rules. Those rules
-are in `internal/gateways`. The declaration in `service.yaml` contains the
-fields needed by this workflow. Cluster, database, release, user, and role
-entities are partial models for this gate. They do not establish compatibility
-for the other Hypershell workflows.
+This registry contains Hypershell archetypes. Common component declarations
+come from the pinned STEGO Git registry in `.stego/config.yaml`. The compiler
+and common registry use the same full commit SHA. No common component metadata
+is copied here.
 
-The `grpc-application` component compiles the pinned Gateway protobuf contracts.
-Its domain factory is `internal/grpcapi`. The public `out/grpcapi/pb` packages
-contain messages and client/server interfaces; the generated runtime owns TLS,
-authentication, deadlines, and service shutdown.
+`service.yaml` selects public package paths through `component_namespaces`.
+Gateway fields, grants, response mapping, and provider policy remain application
+code. The common runtime comes from STEGO.
 
-The `tsl-search` component supplies declared-field search and common metadata
-aliases. It has no custom field resolver in this variant. Search remains separate
-from the domain access filter, which always applies before count and pagination.
+The management console uses the common browser archetype. The Gateway console
+has a separate local archetype that adds browser telemetry to its upstream
+dashboard integration. Generated files remain committed for review and repeat
+generation checks.
 
-STEGO captures the registry inputs and records their SHA-256 content digest in
-`.stego/state.yaml`. The `gateway-workflow` reference remains a local label.
-Registry changes after planning require a new plan. See the compiler's
-[registry input contract](https://github.com/jsell-rh/stego/blob/main/specs/registry-snapshots.md)
-for the digest encoding, input bounds, and state upgrade rules. The digest covers
-registry YAML and protobuf files; it does not identify the complete application.
+STEGO captures every registry input and checks it again before apply. Repeated
+artifact names or input paths across common and local sources are errors.

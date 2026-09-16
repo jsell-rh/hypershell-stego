@@ -1,3 +1,6 @@
 registry:
+  - url: https://github.com/jsell-rh/stego.git
+    ref: 6e80eca6c65ed3528bf81d7176d925417b4e46e0
+    path: registry
   - url: registry
-    ref: gateway-console
+    ref: application

@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: browser-workflow
+            registry_ref: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: a139c91042ae5b59e0e24917e19d1e6f881dd7ef4a7eb29f97829f1c0ea4ad6c
+                sha256: 63e18a721b083cb50eac42df64e12922e69ce25477b4f5edb75c81568cdbd470
                 mode: 420
             go.mod:
                 exists: true
@@ -21,43 +21,43 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
+                sha256: 7456b6c9bcf2e57b96f237fc5a9e62649da552ae5bad56d7be0b219fe3095b6e
                 mode: 420
             ui/build.zip:
                 exists: true
                 sha256: 6c51a7b54da532726045ba98d18ec5f3e9a4d1fa20f42ce93aa6cc0af294b05f
                 mode: 420
-        sha256: 035719e42a652d271a63d98a047a6cd44a9f357c1cde28003407d67903882bff
+        sha256: 1faa1918b39c63fae9e70e2e53c5cd09e2c2a6a4c7d02e47bc157e4afcd07490
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916172759-d9a64189e35e
+        module_version: v0.0.0-20260916174755-6e80eca6c65e
         vcs: git
-        revision: d9a64189e35e5673388d6f7d591ebae6cdc0c9da
+        revision: 6e80eca6c65ed3528bf81d7176d925417b4e46e0
         source_state: clean
-    service_hash: b40e3eacd51bd1ddff227481b8c21ce4338a4d97e3842092711aea728564cf83
-    registry_sha: browser-workflow
-    registry_content_sha256: d9639cf6f1efa7547f7092d70bc1a87a98898e20577c70995c7421d6891d50be
+    service_hash: 7456b6c9bcf2e57b96f237fc5a9e62649da552ae5bad56d7be0b219fe3095b6e
+    registry_sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
+    registry_content_sha256: 3998acb15a63a97f65f0f13ca9f21059eda920af068fbe11483519131e0edbba
     components:
         browser-backend:
-            version: 2.0.1
-            sha: browser-workflow
+            version: 2.1.0
+            sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
         health-check:
             version: 1.1.0
-            sha: browser-workflow
+            sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
         kubernetes-service:
             version: 1.17.0
-            sha: browser-workflow
+            sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
         otel-tracing:
             version: 1.14.3
-            sha: browser-workflow
+            sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
         postgres-adapter:
             version: 4.9.0
-            sha: browser-workflow
+            sha: 16c07cd358f130f9b2b32fbc82855cccd4c4e6b7f420b3ad21db4ad952ed7dc3
     files:
         browser/backend.go: fbda706a78ba289b505bef5dcf4ce7f4b8bf912d170b342d8866060e2113134d
-        browser/client/client.go: 137ebff4d1211a27c86d09cf8cfab6fd2d7d6871ab6a8d520f6fface80949d4a
+        browser/client/client.go: 749417cae296bbe6173551ad4725c00b1c0a4b486d7bfa22dc514355ee3fe65e
         browser/handlers.go: 64630cf8c12867823eaa5f741a3c813526609d0895aebba0757753140c986673
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
         browser/oauth.go: f27acdf720f12f9be55e0ae0e5e8a5dcef16fadfa79017c4093131a36241728e

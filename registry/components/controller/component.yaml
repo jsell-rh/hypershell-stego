@@ -1,8 +1,0 @@
-kind: component
-name: controller
-version: 1.21.0
-output_namespace: controller
-requires: []
-provides:
-  - reconciliation-runtime
-slots: []
