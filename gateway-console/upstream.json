@@ -1,9 +1,9 @@
 {
   "upstream": "https://github.com/Gkrumbach07/openshell-dashboard",
   "revision": "07f1b13ebd9e1826afe943b831b092be8bf92498",
-  "build_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35134453701",
-  "image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:14786a7ad91fc0a782fd842ade68a61dc12a4b622215b544889f5438f4c72a6f",
-  "asset_bundle_sha256": "4c92cc276f80ccbebdbec44a35600a1b714f8d3b7ee5b2279e8170d40fa348e0",
+  "build_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35160712345",
+  "image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:c8959418c35ece701387accceb9cf2f8110d7f44489c2ee2c7f72b8000cf2814",
+  "asset_bundle_sha256": "d33d5b3e7ab0f05c5311fbd960872729f0d99b43b757b3f77c986eb25e0b7a2d",
   "build_inputs": "../components/gateway-dashboard",
   "scope": "Checked upstream image and assets. The generated module and its Gateway deployment still require application qualification."
 }

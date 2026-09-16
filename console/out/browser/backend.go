@@ -331,6 +331,8 @@ func (b *Backend) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 				contentType = "image/x-icon"
 			case strings.HasSuffix(target, ".woff2"):
 				contentType = "font/woff2"
+			case strings.HasSuffix(target, ".ttf"):
+				contentType = "font/ttf"
 			}
 			hash := a.Hash
 			if target == "/index.html" && b.config.TelemetryService != "" {

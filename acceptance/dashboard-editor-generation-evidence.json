@@ -1,0 +1,25 @@
+{
+  "compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "compiler_ci": "https://github.com/jsell-rh/stego/actions/runs/35160694463",
+  "compiler_ci_jobs": 6,
+  "compiler_log_sha256": "db32f3dd10fc8d949cdfd1d1980b2fd4a44d916e48ecda3c2b5c15434c7870b0",
+  "repeated_generation": [
+    {
+      "target": "/home/jsell/code/scratch/hypershell-dashboard-20260916",
+      "repeated_state_equal": true,
+      "state_sha256": "b1a20411fcb99feb8425bab6802070570d1e79650d6a527b3d61f2864c9133a2"
+    },
+    {
+      "target": "/home/jsell/code/scratch/hypershell-dashboard-20260916/console",
+      "repeated_state_equal": true,
+      "state_sha256": "2ec5994fc1513eee21f6b33750e8f321dce73aa10364f39db37ad0ccf99a2458"
+    },
+    {
+      "target": "/home/jsell/code/scratch/hypershell-dashboard-20260916/gateway-console",
+      "repeated_state_equal": true,
+      "state_sha256": "d856029c25cb41915bdb2a1b360ff84b101a602458015a9b84ec7b07ee5a3d7b"
+    }
+  ],
+  "generated_asset_files_match_checked_bundle": 74,
+  "scope": "All three targets passed repeated generation. Every Gateway public asset matches the checked source bundle. Module CI and the live editor workflow remain required."
+}

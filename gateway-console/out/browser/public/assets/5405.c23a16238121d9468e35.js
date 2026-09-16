@@ -1,4 +1,4 @@
-"use strict";(self.webpackChunkopenshell_dashboard=self.webpackChunkopenshell_dashboard||[]).push([[405],{21020(e,t,r){
+"use strict";(self.webpackChunkopenshell_dashboard=self.webpackChunkopenshell_dashboard||[]).push([[5405],{21020(e,t,r){
 /**
  * @license React
  * react-jsx-runtime.production.min.js
