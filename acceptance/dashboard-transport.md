@@ -63,7 +63,8 @@ certificate without the root CA. The test had supplied the CA's public-key
 hash to Chromium instead of the leaf's hash.
 
 Chromium checks the supplied hashes against the certificates that the server
-sends. See its [certificate verifier](https://chromium.googlesource.com/chromium/src/+/5bbf537b285f8b2e09858d7e8c2bcceb1cd656f0/services/network/ignore_errors_cert_verifier.cc).
+sends. See its [certificate verifier](https://chromium.googlesource.com/chromium/src/+/HEAD/services/network/ignore_errors_cert_verifier.cc),
+file blob `5bbf537b285f8b2e09858d7e8c2bcceb1cd656f0` at inspection.
 The absent CA could not match. This explains the certificate error in this
 run. It does not establish the cause of the earlier connection-closed error.
 
@@ -76,3 +77,8 @@ the browser's existing test-pin mechanism are unchanged.
 Focused tests passed in 0.028 seconds. They include an unverified-peer
 rejection and a CA-signed server that omits the root from its chain. A live
 result for this correction is still required.
+
+Run `35149129268` completed with failure after 288.81 seconds in the live
+test. Its evidence was collected. Independent operator inspection at
+`2026-09-16T21:07:51.822175Z` confirmed no remaining test runtime, fixture
+resources, or allocated namespaces, and an empty test lease.
