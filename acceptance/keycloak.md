@@ -253,7 +253,11 @@ variants pass after the fix, with the race detector, in 14.373 seconds. The
 Hypershell adapter suite passes in 1.328 seconds. The real-provider suite passed in 63.85 seconds in STEGO CI run
 [35038752735](https://github.com/jsell-rh/stego/actions/runs/35038752735).
 The restricted client-role operation and inspection took 543 milliseconds.
-The rendered application rerun is still required.
+The rendered browser workflow passed in 74.93 seconds in
+[application job 104614812988](https://github.com/jsell-rh/hypershell-stego/actions/runs/35038888231/job/104614812988)
+on application commit `5144e666eb7a9cf61f2ba1a6070cd8815568ba93`.
+This run includes the fixed common provider. The full cluster workflow, CNPG
+workflow, and later protected-journal API checks have separate pending results.
 
 Browser test failures now retain only the fixed provisioning operation's status,
 duration, and transport side from generated OTEL spans. The test does not print
