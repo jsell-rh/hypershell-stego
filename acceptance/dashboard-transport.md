@@ -109,3 +109,27 @@ Independent operator cleanup passed at `2026-09-16T21:23:58.133877Z`. Runtime,
 fixture resources, and allocated namespaces were absent, and the lease was
 empty. The complete rendered dashboard, editor, telemetry, recovery, and access
 gate remains open.
+
+## Browser trust through namespace recovery
+
+The workload namespace recovery test removes the dashboard Certificate and TLS
+Secret. The controller then requests a replacement with a new key. A browser
+session that trusts only the old leaf cannot validate that replacement.
+
+The public test fixture now imports its declared operator CA into an ephemeral
+NSS database in the Chromium container. The pinned image supplies certutil.
+The database uses a 16 MiB emptyDir volume. Only the browser mounts the public
+certificates and database. Each import has a five-second deadline, and a bundle
+can contain at most 16 certificates. The fixture does not change HOME or the
+workstation trust store. The selected path follows Chromium's
+[Linux certificate configuration](https://chromium.googlesource.com/chromium/src/+/HEAD/docs/linux/cert_management.md).
+
+The rendered dashboard retains normal CA and hostname verification. It no
+longer uses a dashboard leaf exception. The separate identity fixture retains
+its existing test pin. The Go probe still verifies public HTTPS and the exact
+responses. The browser test also checks that its expected CA matches the
+fixture's declared CA hash before navigation.
+
+Five fixture checks passed in 0.100 seconds, including separate mounts, bounds,
+CA selection, and shell syntax. The focused HTTPS probe tests passed in 0.029
+seconds. Live browser login and recovery with this trust store remain unproved.

@@ -3,8 +3,8 @@ package acceptance
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
 	"encoding/json"
-	"encoding/pem"
 	"fmt"
 	"io"
 	"net/http"
@@ -36,16 +36,17 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 	}
 	// Check the route from the browser fixture, not only from the controller Pod.
 	probe := newConsoleBrowser(w.t, origin, ca)
-	certificate, err := checkDashboardRoute(context.Background(), probe.client, origin)
+	_, err = checkDashboardRoute(context.Background(), probe.client, origin)
 	if err != nil {
 		w.t.Fatal(err)
 	}
 	w.t.Log("Dashboard route passed verified HTTPS and protected-document redirect checks from the browser fixture")
-	leafFile := filepath.Join(w.t.TempDir(), "verified-console-leaf.pem")
-	if err := os.WriteFile(leafFile, pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: certificate}), 0600); err != nil {
-		w.t.Fatal("verified dashboard certificate cannot be saved")
+	if os.Getenv("STEGO_TEST_BROWSER_PUBLIC_CA_SHA256") != fmt.Sprintf("%x", sha256.Sum256([]byte(w.public.CA))) {
+		w.t.Fatal("browser fixture does not declare the expected public CA")
 	}
-	browser := newRenderedBrowser(w.t, origin, leafFile, w.identity.certificate)
+	// The fixture CA remains trusted when namespace recovery issues a new leaf.
+	// Keep the separate identity fixture's existing leaf pin.
+	browser := newRenderedBrowser(w.t, origin, w.identity.certificate)
 	if browser == nil {
 		w.t.Fatal("public Gateway workflow requires a rendered browser")
 	}

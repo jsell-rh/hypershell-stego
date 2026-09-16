@@ -45,6 +45,7 @@ class PublicGatewayFixture(unittest.TestCase):
         cases = [lambda c: c.update(extra=True), lambda c: c.update(domain='*.example.test'),
                  lambda c: c.update(domain='127.0.0.1'), lambda c: c.update(router='*'),
                  lambda c: c.update(issuer='../issuer'), lambda c: c.update(ca_pem='invalid'),
+                 lambda c: c.update(ca_pem=c['ca_pem'] * 17),
                  lambda c: c.update(ca_pem=c['ca_pem']+(self.root/'key.pem').read_text()),
                  lambda c: c.update(ca_pem=c['ca_pem']+'extra text'), lambda c: c.update(endpoints=[]),
                  lambda c: c.update(endpoints=c['endpoints']*9), lambda c: c.update(endpoints=[True])]
@@ -79,7 +80,7 @@ class PublicGatewayFixture(unittest.TestCase):
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())
         config = next(item for item in document['items'] if item['kind'] == 'ConfigMap' and item['metadata']['name'] == 'database-ca')
-        self.assertEqual(set(config['data']), {'server.crt', 'gateway-public.json', 'gateway-internal-ca.pem'})
+        self.assertEqual(set(config['data']), {'server.crt', 'gateway-public.json', 'gateway-internal-ca.pem', 'gateway-public-ca-0.pem'})
         self.assertEqual(config['data']['gateway-internal-ca.pem'], (root / 'ca.pem').read_text())
         self.assertEqual(json.loads(config['data']['gateway-public.json']), self.config)
         self.assertEqual(config['metadata']['labels']['stego.test/browser-run'], 'stego-service-ci')
@@ -96,7 +97,24 @@ class PublicGatewayFixture(unittest.TestCase):
             self.assertFalse(container['securityContext']['allowPrivilegeEscalation'])
             self.assertIn('cpu', container['resources']['limits'])
             self.assertIn('memory', container['resources']['limits'])
+        pod = job['spec']['template']['spec']
+        chromium = next(c for c in pod['initContainers'] if c['name'] == 'chromium')
+        volumes = {v['name']: v for v in pod['volumes']}
+        self.assertEqual(volumes['browser-nss']['emptyDir'], {'sizeLimit': '16Mi'})
+        self.assertEqual(volumes['browser-public-ca']['configMap']['items'],
+                         [{'key': 'gateway-public-ca-0.pem', 'path': 'gateway-public-ca-0.pem'}])
+        self.assertEqual(config['data']['gateway-public-ca-0.pem'].strip(), self.config['ca_pem'].strip())
+        self.assertIn({'name': 'browser-nss', 'mountPath': '/home/seluser/.pki/nssdb'}, chromium['volumeMounts'])
+        self.assertIn({'name': 'browser-public-ca', 'mountPath': '/browser-public-ca', 'readOnly': True}, chromium['volumeMounts'])
+        for c in pod['containers'] + [c for c in pod['initContainers'] if c['name'] != 'chromium']:
+            self.assertFalse({'browser-nss', 'browser-public-ca'} & {m['name'] for m in c['volumeMounts']})
+        self.assertFalse(any(e['name'] == 'HOME' for e in chromium['env']))
+        self.assertIn("timeout 5s certutil -A", chromium['command'][2])
+        self.assertIn("-t 'C,,'", chromium['command'][2])
+        self.assertTrue(chromium['command'][2].endswith('exec chromedriver --port=9515 --allowed-ips=127.0.0.1'))
+        subprocess.run(['sh', '-n', '-c', chromium['command'][2]], check=True, capture_output=True, timeout=5)
         settings = {row['name']: row.get('value') for row in job['spec']['template']['spec']['containers'][0]['env']}
+        self.assertEqual(settings['STEGO_TEST_BROWSER_PUBLIC_CA_SHA256'], hashlib.sha256(self.config['ca_pem'].encode()).hexdigest())
         self.assertNotIn('STEGO_TEST_UNRELATED_NETWORK_HOST', settings)
         subprocess.run([sys.executable, str(script), 'stego-service-20260915-123abc', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
@@ -124,7 +142,7 @@ class PublicGatewayFixture(unittest.TestCase):
 
     def test_required_and_scoped_mount(self):
         job = {'items': [{'kind': 'Job', 'metadata': {'name': 'service-check'}, 'spec': {'template': {'spec': {
-            'volumes': [], 'containers': [{'env': [], 'volumeMounts': []}]}}}}, {'kind': 'ConfigMap', 'metadata': {'name': 'database-ca'}, 'data': {'server.crt': 'separate database trust'}}]}
+            'volumes': [], 'initContainers': [{'name': 'chromium', 'command': ['sh', '-c', 'exec chromedriver'], 'volumeMounts': []}], 'containers': [{'env': [], 'volumeMounts': []}]}}}}, {'kind': 'ConfigMap', 'metadata': {'name': 'database-ca'}, 'data': {'server.crt': 'separate database trust'}}]}
         with patch.dict(os.environ, {'STEGO_TEST_GATEWAY_PUBLIC_CONFIG': '', 'STEGO_TEST_REQUIRE_PUBLIC_GATEWAY': '0'}):
             original = copy.deepcopy(job)
             apply_public_fixture(job, 'stego-service-ci', '1', '1')
@@ -147,6 +165,8 @@ class PublicGatewayFixture(unittest.TestCase):
         spec['containers'][0]['volumeMounts'] = []
         spec['volumes'] = []
         job['items'][1]['data'].pop('gateway-public.json')
+        job['items'][1]['data'].pop('gateway-public-ca-0.pem')
+        spec['initContainers'] = copy.deepcopy(original['items'][0]['spec']['template']['spec']['initContainers'])
         self.assertEqual(job, original)
 
 
