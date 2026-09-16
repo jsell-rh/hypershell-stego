@@ -282,3 +282,32 @@ func TestGatewayCleanupObservationDoesNotRepeatEvents(t *testing.T) {
 		t.Fatal("final deletion notice repeated", final, err)
 	}
 }
+
+func TestGatewayDeletingPhaseMatchesSearch(t *testing.T) {
+	f := database(t)
+	row, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("phase-search"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.service.Delete(context.Background(), principal("alice"), row.ID); err != nil {
+		t.Fatal(err)
+	}
+	row, err = f.service.Get(context.Background(), principal("alice"), row.ID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row = row.CurrentObservations()
+	if row.Phase == nil || *row.Phase != "Deleting" {
+		t.Fatal("pending display phase differs")
+	}
+	for _, user := range []string{"alice", "outsider"} {
+		result, err := f.service.Search(context.Background(), principal(user), 1, 1, "phase = 'Deleting'", []storage.OrderByField{{Field: "phase", Direction: "asc"}})
+		want := int64(0)
+		if user == "alice" {
+			want = 1
+		}
+		if err != nil || result.Total != want || len(result.Items.([]model.Gateway)) != int(want) {
+			t.Fatal("phase search and access differ from public state", user, result.Total, err)
+		}
+	}
+}

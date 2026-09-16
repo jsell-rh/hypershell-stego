@@ -8,17 +8,6 @@ import (
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
-// PublicState supplies the public lifecycle fields after observation projection.
-func PublicState(row model.Gateway) model.Gateway {
-	row = row.CurrentObservations()
-	if row.DeletedAt.Valid && row.DeletionFinalizedAt == nil {
-		phase, status := "Deleting", "Gateway cleanup is in progress"
-		row.Phase = &phase
-		row.Status = &status
-	}
-	return row
-}
-
 // RecordCleanup is an internal application commit boundary. External callers
 // must first pass the controller authorization in ObserveCleanup. The account
 // worker supplies only its own accounts observation. No provider work runs here.

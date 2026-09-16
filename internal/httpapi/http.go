@@ -245,7 +245,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 }
 
 func present(row model.Gateway, creator string) (Gateway, error) {
-	row = gateways.PublicState(row)
+	row = row.CurrentObservations()
 	var names []string
 	if len(row.ServerDnsNames) > 0 {
 		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {

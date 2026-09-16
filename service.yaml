@@ -60,8 +60,8 @@ entities:
       - { name: external_dns, type: string, optional: true }
       - { name: tls_mode, type: string, optional: true }
       - { name: service_type, type: string, optional: true }
-      - { name: status, type: string, optional: true, unobserved: ObservationPending }
-      - { name: phase, type: string, optional: true, unobserved: Provisioning }
+      - { name: status, type: string, optional: true, unobserved: ObservationPending, deleting: Gateway cleanup is in progress }
+      - { name: phase, type: string, optional: true, unobserved: Provisioning, deleting: Deleting }
       - { name: image, type: string, optional: true }
       - { name: supervisor_image, type: string, optional: true }
       - { name: server_dns_names, type: jsonb, optional: true }
