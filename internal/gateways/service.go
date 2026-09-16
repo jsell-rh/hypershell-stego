@@ -52,7 +52,6 @@ type Repository interface {
 	store.ResourceLocker
 }
 type Service struct {
-	accountCleaner        AccountCleaner
 	repository            Repository
 	controlPlaneSubjects  map[string]bool
 	cleanupPolicy         *auth.GrantPolicy
@@ -85,7 +84,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
+	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.

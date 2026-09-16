@@ -1,11 +1,9 @@
 package gateways
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
-	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	"os"
 	"strings"
 	"unicode/utf8"
@@ -13,12 +11,7 @@ import (
 
 // Options supplies trusted placement settings and controller subjects.
 // Subjects belong to the issuer configured in the token verifier.
-type AccountCleaner interface {
-	CleanupGateway(context.Context, store.Transaction, string) error
-}
-
 type Options struct {
-	AccountCleaner        AccountCleaner
 	ControlPlaneSubjects  []string
 	CleanupPolicy         *auth.GrantPolicy
 	ProviderStatePolicy   *auth.GrantPolicy

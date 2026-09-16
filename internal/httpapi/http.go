@@ -98,7 +98,6 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err != nil {
 		return nil, err
 	}
-	options.AccountCleaner = accounts
 	service, err := gateways.New(repository, options)
 	if err != nil {
 		return nil, err
@@ -358,10 +357,6 @@ func writeError(w http.ResponseWriter, r *http.Request, err error) {
 		code, reason = http.StatusPreconditionRequired, "Controller write requires an observed resource version"
 	case errors.Is(err, gateways.ErrLastOwner):
 		code, reason, errorID = http.StatusConflict, "The last Gateway owner cannot be removed", 6
-	case errors.Is(err, gateways.ErrGatewayCleanupUnavailable):
-		code, reason = http.StatusServiceUnavailable, "Gateway service-account cleanup is unavailable"
-	case errors.Is(err, gateways.ErrServiceAccountsExist):
-		code, reason, errorID = http.StatusConflict, "service accounts require cleanup before Gateway deletion", 6
 	case errors.Is(err, transport.ErrUnauthenticated), errors.Is(err, gateways.ErrIdentity):
 		code, reason = http.StatusUnauthorized, "Authentication is required"
 		errorID = 15

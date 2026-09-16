@@ -2,7 +2,6 @@ package acceptance
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"testing"
 	"time"
@@ -12,30 +11,6 @@ import (
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
 )
-
-// A fixed interruption after one confirmed item models a request budget without
-// sleeping or imposing load. Inventory has no clients; retained IDs still need
-// closure because a provider create can have completed after an earlier scan.
-type interruptedGatewayCleanup struct {
-	*accountProvider
-	calls     int
-	confirmed map[string]int
-	cancel    context.CancelFunc
-}
-
-func (p *interruptedGatewayCleanup) DeleteGateway(context.Context, string) error { return nil }
-func (p *interruptedGatewayCleanup) Delete(ctx context.Context, gatewayID, id, uuid string) error {
-	p.calls++
-	if p.cancel != nil && p.calls == 2 {
-		p.cancel()
-		return context.Canceled
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	p.confirmed[id]++
-	return p.accountProvider.Delete(ctx, gatewayID, id, uuid)
-}
 
 func TestGatewayAccountCleanupProgressSurvivesInterruptedRequests(t *testing.T) {
 	f := database(t)
@@ -63,47 +38,36 @@ func TestGatewayAccountCleanupProgressSurvivesInterruptedRequests(t *testing.T) 
 			t.Fatal(err)
 		}
 	}
-	provider := &interruptedGatewayCleanup{accountProvider: original, confirmed: map[string]int{}}
-	for attempt := 0; attempt < 3; attempt++ {
-		// Reconstruct both application services. Progress cannot live in their memory.
-		cleanup, err := serviceaccounts.New(f.storage, provider)
-		if err != nil {
-			t.Fatal(err)
-		}
-		service, err := gateways.New(f.storage, gateways.Options{AccountCleaner: cleanup})
-		if err != nil {
-			t.Fatal(err)
-		}
-		ctx, cancel := context.WithCancel(context.Background())
-		provider.calls, provider.cancel = 0, cancel
-		err = service.Delete(ctx, principal("alice"), gateway.ID)
+	provider := &boundedCleanupProvider{accountProvider: original, confirmed: map[string]int{}}
+	ctx, cancel := context.WithCancel(context.Background())
+	if err := f.service.Delete(ctx, principal("alice"), gateway.ID); err != nil {
 		cancel()
-		if err == nil {
-			t.Fatal("interrupted cleanup reported Gateway deletion")
-		}
-		if !errors.Is(err, gateways.ErrGatewayCleanupUnavailable) && !errors.Is(err, context.Canceled) {
-			t.Fatal("unexpected interrupted cleanup result", err)
-		}
-		if _, err := f.storage.Get(context.Background(), "Gateway", gateway.ID); err != nil {
-			t.Fatal("interruption removed Gateway", err)
-		}
+		t.Fatal(err)
 	}
-	visited := len(provider.confirmed)
-	t.Logf("Three interrupted requests confirmed %d of %d retained accounts", visited, len(ids))
-	// Restore the provider and verify normal cleanup before reporting the failure.
-	provider.cancel = nil
+	cancel()
+	if provider.calls != 0 || provider.inventory != 0 {
+		t.Fatal("request ran provider cleanup")
+	}
+	// Reconstruct services after the accepted request context has ended.
+	service, err := gateways.New(f.storage, gateways.Options{})
+	if err != nil {
+		t.Fatal(err)
+	}
 	cleanup, err := serviceaccounts.New(f.storage, provider)
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, err := gateways.New(f.storage, gateways.Options{AccountCleaner: cleanup})
-	if err != nil {
-		t.Fatal(err)
-	}
 	if err := service.Delete(context.Background(), principal("alice"), gateway.ID); err != nil {
-		t.Fatal("uninterrupted cleanup", err)
+		t.Fatal("repeated request", err)
 	}
-	if visited != len(ids) {
-		t.Fatalf("cleanup repeated its completed prefix across service restart: reached %d of %d retained accounts", visited, len(ids))
+	if complete, err := cleanup.RecoverGatewayCleanup(context.Background(), gateway.ID); err != nil || !complete {
+		t.Fatal("independent cleanup", complete, err)
+	}
+	if len(provider.confirmed) != len(ids) || provider.inventory != 1 {
+		t.Fatal("restart did not check retained accounts and inventory")
+	}
+	row, err := service.Get(context.Background(), principal("alice"), gateway.ID)
+	if err != nil || !row.DeletedAt.Valid || row.DeletionFinalizedAt != nil {
+		t.Fatal("account cleanup bypassed the other cleanup owners", err)
 	}
 }

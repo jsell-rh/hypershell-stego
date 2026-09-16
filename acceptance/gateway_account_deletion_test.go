@@ -6,6 +6,7 @@ import (
 	"errors"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -66,7 +67,7 @@ func TestGatewayDeletionRemovesServiceAccounts(t *testing.T) {
 				ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+bearer)), 12*time.Second)
 				defer cancel()
 				_, err := client.DeleteGateway(ctx, &pb.DeleteGatewayRequest{Id: gateway.ID})
-				code := map[int]codes.Code{204: codes.OK, 404: codes.NotFound, 503: codes.Unavailable, 500: codes.Internal}[want]
+				code := map[int]codes.Code{202: codes.OK, 404: codes.NotFound, 503: codes.Unavailable, 500: codes.Internal}[want]
 				if status.Code(err) != code || err != nil && strings.Contains(err.Error(), "private") {
 					t.Fatal("Gateway deletion", err)
 				}
@@ -86,41 +87,34 @@ func TestGatewayDeletionRemovesServiceAccounts(t *testing.T) {
 			provider.mu.Lock()
 			provider.failChange = true
 			provider.mu.Unlock()
-			deletion(owner, 503)
+			deletion(owner, 202)
 			checkStored(3, 0)
 			if code, _ := requestJSON(t, "GET", address+root, owner, nil); code != 200 {
-				t.Fatal("provider failure deleted Gateway", code)
+				t.Fatal("provider failure removed pending Gateway", code)
 			}
+			// This fixture has no external Gateway resources. The account provider
+			// is the only active controller; other owners are explicit test inputs.
+			completeFakeGatewayOwners(t, f, gateway.ID, "identity", "workload", "sql")
 			provider.mu.Lock()
 			provider.failChange = false
 			provider.mu.Unlock()
-			// Provider effects cannot roll back. The database must retain a safe retry
-			// when the final event insert fails.
-			if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_gateway_cleanup CHECK(false) NOT VALID`); err != nil {
-				t.Fatal(err)
-			}
-			deletion(owner, 500)
-			checkStored(3, 0)
-			if code, _ := requestJSON(t, "GET", address+root, owner, nil); code != 200 {
-				t.Fatal("event failure deleted Gateway", code)
-			}
-			provider.mu.Lock()
-			remaining := len(provider.clients)
-			provider.mu.Unlock()
-			if remaining != 0 {
-				t.Fatal("provider cleanup did not run", remaining)
-			}
-			if _, err := f.db.Exec(`ALTER TABLE stego_outbox.messages DROP CONSTRAINT reject_gateway_cleanup`); err != nil {
-				t.Fatal(err)
-			}
 			connection.Close()
 			stop()
 			stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 			client, connection = grpcClient(t, rpcAddress, apiTLS)
-			deletion(owner, 204)
+			deadline := time.Now().Add(20 * time.Second)
+			for {
+				code, _ := requestJSON(t, "GET", address+root, owner, nil)
+				if code == 404 {
+					break
+				}
+				if code != 200 || time.Now().After(deadline) {
+					t.Fatal("restart did not finish cleanup", code)
+				}
+				time.Sleep(50 * time.Millisecond)
+			}
 			checkStored(0, 3)
-			readGatewayEvent(t, consumer, gateway.ID, "Delete", "gateway.deleted")
-			awaitQueueEmpty(t, f)
+			awaitQueueEmptyAfterRestart(t, f)
 			if code, _ := requestJSON(t, "GET", address+root+"/service_accounts", owner, nil); code != 404 {
 				t.Fatal("deleted accounts are visible", code)
 			}
@@ -136,10 +130,10 @@ func TestGatewayDeletionRemovesServiceAccounts(t *testing.T) {
 			provider.mu.Unlock()
 			stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 			client, connection = grpcClient(t, rpcAddress, apiTLS)
-			deadline := time.Now().Add(15 * time.Second)
+			deadline = time.Now().Add(15 * time.Second)
 			for {
 				provider.mu.Lock()
-				remaining = len(provider.clients)
+				remaining := len(provider.clients)
 				provider.mu.Unlock()
 				if remaining == 0 {
 					break
@@ -158,7 +152,7 @@ func TestGatewayAccountCleanupSerializesCreation(t *testing.T) {
 	f := database(t)
 	provider := newAccountProvider()
 	accounts, gateway := accountService(t, f, provider)
-	service, err := gateways.New(f.storage, gateways.Options{AccountCleaner: accounts})
+	service, err := gateways.New(f.storage, gateways.Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -185,8 +179,11 @@ func TestGatewayAccountCleanupSerializesCreation(t *testing.T) {
 	if err := <-deleted; err != nil {
 		t.Fatal(err)
 	}
-	if _, err := service.Get(ctx, principal("alice"), gateway.ID); !errors.Is(err, storage.ErrNotFound) {
-		t.Fatal("Gateway survived completed cleanup", err)
+	if row, err := service.Get(ctx, principal("alice"), gateway.ID); err != nil || !row.DeletedAt.Valid {
+		t.Fatal("deletion request was not stored", err)
+	}
+	if complete, err := accounts.RecoverGatewayCleanup(ctx, gateway.ID); err != nil || !complete {
+		t.Fatal("account cleanup", complete, err)
 	}
 	provider.mu.Lock()
 	remaining := len(provider.clients)
@@ -204,5 +201,28 @@ func TestGatewayAccountCleanupSerializesCreation(t *testing.T) {
 	defer provider.mu.Unlock()
 	if provider.calls != calls {
 		t.Fatal("deleted Gateway reached provider creation")
+	}
+}
+
+// Use only with fixtures that have no external identity, workload, or SQL
+// resources. Tests with real resources must obtain controller observations.
+func completeFakeGatewayOwners(t *testing.T, f *fixture, id string, owners ...string) {
+	t.Helper()
+	for _, owner := range owners {
+		err := f.storage.WithTransaction(context.Background(), func(ctx context.Context, tx storage.Transaction) error {
+			value, err := tx.(storage.RetainedReader).GetRetained(ctx, "Gateway", id)
+			if err != nil {
+				return err
+			}
+			row := value.(model.Gateway)
+			target := ""
+			if owner == "workload" || owner == "sql" {
+				target = row.ClusterID
+			}
+			return gateways.RecordCleanup(ctx, tx, id, row.ResourceVersion, owner, target, true)
+		})
+		if err != nil {
+			t.Fatal("test cleanup observation", owner, err)
+		}
 	}
 }

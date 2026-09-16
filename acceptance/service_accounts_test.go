@@ -140,9 +140,6 @@ func TestServiceAccountLifecycleUsesGeneratedStorage(t *testing.T) {
 	if count(t, f.db, "service_account_audits") != 2 {
 		t.Fatal("creation audit is incomplete")
 	}
-	if err := f.service.Delete(ctx, principal("alice"), gateway.ID); !errors.Is(err, gateways.ErrServiceAccountsExist) {
-		t.Fatalf("Gateway bypassed account cleanup: %v", err)
-	}
 	if _, err := service.Create(ctx, principal("alice"), gateway.ID, accountInput("NIGHTLY")); !errors.Is(err, storage.ErrConflict) {
 		t.Fatalf("active name uniqueness: %v", err)
 	}
@@ -466,7 +463,7 @@ func TestServiceAccountCreationSerializesGatewayDeletion(t *testing.T) {
 	if err := <-created; err != nil {
 		t.Fatal(err)
 	}
-	if err := <-deleted; !errors.Is(err, gateways.ErrServiceAccountsExist) {
+	if err := <-deleted; err != nil {
 		t.Fatalf("concurrent Gateway deletion: %v", err)
 	}
 	if _, err := f.service.Get(ctx, principal("alice"), gateway.ID); err != nil {

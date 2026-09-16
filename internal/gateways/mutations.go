@@ -156,8 +156,6 @@ func (s *Service) update(ctx context.Context, p Principal, id string, patch Patc
 
 // Delete commits a durable request. The soft deletion blocks new account
 // reservations. Cleanup and final deletion run after this request returns.
-var ErrGatewayCleanupUnavailable = errors.New("Gateway service-account cleanup is unavailable")
-var ErrServiceAccountsExist = errors.New("service accounts require cleanup before Gateway deletion")
 
 func (s *Service) Delete(ctx context.Context, p Principal, id string) error {
 	if err := validatePrincipal(p); err != nil {
