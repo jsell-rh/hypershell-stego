@@ -19,14 +19,18 @@ private API grant. Stop old writers before migration. Cross-process writer
 fencing and detection of a whole-database rollback remain open. See the
 [provider boundary and results](acceptance/keycloak.md).
 
-The required [Gateway namespace network isolation](acceptance/gateway-network-isolation.md)
-is not enabled in the application. STEGO supplies an optional deny-all policy
-and admission protection. Allowed Gateway traffic and live network enforcement
-remain open. A passing API or browser test does not prove this requirement.
+[Gateway namespace network isolation](acceptance/gateway-network-isolation.md)
+is enabled for Gateway and state allocations. The declaration permits fixed
+operator-approved Pod peers and Kubernetes addresses. An earlier complete
+workflow passed 28 fresh-connection checks before and after recovery. External
+DNS tracking and arbitrary external database destinations still need separate
+implementation and qualification; passing the account workflow does not prove
+them.
 The [complete public Gateway workflow](acceptance/public-gateway-complete-20260915.json)
 passed through the generated browser backend, REST, gRPC, restart, regeneration,
 public TLS, certificate rotation, service accounts, telemetry, and normal cleanup.
-This result does not prove the separate namespace network isolation requirement.
+Its linked source and configuration define its scope. Use the separate network
+record for traffic-enforcement evidence.
 
 The [controller-local database change](acceptance/controller-local-database.md)
 removes `database_id`, `ManagedDatabase`, and database registration from the

@@ -43,5 +43,5 @@ passed in 6.04 seconds, including exact grants, an independent journal commit
 under the Gateway lock, ciphertext storage, API restart, and retained cleanup.
 The cluster API and current CNPG gates still require results. The orphan fixture
 is being corrected and the complete core suite will run again. This evidence does not establish production capacity,
-Gateway egress isolation, cross-process writer fencing, or database rollback
+external DNS enforcement, cross-process writer fencing, or database rollback
 detection. The Kata Sandbox test remains deferred.
