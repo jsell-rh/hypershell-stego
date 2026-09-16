@@ -72,5 +72,24 @@
     "sandbox-workload": "skipped"
   },
   "log_sha256": "e9eb3cac75ae8b843046ea69e7c2cb6b0c77602d11c5b6c3d5d9ea3811bd0934",
-  "scope": "Full core, browser, web-console, and image checks after bounded provider discovery. CNPG is not selected here. Live Kata remains deferred."
+  "scope": "Full core, browser, web-console, and image checks after bounded provider discovery. CNPG is not selected here. Live Kata remains deferred.",
+  "skipped_tests": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "test": "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "test": "TestNamespaceCountWithLiveKubernetes"
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "test": "TestGeneratedKubernetesBrowserGatewayWorkflow"
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "test": "TestGeneratedKubernetesServiceGatewayWorkflow"
+    }
+  ],
+  "packages_without_tests": 52
 }
