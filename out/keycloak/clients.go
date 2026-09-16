@@ -108,7 +108,7 @@ func (c *Client) ListClients(ctx context.Context, page Page) ([]ClientRepresenta
 // search. It does not check ownership or prove absence. The caller must retain
 // known IDs and bound the scan. Pattern characters are rejected before I/O.
 func (c *Client) SearchClients(ctx context.Context, fragment string, page Page) ([]ClientRepresentation, error) {
-	if !textValue(fragment, 255) || strings.TrimSpace(fragment) == "" || strings.ContainsAny(fragment, "%_\\[]") {
+	if !validClientSearchFragment(fragment) {
 		return nil, errors.New("invalid Keycloak client search fragment")
 	}
 	if err := page.validate(); err != nil {
@@ -300,4 +300,8 @@ func (c *Client) serviceAccountUser(work context.Context, b ClientBinding) (User
 		return UserRepresentation{}, ErrResponse
 	}
 	return user, nil
+}
+
+func validClientSearchFragment(fragment string) bool {
+	return textValue(fragment, 255) && strings.TrimSpace(fragment) != "" && !strings.ContainsAny(fragment, "%_\\[]")
 }

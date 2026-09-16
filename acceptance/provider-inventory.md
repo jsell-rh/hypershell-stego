@@ -211,3 +211,38 @@ The image and console jobs passed. This source predates the scope guard and
 closure preparation. Evidence is in `core-journal-full-result` and
 `core-journal-full-independent-verification.json`. Full run `35104550272` is
 now active for `550b2b7`.
+
+## Bounded discovery candidate
+
+Compiler `b6efc0f` provides a candidate cursor source and a source version that
+binds the realm, provider identity, and query. The API now uses `ScanCycle` with
+its generated checkpoint store for provider discovery. It reads one page of at
+most 20 candidates per pass. Each ownership read and closure preparation has a
+750 ms limit. Work and checkpoint commit have separate two-second and one-second
+limits. Provider source lookup has a separate one-second limit.
+
+The new private inventory service exposes source identity, one candidate page,
+and preparation of one candidate. Each call requires the existing verified
+caller policy. Page and preparation requests include the source version; the
+worker rejects a changed source before provider access. The reference RPC and
+public HTTP contracts are retained. Hypershell selects the Gateway query and
+checks exact account ownership. STEGO owns query bounds, cursors, lifecycle
+journals, failure retention, and checkpoint mechanics.
+
+A cycle that finds an owned client retains failure status even when its closure
+save succeeds. Retained journal recovery performs deletion. A later complete
+cycle must find no owned clients and have no saved failures. This prevents
+page shifts during deletion from turning a partial inventory into completion.
+The final scope guard remains in the same database transaction as the cleanup
+observation. The inventory limit still fails closed; recovery at that hard
+limit needs a separate test and design check.
+
+The earlier read-failure regression now passes through the common bounded scan.
+The three query, read-failure, and partial-disable tests pass in 1.068 seconds
+with the race detector. The API and acceptance packages compile, and both
+generated targets have no drift. `TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift`
+adds a real PostgreSQL test with encrypted journals and an HTTPS provider fixture:
+it checks failed first reads, independent later registration, saved cursors,
+service and store reconstruction, shifted pages, foreign clients, and final
+scope closure. Its CI result is pending. The focused gate now requires eight
+SQL tests and two boundary tests. The jshell API gate requires 50 checks.

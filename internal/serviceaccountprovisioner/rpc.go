@@ -79,6 +79,7 @@ type application struct {
 
 func (a *application) Register(registrar grpc.ServiceRegistrar) error {
 	pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, a.server)
+	pb.RegisterGatewayAccountInventoryServiceServer(registrar, a.server)
 	return nil
 }
 func (a *application) Close() error { a.provider.Close(); a.connection.Close(); return nil }

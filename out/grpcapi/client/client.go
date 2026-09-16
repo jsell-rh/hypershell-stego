@@ -439,6 +439,12 @@ func clientMethod(method string) string {
 		return method[1:]
 	case "/hypershell.controlplane.v1.ServiceAccountProviderStateService/SaveServiceAccountProviderState":
 		return method[1:]
+	case "/hypershell.provisioner.v1.GatewayAccountInventoryService/GetSource":
+		return method[1:]
+	case "/hypershell.provisioner.v1.GatewayAccountInventoryService/PrepareCandidate":
+		return method[1:]
+	case "/hypershell.provisioner.v1.GatewayAccountInventoryService/ReadPage":
+		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Delete":
 		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/DeleteGateway":

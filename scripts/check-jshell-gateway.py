@@ -28,6 +28,7 @@ REQUIRED = [
     "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
     "TestGatewayJournalClosureRollsBackWithFinalEvent",
     "TestGatewayCleanupRecoversJournalOmittedByProvider",
+    "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
     "TestGatewayCleanupObservationDoesNotRepeatEvents",
     "TestGatewayDeletingPhaseMatchesSearch",
     "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",

@@ -43,10 +43,6 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	if s.provider == nil {
 		return false, ErrUnavailable
 	}
-	checkpoints, ok := s.repository.(storage.CheckpointStore)
-	if !ok {
-		return false, runtime.ErrScanContract
-	}
 	scopes, ok := s.repository.(storage.ResourceStateScopeStore)
 	if !ok {
 		return false, runtime.ErrScanContract
@@ -57,55 +53,11 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 		return false, err
 	}
 	sourceVersion := strconv.FormatInt(gateway.ResourceGeneration, 10) + ":" + strconv.FormatInt(membership.Revision, 10) + ":account-journals-v2"
-	access := runtime.CheckpointAccess{
-		Load: func(ctx context.Context) (runtime.Checkpoint, error) {
-			saved, err := checkpoints.LoadCheckpoint(ctx, "Gateway", id, accountCleanupScope)
-			return runtime.Checkpoint{After: saved.After, Version: saved.Version}, err
-		},
-		Save: func(ctx context.Context, version int64, data string) error {
-			return s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
-				retained, ok := tx.(storage.RetainedReader)
-				if !ok {
-					return runtime.ErrScanContract
-				}
-				progressStore, ok := tx.(storage.CheckpointStore)
-				if !ok {
-					return runtime.ErrScanContract
-				}
-				value, err := retained.GetRetained(ctx, "Gateway", id)
-				if err != nil {
-					return err
-				}
-				current, ok := value.(model.Gateway)
-				if !ok || current.ID != id || !current.DeletedAt.Valid || current.ResourceGeneration != gateway.ResourceGeneration {
-					return storage.ErrVersionConflict
-				}
-				saved, err := progressStore.LoadCheckpoint(ctx, "Gateway", id, accountCleanupScope)
-				if err != nil {
-					return err
-				}
-				if saved.Version != version {
-					return storage.ErrCheckpointConflict
-				}
-				old, err := runtime.DecodeCycle(saved.After)
-				if err != nil {
-					return err
-				}
-				next, err := runtime.DecodeCycle(data)
-				if err != nil {
-					return err
-				}
-				if next.Source != sourceVersion {
-					return runtime.ErrScanContract
-				}
-				if err := runtime.ValidateCycleTransition(old, next); err != nil {
-					return err
-				}
-				_, err = progressStore.SaveCheckpoint(ctx, "Gateway", id, accountCleanupScope, version, data)
-				return err
-			})
-		},
+	access, err := s.cleanupCheckpointAccess(gateway, accountCleanupScope, sourceVersion)
+	if err != nil {
+		return false, err
 	}
+
 	cursor, ok := s.repository.(storage.CursorReader)
 	if !ok {
 		return false, runtime.ErrScanContract
@@ -167,11 +119,8 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 		runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second})
 	complete := err == nil && progress.Complete
 	if complete {
-		// Inventory has a separate budget and cannot replace the retained scan.
-		call, cancel := context.WithTimeout(ctx, 5*time.Second)
-		err = errors.Join(s.provider.DeleteGateway(call, id), call.Err())
-		cancel()
-		complete = err == nil
+		// Discovery has its own saved cursor. It cannot replace retained cleanup.
+		complete, err = s.recoverGatewayInventory(ctx, gateway)
 	}
 	observed := s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
 		if complete {

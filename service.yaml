@@ -305,6 +305,8 @@ overrides:
         import_path: hypershell/v1/gateways.proto
       - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
         import_path: hypershell/provisioner/v1/service_accounts.proto
+      - path: contracts/extensions/service_account_inventory.proto
+        import_path: hypershell/provisioner/v1/service_account_inventory.proto
       - path: contracts/reference/proto/hypershell/v1/role_bindings.proto
         import_path: hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto

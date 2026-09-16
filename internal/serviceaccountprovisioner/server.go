@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	"strings"
 
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
@@ -14,11 +15,15 @@ import (
 
 type Server struct {
 	pb.UnimplementedOpenShellGatewayServiceAccountProvisionerServiceServer
+	pb.UnimplementedGatewayAccountInventoryServiceServer
 	provider Provider
 	subjects map[string]bool
 }
 
 type Provider interface {
+	GatewayInventorySource(string) (string, error)
+	GatewayInventoryPage(context.Context, string, string, string, int) (runtime.CursorPage[string], error)
+	PrepareGatewayInventoryCandidate(context.Context, string, string, string) (bool, error)
 	Configured() bool
 	ProvisionServiceAccount(context.Context, serviceaccountkeycloak.ServiceAccountSpec) (*serviceaccountkeycloak.ProvisionedServiceAccount, error)
 	ReconcileServiceAccount(context.Context, serviceaccountkeycloak.ServiceAccountSpec, string, string, bool) error

@@ -12,6 +12,7 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
 )
@@ -40,6 +41,9 @@ type Spec struct {
 // Credential exists only for the synchronous create result. Do not persist it.
 type Credential struct{ ClientID, ClientUUID, Subject, Secret string }
 type Provisioner interface {
+	InventorySource(context.Context, string) (string, error)
+	InventoryPage(context.Context, string, string, string, int) (runtime.CursorPage[string], error)
+	PrepareInventoryCandidate(context.Context, string, string, string) (bool, error)
 	DeleteGateway(context.Context, string) error
 	Provision(context.Context, Spec) (Credential, error)
 	Reconcile(context.Context, Spec, string, string) error

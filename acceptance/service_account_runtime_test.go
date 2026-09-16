@@ -24,6 +24,7 @@ import (
 
 type accountRPC struct {
 	pb.UnimplementedOpenShellGatewayServiceAccountProvisionerServiceServer
+	pb.UnimplementedGatewayAccountInventoryServiceServer
 	provider *accountProvider
 }
 
@@ -90,7 +91,9 @@ func startAccountProvisioner(t testing.TB, provider *accountProvider, key *rsa.P
 	t.Setenv("STEGO_GRPC_TLS_CERT", filepath.Join(directory, "server.pem"))
 	t.Setenv("STEGO_GRPC_TLS_KEY", filepath.Join(directory, "server-key.pem"))
 	runtime, err := transport.New(verifier.Authenticate, func(registrar grpc.ServiceRegistrar) error {
-		pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, &accountRPC{provider: provider})
+		server := &accountRPC{provider: provider}
+		pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, server)
+		pb.RegisterGatewayAccountInventoryServiceServer(registrar, server)
 		return nil
 	})
 	if err != nil {

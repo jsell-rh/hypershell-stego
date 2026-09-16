@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/provisioner/v1"
 	"google.golang.org/grpc/codes"
@@ -12,7 +13,8 @@ import (
 )
 
 type rpcProvisioner struct {
-	client pb.OpenShellGatewayServiceAccountProvisionerServiceClient
+	inventory pb.GatewayAccountInventoryServiceClient
+	client    pb.OpenShellGatewayServiceAccountProvisionerServiceClient
 }
 
 func ProvisionerFromEnvironment() (Provisioner, func(), error) {
@@ -27,7 +29,7 @@ func ProvisionerFromEnvironment() (Provisioner, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	return &rpcProvisioner{client: pb.NewOpenShellGatewayServiceAccountProvisionerServiceClient(client)}, client.Close, nil
+	return &rpcProvisioner{client: pb.NewOpenShellGatewayServiceAccountProvisionerServiceClient(client), inventory: pb.NewGatewayAccountInventoryServiceClient(client)}, client.Close, nil
 }
 func (p *rpcProvisioner) Provision(ctx context.Context, spec Spec) (Credential, error) {
 	response, err := p.client.Provision(ctx, &pb.ProvisionRequest{Spec: &pb.ServiceAccountSpec{ClientId: spec.ClientID, DisplayName: spec.DisplayName, GatewayClientId: spec.GatewayClientID, GatewayId: spec.GatewayID, ServiceAccountId: spec.ServiceAccountID, CreatorUserId: spec.CreatorUserID, Role: spec.Role, ExpectedIssuer: spec.ExpectedIssuer, AccessTokenLifetimeSeconds: spec.AccessTokenLifetimeSeconds}})
@@ -68,4 +70,40 @@ func (p *rpcProvisioner) Reconcile(ctx context.Context, spec Spec, clientUUID, s
 func (p *rpcProvisioner) DeleteGateway(ctx context.Context, gatewayID string) error {
 	_, err := p.client.DeleteGateway(ctx, &pb.DeleteGatewayRequest{GatewayId: gatewayID})
 	return terminalError(err)
+}
+
+func (p *rpcProvisioner) InventorySource(ctx context.Context, id string) (string, error) {
+	value, err := p.inventory.GetSource(ctx, &pb.GatewayAccountInventorySourceRequest{GatewayId: id})
+	if err != nil {
+		return "", ErrUnavailable
+	}
+	return value.GetSourceVersion(), nil
+}
+func (p *rpcProvisioner) InventoryPage(ctx context.Context, id, version, after string, limit int) (runtime.CursorPage[string], error) {
+	result := runtime.CursorPage[string]{}
+	if limit < 1 || limit > 100 {
+		return result, runtime.ErrScanContract
+	}
+	value, err := p.inventory.ReadPage(ctx, &pb.GatewayAccountInventoryPageRequest{GatewayId: id, SourceVersion: version, After: after, Limit: int32(limit)})
+	if err != nil {
+		return result, ErrUnavailable
+	}
+	if len(value.GetCandidates()) > limit {
+		return result, runtime.ErrScanContract
+	}
+	for _, item := range value.GetCandidates() {
+		if item == nil || !validInventoryProviderID(item.GetProviderId()) {
+			return runtime.CursorPage[string]{}, runtime.ErrScanContract
+		}
+		result.Items = append(result.Items, runtime.CursorItem[string]{Cursor: item.GetCursor(), Value: item.GetProviderId()})
+	}
+	result.More = value.GetMore()
+	return result, nil
+}
+func (p *rpcProvisioner) PrepareInventoryCandidate(ctx context.Context, id, version, providerID string) (bool, error) {
+	value, err := p.inventory.PrepareCandidate(ctx, &pb.PrepareGatewayAccountCandidateRequest{GatewayId: id, SourceVersion: version, ProviderId: providerID})
+	if err != nil {
+		return false, ErrUnavailable
+	}
+	return value.GetOwned(), nil
 }

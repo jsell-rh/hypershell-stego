@@ -61,13 +61,19 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
-          go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
-            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+          go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner \
+            -run '^Test(GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
+          go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
+            -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|InventoryRecoveryAcrossReadFailureAndPageShift|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
+            | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
           from pathlib import Path
           required = {
+              "TestGatewayInventoryRegistersPastFailedClientRead",
+              "TestInventoryRPCsDenyUnverifiedCaller",
+              "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
               "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
               "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
               "TestGatewayJournalAddedAfterLastPagePreventsCompletion",

@@ -361,19 +361,12 @@ func (c *Client) ListManagedClients(ctx context.Context, gatewayID string) ([]Ma
 			if err != nil {
 				return nil, err
 			}
-			parent, account := client.Attributes[gatewayIDAttribute], client.Attributes[serviceAccountIDAttribute]
-			if client.Attributes["stego.owner."+managedAttribute] == "true" {
-				parent = client.Attributes["stego.owner."+gatewayIDAttribute]
-				account = client.Attributes["stego.owner."+serviceAccountIDAttribute]
-			}
-			if client.Attributes[managedAttribute] != "true" && client.Attributes["stego.owner."+managedAttribute] != "true" {
-				continue
-			}
-			if gatewayID != "" && parent != gatewayID {
-				continue
-			}
-			if _, err = accountBinding(client, parent, account); err != nil {
+			parent, account, owned, err := managedInventoryAccount(client, gatewayID)
+			if err != nil {
 				return nil, err
+			}
+			if !owned {
+				continue
 			}
 			result = append(result, ManagedClient{UUID: client.ID, ClientID: client.ClientID, GatewayID: parent, ServiceAccountID: account})
 		}
