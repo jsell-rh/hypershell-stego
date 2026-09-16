@@ -46,6 +46,7 @@ jobs:
         run: |
           pnpm --filter @openshift-online/hypershell-domain-probes build
           pnpm --filter @openshift-online/hypershell-gateway-management-ui build
+          pnpm --filter @openshift-online/hypershell-gateway-management-ui exec vitest run --maxWorkers=1 --no-file-parallelism
           pnpm --filter @openshift-online/hypershell-web-console build
           revision=$(cat .stego/compiler-revision)
           [[ $revision =~ ^[0-9a-f]{40}$ ]]
