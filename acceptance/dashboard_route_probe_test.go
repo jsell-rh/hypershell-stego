@@ -42,7 +42,7 @@ func TestDashboardProbeFailureCategoriesExcludeTransportDetails(t *testing.T) {
 }
 
 func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
-	for _, scenario := range []string{"valid", "foreign redirect", "wrong return path", "oversized response", "wrong readiness", "wrong status", "canceled", "unverified peer"} {
+	for _, scenario := range []string{"valid", "foreign redirect", "wrong return path", "oversized response", "wrong readiness", "unavailable", "wrong status", "canceled", "unverified peer"} {
 		t.Run(scenario, func(t *testing.T) {
 			var followed atomic.Int32
 			server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -51,6 +51,11 @@ func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
 				}
 				switch r.URL.Path {
 				case "/readyz":
+					if scenario == "unavailable" {
+						w.WriteHeader(http.StatusServiceUnavailable)
+						_, _ = w.Write([]byte("unavailable\n"))
+						return
+					}
 					if scenario == "wrong readiness" {
 						_, _ = w.Write([]byte("not ready\n"))
 					} else {
@@ -99,6 +104,9 @@ func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
 			certificate, err := checkDashboardRoute(ctx, client, server.URL)
 			if (err == nil) != (scenario == "valid") {
 				t.Fatal("unexpected route probe result", err)
+			}
+			if scenario == "unavailable" && err.Error() != "dashboard fixture HTTPS response differs: /readyz (status=503 bytes=12 read=none)" {
+				t.Fatal("readiness failure did not retain its bounded response details", err)
 			}
 			if err == nil && !bytes.Equal(certificate, server.Certificate().Raw) || err != nil && certificate != nil {
 				t.Fatal("probe returned an incorrect or unverified browser certificate")

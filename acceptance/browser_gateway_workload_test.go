@@ -188,8 +188,10 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		w.check(id)
 	}
 	identities := w.checkSQLIsolation()
-	w.checkRPC(gatewayID)
+	// Open the session before the first Gateway Pod replacement. The final
+	// browser reload must preserve this same session and workspace.
 	dashboard := w.startRenderedDashboard(gatewayID)
+	w.checkRPC(gatewayID)
 	checkConsoleRecovery := w.checkConsoleSQLRecovery()
 	if w.public != nil {
 		if w.publicEgressFailure == nil {

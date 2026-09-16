@@ -181,3 +181,28 @@ print URLs or arbitrary error text. Request deadlines, certificate verification,
 and response checks are unchanged. The focused probe checks passed in 0.052
 seconds. The next live run must establish the failure category or complete the
 probe and rendered workflow.
+
+## Open the dashboard before recovery faults
+
+[Run 35154581396](https://github.com/jsell-rh/hypershell-stego/actions/runs/35154581396)
+at `4134bda` failed after 265.75 seconds. This time the dashboard `/readyz`
+request passed certificate verification but failed its response check. The
+test did not record the status or response size. Immediate follow-up requests
+from the same test Pod returned HTTP 200 and the exact `ok` body from both
+dashboards, with successful certificate verification. This proves connectivity
+after the failure; it does not identify the failed response.
+
+Source review found that the test replaced the Gateway Pod before it opened
+the dashboard. Thus, it did not prove that an existing dashboard session and
+workspace could survive that first replacement. The generated health monitor
+also samples private-application readiness asynchronously, so Gateway RPC
+recovery does not itself prove that the dashboard is ready at that instant.
+
+The workflow now opens the dashboard before the first Gateway Pod replacement.
+The existing final browser reload must recover the same session and workspace
+after Gateway, database, worker, and namespace recovery. All existing recovery
+and access assertions remain. The HTTPS probe now retains status, bounded byte
+count, and read-error category without recording response bodies or redirects.
+Focused probe checks passed in 0.053 seconds, including exact diagnostics for
+HTTP 503. The probe still rejects that response. The complete live workflow
+must qualify the revised order.

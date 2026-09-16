@@ -97,10 +97,14 @@ func checkDashboardRoute(ctx context.Context, browser *http.Client, origin strin
 			certificate = append([]byte(nil), leaf...)
 			body, err := io.ReadAll(io.LimitReader(response.Body, 1025))
 			if err != nil || len(body) > 1024 || response.StatusCode != check.status {
-				return fmt.Errorf("dashboard fixture HTTPS response differs: %s", check.path)
+				category := "none"
+				if err != nil {
+					category = dashboardProbeFailure(err)
+				}
+				return fmt.Errorf("dashboard fixture HTTPS response differs: %s (status=%d bytes=%d read=%s)", check.path, response.StatusCode, len(body), category)
 			}
 			if check.path == "/readyz" && string(body) != "ok\n" || check.path == "/workspaces" && response.Header.Get("Location") != "/auth/login?return_to=%2Fworkspaces" {
-				return fmt.Errorf("dashboard fixture HTTPS response differs: %s", check.path)
+				return fmt.Errorf("dashboard fixture HTTPS response differs: %s (status=%d bytes=%d shape=unexpected)", check.path, response.StatusCode, len(body))
 			}
 			return nil
 		}()
