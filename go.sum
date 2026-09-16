@@ -118,8 +118,8 @@ github.com/jinzhu/now v1.0.1/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/
 github.com/jinzhu/now v1.1.5 h1:/o9tlHleP7gOFmsnYNz3RGnqzefHA47wQpKrrdTIwXQ=
 github.com/jinzhu/now v1.1.5/go.mod h1:d3SSVoowX0Lcu0IBviAWJpolVfI5UJVZZ7cO71lE/z8=
 github.com/joho/godotenv v1.3.0/go.mod h1:7hK45KPybAkOC6peb+G5yklZfMxEjkZhHbwpqxOKXbg=
-github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916213115-1547331f8c79 h1:wHPcUBu3Qs965Tx2S6dFz4HU8Zw9fhgVKSTZZA1x0Mw=
-github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916213115-1547331f8c79/go.mod h1:bYK/CJYelVUBBzEMRaKTitU2L2MsEuKFt23bRb5j+Ck=
+github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916222946-1a5fa8aed887 h1:SlAFJbW1KiFBaeOlMOh6Wu8iBrj5fUWCVJ0Zz3LuKak=
+github.com/jsell-rh/hypershell-stego/gateway-console v0.0.0-20260916222946-1a5fa8aed887/go.mod h1:bYK/CJYelVUBBzEMRaKTitU2L2MsEuKFt23bRb5j+Ck=
 github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d/go.mod h1:2PavIy+JPciBPrBUjwbNvtwB6RQlve+hkpll6QSNmOE=
 github.com/karrick/godirwalk v1.8.0/go.mod h1:H5KPZjojv4lE+QYImBI8xVtrBRgYrIVsaRPx4tDPEn4=
 github.com/karrick/godirwalk v1.10.3/go.mod h1:RoGL9dQei4vP9ilrpETWE8CLOZ1kiN0LhBygSwrAsHA=
