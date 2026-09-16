@@ -18,13 +18,13 @@ type timedIdentityFailure struct {
 	attempts chan time.Time
 }
 
-func (p *timedIdentityFailure) EnsureGateway(ctx context.Context, id, name string) (string, error) {
+func (p *timedIdentityFailure) EnsureGateway(ctx context.Context, id, name string, revision int64) (string, error) {
 	select {
 	case p.attempts <- time.Now():
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}
-	return p.failedIdentityProvider.EnsureGateway(ctx, id, name)
+	return p.failedIdentityProvider.EnsureGateway(ctx, id, name, revision)
 }
 
 func TestIdentityRetrySurvivesAPIWatchRestart(t *testing.T) { testIdentityRetryRestart(t, false) }

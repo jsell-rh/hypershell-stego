@@ -33,6 +33,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 		w.p.settings(w.telemetry, env, files)
 		target := []string{"--worker", worker.name}
 		if worker.name == "gateway-identity" {
+			env["HYPERSHELL_INSTANCE_ID"] = w.identity.instanceID
+			env["HYPERSHELL_IDENTITY_STATE_KEYS_FILE"] = "/var/run/stego/identity-state-keys.json"
+			files["identity-state-keys.json"] = w.p.read(w.identity.stateKeysFile)
 			env["HYPERSHELL_KEYCLOAK_URL"] = w.identity.options.ServerURL
 			env["HYPERSHELL_KEYCLOAK_REALM"] = w.identity.options.Realm
 			env["HYPERSHELL_KEYCLOAK_CLIENT_ID"] = w.identity.options.ClientID

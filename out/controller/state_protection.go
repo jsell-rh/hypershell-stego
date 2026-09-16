@@ -10,7 +10,9 @@ import (
 	"crypto/hkdf"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
@@ -71,6 +73,35 @@ func NewStateProtector(keys [][]byte) (*StateProtector, error) {
 		}
 	}
 	return p, nil
+}
+
+// NewStateProtectorFromJSON reads one active key and up to three older read keys.
+// Use a JSON array of canonical padded base64 strings. Each key contains 32
+// independent random bytes. Read the data through a bounded private-file reader;
+// keep that file outside the state database. The caller owns and clears data.
+func NewStateProtectorFromJSON(data []byte) (*StateProtector, error) {
+	if len(data) == 0 || len(data) > 256 {
+		return nil, ErrStateProtection
+	}
+	var values []string
+	if json.Unmarshal(data, &values) != nil || len(values) < 1 || len(values) > 4 {
+		return nil, ErrStateProtection
+	}
+	keys := make([][]byte, 0, len(values))
+	defer func() {
+		for _, key := range keys {
+			clear(key)
+		}
+	}()
+	for _, value := range values {
+		decoded, err := base64.StdEncoding.Strict().DecodeString(value)
+		if err != nil || len(decoded) != 32 || base64.StdEncoding.EncodeToString(decoded) != value {
+			clear(decoded)
+			return nil, ErrStateProtection
+		}
+		keys = append(keys, decoded)
+	}
+	return NewStateProtector(keys)
 }
 func stateAdditionalData(key StateKey, version int64) ([]byte, error) {
 	if version < 1 {

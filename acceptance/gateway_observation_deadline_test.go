@@ -60,10 +60,10 @@ func (p *deadlineObservationProvider) observe(ctx context.Context) error {
 
 type deadlineIdentityObservationProvider struct{ *deadlineObservationProvider }
 
-func (p *deadlineIdentityObservationProvider) EnsureGateway(context.Context, string, string) (string, error) {
+func (p *deadlineIdentityObservationProvider) EnsureGateway(context.Context, string, string, int64) (string, error) {
 	return "{}", nil
 }
-func (p *deadlineIdentityObservationProvider) DeleteGateway(ctx context.Context, _ string) error {
+func (p *deadlineIdentityObservationProvider) DeleteGateway(ctx context.Context, _ string, _ int64) error {
 	return p.observe(ctx)
 }
 func (p *deadlineIdentityObservationProvider) ReconcileGatewayUser(context.Context, string, string, string, string) error {

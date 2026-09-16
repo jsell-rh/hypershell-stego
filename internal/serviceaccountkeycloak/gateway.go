@@ -4,16 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"fmt"
-	"net/http"
-	"net/url"
-	"reflect"
 
 	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 	"github.com/segmentio/ksuid"
 )
 
 const gatewayAttribute = "hypershell.gateway"
+const managedGatewayAttribute = "stego.owner.hypershell.gateway"
+const managedGatewayIDAttribute = "stego.owner.hypershell.gateway-id"
 
 // GatewayClientID uses the immutable Gateway ID. A rename does not change tokens.
 func GatewayClientID(id string) (string, error) {
@@ -24,209 +22,100 @@ func GatewayClientID(id string) (string, error) {
 	return "hs-gateway-" + id, nil
 }
 
-// EnsureGateway creates the trusted audience binding before it enables login.
-// The controller owns this client. It never adopts an unmarked client.
-func (c *Client) EnsureGateway(ctx context.Context, id, name string) (string, error) {
+// Gateway policy supplies ownership, role names, claims, and login callbacks.
+// STEGO owns discovery, recovery records, provider changes, and cleanup.
+func gatewayIdentity(id string) (provider.NativeClientIdentity, error) {
 	clientID, err := GatewayClientID(id)
 	if err != nil {
-		return "", err
+		return provider.NativeClientIdentity{}, err
 	}
-	if name == "" || len(name) > 255 {
-		return "", errors.New("invalid Gateway name")
-	}
-	desired := kcClient{ClientID: clientID, Name: name, Protocol: "openid-connect", PublicClient: true, StandardFlowEnabled: true,
-		RedirectURIs: []string{"http://127.0.0.1:*", "http://localhost:*"}, WebOrigins: []string{},
-		DefaultClientScopes: []string{}, OptionalClientScopes: []string{},
-		Attributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: id, "pkce.code.challenge.method": "S256", deviceGrantAttribute: "true", cibaGrantAttribute: "false", accessTokenLifespanAttribute: "300", "backchannel.logout.session.required": "true", "backchannel.logout.revoke.offline.tokens": "true", "realm_client": "false"},
-	}
-	uuid, err := c.clientUUID(ctx, clientID)
-	if err != nil {
-		return "", err
-	}
-	if uuid == "" {
-		body, _ := json.Marshal(desired)
-		_, code, err := c.admin(ctx, http.MethodPost, fmt.Sprintf("/admin/realms/%s/clients", c.realm), body)
-		if err != nil {
-			return "", err
-		}
-		if code != http.StatusCreated && code != http.StatusConflict {
-			return "", statusError("create Gateway client", code)
-		}
-		uuid, err = c.clientUUID(ctx, clientID)
-		if err != nil {
-			return "", err
-		}
-		if uuid == "" {
-			return "", ErrNotFound
-		}
-	}
-	live, err := c.requireGateway(ctx, uuid, id)
-	if err != nil {
-		return "", err
-	}
-	mappersOK, err := c.protocolMappersConverged(ctx, uuid, clientID)
-	if err != nil {
-		return "", err
-	}
-	rolesOK, err := c.gatewayRoles(ctx, uuid, false)
-	if err != nil {
-		return "", err
-	}
-	scopesOK, err := c.gatewayScopes(ctx, uuid, false)
-	if err != nil {
-		return "", err
-	}
-	if !gatewayConfigurationEqual(live, &desired) || !mappersOK || !rolesOK || !scopesOK {
-		// A failed configuration remains disabled. A later pass repairs it.
-		if err := c.setEnabled(ctx, uuid, false); err != nil {
-			return "", err
-		}
-		body, _ := json.Marshal(desired)
-		_, code, err := c.admin(ctx, http.MethodPut, fmt.Sprintf("/admin/realms/%s/clients/%s", c.realm, url.PathEscape(uuid)), body)
-		if err != nil {
-			return "", err
-		}
-		if code != http.StatusNoContent {
-			return "", statusError("configure Gateway client", code)
-		}
-		if _, err := c.gatewayRoles(ctx, uuid, true); err != nil {
-			return "", err
-		}
-		if _, err := c.gatewayScopes(ctx, uuid, true); err != nil {
-			return "", err
-		}
-		if !mappersOK {
-			if err := c.replaceProtocolMappers(ctx, uuid, clientID); err != nil {
-				return "", err
-			}
-		}
-		live, err = c.requireGateway(ctx, uuid, id)
-		if err != nil {
-			return "", err
-		}
-		mappersOK, err = c.protocolMappersConverged(ctx, uuid, clientID)
-		if err != nil {
-			return "", err
-		}
-		rolesOK, err = c.gatewayRoles(ctx, uuid, false)
-		if err != nil {
-			return "", err
-		}
-		scopesOK, err = c.gatewayScopes(ctx, uuid, false)
-		if err != nil {
-			return "", err
-		}
-		if !gatewayConfigurationEqual(live, &desired) {
-			return "", errors.New("Gateway client configuration did not converge")
-		}
-		if !mappersOK {
-			return "", errors.New("Gateway claim mappers did not converge")
-		}
-		if !rolesOK || !scopesOK {
-			return "", errors.New("Gateway role scopes did not converge")
-		}
-	}
-	if !live.Enabled {
-		if err := c.setEnabled(ctx, uuid, true); err != nil {
-			return "", err
-		}
-		live, err = c.requireGateway(ctx, uuid, id)
-		if err != nil {
-			return "", err
-		}
-		if !live.Enabled || !gatewayConfigurationEqual(live, &desired) {
-			return "", errors.New("Gateway client enablement did not converge")
-		}
-	}
-	body, _ := json.Marshal(map[string]any{"issuer": c.issuer(), "client_id": clientID, "audience": clientID, "jwks_ttl": 3600, "roles_claim": "hypershell.roles", "admin_role": RoleAdmin, "user_role": RoleUser})
-	return string(body), nil
+	return provider.NativeClientIdentity{ClientID: clientID,
+		Ownership:        map[string]string{managedGatewayAttribute: "true", managedGatewayIDAttribute: id},
+		LegacyAttributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: id},
+		LegacyRenames:    map[string]string{gatewayAttribute: managedGatewayAttribute, gatewayIDAttribute: managedGatewayIDAttribute},
+	}, nil
 }
-
-func gatewayConfigurationEqual(live *provider.ClientRepresentation, desired *kcClient) bool {
-	return live.ClientID == desired.ClientID && live.Name == desired.Name && live.Protocol == desired.Protocol && live.PublicClient && live.StandardFlowEnabled &&
-		!live.ServiceAccountsEnabled && !live.ImplicitFlowEnabled && !live.DirectAccessGrantsEnabled && !live.AuthorizationServicesEnabled && !live.FullScopeAllowed &&
-		equalStrings(live.RedirectURIs, desired.RedirectURIs) && len(live.WebOrigins) == 0 && len(live.DefaultClientScopes) == 0 && len(live.OptionalClientScopes) == 0 && reflect.DeepEqual(live.Attributes, desired.Attributes)
-}
-func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider.ClientRepresentation, error) {
-	clientID, err := GatewayClientID(id)
+func (c *Client) gatewayLifecycle(id string, revision int64, cleanup bool) (*provider.NativeClientLifecycle, error) {
+	if c.gatewayJournal == nil || revision < 1 {
+		return nil, errors.New("Gateway identity requires a protected journal and resource revision")
+	}
+	identity, err := gatewayIdentity(id)
 	if err != nil {
 		return nil, err
 	}
+	journal, err := c.gatewayJournal(id, revision, cleanup)
+	if err != nil {
+		return nil, err
+	}
+	return provider.NewNativeClientLifecycle(c.keycloak, journal, identity)
+}
+func (c *Client) EnsureGateway(ctx context.Context, id, name string, revision int64) (string, error) {
+	if name == "" {
+		return "", errors.New("Gateway name is required")
+	}
+	lifecycle, err := c.gatewayLifecycle(id, revision, false)
+	if err != nil {
+		return "", err
+	}
+	binding, err := lifecycle.Reconcile(ctx, func(binding provider.ClientBinding) (provider.NativeAccessPolicy, error) {
+		return provider.NativeAccessPolicy{
+			Client: provider.NativeClientPolicy{DisplayName: name, AccessTokenLifetimeSeconds: 300, LoopbackRedirectURIs: []string{"http://127.0.0.1:*/callback", "http://localhost:*/callback"}, EnableDeviceAuthorization: true},
+			Roles:  []string{RoleAdmin, RoleUser},
+			Scopes: provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: binding, Names: []string{RoleAdmin, RoleUser}}}},
+			Claims: provider.TokenClaimsPolicy{AudienceClients: []provider.ClientBinding{binding}, ClientRoles: []provider.ClientRoleClaim{{Client: binding, Claim: "hypershell.roles"}}},
+		}, nil
+	})
+	if err != nil {
+		return "", err
+	}
+	body, _ := json.Marshal(map[string]any{"issuer": c.issuer(), "client_id": binding.ClientID, "audience": binding.ClientID, "jwks_ttl": 3600, "roles_claim": "hypershell.roles", "admin_role": RoleAdmin, "user_role": RoleUser})
+	return string(body), nil
+}
+func (c *Client) DeleteGateway(ctx context.Context, id string, revision int64) error {
+	lifecycle, err := c.gatewayLifecycle(id, revision, true)
+	if err != nil {
+		return err
+	}
+	return lifecycle.Close(ctx)
+}
+
+// Reads accept a complete legacy binding until its controller migrates it.
+// Mixed ownership keys are not a usable grant or service-account audience.
+func gatewayBinding(live *provider.ClientRepresentation, id string) (provider.ClientBinding, error) {
+	expected, err := gatewayIdentity(id)
+	if err != nil {
+		return provider.ClientBinding{}, err
+	}
+	if live == nil || live.ClientID != expected.ClientID {
+		return provider.ClientBinding{}, provider.ErrOwnership
+	}
+	attributes := expected.LegacyAttributes
+	_, newKind := live.Attributes[managedGatewayAttribute]
+	_, newID := live.Attributes[managedGatewayIDAttribute]
+	if newKind || newID {
+		if _, ok := live.Attributes[gatewayAttribute]; ok {
+			return provider.ClientBinding{}, provider.ErrOwnership
+		}
+		if _, ok := live.Attributes[gatewayIDAttribute]; ok {
+			return provider.ClientBinding{}, provider.ErrOwnership
+		}
+		attributes = expected.Ownership
+	}
+	binding := provider.ClientBinding{ID: live.ID, ClientID: expected.ClientID, Attributes: attributes}
+	if err := binding.CheckOwnership(*live); err != nil {
+		return provider.ClientBinding{}, err
+	}
+	return binding, nil
+}
+func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider.ClientRepresentation, error) {
 	live, err := c.getClient(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
-	if live.ClientID != clientID || live.Attributes[gatewayAttribute] != "true" || live.Attributes[gatewayIDAttribute] != id {
-		return nil, errors.New("Gateway client ownership does not match")
+	if _, err = gatewayBinding(live, id); err != nil {
+		return nil, err
 	}
 	return live, nil
-}
-func (c *Client) gatewayRoles(ctx context.Context, uuid string, create bool) (bool, error) {
-	path := fmt.Sprintf("/admin/realms/%s/clients/%s/roles", c.realm, url.PathEscape(uuid))
-	body, code, err := c.admin(ctx, http.MethodGet, path, nil)
-	if err != nil {
-		return false, err
-	}
-	if code != http.StatusOK {
-		return false, statusError("list Gateway roles", code)
-	}
-	var roles []kcRole
-	if json.Unmarshal(body, &roles) != nil {
-		return false, errors.New("invalid Gateway roles")
-	}
-	present := map[string]bool{}
-	for _, role := range roles {
-		present[role.Name] = true
-	}
-	complete := true
-	for _, name := range []string{RoleUser, RoleAdmin} {
-		if present[name] {
-			continue
-		}
-		complete = false
-		if !create {
-			continue
-		}
-		payload, _ := json.Marshal(map[string]string{"name": name})
-		_, code, err := c.admin(ctx, http.MethodPost, path, payload)
-		if err != nil {
-			return false, err
-		}
-		if code != http.StatusCreated && code != http.StatusConflict {
-			return false, statusError("create Gateway role", code)
-		}
-	}
-	return complete, nil
-}
-
-// DeleteGateway requires both the immutable client name and the trusted binding.
-// The caller must first obtain an explicit deletion state from the API.
-func (c *Client) DeleteGateway(ctx context.Context, id string) error {
-	clientID, err := GatewayClientID(id)
-	if err != nil {
-		return err
-	}
-	uuid, err := c.clientUUID(ctx, clientID)
-	if err != nil {
-		return err
-	}
-	if uuid == "" {
-		return nil
-	}
-	if _, err := c.requireGateway(ctx, uuid, id); err != nil {
-		return err
-	}
-	if err := c.deleteClient(ctx, uuid); err != nil {
-		return err
-	}
-	remaining, err := c.clientUUID(ctx, clientID)
-	if err != nil {
-		return err
-	}
-	if remaining != "" {
-		return errors.New("Gateway identity cleanup is pending")
-	}
-	return nil
 }
 
 // GatewayIDs supplies a bounded inventory for recovery after an offline deletion.
@@ -243,10 +132,13 @@ func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 				return nil, errors.New("Gateway client inventory repeats an ID")
 			}
 			seen[client.ID] = true
-			if client.Attributes[gatewayAttribute] != "true" {
+			id := client.Attributes[managedGatewayIDAttribute]
+			if id == "" {
+				id = client.Attributes[gatewayIDAttribute]
+			}
+			if _, err := gatewayBinding(&client, id); err != nil {
 				continue
 			}
-			id := client.Attributes[gatewayIDAttribute]
 			expected, err := GatewayClientID(id)
 			if err == nil && client.ClientID == expected {
 				ids = append(ids, id)
@@ -257,35 +149,4 @@ func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 		}
 	}
 	return nil, errors.New("Keycloak client inventory exceeds its limit")
-}
-
-func (c *Client) gatewayScopes(ctx context.Context, uuid string, repair bool) (bool, error) {
-	body, code, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/roles", c.realm, url.PathEscape(uuid)), nil)
-	if err != nil {
-		return false, err
-	}
-	if code != http.StatusOK {
-		return false, statusError("read Gateway roles", code)
-	}
-	var available []kcRole
-	if json.Unmarshal(body, &available) != nil {
-		return false, errors.New("invalid Gateway roles")
-	}
-	roles := []kcRole{}
-	for _, role := range available {
-		if role.Name == RoleUser || role.Name == RoleAdmin {
-			roles = append(roles, role)
-		}
-	}
-	if len(roles) != 2 {
-		return false, nil
-	}
-	ok, err := c.scopeMappingsConverged(ctx, uuid, uuid, roles)
-	if err != nil || ok || !repair {
-		return ok, err
-	}
-	if err := c.replaceScopeMappings(ctx, uuid, uuid, roles); err != nil {
-		return false, err
-	}
-	return c.scopeMappingsConverged(ctx, uuid, uuid, roles)
 }

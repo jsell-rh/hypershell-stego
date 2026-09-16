@@ -53,3 +53,9 @@ after API restart, saves the next protected version through TLS gRPC, and reject
 both a stale state snapshot and a stale Gateway observation. Local compilation
 passed. Runtime results for this extension remain pending. The production
 Keycloak controller still needs the common provider lifecycle and key setup.
+
+The production identity worker now uses this journal through STEGO's native
+client lifecycle. It requires an external private key file and a stable instance
+ID. The application test checks encrypted records for legacy migration, new
+creation, and retained deletion. The older statements above describe the state
+before this adoption. The updated production workflow still requires a CI result.

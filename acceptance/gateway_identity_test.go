@@ -1,9 +1,11 @@
 package acceptance
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	"net"
 	"net/http"
 	"net/url"
@@ -45,7 +47,7 @@ func startIdentityControllerWithExit(t *testing.T, binary string, k *keycloakFix
 	}
 	command := exec.Command(binary)
 	command.Env = append(os.Environ(), "STEGO_CONTROLLER_MONITOR_ADDR="+monitor, "HYPERSHELL_API_GRPC_ADDR="+address, "HYPERSHELL_API_CA_FILE="+ca, "HYPERSHELL_API_TOKEN_FILE="+tokenFile,
-		"HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile)
+		"HYPERSHELL_INSTANCE_ID="+k.instanceID, "HYPERSHELL_IDENTITY_STATE_KEYS_FILE="+k.stateKeysFile, "HYPERSHELL_KEYCLOAK_URL="+k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM="+k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID="+k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE="+k.options.SecretFile, "HYPERSHELL_KEYCLOAK_CA_FILE="+k.options.CAFile)
 	if raceEnabled {
 		command.Env = append(command.Env, "GORACE=halt_on_error=1 exitcode=66")
 	}
@@ -167,6 +169,44 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	if code != 201 || json.Unmarshal(body, &created) != nil || created.ID == "" {
 		t.Fatalf("create seed Gateway: %d", code)
 	}
+	// The seeded resource starts with the legacy ownership format. Its provider
+	// ID must survive migration through the same production worker and SQL journal.
+	legacyID := "legacy-" + created.ID
+	legacyClientID, _ := keycloak.GatewayClientID(created.ID)
+	k.adminRequest(t, "POST", "/clients", map[string]any{"id": legacyID, "clientId": legacyClientID, "name": "legacy", "protocol": "openid-connect", "clientAuthenticatorType": "client-secret", "publicClient": true, "enabled": true, "standardFlowEnabled": true, "webOrigins": []string{}, "attributes": map[string]string{"hypershell.gateway": "true", "hypershell.gateway-id": created.ID}})
+	checkJournal := func(id, providerID string, closed bool) {
+		t.Helper()
+		var data []byte
+		var version int64
+		if err := f.db.QueryRow("SELECT data,version FROM stego_resource_state WHERE entity='Gateway' AND resource_id=$1 AND scope='identity-provider'", id).Scan(&data, &version); err != nil {
+			t.Fatal(err)
+		}
+		keys, err := os.ReadFile(k.stateKeysFile)
+		if err != nil {
+			t.Fatal(err)
+		}
+		protector, err := runtime.NewStateProtectorFromJSON(keys)
+		clear(keys)
+		if err != nil {
+			t.Fatal(err)
+		}
+		plain, err := protector.Open(runtime.StateKey{Instance: k.instanceID, Entity: "Gateway", ResourceID: id, Scope: "identity-provider"}, version, data)
+		if err != nil {
+			t.Fatal(err)
+		}
+		var record struct {
+			Version   int
+			Phase     string
+			Closed    bool
+			Binding   struct{ ID, ClientID string }
+			Migration string
+		}
+		raw := plain.Reveal()
+		defer clear(raw)
+		if json.Unmarshal(raw, &record) != nil || record.Version != 1 || record.Phase != "bound" || record.Closed != closed || record.Binding.ID != providerID || record.Migration != "" || bytes.Contains(data, raw) {
+			t.Fatal("production provider journal does not match its resource")
+		}
+	}
 	stopController, logs := startIdentityController(t, controllerBinary, k, grpcAddress, tlsIdentity.config.CAFile, controllerToken)
 	waitOIDC := func(id string) string {
 		t.Helper()
@@ -193,6 +233,7 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		}
 	}
 	firstOIDC := waitOIDC(created.ID)
+	checkJournal(created.ID, legacyID, false)
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
@@ -208,9 +249,11 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 	}
 	secondID := second.GetGateway().GetMetadata().GetId()
 	waitOIDC(secondID)
+	lateClient := k.gatewayClient(t, secondID)
+	checkJournal(secondID, lateClient["id"].(string), false)
 	live := k.gatewayClient(t, created.ID)
 	attributes, ok := live["attributes"].(map[string]any)
-	if !ok || attributes["hypershell.gateway-id"] != created.ID || attributes["hypershell.gateway"] != "true" || attributes["pkce.code.challenge.method"] != "S256" || attributes["oauth2.device.authorization.grant.enabled"] != "true" {
+	if !ok || attributes["stego.owner.hypershell.gateway-id"] != created.ID || attributes["stego.owner.hypershell.gateway"] != "true" || attributes["pkce.code.challenge.method"] != "S256" || attributes["oauth2.device.authorization.grant.enabled"] != "true" {
 		t.Fatal("controller did not create a trusted browser and device binding")
 	}
 	for _, field := range []string{"directAccessGrantsEnabled", "implicitFlowEnabled", "serviceAccountsEnabled", "fullScopeAllowed"} {
@@ -330,14 +373,13 @@ func TestGatewayIdentityControllerWorkflow(t *testing.T) {
 		}
 	}
 	completedVersion := awaitCleanup()
+	checkJournal(secondID, lateClient["id"].(string), true)
 	stopController()
-	provider, err := keycloak.NewClient(k.options)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer provider.Close()
-	if _, err := provider.EnsureGateway(context.Background(), secondID, "late-effect"); err != nil {
-		t.Fatal(err)
+	// Reproduce an already-dispatched create with its saved provider ID.
+	// The public reconciliation path must not reopen a closed journal.
+	lateClient["enabled"] = false
+	if response := k.adminRequest(t, "POST", "/clients", lateClient); response.StatusCode != 201 {
+		t.Fatal("late provider effect fixture failed", response.StatusCode)
 	}
 	if k.gatewayClient(t, secondID) == nil {
 		t.Fatal("late identity effect was not created")

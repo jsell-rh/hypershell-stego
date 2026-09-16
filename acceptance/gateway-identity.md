@@ -3,12 +3,14 @@
 `TestGatewayIdentityControllerWorkflow` runs the generated API, the identity
 controller, the service-account provisioner, PostgreSQL, and Keycloak as separate
 processes. It creates a Gateway through REST before the controller starts. It
-then creates another Gateway through gRPC while the watch is open.
+then creates another Gateway through gRPC while the watch is open. The first
+Gateway starts with a legacy Keycloak client. Its stable provider ID must survive
+ownership migration through the production worker and protected SQL journal.
 
 The gRPC creation occurs after the initial scan completes. It must reach the
 controller through the live watch before the next scan.
 
-The controller creates the Keycloak client and its trusted Gateway binding.
+STEGO creates or migrates the Keycloak client and its trusted Gateway binding.
 It creates the Gateway roles, token claim mappers, and role scopes before it
 enables login. It publishes the resulting OIDC configuration through the generated
 API client. A service-account request then uses this binding to obtain a real
@@ -28,8 +30,8 @@ owners and platform administrators have no implicit access. A missing row or a
 denied request never permits provider deletion. Unit tests check these cases,
 provider failures, API conflicts, and unchanged identity publication.
 
-Run the workflow with the same PostgreSQL and Keycloak settings as the full
-acceptance gate:
+Run the workflow in CI with the same PostgreSQL and Keycloak settings as the full
+acceptance gate. Do not run it on the developer workstation:
 
 ```sh
 STEGO_REQUIRE_POSTGRES=1 STEGO_REQUIRE_KEYCLOAK=1 \
@@ -57,6 +59,8 @@ Run `go run ./out/deploy/workers/gateway-identity`. Supply these settings:
 | `HYPERSHELL_KEYCLOAK_CLIENT_ID` | Provider administrator client |
 | `HYPERSHELL_KEYCLOAK_SECRET_FILE` | Private administrator credential file |
 | `HYPERSHELL_KEYCLOAK_CA_FILE` | Trusted provider certificate authority |
+| `HYPERSHELL_INSTANCE_ID` | Stable instance ID, from 1 to 128 letters, digits, dots, underscores, or hyphens |
+| `HYPERSHELL_IDENTITY_STATE_KEYS_FILE` | Private JSON file with the active state key and retained read keys |
 
 The API must allow the controller subject through its control-plane setting.
 The API must also give that subject a `Gateway` / `configure.identity` grant
@@ -124,3 +128,35 @@ client absence through STEGO and checks for late effects after completion.
 The [Run callback abort check](worker-run-abort.md) now runs within this workflow.
 It requires safe process failure and identity repair after a callback panic or
 `runtime.Goexit`. The generated monitor owns failure reporting and shutdown.
+
+## Protected provider lifecycle
+
+The worker uses STEGO's native-client lifecycle and encrypted journal. Hypershell
+supplies Gateway ownership values, OpenShell role names, token claims, and the
+observed resource revision. The common provider owns discovery, creation,
+disablement, migration, policy repair, enablement, and retained cleanup. The Gateway controller no longer has a handwritten role, scope, mapper, or
+enablement sequence.
+Service-account lifecycle code still has separate handwritten mechanisms.
+
+The key file contains a JSON array of one through four canonical padded base64
+strings. Each string encodes an independent random 32-byte key. The first key is
+active. Keep old read keys until all saved records use the active key. Keep this
+file outside the API database. Keep the instance ID unchanged across restarts.
+A lost key or changed instance ID prevents recovery; do not reset the journal to
+bypass that failure. Follow the store's separate backup and restore procedure.
+
+The generated worker has one replica and uses the `Recreate` deployment strategy.
+Do not run another identity writer for the same provider clients. Stop old workers
+before migration. A database version check cannot make Keycloak writes atomic.
+The controller now passes its observed Gateway revision to each lifecycle call;
+stale, denied, or mismatched journal responses stop provider work.
+
+Native browser login uses the exact loopback `/callback` path. This follows the
+[pinned OpenShell implementation](https://github.com/opendatahub-io/openshell/blob/681c9b2d8b9887f230cee4871bdbdbc9a362dfc8/crates/openshell-cli/src/oidc_auth.rs).
+Device authorization remains enabled. The API's OIDC response shape is unchanged.
+
+The workflow checks encrypted records for migrated, new, and deleted Gateways.
+A late-create fixture uses the saved provider ID directly; ordinary reconciliation
+cannot reopen a closed record. Key files and instance IDs remain stable across
+worker restarts. The focused adapter and revision checks passed with the race
+detector. The updated full application workflow still requires a CI result.

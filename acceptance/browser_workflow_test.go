@@ -58,7 +58,7 @@ func browserProvider(t *testing.T) *keycloakFixture {
 	if certificate == "" {
 		certificate = ca
 	}
-	return &keycloakFixture{certificate: certificate, options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: ca}, http: client}
+	return withIdentityState(t, &keycloakFixture{certificate: certificate, options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: ca}, http: client})
 }
 func consoleProgram(t *testing.T) string {
 	t.Helper()

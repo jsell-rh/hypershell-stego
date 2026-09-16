@@ -24,11 +24,11 @@ type checkpointProvider struct {
 	pauseAfter int
 }
 
-func (*checkpointProvider) EnsureGateway(context.Context, string, string) (string, error) {
+func (*checkpointProvider) EnsureGateway(context.Context, string, string, int64) (string, error) {
 	return "{}", nil
 }
-func (*checkpointProvider) DeleteGateway(context.Context, string) error  { return nil }
-func (*checkpointProvider) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
+func (*checkpointProvider) DeleteGateway(context.Context, string, int64) error { return nil }
+func (*checkpointProvider) GatewayIDs(context.Context) ([]string, error)       { return nil, nil }
 func (p *checkpointProvider) ReconcileGatewayUser(ctx context.Context, _, _, subject, role string) error {
 	p.mu.Lock()
 	pause := p.pauseAfter > 0 && len(p.roles) >= p.pauseAfter

@@ -42,14 +42,20 @@ func (f *apiFixture) UpdateGateway(context.Context, *pb.UpdateGatewayRequest, ..
 
 type providerFixture struct {
 	creates, deletes int
+	revision         int64
 	err              error
 }
 
-func (f *providerFixture) EnsureGateway(context.Context, string, string) (string, error) {
+func (f *providerFixture) EnsureGateway(_ context.Context, _ string, _ string, revision int64) (string, error) {
 	f.creates++
+	f.revision = revision
 	return "identity", f.err
 }
-func (f *providerFixture) DeleteGateway(context.Context, string) error  { f.deletes++; return f.err }
+func (f *providerFixture) DeleteGateway(_ context.Context, _ string, revision int64) error {
+	f.deletes++
+	f.revision = revision
+	return f.err
+}
 func (f *providerFixture) GatewayIDs(context.Context) ([]string, error) { return nil, nil }
 
 func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
@@ -73,7 +79,7 @@ func TestDeletionRequiresExplicitPrivilegedState(t *testing.T) {
 			controller, _ := New(api, &stateFixture{state: test.state, err: test.err}, provider)
 			err := controller.reconcile(context.Background(), "gateway")
 			if test.deleted {
-				if err != nil || provider.deletes != 1 {
+				if err != nil || provider.deletes != 1 || provider.revision != test.state.ResourceVersion {
 					t.Fatalf("explicit deletion: %v", err)
 				}
 			} else if err == nil || provider.deletes != 0 {
@@ -111,6 +117,9 @@ func TestIdentityPublicationRequiresProviderSuccess(t *testing.T) {
 	controller, _ := New(api, state, provider)
 	if err := controller.reconcile(context.Background(), "gateway"); err == nil || state.state.Gateway.Oidc != nil || state.identityObservations != 1 {
 		t.Fatal("failed provider operation published identity", err)
+	}
+	if provider.revision != 1 {
+		t.Fatal("provider did not receive the observed resource revision")
 	}
 	if condition := state.state.Conditions["identity"].Conditions["ClientReady"]; condition.Status != "Unknown" || condition.Reason != "IdentityProviderUnavailable" {
 		t.Fatal("failure condition was lost", condition)

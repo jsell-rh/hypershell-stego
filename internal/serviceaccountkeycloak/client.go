@@ -12,6 +12,7 @@ import (
 	"time"
 
 	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 	"regexp"
 )
@@ -71,19 +72,23 @@ type ManagedClient struct {
 }
 
 type Client struct {
-	serverURL  string
-	realm      string
-	clientID   string
-	secretFile string
-	httpClient *transport.Client
-	keycloak   *provider.Client
+	serverURL      string
+	realm          string
+	clientID       string
+	secretFile     string
+	httpClient     *transport.Client
+	keycloak       *provider.Client
+	gatewayJournal func(string, int64, bool) (*runtime.StateJournal, error)
 
 	tokenGate   chan struct{}
 	token       string
 	tokenExpiry time.Time
 }
 
-type Options struct{ ServerURL, Realm, ClientID, SecretFile, CAFile string }
+type Options struct {
+	ServerURL, Realm, ClientID, SecretFile, CAFile string
+	GatewayJournal                                 func(string, int64, bool) (*runtime.StateJournal, error)
+}
 
 func (c *Client) String() string             { return "KeycloakClient{credentials redacted}" }
 func (c *Client) GoString() string           { return c.String() }
@@ -108,7 +113,7 @@ func NewClient(options Options) (*Client, error) {
 		client.Close()
 		return nil, err
 	}
-	return &Client{keycloak: common, serverURL: strings.TrimRight(options.ServerURL, "/"), realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile, httpClient: client, tokenGate: make(chan struct{}, 1)}, nil
+	return &Client{gatewayJournal: options.GatewayJournal, keycloak: common, serverURL: strings.TrimRight(options.ServerURL, "/"), realm: options.Realm, clientID: options.ClientID, secretFile: options.SecretFile, httpClient: client, tokenGate: make(chan struct{}, 1)}, nil
 }
 func (c *Client) Close() {
 	if c != nil {
@@ -329,7 +334,11 @@ func mappingsConverged(mappings roleMappingSet, gatewayUUID string, roles []kcRo
 }
 
 func (c *Client) userRoleMappingsConverged(ctx context.Context, spec ServiceAccountSpec, clientUUID, subject, gatewayUUID string) (bool, error) {
-	err := c.keycloak.InspectServiceAccountRoles(ctx, serviceAccountBinding(spec, clientUUID), subject, serviceAccountRoles(spec, gatewayUUID))
+	policy, err := c.serviceAccountRoles(ctx, spec, gatewayUUID)
+	if err != nil {
+		return false, err
+	}
+	err = c.keycloak.InspectServiceAccountRoles(ctx, serviceAccountBinding(spec, clientUUID), subject, policy)
 	if errors.Is(err, provider.ErrRolePolicy) {
 		return false, nil
 	}
@@ -595,8 +604,11 @@ func (c *Client) resolveGatewayRoles(ctx context.Context, gatewayClientID, gatew
 	if err != nil {
 		return "", nil, err
 	}
-	if gateway.ClientID != gatewayClientID || gateway.Attributes["hypershell.gateway"] != "true" || gateway.Attributes[gatewayIDAttribute] != gatewayID || gatewayID == "" {
+	if gateway.ClientID != gatewayClientID || gatewayID == "" {
 		return "", nil, errors.New("keycloak Gateway client binding does not match")
+	}
+	if _, err := gatewayBinding(gateway, gatewayID); err != nil {
+		return "", nil, err
 	}
 	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/roles", c.realm, url.PathEscape(gatewayUUID)), nil)
 	if err != nil {
@@ -763,7 +775,11 @@ func (c *Client) serviceAccountUserID(ctx context.Context, clientUUID string) (s
 }
 
 func (c *Client) replaceRoleMappings(ctx context.Context, spec ServiceAccountSpec, clientUUID, subject, gatewayUUID string, roles []kcRole) error {
-	binding, policy := serviceAccountBinding(spec, clientUUID), serviceAccountRoles(spec, gatewayUUID)
+	binding := serviceAccountBinding(spec, clientUUID)
+	policy, err := c.serviceAccountRoles(ctx, spec, gatewayUUID)
+	if err != nil {
+		return err
+	}
 	if err := c.keycloak.ReconcileServiceAccountRoles(ctx, binding, subject, policy); err != nil {
 		return err
 	}
@@ -891,13 +907,18 @@ func serviceAccountBinding(spec ServiceAccountSpec, id string) provider.ClientBi
 		managedAttribute: "true", gatewayIDAttribute: spec.GatewayID, serviceAccountIDAttribute: spec.ServiceAccountID, creatorUserIDAttribute: spec.CreatorUserID,
 	}}
 }
-func serviceAccountRoles(spec ServiceAccountSpec, gatewayUUID string) provider.RolePolicy {
-	return provider.RolePolicy{Clients: []provider.ClientRoleGrant{{
-		Client: provider.ClientBinding{ID: gatewayUUID, ClientID: spec.GatewayClientID,
-			Attributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: spec.GatewayID}},
-		Names: desiredRoleNames(spec.Role),
-	}}}
+func (c *Client) serviceAccountRoles(ctx context.Context, spec ServiceAccountSpec, gatewayUUID string) (provider.RolePolicy, error) {
+	live, err := c.requireGateway(ctx, gatewayUUID, spec.GatewayID)
+	if err != nil {
+		return provider.RolePolicy{}, err
+	}
+	binding, err := gatewayBinding(live, spec.GatewayID)
+	if err != nil || binding.ClientID != spec.GatewayClientID {
+		return provider.RolePolicy{}, provider.ErrOwnership
+	}
+	return provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: binding, Names: desiredRoleNames(spec.Role)}}}, nil
 }
+
 func serviceAccountTokenPolicy(spec ServiceAccountSpec, subject string) provider.ServiceAccountTokenPolicy {
 	lifetime := spec.AccessTokenLifetimeSeconds
 	if lifetime == 0 {

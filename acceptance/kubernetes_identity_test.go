@@ -40,8 +40,8 @@ func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(a
 		}
 		return data
 	}
-	files := map[string][]byte{"api-ca.pem": read(apiIdentity.config.CAFile), "api-token": []byte(bearer), "keycloak-ca.pem": read(k.options.CAFile), "keycloak-secret": read(k.options.SecretFile)}
-	environment := map[string]string{"HYPERSHELL_API_GRPC_ADDR": apiHost + ":9090", "HYPERSHELL_API_CA_FILE": "/var/run/stego/api-ca.pem", "HYPERSHELL_API_TOKEN_FILE": "/var/run/stego/api-token", "HYPERSHELL_KEYCLOAK_URL": k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM": k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID": k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE": "/var/run/stego/keycloak-secret", "HYPERSHELL_KEYCLOAK_CA_FILE": "/var/run/stego/keycloak-ca.pem"}
+	files := map[string][]byte{"api-ca.pem": read(apiIdentity.config.CAFile), "api-token": []byte(bearer), "keycloak-ca.pem": read(k.options.CAFile), "keycloak-secret": read(k.options.SecretFile), "identity-state-keys.json": read(k.stateKeysFile)}
+	environment := map[string]string{"HYPERSHELL_INSTANCE_ID": k.instanceID, "HYPERSHELL_IDENTITY_STATE_KEYS_FILE": "/var/run/stego/identity-state-keys.json", "HYPERSHELL_API_GRPC_ADDR": apiHost + ":9090", "HYPERSHELL_API_CA_FILE": "/var/run/stego/api-ca.pem", "HYPERSHELL_API_TOKEN_FILE": "/var/run/stego/api-token", "HYPERSHELL_KEYCLOAK_URL": k.options.ServerURL, "HYPERSHELL_KEYCLOAK_REALM": k.options.Realm, "HYPERSHELL_KEYCLOAK_CLIENT_ID": k.options.ClientID, "HYPERSHELL_KEYCLOAK_SECRET_FILE": "/var/run/stego/keycloak-secret", "HYPERSHELL_KEYCLOAK_CA_FILE": "/var/run/stego/keycloak-ca.pem"}
 	for _, entry := range exports {
 		key, value, _ := strings.Cut(entry, "=")
 		switch key {
@@ -264,5 +264,5 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	if err := os.WriteFile(secret, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &keycloakFixture{options: keycloak.Options{ServerURL: "https://" + host + ":8443", Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(dir, "server.pem")}
+	return withIdentityState(t, &keycloakFixture{options: keycloak.Options{ServerURL: "https://" + host + ":8443", Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(dir, "server.pem")})
 }

@@ -24,7 +24,7 @@ type pausedIdentityProvider struct {
 	calls chan identityProviderCall
 }
 
-func (p *pausedIdentityProvider) EnsureGateway(ctx context.Context, _ string, name string) (string, error) {
+func (p *pausedIdentityProvider) EnsureGateway(ctx context.Context, _ string, name string, _ int64) (string, error) {
 	call := identityProviderCall{ctx: ctx, name: name, result: make(chan string, 1)}
 	select {
 	case p.calls <- call:

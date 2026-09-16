@@ -262,3 +262,20 @@ workflow, and later protected-journal API checks have separate pending results.
 Browser test failures now retain only the fixed provisioning operation's status,
 duration, and transport side from generated OTEL spans. The test does not print
 arbitrary attributes, error text, the DOM, or one-time credentials.
+
+## Full cluster workflow after the account fix
+
+The complete jshell Gateway browser workflow passed in
+[35038887851](https://github.com/jsell-rh/hypershell-stego/actions/runs/35038887851)
+on application commit `5144e666eb7a9cf61f2ba1a6070cd8815568ba93`.
+The saved cleanup record confirms that test resources and namespace allocations
+are absent; the restricted CI namespace remains. This proves the earlier account
+fix in the full cluster workflow. It does not qualify the later native lifecycle
+and key-file changes.
+
+The common native lifecycle passed the real-Keycloak suite in
+[STEGO job 104617779509](https://github.com/jsell-rh/stego/actions/runs/35040036218/job/104617779509).
+The suite took 56.84 seconds. It includes new creation, legacy migration, a lost
+journal acknowledgement, recovery with a new journal, complete access policy,
+and retained cleanup. Hypershell now calls this lifecycle from its production
+identity worker. The new application workflow still requires a CI result.

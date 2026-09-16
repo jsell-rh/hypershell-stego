@@ -247,7 +247,9 @@ client. A real API test exposed, then verified the fix for, a foreign-audience
 access defect. Failed role reduction now queues terminal revocation, including
 when OIDC settings are invalid or the provider binding is lost. The tests check
 restart and restored owner access. The identity controller now creates these
-bindings. Existing-client migration and production recovery latency remain open.
+bindings. The current implementation moves native-client lifecycle and protected
+recovery state into STEGO. Application validation of this migration remains open;
+see the [identity workflow](acceptance/gateway-identity.md).
 
 The workflow also exposed a data race during GORM model initialization. The
 compiler now prepares model metadata before it starts concurrent application

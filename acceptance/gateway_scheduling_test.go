@@ -81,10 +81,10 @@ func (p *blockedCleanupProvider) deleteID(ctx context.Context, id string) error 
 
 type blockedIdentityCleanupProvider struct{ *blockedCleanupProvider }
 
-func (p *blockedIdentityCleanupProvider) EnsureGateway(context.Context, string, string) (string, error) {
+func (p *blockedIdentityCleanupProvider) EnsureGateway(context.Context, string, string, int64) (string, error) {
 	return "{}", nil
 }
-func (p *blockedIdentityCleanupProvider) DeleteGateway(ctx context.Context, id string) error {
+func (p *blockedIdentityCleanupProvider) DeleteGateway(ctx context.Context, id string, _ int64) error {
 	return p.deleteID(ctx, id)
 }
 func (p *blockedIdentityCleanupProvider) ReconcileGatewayUser(context.Context, string, string, string, string) error {

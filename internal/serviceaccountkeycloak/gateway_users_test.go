@@ -18,6 +18,7 @@ import (
 
 func TestGatewayUserMappingUsesSubjectAndOnlyTargetClient(t *testing.T) {
 	for _, tc := range []struct {
+		managed                  bool
 		name, role, user, issuer string
 		initial, inherited       []string
 		failDelete, changeOwner  bool
@@ -28,6 +29,8 @@ func TestGatewayUserMappingUsesSubjectAndOnlyTargetClient(t *testing.T) {
 		{name: "person owner", role: "gateway:owner", wantRoles: []string{RoleAdmin, RoleUser}, wantWrites: "POST"},
 		{name: "automation owner", role: "gateway:owner", user: `{"id":"provider-subject","enabled":true,"serviceAccountClientId":"registered-automation"}`, wantRoles: []string{RoleAdmin, RoleUser}, wantWrites: "POST"},
 		{name: "automation viewer", role: "gateway:viewer", user: `{"id":"provider-subject","enabled":true,"serviceAccountClientId":"registered-automation"}`, wantRoles: []string{RoleUser}, wantWrites: "POST"},
+		{name: "migrated owner", managed: true, role: "gateway:owner", wantRoles: []string{RoleAdmin, RoleUser}, wantWrites: "POST"},
+		{name: "migrated automation viewer", managed: true, role: "gateway:viewer", user: `{"id":"provider-subject","enabled":true,"serviceAccountClientId":"automation"}`, wantRoles: []string{RoleUser}, wantWrites: "POST"},
 		{name: "owner to viewer", role: "gateway:viewer", initial: []string{RoleAdmin, RoleUser}, wantRoles: []string{RoleUser}, wantWrites: "DELETE"},
 		{name: "viewer unchanged", role: "gateway:viewer", initial: []string{RoleUser}, wantRoles: []string{RoleUser}},
 		{name: "remove all Gateway roles", initial: []string{RoleAdmin, RoleUser}, wantWrites: "DELETE"},
@@ -76,7 +79,11 @@ func TestGatewayUserMappingUsesSubjectAndOnlyTargetClient(t *testing.T) {
 					if tc.changeOwner && bindingReads > 1 {
 						owner = "other-gateway"
 					}
-					json.NewEncoder(w).Encode(kcClient{ID: "client-uuid", ClientID: clientID, Attributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: owner}})
+					attributes := map[string]string{gatewayAttribute: "true", gatewayIDAttribute: owner}
+					if tc.managed {
+						attributes = map[string]string{managedGatewayAttribute: "true", managedGatewayIDAttribute: owner}
+					}
+					json.NewEncoder(w).Encode(kcClient{ID: "client-uuid", ClientID: clientID, Attributes: attributes})
 				case r.Method == "GET" && strings.HasPrefix(r.URL.Path, "/admin/realms/test/clients/client-uuid/roles/"):
 					name := strings.TrimPrefix(r.URL.Path, "/admin/realms/test/clients/client-uuid/roles/")
 					if name != RoleAdmin && name != RoleUser {

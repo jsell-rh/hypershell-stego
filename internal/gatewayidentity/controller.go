@@ -29,8 +29,8 @@ const observationCommitTimeout = 2 * time.Second
 // Provider methods must support concurrent calls for different Gateway IDs.
 // STEGO permits one action per ID within a Run call.
 type Provider interface {
-	EnsureGateway(context.Context, string, string) (string, error)
-	DeleteGateway(context.Context, string) error
+	EnsureGateway(context.Context, string, string, int64) (string, error)
+	DeleteGateway(context.Context, string, int64) error
 	GatewayIDs(context.Context) ([]string, error)
 	ReconcileGatewayUser(context.Context, string, string, string, string) error
 }
@@ -123,7 +123,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			return errors.New("Gateway state has no identity cleanup observation")
 		}
 		return runtime.RunObservation(ctx, func(operation context.Context) error {
-			return c.provider.DeleteGateway(operation, id)
+			return c.provider.DeleteGateway(operation, id, state.ResourceVersion)
 		}, func(commit context.Context, observation error) error {
 			observed := observation == nil
 			if complete == observed {
@@ -148,7 +148,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 	var oidc string
 	err = runtime.RunObservation(ctx, func(operation context.Context) error {
 		var err error
-		oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName())
+		oidc, err = c.provider.EnsureGateway(operation, id, gateway.GetName(), state.ResourceVersion)
 		if err == nil && (oidc == "" || len(oidc) > 8192 || !utf8.ValidString(oidc) || strings.ContainsRune(oidc, 0)) {
 			return errors.New("identity provider returned no configuration")
 		}

@@ -39,14 +39,14 @@ func TestGatewayClientCannotAdoptForeignIdentity(t *testing.T) {
 		if err := os.WriteFile(secret, []byte("test-secret"), 0600); err != nil {
 			t.Fatal(err)
 		}
-		client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca})
+		client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, GatewayJournal: testGatewayJournals(t)})
 		if err != nil {
 			t.Fatal(err)
 		}
-		if _, err := client.EnsureGateway(context.Background(), id, "gateway"); err == nil {
+		if _, err := client.EnsureGateway(context.Background(), id, "gateway", 1); err == nil {
 			t.Fatal("adopted an untrusted Gateway client")
 		}
-		if err := client.DeleteGateway(context.Background(), id); err == nil {
+		if err := client.DeleteGateway(context.Background(), id, 1); err == nil {
 			t.Fatal("deleted an untrusted Gateway client")
 		}
 		if err := client.ReconcileGatewayUser(context.Background(), id, server.URL+"/realms/test", "subject", "gateway:owner"); err == nil {
@@ -77,6 +77,10 @@ func TestGatewayDeletionRequiresConfirmedAbsence(t *testing.T) {
 			}
 			json.NewEncoder(w).Encode(clients)
 		case r.Method == "GET" && r.URL.Path == "/admin/realms/test/clients/uuid":
+			if !present.Load() {
+				w.WriteHeader(404)
+				return
+			}
 			json.NewEncoder(w).Encode(kcClient{ID: "uuid", ClientID: clientID, Attributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: id}})
 		case r.Method == "DELETE" && r.URL.Path == "/admin/realms/test/clients/uuid":
 			deletes.Add(1)
@@ -93,16 +97,16 @@ func TestGatewayDeletionRequiresConfirmedAbsence(t *testing.T) {
 	if err := os.WriteFile(secret, []byte("test-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca})
+	client, err := NewClient(Options{ServerURL: server.URL, Realm: "test", ClientID: "admin", SecretFile: secret, CAFile: ca, GatewayJournal: testGatewayJournals(t)})
 	if err != nil {
 		t.Fatal(err)
 	}
 	defer client.Close()
-	if err := client.DeleteGateway(context.Background(), id); err == nil || deletes.Load() != 1 {
+	if err := client.DeleteGateway(context.Background(), id, 1); err == nil || deletes.Load() != 1 {
 		t.Fatal("delete response was treated as absence", err)
 	}
 	present.Store(false)
-	if err := client.DeleteGateway(context.Background(), id); err != nil || deletes.Load() != 1 {
+	if err := client.DeleteGateway(context.Background(), id, 1); err != nil || deletes.Load() != 1 {
 		t.Fatal("confirmed absence failed", err)
 	}
 }

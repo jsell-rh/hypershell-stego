@@ -24,7 +24,7 @@ type failedIdentityProvider struct {
 	ready atomic.Bool
 }
 
-func (p *failedIdentityProvider) EnsureGateway(context.Context, string, string) (string, error) {
+func (p *failedIdentityProvider) EnsureGateway(context.Context, string, string, int64) (string, error) {
 	if p.ready.Load() {
 		return "{}", nil
 	}

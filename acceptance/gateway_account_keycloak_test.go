@@ -64,7 +64,7 @@ func TestGatewayDeletionWithProviderFailureAndOrphans(t *testing.T) {
 	}
 	credentials = append(credentials, provision(gateway.ID, "gateway-audience"))
 	foreignID := ksuid.New().String()
-	if _, err := provider.EnsureGateway(context.Background(), foreignID, "other-gateway"); err != nil {
+	if _, err := provider.EnsureGateway(context.Background(), foreignID, "other-gateway", 1); err != nil {
 		t.Fatal(err)
 	}
 	foreignAudience, err := keycloak.GatewayClientID(foreignID)

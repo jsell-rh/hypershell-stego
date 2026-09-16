@@ -59,7 +59,7 @@ type retryProvider struct {
 	calls chan time.Time
 }
 
-func (p *retryProvider) EnsureGateway(context.Context, string, string) (string, error) {
+func (p *retryProvider) EnsureGateway(context.Context, string, string, int64) (string, error) {
 	p.calls <- time.Now()
 	return "", errors.New("provider unavailable")
 }

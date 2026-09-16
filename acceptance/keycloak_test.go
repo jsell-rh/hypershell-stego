@@ -31,9 +31,11 @@ import (
 const keycloakImage = "quay.io/keycloak/keycloak@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54"
 
 type keycloakFixture struct {
-	certificate string
-	options     keycloak.Options
-	http        *web.Client
+	stateKeysFile string
+	instanceID    string
+	certificate   string
+	options       keycloak.Options
+	http          *web.Client
 }
 
 func startKeycloak(t *testing.T) *keycloakFixture { return startKeycloakConfigured(t, nil) }
@@ -118,7 +120,7 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 	if err := os.WriteFile(secretFile, []byte("acceptance-only-admin-secret"), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return &keycloakFixture{options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secretFile, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(certDir, "server.pem")}
+	return withIdentityState(t, &keycloakFixture{options: keycloak.Options{ServerURL: base, Realm: "workflow", ClientID: "provisioner", SecretFile: secretFile, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(certDir, "server.pem")})
 }
 
 // keycloakTestRealm supplies the same realm to Docker and Kubernetes fixtures.

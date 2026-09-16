@@ -2,7 +2,10 @@
 
 package keycloak
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // ClientRepresentation contains public configuration, never a client secret.
 type ClientRepresentation struct {
@@ -63,7 +66,29 @@ func (b ClientBinding) matches(c ClientRepresentation) bool {
 			return false
 		}
 	}
+	// Reserved ownership keys must all be declared by the caller. A partial
+	// migration needs its saved plan; ordinary operations cannot adopt it.
+	for key := range c.Attributes {
+		if strings.HasPrefix(key, "stego.owner.") {
+			if _, known := b.Attributes[key]; !known {
+				return false
+			}
+		}
+	}
 	return true
+}
+
+// CheckOwnership checks a full provider read against trusted application values.
+// All reserved ownership keys must be in the expected binding. This is a local
+// check, not proof that a later remote request will see the same provider state.
+func (b ClientBinding) CheckOwnership(value ClientRepresentation) error {
+	if err := b.validate(); err != nil {
+		return err
+	}
+	if !b.matches(value) {
+		return ErrOwnership
+	}
+	return nil
 }
 
 type Page struct{ First, Size int }
