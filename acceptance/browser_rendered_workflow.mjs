@@ -29,6 +29,18 @@ async function gatewayDetail(id,label) {
 async function newSession(){
  const value=await request('/session',{capabilities:{alwaysMatch:{browserName:'chrome','goog:loggingPrefs':{performance:'ALL',browser:'ALL'},'goog:chromeOptions':{binary:process.env.STEGO_TEST_CHROMIUM_BINARY??'/usr/bin/chromium',args:['--headless=new','--disable-gpu','--no-sandbox','--disable-dev-shm-usage','--disable-background-networking','--no-first-run','--window-size=1280,960',`--user-data-dir=/tmp/stego-chrome-${Date.now()}`,`--ignore-certificate-errors-spki-list=${input.pins.join(',')}`]}}}});
  session=value.sessionId;await command('/timeouts',{implicit:0,pageLoad:20000,script:5000});
+ if(phase==='dashboard-create'){
+  await command('/goog/cdp/execute',{cmd:'Page.addScriptToEvaluateOnNewDocument',params:{source:`
+   if(location.origin===${JSON.stringify(input.origin)}){
+    window.stegoEditorPolicyViolations=[];
+    document.addEventListener('securitypolicyviolation',event=>{
+     const allowed=new Set(['default-src','script-src','script-src-elem','script-src-attr','style-src','style-src-elem','style-src-attr','worker-src','child-src','connect-src','img-src','font-src','frame-src','base-uri','form-action']);
+     const values=window.stegoEditorPolicyViolations;
+     if(allowed.has(event.effectiveDirective) && values.length<16 && !values.includes(event.effectiveDirective))values.push(event.effectiveDirective);
+    });
+   }
+  `}});
+ }
 }
 async function login(username){
  await command('/url',{url:input.origin+'/auth/login?return_to=%2Fgateways%2Fnew'});
@@ -38,11 +50,12 @@ async function login(username){
 async function dashboardEditor(workspace,heading){
  await command('/url',{url:input.origin+'/global-policy'});
  await heading('Global policy');
- await script(`window.stegoEditorPolicyViolations=[];document.addEventListener('securitypolicyviolation',event=>window.stegoEditorPolicyViolations.push(event.effectiveDirective));`);
+ assert.equal(await script('return Array.isArray(window.stegoEditorPolicyViolations)'),true,'early content-policy capture is missing');
  await click('[data-testid="set-global-policy"]');
  await element('.monaco-editor textarea.inputarea');
  await until(()=>script(`const node=document.querySelector('.monaco-editor .view-lines');if(!node)return false;const box=node.getBoundingClientRect();return box.width>200 && box.height>100 && node.innerText.trim().length>0;`),'visible policy editor');
- await click('.monaco-editor textarea.inputarea');
+ await click('.monaco-editor .view-lines');
+ await until(()=>script(`return document.activeElement?.matches('.monaco-editor textarea.inputarea')===true;`),'editor keyboard focus');
  await command('/actions',{actions:[{type:'key',id:'editor',actions:[
   {type:'keyDown',value:'\uE009'},{type:'keyDown',value:'a'},
   {type:'keyUp',value:'a'},{type:'keyUp',value:'\uE009'},
@@ -167,13 +180,13 @@ try {
     const url=new URL(event.params.request.url);
     if(url.origin===input.origin)requests.set(event.params.requestId,url.pathname);
    }
-   if(event.method==='Network.loadingFailed' && requests.has(event.params.requestId) && responses.length<128){
+   if(event.method==='Network.loadingFailed' && requests.has(event.params.requestId) && responses.length<126){
     const category=/^net::ERR_[A-Z_]+$/.test(event.params.errorText)?event.params.errorText:'unclassified';
     responses.push({path:requests.get(event.params.requestId),error:category,canceled:event.params.canceled===true});
    }
    if(event.method==='Network.responseReceived'){
     const response=event.params.response;const url=new URL(response.url);
-    if(url.origin===input.origin && responses.length<128)responses.push({path:url.pathname,status:response.status,type:response.mimeType});
+    if(url.origin===input.origin && responses.length<126)responses.push({path:url.pathname,status:response.status,type:response.mimeType});
    }
   }
   const authorizationError=await script(`
@@ -186,9 +199,9 @@ try {
   if(phase.startsWith('dashboard-')){
    const violations=await script(`
     const allowed=new Set(['default-src','script-src','script-src-elem','script-src-attr','style-src','style-src-elem','style-src-attr','worker-src','child-src','connect-src','img-src','font-src','frame-src','base-uri','form-action']);
-    return Array.isArray(window.stegoEditorPolicyViolations)?[...new Set(window.stegoEditorPolicyViolations.filter(value=>allowed.has(value)))].slice(0,16):[];
-   `).catch(()=>[]);
-   if(violations.length && responses.length<128)responses.push({path:'/global-policy',content_policy_violations:violations});
+    return Array.isArray(window.stegoEditorPolicyViolations)?[...new Set(window.stegoEditorPolicyViolations.filter(value=>allowed.has(value)))].slice(0,16):null;
+   `).catch(()=>null);
+   if(responses.length<128)responses.push({path:'/global-policy',content_policy_violations:violations});
   }
   await writeFile(outputPath+'.network.json',JSON.stringify(responses));
   await writeFile(outputPath+'.txt',String(await script('return document.body.innerText').catch(()=>'')));

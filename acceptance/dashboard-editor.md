@@ -64,3 +64,33 @@ The build checks pin candidate STEGO revision
 and HTTP serving. Compiler CI must pass before runtime adoption. Both build
 checks use this revision. Application compiler pins and deployed assets remain
 at their previous checked versions until the new source and runtime pass.
+
+## Visible editor and keyboard interaction
+
+[Live run 35161493736](https://github.com/jsell-rh/hypershell-stego/actions/runs/35161493736)
+reached visible policy text in Monaco. The saved screenshot shows the editor,
+and the visible-content check passed. The next click on the input textarea
+failed with `element click intercepted`. Monaco's captured stylesheet places
+that textarea behind the visible editor with `z-index: -10`. The test now clicks
+the visible text area and waits for keyboard focus before it sends input.
+
+The failure record reached its 128-entry network limit. That left no room for
+content-policy diagnostics. Network events now use at most 126 entries; two
+entries remain for authorization and policy results. A null policy result means
+capture was unavailable. An empty array means capture ran and had no recorded
+directives. Neither condition proves behavior outside the captured document.
+
+The dashboard test installs its bounded directive listener before page scripts
+run. It uses the existing ChromeDriver session and records at most 16 distinct
+allowed directive names. It records no blocked URLs or browser message text.
+The [ChromeDriver command mapping](https://www.selenium.dev/selenium/docs/api/py/_modules/selenium/webdriver/chromium/remote_connection.html)
+and [protocol definition](https://github.com/ChromeDevTools/devtools-protocol/blob/master/json/browser_protocol.json)
+define the command used for this early listener. The test does not change the
+application's content policy or use JavaScript to force editor focus.
+
+The failed run also passed verified HTTPS, login, workspace creation, API Pod
+replacement, and separate database access checks. It stopped before keyboard
+input, invalid JSON rejection, later recovery and revocation, full telemetry
+correlation, and deletion. Independent cleanup passed at
+`2026-09-16T23:32:38.175068+00:00`. A new live run must check the revised
+interaction and retain the early policy result.
