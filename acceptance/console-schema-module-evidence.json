@@ -1,0 +1,17 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35127006689",
+  "source": "554adff159dbe4e45514c2e4cb196be3c146c5c4",
+  "compiler": "f6bf115fb83c289fe5a8b5abb600c2770d12d40b",
+  "source_files_match": 85,
+  "repeated_generation_matches": true,
+  "generated_source_sha256": "54cd891ea8f8c18e1a875a0153121415bc21413463b4ef8ec6d4fbbf8347a631",
+  "schema_sha256": "74d3a660dc8b55a8ae1660661c3a116251c75bf2d6332b2a48e8f1b200f6a826",
+  "deployment": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6709e946c23c5e286c30b73219ab51b81005e99b3a33f2fa72062d9b5197525c",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "Generation, exact source, dependency scan, entry point builds, and deployment checks passed. This does not test the new schema against PostgreSQL or prove a deployed dashboard. The compiler schema behavior check is pending. A later compiler change preserves cancellation."
+}

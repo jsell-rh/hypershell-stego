@@ -68,3 +68,24 @@ The expanded API test checks separate records, denied callers, two API restarts,
 registration closure, and completion. It supplies the cleanup observation itself;
 it does not claim that a console database was removed. The live console workflow
 must prove that the worker sends this observation only after actual removal.
+
+## Generated schema setup
+
+The console module at `554adff` now contains the generated `out/browser/schema`
+package. STEGO owns its DDL, bounded transaction, retry checks, and runtime grant
+checks. Schema setup requires a separate database owner connection. The browser
+login has data access only. The generated session store checks the schema before
+startup and uses qualified table names.
+
+The module build and repeat generation passed in run `35127006689`. All 85 source
+files matched the committed module. See [the module record](console-schema-module-evidence.json).
+This check does not run the schema against PostgreSQL. That compiler check is
+pending. The module uses compiler `f6bf115`; a later compiler change also preserves
+cancellation and deadlines. Adopt the qualified final compiler before deployment.
+
+The root worker still imports module `e0ed90b1b46d`. Its database setup is not yet
+connected to the new schema package. The next integration must use
+`postgres-client.WithDatabaseOwner` with `ManagedSchema: true`, then call the
+module's generated schema setup. A separate allocation profile must retain the
+console Secret and its digest marker. Its namespace can be removed only after
+console SQL completion and aggregate Gateway cleanup are confirmed.
