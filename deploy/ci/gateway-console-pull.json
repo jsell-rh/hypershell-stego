@@ -1,0 +1,178 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-gateway-console-pull-token",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE"
+              ],
+              "resources": [
+                "serviceaccounts/token"
+              ],
+              "scope": "Namespaced"
+            }
+          ]
+        },
+        "matchConditions": [
+          {
+            "name": "selected-account",
+            "expression": "request.namespace == 'stego-ci-access' && request.name == 'gateway-console-pull'"
+          }
+        ],
+        "validations": [
+          {
+            "expression": "has(object.spec.expirationSeconds) && object.spec.expirationSeconds >= 600 && object.spec.expirationSeconds <= 1800",
+            "message": "Image pull tokens require an explicit lifetime from 600 through 1800 seconds"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-gateway-console-pull-token",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-gateway-console-pull-token",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "gateway-console-pull",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        },
+        "namespace": "stego-ci-access"
+      },
+      "automountServiceAccountToken": false
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "gateway-console-pull",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        },
+        "namespace": "stego-service-ci"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "image.openshift.io"
+          ],
+          "resources": [
+            "imagestreams/layers"
+          ],
+          "resourceNames": [
+            "hypershell-gateway-console"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "gateway-console-pull",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        },
+        "namespace": "stego-service-ci"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "gateway-console-pull"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "gateway-console-pull",
+          "namespace": "stego-ci-access"
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "gateway-console-pull-issuer",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        },
+        "namespace": "stego-ci-access"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "serviceaccounts/token"
+          ],
+          "resourceNames": [
+            "gateway-console-pull"
+          ],
+          "verbs": [
+            "create"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "RoleBinding",
+      "metadata": {
+        "name": "gateway-console-pull-issuer",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-browser-ci"
+        },
+        "namespace": "stego-ci-access"
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "Role",
+        "name": "gateway-console-pull-issuer"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "service-check",
+          "namespace": "stego-service-ci"
+        }
+      ]
+    }
+  ]
+}

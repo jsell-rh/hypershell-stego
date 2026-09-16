@@ -23,3 +23,29 @@ The next live test needs a separate registry identity with permission to pull
 the selected test image. It must not copy the CI or controller API token into
 Gateway namespaces. The previous browser test stopped before the dashboard
 was ready. The full rendered workflow remains unproven.
+
+## Test registry identity
+
+`deploy/ci/gateway-console-pull.json` declares a separate ServiceAccount in
+`stego-ci-access`. Its added role grants `get` on only the
+`hypershell-gateway-console` image stream layers in `stego-service-ci`. The
+`service-check` test driver can request a token for that account. Admission
+requires an explicit token lifetime from 600 through 1,800 seconds.
+
+The operator installed the seven declared resources while no browser Job was
+present and held the shared test Lease during installation. Ten live access
+reviews passed. The pull account could read the selected image layers. It
+could not read another test image, push layers, read application Secrets,
+create Pods or role bindings, or request another token. The test driver could
+request the pull token but could not request a token for the CI account.
+A real request for a 1,801-second token was denied by the new admission policy.
+The installation record contains no token.
+
+OpenShift also supplies default authenticated-user permissions and image pull
+rights inside the account's own namespace. This account is outside the test
+image namespace. The added role does not grant general image access there.
+See [Red Hat's image pull permission description](https://docs.redhat.com/en/documentation/openshift_container_platform/3.0/html/developer_guide/dev-guide-image-pull-secrets).
+
+These checks prove the declared permission boundary and lifetime rejection.
+They do not yet prove that a Gateway Pod can pull its image. CI must use the
+new account and the generated Secret operation in the next workflow run.

@@ -1,0 +1,168 @@
+{
+  "resources": [
+    {
+      "kind": "ValidatingAdmissionPolicy",
+      "name": "stego-gateway-console-pull-token",
+      "namespace": "",
+      "uid": "08a25207-3fdd-410a-99cb-c048dea835e8"
+    },
+    {
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "name": "stego-gateway-console-pull-token",
+      "namespace": "",
+      "uid": "a8316287-1bca-4b5e-96e6-39345f21de3e"
+    },
+    {
+      "kind": "ServiceAccount",
+      "name": "gateway-console-pull",
+      "namespace": "stego-ci-access",
+      "uid": "1e0ad04c-94df-4982-9d26-63cec87f5a26"
+    },
+    {
+      "kind": "Role",
+      "name": "gateway-console-pull",
+      "namespace": "stego-service-ci",
+      "uid": "82969257-0952-42e8-8512-7db23d6d1d59"
+    },
+    {
+      "kind": "RoleBinding",
+      "name": "gateway-console-pull",
+      "namespace": "stego-service-ci",
+      "uid": "4e4c0afa-8ddd-4597-9eb8-c00178fa2274"
+    },
+    {
+      "kind": "Role",
+      "name": "gateway-console-pull-issuer",
+      "namespace": "stego-ci-access",
+      "uid": "7f2cffec-29d5-472e-aa53-0727a39f5b33"
+    },
+    {
+      "kind": "RoleBinding",
+      "name": "gateway-console-pull-issuer",
+      "namespace": "stego-ci-access",
+      "uid": "0faeeeb3-6074-4ac2-aaa7-da2ffb84499c"
+    }
+  ],
+  "checks": [
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "get",
+        "group": "image.openshift.io",
+        "resource": "imagestreams",
+        "namespace": "stego-service-ci",
+        "name": "hypershell-gateway-console",
+        "subresource": "layers"
+      },
+      "allowed": true
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "get",
+        "group": "image.openshift.io",
+        "resource": "imagestreams",
+        "namespace": "stego-service-ci",
+        "name": "hypershell",
+        "subresource": "layers"
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "update",
+        "group": "image.openshift.io",
+        "resource": "imagestreams",
+        "namespace": "stego-service-ci",
+        "name": "hypershell-gateway-console",
+        "subresource": "layers"
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "get",
+        "group": "",
+        "resource": "secrets",
+        "namespace": "stego-service-ci",
+        "name": "hypershell-files"
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "create",
+        "group": "",
+        "resource": "pods",
+        "namespace": "stego-service-ci",
+        "name": ""
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "create",
+        "group": "rbac.authorization.k8s.io",
+        "resource": "rolebindings",
+        "namespace": "stego-service-ci",
+        "name": ""
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "get",
+        "group": "",
+        "resource": "secrets",
+        "namespace": "stego-ci-access",
+        "name": "any"
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-ci-access:gateway-console-pull",
+      "attributes": {
+        "verb": "create",
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "stego-ci-access",
+        "name": "gateway-console-pull",
+        "subresource": "token"
+      },
+      "allowed": false
+    },
+    {
+      "subject": "system:serviceaccount:stego-service-ci:service-check",
+      "attributes": {
+        "verb": "create",
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "stego-ci-access",
+        "name": "gateway-console-pull",
+        "subresource": "token"
+      },
+      "allowed": true
+    },
+    {
+      "subject": "system:serviceaccount:stego-service-ci:service-check",
+      "attributes": {
+        "verb": "create",
+        "group": "",
+        "resource": "serviceaccounts",
+        "namespace": "stego-ci-access",
+        "name": "hypershell-ci",
+        "subresource": "token"
+      },
+      "allowed": false
+    }
+  ],
+  "complete": true,
+  "stego-ci-access-uid": "501032b5-3459-4073-b5a1-9f4d443e9666",
+  "stego-service-ci-uid": "0666fe42-3306-4de3-acd8-d0acebcf1db6",
+  "excessive_lifetime_denied": true
+}
