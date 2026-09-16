@@ -21,7 +21,7 @@ small source patch removes the earlier router flags, whose behavior is included
 in version 7. CI checks the existing authentication and Sandbox list tests.
 The original upstream commit and the modified build tree are recorded separately.
 These files change the build inputs; they do not copy the dashboard backend
-into Hypershell or replace its implementation. Qualification remains pending.
+into Hypershell or replace its implementation. The source build has now passed. Deployment qualification remains pending.
 
 The production asset configuration keeps the upstream entry point and API.
 It emits assets under `/assets/`, splits JavaScript chunks, and emits imported
@@ -54,3 +54,11 @@ pin is in `compiler-revision`; it does not change the main application's pin.
 The next CI run must capture the actual assets twice, generate a fresh browser
 backend, check repeated generation, and build that backend. The small
 `generation-service.yaml` is a compiler check, not a deployment declaration.
+
+The [complete source run](../../acceptance/dashboard-assets-evidence.json) passed
+all five checks. It captured 35 files (4,702,076 expanded bytes) in a 1,169,044-byte
+ZIP. Repeated capture was identical. A fresh generated browser backend built,
+and repeated generation had no drift. The Go check found no vulnerabilities;
+the production JavaScript audit also found none. All eight selected router tests
+passed. This is source and generation evidence. The per-Gateway deployment and
+rendered editor and terminal tests remain open.

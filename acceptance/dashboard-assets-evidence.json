@@ -1,0 +1,41 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35109813205",
+  "application_source": "3d843aa433117cd828777eed3af38a0836150138",
+  "upstream_source": "07f1b13ebd9e1826afe943b831b092be8bf92498",
+  "build_tree": "ab26c7cb551d016f0bef6c7f99e96098e5606319",
+  "compiler": "3e961af8f4d5be4bb38b40f4411b2e32b28e46a3",
+  "outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "router_test_passes": 8,
+  "runtime_npm_vulnerabilities": {
+    "info": 0,
+    "low": 0,
+    "moderate": 0,
+    "high": 0,
+    "critical": 0,
+    "total": 0
+  },
+  "asset_files": 35,
+  "expanded_asset_bytes": 4702076,
+  "largest_asset_bytes": 783909,
+  "bundle_bytes": 1169044,
+  "repeated_bundle_equal": true,
+  "repeated_generation_state_equal": true,
+  "scope": "The upstream build, dependency checks, selected router tests, captured assets, and fresh generated browser build passed. This does not prove dashboard deployment or rendered behavior.",
+  "sha256": {
+    "outcomes.json": "0584a5856e27ba8eb8f168cb83b284eb5a7da322e35fe54aa0e71e328335b80a",
+    "go-vulnerabilities.log": "e3c47feabb6539b35ab204e3a2071443f1eb54809a835b43a0550d430c6e8c99",
+    "npm-audit.json": "c22395adf2874772accf5270e690351f8e72fa4902a0ab6ba30770a56d5e1a84",
+    "router-tests.log": "c08f53616113b632ce137b66318460e4213909b9f63aa1f4c25b5f9e7598c93a",
+    "ui-build.log": "9250397eb4778a09818f9bf7415f3b75ea279766d2eddbc1376df411a63afae1",
+    "build.zip": "a6e452c14f8ece59993c3db72535ca9981c4e0338a02cd5adfadeb7f7064104d",
+    "generated-source.tar": "770aa9a17da89e2bba7acd8252f101dfd89de00f3244ceeb43f63e776f7af5ab",
+    "generated-browser": "5d87dc677847dec1eff2861511830a69b56b7a70ee82acecae2fd1a9f6ae8a78",
+    "generation.log": "7cf982e181b16f18ac9562cb93f5dddca1d6a458b89cddae7c7f123ea9f3007a"
+  }
+}
