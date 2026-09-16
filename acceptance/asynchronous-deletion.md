@@ -120,3 +120,27 @@ in 0.02 seconds; direct cleanup by saved ID succeeded. The Hypershell default
 branch must remain unchanged until recovery covers retained journal IDs and
 this case passes in the application workflow. Earlier passing complete workflows
 do not cover the omission case.
+
+## CNPG workflow with the count watcher correction
+
+Run `35100459235` passed the complete CNPG Gateway workflow on source
+`bceea63d495bccc14f09dbc3208ed86fcf11b27c`, compiler
+`e01e624f26c58e9ff33e7dc1422b540cb70381ee`. The browser workflow passed in
+464.05 seconds. The run includes the correction that stops namespace count
+watches for deleted Gateways that remain visible during cleanup.
+
+The evidence reports a CNPG primary Pod replacement, two ready instances, and
+unchanged SQL object IDs, data, credentials, and keys. Generated source hashes
+match before generation, after generation, and after the tests. The deployment
+exit code is zero. Evidence SHA-256 is
+`9c95a45ee650212e8db0f9b28c8073348bddab8aa4afab10afb160f3a831ae50`.
+
+The wrapper verified removal of application resources, allocations, CNPG runtime,
+volumes, and private fixtures. An independent operator read found no application
+Job, Pod, or PVC; no CNPG Cluster, Job, Pod, or PVC; no CNPG child resources or
+private credentials; and no operator Job or Pod. The live-test Lease is empty.
+Fixed installation resources remain. Local evidence is in
+`/home/jsell/.local/state/stego/runs/gateway-cleanup-20260916/cnpg-latest-result`.
+
+This run predates retained journal enumeration and cannot qualify the journal
+omission or concurrent registration fixes. Those checks remain separate gates.
