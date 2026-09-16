@@ -53,8 +53,17 @@ that failure. The rendered browser check remains required.
 
 Source `6d85104` includes the CLI empty-202 contract and updated deletion tests.
 CI run `35095289920` checks core acceptance, the rendered browser, the console,
-and the service image. The CNPG workflow is running in CI run `35095613420` at `d7ff741`.
-Full CNPG and external PostgreSQL cluster workflows must also pass before this branch can replace the default branch. Kata remains deferred
+and the service image. The first CNPG attempt, run `35095613420` at `d7ff741`, failed its SQL cleanup
+precheck before the full browser workflow. A cleanup report for a live Gateway
+returned gRPC `Internal` instead of `Aborted`. Source `ab0b3ef` returns the storage
+state-conflict error. The failed run removed application resources, CNPG runtime,
+volumes, and private fixtures. The fixed installation remains. Evidence is in
+`cnpg-first-result`. Corrected CNPG run `35096666440` is active, and full CI run
+`35096455130` is queued. The earlier run `35095289920` passed its rendered browser,
+console, and image jobs; its core suite has not finished.
+
+The full core suite, CNPG workflow, and external PostgreSQL cluster workflow must
+pass before this branch can replace the default branch. Kata remains deferred
 by the user. Large provider inventories remain open: the inventory call still
 uses a bounded full scan. This application retains its fresh-schema gate; no
 in-place application upgrade is claimed.
