@@ -19,6 +19,7 @@ overrides:
   health-check:
     database: true
   browser-backend:
+    additional_scopes: [email, profile]
     telemetry_service_name: hypershell-web-console
     api_prefix: /api/hypershell/v1
     logout_scope: identity_provider

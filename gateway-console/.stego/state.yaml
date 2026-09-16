@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/gateway-console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            registry_ref: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: 079352909b4306f4e3420f75c357163bac639526a5e8c4435f04861f9f6d5135
+                sha256: 030904971c6f7b1750a551ad02017b7a40676cd74a94260b4611afa5fe7f741d
                 mode: 420
             go.mod:
                 exists: true
@@ -27,42 +27,42 @@ last_applied:
                 exists: true
                 sha256: 4c92cc276f80ccbebdbec44a35600a1b714f8d3b7ee5b2279e8170d40fa348e0
                 mode: 420
-        sha256: 9185ec6a3796e1f10a358a57ab4d37e35aff4940d2f379841956d05631b09726
+        sha256: 22e737262ea902273e72b416c176137a582203d67f9b0a003c5f8b6416d87e59
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916195509-bd7d9ea85ec7
-        vcs: git
-        revision: bd7d9ea85ec73d60be3557bc4df743fb38392f9c
-        source_state: clean
+        module_version: (devel)
+        vcs: unknown
+        revision: unknown
+        source_state: unknown
     service_hash: a79690c85b218a93044d646f706210f9bfd5e541bbf772cbef2ccfe38e4cdcca
-    registry_sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
-    registry_content_sha256: 974efef66334ffda799fd259377612875d9353e2ed3c7b078a65553796050baf
+    registry_sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
+    registry_content_sha256: 14c7ad4fc7e64b167e6ec3460ab010a6e9c47c0e057afc48fab23952baf44490
     components:
         browser-backend:
-            version: 2.2.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            version: 3.0.0
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         browser-telemetry:
             version: 1.2.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         health-check:
             version: 1.1.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         kubernetes-service:
             version: 1.18.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         otel-tracing:
             version: 1.15.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
         postgres-adapter:
             version: 4.9.0
-            sha: 2b8a6e3804d49ed266b175c8ef1201486cdf72385ec4b0300673ef9f8ea3739a
+            sha: 004a0a68cbc7b6bca526726a02731eaee06b6dda7c17b1fbae205e6ac693793e
     files:
-        browser/backend.go: 59fc00eadc4f5fb97071c86d8f77d956801d6502b370b6a759e483683e78c778
+        browser/backend.go: 6aec9f4e2716894c94a70be70baa9c572f8d18813ef5f70780ecd4a88835bc8c
         browser/client/client.go: 1000bca2a6f2916db09a0ac64969cb8b5d5911794913008c5bb9daffe8c94aaa
         browser/client/socket.go: 4d2e33e95559d76c345d8197c7e5b77d3a00c129c5c32035ed1a4fdfbcff190e
-        browser/handlers.go: cac1695cbfcd37606c31313970bbddcf402094c8def5d50c82bb025f586780aa
+        browser/handlers.go: 67417242b9c06430c46dfb0f13bde447e2cc8870f1740f599c8148622fcb640d
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
         browser/oauth.go: a9459f07974859019f9ea2871e26787da029325123dd0ecf4a272f34d23a85b5
         browser/public/assets/02f7d6c6946e23f6f4d6.woff2: ad58f7fcae1bb271807d629e3d7bf370be17b13436c1753720db1f389d8cc114

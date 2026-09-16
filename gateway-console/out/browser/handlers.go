@@ -72,7 +72,7 @@ func (b *Backend) login(w http.ResponseWriter, r *http.Request) {
 	}
 	values := target.Query()
 	challenge := sha256.Sum256([]byte(verifier))
-	for key, value := range map[string]string{"client_id": b.provider.options.ClientID, "redirect_uri": b.origin.String() + "/auth/callback", "response_type": "code", "scope": "openid profile email", "state": state, "nonce": nonce, "code_challenge_method": "S256", "code_challenge": base64.RawURLEncoding.EncodeToString(challenge[:])} {
+	for key, value := range map[string]string{"client_id": b.provider.options.ClientID, "redirect_uri": b.origin.String() + "/auth/callback", "response_type": "code", "scope": b.config.OAuthScope, "state": state, "nonce": nonce, "code_challenge_method": "S256", "code_challenge": base64.RawURLEncoding.EncodeToString(challenge[:])} {
 		values.Set(key, value)
 	}
 	target.RawQuery = values.Encode()

@@ -98,7 +98,11 @@ checks request only `openid`. This is a component contract mismatch. The live
 artifact did not retain the authorization error parameter, so it does not prove
 that this mismatch caused the callback failure. STEGO candidate `42c7ea1` adds
 minimal default scopes and explicit additional scopes, with common CI pending.
-The application has not adopted that candidate yet.
+All three application generators now pin that candidate. The management
+console explicitly retains email and profile scopes, which its existing client
+permits. The Gateway dashboard uses openid with its client-owned claim mappers.
+All three projects passed repeated generation and drift checks with identical
+state on the repeated apply. Runtime and live qualification remain pending.
 
 Browser failure evidence now saves only a fixed authorization error category
 from a callback on the expected origin. It does not save code, state, provider
