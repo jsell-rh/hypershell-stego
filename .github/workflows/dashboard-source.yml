@@ -24,6 +24,7 @@ jobs:
       GOFLAGS: -p=2
       GOWORK: 'off'
       NODE_OPTIONS: --max-old-space-size=1536
+      CGO_ENABLED: '0'
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -256,6 +257,25 @@ jobs:
           image=$(cat "$root/image-tag")
           docker push "$image" 2>&1 | tee "$root/image-push.log"
           docker image inspect "$image" --format '{{json .RepoDigests}}' > "$root/image-digests.json"
+          digest=$(python3 - "$root/image-digests.json" <<'PY'
+          import json, pathlib, re, sys
+          values = json.loads(pathlib.Path(sys.argv[1]).read_text())
+          selected = [value for value in values if re.fullmatch(r"ghcr\.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:[0-9a-f]{64}", value)]
+          assert len(selected) == 1
+          print(selected[0])
+          PY
+          )
+          docker pull "$digest" 2>&1 | tee "$root/image-pull.log"
+          docker image inspect "$digest" > "$root/published-image-inspect.json"
+          python3 - "$root" <<'PY'
+          import json, pathlib, sys
+          root = pathlib.Path(sys.argv[1])
+          built = json.loads((root / "image-inspect.json").read_text())[0]
+          published = json.loads((root / "published-image-inspect.json").read_text())[0]
+          for field in ("Id", "Architecture", "Os", "RootFS", "Config"):
+              assert built[field] == published[field], field
+          (root / "registry-verification.json").write_text(json.dumps({"image_id": published["Id"], "pulled_digest_matches_build": True}, indent=2) + "\n")
+          PY
       - name: Generate the private browser and deployment for the real image
         run: |
           set -euo pipefail
