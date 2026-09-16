@@ -441,6 +441,11 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		signals, telemetry = newHTTPDiagnosticCollectorAt(t, deployment.host("fixture"), "0.0.0.0:19093")
 	}
 	settings = append(settings, telemetry...)
+	t.Cleanup(func() {
+		if t.Failed() {
+			reportAccountProvisioningSpans(t, signals)
+		}
+	})
 	providerLogs := func() string { return "" }
 	restartProvider := func() {}
 	if os.Getenv("STEGO_REQUIRE_BROWSER") == "1" {
