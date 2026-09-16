@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { DashboardTelemetry, dashboardRoute } from './telemetry.stego';
+import { DashboardTelemetry, dashboardRoute } from '../telemetry.stego';
 
 const mockLog = jest.fn();
 const mockCount = jest.fn();

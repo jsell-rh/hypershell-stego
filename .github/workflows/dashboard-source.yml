@@ -71,11 +71,12 @@ jobs:
           cp components/gateway-dashboard/frontend/index.stego.html upstream-dashboard/frontend/public/
           mkdir -p upstream-dashboard/frontend/stego/browser-telemetry
           cp gateway-console/out/browsertelemetry/* upstream-dashboard/frontend/stego/browser-telemetry/
-          cp components/gateway-dashboard/frontend/telemetry.stego.tsx components/gateway-dashboard/frontend/telemetry.stego.spec.tsx upstream-dashboard/frontend/src/app/
+          cp components/gateway-dashboard/frontend/telemetry.stego.tsx upstream-dashboard/frontend/src/app/
+          cp components/gateway-dashboard/frontend/telemetry.stego.spec.tsx upstream-dashboard/frontend/src/app/__tests__/
           cmp gateway-console/out/browsertelemetry/index.js upstream-dashboard/frontend/stego/browser-telemetry/index.js
           sha256sum gateway-console/out/browsertelemetry/* > "$RUNNER_TEMP/dashboard-source/browser-telemetry.sha256"
           git -C upstream-dashboard apply --index "$GITHUB_WORKSPACE/components/gateway-dashboard/router.patch"
-          git -C upstream-dashboard add backend/go.mod backend/go.sum frontend/package.json frontend/package-lock.json frontend/webpack.stego.cjs frontend/public/index.stego.html frontend/stego/browser-telemetry frontend/src/app/telemetry.stego.tsx frontend/src/app/telemetry.stego.spec.tsx
+          git -C upstream-dashboard add backend/go.mod backend/go.sum frontend/package.json frontend/package-lock.json frontend/webpack.stego.cjs frontend/public/index.stego.html frontend/stego/browser-telemetry frontend/src/app/telemetry.stego.tsx frontend/src/app/__tests__/telemetry.stego.spec.tsx
           git -C upstream-dashboard diff --cached --binary > "$RUNNER_TEMP/dashboard-source/build-overlay.patch"
           build_tree=$(git -C upstream-dashboard write-tree)
           printf '%s\n' "$build_tree" > "$RUNNER_TEMP/dashboard-source/build-tree"
@@ -112,7 +113,19 @@ jobs:
         working-directory: upstream-dashboard/frontend
         run: |
           set -euo pipefail
-          npm test -- --runInBand src/app/__tests__/AppRoutes.spec.tsx src/pages/__tests__/SandboxListPage.spec.tsx src/app/telemetry.stego.spec.tsx 2>&1 | tee "$RUNNER_TEMP/dashboard-source/router-tests.log"
+          npm test -- --runInBand --json --outputFile="$RUNNER_TEMP/dashboard-source/router-results.json" src/app/__tests__/AppRoutes.spec.tsx src/pages/__tests__/SandboxListPage.spec.tsx src/app/__tests__/telemetry.stego.spec.tsx 2>&1 | tee "$RUNNER_TEMP/dashboard-source/router-tests.log"
+          python3 - <<'PYRESULT'
+          import json, os
+          from pathlib import Path
+          result = json.loads((Path(os.environ["RUNNER_TEMP"]) / "dashboard-source/router-results.json").read_text())
+          required = "document signals use fixed routes and contain no resource identifiers"
+          matches = [test for suite in result["testResults"]
+                     if suite["name"].endswith("/src/app/__tests__/telemetry.stego.spec.tsx")
+                     for test in suite["assertionResults"] if test["fullName"] == required]
+          if (result.get("success") is not True or len(matches) != 1
+                  or matches[0].get("status") != "passed"):
+              raise SystemExit("The dashboard telemetry privacy test did not pass")
+          PYRESULT
       - name: Check runtime JavaScript dependencies
         id: dependencies
         if: always() && steps.frontend.outcome != 'skipped'
