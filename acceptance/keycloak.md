@@ -230,3 +230,29 @@ Seven formatting forms and implicit JSON export are now checked. The small
 adapter suite passed with the race detector in 1.327 seconds. The application
 uses clean compiler pin `436e43dfe57e52e4c3396d5b633e4645fd3d2841`.
 The new resource-state migration is not part of this pin.
+
+## Complete realm assignment reads
+
+Compiler pin `688d91bc597589a42bc651d0957688ac3a064b5a` supplies provider
+version 0.10.4. Keycloak filters its combined role-mapping response by role-view
+permission. The Hypershell provisioner can manage users and clients, but lacks
+realm-view permission. The combined response can therefore hide the service
+account's default realm role. The common role operation detected excess effective
+access and stopped, so account creation failed.
+
+STEGO now reads the dedicated realm-mapping endpoint before it changes roles.
+That endpoint requires user-view permission. Hypershell keeps the same provider
+permissions. A denied or contradictory direct read stops repair before a write.
+The change is common provider code; Hypershell has no new role-reading mechanism.
+
+A new real-provider test reproduced the failure in STEGO CI run
+[35038361635](https://github.com/jsell-rh/stego/actions/runs/35038361635).
+The regression uses client roles only, the Hypershell permission set, distinct
+provider and public client IDs, and legacy ownership keys. Both generated unit
+variants pass after the fix, with the race detector, in 14.373 seconds. The
+Hypershell adapter suite passes in 1.328 seconds. Real-provider and rendered
+application reruns are still required before this fix is qualified.
+
+Browser test failures now retain only the fixed provisioning operation's status,
+duration, and transport side from generated OTEL spans. The test does not print
+arbitrary attributes, error text, the DOM, or one-time credentials.

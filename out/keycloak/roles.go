@@ -536,6 +536,44 @@ func (c *Client) readRoleSet(ctx context.Context, path string) (roleSet, error) 
 	}
 	return result, nil
 }
+
+// Keycloak filters the aggregate mapping response by role-view permission.
+// The dedicated realm endpoint uses user-view permission and returns the full
+// direct realm set. Read it before repair, including for client-only policies.
+func (c *Client) readServiceAccountRoles(ctx context.Context, subject string) (roleSet, error) {
+	path := "/users/" + subject + "/role-mappings"
+	result, err := c.readRoleSet(ctx, path)
+	if err != nil {
+		return roleSet{}, err
+	}
+	realm, err := c.readRoles(ctx, path+"/realm", "")
+	if err != nil {
+		return roleSet{}, err
+	}
+	if len(roleDifference(result.Realm, realm)) != 0 {
+		return roleSet{}, ErrRolePolicy
+	}
+	result.Realm = realm
+	count := len(realm)
+	ids := map[string]bool{}
+	for _, role := range realm {
+		ids[role.ID] = true
+	}
+	for _, roles := range result.Clients {
+		count += len(roles)
+		for _, role := range roles {
+			if ids[role.ID] {
+				return roleSet{}, ErrResponse
+			}
+			ids[role.ID] = true
+		}
+	}
+	if count > MaxRoleMappings {
+		return roleSet{}, ErrResponse
+	}
+	return result, nil
+}
+
 func (c *Client) serviceAccountGroups(ctx context.Context, subject string) ([]string, error) {
 	response, err := c.admin(ctx, http.MethodGet, "/users/"+subject+"/groups?briefRepresentation=true&first=0&max=65", nil)
 	if err != nil {
@@ -662,7 +700,7 @@ func (c *Client) reconcileServiceAccountRoles(work context.Context, b ClientBind
 		return err
 	}
 	path := "/users/" + subject + "/role-mappings"
-	current, err := c.readRoleSet(work, path)
+	current, err := c.readServiceAccountRoles(work, subject)
 	if err != nil {
 		return err
 	}
@@ -709,7 +747,7 @@ func (c *Client) reconcileServiceAccountRoles(work context.Context, b ClientBind
 	if len(groups) != 0 {
 		return ErrRolePolicy
 	}
-	current, err = c.readRoleSet(work, path)
+	current, err = c.readServiceAccountRoles(work, subject)
 	if err != nil {
 		return err
 	}
@@ -756,7 +794,7 @@ func (c *Client) reconcileServiceAccountRoles(work context.Context, b ClientBind
 	if len(groups) != 0 {
 		return ErrRolePolicy
 	}
-	current, err = c.readRoleSet(work, path)
+	current, err = c.readServiceAccountRoles(work, subject)
 	if err != nil {
 		return err
 	}

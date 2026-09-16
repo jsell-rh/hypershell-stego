@@ -130,7 +130,7 @@ func (c *Client) inspectServiceAccountRolePolicy(ctx context.Context, subject st
 		return ErrRolePolicy
 	}
 	path := "/users/" + subject + "/role-mappings"
-	current, err := c.readRoleSet(ctx, path)
+	current, err := c.readServiceAccountRoles(ctx, subject)
 	if err != nil {
 		return err
 	}
