@@ -55,9 +55,11 @@ jobs:
       - name: Check generated source
         run: scripts/generate.sh --check
       - name: Check retained journal recovery
+        shell: bash
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
         run: |
+          set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
           go test -json -race -count=1 -mod=readonly -timeout=3m ./acceptance \
             -run '^TestGateway(Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint))$' \
