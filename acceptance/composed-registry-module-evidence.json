@@ -1,0 +1,18 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35130594165",
+  "source": "a7553b3f54da6e62106377585d5682745ca82840",
+  "compiler": "6e80eca6c65ed3528bf81d7176d925417b4e46e0",
+  "source_files_match": 79,
+  "repeated_generation_matches": true,
+  "copied_common_component_files": 0,
+  "generated_source_sha256": "be07d0efc7743366b4a8ea483ef1edc4558ff63ea5d25b63d6ec938fa26ae1a1",
+  "schema_sha256": "d6a3a0b11bfa2528722cb221aca730614fdd155ee212bb3ae9bfb80aef6bb345",
+  "deployment": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6709e946c23c5e286c30b73219ab51b81005e99b3a33f2fa72062d9b5197525c",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "The module passed generation, exact source, dependency scan, entry point builds, and deployment checks. The common registry came from its pinned Git source. This job does not prove a deployed dashboard."
+}

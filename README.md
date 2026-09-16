@@ -9,6 +9,13 @@ OpenShell configuration. Common components must not depend on Hypershell entity
 names. The compiler revision is pinned in [.stego/compiler-revision](.stego/compiler-revision).
 Generated code must not be edited by hand.
 
+All three generated modules use the common STEGO registry from the same pinned
+Git revision as their compiler. Local registries contain application archetypes;
+they contain no copies of common component declarations. Application output
+paths are set in `service.yaml`. See the [registry model](registry/README.md)
+and the [Gateway console registry result](acceptance/composed-registry-module-evidence.json).
+The generated runtime stays in Git for review and repeatable builds.
+
 ## Current application behavior
 
 Gateway creation commits the Gateway, owner grant, and events together. REST
@@ -66,11 +73,13 @@ and recreation; startup never performs that teardown.
 
 | Path | Responsibility |
 | --- | --- |
-| `service.yaml`, `registry/`, `.stego/` | Application declaration, component metadata, compiler pin, and generation state |
+| `service.yaml`, `registry/`, `.stego/` | Application declaration and archetypes, pinned registry sources and compiler, and generation state |
 | `out/` | Generated API, storage, controller, client, security, and telemetry code |
 | `internal/` | Domain policy and application adapters |
 | `contracts/` | Reference contracts and explicit application extensions |
-| `console/` | Separate generated browser backend and its declaration |
+| `console/` | Generated management browser backend and its declaration |
+| `gateway-console/` | Generated browser backend for the upstream Gateway dashboard and its local composition |
+| `components/gateway-dashboard/` | Upstream dashboard build inputs and integration files |
 | `components/web-console/`, `packages/gateway-management-ui/` | Management UI and domain components |
 | `acceptance/`, `.github/workflows/`, `scripts/` | Required checks, bounded CI runners, and source-specific evidence |
 
