@@ -1,0 +1,24 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35107987220",
+  "source": "d53f843ccf8b30e5215fbaa471879fa470323d31",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "archive_sha256": "3e3b9a4e3ba7820a9980bbbe6694a68aecb12d2813fba4f4b60138e1d37224fb",
+  "exit": "0",
+  "generation_equal": true,
+  "generated_files": 269,
+  "workflow_passes": [
+    "498.58s"
+  ],
+  "failed_tests": [],
+  "cleanup": {
+    "namespace_retained": "stego-service-ci",
+    "test_resources_absent": true,
+    "allocations_absent": true
+  },
+  "allocation_cleanup": {
+    "allocations_before": 0,
+    "allocations_absent": true
+  },
+  "operator_cleanup": "Pending. The saved operator context returns Unauthorized. Do not start another live test before this check.",
+  "scope": "Public Gateway workflow with bounded provider discovery. The complete per-Gateway dashboard is not part of this test."
+}
