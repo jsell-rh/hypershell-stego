@@ -205,6 +205,23 @@ overrides:
           - {resource: requests.storage, value: "0"}
         bindings:
           - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}
+      - name: gateway-console-state
+        network_isolation: true
+        identity_config_map: gateway-console-state-identity
+        identity_annotations:
+          - {field: sha256, key: hypershell.redhat.io/console-state-identity}
+        namespace_prefix: openshell-console-
+        suffix_length: 40
+        owner_label: hypershell.redhat.io/gateway-id
+        manager: hypershell-gateway-controller
+        quota:
+          - {resource: pods, value: "0"}
+          - {resource: limits.cpu, value: "1"}
+          - {resource: limits.memory, value: 64Mi}
+          - {resource: limits.ephemeral-storage, value: 64Mi}
+          - {resource: requests.storage, value: "0"}
+        bindings:
+          - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}
     workers:
       - name: namespace-allocation
         namespace_allocator: true

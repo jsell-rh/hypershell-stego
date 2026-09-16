@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"reflect"
@@ -158,10 +159,12 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 		}
 		defer conn.Close(clean)
 		for _, gw := range []*pb.Gateway{first, second} {
-			n := names(gw)
-			for _, query := range []string{"DROP DATABASE IF EXISTS " + quote(n.Database) + " WITH (FORCE)", "DROP ROLE IF EXISTS " + quote(n.User), "DROP ROLE IF EXISTS " + quote(n.Owner)} {
-				if _, err := conn.Exec(clean, query); err != nil {
-					t.Error("Gateway fixture cleanup failed", sqlState(err))
+			consoleNames, _ := sql.DatabaseNames(k.consoleDatabaseKey(gw))
+			for _, n := range []sql.DatabaseIdentity{names(gw), consoleNames} {
+				for _, query := range []string{"DROP DATABASE IF EXISTS " + quote(n.Database) + " WITH (FORCE)", "DROP ROLE IF EXISTS " + quote(n.User), "DROP ROLE IF EXISTS " + quote(n.Owner)} {
+					if _, err := conn.Exec(clean, query); err != nil {
+						t.Error("Gateway fixture cleanup failed", sqlState(err))
+					}
 				}
 			}
 		}
@@ -253,6 +256,66 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 			}
 		}
 	}
+	// The same worker provisions the generated browser schema in a separate
+	// logical database. Its retained key and runtime login never belong to Gateway.
+	consoleNS, _ := ConsoleStateNamespace(first.Metadata.Id)
+	consoleNamespace := object{"apiVersion": "v1", "kind": "Namespace", "metadata": object{"name": consoleNS, "uid": consoleNS, "resourceVersion": "1", "labels": k.consoleStateOwner(first.Metadata.Id)}}
+	consolePolicy := stateNetworkPolicyFixture(k, first.Metadata.Id)
+	consolePolicy["metadata"].(object)["namespace"] = consoleNS
+	consolePolicy["metadata"].(object)["labels"] = k.consoleStateOwner(first.Metadata.Id)
+	put("/api/v1/namespaces/"+consoleNS, consoleNamespace)
+	put("/apis/networking.k8s.io/v1/namespaces/"+consoleNS+"/networkpolicies/stego-allocation", consolePolicy)
+	if _, err := k.prepareConsoleDatabase(ctx, first); !errors.Is(err, ErrPending) {
+		t.Fatal("console SQL did not wait for its state pin", err)
+	}
+	consoleNames, _ := sql.DatabaseNames(k.consoleDatabaseKey(first))
+	var consolePresent bool
+	if err := bootstrap.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)", consoleNames.Database).Scan(&consolePresent); err != nil || consolePresent {
+		t.Fatal("unregistered console created its database")
+	}
+	mu.Lock()
+	consoleMarker := objects["/api/v1/namespaces/"+consoleNS+"/configmaps/"+consoleStateMarker]
+	consoleNamespace["metadata"].(object)["annotations"] = object{consoleStateAnnotation: kube.String(consoleMarker, "data", "sha256")}
+	mu.Unlock()
+	consoleFiles, err := k.prepareConsoleDatabase(ctx, first)
+	if err != nil {
+		t.Fatal("generated console SQL schema failed", err)
+	}
+	urlBytes, err := data(object{"data": consoleFiles}, "database-url")
+	if err != nil {
+		t.Fatal(err)
+	}
+	consoleURL, err := url.Parse(string(urlBytes))
+	if err != nil {
+		t.Fatal("console database URL is invalid")
+	}
+	consoleConfig := bootstrapConfig.Copy()
+	consoleConfig.Database = strings.TrimPrefix(consoleURL.Path, "/")
+	consoleConfig.User = consoleURL.User.Username()
+	consoleConfig.Password, _ = consoleURL.User.Password()
+	consoleRuntime, err := pgx.ConnectConfig(ctx, consoleConfig)
+	if err != nil {
+		t.Fatal("console runtime connection failed", sqlState(err))
+	}
+	defer consoleRuntime.Close(context.Background())
+	execSQL(consoleRuntime, "INSERT INTO public.stego_browser_sessions(id_hash,payload,state,expires_at) VALUES(decode(repeat('00',32),'hex'),decode(repeat('00',28),'hex'),'active',CURRENT_TIMESTAMP+INTERVAL '1 hour')")
+	for _, query := range []string{"CREATE TABLE public.forbidden(value integer)", "CREATE TEMP TABLE forbidden(value integer)", "TRUNCATE public.stego_browser_sessions"} {
+		if _, err := consoleRuntime.Exec(ctx, query); sqlState(err) != "42501" {
+			t.Fatal("console runtime schema write was not denied", sqlState(err))
+		}
+	}
+	for _, database := range []string{names(first).Database, names(second).Database, ledger} {
+		wrong := consoleConfig.Copy()
+		wrong.Database = database
+		connection, err := pgx.ConnectConfig(ctx, wrong)
+		if err == nil {
+			connection.Close(ctx)
+			t.Fatal("console connected to another database")
+		}
+		if sqlState(err) != "42501" {
+			t.Fatal("console cross-database check failed without denial", sqlState(err))
+		}
+	}
 	// A new adapter must reuse the original keys, credential, and database.
 	k.Close()
 	k, err = NewKubernetes(k.options)
@@ -267,6 +330,13 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 	again, err := k.databaseCredentials(ctx, first, recovered, selected)
 	if err != nil || !reflect.DeepEqual(again, firstCredentials) {
 		t.Fatal("restart changed Gateway SQL credentials", err)
+	}
+	recoveredConsoleFiles, err := k.prepareConsoleDatabase(ctx, first)
+	if err != nil || !reflect.DeepEqual(consoleFiles, recoveredConsoleFiles) {
+		t.Fatal("restart changed console credentials or session key", err)
+	}
+	if err := consoleRuntime.QueryRow(ctx, "SELECT count(*) FROM public.stego_browser_sessions").Scan(&count); err != nil || count != 1 {
+		t.Fatal("restart changed console session rows", sqlState(err))
 	}
 	checkData(firstCredentials, "first")
 	checkData(secondCredentials, "second")
@@ -288,6 +358,15 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 	}
 	if err := k.DeleteDatabase(ctx, first); err == nil {
 		t.Fatal("lost credentials permitted deletion")
+	}
+	if !k.options.ConsoleSQLBindings.(*consoleBindingFixture).completed {
+		t.Fatal("Gateway key loss prevented independent console cleanup")
+	}
+	if err := bootstrap.QueryRow(ctx, "SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)", consoleNames.Database).Scan(&consolePresent); err != nil || consolePresent {
+		t.Fatal("console completion preceded actual database deletion")
+	}
+	if _, err := k.prepareConsoleDatabase(ctx, first); err == nil {
+		t.Fatal("late console retry recreated closed state")
 	}
 	put(secretPath, firstState)
 	checkData(firstCredentials, "first")

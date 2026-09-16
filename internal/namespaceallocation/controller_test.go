@@ -137,12 +137,35 @@ func TestStateAllocationRemainsUntilSQLCleanupCompletes(t *testing.T) {
 			c := &Controller{allocator: writes, state: a, cluster: cluster}
 			err := c.reconcile(context.Background(), "gateway:"+id)
 			if sqlComplete && workloadComplete {
-				if err != nil || len(writes.calls) != 2 || writes.calls[1] != "delete:gateway-state:"+stateName+":"+id {
+				if err != nil || len(writes.calls) != 3 || writes.calls[2] != "delete:gateway-state:"+stateName+":"+id || writes.calls[1] != "delete:gateway-console-state:openshell-console-"+stateName[len("openshell-state-"):]+":"+id {
 					t.Fatal("completed state was not removed", err, writes.calls)
 				}
 			} else if !errors.Is(err, ErrPending) || len(writes.calls) != 1 || writes.calls[0] != "delete:gateway:"+ns+":"+id {
 				t.Fatal("SQL state was removed early", sqlComplete, workloadComplete, err, writes.calls)
 			}
+		}
+	}
+}
+
+func TestConsoleStateAllocationPrecedesWorkload(t *testing.T) {
+	id, cluster := ksuid.New().String(), ksuid.New().String()
+	ns, _ := gatewayworkload.Namespace(id)
+	state, _ := gatewayworkload.StateNamespace(id)
+	consoleState, _ := gatewayworkload.ConsoleStateNamespace(id)
+	address := "https://console.example.test"
+	api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster, ConsoleAddress: &address}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: false}}}}}
+	writes := &allocations{done: true}
+	controller := &Controller{allocator: writes, state: api, cluster: cluster}
+	if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
+		t.Fatal(err)
+	}
+	expected := []string{"ensure:gateway-state:" + state + ":" + id, "ensure:gateway-console-state:" + consoleState + ":" + id, "ensure:gateway:" + ns + ":" + id}
+	if len(writes.calls) != len(expected) {
+		t.Fatal(writes.calls)
+	}
+	for i, value := range expected {
+		if writes.calls[i] != value {
+			t.Fatal(writes.calls)
 		}
 	}
 }

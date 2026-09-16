@@ -2,6 +2,7 @@ package gatewayworkload
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -141,6 +142,39 @@ func TestConsoleWaitsForAssignedNamespace(t *testing.T) {
 			}
 			if (mode == "wrong cluster" || mode == "wrong namespace") && calls != 0 {
 				t.Fatal("invalid placement reached Kubernetes")
+			}
+		})
+	}
+}
+
+func TestConsoleStoreDependenciesMatchRetainedState(t *testing.T) {
+	gw, _ := records(t)
+	encode := func(value string) string { return base64.StdEncoding.EncodeToString([]byte(value)) }
+	expected := object{"database-url": encode("postgresql://runtime:private@database.example/console?sslmode=verify-full"), "database-ca.pem": encode("fixture-ca"), "session-key": encode("fixture-key")}
+	for _, mode := range []string{"valid", "database", "key", "direct-url", "key-path", "application"} {
+		t.Run(mode, func(t *testing.T) {
+			secrets := consoleDependencies(gw.Metadata.Id)
+			secrets[0]["data"] = object{"DATABASE_URL_FILE": encode("/var/run/stego/database-url"), "STEGO_BROWSER_SESSION_KEY_FILE": encode("/var/run/stego/session-key")}
+			files := object{}
+			for name, value := range expected {
+				files[name] = value
+			}
+			secrets[1]["data"] = files
+			switch mode {
+			case "database":
+				files["database-url"] = encode("other-database")
+			case "key":
+				delete(files, "session-key")
+			case "direct-url":
+				secrets[0]["data"].(object)["DATABASE_URL"] = encode("other-database")
+			case "key-path":
+				secrets[0]["data"].(object)["STEGO_BROWSER_SESSION_KEY_FILE"] = encode("/var/run/stego/other-key")
+			case "application":
+				secrets[3]["data"].(object)["session-key"] = expected["session-key"]
+			}
+			err := consoleStoreDependencies(secrets, expected)
+			if (err == nil) != (mode == "valid") {
+				t.Fatal("console storage boundary differs", mode, err)
 			}
 		})
 	}

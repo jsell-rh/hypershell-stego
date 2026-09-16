@@ -85,7 +85,8 @@ func consoleConfigurationDigest(id string, secrets []object) (string, error) {
 }
 
 // EnsureConsole starts only after the allocator and all four controller-owned
-// dependency Secrets are ready. The caller must provision durable state first.
+// dependency Secrets are ready. It provisions the retained session database
+// before it permits a rollout.
 func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image string, group uint64) error {
 	if !k.Handles(gw) || k.allocation == nil {
 		return errors.New("console requires its assigned namespace allocator")
@@ -99,6 +100,10 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image st
 		if errors.Is(err, allocation.ErrPending) {
 			return ErrPending
 		}
+		return err
+	}
+	storeFiles, err := k.prepareConsoleDatabase(ctx, gw)
+	if err != nil {
 		return err
 	}
 	dependencies := make([]object, 0, len(consoleSecretNames))
@@ -117,6 +122,9 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image st
 	}
 	digest, err := consoleConfigurationDigest(id, dependencies)
 	if err != nil {
+		return err
+	}
+	if err = consoleStoreDependencies(dependencies, storeFiles); err != nil {
 		return err
 	}
 	entries, err := consoleResources(gw, image, group, digest)
@@ -144,6 +152,34 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, image st
 	}
 	if !ready {
 		return ErrPending
+	}
+	return nil
+}
+
+// Only the browser backend receives its database URL and session key.
+func consoleStoreDependencies(dependencies []object, expected object) error {
+	invalid := errors.New("console storage dependencies differ from retained state")
+	if len(dependencies) != 4 {
+		return invalid
+	}
+	for name, value := range map[string]string{"DATABASE_URL_FILE": "/var/run/stego/database-url", "STEGO_BROWSER_SESSION_KEY_FILE": "/var/run/stego/session-key"} {
+		raw, err := data(dependencies[0], name)
+		if err != nil || string(raw) != value {
+			return invalid
+		}
+	}
+	if kube.String(dependencies[0], "data", "DATABASE_URL") != "" {
+		return invalid
+	}
+	for name, value := range expected {
+		if kube.String(dependencies[1], "data", name) != value {
+			return invalid
+		}
+		for _, application := range dependencies[2:] {
+			if kube.String(application, "data", name) != "" {
+				return invalid
+			}
+		}
 	}
 	return nil
 }

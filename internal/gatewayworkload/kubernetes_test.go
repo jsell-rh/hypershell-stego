@@ -45,7 +45,7 @@ func fixture(t *testing.T, handler http.HandlerFunc) *Kubernetes {
 		t.Fatal(err)
 	}
 	image := "registry.example/image@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-	k, err := NewKubernetes(Options{InternalCAFile: ca, SQLBindings: new(bindingFixture), ControlNamespace: "control", DatabaseConfigFile: filepath.Join(t.TempDir(), "database.json"), ClusterID: testClusterID, ServerURL: server.URL, CAFile: ca, TokenFile: token, ClusterIssuer: "issuer", Issuer: "https://issuer.example/realm", TrustBundleFile: ca, SandboxImage: image, SupervisorImage: image})
+	k, err := NewKubernetes(Options{InternalCAFile: ca, SQLBindings: new(bindingFixture), ConsoleSQLBindings: new(consoleBindingFixture), ControlNamespace: "control", DatabaseConfigFile: filepath.Join(t.TempDir(), "database.json"), ClusterID: testClusterID, ServerURL: server.URL, CAFile: ca, TokenFile: token, ClusterIssuer: "issuer", Issuer: "https://issuer.example/realm", TrustBundleFile: ca, SandboxImage: image, SupervisorImage: image})
 	if err != nil {
 		t.Fatal(err)
 	}

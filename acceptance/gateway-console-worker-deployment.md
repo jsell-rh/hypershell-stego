@@ -1,7 +1,7 @@
 # Gateway console deployment
 
 The Gateway worker can render the console from the generated browser module.
-The module is pinned to `e0ed90b1b46d`. It contains the qualified dashboard image
+The module is pinned to `554adff159dbe`. It contains the qualified dashboard image
 and the STEGO deployment renderer. The worker does not keep a second copy of
 those Pod and Service definitions.
 
@@ -41,8 +41,8 @@ public digest marker, namespace pin, and retained registration. The common
 runtime calculates the digest. Hypershell supplies key policy, the SQL absence
 check, and the authorized registration callbacks. The prior data hash is retained
 in a test fixture to check recovery of the existing storage format. This is the
-common state mechanism to use for the separate console session state. The console
-state and its SQL schema are not yet connected.
+common state mechanism to use for the separate console session state. The console entry point now uses this mechanism for its separate database and
+session key.
 
 
 ## Component state and cleanup
@@ -62,7 +62,9 @@ The console worker must close registration before database deletion, then call
 stores a separate immutable completion record in the same transaction. The API
 rejects aggregate SQL cleanup while registered console state lacks that record.
 An older worker therefore cannot complete deletion while console cleanup is
-unfinished. The console database worker is not yet connected to this protocol.
+unfinished. The Gateway worker now closes console registration, removes its logical database,
+and confirms completion. It attempts Gateway cleanup even if console cleanup
+fails. Each database has an eight-second work context.
 
 The expanded API test checks separate records, denied callers, two API restarts,
 registration closure, and completion. It supplies the cleanup observation itself;
@@ -83,9 +85,15 @@ This check does not run the schema against PostgreSQL. That compiler check is
 pending. The module uses compiler `f6bf115`; a later compiler change also preserves
 cancellation and deadlines. Adopt the qualified final compiler before deployment.
 
-The root worker still imports module `e0ed90b1b46d`. Its database setup is not yet
-connected to the new schema package. The next integration must use
-`postgres-client.WithDatabaseOwner` with `ManagedSchema: true`, then call the
-module's generated schema setup. A separate allocation profile must retain the
-console Secret and its digest marker. Its namespace can be removed only after
-console SQL completion and aggregate Gateway cleanup are confirmed.
+The root worker imports module `554adff159dbe`. `EnsureConsole` now calls the
+common owner connection with `ManagedSchema: true` and the generated schema
+setup. It checks the runtime database URL and session key against retained state
+before deployment. The upstream application Secrets cannot use those file keys.
+The namespace allocator creates a separate state profile when the Gateway has a
+console address. It retains that namespace until SQL and workload cleanup finish.
+
+The extended real SQL test provisions Gateway and console databases, tests denied
+runtime DDL and cross-database access, restarts the adapter, checks retained
+session rows and keys, and removes the console database while Gateway cleanup
+cannot read its keys. Its new result is pending. The reconciliation loop still
+needs the complete dependency Secret, TLS, network, and deployment path.

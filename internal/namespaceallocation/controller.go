@@ -114,6 +114,13 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 			if !complete || !sqlComplete {
 				return ErrPending
 			}
+			consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
+			if err != nil {
+				return err
+			}
+			if err = c.remove(ctx, "gateway-console-state", consoleStateName, id); err != nil {
+				return err
+			}
 			return c.remove(ctx, "gateway-state", stateName, id)
 		}
 		if !recorded {
@@ -121,6 +128,15 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 		}
 		if err := c.allocator.Ensure(ctx, "gateway-state", stateName, id); err != nil {
 			return err
+		}
+		if gw.GetConsoleAddress() != "" {
+			consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
+			if err != nil {
+				return err
+			}
+			if err = c.allocator.Ensure(ctx, "gateway-console-state", consoleStateName, id); err != nil {
+				return err
+			}
 		}
 		return c.allocator.Ensure(ctx, "gateway", name, id)
 	default:

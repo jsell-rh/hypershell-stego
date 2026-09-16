@@ -101,11 +101,11 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: e1c8b4f8de12b4acb354d4c4d901e242a1e397dd0ae3713fa40b3253154b3617
+                sha256: 7565c350b7ec40471bf186160e72f29da02cc80ee546d4ebf6eee2e3e3aed27b
                 mode: 420
             go.sum:
                 exists: true
-                sha256: 83510790cf51b5be3a6861c3976e0e710939d7f92c5e4cb4f7b657c39a282f05
+                sha256: 6a750458fbab8fe1a5f4c1e2949b38f3b2d2853fff2969cdd4c2aa0c78cd204a
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
@@ -113,7 +113,7 @@ last_applied:
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: acf53db06d973d72b32ce156c096cfb2d542c370c15b4ccae25ffa92acbd9ba7
+                sha256: 988d9aae13f5d481e3acc3aa1c83c02ed27f17424f42bc2d8cfbc9e669c7d8a7
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -129,9 +129,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: f5c1073ce4271ca087997e1571bd1fc8f54a9fb3a8488992d0ebd974f644d943
+                sha256: 78d0fba674404621d59dbc2f3e029b413faecceda343169f8fea07693fd8d421
                 mode: 420
-        sha256: a0eff5fe5a759e3dc93f740f8a985cec2b4a22158386d69c3243925f5d75943b
+        sha256: aef9cb958ccdafe8cb9f12999f7553ccc10343e24b3d6efdf7aed3d11a82fae1
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -140,7 +140,7 @@ last_applied:
         vcs: git
         revision: 6faecee0b8c58aae587c4cc30b85e4ac63032188
         source_state: clean
-    service_hash: f5c1073ce4271ca087997e1571bd1fc8f54a9fb3a8488992d0ebd974f644d943
+    service_hash: 78d0fba674404621d59dbc2f3e029b413faecceda343169f8fea07693fd8d421
     registry_sha: gateway-workflow
     registry_content_sha256: ca9fee026f647141206feb2ddeae28bff7de3b0a5b797570f8cf4017d547703d
     components:
@@ -470,13 +470,13 @@ last_applied:
         controller/watch_keyed.go: 9fca0285770133bdda16a4877f52b57a267fecffeaff8a86c878717688ff596d
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/allocation/allocation.go: 031f81313090fb637d25271bbc2116d6e45619216c44ad05e1ec1484634cab6d
+        deploy/allocation/allocation.go: 9fe712228a0ef5743d64d08c143d1f20d7e802979138e88c688e812cb95e1fd3
         deploy/render/main.go: 64b25955b83f58593709d15799ad5770a8c38ad216193e8f802d90e63f8b1d59
         deploy/render/manifest.json.tmpl: a8d56604334ff0486de1aad7bf7aaf69890cf77ac72abf4a0ec89b1c6ee8f8da
         deploy/render/rpc-provisioner.json.tmpl: 1743f044cdd7aa6c4bc5d03977c6af918e398e84ecf80d7c98662a5c014854b0
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
         deploy/render/worker-gateway-workload.json.tmpl: db594ca65bd58f02e7483848d680f5ffb975eb77a5e3bf82c9155c3ef51ba851
-        deploy/render/worker-namespace-allocation.json.tmpl: 44e501d8a8f6dd2f8ae80eb89a2dec7d1bf0755afa4ef2d23650b52049f2066d
+        deploy/render/worker-namespace-allocation.json.tmpl: 5c137f001b5458b5489893e1d8aa20b22a2acdd9373167aeea447c9176aeeb07
         deploy/render/worker-sandbox-count.json.tmpl: f8a205fb17feea43715c1ed6a4603983416a6c4c949a5c14a1094e5ac284bb74
         deploy/resources.go: 49befbd30808a9288737673fa4d6442d888e4ffb0bba7390cdac37130f48b7c2
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7

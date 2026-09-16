@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -24,6 +25,7 @@ type Options struct {
 	InternalCAFile                                         string
 	PublicDomain, PublicIssuer, PublicCAFile, PublicRouter string
 	SQLBindings                                            SQLBindings
+	ConsoleSQLBindings                                     ConsoleSQLBindings
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
 	DatabaseConfigFile                                     string
@@ -41,7 +43,7 @@ type Kubernetes struct {
 }
 
 func NewKubernetes(o Options) (*Kubernetes, error) {
-	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" || o.SQLBindings == nil {
+	if !filepath.IsAbs(o.DatabaseConfigFile) || o.ControlNamespace == "" || o.SQLBindings == nil || o.ConsoleSQLBindings == nil {
 		return nil, errors.New("Gateway controller requires a database file, control namespace, and SQL state client")
 	}
 	if _, err := Namespace(o.ClusterID); err != nil {
@@ -275,6 +277,15 @@ func (k *Kubernetes) DeleteDatabase(ctx context.Context, gw *pb.Gateway) error {
 	if err := k.Delete(ctx, gw); err != nil {
 		return err
 	}
+	var failures []error
+	for _, remove := range []func(context.Context, *pb.Gateway) error{k.deleteConsoleDatabase, k.deleteGatewayDatabase} {
+		operation, cancel := context.WithTimeout(ctx, 8*time.Second)
+		failures = append(failures, remove(operation, gw))
+		cancel()
+	}
+	return errors.Join(failures...)
+}
+func (k *Kubernetes) deleteGatewayDatabase(ctx context.Context, gw *pb.Gateway) error {
 	if k.options.SQLBindings == nil {
 		return errors.New("SQL state registration is required")
 	}

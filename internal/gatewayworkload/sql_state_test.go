@@ -76,3 +76,22 @@ func TestSQLBindingResponseRequiresExactIdentityAndValidState(t *testing.T) {
 		}
 	}
 }
+
+type consoleBindingFixture struct {
+	bindingFixture
+	completed bool
+}
+
+func (b *consoleBindingFixture) Complete(ctx context.Context, id, cluster string) (store.EffectBinding, error) {
+	value, err := b.Load(ctx, id, cluster)
+	if err != nil {
+		return value, err
+	}
+	if !value.Present || !value.Closed {
+		return value, store.ErrEffectBindingConflict
+	}
+	b.mu.Lock()
+	b.completed = true
+	b.mu.Unlock()
+	return value, nil
+}
