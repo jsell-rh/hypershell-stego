@@ -1,6 +1,10 @@
 --- a/frontend/src/app/App.tsx
 +++ b/frontend/src/app/App.tsx
-@@ -15,9 +15,7 @@
+@@ -1,2 +1,3 @@
++import { DashboardTelemetry } from './telemetry.stego';
+ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+ import { BrowserRouter } from 'react-router-dom';
+@@ -15,9 +16,8 @@
    <QueryClientProvider client={queryClient}>
      <SlotProvider slots={{}}>
        <AlertProvider>
@@ -8,6 +12,7 @@
 -          future={{ v7_startTransition: true, v7_relativeSplatPath: true }}
 -        >
 +        <BrowserRouter>
++          <DashboardTelemetry />
            <AppRoutes />
          </BrowserRouter>
        </AlertProvider>

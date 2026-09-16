@@ -84,3 +84,12 @@ only the checked dashboard binary. Both source dependency checks passed. The
 generated browser built with all eight upstream document routes, repeated
 generation kept the same state, and the deployment checks passed. The live Pod,
 editor, terminal, and Gateway lifecycle checks remain open.
+
+The next source candidate connects page views to the generated
+`gateway-console/out/browsertelemetry` package. The build copies those exact
+files into the recorded upstream build tree and records their hashes. The
+Hypershell hook supplies only fixed route names and page-view events. STEGO
+supplies the trace, log, and metric runtime, its signal settings, authenticated
+export, limits, and page-hide flush. The route test rejects resource names,
+query values, and fragments in telemetry. Live delivery remains a required
+part of the deployed dashboard workflow.
