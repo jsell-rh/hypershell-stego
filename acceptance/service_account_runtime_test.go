@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -76,6 +77,15 @@ func (s *accountRPC) DeleteManaged(ctx context.Context, r *pb.DeleteManagedReque
 	return &pb.DeleteManagedResponse{}, nil
 }
 func startAccountProvisioner(t testing.TB, provider *accountProvider, key *rsa.PrivateKey, settings []string) ([]string, string) {
+	options, file, _ := startProvisionerTransport(t, func(registrar grpc.ServiceRegistrar) error {
+		server := &accountRPC{provider: provider}
+		pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, server)
+		pb.RegisterGatewayAccountInventoryServiceServer(registrar, server)
+		return nil
+	}, key, settings)
+	return options, file
+}
+func startProvisionerTransport(t testing.TB, register func(grpc.ServiceRegistrar) error, key *rsa.PrivateKey, settings []string) ([]string, string, func()) {
 	t.Helper()
 	for _, setting := range settings {
 		name, value, _ := strings.Cut(setting, "=")
@@ -90,35 +100,34 @@ func startAccountProvisioner(t testing.TB, provider *accountProvider, key *rsa.P
 	t.Setenv("STEGO_GRPC_ADDR", "127.0.0.1:0")
 	t.Setenv("STEGO_GRPC_TLS_CERT", filepath.Join(directory, "server.pem"))
 	t.Setenv("STEGO_GRPC_TLS_KEY", filepath.Join(directory, "server-key.pem"))
-	runtime, err := transport.New(verifier.Authenticate, func(registrar grpc.ServiceRegistrar) error {
-		server := &accountRPC{provider: provider}
-		pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, server)
-		pb.RegisterGatewayAccountInventoryServiceServer(registrar, server)
-		return nil
-	})
+	runtime, err := transport.New(verifier.Authenticate, register)
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx, cancel := context.WithCancel(context.Background())
 	done := make(chan error, 1)
 	go func() { done <- runtime.Run(ctx) }()
-	t.Cleanup(func() {
-		cancel()
-		runtime.Close()
-		select {
-		case err := <-done:
-			if err != nil {
-				t.Error(err)
+	var stopped sync.Once
+	stop := func() {
+		stopped.Do(func() {
+			cancel()
+			runtime.Close()
+			select {
+			case err := <-done:
+				if err != nil {
+					t.Error(err)
+				}
+			case <-time.After(time.Second):
+				t.Error("provisioner did not stop")
 			}
-		case <-time.After(time.Second):
-			t.Error("provisioner did not stop")
-		}
-	})
+		})
+	}
+	t.Cleanup(stop)
 	tokenFile := filepath.Join(t.TempDir(), "service-token")
 	if err := os.WriteFile(tokenFile, []byte(token(t, key, "api-provisioner")), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return []string{"HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR=" + runtime.Addr().String(), "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE=" + identity.config.CAFile, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE=" + tokenFile}, tokenFile
+	return []string{"HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR=" + runtime.Addr().String(), "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE=" + identity.config.CAFile, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE=" + tokenFile}, tokenFile, stop
 }
 func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	f := database(t)

@@ -278,3 +278,11 @@ maximum-offset SQL recovery case and the typed RPC boundary cases. The
 source, compiler, required tests, package results, and raw test hash. Raw results
 are in `provider-window-sql-result` under the persistent Gateway cleanup run
 directory. Full deployed qualification remains separate.
+
+The discovery recovery test now uses the actual provisioner server through
+STEGO's generated TLS gRPC client and server. It replaces the transport and
+provider client when it reconstructs the service. A valid token for an unrelated
+caller must be denied. Changed source versions must fail before any Keycloak
+request. The existing read-failure, later-client, page-shift, and closure checks
+then run through the private RPCs. The test package compiles; the stronger CI
+result is pending. This test change does not alter production code.

@@ -19,11 +19,14 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
+	"github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/provisioner/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
+	"google.golang.org/grpc"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -48,9 +51,11 @@ func TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift(t *testing.T) {
 	clients["foreign"] = map[string]any{"id": "foreign", "clientId": "hs-sa-" + gateway.ID + "-other", "enabled": false, "attributes": map[string]string{"hypershell.service-account": "true", "hypershell.gateway-id": ksuid.New().String(), "hypershell.service-account-id": ksuid.New().String()}}
 	var mu sync.Mutex
 	failRead := true
+	providerRequests := 0
 	server := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		mu.Lock()
 		defer mu.Unlock()
+		providerRequests++
 		if r.URL.Path == "/realms/test/protocol/openid-connect/token" {
 			_, _ = w.Write([]byte(`{"access_token":"admin-token","expires_in":300,"token_type":"Bearer"}`))
 			return
@@ -104,15 +109,62 @@ func TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer clear(master)
-	makeService := func(store *model.Store) (*serviceaccounts.Service, *serviceaccountkeycloak.Client) {
+	key, settings := issuer(t)
+	makeService := func(store *model.Store) (*serviceaccounts.Service, func()) {
 		client := inventorySQLClient(t, store, gateway.ID, server, master)
-		service, err := serviceaccounts.New(store, &journalCleanupProvider{accountProvider: newAccountProvider(), client: client})
+		t.Cleanup(client.Close)
+		worker, err := serviceaccountprovisioner.NewServer(client, []string{"api-provisioner"})
 		if err != nil {
 			t.Fatal(err)
 		}
-		return service, client
+		rpcSettings, tokenFile, stopTransport := startProvisionerTransport(t, func(registrar grpc.ServiceRegistrar) error {
+			pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, worker)
+			pb.RegisterGatewayAccountInventoryServiceServer(registrar, worker)
+			return nil
+		}, key, settings)
+		for _, setting := range rpcSettings {
+			name, value, _ := strings.Cut(setting, "=")
+			t.Setenv(name, value)
+		}
+		provider, closeConnection, err := serviceaccounts.ProvisionerFromEnvironment()
+		if err != nil {
+			t.Fatal(err)
+		}
+		var once sync.Once
+		closeAll := func() { once.Do(func() { closeConnection(); stopTransport(); client.Close() }) }
+		t.Cleanup(closeAll)
+		if err := os.WriteFile(tokenFile, []byte(token(t, key, "wrong-provisioner")), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := provider.InventorySource(ctx, gateway.ID); err == nil {
+			t.Fatal("signed unrelated caller read inventory source")
+		}
+		if err := os.WriteFile(tokenFile, []byte(token(t, key, "api-provisioner")), 0600); err != nil {
+			t.Fatal(err)
+		}
+		mu.Lock()
+		beforeRequests := providerRequests
+		mu.Unlock()
+		if _, err := provider.InventoryPage(ctx, gateway.ID, strings.Repeat("0", 64), "", 20); err == nil {
+			t.Fatal("changed source reached provider query through RPC")
+		}
+		if owned, err := provider.PrepareInventoryCandidate(ctx, gateway.ID, strings.Repeat("0", 64), ids[0]); err == nil || owned {
+			t.Fatal("changed source reached closure through RPC", err)
+		}
+		mu.Lock()
+		afterRequests := providerRequests
+		mu.Unlock()
+		if beforeRequests != afterRequests {
+			t.Fatal("source mismatch reached provider network")
+		}
+
+		service, err := serviceaccounts.New(store, provider)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return service, closeAll
 	}
-	service, client := makeService(f.storage)
+	service, closeProvider := makeService(f.storage)
 	if complete, err := service.RecoverGatewayCleanup(ctx, gateway.ID); err == nil || complete {
 		t.Fatal("failed first read permitted completion", complete, err)
 	}
@@ -128,7 +180,7 @@ func TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift(t *testing.T) {
 	if err != nil || saved.Version == 0 {
 		t.Fatal("first read blocked later closure", err)
 	}
-	client.Close()
+	closeProvider()
 	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	if err != nil {
 		t.Fatal(err)
@@ -137,8 +189,8 @@ func TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	service, client = makeService(restarted)
-	defer client.Close()
+	service, closeProvider = makeService(restarted)
+	defer closeProvider()
 	for pass := 0; pass < 2; pass++ {
 		if complete, err := service.RecoverGatewayCleanup(ctx, gateway.ID); complete || err == nil {
 			t.Fatal("failed discovery cycle permitted completion", pass, complete, err)
