@@ -160,11 +160,20 @@ try {
 }catch(error){
  if(session){
   const responses=[];
+  const requests=new Map();
   for(const entry of await command('/log',{type:'performance'}).catch(()=>[])){
    const event=JSON.parse(entry.message).message;
+   if(event.method==='Network.requestWillBeSent' && requests.size<64){
+    const url=new URL(event.params.request.url);
+    if(url.origin===input.origin)requests.set(event.params.requestId,url.pathname);
+   }
+   if(event.method==='Network.loadingFailed' && requests.has(event.params.requestId) && responses.length<128){
+    const category=/^net::ERR_[A-Z_]+$/.test(event.params.errorText)?event.params.errorText:'unclassified';
+    responses.push({path:requests.get(event.params.requestId),error:category,canceled:event.params.canceled===true});
+   }
    if(event.method==='Network.responseReceived'){
     const response=event.params.response;const url=new URL(response.url);
-    if(url.origin===input.origin)responses.push({path:url.pathname,status:response.status,type:response.mimeType});
+    if(url.origin===input.origin && responses.length<128)responses.push({path:url.pathname,status:response.status,type:response.mimeType});
    }
   }
   await writeFile(outputPath+'.network.json',JSON.stringify(responses));
