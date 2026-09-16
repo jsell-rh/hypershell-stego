@@ -438,7 +438,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	if deployment == nil {
 		signals, telemetry = newHTTPDiagnosticCollector(t)
 	} else {
-		signals, telemetry = newHTTPDiagnosticCollectorAt(t, deployment.host("fixture"), "0.0.0.0:19093")
+		signals, telemetry = newAuthenticatedHTTPDiagnosticCollectorAt(t, deployment.host("fixture"), "0.0.0.0:19093")
 	}
 	settings = append(settings, telemetry...)
 	t.Cleanup(func() {

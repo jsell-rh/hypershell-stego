@@ -3,7 +3,10 @@ package acceptance
 import (
 	"bytes"
 	"context"
+	"crypto/rand"
+	"crypto/subtle"
 	"crypto/tls"
+	"encoding/hex"
 	"encoding/json"
 	"net"
 	"net/http"
@@ -22,6 +25,7 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
@@ -181,6 +185,29 @@ func newHTTPDiagnosticCollector(t *testing.T) (*httpDiagnosticCollector, []strin
 
 func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*httpDiagnosticCollector, []string) {
 	t.Helper()
+	return diagnosticCollectorAt(t, hostname, address, false)
+}
+
+func newAuthenticatedHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*httpDiagnosticCollector, []string) {
+	t.Helper()
+	return diagnosticCollectorAt(t, hostname, address, true)
+}
+
+func diagnosticCollectorAt(t *testing.T, hostname, address string, authenticated bool) (*httpDiagnosticCollector, []string) {
+	t.Helper()
+	var token, tokenFile string
+	if authenticated {
+		var raw [32]byte
+		if _, err := rand.Read(raw[:]); err != nil {
+			t.Fatal("collector token generation failed")
+		}
+		token = hex.EncodeToString(raw[:])
+		clear(raw[:])
+		tokenFile = filepath.Join(t.TempDir(), "collector-token")
+		if err := os.WriteFile(tokenFile, []byte(token), 0600); err != nil {
+			t.Fatal(err)
+		}
+	}
 	cert := identity(t, hostname)
 	directory := filepath.Dir(cert.config.CAFile)
 	pair, err := tls.LoadX509KeyPair(filepath.Join(directory, "server.pem"), filepath.Join(directory, "server-key.pem"))
@@ -199,7 +226,14 @@ func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*http
 	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		signals.workers = &workerSignalEvidence{}
 	}
-	server := grpc.NewServer(grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
+	server := grpc.NewServer(grpc.MaxRecvMsgSize(1<<20), grpc.MaxConcurrentStreams(8), grpc.ConnectionTimeout(5*time.Second), grpc.Creds(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, Certificates: []tls.Certificate{pair}})), grpc.UnaryInterceptor(func(ctx context.Context, request any, info *grpc.UnaryServerInfo, next grpc.UnaryHandler) (any, error) {
+		if authenticated {
+			md, _ := metadata.FromIncomingContext(ctx)
+			values := md.Get("authorization")
+			if len(values) != 1 || subtle.ConstantTimeCompare([]byte(values[0]), []byte("Bearer "+token)) != 1 {
+				return nil, status.Error(codes.Unauthenticated, "collector credential is invalid")
+			}
+		}
 		if signals.unavailable.Load() {
 			if info.FullMethod == "/opentelemetry.proto.collector.metrics.v1.MetricsService/Export" {
 				signals.rejectedMetrics.Add(1)
@@ -218,7 +252,11 @@ func newHTTPDiagnosticCollectorAt(t *testing.T, hostname, address string) (*http
 	metriccollector.RegisterMetricsServiceServer(server, signals.metrics)
 	go server.Serve(listener)
 	t.Cleanup(server.Stop)
-	return signals, []string{"OTEL_EXPORTER_OTLP_ENDPOINT=https://" + listener.Addr().String(), "OTEL_EXPORTER_OTLP_CERTIFICATE=" + cert.config.CAFile, "OTEL_TRACES_SAMPLER_ARG=1", "OTEL_METRIC_EXPORT_INTERVAL=1000"}
+	settings := []string{"OTEL_EXPORTER_OTLP_ENDPOINT=https://" + listener.Addr().String(), "OTEL_EXPORTER_OTLP_CERTIFICATE=" + cert.config.CAFile, "OTEL_TRACES_SAMPLER_ARG=1", "OTEL_METRIC_EXPORT_INTERVAL=1000"}
+	if authenticated {
+		settings = append(settings, "STEGO_OTEL_TOKEN_FILE="+tokenFile)
+	}
+	return signals, settings
 }
 
 func (c *httpDiagnosticCollector) check(t *testing.T, instance string, private []string) {
