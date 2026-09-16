@@ -217,7 +217,7 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	allocationMarker := hex.EncodeToString(markerBytes[:16])
 	apply(object{"apiVersion": "networking.k8s.io/v1", "kind": "NetworkPolicy", "metadata": meta, "spec": object{
 		"podSelector": object{"matchLabels": labels}, "policyTypes": []string{"Ingress", "Egress"}, "egress": []any{},
-		"ingress": []any{object{"from": []any{object{"namespaceSelector": object{"matchLabels": object{"stego.dev/allocator": allocationMarker, "stego.dev/allocation-profile": "gateway"}}, "podSelector": object{"matchExpressions": []any{object{"key": "hypershell.redhat.io/gateway-id", "operator": "Exists"}}}}, object{"namespaceSelector": object{"matchLabels": object{"stego.dev/allocator": allocationMarker, "stego.dev/allocation-profile": "gateway"}}, "podSelector": object{"matchExpressions": []any{object{"key": "stego.test/network-probe", "operator": "Exists"}}}}, object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-identity"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-console"}}}, object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-provisioner"}}}}, "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
+		"ingress": []any{object{"from": identityFixtureIngressPeers(allocationMarker), "ports": []any{object{"protocol": "TCP", "port": 8443}}}},
 	}})
 	apply(object{"apiVersion": "v1", "kind": "Secret", "metadata": meta, "data": map[string][]byte{"tls.crt": read("server.pem"), "tls.key": read("server-key.pem"), "workflow-realm.json": realm}})
 	apply(object{"apiVersion": "v1", "kind": "Service", "metadata": meta, "spec": object{"selector": labels, "ports": []any{object{"port": 8443}}}})
@@ -265,4 +265,19 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 		t.Fatal(err)
 	}
 	return withIdentityState(t, &keycloakFixture{options: keycloak.Options{ServerURL: "https://" + host + ":8443", Realm: "workflow", ClientID: "provisioner", SecretFile: secret, CAFile: identity.config.CAFile}, http: client, certificate: filepath.Join(dir, "server.pem")})
+}
+
+func identityFixtureIngressPeers(allocationMarker string) []any {
+	type object = map[string]any
+	assigned := object{"matchLabels": object{"stego.dev/allocator": allocationMarker, "stego.dev/allocation-profile": "gateway"}}
+	return []any{
+		object{"namespaceSelector": assigned, "podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-console"}}},
+		object{"namespaceSelector": assigned, "podSelector": object{"matchExpressions": []any{object{"key": "hypershell.redhat.io/gateway-id", "operator": "Exists"}}}},
+		object{"namespaceSelector": assigned, "podSelector": object{"matchExpressions": []any{object{"key": "stego.test/network-probe", "operator": "Exists"}}}},
+		object{"podSelector": object{"matchLabels": object{"app": "stego-fixture"}}},
+		object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-gateway-identity"}}},
+		object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell"}}},
+		object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-console"}}},
+		object{"podSelector": object{"matchLabels": object{"app.kubernetes.io/name": "hypershell-provisioner"}}},
+	}
 }
