@@ -56,7 +56,8 @@ The production provisioner now uses this journal with STEGO's common
 [CI job 104635435888](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888).
 It took 104.29 seconds and included account creation, one-time credential
 delivery, verified tokens, reload, revoke, and delete. The separate private API
-and full cluster results remain pending.
+result remains pending. The [full cluster workflow](common-account-lifecycle-20260916.md)
+also passed, including provisioner Pod replacement and account cleanup.
 
 The provisioner requires `HYPERSHELL_API_GRPC_ADDR`, `HYPERSHELL_API_CA_FILE`,
 and `HYPERSHELL_API_TOKEN_FILE`. Its API identity needs the exact grant above.

@@ -383,3 +383,12 @@ Account creation, one-time credential delivery, verified token issuance, reload,
 revoke, and delete all passed with the common lifecycle and SQL journal.
 This browser fixture supplies Gateway readiness. The full cluster and private
 API results remain pending. Web-console and generated image checks also passed.
+
+## Common account lifecycle cluster result
+
+The [complete cluster workflow](common-account-lifecycle-20260916.md) passed on
+`048ff55` in 524.89 seconds. It used the common account lifecycle and SQL journal,
+replaced the provisioner Pod, used browser-issued credentials on real Gateways,
+and removed three provider clients before the Gateway deletion response.
+The saved cleanup record confirms that test resources and allocations are absent.
+Private state API, core-suite, and current CNPG qualification remain pending.

@@ -9,7 +9,7 @@ account quotas, expiry, and authorization policy.
 | --- | --- |
 | Account browser workflow | [Passed on `048ff55`](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888): real login, SQL journal, credential delivery, tokens, revoke, and delete |
 | Application regeneration, web console, and images | Passed on `048ff55`; the complete core suite is still running |
-| Full Gateway cluster workflow | [Passed on `6354a23`](acceptance/native-lifecycle-browser-evidence.json); the later account migration still needs a complete cluster result |
+| Full Gateway cluster workflow | [Passed on `048ff55`](acceptance/common-account-lifecycle-20260916.md), including the common account lifecycle, provisioner replacement, real Gateway credentials, and verified cleanup |
 | Private account state API and restart | [Required test](acceptance/service-account-provider-state.md); live result pending |
 | CNPG | Earlier complete workflow passed; qualification of the account migration is pending |
 
@@ -582,5 +582,5 @@ The service-account provisioner now uses STEGO's common Keycloak lifecycle and
 Common code manages creation, migration, access repair, and retained cleanup.
 Hypershell supplies Gateway ownership and OpenShell role policy. This migration
 requires stable journal keys and an exact API grant. Its rendered browser
-workflow passed on commit `048ff55`; private API and full cluster qualification
-remain pending.
+and full cluster workflows passed on commit `048ff55`. Private API, core-suite,
+and CNPG qualification remain pending.
