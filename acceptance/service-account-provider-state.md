@@ -13,6 +13,11 @@ target. Administrator roles, Gateway ownership, cleanup grants, and controller
 write grants do not substitute for this grant. The machine caller does not need
 a username or other profile fields. These RPCs do not create user or grant rows.
 
+The account check uses STEGO's common cursor with an exact account ID and
+retained rows enabled. `GetRetained` applies only to versioned entities, so it
+is used for Gateway only. The account cursor requests at most one result and
+checks the returned account and Gateway IDs before it permits state access.
+
 The record key is entity `ServiceAccount`, the canonical account ID, and scope
 `gateway:<Gateway ID>`. The journal's authenticated encryption also binds the
 operator's instance ID. Normal work requires a retained live Gateway and an

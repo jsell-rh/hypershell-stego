@@ -357,3 +357,17 @@ migration, the fixed CI receiver now permits TCP 19094 from the provisioner.
 The update ran with the live-test Lease held and no test workload present.
 All fixture network policies passed verification, and the Lease was released.
 See [receiver update](account-state-receiver-update-20260916.json).
+
+## Account journal storage correction
+
+The rendered browser test in run `35045331844` failed during account creation.
+The journal check called the versioned retained-read method for ServiceAccount,
+which has no resource version. A focused test reproduced that rejection. The
+check now uses the common retained cursor, bounded to the exact account ID.
+Foreign Gateway accounts are still denied. The focused tests passed with the
+race detector in 1.021 and 1.027 seconds. Live qualification remains pending.
+
+The earlier run `35045188547` stopped at stale generation records. Those records
+were regenerated with the pinned compiler for both the application and console.
+Run `35045331844` then passed regeneration, web-console checks, and image checks.
+Its failed browser result does not qualify the account lifecycle migration.

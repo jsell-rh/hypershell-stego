@@ -44,15 +44,28 @@ func checkAccountProviderState(ctx context.Context, tx store.Transaction, gatewa
 	if !cleanup && gateway.DeletedAt.Valid {
 		return store.ErrVersionConflict
 	}
-	value, err = reader.GetRetained(ctx, "ServiceAccount", accountID)
-	if errors.Is(err, store.ErrNotFound) && cleanup {
-		return nil
+	// ServiceAccount has no resource revision. The common cursor can read its
+	// retained row by exact ID without a count query or a Gateway row lock.
+	accounts, ok := tx.(store.CursorReader)
+	if !ok {
+		return errors.New("account provider state requires retained cursor reads")
 	}
+	result, err := accounts.ReadCursor(ctx, "ServiceAccount", "id", accountID, store.CursorOptions{Limit: 1, Deletion: store.CursorAll})
 	if err != nil {
 		return err
 	}
-	account, ok := value.(model.ServiceAccount)
-	if !ok || account.ID != accountID || account.GatewayID != gatewayID || account.ClientID != "hs-sa-"+gatewayID+"-"+accountID {
+	rows, ok := result.Items.([]model.ServiceAccount)
+	if !ok || len(rows) > 1 || result.More {
+		return errors.New("account provider state read does not match")
+	}
+	if len(rows) == 0 {
+		if cleanup {
+			return nil
+		}
+		return store.ErrNotFound
+	}
+	account := rows[0]
+	if account.ID != accountID || account.GatewayID != gatewayID || account.ClientID != "hs-sa-"+gatewayID+"-"+accountID {
 		return ErrForbidden
 	}
 	if !cleanup {
