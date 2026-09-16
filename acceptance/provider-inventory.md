@@ -60,3 +60,14 @@ Compiler and application qualification remain pending. Do not promote this
 candidate to application main until the composed tests and full workflow
 checks pass. Provider inventory query adoption and bounded progress for large
 legacy inventories remain open work.
+
+The candidate source is `d1ec34c140e3fef91af077a7ab027ca7b8cc21d3`, with compiler
+`20d6e2e`. Application CI run `35102064260` is in progress. The combined common
+runtime is queued in STEGO CI run `35101860805`. The acceptance package compiles;
+its database tests have not yet returned results. The active CNPG run
+`35100459235` uses the earlier deletion candidate and cannot qualify this fix.
+
+Before release, also test a journal registration that occurs during a scan.
+Key pages are not a snapshot. Completion must not miss a new key before the
+saved cursor. Current application checks cover a saved journal that exists
+before the recovery cycle; they do not yet prove this concurrent case.
