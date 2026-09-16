@@ -86,6 +86,10 @@ func startAccountProvisioner(t testing.TB, provider *accountProvider, key *rsa.P
 	return options, file
 }
 func startProvisionerTransport(t testing.TB, register func(grpc.ServiceRegistrar) error, key *rsa.PrivateKey, settings []string) ([]string, string, func()) {
+	return startAuthenticatedProvisionerTransport(t, register, settings, token(t, key, "api-provisioner"))
+}
+
+func startAuthenticatedProvisionerTransport(t testing.TB, register func(grpc.ServiceRegistrar) error, settings []string, bearer string) ([]string, string, func()) {
 	t.Helper()
 	for _, setting := range settings {
 		name, value, _ := strings.Cut(setting, "=")
@@ -124,7 +128,7 @@ func startProvisionerTransport(t testing.TB, register func(grpc.ServiceRegistrar
 	}
 	t.Cleanup(stop)
 	tokenFile := filepath.Join(t.TempDir(), "service-token")
-	if err := os.WriteFile(tokenFile, []byte(token(t, key, "api-provisioner")), 0600); err != nil {
+	if err := os.WriteFile(tokenFile, []byte(bearer), 0600); err != nil {
 		t.Fatal(err)
 	}
 	return []string{"HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR=" + runtime.Addr().String(), "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE=" + identity.config.CAFile, "HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE=" + tokenFile}, tokenFile, stop

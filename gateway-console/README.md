@@ -43,9 +43,10 @@ The console client uses the native Gateway client's roles and audience. It
 creates no second set of grants. STEGO controls client repair and deletion.
 The API stores its encrypted recovery record in a separate fixed scope. It
 uses the same assigned identity controller and cleanup grants, with resource
-and record version checks. Cleanup closes the console client before the native
-client. This change does not yet supply credentials to a dashboard Pod or
-publish `console_address`. The application workflow still requires those steps.
+and record version checks. Cleanup attempts both client closures and retains any error for retry. A console
+failure must not leave native closure open. This change does not yet supply
+credentials to a dashboard Pod or publish `console_address`. The application
+workflow still requires those steps.
 
 The [identity evidence](../acceptance/console-identity-evidence.json) records 21
 passing checks against real Keycloak and PostgreSQL. It includes PKCE console
@@ -53,3 +54,17 @@ login, stored owner and viewer grants, grant removal during a console placement
 fault, and restart. The controller applies grants before client repair. It
 retries from current state if a grant observation changes the resource revision.
 This evidence does not prove a deployed dashboard workflow.
+
+The trusted provisioner exposes an internal console credential RPC. Configure
+`HYPERSHELL_CONSOLE_CREDENTIAL_GRANTS` with exact issuer, subject, `Gateway`
+resource, `read.console-credential` operation, and managed cluster ID as target.
+No account provisioning subject receives this grant by default. The request
+must match the current Gateway ID, cluster, and resource revision. The service
+checks that observation before and after the protected credential read.
+
+The provisioner's API identity also needs a separate `HYPERSHELL_PROVIDER_STATE_GRANTS`
+entry for `Gateway`, operation `read.console-client`, and an empty target. This
+grant permits only console journal reads. It does not permit native journal
+reads, journal writes, or cleanup. The provisioner uses the instance's identity
+state keys and console domain policy. Gateway Pods receive no administrator
+credential or state key through this interface.

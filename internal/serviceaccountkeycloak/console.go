@@ -145,15 +145,63 @@ func (c *Client) EnsureGatewayWithConsole(ctx context.Context, id, name, cluster
 			return "", err
 		}
 		_, err = lifecycle.Reconcile(ctx, func(provider.ClientBinding) (provider.BrowserAccessPolicy, error) {
-			return provider.BrowserAccessPolicy{
-				Client: provider.BrowserClientPolicy{DisplayName: name, AccessTokenLifetimeSeconds: 300, RedirectURI: origin + "/auth/callback", PostLogoutRedirectURI: origin + "/auth/logout"},
-				Scopes: provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: native, Names: []string{RoleAdmin, RoleUser}}}},
-				Claims: provider.TokenClaimsPolicy{AudienceClients: []provider.ClientBinding{native}, ClientRoles: []provider.ClientRoleClaim{{Client: native, Claim: "hypershell.roles"}}},
-			}, nil
+			return consoleAccessPolicy(native, name, origin), nil
 		})
 		if err != nil {
 			return "", err
 		}
 	}
 	return c.gatewayOIDC(native), nil
+}
+
+func consoleAccessPolicy(native provider.ClientBinding, name, origin string) provider.BrowserAccessPolicy {
+	return provider.BrowserAccessPolicy{
+		Client: provider.BrowserClientPolicy{DisplayName: name, AccessTokenLifetimeSeconds: 300, RedirectURI: origin + "/auth/callback", PostLogoutRedirectURI: origin + "/auth/logout"},
+		Scopes: provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: native, Names: []string{RoleAdmin, RoleUser}}}},
+		Claims: provider.TokenClaimsPolicy{AudienceClients: []provider.ClientBinding{native}, ClientRoles: []provider.ClientRoleClaim{{Client: native, Claim: "hypershell.roles"}}},
+	}
+}
+
+// GatewayConsoleCredentials reads only an open, fully reconciled client. The
+// caller must check worker access and the Gateway observation before and after
+// this call. This method does not create, repair, or reopen provider state.
+func (c *Client) GatewayConsoleCredentials(ctx context.Context, id, name, cluster string, revision int64) (string, provider.Secret, error) {
+	domain, ok := c.consoleDomains[cluster]
+	if !ok || name == "" {
+		return "", provider.Secret{}, errors.New("Gateway console has no current placement")
+	}
+	origin, err := GatewayConsoleOrigin(id, domain)
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	lifecycle, err := c.consoleLifecycle(id, revision, false)
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	nativeID, err := GatewayClientID(id)
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	live, err := c.keycloak.FindClient(ctx, nativeID)
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	native, err := gatewayBinding(&live, id)
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	policy := gatewayAccessPolicy(native, name)
+	if err := c.keycloak.InspectNativeClientAccess(ctx, native, policy); err != nil {
+		return "", provider.Secret{}, err
+	}
+	binding, secret, err := lifecycle.Credentials(ctx, func(provider.ClientBinding) (provider.BrowserAccessPolicy, error) {
+		return consoleAccessPolicy(native, name, origin), nil
+	})
+	if err != nil {
+		return "", provider.Secret{}, err
+	}
+	if err := c.keycloak.InspectNativeClientAccess(ctx, native, policy); err != nil {
+		return "", provider.Secret{}, err
+	}
+	return binding.ClientID, secret, nil
 }

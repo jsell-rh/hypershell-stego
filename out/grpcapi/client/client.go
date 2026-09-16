@@ -445,6 +445,8 @@ func clientMethod(method string) string {
 		return method[1:]
 	case "/hypershell.provisioner.v1.GatewayAccountInventoryService/ReadPage":
 		return method[1:]
+	case "/hypershell.provisioner.v1.GatewayConsoleCredentialService/GetCredentials":
+		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Delete":
 		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/DeleteGateway":

@@ -15,6 +15,10 @@ last_applied:
                 exists: true
                 sha256: 7e64ad3e3eb6970f604ade8963cedf8f44f615a411fbed2e9752e5dbe954f366
                 mode: 420
+            contracts/extensions/console_credentials.proto:
+                exists: true
+                sha256: 27ab02a17e43d765f38c615a7af1d905ddcff24a38b15bdea4f73cc04856d8c2
+                mode: 420
             contracts/extensions/gateways.proto:
                 exists: true
                 sha256: 84ce8aac2404fb3200e149e07d2e3b4fa3349748b3cb6cf0eaa8ca66dc88d3f5
@@ -121,22 +125,22 @@ last_applied:
                 mode: 420
             internal/serviceaccountprovisioner/rpc.go:
                 exists: true
-                sha256: 509a3d7f7bc406ca202c94184346def6d435fbf0c7c4ac9736dcc727e04fe4e6
+                sha256: eadec11fbfdf56893d3d4d8dbc4ca7f65c94e445476aee0bbc9bdee38b0d38ce
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: fa7950cf9bcddbfe846db49f3b1f539bcaac1462b5dd5885267cac9a0127503f
+                sha256: f5c1073ce4271ca087997e1571bd1fc8f54a9fb3a8488992d0ebd974f644d943
                 mode: 420
-        sha256: 262b01257f52d14b4df05f8eb6820c0dcf3e8bf834c3c3490abd3fc6327273f8
+        sha256: 7165ba6cd68a4557dd9181792d9ff74d36d115edcfbdf32225069556e1e15834
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916152247-1db04e6c0d2a
-        vcs: git
-        revision: 1db04e6c0d2aa566b4ce027401b70155a190f3dd
-        source_state: clean
-    service_hash: fa7950cf9bcddbfe846db49f3b1f539bcaac1462b5dd5885267cac9a0127503f
+        module_version: (devel)
+        vcs: unknown
+        revision: unknown
+        source_state: unknown
+    service_hash: f5c1073ce4271ca087997e1571bd1fc8f54a9fb3a8488992d0ebd974f644d943
     registry_sha: gateway-workflow
     registry_content_sha256: 96afb77c7e6cd90218eb742da603e6d5c2d241c8bd9c94955fc39d417cccba41
     components:
@@ -445,7 +449,7 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: a065587a5b2240d81cd5f4798c316d3ce96d408d34bd228a97d149807b529c00
+        cli/command/version.go: 923469c895864b67eecc47986593debc60a0ddbae8f8e395005a79b521c1d7b7
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
@@ -492,11 +496,13 @@ last_applied:
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
-        grpcapi/client/client.go: 06739b7e20642ab657622e1e2fc8548aabb4449852ea1aeeebdf4e1619aeed30
+        grpcapi/client/client.go: e11483399bdf243e27f7c074bd1b5a71dd8b54ef7cc0f2132bb0366922788641
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
         grpcapi/pb/datamodel.pb.go: c6caf936644ead4b030c774ab28e36bf00717b54c70dcdc46088e7da13154294
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 2809bdac7e8a57b1f5b27c9ace02fda831ccde69847c54991f64776cf3fca0e7
         grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 525e65808542b6f7d56372705c02fc7afe4f6394e4c5026c5564002824ab3385
+        grpcapi/pb/hypershell/provisioner/v1/console_credentials.pb.go: 0a3f9ec696a18e30f5ada1870b68b92faa40c9ab0fefca182152dc8fac195fda
+        grpcapi/pb/hypershell/provisioner/v1/console_credentials_grpc.pb.go: 930bcc89d18587d755a19f39e98670fd4f1b0fd0c73189d514b4244f17aa7908
         grpcapi/pb/hypershell/provisioner/v1/service_account_inventory.pb.go: 2f684d00d892046e41e1c8c7814a0d9d9e44bcb07d8e9f65f2aa96f9157dcfbc
         grpcapi/pb/hypershell/provisioner/v1/service_account_inventory_grpc.pb.go: f0a3374ebcf1c11030b6f54bf5cec77acf4901360156af7d3c62004570767561
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
@@ -526,7 +532,7 @@ last_applied:
         keycloak/access_lifecycle.go: 305fd5a8b98dfa17a2cc357cac9aec28c1955c44822cb9455f443bd80caabcfe
         keycloak/browser_access.go: 059d39cff12faf9782c49acc173113788a8c0768b243366ff67ab2b6a4fc8ea4
         keycloak/browser_clients.go: f010ac9a3d135cbbf00aff56a4dac75d7d888b8bb13b106a1ad6004eb1bfd978
-        keycloak/browser_lifecycle.go: abf22feba83a5c4b44249cc894e0d0cf6dbe40be6888945e02e83c313193e60f
+        keycloak/browser_lifecycle.go: 98e34da5a5c48ca3de857349fbd07f6a9c11db933d85d5d216f4eb54f57b70dd
         keycloak/client.go: da06c0e730edc9178d615d80014ceef065880fa6d900007fc50ce0c7b0c74a7f
         keycloak/client_configuration.go: 4572a3928355d1a72a18b8856680d0bf13bbd1041848ad0a62390ab660de8179
         keycloak/client_cursor.go: 029e8ed2805aaa3b3c8232a5153834af81e0e6efa35e542d7af1f495fbf70d82

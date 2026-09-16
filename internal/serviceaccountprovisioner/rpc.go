@@ -7,8 +7,10 @@ import (
 	"os"
 	"strings"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -52,9 +54,32 @@ func Open(ctx context.Context) (process.Application, error) {
 	}) >= 0 {
 		return nil, errors.New("account provider requires a stable instance ID")
 	}
+	consoleDomains, err := keycloak.ParseConsoleDomains(os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_DOMAINS"))
+	if err != nil {
+		return nil, err
+	}
+	grants := os.Getenv("HYPERSHELL_CONSOLE_CREDENTIAL_GRANTS")
+	if grants == "" {
+		grants = "[]"
+	}
+	consolePolicy, err := auth.ParseGrantPolicy([]byte(grants))
+	if err != nil {
+		return nil, err
+	}
+	identityState := control.NewGatewayIdentityServiceClient(connection)
 	state := control.NewServiceAccountProviderStateServiceClient(connection)
 	provider, err := keycloak.NewClient(keycloak.Options{
 		ServerURL: os.Getenv("HYPERSHELL_KEYCLOAK_URL"), Realm: os.Getenv("HYPERSHELL_KEYCLOAK_REALM"), ClientID: os.Getenv("HYPERSHELL_KEYCLOAK_CLIENT_ID"), SecretFile: os.Getenv("HYPERSHELL_KEYCLOAK_SECRET_FILE"), CAFile: os.Getenv("HYPERSHELL_KEYCLOAK_CA_FILE"),
+		ConsoleDomains: consoleDomains,
+		GatewayJournal: func(string, int64, bool) (*runtime.StateJournal, error) {
+			return nil, errors.New("account provisioner cannot change native Gateway identity")
+		},
+		ConsoleJournal: func(id string, revision int64, cleanup bool) (*runtime.StateJournal, error) {
+			if cleanup {
+				return nil, errors.New("account provisioner cannot close console identity")
+			}
+			return gatewayidentity.NewConsoleProviderStateJournal(identityState, protector, instance, id, revision, false)
+		},
 		AccountJournal: func(gatewayID, accountID string, cleanup bool) (*runtime.StateJournal, error) {
 			return NewProviderStateJournal(state, protector, instance, gatewayID, accountID, cleanup)
 		},
@@ -68,18 +93,20 @@ func Open(ctx context.Context) (process.Application, error) {
 		return nil, err
 	}
 	ready = true
-	return &application{provider: provider, server: server, connection: connection}, nil
+	return &application{provider: provider, server: server, connection: connection, console: NewConsoleCredentialServer(provider, identityState, consolePolicy)}, nil
 }
 
 type application struct {
 	connection *rpc.Client
 	provider   *keycloak.Client
 	server     *Server
+	console    *ConsoleCredentialServer
 }
 
 func (a *application) Register(registrar grpc.ServiceRegistrar) error {
 	pb.RegisterOpenShellGatewayServiceAccountProvisionerServiceServer(registrar, a.server)
 	pb.RegisterGatewayAccountInventoryServiceServer(registrar, a.server)
+	pb.RegisterGatewayConsoleCredentialServiceServer(registrar, a.console)
 	return nil
 }
 func (a *application) Close() error { a.provider.Close(); a.connection.Close(); return nil }

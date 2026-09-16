@@ -5,6 +5,7 @@ import (
 	"errors"
 	"math"
 
+	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -32,10 +33,8 @@ func (s *Service) loadIdentityProviderState(ctx context.Context, p Principal, id
 	if !validID(id) {
 		return result, ErrInvalid
 	}
-	if s.authorizeIdentityController(p, id) != nil {
-		if err = s.AuthorizeCleanup(p, "Gateway", "identity", ""); err != nil {
-			return result, err
-		}
+	if err = s.authorizeIdentityProviderStateRead(p, id, scope); err != nil {
+		return result, err
 	}
 	err = s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
 		reader, ok := tx.(store.RetainedReader)
@@ -71,6 +70,18 @@ func (s *Service) loadIdentityProviderState(ctx context.Context, p Principal, id
 		return nil
 	})
 	return result, err
+}
+
+// The trusted provisioner can read only the console record with this grant.
+// It receives no native record or state write permission.
+func (s *Service) authorizeIdentityProviderStateRead(p Principal, id, scope string) error {
+	if scope == consoleIdentityProviderStateScope && validatePrincipal(p) == nil && s.isControlPlane(p) && s.providerStatePolicy.Allows(auth.Identity{Issuer: p.Issuer, UserID: p.Subject}, "Gateway", "read.console-client", "") {
+		return nil
+	}
+	if s.authorizeIdentityController(p, id) == nil {
+		return nil
+	}
+	return s.AuthorizeCleanup(p, "Gateway", "identity", "")
 }
 
 // SaveIdentityProviderState keeps recovery writes separate from domain events.

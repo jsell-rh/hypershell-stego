@@ -58,18 +58,22 @@ func (c *Client) reconcileGateway(ctx context.Context, id, name string, revision
 		return provider.ClientBinding{}, err
 	}
 	binding, err := lifecycle.Reconcile(ctx, func(binding provider.ClientBinding) (provider.NativeAccessPolicy, error) {
-		return provider.NativeAccessPolicy{
-			Client: provider.NativeClientPolicy{DisplayName: name, AccessTokenLifetimeSeconds: 300, LoopbackRedirectURIs: []string{"http://127.0.0.1:*/callback", "http://localhost:*/callback"}, EnableDeviceAuthorization: true},
-			Roles:  []string{RoleAdmin, RoleUser},
-			Scopes: provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: binding, Names: []string{RoleAdmin, RoleUser}}}},
-			Claims: provider.TokenClaimsPolicy{AudienceClients: []provider.ClientBinding{binding}, ClientRoles: []provider.ClientRoleClaim{{Client: binding, Claim: "hypershell.roles"}}},
-		}, nil
+		return gatewayAccessPolicy(binding, name), nil
 	})
 	if err != nil {
 		return provider.ClientBinding{}, err
 	}
 	return binding, nil
 }
+func gatewayAccessPolicy(binding provider.ClientBinding, name string) provider.NativeAccessPolicy {
+	return provider.NativeAccessPolicy{
+		Client: provider.NativeClientPolicy{DisplayName: name, AccessTokenLifetimeSeconds: 300, LoopbackRedirectURIs: []string{"http://127.0.0.1:*/callback", "http://localhost:*/callback"}, EnableDeviceAuthorization: true},
+		Roles:  []string{RoleAdmin, RoleUser},
+		Scopes: provider.RolePolicy{Clients: []provider.ClientRoleGrant{{Client: binding, Names: []string{RoleAdmin, RoleUser}}}},
+		Claims: provider.TokenClaimsPolicy{AudienceClients: []provider.ClientBinding{binding}, ClientRoles: []provider.ClientRoleClaim{{Client: binding, Claim: "hypershell.roles"}}},
+	}
+}
+
 func (c *Client) gatewayOIDC(binding provider.ClientBinding) string {
 	body, _ := json.Marshal(map[string]any{"issuer": c.issuer(), "client_id": binding.ClientID, "audience": binding.ClientID, "jwks_ttl": 3600, "roles_claim": "hypershell.roles", "admin_role": RoleAdmin, "user_role": RoleUser})
 	return string(body)

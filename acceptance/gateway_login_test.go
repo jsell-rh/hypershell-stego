@@ -216,6 +216,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	k := startKeycloakConfigured(t, func(realm map[string]any) { realm["editUsernameAllowed"] = true })
 	settings, jwks := k.apiLoginSetup(t)
 	aliceID, bobID, controllerID := k.human(t, "alice"), k.human(t, "bob"), k.human(t, "controller")
+	credentialReaderID := k.human(t, "credential-reader")
 	response := k.adminRequest(t, "GET", "/clients?clientId=hypershell", nil)
 	var clients []struct {
 		ID string `json:"id"`
@@ -238,10 +239,12 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	f := database(t)
 	tlsIdentity := identity(t, "localhost")
 	dir := filepath.Dir(tlsIdentity.config.CAFile)
-	allowed, _ := json.Marshal([]string{controllerID})
+	allowed, _ := json.Marshal([]string{controllerID, credentialReaderID})
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(allowed), "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"))
 	settings = withCleanupGrants(t, settings, cleanupGrant(controllerID, "Gateway", "identity", ""))
 	settings = withControllerWriteGrants(t, settings, writeGrant(controllerID, "configure.identity", ""))
+	readerGrants, _ := json.Marshal([]auth.Grant{{Issuer: k.options.ServerURL + "/realms/workflow", Subject: credentialReaderID, Resource: "Gateway", Operation: "read.console-client"}})
+	settings = append(settings, "HYPERSHELL_PROVIDER_STATE_GRANTS="+string(readerGrants))
 	_, config := broker(t, identity(t, "localhost"))
 	apiBinary, controllerBinary := buildApplication(t), buildProgram(t, "./out/deploy/workers/gateway-identity")
 	stopAPI, address, grpcAddress := startBoth(t, apiBinary, f.dsn, config, settings...)
@@ -336,18 +339,17 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	if consoleClient == nil {
 		t.Fatal("console client is absent")
 	}
-	secretResponse := k.adminRequest(t, "GET", "/clients/"+url.PathEscape(consoleClient["id"].(string))+"/client-secret", nil)
-	var consoleSecret struct{ Value string }
-	if json.Unmarshal(secretResponse.Body, &consoleSecret) != nil || consoleSecret.Value == "" {
-		t.Fatal("console credential is absent")
-	}
+	waitSync()
+	readerToken := k.browserLogin(t, "hypershell", "credential-reader")
+	consoleSecret := readConsoleCredentialThroughRuntime(t, k, grpcAddress, tlsIdentity.config.CAFile, readerToken, controllerToken, controllerID, settings, gateway.ID, f.cluster)
+
 	consoleOrigin, err := keycloak.GatewayConsoleOrigin(gateway.ID, "console.example.com")
 	if err != nil {
 		t.Fatal(err)
 	}
 	consoleLogin := func(username string) string {
 		t.Helper()
-		return k.browserLoginAt(t, "hs-console-"+gateway.ID, username, consoleOrigin+"/auth/callback", consoleSecret.Value)
+		return k.browserLoginAt(t, "hs-console-"+gateway.ID, username, consoleOrigin+"/auth/callback", consoleSecret)
 	}
 	waitRoles := func(username, subject string, want []string) string {
 		t.Helper()
