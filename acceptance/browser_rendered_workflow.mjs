@@ -35,6 +35,30 @@ async function login(username){
  await type('#username',username);await type('#password','acceptance-only-user-password');await click('#kc-login');
  await element('#gateway-name');
 }
+async function dashboardEditor(workspace,heading){
+ await command('/url',{url:input.origin+'/global-policy'});
+ await heading('Global policy');
+ await script(`window.stegoEditorPolicyViolations=[];document.addEventListener('securitypolicyviolation',event=>window.stegoEditorPolicyViolations.push(event.effectiveDirective));`);
+ await click('[data-testid="set-global-policy"]');
+ await element('.monaco-editor textarea.inputarea');
+ await until(()=>script(`const node=document.querySelector('.monaco-editor .view-lines');if(!node)return false;const box=node.getBoundingClientRect();return box.width>200 && box.height>100 && node.innerText.trim().length>0;`),'visible policy editor');
+ await click('.monaco-editor textarea.inputarea');
+ await command('/actions',{actions:[{type:'key',id:'editor',actions:[
+  {type:'keyDown',value:'\uE009'},{type:'keyDown',value:'a'},
+  {type:'keyUp',value:'a'},{type:'keyUp',value:'\uE009'},
+  {type:'keyDown',value:'\uE017'},{type:'keyUp',value:'\uE017'},
+ ]}]});
+ await type('.monaco-editor textarea.inputarea','{');
+ await until(()=>script(`return document.body.innerText.includes('Invalid JSON') && document.querySelector('[data-testid="confirm-global-policy"]')?.disabled;`),'invalid policy rejection');
+ assert.deepEqual(await script('return window.stegoEditorPolicyViolations'),[],'editor violated the browser content policy');
+ await writeFile(outputPath+'.editor.png',Buffer.from(await command('/screenshot'),'base64'));
+ // Close the draft without changing the Gateway policy.
+ const cancel=await until(()=>script(`const button=[...document.querySelectorAll('[role="dialog"] button')].find(node=>node.textContent.trim()==='Cancel');return button;`),'policy draft cancel');
+ await command(`/element/${cancel[elementKey]}/click`,{});
+ await command('/url',{url:input.origin+'/workspaces/'+workspace});
+ await heading(workspace);
+ await writeFile(outputPath+'.editor.json',JSON.stringify({rendered:true,keyboard_input:true,invalid_json_rejected:true,content_policy_violations:[],policy_submitted:false}));
+}
 try {
  if(phase==='close'){try{await command('',undefined,'DELETE');}catch(error){if(!error.message.includes('invalid session id'))throw error;}process.exit(0);}
  if(phase==='dashboard-create'||phase==='dashboard-reload'||phase==='dashboard-verify'){
@@ -52,6 +76,7 @@ try {
    await type('#workspace-name',workspace);await click('[data-testid="create-workspace-submit"]');
    await click(`[data-testid="workspace-link-${workspace}"]`);
    await heading(workspace);
+   await dashboardEditor(workspace,heading);
   }else{
    await command('/refresh',{});
    await heading(workspace);
