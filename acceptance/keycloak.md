@@ -308,3 +308,20 @@ saved provider creation and migration state to that reservation, preserve the
 one-time credential response, and keep cleanup possible after a lost response.
 Gateway roles, account quotas, expiry, and creator authorization remain
 application policy. No service-account lifecycle migration is claimed here.
+
+## Legacy audience names
+
+The native lifecycle change made the service-account role path require the
+new generated Gateway client name for legacy ownership as well. A focused test
+reproduced rejection of an otherwise valid stored legacy audience. The account
+path now accepts the exact stored public name when the provider client has the
+complete legacy Gateway ownership attributes. It retains the provider ID and
+Gateway ID checks. New ownership still requires the generated name, and the
+common provider still rejects unknown reserved ownership keys and partial
+migrations. The adapter suite passed with the race detector in 1.368 seconds.
+
+The shared service-account lifecycle passed its real Keycloak check in STEGO
+run `35041366927`, provider job `104622531905`. The whole real-provider test took
+61.44 seconds. The account checks covered creation, migration, a saved subject,
+a lost journal acknowledgement, restart, signed token policy, disabled repair,
+resume, and late-create cleanup. Production provisioner adoption remains open.

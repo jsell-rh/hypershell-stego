@@ -82,17 +82,31 @@ func (c *Client) DeleteGateway(ctx context.Context, id string, revision int64) e
 // Reads accept a complete legacy binding until its controller migrates it.
 // Mixed ownership keys are not a usable grant or service-account audience.
 func gatewayBinding(live *provider.ClientRepresentation, id string) (provider.ClientBinding, error) {
+	clientID, err := GatewayClientID(id)
+	if err != nil {
+		return provider.ClientBinding{}, err
+	}
+	return gatewayAudienceBinding(live, id, clientID)
+}
+
+// Stored legacy audiences can have an older public name. The trusted caller
+// must supply that exact name and Gateway ID. New ownership requires the
+// generated name, and both forms retain the common reserved-key checks.
+func gatewayAudienceBinding(live *provider.ClientRepresentation, id, clientID string) (provider.ClientBinding, error) {
 	expected, err := gatewayIdentity(id)
 	if err != nil {
 		return provider.ClientBinding{}, err
 	}
-	if live == nil || live.ClientID != expected.ClientID {
+	if live == nil || live.ClientID != clientID {
 		return provider.ClientBinding{}, provider.ErrOwnership
 	}
 	attributes := expected.LegacyAttributes
 	_, newKind := live.Attributes[managedGatewayAttribute]
 	_, newID := live.Attributes[managedGatewayIDAttribute]
 	if newKind || newID {
+		if clientID != expected.ClientID {
+			return provider.ClientBinding{}, provider.ErrOwnership
+		}
 		if _, ok := live.Attributes[gatewayAttribute]; ok {
 			return provider.ClientBinding{}, provider.ErrOwnership
 		}
@@ -101,7 +115,7 @@ func gatewayBinding(live *provider.ClientRepresentation, id string) (provider.Cl
 		}
 		attributes = expected.Ownership
 	}
-	binding := provider.ClientBinding{ID: live.ID, ClientID: expected.ClientID, Attributes: attributes}
+	binding := provider.ClientBinding{ID: live.ID, ClientID: clientID, Attributes: attributes}
 	if err := binding.CheckOwnership(*live); err != nil {
 		return provider.ClientBinding{}, err
 	}

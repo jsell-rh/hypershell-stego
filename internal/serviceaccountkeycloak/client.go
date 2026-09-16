@@ -607,7 +607,7 @@ func (c *Client) resolveGatewayRoles(ctx context.Context, gatewayClientID, gatew
 	if gateway.ClientID != gatewayClientID || gatewayID == "" {
 		return "", nil, errors.New("keycloak Gateway client binding does not match")
 	}
-	if _, err := gatewayBinding(gateway, gatewayID); err != nil {
+	if _, err := gatewayAudienceBinding(gateway, gatewayID, gatewayClientID); err != nil {
 		return "", nil, err
 	}
 	body, status, err := c.admin(ctx, http.MethodGet, fmt.Sprintf("/admin/realms/%s/clients/%s/roles", c.realm, url.PathEscape(gatewayUUID)), nil)
@@ -908,11 +908,11 @@ func serviceAccountBinding(spec ServiceAccountSpec, id string) provider.ClientBi
 	}}
 }
 func (c *Client) serviceAccountRoles(ctx context.Context, spec ServiceAccountSpec, gatewayUUID string) (provider.RolePolicy, error) {
-	live, err := c.requireGateway(ctx, gatewayUUID, spec.GatewayID)
+	live, err := c.getClient(ctx, gatewayUUID)
 	if err != nil {
 		return provider.RolePolicy{}, err
 	}
-	binding, err := gatewayBinding(live, spec.GatewayID)
+	binding, err := gatewayAudienceBinding(live, spec.GatewayID, spec.GatewayClientID)
 	if err != nil || binding.ClientID != spec.GatewayClientID {
 		return provider.RolePolicy{}, provider.ErrOwnership
 	}
