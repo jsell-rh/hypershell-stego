@@ -57,6 +57,33 @@ func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 	}
 }
 
+func TestConsolePrivateImageUsesGeneratedPodReference(t *testing.T) {
+	gw, release := records(t)
+	entries, err := consoleResources(gw, release.Image, 65532, strings.Repeat("a", 64), consoleName+"-image-pull")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, entry := range entries {
+		if kube.String(entry.object, "kind") != "Deployment" {
+			continue
+		}
+		pod, ok := kube.Nested(entry.object, "spec", "template", "spec").(map[string]any)
+		if !ok {
+			t.Fatal("Pod template is missing")
+		}
+		refs, _ := pod["imagePullSecrets"].([]any)
+		if len(refs) != 1 || kube.String(object(refs[0].(map[string]any)), "name") != consoleName+"-image-pull" {
+			t.Fatal("private image reference is missing")
+		}
+		volumes, _ := json.Marshal(pod["volumes"])
+		if strings.Contains(string(volumes), consoleName+"-image-pull") {
+			t.Fatal("pull credentials are mounted in the application")
+		}
+		return
+	}
+	t.Fatal("console Deployment is missing")
+}
+
 func consoleDependencies(id string) []object {
 	ns, _ := Namespace(id)
 	values := make([]object, len(consoleSecretNames))

@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"net/http"
+	"path/filepath"
 	"strings"
 
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
@@ -15,8 +16,9 @@ import (
 )
 
 type ConsoleOptions struct {
-	Domain, Image string
-	Credentials   provisioner.GatewayConsoleCredentialServiceClient
+	Domain, Image       string
+	ImagePullConfigFile string
+	Credentials         provisioner.GatewayConsoleCredentialServiceClient
 }
 
 func checkConsoleOptions(o Options) error {
@@ -28,6 +30,9 @@ func checkConsoleOptions(o Options) error {
 	}
 	if o.Console.Credentials == nil || !digestImage.MatchString(o.Console.Image) || o.PublicDomain == "" || o.PublicIssuer == "" || o.PublicRouter == "" {
 		return errors.New("console requires a pinned image, credential client, and public TLS configuration")
+	}
+	if o.Console.ImagePullConfigFile != "" && !filepath.IsAbs(o.Console.ImagePullConfigFile) {
+		return errors.New("console image pull configuration requires an absolute private file path")
 	}
 	return nil
 }

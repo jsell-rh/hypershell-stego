@@ -32,7 +32,8 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 	}
 	var console *gatewayworkload.ConsoleOptions
 	domain, image := os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_DOMAIN"), os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_IMAGE")
-	if domain != "" || image != "" {
+	pullFile := os.Getenv("HYPERSHELL_GATEWAY_CONSOLE_IMAGE_PULL_CONFIG_FILE")
+	if domain != "" || image != "" || pullFile != "" {
 		if domain == "" || image == "" {
 			return errors.New("Gateway console requires a domain and pinned image")
 		}
@@ -41,7 +42,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 			return err
 		}
 		defer credentials.Close()
-		console = &gatewayworkload.ConsoleOptions{Domain: domain, Image: image, Credentials: provisioner.NewGatewayConsoleCredentialServiceClient(credentials)}
+		console = &gatewayworkload.ConsoleOptions{Domain: domain, Image: image, ImagePullConfigFile: pullFile, Credentials: provisioner.NewGatewayConsoleCredentialServiceClient(credentials)}
 	}
 	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{Console: console, InternalCAFile: os.Getenv("HYPERSHELL_GATEWAY_INTERNAL_CA_FILE"), PublicRouter: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ROUTER"), PublicDomain: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_DOMAIN"), PublicIssuer: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ISSUER"), PublicCAFile: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_CA_FILE"), SQLBindings: bindings, ConsoleSQLBindings: consoleBindings, ControlNamespace: os.Getenv("HYPERSHELL_CONTROL_NAMESPACE"), DatabaseConfigFile: os.Getenv("HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"), SandboxRuntimeClass: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"), ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
 	if err != nil {

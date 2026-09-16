@@ -14,10 +14,23 @@ with a pull Secret reference. It requires every other resource field to remain
 equal to the deployment without that reference. This check does not use real
 registry credentials.
 
-This is a compiler adoption step. The workload controller does not yet install
-the Secret or select it for Gateway console Pods. The root module still uses
-its previously verified Gateway console module revision. Update that module
-only after the new module build and image evidence pass their checks.
+The root application now uses Gateway console module revision
+`v0.0.0-20260916195647-ee4ec91bdc5a`. Its CI passed. An independent artifact
+check matched all 83 source files, repeated state, dependency scan, image
+binary, image digest, and deployment records to the pinned source.
+
+The workload controller accepts
+`HYPERSHELL_GATEWAY_CONSOLE_IMAGE_PULL_CONFIG_FILE`. When set, this must name
+an absolute private file with the auth-only Docker config for the console
+image registry. The controller obtains the current allocated namespace UID,
+then uses STEGO to install or rotate the named image pull Secret before it
+creates the console deployment. The generated Pod references that Secret.
+The focused application check confirms that it is not an application volume.
+
+The live fixture requests a separate 30-minute registry token. Before use,
+it checks the actual authenticated identity and allowed and denied operations.
+It mounts the source file only into the workload controller. Those live
+fixture assertions have not yet run.
 
 The next live test needs a separate registry identity with permission to pull
 the selected test image. It must not copy the CI or controller API token into
@@ -47,5 +60,5 @@ image namespace. The added role does not grant general image access there.
 See [Red Hat's image pull permission description](https://docs.redhat.com/en/documentation/openshift_container_platform/3.0/html/developer_guide/dev-guide-image-pull-secrets).
 
 These checks prove the declared permission boundary and lifetime rejection.
-They do not yet prove that a Gateway Pod can pull its image. CI must use the
-new account and the generated Secret operation in the next workflow run.
+They do not yet prove that a Gateway Pod can pull its image. The next workflow run must prove the
+new account and generated Secret operation through an actual image pull.

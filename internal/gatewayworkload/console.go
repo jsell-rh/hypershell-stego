@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"net/http"
+	"strings"
 
 	deployment "github.com/jsell-rh/hypershell-stego/gateway-console/out/deploy"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
@@ -23,7 +24,7 @@ func consoleOwner(id string) kube.Owner {
 
 // consoleResources uses the separately generated browser module. The allocator
 // owns network policy. No Gateway Service selector label can enter these Pods.
-func consoleResources(gw *pb.Gateway, image string, group uint64, digest string) ([]resource, error) {
+func consoleResources(gw *pb.Gateway, image string, group uint64, digest string, pullSecrets ...string) ([]resource, error) {
 	ns, err := Namespace(gw.GetMetadata().GetId())
 	if err != nil || ns != gw.GetNamespace() {
 		return nil, errors.New("console placement does not match its Gateway")
@@ -32,7 +33,7 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest string)
 	if err != nil || len(raw) != 32 || hex.EncodeToString(raw) != digest {
 		return nil, errors.New("console configuration digest is invalid")
 	}
-	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id)})
+	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id), ImagePullSecrets: pullSecrets})
 	if err != nil {
 		return nil, err
 	}
@@ -107,6 +108,23 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 	if _, err := k.consoleOrigin(gw, version); err != nil {
 		return err
 	}
+	var pullSecrets []string
+	if k.options.Console.ImagePullConfigFile != "" {
+		uid, err := k.allocation.NamespaceUID(ctx, "gateway", ns, id)
+		if err != nil {
+			return err
+		}
+		name := consoleName + "-image-pull"
+		registry, _, found := strings.Cut(k.options.Console.Image, "/")
+		if !found {
+			return errors.New("console image has no registry")
+		}
+		target := kube.ImagePullSecretTarget{Namespace: ns, NamespaceUID: uid, Name: name, NamespaceOwner: owner(id), Owner: consoleOwner(id), Registries: []string{registry}}
+		if err := k.client.EnsureImagePullSecretFile(ctx, target, k.options.Console.ImagePullConfigFile); err != nil {
+			return err
+		}
+		pullSecrets = []string{name}
+	}
 	storeFiles, err := k.prepareConsoleDatabase(ctx, gw)
 	if err != nil {
 		return err
@@ -115,7 +133,7 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 	if err != nil {
 		return err
 	}
-	entries, err := consoleResources(gw, k.options.Console.Image, group, digest)
+	entries, err := consoleResources(gw, k.options.Console.Image, group, digest, pullSecrets...)
 	if err != nil {
 		return err
 	}

@@ -69,6 +69,8 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 						w.t.Fatal("Gateway console image or provisioner settings are missing")
 					}
 					env["HYPERSHELL_GATEWAY_CONSOLE_IMAGE"] = image
+					env["HYPERSHELL_GATEWAY_CONSOLE_IMAGE_PULL_CONFIG_FILE"] = "/var/run/stego/image-pull.json"
+					files["image-pull.json"] = w.imagePullConfig(image)
 					w.p.settings(w.consoleProvisioner, env, files)
 				}
 				env["HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"] = "/var/run/stego/gateway-database.json"
