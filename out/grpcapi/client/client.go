@@ -435,6 +435,10 @@ func clientMethod(method string) string {
 		return method[1:]
 	case "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount":
 		return method[1:]
+	case "/hypershell.controlplane.v1.ServiceAccountProviderStateService/LoadServiceAccountProviderState":
+		return method[1:]
+	case "/hypershell.controlplane.v1.ServiceAccountProviderStateService/SaveServiceAccountProviderState":
+		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/Delete":
 		return method[1:]
 	case "/hypershell.provisioner.v1.OpenShellGatewayServiceAccountProvisionerService/DeleteGateway":

@@ -21,6 +21,7 @@ type Options struct {
 	AccountCleaner        AccountCleaner
 	ControlPlaneSubjects  []string
 	CleanupPolicy         *auth.GrantPolicy
+	ProviderStatePolicy   *auth.GrantPolicy
 	ControllerWritePolicy *auth.GrantPolicy
 	DefaultReleaseID      string
 	DefaultClusterID      string
@@ -42,6 +43,12 @@ func OptionsFromEnvironment() (Options, error) {
 	}
 	if raw := os.Getenv("HYPERSHELL_CONTROLLER_WRITE_GRANTS"); raw != "" {
 		options.ControllerWritePolicy, err = auth.ParseGrantPolicy([]byte(raw))
+		if err != nil {
+			return Options{}, err
+		}
+	}
+	if raw := os.Getenv("HYPERSHELL_PROVIDER_STATE_GRANTS"); raw != "" {
+		options.ProviderStatePolicy, err = auth.ParseGrantPolicy([]byte(raw))
 		if err != nil {
 			return Options{}, err
 		}

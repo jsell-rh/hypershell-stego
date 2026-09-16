@@ -13,7 +13,7 @@ last_applied:
                 mode: 420
             contracts/controlplane/gateway_identity.proto:
                 exists: true
-                sha256: c0eb538201aae91a5bb36abc9af04c61f8a451393c815dff0146db11a51a3302
+                sha256: eb90080b62ad0adb1464b5146cc6ac7e7683a4aa570671a47c56af7e5c4b1968
                 mode: 420
             contracts/extensions/gateways.proto:
                 exists: true
@@ -123,7 +123,7 @@ last_applied:
                 exists: true
                 sha256: 346dbf2779f12d2cd327a20ad625629768236ae319bb6f91fd0d6f562a708e30
                 mode: 420
-        sha256: 7e8a8de2f974d0704585609d11c1a1f37243ba37649ae7a9a6b19b9ba3fef55a
+        sha256: 3cbf2e31b56320327717d04122ecb2e575f8c754879779d3c32aa3b939d05927
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -486,11 +486,11 @@ last_applied:
         events/publisher.go: 509b0edb8033b8492830ccc9b88ad6748fd6e55cc95a7823a1de5e0fb3cd60eb
         events/runtime.go: 38ad2acb67ebecd7b4bdca5196dea6f80150884bc47427f1e372b4e1ccbd4b6d
         grpcapi/bridge.go: 0c2155ae56529560de7d9868de6c694b9d2775275456d7e562c10ca16eca8369
-        grpcapi/client/client.go: 0943d1f1aedeb9941eca8d774073a83cdb3d79f92347742d028606ac238a94ea
+        grpcapi/client/client.go: ea1fe7b522eb99e0000185195bf9da3f428bb87884ca05e56542eabf0abe8628
         grpcapi/client/stream_headers.go: d8048c3954965dd73682bffc4aef88ba23b54b29174e780d979532ef39d7bb3d
         grpcapi/pb/datamodel.pb.go: c6caf936644ead4b030c774ab28e36bf00717b54c70dcdc46088e7da13154294
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: eb716ebc004ebbe41e0b5bac6f9cce76d3b7a0dd5e0585925c8bb26926063e3d
-        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 2da8a192826900ee515fad104ee839c262b96f3eff431a349b959ef88019454e
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity.pb.go: 3eae82d0df9e9afcfe5324e708118de35c1506719d07b4c1b3663279972b4578
+        grpcapi/pb/hypershell/controlplane/v1/gateway_identity_grpc.pb.go: 525e65808542b6f7d56372705c02fc7afe4f6394e4c5026c5564002824ab3385
         grpcapi/pb/hypershell/provisioner/v1/service_accounts.pb.go: b7d6b3fe5ea84563b9e1cf4829a163ee979d39a470027897812c183dd7304c66
         grpcapi/pb/hypershell/provisioner/v1/service_accounts_grpc.pb.go: e810361a04b1f79378377f723fff7d8d0e835436b20df94dadaeb2ddb729868b
         grpcapi/pb/hypershell/v1/common.pb.go: 6f176d0f0214f215ee22bea21dadf87605238123c3fc533b454d46435407f82e

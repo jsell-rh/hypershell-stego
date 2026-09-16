@@ -154,3 +154,29 @@ message GatewayProviderState {
  int64 resource_version = 4;
  bool deleted = 5;
 }
+
+// These methods store encrypted service-account recovery state. They do not
+// grant domain access or change account metadata. Cleanup can retain an orphan
+// client binding under an existing Gateway after its account row is absent.
+service ServiceAccountProviderStateService {
+ rpc LoadServiceAccountProviderState(LoadServiceAccountProviderStateRequest) returns (ServiceAccountProviderState);
+ rpc SaveServiceAccountProviderState(SaveServiceAccountProviderStateRequest) returns (ServiceAccountProviderState);
+}
+message LoadServiceAccountProviderStateRequest {
+ string gateway_id = 1;
+ string service_account_id = 2;
+ bool cleanup = 3;
+}
+message SaveServiceAccountProviderStateRequest {
+ string gateway_id = 1;
+ string service_account_id = 2;
+ bool cleanup = 3;
+ int64 expected_version = 4;
+ bytes sealed_state = 5;
+}
+message ServiceAccountProviderState {
+ string gateway_id = 1;
+ string service_account_id = 2;
+ int64 version = 3;
+ bytes sealed_state = 4;
+}

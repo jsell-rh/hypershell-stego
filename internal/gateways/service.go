@@ -56,6 +56,7 @@ type Service struct {
 	repository            Repository
 	controlPlaneSubjects  map[string]bool
 	cleanupPolicy         *auth.GrantPolicy
+	providerStatePolicy   *auth.GrantPolicy
 	controllerWritePolicy *auth.GrantPolicy
 	defaultReleaseID      string
 	defaultClusterID      string
@@ -84,7 +85,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
+	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, accountCleaner: selected.AccountCleaner, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.

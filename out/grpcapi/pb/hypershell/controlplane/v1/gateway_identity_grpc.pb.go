@@ -774,3 +774,152 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "hypershell/controlplane/v1/gateway_identity.proto",
 }
+
+const (
+	ServiceAccountProviderStateService_LoadServiceAccountProviderState_FullMethodName = "/hypershell.controlplane.v1.ServiceAccountProviderStateService/LoadServiceAccountProviderState"
+	ServiceAccountProviderStateService_SaveServiceAccountProviderState_FullMethodName = "/hypershell.controlplane.v1.ServiceAccountProviderStateService/SaveServiceAccountProviderState"
+)
+
+// ServiceAccountProviderStateServiceClient is the client API for ServiceAccountProviderStateService service.
+//
+// For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
+//
+// These methods store encrypted service-account recovery state. They do not
+// grant domain access or change account metadata. Cleanup can retain an orphan
+// client binding under an existing Gateway after its account row is absent.
+type ServiceAccountProviderStateServiceClient interface {
+	LoadServiceAccountProviderState(ctx context.Context, in *LoadServiceAccountProviderStateRequest, opts ...grpc.CallOption) (*ServiceAccountProviderState, error)
+	SaveServiceAccountProviderState(ctx context.Context, in *SaveServiceAccountProviderStateRequest, opts ...grpc.CallOption) (*ServiceAccountProviderState, error)
+}
+
+type serviceAccountProviderStateServiceClient struct {
+	cc grpc.ClientConnInterface
+}
+
+func NewServiceAccountProviderStateServiceClient(cc grpc.ClientConnInterface) ServiceAccountProviderStateServiceClient {
+	return &serviceAccountProviderStateServiceClient{cc}
+}
+
+func (c *serviceAccountProviderStateServiceClient) LoadServiceAccountProviderState(ctx context.Context, in *LoadServiceAccountProviderStateRequest, opts ...grpc.CallOption) (*ServiceAccountProviderState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceAccountProviderState)
+	err := c.cc.Invoke(ctx, ServiceAccountProviderStateService_LoadServiceAccountProviderState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *serviceAccountProviderStateServiceClient) SaveServiceAccountProviderState(ctx context.Context, in *SaveServiceAccountProviderStateRequest, opts ...grpc.CallOption) (*ServiceAccountProviderState, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ServiceAccountProviderState)
+	err := c.cc.Invoke(ctx, ServiceAccountProviderStateService_SaveServiceAccountProviderState_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+// ServiceAccountProviderStateServiceServer is the server API for ServiceAccountProviderStateService service.
+// All implementations must embed UnimplementedServiceAccountProviderStateServiceServer
+// for forward compatibility.
+//
+// These methods store encrypted service-account recovery state. They do not
+// grant domain access or change account metadata. Cleanup can retain an orphan
+// client binding under an existing Gateway after its account row is absent.
+type ServiceAccountProviderStateServiceServer interface {
+	LoadServiceAccountProviderState(context.Context, *LoadServiceAccountProviderStateRequest) (*ServiceAccountProviderState, error)
+	SaveServiceAccountProviderState(context.Context, *SaveServiceAccountProviderStateRequest) (*ServiceAccountProviderState, error)
+	mustEmbedUnimplementedServiceAccountProviderStateServiceServer()
+}
+
+// UnimplementedServiceAccountProviderStateServiceServer must be embedded to have
+// forward compatible implementations.
+//
+// NOTE: this should be embedded by value instead of pointer to avoid a nil
+// pointer dereference when methods are called.
+type UnimplementedServiceAccountProviderStateServiceServer struct{}
+
+func (UnimplementedServiceAccountProviderStateServiceServer) LoadServiceAccountProviderState(context.Context, *LoadServiceAccountProviderStateRequest) (*ServiceAccountProviderState, error) {
+	return nil, status.Error(codes.Unimplemented, "method LoadServiceAccountProviderState not implemented")
+}
+func (UnimplementedServiceAccountProviderStateServiceServer) SaveServiceAccountProviderState(context.Context, *SaveServiceAccountProviderStateRequest) (*ServiceAccountProviderState, error) {
+	return nil, status.Error(codes.Unimplemented, "method SaveServiceAccountProviderState not implemented")
+}
+func (UnimplementedServiceAccountProviderStateServiceServer) mustEmbedUnimplementedServiceAccountProviderStateServiceServer() {
+}
+func (UnimplementedServiceAccountProviderStateServiceServer) testEmbeddedByValue() {}
+
+// UnsafeServiceAccountProviderStateServiceServer may be embedded to opt out of forward compatibility for this service.
+// Use of this interface is not recommended, as added methods to ServiceAccountProviderStateServiceServer will
+// result in compilation errors.
+type UnsafeServiceAccountProviderStateServiceServer interface {
+	mustEmbedUnimplementedServiceAccountProviderStateServiceServer()
+}
+
+func RegisterServiceAccountProviderStateServiceServer(s grpc.ServiceRegistrar, srv ServiceAccountProviderStateServiceServer) {
+	// If the following call panics, it indicates UnimplementedServiceAccountProviderStateServiceServer was
+	// embedded by pointer and is nil.  This will cause panics if an
+	// unimplemented method is ever invoked, so we test this at initialization
+	// time to prevent it from happening at runtime later due to I/O.
+	if t, ok := srv.(interface{ testEmbeddedByValue() }); ok {
+		t.testEmbeddedByValue()
+	}
+	s.RegisterService(&ServiceAccountProviderStateService_ServiceDesc, srv)
+}
+
+func _ServiceAccountProviderStateService_LoadServiceAccountProviderState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(LoadServiceAccountProviderStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceAccountProviderStateServiceServer).LoadServiceAccountProviderState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceAccountProviderStateService_LoadServiceAccountProviderState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceAccountProviderStateServiceServer).LoadServiceAccountProviderState(ctx, req.(*LoadServiceAccountProviderStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _ServiceAccountProviderStateService_SaveServiceAccountProviderState_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SaveServiceAccountProviderStateRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ServiceAccountProviderStateServiceServer).SaveServiceAccountProviderState(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: ServiceAccountProviderStateService_SaveServiceAccountProviderState_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ServiceAccountProviderStateServiceServer).SaveServiceAccountProviderState(ctx, req.(*SaveServiceAccountProviderStateRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+// ServiceAccountProviderStateService_ServiceDesc is the grpc.ServiceDesc for ServiceAccountProviderStateService service.
+// It's only intended for direct use with grpc.RegisterService,
+// and not to be introspected or modified (even as a copy)
+var ServiceAccountProviderStateService_ServiceDesc = grpc.ServiceDesc{
+	ServiceName: "hypershell.controlplane.v1.ServiceAccountProviderStateService",
+	HandlerType: (*ServiceAccountProviderStateServiceServer)(nil),
+	Methods: []grpc.MethodDesc{
+		{
+			MethodName: "LoadServiceAccountProviderState",
+			Handler:    _ServiceAccountProviderStateService_LoadServiceAccountProviderState_Handler,
+		},
+		{
+			MethodName: "SaveServiceAccountProviderState",
+			Handler:    _ServiceAccountProviderStateService_SaveServiceAccountProviderState_Handler,
+		},
+	},
+	Streams:  []grpc.StreamDesc{},
+	Metadata: "hypershell/controlplane/v1/gateway_identity.proto",
+}
