@@ -1,0 +1,32 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35111676342",
+  "source": "59408834cd9c514f7dbbb5e4b3fb58d554b2ef86",
+  "private_compiler": "02e7494f7fbfef542f83a71166e86ff36c9979f1",
+  "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:e42d2e8c1179b6b91e117bfc251e64ebff883faa2de02e4cbf7c0dd055dbca98",
+  "image_user": "65532:65532",
+  "image_binary_matches_checked_source": true,
+  "only_regular_image_file": "dashboard",
+  "repeated_generation_state_equal": true,
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "deployment_verification": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:e42d2e8c1179b6b91e117bfc251e64ebff883faa2de02e4cbf7c0dd055dbca98",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "The upstream image was built and published in CI. The generated private browser built and retained stable state. This run declares only the root document path. It does not prove a deployed Pod, rendered dashboard, or full Gateway lifecycle.",
+  "sha256": {
+    "dashboard-image.tar": "765d411af5b3cc15d93727dead2b3fee0e81307f52ed5c92dc2f84b31507e47f",
+    "generated-source.tar": "85d392950a4d2f1a102431b54c2607ffeeed40d629f2bbd8393b68ef45e37e64",
+    "generated-browser": "8914f8867a6a4a8d6baefc51f5755c8ee2d5b024ec5a9ec7bd02015d3b26cb49",
+    "deployment.json": "8b6d4881f8de7db0f03dd2a88532b29cc45a943ad21133144c014ff6b35f267c",
+    "generation.log": "585cad2116319f93040d668fa58c09af98c5fffd720ebf5a4a4c831e3ffa5b11"
+  }
+}
