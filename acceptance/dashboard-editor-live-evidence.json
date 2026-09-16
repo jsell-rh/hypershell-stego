@@ -1,0 +1,38 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35161493736",
+  "source": "399a41bbec9bf238c3f7741ec824df0045ae2681",
+  "compiler": "8e0fae6f28276e192e8497c8acad487c765f3bb5",
+  "result": "failure",
+  "test_seconds": 267.44,
+  "failure": "The browser click on the Monaco input textarea was intercepted.",
+  "proved": [
+    "API Pod replacement",
+    "Verified HTTPS and protected document redirect",
+    "Dashboard login and workspace creation",
+    "Visible policy editor text",
+    "Separate Gateway databases and denied cross-database access",
+    "Repeated generation with 404 matching file hashes"
+  ],
+  "not_proved": [
+    "Editor keyboard input and invalid JSON rejection",
+    "Complete editor styling and content-policy compliance",
+    "Later dashboard recovery and viewer revocation",
+    "Authenticated correlation of all three telemetry signals",
+    "Final Gateway deletion"
+  ],
+  "network_records": 128,
+  "content_policy_result": "Unknown. The network record reached its limit before policy diagnostics could be added.",
+  "screenshot_viewed": true,
+  "job_uid": "c9e58c30-012a-4e5c-b703-b53b7b7cf71a",
+  "actual_limits_checked": true,
+  "actual_browser_trust_checked": true,
+  "cleanup_checked_at": "2026-09-16T23:32:38.175068+00:00",
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "dd8249f19ab6d6996c569ed4ae3e52add2015e4a5057cc309d15eca5acb058e6",
+  "evidence_sha256": {
+    ".png": "60e2e7810d715bcb2aec59dded5543323eb8fb9e95eace27a1b8b1942a82cc06",
+    ".txt": "147a00da1e864ffe2587aad0f7cc81b7ced52e9692952f40e0298348c1413302",
+    ".network.json": "029196c45d7360a1359054cbf45eb07b279d747aa2efcfa336f5888eda04b9e6"
+  },
+  "scope": "This run proves editor text is visible. It does not prove complete editor operation or the full deployed workflow. The later telemetry export errors occur in failure diagnostics; the full telemetry assertion was not reached."
+}
