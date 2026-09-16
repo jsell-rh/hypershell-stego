@@ -41,7 +41,21 @@ passed. The core suite completed with one failure in the legacy orphan fixture.
 Its real-Keycloak account test passed in 53.36 seconds. The private state API test
 passed in 6.04 seconds, including exact grants, an independent journal commit
 under the Gateway lock, ciphertext storage, API restart, and retained cleanup.
-The cluster API and current CNPG gates still require results. The orphan fixture
-is being corrected and the complete core suite will run again. This evidence does not establish production capacity,
+The [cluster API gate](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870319)
+also passed on the same production source. All 34 required tests passed. The
+private state API test took 5.30 seconds; the API acceptance package took
+184.467 seconds. Cleanup confirmed that the Job, Pods, and fixture resources
+are absent. Artifact `gateway-api-35045870319-1` contains the exact source hashes,
+test results, regeneration hashes, and cleanup record. Its `verification.json`
+has SHA-256 `fd9013564f9b41b3072a84b05a85c229882a959ea85c08f00dee110043a1f060`;
+its `cleanup.json` has SHA-256
+`e6a192f8416a44fcebf085be2caffe87d62694df068e68636d4837ba85f8bf38`.
+
+The legacy orphan fixture now explicitly removes the current ownership
+attributes. Keycloak retains attributes omitted from an update. The test first
+checks that mixed ownership is denied, then verifies the legacy fixture by
+readback. Production ownership checks are unchanged. The corrected core suite
+and the current CNPG gate are running on `a570dd0`. This evidence does not
+establish production capacity,
 external DNS enforcement, cross-process writer fencing, or database rollback
 detection. The Kata Sandbox test remains deferred.

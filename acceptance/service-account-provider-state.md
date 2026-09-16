@@ -46,7 +46,10 @@ and holds a real PostgreSQL Gateway row lock while a journal RPC commits. It
 then checks API restart, ciphertext storage, denied reads and writes, stale
 versions, malformed requests, account isolation, and retained orphan cleanup.
 It also checks that journal requests do not change account metadata or emit
-domain events. The live result is pending.
+domain events. The [jshell API gate](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870319)
+passed on `048ff55`. This test took 5.30 seconds. All 34 required API tests
+passed; the saved cleanup record confirms that the Job, Pods, and fixture
+resources are absent.
 
 The authorization tests passed with the race detector in 1.021 seconds. The
 application and acceptance packages compile, and generation has no drift.
@@ -55,8 +58,7 @@ The production provisioner now uses this journal with STEGO's common
 `048ff55bf2a26dbfac3e238fec3352376fba6495` in
 [CI job 104635435888](https://github.com/jsell-rh/hypershell-stego/actions/runs/35045870530/job/104635435888).
 It took 104.29 seconds and included account creation, one-time credential
-delivery, verified tokens, reload, revoke, and delete. The separate private API
-result remains pending. The [full cluster workflow](common-account-lifecycle-20260916.md)
+delivery, verified tokens, reload, revoke, and delete. The [full cluster workflow](common-account-lifecycle-20260916.md)
 also passed, including provisioner Pod replacement and account cleanup.
 
 The provisioner requires `HYPERSHELL_API_GRPC_ADDR`, `HYPERSHELL_API_CA_FILE`,
