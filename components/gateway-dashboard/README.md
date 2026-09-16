@@ -23,6 +23,13 @@ The original upstream commit and the modified build tree are recorded separately
 These files change the build inputs; they do not copy the dashboard backend
 into Hypershell or replace its implementation. Qualification remains pending.
 
+The production asset configuration keeps the upstream entry point and API.
+It emits assets under `/assets/`, splits JavaScript chunks, and emits imported
+CSS as separate files. It preserves license comments in JavaScript and omits
+source maps from the served files. The HTML uses local assets and the existing
+font fallback. This does not yet prove the editor's runtime styles or the full
+browser content policy. The rendered editor and terminal checks remain required.
+
 This check does not deploy the dashboard or prove authentication, rendering,
 the editor, terminal access, restart, or cleanup. Those remain required in the
 complete Gateway workflow. Do not weaken browser security rules to make the

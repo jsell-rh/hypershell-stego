@@ -1,7 +1,7 @@
 {
   "name": "openshell-dashboard",
   "version": "0.1.0",
-  "description": "OpenShell Dashboard frontend \u2014 React + PatternFly 6 admin UI for the OpenShell gateway",
+  "description": "OpenShell Dashboard frontend — React + PatternFly 6 admin UI for the OpenShell gateway",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -100,9 +100,11 @@
     "html-webpack-plugin": "^5.6.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.4.1",
+    "mini-css-extract-plugin": "2.10.2",
     "monaco-editor-webpack-plugin": "^7.1.1",
     "prettier": "^3.9.6",
     "style-loader": "^4.0.0",
+    "terser-webpack-plugin": "5.6.1",
     "ts-jest": "^29.2.5",
     "ts-loader": "^9.5.1",
     "tsc-alias": "^1.8.15",
