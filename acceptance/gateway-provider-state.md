@@ -32,3 +32,11 @@ The first local check compiles the test only. Runtime results must come from CI
 or jshell. The production Keycloak controller does not yet use this API. The
 common provider journal and lifecycle must use it before ownership migration
 and full client lifecycle adoption can proceed.
+
+The first jshell API run, [35037984214](https://github.com/jsell-rh/hypershell-stego/actions/runs/35037984214),
+failed at the event assertion. The test counted the whole pending queue after
+access checks. Request preparation can create valid global-role grant events
+for those checks. The test now captures the event sequence after access checks
+and compares it across state operations. This also detects an event that the
+runtime has already delivered. A new runtime run is required for the remaining
+restart and cleanup assertions. The other required API tests passed in that run.

@@ -65,6 +65,18 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		load(parent, codes.PermissionDenied)
 	}
 	load(ctx, codes.Unauthenticated)
+	// Request preparation can project global role grants before a denied call.
+	// Measure after these calls. A queue count can miss an event already sent.
+	eventSequence := func() int64 {
+		t.Helper()
+		var sequence int64
+		if err := f.db.QueryRow("SELECT last_value FROM stego_outbox.messages_sequence_seq").Scan(&sequence); err != nil {
+			t.Fatal(err)
+		}
+		return sequence
+	}
+	awaitQueueEmpty(t, f)
+	lastEvent := eventSequence()
 	master := make([]byte, 32)
 	if _, err := rand.Read(master); err != nil {
 		t.Fatal(err)
@@ -131,7 +143,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 		if version != wantVersion || !bytes.Equal(stored, record.SealedState) || bytes.Contains(stored, plain) {
 			t.Fatal("database state is not the protected record")
 		}
-		if count(t, f.db, "stego_outbox.messages") != 0 {
+		if eventSequence() != lastEvent {
 			t.Fatal("provider state write created a domain event")
 		}
 	}
@@ -155,6 +167,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Update", "gateway.updated")
 	awaitQueueEmpty(t, f)
+	lastEvent = eventSequence()
 	next := seal(2, plain)
 	save(writer, 1, 1, next, false, codes.Aborted)
 	save(writer, 2, 1, next, false, codes.OK)
@@ -165,6 +178,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	}
 	readGatewayEvent(t, consumer, gateway.ID, "Delete", "gateway.deleted")
 	awaitQueueEmpty(t, f)
+	lastEvent = eventSequence()
 	verify(2, 3, true, plain)
 	closed := []byte(`{"provider_id":"saved-provider-id","closed":true}`)
 	last := seal(3, closed)
