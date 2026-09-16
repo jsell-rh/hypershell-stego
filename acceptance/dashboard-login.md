@@ -28,6 +28,12 @@ document, return path, privacy headers, and retained cookie restrictions. The
 rendered browser check still requires the real upstream UI without a test-side
 reload or sign-in workaround.
 
+The rendered test opens protected `/workspaces` and waits for the configured
+identity provider origin and username field. It cannot wait for a dashboard
+sign-in button because the backend protects that document before login. After
+login, the test still requires workspace creation, the rendered policy editor,
+reload after recovery, and confirmed provider logout.
+
 Common CI, the published module check, and the deployed application check must
 pass before this candidate is qualified. Repeated generation and HTTP fixture
 checks do not prove browser SameSite behavior.
