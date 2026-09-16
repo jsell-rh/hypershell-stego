@@ -67,3 +67,14 @@ pass before this branch can replace the default branch. Kata remains deferred
 by the user. Large provider inventories remain open: the inventory call still
 uses a bounded full scan. This application retains its fresh-schema gate; no
 in-place application upgrade is claimed.
+
+The first full core run, `35095289920`, finished with nine failed tests. Three
+failed on the live-resource cleanup status fixed in `ab0b3ef`. Five still expected
+a partially cleaned Gateway to be hidden. Source `faccbf5` requires HTTP 200 and
+phase `Deleting` in those cases and retains the provider and permission checks.
+The namespace-count test found a real defect: pending Gateways in the public
+list kept their Pod watches. Source `62ed4b6` checks private stored deletion state
+before watch assignment. Its focused race test passed in 5.034 seconds. It also
+proves that display text alone cannot stop a live watch. The generated worker
+workflow remains a required cluster test. The acceptance package compiled.
+The superseded core run `35096455130` was canceled; it is not passing evidence.

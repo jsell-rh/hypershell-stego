@@ -53,6 +53,7 @@ REQUIRED = [
     "TestGatewayWorkflowAcrossRESTAndGRPC",
     "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
     "TestGatewayWatchThroughGeneratedRuntime",
+    "TestNamespaceCountWorkflowThroughGeneratedWorker",
     "TestPlacementWorkflowThroughGeneratedRuntime",
     "TestControllerLocalSchemaHasNoDatabaseCatalog",
     "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
