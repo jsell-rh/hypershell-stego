@@ -321,10 +321,24 @@ func (c *Client) DeleteGatewayServiceAccounts(ctx context.Context, gatewayID str
 	return nil
 }
 func (c *Client) ListManagedClients(ctx context.Context, gatewayID string) ([]ManagedClient, error) {
+	if gatewayID != "" {
+		if value, err := ksuid.Parse(gatewayID); err != nil || value == ksuid.Nil || value.String() != gatewayID {
+			return nil, ErrNotManaged
+		}
+	}
 	result := []ManagedClient{}
 	seen := map[string]bool{}
 	for first := 0; first < provider.MaxInventory; first += provider.MaxPageSize {
-		page, err := c.keycloak.ListClients(ctx, provider.Page{First: first, Size: provider.MaxPageSize})
+		bounds := provider.Page{First: first, Size: provider.MaxPageSize}
+		var page []provider.ClientRepresentation
+		var err error
+		if gatewayID == "" {
+			page, err = c.keycloak.ListClients(ctx, bounds)
+		} else {
+			// The canonical name narrows discovery. Each candidate still requires its
+			// current representation and exact ownership checks before use.
+			page, err = c.keycloak.SearchClients(ctx, "hs-sa-"+gatewayID+"-", bounds)
+		}
 		if err != nil {
 			return nil, err
 		}
