@@ -1,0 +1,22 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35125463845",
+  "source": "44b64ae56d90168747a661a8d25c404b9fb3d21f",
+  "failed_tests": [],
+  "skipped_tests": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes"
+  ],
+  "log_sha256": "64593c88a5408d154d5fc8f0f76872e8d42a6ccf7263ee965e6c86e31d7b6e52",
+  "jobs": {
+    "acceptance (browser)": "success",
+    "web-console": "success",
+    "service-image": "success",
+    "acceptance (core)": "success",
+    "sandbox-workload": "skipped",
+    "cnpg-gateway-workflow": "skipped"
+  },
+  "scope": "The full application core, browser, web console, and service image checks passed. The Sandbox and CNPG jobs were not run in this workflow. Later console SQL lifecycle changes have a separate live gate.",
+  "passed_top_level_test_count": 285
+}
