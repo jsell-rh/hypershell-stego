@@ -31,23 +31,9 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 		if target != "" {
 			return ErrInvalid
 		}
-		writer, ok := tx.(store.CleanupWriter)
-		if !ok {
-			return errors.New("cleanup storage is required")
-		}
-		if err := writer.ObserveCleanupIfVersion(ctx, "Gateway", id, version, owner, complete); err != nil {
-			return err
-		}
 	case "workload", "sql":
 		if !validID(target) {
 			return ErrInvalid
-		}
-		writer, ok := tx.(store.TargetCleanupWriter)
-		if !ok {
-			return errors.New("target cleanup storage is required")
-		}
-		if err := writer.ObserveTargetCleanupIfVersion(ctx, "Gateway", id, version, owner, target, complete); err != nil {
-			return err
 		}
 	default:
 		return ErrInvalid
@@ -56,13 +42,61 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 	if !ok {
 		return errors.New("retained storage is required")
 	}
-	value, err := reader.GetRetained(ctx, "Gateway", id)
+	read := func() (model.Gateway, error) {
+		value, err := reader.GetRetained(ctx, "Gateway", id)
+		if err != nil {
+			return model.Gateway{}, err
+		}
+		row, ok := value.(model.Gateway)
+		if !ok || row.ID != id || !row.DeletedAt.Valid {
+			return model.Gateway{}, errors.New("cleanup resource does not match")
+		}
+		return row, nil
+	}
+	row, err := read()
 	if err != nil {
 		return err
 	}
-	row, ok := value.(model.Gateway)
-	if !ok || row.ID != id || !row.DeletedAt.Valid {
-		return errors.New("cleanup resource does not match")
+	if row.ResourceVersion != version {
+		return store.ErrVersionConflict
+	}
+	states, err := row.CleanupObservations()
+	if err != nil {
+		return err
+	}
+	changed := states[owner] != complete
+	if target != "" {
+		targets, err := row.CleanupTargets()
+		if err != nil {
+			return err
+		}
+		prior, present := targets[owner][target]
+		if !present {
+			return store.ErrVersionConflict
+		}
+		changed = prior != complete
+	}
+	if changed {
+		if target == "" {
+			writer, ok := tx.(store.CleanupWriter)
+			if !ok {
+				return errors.New("cleanup storage is required")
+			}
+			err = writer.ObserveCleanupIfVersion(ctx, "Gateway", id, version, owner, complete)
+		} else {
+			writer, ok := tx.(store.TargetCleanupWriter)
+			if !ok {
+				return errors.New("target cleanup storage is required")
+			}
+			err = writer.ObserveTargetCleanupIfVersion(ctx, "Gateway", id, version, owner, target, complete)
+		}
+		if err != nil {
+			return err
+		}
+		row, err = read()
+		if err != nil {
+			return err
+		}
 	}
 	pending, err := row.PendingCleanup()
 	if err != nil {
@@ -77,6 +111,10 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 			return err
 		}
 		return notifyGateway(tx, id, "Delete", "gateway.deleted")
+	}
+	// Repeated recovery must not change revisions or publish duplicate state.
+	if !changed {
+		return nil
 	}
 	return notifyGateway(tx, id, "Update", "gateway.updated")
 }

@@ -230,3 +230,55 @@ func TestGatewayDurableDeletionThroughGeneratedTransports(t *testing.T) {
 		})
 	}
 }
+
+func TestGatewayCleanupObservationDoesNotRepeatEvents(t *testing.T) {
+	f := database(t)
+	gateway, err := f.service.Create(context.Background(), principal("alice", "gateway:creator"), f.request("cleanup-events"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := f.service.Delete(context.Background(), principal("alice"), gateway.ID); err != nil {
+		t.Fatal(err)
+	}
+	observe := func(owner string, complete bool) {
+		t.Helper()
+		err := f.storage.WithTransaction(context.Background(), func(ctx context.Context, tx storage.Transaction) error {
+			value, err := tx.(storage.RetainedReader).GetRetained(ctx, "Gateway", gateway.ID)
+			if err != nil {
+				return err
+			}
+			row := value.(model.Gateway)
+			target := ""
+			if owner == "workload" || owner == "sql" {
+				target = gateway.ClusterID
+			}
+			return gateways.RecordCleanup(ctx, tx, row.ID, row.ResourceVersion, owner, target, complete)
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+	}
+	before := count(t, f.db, "stego_outbox.messages")
+	observe("accounts", false)
+	if count(t, f.db, "stego_outbox.messages") != before {
+		t.Fatal("unchanged pending cleanup published an event")
+	}
+	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
+		observe(owner, true)
+	}
+	after := count(t, f.db, "stego_outbox.messages")
+	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
+		observe(owner, true)
+	}
+	if count(t, f.db, "stego_outbox.messages") != after {
+		t.Fatal("unchanged completed cleanup published an event")
+	}
+	observe("accounts", false)
+	if _, err := f.service.Get(context.Background(), principal("alice"), gateway.ID); !errors.Is(err, storage.ErrNotFound) {
+		t.Fatal("late cleanup restored a finalized Gateway", err)
+	}
+	var final int
+	if err := f.db.QueryRow("SELECT count(*) FROM stego_outbox.messages WHERE resource_key=$1 AND kind='gateway.deleted'", gateway.ID).Scan(&final); err != nil || final != 1 {
+		t.Fatal("final deletion notice repeated", final, err)
+	}
+}
