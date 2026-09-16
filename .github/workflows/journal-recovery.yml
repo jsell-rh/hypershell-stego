@@ -9,6 +9,7 @@ on:
       - 'acceptance/gateway_provider_state_test.go'
       - 'acceptance/gateway_identity_test.go'
       - 'acceptance/gateway_login_test.go'
+      - 'acceptance/identity_condition_race_test.go'
       - 'internal/gatewayidentity/**'
       - 'internal/gatewayidentityapp/**'
       - 'internal/gateways/provider_state.go'
@@ -77,7 +78,7 @@ jobs:
             -run '^Test(IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
-            -run '^(TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
+            -run '^(TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
             | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
@@ -89,6 +90,7 @@ jobs:
               "TestGatewayClosureContinuesAfterConsoleFailure",
               "TestConsoleProviderStateReadGrantIsReadOnly",
               "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+              "TestIdentityConditionDuringProviderTimeoutAndDesiredChange",
               "TestConsoleDomainPolicy",
               "TestConsoleProviderStateJournalSeparatesNativeScope",
               "TestProviderStateJournalScopeAndObservation",

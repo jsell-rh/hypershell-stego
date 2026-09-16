@@ -11,12 +11,14 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"google.golang.org/grpc/metadata"
+	"google.golang.org/protobuf/proto"
 )
 
 type identityProviderCall struct {
-	ctx    context.Context
-	name   string
-	result chan string
+	ctx      context.Context
+	name     string
+	revision int64
+	result   chan string
 }
 
 type pausedIdentityProvider struct {
@@ -24,8 +26,8 @@ type pausedIdentityProvider struct {
 	calls chan identityProviderCall
 }
 
-func (p *pausedIdentityProvider) EnsureGateway(ctx context.Context, _ string, name string, _ int64) (string, error) {
-	call := identityProviderCall{ctx: ctx, name: name, result: make(chan string, 1)}
+func (p *pausedIdentityProvider) EnsureGateway(ctx context.Context, _ string, name string, revision int64) (string, error) {
+	call := identityProviderCall{ctx: ctx, name: name, revision: revision, result: make(chan string, 1)}
 	select {
 	case p.calls <- call:
 	case <-ctx.Done():
@@ -174,7 +176,10 @@ func TestIdentityConditionDuringProviderTimeoutAndDesiredChange(t *testing.T) {
 		t.Fatal("retry did not read current desired state", fresh.name)
 	}
 	afterOldPass := read()
-	if afterOldPass.ResourceVersion != pending.ResourceVersion || afterOldPass.Gateway.GetOidc() != ready.Gateway.GetOidc() || condition(afterOldPass).Current {
+	// Grant synchronization can advance the revision before this provider call.
+	// Its supplied revision is the barrier. The old identity result must not
+	// change OIDC, the desired generation, or any part of the pending condition.
+	if fresh.revision < pending.ResourceVersion || afterOldPass.ResourceVersion != fresh.revision || afterOldPass.ResourceGeneration != pending.ResourceGeneration || afterOldPass.Gateway.GetOidc() != ready.Gateway.GetOidc() || !proto.Equal(condition(afterOldPass), condition(pending)) {
 		t.Fatal("old provider result changed current state", afterOldPass)
 	}
 	fresh.result <- `{"client":"current"}`
