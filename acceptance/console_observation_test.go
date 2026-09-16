@@ -60,7 +60,7 @@ func TestGatewayConsoleObservationCommitsWithWorkload(t *testing.T) {
 	if after.ResourceGeneration != before.ResourceGeneration || after.ObservedGeneration("workload") != after.ResourceGeneration || after.ObservedGeneration("endpoint") != after.ResourceGeneration || after.ObservedGeneration("console") != after.ResourceGeneration || current.ConsoleAddress == nil || *current.ConsoleAddress != console || current.RouteAddress == nil || *current.RouteAddress != route || current.Phase == nil || *current.Phase != phase || count(t, f.db, "stego_outbox.messages") != events+1 {
 		t.Fatal("console and workload observations did not commit together")
 	}
-	if _, err := service.UpdateControlPlane(ctx, p, row.ID, patch, &console, &route, before.ResourceVersion); !errors.Is(err, store.ErrConflict) {
+	if _, err := service.UpdateControlPlane(ctx, p, row.ID, patch, &console, &route, before.ResourceVersion); !errors.Is(err, store.ErrVersionConflict) {
 		t.Fatal("stale observation did not fail", err)
 	}
 	if !reflect.DeepEqual(after, read()) || count(t, f.db, "stego_outbox.messages") != events+1 {

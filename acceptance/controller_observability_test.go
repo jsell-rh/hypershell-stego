@@ -51,6 +51,8 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 	_, brokerConfig := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), "OTEL_EXPORTER_OTLP_ENDPOINT=", "OTEL_SERVICE_NAME=hypershell-api")
+	// The API must not inherit the controller's collector credentials on restart.
+	settings = append(settings, "OTEL_EXPORTER_OTLP_CERTIFICATE=", "STEGO_OTEL_TOKEN_FILE=")
 	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "configure.identity", ""))
 	binary := buildApplication(t)
 	stopAPI, httpAddress, address := startBoth(t, binary, f.dsn, brokerConfig, settings...)
