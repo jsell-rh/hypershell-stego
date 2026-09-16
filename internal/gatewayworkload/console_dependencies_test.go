@@ -5,6 +5,8 @@ import (
 	"crypto/x509"
 	"encoding/base64"
 	"errors"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -24,7 +26,7 @@ func (f consoleCredentialFixture) GetCredentials(ctx context.Context, r *provisi
 }
 
 func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T) {
-	for _, scenario := range []string{"valid", "wrong version", "foreign origin", "foreign client", "short secret", "unknown response", "missing TLS identity", "denied", "canceled"} {
+	for _, scenario := range []string{"valid", "telemetry", "unsafe telemetry", "wrong version", "foreign origin", "foreign client", "short secret", "unknown response", "missing TLS identity", "denied", "canceled"} {
 		t.Run(scenario, func(t *testing.T) {
 			gw, _ := records(t)
 			origin, err := keycloak.GatewayConsoleOrigin(gw.Metadata.Id, "example.test")
@@ -44,6 +46,23 @@ func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T)
 			}
 			server := secret(consoleName+"-tls", serverCert, serverKey, consoleOwner(gw.Metadata.Id))
 			client := secret("openshell-client-tls", clientCert, clientKey, owner(gw.Metadata.Id))
+			if scenario == "telemetry" || scenario == "unsafe telemetry" {
+				directory := t.TempDir()
+				ca, token := filepath.Join(directory, "otel-ca.pem"), filepath.Join(directory, "otel-token")
+				if err := os.WriteFile(ca, public, 0600); err != nil {
+					t.Fatal(err)
+				}
+				mode := os.FileMode(0600)
+				if scenario == "unsafe telemetry" {
+					mode = 0644
+				}
+				if err := os.WriteFile(token, []byte("private-collector-token"), mode); err != nil {
+					t.Fatal(err)
+				}
+				t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "https://collector.example.test:4317")
+				t.Setenv("OTEL_EXPORTER_OTLP_CERTIFICATE", ca)
+				t.Setenv("STEGO_OTEL_TOKEN_FILE", token)
+			}
 			reads := 0
 			k := &Kubernetes{options: Options{ClusterID: gw.ClusterId, Issuer: "https://issuer.example.test/realm", Console: &ConsoleOptions{Domain: "example.test"}}, trust: string(public), internalTrust: internal, internalRoots: x509.NewCertPool(), publicRoots: x509.NewCertPool()}
 			k.internalRoots.AppendCertsFromPEM(internal)
@@ -83,14 +102,14 @@ func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T)
 			}
 			store := object{"database-url": encode("private-database-url"), "database-ca.pem": encode(string(public)), "session-key": encode("private-session-key")}
 			got, err := k.consoleDependencyObjects(ctx, gw, version, store, server, client)
-			if scenario != "valid" {
+			if scenario != "valid" && scenario != "telemetry" {
 				if err == nil || got != nil {
 					t.Fatal("unsafe console dependency accepted")
 				}
 				if strings.Contains(err.Error(), "private-provider-details") {
 					t.Fatal("provider detail escaped")
 				}
-				if (scenario == "wrong version" || scenario == "foreign origin" || scenario == "missing TLS identity") && reads != 0 {
+				if (scenario == "wrong version" || scenario == "foreign origin" || scenario == "missing TLS identity" || scenario == "unsafe telemetry") && reads != 0 {
 					t.Fatal("invalid observation reached credential service")
 				}
 				return
@@ -112,6 +131,18 @@ func TestConsoleDependenciesUseCurrentCredentialsAndSeparateMounts(t *testing.T)
 				for _, value := range s["data"].(object) {
 					if value == base64.StdEncoding.EncodeToString(clientKey) {
 						t.Fatal("Gateway client key entered browser mount")
+					}
+				}
+			}
+			if scenario == "telemetry" {
+				if got[0]["data"].(object)["OTEL_SERVICE_NAME"] != encode(consoleName) || got[0]["data"].(object)["STEGO_OTEL_TOKEN_FILE"] != encode("/var/run/stego/otel-token") || got[1]["data"].(object)["otel-token"] != encode("private-collector-token") {
+					t.Fatal("common telemetry did not reach browser configuration")
+				}
+				for _, s := range got[2:] {
+					for name, value := range s["data"].(object) {
+						if strings.HasPrefix(name, "OTEL_") || strings.HasPrefix(name, "otel-") || value == encode("private-collector-token") {
+							t.Fatal("collector credential entered the dashboard")
+						}
 					}
 				}
 			}

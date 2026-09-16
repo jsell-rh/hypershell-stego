@@ -11,6 +11,7 @@ import (
 	provisioner "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/provisioner/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	telemetry "github.com/jsell-rh/hypershell-stego/out/tracing"
 )
 
 type ConsoleOptions struct {
@@ -63,6 +64,15 @@ func (k *Kubernetes) consoleDependencyObjects(ctx context.Context, gw *pb.Gatewa
 			return nil, invalid
 		}
 	}
+	telemetryEnvironment, telemetryFiles, err := telemetry.ExportEnvironment(consoleName, "/var/run/stego")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		for _, value := range telemetryFiles {
+			clear(value)
+		}
+	}()
 	credential, err := k.options.Console.Credentials.GetCredentials(ctx, &provisioner.GatewayConsoleCredentialRequest{GatewayId: id, ClusterId: k.options.ClusterID, ResourceVersion: version})
 	if err != nil {
 		return nil, errors.New("console credential is not ready")
@@ -91,9 +101,15 @@ func (k *Kubernetes) consoleDependencyObjects(ctx context.Context, gw *pb.Gatewa
 	} {
 		runtime[name] = encode(value)
 	}
+	for name, value := range telemetryEnvironment {
+		runtime[name] = encode(value)
+	}
 	files := object{"tls.crt": kube.String(server, "data", "tls.crt"), "tls.key": kube.String(server, "data", "tls.key"), "issuer-ca.pem": encode(k.trust), "client-secret": encode(credential.ClientSecret)}
 	for name, value := range store {
 		files[name] = value
+	}
+	for name, value := range telemetryFiles {
+		files[name] = base64.StdEncoding.EncodeToString(value)
 	}
 	application := object{}
 	for name, value := range map[string]string{

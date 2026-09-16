@@ -95,3 +95,10 @@ cannot report successful workload reconciliation while its enabled console is
 pending or fails its public checks. The probe checks the exact TLS leaf, browser
 readiness, anonymous session response, and denied anonymous API access. It does
 not replace the required rendered login, editor, terminal, and telemetry tests.
+
+The console receives collector settings through STEGO's `ExportEnvironment`
+helper. Configure OTEL on the workload worker. Reconciliation copies the
+validated CA and optional `STEGO_OTEL_TOKEN_FILE` into the browser's private
+files and selects the console service name. It does not copy those files to the
+upstream dashboard container. Token changes produce a new configuration digest
+and rollout. The collector must be an approved network destination.
