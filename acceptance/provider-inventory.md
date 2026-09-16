@@ -165,3 +165,26 @@ bulk helper reads the complete candidate list before it saves these records.
 A provider deadline during that read can still prevent progress. Saved account
 and journal scans are bounded and have checkpoints; provider discovery must
 meet the same recovery requirement before this work is complete.
+
+## Complete API gate with scope closure
+
+Run `35103602751`, source `b58d9a2`, passed all 49 required API checks. The
+saved JSON has no failures, skips, or missing checks. The acceptance package
+passed in 289.928 seconds. The SQL runtime and cleanup metric packages also
+passed. The committed output and all three regeneration snapshots are equal.
+This includes REST, gRPC, retained cleanup recovery, concurrent journal
+registration, and final-event rollback. Reconstruction fixtures do not imply
+a database-server restart.
+
+The runner removed its Job, Pods, and fixture resources. An independent check
+found no Jobs, Pods, or PVCs in `stego-ci`, and the live-test lease was clear.
+Evidence is in `api-scope-result` and
+`api-scope-independent-verification.json` in the Gateway cleanup run directory.
+The test JSON SHA-256 is
+`de8cf288d1d0886b803757804b1ae972341dab0a9906d6f8e7a44792249e122f`.
+
+The earlier queued full run `35103696549` was cancelled before it started.
+Full run `35104550272` now targets `550b2b7`, which includes provider closure
+preparation. The complete public browser workflow `35104667835` targets the
+same source and is the only live cluster run. The earlier API result does not
+qualify that later provider change. Application main remains unchanged.
