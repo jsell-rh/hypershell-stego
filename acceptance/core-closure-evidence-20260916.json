@@ -1,0 +1,58 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35104550272",
+  "source": "550b2b724b2db9eca6678ebe04358b8cd278b77b",
+  "passes": 472,
+  "failures": [],
+  "selection_skips": 58,
+  "packages": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+      "elapsed": 1.017
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/cli",
+      "elapsed": 1.033
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/contracts",
+      "elapsed": 1.841
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gateways",
+      "elapsed": 1.033
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/httpapi",
+      "elapsed": 1.017
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+      "elapsed": 1.028
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "elapsed": 11.779
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "elapsed": 1.627
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/sandboxcount",
+      "elapsed": 12.043
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayidentity",
+      "elapsed": 22.381
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed": 1419.213
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed": 79.98
+    }
+  ],
+  "log_sha256": "110d2cb9b988a273bd7dac1f7bad239bba40f512824a5f9f82726cd833323756"
+}

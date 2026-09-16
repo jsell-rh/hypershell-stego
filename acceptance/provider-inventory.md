@@ -309,3 +309,18 @@ package took 6.2 seconds. The [verification record](provider-wire-sql-evidence.j
 contains the test names, source, compiler, and raw result hash. This test uses
 the real provisioner service over generated TLS gRPC. Full deployed workflow
 qualification remains separate.
+
+
+API run `35106819091`, source `120711a`, passed all 51 required checks with no
+failures or skips. Core acceptance took 287.418 seconds. Committed output and
+all three generation snapshots matched. Independent operator checks found no
+test Jobs, Pods, PVCs, private fixture resources, or Lease holder. The
+[verification record](api-window-evidence-20260916.json) contains the source,
+compiler, package results, and raw test hash.
+
+Earlier full run `35104550272`, source `550b2b7`, also passed. Core acceptance
+took 1419.213 seconds; browser acceptance took 79.98 seconds. The saved log has
+472 test passes, no failures, and 58 suite-selection skips. Image and console
+jobs passed. CNPG was not selected, and Kata remains deferred. The
+[full-run record](core-closure-evidence-20260916.json) preserves these limits.
+Latest full run `35106305055`, source `85706c6`, is now active.

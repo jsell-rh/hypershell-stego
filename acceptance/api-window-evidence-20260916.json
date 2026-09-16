@@ -1,0 +1,35 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35106819091",
+  "source": "120711ac272d8addf452d0d05942c665d49aa493",
+  "compiler": "af67e7b8aae896b62c5b005ae6152862ee199cda",
+  "required_count": 51,
+  "missing": [],
+  "failures": [],
+  "skips": [],
+  "packages": [
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "elapsed": 2.9939999999999998
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+      "elapsed": 1.012
+    },
+    {
+      "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+      "elapsed": 287.418
+    }
+  ],
+  "generation_equal": true,
+  "cleanup": {
+    "job_absent": "gateway-api-54fd846622ff",
+    "pods_absent": true,
+    "fixture_resources_absent": true
+  },
+  "tests_sha256": "4bfc8472a7e3c5232b0c1e5c99d7dd286b94cc00f34bb68f11e474885750f49f",
+  "independent_cleanup": {
+    "jobs_pods_pvcs_absent": true,
+    "run_secrets_configmaps_absent": true,
+    "lease_holder_empty": true
+  }
+}

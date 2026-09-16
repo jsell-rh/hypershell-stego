@@ -47,8 +47,9 @@ separate qualification requirement.
 | `5753c33`, [discovery run 35105755539](https://github.com/jsell-rh/hypershell-stego/actions/runs/35105755539) | Eight SQL and two boundary tests passed. They include a failed first read, independent later clients, store reconstruction, shifted pages, and foreign-client preservation. |
 | `d1ec34c`, [full run 35102064260](https://github.com/jsell-rh/hypershell-stego/actions/runs/35102064260) | Core, rendered browser, image, and console checks passed. This source predates the scope guard and bounded provider discovery. CNPG and Sandbox were not selected. |
 | `bceea63`, [CNPG run 35100459235](https://github.com/jsell-rh/hypershell-stego/actions/runs/35100459235) | Complete Gateway workflow passed with primary replacement, stable SQL identities and data, regeneration, and verified cleanup. This source predates journal enumeration. |
-| `550b2b7`, [public browser workflow](acceptance/browser-closure-evidence-20260916.json) | Passed in 501.24 seconds with 266 stable generation hashes and verified cleanup. Full run `35104550272` is still active. This source predates bounded discovery. |
-| `85706c6`, [maximum-offset recovery](acceptance/provider-window-sql-evidence.json) | All twelve required checks passed in `35106173055`. The latest full run `35106305055` remains pending. The API gate now requires 51 checks. |
+| `550b2b7`, [public browser workflow](acceptance/browser-closure-evidence-20260916.json) | Passed in 501.24 seconds with 266 stable generation hashes and verified cleanup. [Full run 35104550272](acceptance/core-closure-evidence-20260916.json) also passed core, browser, image, and console checks. This source predates bounded discovery. |
+| `85706c6`, [maximum-offset recovery](acceptance/provider-window-sql-evidence.json) | All twelve required checks passed in `35106173055`. The latest full run `35106305055` is active. |
+| `120711a`, [API discovery workflow](acceptance/api-window-evidence-20260916.json) | All 51 required checks passed. No failures or skips; all four generation snapshots matched. Independent checks confirmed resource and Lease cleanup. |
 
 These results do not establish complete parity, production capacity, backup and
 restore, or every deployment recovery case. The user deferred the live Kata
