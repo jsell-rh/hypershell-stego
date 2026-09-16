@@ -78,3 +78,18 @@ before watch assignment. Its focused race test passed in 5.034 seconds. It also
 proves that display text alone cannot stop a live watch. The generated worker
 workflow remains a required cluster test. The acceptance package compiled.
 The superseded core run `35096455130` was canceled; it is not passing evidence.
+
+CNPG run `35096666440` passed at `ab0b3ef`, with compiler `e01e624`. All prechecks
+passed. The complete Kubernetes browser workflow passed in 481.23 seconds. It
+proved real login, Gateway creation, access grants, REST and gRPC, events,
+controller and API restart, CNPG Pod replacement, encrypted state, SQL isolation,
+denied cleanup, recovery, and final Gateway cleanup. The supplied PostgreSQL
+server and installation data remained. Correlated worker logs, metrics, and
+traces were checked. The run removed its application resources, CNPG runtime,
+volumes, and private fixtures, then released its Lease. A separate operator
+check confirmed absence. Evidence is in `cnpg-corrected-result`.
+
+This CNPG result precedes the count-watch fix. Full CI `35098200160` and the
+external-PostgreSQL browser run `35098646742` use source `371c230`, which includes
+that fix. Their results are still pending. The newer source still needs CNPG
+qualification before the default branch changes.
