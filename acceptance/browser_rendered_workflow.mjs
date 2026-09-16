@@ -176,6 +176,13 @@ try {
     if(url.origin===input.origin && responses.length<128)responses.push({path:url.pathname,status:response.status,type:response.mimeType});
    }
   }
+  const authorizationError=await script(`
+   if(location.origin!==arguments[0] || location.pathname!=='/auth/callback')return null;
+   const error=new URLSearchParams(location.search).get('error');
+   if(!error)return null;
+   return ['invalid_request','unauthorized_client','access_denied','unsupported_response_type','invalid_scope','server_error','temporarily_unavailable','interaction_required','login_required','account_selection_required','consent_required'].includes(error)?error:'unclassified';
+  `,[input.origin]).catch(()=>null);
+  if(authorizationError && responses.length<128)responses.push({path:'/auth/callback',authorization_error:authorizationError});
   await writeFile(outputPath+'.network.json',JSON.stringify(responses));
   await writeFile(outputPath+'.txt',String(await script('return document.body.innerText').catch(()=>'')));
   await writeFile(outputPath+'.png',Buffer.from(await command('/screenshot').catch(()=>''),'base64'));

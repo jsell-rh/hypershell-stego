@@ -82,3 +82,30 @@ Run `35149129268` completed with failure after 288.81 seconds in the live
 test. Its evidence was collected. Independent operator inspection at
 `2026-09-16T21:07:51.822175Z` confirmed no remaining test runtime, fixture
 resources, or allocated namespaces, and an empty test lease.
+
+## Authorization callback boundary
+
+Run `35150654630` at `3d8f9d6` passed repeat generation with 366 matching file
+hashes. Both dashboard applications and generated backends were ready without
+restarts. Verified SQL isolation, Gateway RPC denial and data recovery, and the
+public HTTPS probes passed. Chromium then reached `/auth/callback` with HTTP
+400. The page showed only `Bad Request`; it did not show a TLS error. The live
+test failed after 278.09 seconds.
+
+The backend requests `openid profile email`. The common Keycloak browser client
+removes shared scopes and supplies client-owned claim mappers. Its provider
+checks request only `openid`. This is a component contract mismatch. The live
+artifact did not retain the authorization error parameter, so it does not prove
+that this mismatch caused the callback failure. STEGO candidate `42c7ea1` adds
+minimal default scopes and explicit additional scopes, with common CI pending.
+The application has not adopted that candidate yet.
+
+Browser failure evidence now saves only a fixed authorization error category
+from a callback on the expected origin. It does not save code, state, provider
+error descriptions, or complete URLs. This will distinguish a provider rejection
+from other callback failures in a later test.
+
+Independent operator cleanup passed at `2026-09-16T21:23:58.133877Z`. Runtime,
+fixture resources, and allocated namespaces were absent, and the lease was
+empty. The complete rendered dashboard, editor, telemetry, recovery, and access
+gate remains open.
