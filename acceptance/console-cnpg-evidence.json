@@ -1,0 +1,46 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35120457028",
+  "source": "598e7f07ce39fde4b175378e7e99515fe0b3525e",
+  "required_tests_passed": [
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+    "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+    "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+    "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+    "TestControllerLocalSchemaHasNoDatabaseCatalog",
+    "TestGatewayDeletionBeforeWorkloadStartup",
+    "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedWorkloadWorkerStartupPrivacy",
+    "TestKubernetesWriteFailurePrivacy"
+  ],
+  "generation_matches_before_after": true,
+  "restart": {
+    "cluster_spec_unchanged": true,
+    "gateway_credentials_and_keys_unchanged": true,
+    "installation_data_unchanged": true,
+    "primary_changed": true,
+    "provider_data_unchanged": true,
+    "ready_instances": 2,
+    "seconds": 65.432344831,
+    "sql_object_ids_unchanged": true
+  },
+  "cleanup": {
+    "runtime_absent": true,
+    "volumes_absent": true,
+    "private_fixture_absent": true,
+    "installation_retained": true
+  },
+  "sha256": {
+    "cnpg-ci-run.json": "ed953d36af3a169365a37402f259efdca37f382a2d7ea0ea9a916eae642f875d",
+    "cnpg-ci-cleanup.json": "357fca65026406eac9266794fd6f653b95181c6c34e656e352161b38cfcbce06",
+    "browser/deployment.log": "34752b1ec357b8d39e3257017067b6d905403bddace6bce2db21f197d67c1e7b",
+    "browser/evidence.tar": "16c0bd1d6bf15869f8ebc5cca655396f07eec34bd6597423ecfd6992549ecfa4"
+  },
+  "scope": "The CNPG Gateway workflow passed with compiler 1db04e6. This run does not cover later console credential delivery or a deployed dashboard.",
+  "operator_cleanup": {
+    "checked_at": "2026-09-16T16:33:29.384243+00:00",
+    "scoped_resources_absent": true,
+    "known_volumes_absent": true,
+    "lease_released": true
+  }
+}
