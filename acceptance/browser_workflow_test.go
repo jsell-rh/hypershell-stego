@@ -165,10 +165,11 @@ func startConsole(t *testing.T, binary, address, dsn, api string, apiCA string, 
 }
 
 type consoleBrowser struct {
-	client    *http.Client
-	origin    string
-	csrf      string
-	apiPrefix string
+	client        *http.Client
+	origin        string
+	csrf          string
+	apiPrefix     string
+	documentLogin bool
 }
 
 func newConsoleBrowser(t *testing.T, origin string, caFiles ...string) *consoleBrowser {
@@ -265,13 +266,27 @@ func (b *consoleBrowser) loginTo(t *testing.T, k *keycloakFixture, username, ret
 		t.Fatal("provider did not return to console", response.StatusCode)
 	}
 	response = b.request(t, "GET", callback.String(), nil, http.Header{"Sec-Fetch-Site": {"cross-site"}})
-	if response.StatusCode != 303 || response.Header.Get("Location") != returnTo {
+	if b.documentLogin {
+		if response.StatusCode != 200 || response.Header.Get("Location") != "" {
+			t.Fatal("protected application callback did not return a document", response.StatusCode)
+		}
+		body := string(response.Body)
+		if !strings.Contains(body, `content="0; URL=`+html.EscapeString(returnTo)+`"`) || !strings.Contains(body, `<a href="`+html.EscapeString(returnTo)+`">`) {
+			t.Fatal("protected application completion changed the return path")
+		}
+		if response.Header.Get("Cache-Control") != "no-store" || response.Header.Get("Referrer-Policy") != "no-referrer" || response.Header.Get("Cross-Origin-Opener-Policy") != "same-origin" || response.Header.Get("Content-Security-Policy") != "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'" {
+			t.Fatal("protected application completion lost its privacy headers")
+		}
+	} else if response.StatusCode != 303 || response.Header.Get("Location") != returnTo {
 		t.Fatal("console callback failed", response.StatusCode)
 	}
 	found := false
 	for _, cookie := range (&http.Response{Header: response.Header}).Cookies() {
 		if cookie.Name == "__Host-Http-stego_session" {
 			found = true
+			if strings.Contains(string(response.Body), cookie.Value) {
+				t.Fatal("console callback exposed the session cookie")
+			}
 			if !cookie.Secure || !cookie.HttpOnly || cookie.Path != "/" || cookie.Domain != "" || cookie.SameSite != http.SameSiteStrictMode {
 				t.Fatal("unsafe session cookie")
 			}

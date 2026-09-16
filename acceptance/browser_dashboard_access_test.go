@@ -26,6 +26,7 @@ func (w *browserGatewayWorkload) newDashboardViewer(id string) *consoleBrowser {
 	}
 	browser := newConsoleBrowser(w.t, origin, ca, w.identity.options.CAFile)
 	browser.apiPrefix = "/api/v1"
+	browser.documentLogin = true
 	browser.loginTo(w.t, w.identity, "console-bob", "/workspaces")
 	return browser
 }

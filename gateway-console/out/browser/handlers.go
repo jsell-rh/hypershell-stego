@@ -154,7 +154,7 @@ func (b *Backend) callback(w http.ResponseWriter, r *http.Request) {
 	published = true
 	b.sockets.end(value.Previous)
 	setCookie(w, SessionCookie, sessionID, int(active.Expires-time.Now().Unix()))
-	http.Redirect(w, r, value.ReturnTo, 303)
+	b.completeApplicationLogin(w, value.ReturnTo)
 }
 func (b *Backend) active(ctx context.Context, id string) (session, error) {
 	waitCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
@@ -384,6 +384,20 @@ func (b *Backend) logout(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(204)
 	}
+}
+
+// Commit a document at this origin before entering a protected application.
+// A Strict session cookie can be absent from the provider's redirect chain.
+// Only a consumed, verified callback reaches this response.
+var applicationCompletionPage = template.Must(template.New("application-completion").Parse(`<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><meta http-equiv="refresh" content="0; URL={{.}}"><title>Sign-in complete</title></head><body><main><h1>Sign-in complete</h1><p><a href="{{.}}">Continue to the application</a></p></main></body></html>`))
+
+func (b *Backend) completeApplicationLogin(w http.ResponseWriter, target string) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Referrer-Policy", "no-referrer")
+	w.Header().Set("Cross-Origin-Opener-Policy", "same-origin")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; base-uri 'none'; frame-ancestors 'none'; form-action 'none'")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	_ = applicationCompletionPage.Execute(w, b.returnPath(target))
 }
 
 // Application requests use the browser's Origin header. Missing Origin fails
