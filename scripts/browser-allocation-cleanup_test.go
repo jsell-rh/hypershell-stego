@@ -27,6 +27,20 @@ func TestCleanupTargetsKeepOrphanBindingsAndOrder(t *testing.T) {
 		t.Fatal("orphan inventory or deletion order differs", err)
 	}
 }
+func TestCleanupTargetsIncludeConsoleStateAfterWorkload(t *testing.T) {
+	gateway, console, owner := "openshell-0123456789abcdef", "openshell-console-0123456789abcdef0123456789abcdef01234567", "0123456789abcdefghijklmnopq"
+	targets, err := cleanupTargets("stego-service-ci", []kube.Object{cleanupObject(console, "gateway-console-state", owner), cleanupObject(gateway, "gateway", owner)}, nil)
+	want := []cleanupTarget{{"gateway", gateway, owner}, {"gateway-console-state", console, owner}}
+	if err != nil || !reflect.DeepEqual(targets, want) {
+		t.Fatal("console state cleanup order differs", err)
+	}
+	for _, invalid := range []string{gateway, "openshell-state-0123456789abcdef0123456789abcdef01234567", console + "0"} {
+		if _, err := cleanupTargets("stego-service-ci", []kube.Object{cleanupObject(invalid, "gateway-console-state", owner)}, nil); err == nil {
+			t.Fatal("console cleanup accepted another namespace shape")
+		}
+	}
+}
+
 func TestCleanupTargetsRejectForeignAndConflictingResources(t *testing.T) {
 	name, owner := "openshell-0123456789abcdef", "0123456789abcdefghijklmnopq"
 	cases := []struct{ namespaces, bindings []kube.Object }{

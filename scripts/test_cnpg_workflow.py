@@ -36,7 +36,9 @@ class CNPGWorkflowTests(unittest.TestCase):
         config = copy.deepcopy(original)
         config['Roles'] = inspection.inspection_roles() + config['Roles']
         for profile in config['Profiles']:
-            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}[profile['Name']]
+            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}.get(profile['Name'])
+            if role is None:
+                continue
             profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
             if profile['Name'] == 'gateway':
                 profile['NetworkPeers'].insert(0, {'Direction': 'egress', 'Namespace': 'external',

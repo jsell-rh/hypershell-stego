@@ -52,8 +52,18 @@ class InspectionBoundary(unittest.TestCase):
         self.fixture = copy.deepcopy(self.original)
         self.fixture['Roles'] = inspection.inspection_roles() + self.fixture['Roles']
         for profile in self.fixture['Profiles']:
-            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}[profile['Name']]
+            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector'}.get(profile['Name'])
+            if role is None:
+                continue
             profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
+
+    def test_console_state_gets_no_fixture_credentials_grant(self):
+        original = next(p for p in self.original['Profiles'] if p['Name'] == 'gateway-console-state')
+        fixture = next(p for p in self.fixture['Profiles'] if p['Name'] == 'gateway-console-state')
+        self.assertEqual(original, fixture)
+        fixture['Bindings'].append(copy.deepcopy(self.fixture['Profiles'][0]['Bindings'][-1]))
+        with self.assertRaises(ValueError):
+            inspection.verify_runtime(go(self.original), go(self.fixture))
 
     def test_fixed_additions_preserve_runtime_and_original_bindings(self):
         self.assertEqual(inspection.verify_runtime(go(self.original), go(self.fixture)), inspection.inspection_roles())

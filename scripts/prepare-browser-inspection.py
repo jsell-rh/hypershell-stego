@@ -54,21 +54,21 @@ BINDINGS = [
 def declaration(source):
     if 'fixture-gateway-inspector' in source or 'fixture-state-inspector' in source:
         raise ValueError('The source already contains fixture inspection roles')
-    for boundary in ('      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', '    workers:\n'):
-        if source.count(boundary) != 1:
-            raise ValueError('The production profile boundary changed')
-    anchors = [('    allocation_roles:\n', ROLES), *BINDINGS]
-    result = source
-    for anchor, addition in anchors:
-        if result.count(anchor) != 1:
+    if source.count('    allocation_roles:\n') != 1 or source.count('    allocation_profiles:\n') != 1 or source.count('    workers:\n') != 1:
+        raise ValueError('The production profile boundary changed')
+    before, profiles = source.split('    allocation_profiles:\n', 1)
+    profiles, after = profiles.split('    workers:\n', 1)
+    # Append each inspection binding inside its own profile. Other state
+    # profiles keep their existing permissions and binding indices.
+    for name, (anchor, addition) in zip(('gateway', 'gateway-state'), BINDINGS, strict=True):
+        pattern = r'^      - name: ' + re.escape(name) + r'\n.*?(?=^      - name: |\Z)'
+        matches = list(re.finditer(pattern, profiles, re.MULTILINE | re.DOTALL))
+        if len(matches) != 1 or matches[0].group().count(anchor) != 1:
             raise ValueError('The production allocation declaration changed')
-        result = result.replace(anchor, anchor + addition, 1)
-    # The two added bindings must be last, so all production binding indices
-    # and resource names stay unchanged. Move each to its profile's end.
-    for _, addition in BINDINGS:
-        result = result.replace(addition, '', 1)
-    result = result.replace('      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', BINDINGS[0][1] + '      - name: gateway-state\n        network_isolation: true\n        identity_config_map:', 1)
-    result = result.replace('    workers:\n', BINDINGS[1][1] + '    workers:\n', 1)
+        block = matches[0]
+        profiles = profiles[:block.end()] + addition + profiles[block.end():]
+    result = before + '    allocation_profiles:\n' + profiles + '    workers:\n' + after
+    result = result.replace('    allocation_roles:\n', '    allocation_roles:\n' + ROLES, 1)
     restored = result.replace(ROLES, '', 1)
     for _, addition in BINDINGS:
         if result.count(addition) != 1:

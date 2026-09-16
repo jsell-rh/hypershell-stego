@@ -63,6 +63,8 @@ func cleanupTargets(namespace string, namespaces, bindings []kube.Object) ([]cle
 		pattern := `^openshell-[0-9a-f]{16}$`
 		if target.Profile == "gateway-state" {
 			pattern = `^openshell-state-[0-9a-f]{40}$`
+		} else if target.Profile == "gateway-console-state" {
+			pattern = `^openshell-console-[0-9a-f]{40}$`
 		} else if target.Profile != "gateway" {
 			return errors.New("test allocation has an unknown profile")
 		}
