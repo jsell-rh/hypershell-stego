@@ -4,12 +4,42 @@ import (
 	"bytes"
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"errors"
+	"io"
+	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"sync/atomic"
 	"testing"
 )
+
+func TestDashboardProbeFailureCategoriesExcludeTransportDetails(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		err  error
+	}{
+		{"canceled", context.Canceled},
+		{"timeout", context.DeadlineExceeded},
+		{"certificate-authority", x509.UnknownAuthorityError{}},
+		{"certificate-hostname", x509.HostnameError{Host: "private.invalid"}},
+		{"certificate-invalid", x509.CertificateInvalidError{Detail: "private certificate"}},
+		{"dns", &net.DNSError{Name: "private.invalid", Err: "private DNS error"}},
+		{"connection", &net.OpError{Op: "dial", Err: errors.New("private endpoint")}},
+		{"connection-closed", io.EOF},
+		{"connection-closed", io.ErrUnexpectedEOF},
+		{"transport", errors.New("private transport error")},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := &url.Error{Op: "Get", URL: "https://private.invalid/?secret=private", Err: test.err}
+			if got := dashboardProbeFailure(err); got != test.name {
+				t.Fatalf("unexpected bounded failure category: %q", got)
+			}
+		})
+	}
+}
 
 func TestDashboardRouteProbeInspectsRedirectWithoutFollowing(t *testing.T) {
 	for _, scenario := range []string{"valid", "foreign redirect", "wrong return path", "oversized response", "wrong readiness", "wrong status", "canceled", "unverified peer"} {

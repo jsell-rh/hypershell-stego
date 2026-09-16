@@ -4,9 +4,12 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"crypto/x509"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -81,7 +84,7 @@ func checkDashboardRoute(ctx context.Context, browser *http.Client, origin strin
 			request.Header.Set("Sec-Fetch-Site", "none")
 			response, err := client.Do(request)
 			if err != nil {
-				return fmt.Errorf("dashboard fixture HTTPS request failed: %s", check.path)
+				return fmt.Errorf("dashboard fixture HTTPS request failed: %s (%s)", check.path, dashboardProbeFailure(err))
 			}
 			defer response.Body.Close()
 			if response.TLS == nil || len(response.TLS.VerifiedChains) == 0 || len(response.TLS.VerifiedChains[0]) == 0 || len(response.TLS.PeerCertificates) == 0 || !response.TLS.VerifiedChains[0][0].Equal(response.TLS.PeerCertificates[0]) {
@@ -106,4 +109,41 @@ func checkDashboardRoute(ctx context.Context, browser *http.Client, origin strin
 		}
 	}
 	return certificate, nil
+}
+
+// Keep diagnostics useful without printing URLs or arbitrary transport errors.
+func dashboardProbeFailure(err error) string {
+	if errors.Is(err, context.Canceled) {
+		return "canceled"
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "timeout"
+	}
+	var authority x509.UnknownAuthorityError
+	var hostname x509.HostnameError
+	var certificate x509.CertificateInvalidError
+	switch {
+	case errors.As(err, &authority):
+		return "certificate-authority"
+	case errors.As(err, &hostname):
+		return "certificate-hostname"
+	case errors.As(err, &certificate):
+		return "certificate-invalid"
+	}
+	var dns *net.DNSError
+	if errors.As(err, &dns) {
+		return "dns"
+	}
+	var network net.Error
+	if errors.As(err, &network) && network.Timeout() {
+		return "timeout"
+	}
+	var operation *net.OpError
+	if errors.As(err, &operation) {
+		return "connection"
+	}
+	if errors.Is(err, io.EOF) || errors.Is(err, io.ErrUnexpectedEOF) {
+		return "connection-closed"
+	}
+	return "transport"
 }

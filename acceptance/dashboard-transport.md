@@ -160,3 +160,24 @@ passed. The control plane now pins that module revision. Repeated generation
 and state checks passed again after the dependency update. The
 [module evidence](browser-scopes-module-evidence.json) records the source and
 archive hash. A new live result is still required.
+
+## Readiness transport failure with the current compiler
+
+[Run 35153112538](https://github.com/jsell-rh/hypershell-stego/actions/runs/35153112538)
+at `f182ec5` failed the live test after 258.34 seconds. Both dashboards and
+generated backends became ready without restarts. SQL isolation, denied Gateway
+RPC calls, and data recovery after Gateway Pod replacement passed. The next
+request, the dashboard `/readyz` probe, failed before browser navigation.
+
+Independent checks at `2026-09-16T21:48:10Z` verified both public certificates
+against the declared CA and hostnames. Each served leaf matched its configured
+certificate. These checks ran from the operator workstation after the failure;
+they do not prove that the test Pod could reach the endpoint at failure time.
+The test did not retain the transport error type, so the cause remains unknown.
+
+The probe now reports a fixed error category for cancellation, timeout, DNS,
+connection, certificate validation, or another transport failure. It does not
+print URLs or arbitrary error text. Request deadlines, certificate verification,
+and response checks are unchanged. The focused probe checks passed in 0.052
+seconds. The next live run must establish the failure category or complete the
+probe and rendered workflow.
