@@ -340,3 +340,20 @@ the required API identity, keys, and instance ID. The common provider passed its
 real Keycloak test in run `35042039359`. The new application integration has
 compiled and passed the small adapter race checks. Its live gates are pending.
 Earlier results in this file do not qualify this migration.
+
+## Native lifecycle cluster result
+
+The complete cluster browser workflow passed on application commit
+`6354a23c47f7627b779d637bb0dd3d6e93ca53d0` in
+[run 35041052519](https://github.com/jsell-rh/hypershell-stego/actions/runs/35041052519).
+The test took 501.61 seconds. It covered login, Gateway creation, owner and
+viewer access, REST and gRPC, events, worker and API restart, SQL recovery,
+service-account use of the real Gateway, and deletion. The saved cleanup record
+confirms that test resources and namespace allocations are absent. See
+[native lifecycle evidence](native-lifecycle-browser-evidence.json).
+
+This result precedes the common service-account lifecycle migration. For that
+migration, the fixed CI receiver now permits TCP 19094 from the provisioner.
+The update ran with the live-test Lease held and no test workload present.
+All fixture network policies passed verification, and the Lease was released.
+See [receiver update](account-state-receiver-update-20260916.json).

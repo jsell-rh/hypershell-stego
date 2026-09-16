@@ -1,0 +1,19 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35041052519",
+  "application_commit": "6354a23c47f7627b779d637bb0dd3d6e93ca53d0",
+  "result": "success",
+  "workflow_seconds": 501.61,
+  "job_uid": "100cc4cd-d75f-4ef0-8cfb-e1af37906d26",
+  "cleanup": {
+    "namespace_retained": "stego-service-ci",
+    "test_resources_absent": true,
+    "allocations_absent": true
+  },
+  "artifact_sha256": {
+    "deployment.log": "5c77060958c0a6d61af2ca0825ce2dba92d1da19b11712109b9527752e1f8a67",
+    "evidence.tar": "8fdf6028a8ddfb62263d358b0369754f57484df64f1ab4f5863c5ce4c56bec0c",
+    "job-status.json": "c16e5ac3f81f0a5367c85db8504658e0120834c3d6c0bbd09dea992ea938dd59",
+    "cleanup.json": "179eec722abf20ace66a7c69315ad9a7758b5305c67c476dddc3956f074b7232"
+  },
+  "scope": "Native client lifecycle and the full Gateway browser workflow. This result does not qualify the later common service-account lifecycle migration."
+}

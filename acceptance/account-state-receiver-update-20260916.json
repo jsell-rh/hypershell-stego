@@ -1,0 +1,14 @@
+{
+  "phase": "complete",
+  "source_commit": "4b5ae60e712a7aaeca10f12b9e8deb8ad2a0bd91",
+  "holder": "account-state-receiver-20260916",
+  "lease_released": true,
+  "fixture_network_verified": true,
+  "namespace_uid": "0666fe42-3306-4de3-acd8-d0acebcf1db6",
+  "policy_uid": "72b7653d-ebf5-450e-92ec-678326afcbd6",
+  "resource_version": "6555756",
+  "test_runtime_absent": true,
+  "before_spec_sha256": "119403639b6c5c65bb580c86cf32738531693230884e8d8b01d5bc17887f4aeb",
+  "after_spec_sha256": "924e3c40f1cee640eae585865def9db8ba5abbe65562d960b1dca136d042f8e3",
+  "change": "Add only TCP 19094 to the existing provisioner receiver rule."
+}
