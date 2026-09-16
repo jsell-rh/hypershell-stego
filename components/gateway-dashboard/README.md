@@ -103,7 +103,11 @@ exact generated client files with the source archive.
 
 The cluster acceptance test now includes rendered workspace creation, reload
 after namespace recovery, console and provider sign-out, and correlated
-browser logs, traces, and metrics. The source candidate must pass its build,
-then replace the captured asset bundle before that live test runs. The current
-committed asset bundle does not yet contain this bridge. No live result is
-claimed for these new checks.
+browser logs, traces, and metrics. The [session client source check](../../acceptance/dashboard-session-source-evidence.json)
+passed all five gates and all 13 selected UI tests. The saved source tree matches
+the application inputs and generated browser packages. Repeated capture of the
+36 assets was identical. The [image check](../../acceptance/dashboard-session-image-evidence.json)
+verified the published image against the checked binary. The captured bundle
+and image are now selected by the Gateway console. Its current generated module
+and the live workflow still require qualification. No live result is claimed
+for these new checks.

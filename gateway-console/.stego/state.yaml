@@ -21,13 +21,13 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 8bf6693212773a847b1628cebce0bfde7420a7a100f54e98b952be8a2ab92038
+                sha256: a79690c85b218a93044d646f706210f9bfd5e541bbf772cbef2ccfe38e4cdcca
                 mode: 420
             ui/build.zip:
                 exists: true
-                sha256: 4b495d45bacfac59ea1519485c94bea605ec7d9b8bfa004195f11867c16b9640
+                sha256: 4c92cc276f80ccbebdbec44a35600a1b714f8d3b7ee5b2279e8170d40fa348e0
                 mode: 420
-        sha256: 58b79b9e4d4c5ae23b25d6a2c6c9a250e594738c6536d126355d795e611f89a7
+        sha256: b4005f596e644148870c5d871c426cbdc73295d3c53062c5cc71ccdee650cb4f
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -36,7 +36,7 @@ last_applied:
         vcs: unknown
         revision: unknown
         source_state: unknown
-    service_hash: 8bf6693212773a847b1628cebce0bfde7420a7a100f54e98b952be8a2ab92038
+    service_hash: a79690c85b218a93044d646f706210f9bfd5e541bbf772cbef2ccfe38e4cdcca
     registry_sha: 2e346e6ec860ac42837ef7453afd980f26220ede1a1b081b60213f889d6311eb
     registry_content_sha256: 72bf7702a6e0cedf70cb7292f49d5be6998ac02b825c44605dca5f110dc7d601
     components:
@@ -59,7 +59,7 @@ last_applied:
             version: 4.9.0
             sha: 2e346e6ec860ac42837ef7453afd980f26220ede1a1b081b60213f889d6311eb
     files:
-        browser/backend.go: 5bd0984436b275a5b340ee6d31d78bed9051e1758cf49697545f0cb2b1db3e21
+        browser/backend.go: 59fc00eadc4f5fb97071c86d8f77d956801d6502b370b6a759e483683e78c778
         browser/client/client.go: 1000bca2a6f2916db09a0ac64969cb8b5d5911794913008c5bb9daffe8c94aaa
         browser/client/socket.go: 4d2e33e95559d76c345d8197c7e5b77d3a00c129c5c32035ed1a4fdfbcff190e
         browser/handlers.go: cac1695cbfcd37606c31313970bbddcf402094c8def5d50c82bb025f586780aa
@@ -98,9 +98,9 @@ last_applied:
         browser/public/assets/editor.669bd6b36fd05cbfa4edb36ea7e8b1fb.worker.js: 7f9a7d71150da3b4e27145dd1251a2001ad34cbc0b2a67936c399c6c03e35994
         browser/public/assets/favicon.svg: 4764778877da1696b18f0b480c0a3c88b4967e943649e4f1f4343be1b2157be4
         browser/public/assets/json.b4f4ced3cf7e993ce70804117817bcc5.worker.js: 545d6095e09d662cfc5bc5186b557abbfe5cb57697b1396f1b0790fe79385165
-        browser/public/assets/main.834d547c2cab6dda3748.js: 34e0373f3c26dd57c89d2b5715ea89ebf02b57293e273c0fd3eed31234a65b6e
+        browser/public/assets/main.cb397a9e34f917040520.js: ff1d502d1830e45d3b7e382682486a7911aed1901864b6c812f8a56ca0a0ffda
         browser/public/assets/runtime.295dc0b6468045baa0c5.js: afb1fc506bd00b5418c1484aa019767ba67e541bd4fe06f5acc3082d1d418305
-        browser/public/index.html: 30707dc08ab0902ee174c9dcc5f005cb84e451465d2a5b39b36745a2e867dc7b
+        browser/public/index.html: 6b56e2f26dd89cff5beff53ba1bdaef7ee82bb8ec2810282570742914300b836
         browser/schema.sql: 866311ead992bc75143cda28febcef85ababd7c2326aa6ba6376ade2db97a9eb
         browser/schema/schema.go: d6a3a0b11bfa2528722cb221aca730614fdd155ee212bb3ae9bfb80aef6bb345
         browser/sessionclient/index.d.ts: b1fc960fd59cd1da7d1d549f6234076bdae8a85139010926d12d83ddd5b7eef1
@@ -115,7 +115,7 @@ last_applied:
         deploy/Containerfile: 5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe
         deploy/Containerfile.dockerignore: c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e
         deploy/render/main.go: 11e2657cd8832093df4bd49dbf6e545edd90c6e7aaa8fc938151d36c23e05068
-        deploy/render/manifest.json.tmpl: d868fd70d46259ba7b66d52b2f78e90a28787ac46c6ea0265003ce69c6135034
+        deploy/render/manifest.json.tmpl: abe93608eee09bda18413a949b744428c59fe86efe7b5aaa36ab735ec1952f22
         deploy/resources.go: 49befbd30808a9288737673fa4d6442d888e4ffb0bba7390cdac37130f48b7c2
         health/application.go: 65f6bc7958fe139c548dc696ed86468d0064130712a8478c55592cff6e44fd4f
         health/health.go: 303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb
