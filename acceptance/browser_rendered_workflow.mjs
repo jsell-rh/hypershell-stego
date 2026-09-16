@@ -183,6 +183,13 @@ try {
    return ['invalid_request','unauthorized_client','access_denied','unsupported_response_type','invalid_scope','server_error','temporarily_unavailable','interaction_required','login_required','account_selection_required','consent_required'].includes(error)?error:'unclassified';
   `,[input.origin]).catch(()=>null);
   if(authorizationError && responses.length<128)responses.push({path:'/auth/callback',authorization_error:authorizationError});
+  if(phase.startsWith('dashboard-')){
+   const violations=await script(`
+    const allowed=new Set(['default-src','script-src','script-src-elem','script-src-attr','style-src','style-src-elem','style-src-attr','worker-src','child-src','connect-src','img-src','font-src','frame-src','base-uri','form-action']);
+    return Array.isArray(window.stegoEditorPolicyViolations)?[...new Set(window.stegoEditorPolicyViolations.filter(value=>allowed.has(value)))].slice(0,16):[];
+   `).catch(()=>[]);
+   if(violations.length && responses.length<128)responses.push({path:'/global-policy',content_policy_violations:violations});
+  }
   await writeFile(outputPath+'.network.json',JSON.stringify(responses));
   await writeFile(outputPath+'.txt',String(await script('return document.body.innerText').catch(()=>'')));
   await writeFile(outputPath+'.png',Buffer.from(await command('/screenshot').catch(()=>''),'base64'));
