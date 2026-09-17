@@ -46,6 +46,8 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/regenerated/source-commit"
           git archive HEAD | sha256sum > "$RUNNER_TEMP/regenerated/source-archive.sha256"
           cp .stego/compiler-revision .stego/compiler-sha256 "$RUNNER_TEMP/regenerated/"
+          # Include new generated files in the review patch.
+          git add --intent-to-add -- out console/out gateway-console/out
           git diff --binary > "$RUNNER_TEMP/regenerated/generation.patch"
           tar -cf "$RUNNER_TEMP/regenerated/generated.tar" \
             out .stego/state.yaml go.mod go.sum \
