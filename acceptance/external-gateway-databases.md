@@ -57,3 +57,17 @@ data migration; reconciliation must not silently create an empty replacement.
 The new source requires hosted checks and a complete external PostgreSQL
 workflow result before qualification. Earlier CNPG results remain evidence
 for their recorded source only.
+
+## Hosted evidence
+
+At source `29a238a`, the hosted browser workflow passed in 97.62 seconds. It
+checked login, Gateway creation, grants, REST and gRPC access, event delivery,
+session recovery, and account creation and deletion. Three browser instances
+each supplied correlated startup logs, traces, and metrics for all eight stages.
+The two screenshots were reviewed. The fixture does not run a real Gateway.
+
+The same run passed 231 UI tests, three generation checks, and builds and
+entrypoint/user checks for seven generated images. The core job remains active.
+The complete external PostgreSQL cluster workflow has not started. See the
+[hosted evidence](external-gateway-hosted-evidence.json) for exact jobs and hashes.
+These results do not qualify the complete application change.

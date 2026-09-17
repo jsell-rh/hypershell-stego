@@ -1,0 +1,61 @@
+{
+  "source": "29a238a9c0404aaf64ccfd0e248c849cd7193d2a",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35230828914",
+  "browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35230828914",
+    "source": "29a238a9c0404aaf64ccfd0e248c849cd7193d2a",
+    "job": 105234169907,
+    "checked_at": "2026-09-17T14:06:22.977507+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 97.62,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "4b6f2f97bcbd3b32771347215013668ed7a205c58bdbfbe978953ee414edc178",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29"
+    },
+    "screenshot_scope": "Provisioning Gateway with commands not yet available; healthy account fixture with an empty account list after deletion. This hosted fixture does not run a real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate."
+  },
+  "web_console": {
+    "source": "29a238a9c0404aaf64ccfd0e248c849cd7193d2a",
+    "run": 35230828914,
+    "job": 105234169521,
+    "checked_at": "2026-09-17T14:05:28.239115+00:00",
+    "passed": true,
+    "test_counts": [
+      7,
+      166,
+      58
+    ],
+    "total_tests": 231,
+    "generation_checks": 3,
+    "log_sha256": "3c2fc7fa57df01c67e8a885165d52fc8745b3763f66dfb5815fa84f944daefd6",
+    "scope": "Management UI tests, type checks, architecture checks, lint, build, recorded console inputs, and generated output. Live Gateway behavior is checked separately."
+  },
+  "images": {
+    "source": "29a238a9c0404aaf64ccfd0e248c849cd7193d2a",
+    "run": 35230828914,
+    "job": 105234169805,
+    "checked_at": "2026-09-17T14:05:29.277992+00:00",
+    "passed": true,
+    "required_steps": [
+      "Build the generated service image",
+      "Check the image entry point",
+      "Build and check the generated console image",
+      "Build and check the generated RPC image",
+      "Build and check the generated worker images"
+    ],
+    "log_sha256": "ec3792afc36fca7e7423a165f6e040d126fe132a7961992cb031ab1bd2a01f13",
+    "scope": "Generated API, management console, provisioner, and four worker image builds and entrypoint/user checks. This is not a live deployment result."
+  },
+  "core": "pending",
+  "external_live_workflow": "not started",
+  "sandbox": "deferred by the user; not tested",
+  "scope": "Hosted checks only. The complete external PostgreSQL Gateway workflow requires a separate cluster result."
+}
