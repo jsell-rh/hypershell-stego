@@ -53,6 +53,11 @@ jobs:
           node-version: '24.18.1'
       - run: npm ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
       - run: node acceptance/typescript/node_modules/typescript/lib/tsc.js --strict --noEmit --target ES2022 --module NodeNext --moduleResolution NodeNext acceptance/browser_sdk_types.mts
+      - name: Check the selected Gateway console source
+        run: |
+          go mod download github.com/jsell-rh/hypershell-stego/gateway-console
+          go list -m -json github.com/jsell-rh/hypershell-stego/gateway-console > "$RUNNER_TEMP/gateway-console-module.json"
+          python3 scripts/check-gateway-console-inputs.py "$RUNNER_TEMP/gateway-console-module.json"
       - run: go run golang.org/x/vuln/cmd/govulncheck@v1.4.0 ./...
       - name: Check console dependencies
         working-directory: console

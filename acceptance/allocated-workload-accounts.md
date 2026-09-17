@@ -41,3 +41,16 @@ account permissions. See the [generation record](allocated-accounts-generation-e
 Hosted application checks, installation-policy review,
 and the complete bounded cluster workflow remain required.
 Do not change cluster policy while the current main browser test is active.
+
+
+The first application check at `02e3ca8` failed before tests ran. Its root Go
+module still selected an older Gateway-console package. The new dependency
+selects the independently checked console module at `02e3ca8`. CI compares its
+generated source and module files with the checked-in console before application
+checks. Module resolution and image builds use the same explicit version.
+
+The first policy render also stopped before rendering. Its endpoint fixture
+assumed adjacent YAML fields. The corrected fixture selects the Gateway profile
+and preserves its account declaration. Its 14 inspection tests and 12
+installation tests passed locally. The replacement policy render passed in CI;
+independent policy review is still pending. No cluster policy was changed.
