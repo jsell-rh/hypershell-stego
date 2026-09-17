@@ -27,6 +27,7 @@ jobs:
           cache: true
       - name: Check the CI boundary
         run: |
+          timeout 15s bash scripts/test-collect-service-evidence.sh
           python3 scripts/test_cnpg_ci.py
           python3 scripts/test_cnpg_installation_fixture.py
           python3 scripts/test_browser_ci.py

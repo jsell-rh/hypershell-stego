@@ -30,7 +30,7 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public missing-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$results"
@@ -68,6 +68,8 @@ for scenario in service browser workload public configured-public log-failure ar
     missing-sql) expected=1; rm "$test_work/browser-artifacts/postgres-server.json" ;;
     missing-network) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-recovery.json" ;;
     missing-provisioner-restart) expected=1; rm "$test_work/browser-artifacts/provisioner-restart.json" ;;
+    empty-provisioner-restart) expected=1; : > "$test_work/browser-artifacts/provisioner-restart.json" ;;
+    missing-multiple) expected=1; rm "$test_work/image.json" "$test_work/browser-artifacts/provisioner-restart.json" ;;
     missing-public) expected=1; rm "$test_work/browser-artifacts/gateway-public-certificate-rotation.json" ;;
     missing-endpoint) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-endpoint-replacement.json" ;;
     missing-endpoint-ack) expected=1; rm "$test_work/network-endpoint-change.ack" ;;
@@ -80,6 +82,21 @@ for scenario in service browser workload public configured-public log-failure ar
     printf 'Evidence collection case failed: %s\n' "$scenario" >&2
     exit 1
   fi
+  case "$scenario" in
+    missing-*|empty-provisioner-restart)
+      # An incomplete record must fail and retain all available evidence.
+      tar tf "$results/evidence.tar" >/dev/null
+      cmp "$test_work/generated.tar" <(tar xOf "$results/evidence.tar" generated.tar)
+      for file in image.json gateway-console-image.json after-tests.sha256 browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+        if [[ ! -s $test_work/$file ]]; then
+          grep -Fqx "Required service evidence is missing or empty: $file" "$results/collector.log"
+        fi
+      done
+      if [[ $scenario == missing-endpoint || $scenario == missing-endpoint-ack ]]; then
+        grep -Fq 'Required service evidence is missing or empty:' "$results/collector.log"
+      fi
+      ;;
+  esac
   if [[ $observed == 0 ]]; then
     tar tf "$results/evidence.tar" >/dev/null
     if [[ $workload == 1 && $result == 0 ]]; then
