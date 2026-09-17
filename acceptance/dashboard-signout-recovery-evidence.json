@@ -46,5 +46,12 @@
   "cleanup_lease_empty": true,
   "artifact_sha256": "91a126a2fecd5d3dc665acc33f89fe8dabd311b2125f78d78149ed182e7e6992",
   "deployment_log_sha256": "be5d02bf8f5b6a2020ada11b4220b873a5c48757506718c0c9fd70b72b67c86d",
-  "scope": "This failed run proves the listed checks only. The application gate remains open."
+  "scope": "This failed run proves the listed checks only. The application gate remains open.",
+  "generation": {
+    "repeated_files": 412,
+    "first_second_match": true,
+    "archived_files_match_manifest": true,
+    "manifest_sha256": "fc17e084b2fb7551a8d2182def4906de6a410470555ccc11ed72596f396c7053",
+    "generated_tar_sha256": "5e5e2cdcfcea3bacc15361738a4260734e8da08b76c3e4308e2567c772cbe2f8"
+  }
 }
