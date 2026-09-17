@@ -144,6 +144,9 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if !k.Handles(gw) {
 		return errors.New("Gateway belongs to a different managed cluster")
 	}
+	if k.allocation == nil {
+		return errors.New("Gateway workload requires namespace allocation")
+	}
 	oidc, err := validate(gw, release, k.options.Issuer)
 	if err != nil {
 		return err
@@ -152,13 +155,11 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 		return errors.New("Gateway supervisor image differs from controller configuration")
 	}
 	id, ns := gw.Metadata.Id, gw.Namespace
-	if k.allocation != nil {
-		if err := k.allocation.RequireNamespace(ctx, "gateway", ns, id); err != nil {
-			if errors.Is(err, allocation.ErrPending) {
-				return ErrPending
-			}
-			return err
+	if err := k.allocation.RequireNamespace(ctx, "gateway", ns, id); err != nil {
+		if errors.Is(err, allocation.ErrPending) {
+			return ErrPending
 		}
+		return err
 	}
 	state, databaseConfig, err := k.localState(ctx, gw)
 	if err != nil {
@@ -224,9 +225,6 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 		return err
 	}
 	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(append(append([]byte(nil), crt...), publicCertificate...))), k.options.PublicDomain != "") {
-		if k.allocation != nil && entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" {
-			continue
-		}
 		if _, err = k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
 		}

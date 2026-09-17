@@ -69,25 +69,10 @@ type resource struct {
 func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string, publicTLS bool) []resource {
 	id, ns := gw.Metadata.Id, gw.Namespace
 	core := "/api/v1/namespaces/" + ns
-	rbac := "/apis/rbac.authorization.k8s.io/v1"
 	result := []resource{}
 	add := func(path string, o object) { result = append(result, resource{path, o}) }
 	add(core+"/serviceaccounts", definition("v1", "ServiceAccount", Name, id))
 	add("/api/v1/namespaces/"+sandboxNS+"/serviceaccounts", definition("v1", "ServiceAccount", Name+"-sandbox", id))
-	clusterRole := definition("rbac.authorization.k8s.io/v1", "ClusterRole", ns, id)
-	clusterRole["rules"] = []object{{"apiGroups": []string{"authentication.k8s.io"}, "resources": []string{"tokenreviews"}, "verbs": []string{"create"}}, {"apiGroups": []string{""}, "resources": []string{"nodes"}, "verbs": []string{"get", "list", "watch"}}, {"apiGroups": []string{""}, "resources": []string{"namespaces"}, "verbs": []string{"get"}}}
-	add(rbac+"/clusterroles", clusterRole)
-	binding := definition("rbac.authorization.k8s.io/v1", "ClusterRoleBinding", ns, id)
-	binding["roleRef"] = object{"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": ns}
-	binding["subjects"] = []object{{"kind": "ServiceAccount", "name": Name, "namespace": ns}}
-	add(rbac+"/clusterrolebindings", binding)
-	role := definition("rbac.authorization.k8s.io/v1", "Role", Name+"-sandbox", id)
-	role["rules"] = []object{{"apiGroups": []string{"agents.x-k8s.io"}, "resources": []string{"sandboxes", "sandboxes/status"}, "verbs": []string{"get", "list", "watch", "create", "update", "patch", "delete"}}, {"apiGroups": []string{""}, "resources": []string{"events"}, "verbs": []string{"get", "list", "watch"}}, {"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get"}}}
-	add(rbac+"/namespaces/"+sandboxNS+"/roles", role)
-	binding = definition("rbac.authorization.k8s.io/v1", "RoleBinding", Name+"-sandbox", id)
-	binding["roleRef"] = object{"apiGroup": "rbac.authorization.k8s.io", "kind": "Role", "name": Name + "-sandbox"}
-	binding["subjects"] = []object{{"kind": "ServiceAccount", "name": Name, "namespace": ns}}
-	add(rbac+"/namespaces/"+sandboxNS+"/rolebindings", binding)
 	service := definition("v1", "Service", Name, id)
 	service["spec"] = object{"type": "ClusterIP", "selector": object{ownerLabel: id}, "ports": []object{{"name": "grpc", "port": 8080, "targetPort": "grpc"}}}
 	add(core+"/services", service)

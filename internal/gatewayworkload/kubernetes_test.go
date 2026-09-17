@@ -52,6 +52,22 @@ func fixture(t *testing.T, handler http.HandlerFunc) *Kubernetes {
 	t.Cleanup(k.Close)
 	return k
 }
+func TestGatewayRequiresAllocationBeforeWrites(t *testing.T) {
+	gw, release := records(t)
+	requests := 0
+	k := fixture(t, func(w http.ResponseWriter, r *http.Request) {
+		requests++
+		w.WriteHeader(http.StatusInternalServerError)
+	})
+	k.allocation = nil
+	if err := k.Ensure(context.Background(), gw, release, 1); err == nil {
+		t.Fatal("Gateway without allocation was accepted")
+	}
+	if requests != 0 {
+		t.Fatal("Gateway without allocation reached Kubernetes")
+	}
+}
+
 func TestInvalidGatewayCannotWriteResources(t *testing.T) {
 	for _, tc := range []string{"cluster", "namespace", "release", "image", "issuer", "audience", "roles", "driver", "supervisor"} {
 		t.Run(tc, func(t *testing.T) {

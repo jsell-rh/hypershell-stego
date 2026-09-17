@@ -87,6 +87,9 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 		rendered := resources(gw, namespace, release, oidcConfig{}, object{}, object{}, object{}, "hash", enabled)
 		var found bool
 		for _, entry := range rendered {
+			if entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" {
+				t.Fatal("Gateway workload declares authority owned by the allocator")
+			}
 			if entry.object["kind"] != "Deployment" {
 				continue
 			}
