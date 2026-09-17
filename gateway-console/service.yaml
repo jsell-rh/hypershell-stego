@@ -1,6 +1,6 @@
 kind: service
 name: hypershell-gateway-console
-archetype: hypershell-gateway-browser
+archetype: browser-service
 language: go
 overrides:
   postgres-adapter:

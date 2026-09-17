@@ -10,8 +10,9 @@ names. The compiler revision is pinned in [.stego/compiler-revision](.stego/comp
 Generated code must not be edited by hand.
 
 All three generated modules use the common STEGO registry from the same pinned
-Git revision as their compiler. Local registries contain application archetypes;
-they contain no copies of common component declarations. Application output
+Git revision as their compiler. Only the API has a local application archetype.
+Both consoles use the common browser archetype, including browser telemetry.
+There are no local copies of common component declarations. Application output
 paths are set in `service.yaml`. See the [registry model](registry/README.md)
 and the [Gateway console registry result](acceptance/composed-registry-module-evidence.json).
 The generated runtime stays in Git for review and repeatable builds.

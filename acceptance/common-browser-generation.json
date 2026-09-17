@@ -1,0 +1,56 @@
+{
+  "compiler": "00573709fb15a2a54de4242aa8fdbabee325179a",
+  "compiler_sha256": "e5894237467e81c6a3e7a7c8abd436192a74174726384c2f30716e63db3101bb",
+  "compiler_signatures": "https://github.com/jsell-rh/stego/actions/runs/35194639679",
+  "toolchain": {
+    "sha256": "94168e19a28c7bdeaf3c281f88e3a3efab13f7d80e2694ae2dd4d71378da9289",
+    "files": 15036,
+    "bytes": 232512886
+  },
+  "commands": {
+    "api": [
+      "apply",
+      "deps",
+      "apply",
+      "apply",
+      "drift"
+    ],
+    "console": [
+      "apply",
+      "deps",
+      "apply",
+      "apply",
+      "drift"
+    ],
+    "gateway-console": [
+      "apply",
+      "deps",
+      "apply",
+      "apply",
+      "drift"
+    ]
+  },
+  "generation_record_counts": {
+    "api": 193,
+    "console": 95,
+    "gateway-console": 126
+  },
+  "comparison": {
+    "checked_at": "2026-09-17T07:31:38.461695+00:00",
+    "generated_go_files": 217,
+    "changed_generated_go": [
+      "out/cli/command/version.go",
+      "out/main.go"
+    ],
+    "go_change_scope": "The compiler identity record and startup component indices changed. Constructor calls, request handling, and provider code did not change.",
+    "moved_client_files_identical": [
+      "index.d.ts",
+      "index.js",
+      "package.json"
+    ],
+    "api_browser_client_removed": true,
+    "gateway_local_registry_removed": true,
+    "scope": "Generated Go and browser client comparison before UI asset qualification. It does not establish complete application behavior."
+  },
+  "qualification": "Generation and input checks only. Asset, module, and complete application CI results are still required."
+}

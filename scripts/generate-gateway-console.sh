@@ -25,7 +25,7 @@ test "$(git -C "$record/compiler" rev-parse HEAD)" = "$revision"
 unset STEGO_REGISTRY STEGO_MODULE STEGO_GO_VERSION
 export GOWORK=off
 cd "$project/gateway-console"
-python3 "$project/scripts/check-gateway-console-inputs.py" "$record/compiler"
+python3 "$project/scripts/check-gateway-console-inputs.py"
 {
   "$record/stego" apply
   "$record/stego" deps

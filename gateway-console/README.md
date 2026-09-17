@@ -10,10 +10,10 @@ mounts. Browser JavaScript receives no OAuth token.
 [upstream.json](upstream.json) pins the checked upstream build, container image,
 and captured assets. The [build inputs](../components/gateway-dashboard) retain
 the dependency changes and upstream license. [.stego/config.yaml](.stego/config.yaml)
-combines the pinned common STEGO registry with the local application archetype.
-The compiler and common registry use the same full commit SHA. The local
-archetype adds browser telemetry; it contains no copied component metadata or
-new runtime implementation.
+selects the pinned common STEGO registry. The compiler and common registry use
+the same full commit SHA. The common browser archetype includes browser
+telemetry. No local archetype or component metadata is needed. Gateway routes,
+upstream assets, and deployment inputs remain in the application declaration.
 
 Run `scripts/generate-gateway-console.sh` from the repository to regenerate.
 Use `--check` to reject differences from committed output. The script retains

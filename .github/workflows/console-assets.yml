@@ -7,7 +7,7 @@ on:
       - .github/workflows/console-assets.yml
       - components/web-console/**
       - packages/gateway-management-ui/**
-      - out/browsertelemetry/**
+      - console/out/browsertelemetry/**
       - out/tssdk/**
       - pnpm-lock.yaml
       - pnpm-workspace.yaml

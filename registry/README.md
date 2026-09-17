@@ -9,9 +9,9 @@ is copied here.
 Gateway fields, grants, response mapping, and provider policy remain application
 code. The common runtime comes from STEGO.
 
-The management console uses the common browser archetype. The Gateway console
-has a separate local archetype that adds browser telemetry to its upstream
-dashboard integration. Generated files remain committed for review and repeat
+Both consoles use the common browser archetype, which includes browser
+telemetry. They do not need local registry sources. Only the API application
+archetype remains here. Generated files remain committed for review and repeat
 generation checks.
 
 STEGO captures every registry input and checks it again before apply. Repeated

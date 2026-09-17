@@ -82,7 +82,7 @@ jobs:
           git rev-parse HEAD > "$root/source-commit"
           cp gateway-console/.stego/compiler-revision "$root/compiler-revision"
           cp gateway-console/upstream.json "$root/upstream.json"
-          tar -C gateway-console -cf "$root/generated-source.tar" service.yaml registry .stego/config.yaml .stego/compiler-revision .stego/state.yaml go.mod go.sum out
+          tar -C gateway-console -cf "$root/generated-source.tar" service.yaml .stego/config.yaml .stego/compiler-revision .stego/state.yaml go.mod go.sum out
       - name: Publish and verify the generated browser image
         timeout-minutes: 8
         env:

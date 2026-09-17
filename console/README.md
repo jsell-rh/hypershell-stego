@@ -3,6 +3,9 @@
 This service uses STEGO's common browser session backend. Hypershell supplies
 the API prefix, identity role claim, public routes, and asset inputs. Login,
 session storage, token renewal, logout, and the API proxy are generated.
+The common archetype also generates `out/browsertelemetry`. The management UI
+uses this package from the console workspace. The client and backend relay
+share the declared `hypershell-web-console` identity.
 The backend serves the built React console from `ui/build.zip`. The rendered
 Gateway workflow is checked with Chromium through WebDriver.
 
