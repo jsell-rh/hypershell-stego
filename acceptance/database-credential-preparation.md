@@ -24,9 +24,9 @@ three drift checks. The new credentials file was imported from the verified
 archive; the CI patch omitted it because it was untracked. See the
 [generation record](database-credential-generation-evidence.json).
 
-Application checks are pending. The new deleted-record assertion requires the
-jshell Gateway SQL test; hosted core tests do not run it.
-Do not use this branch as a qualified deployment until those checks pass.
+The dedicated API and SQL checks passed, including the new deleted-record
+assertion. The complete live Gateway workflow with this compiler remains
+pending. Do not use this branch as a qualified deployment until it passes.
 
 ## Verified hosted results
 
@@ -55,9 +55,16 @@ Regeneration run `35220022601` matched all 415 files, produced an empty review
 patch, and passed all three drift checks. See the
 [repeat generation record](database-credential-regeneration-evidence.json).
 
-The full core suite and complete live Gateway workflow with this compiler
-remain pending. The verified results below do not qualify those unfinished
-checks.
+The core suite passed at the same application source in job `105197440867`
+of run `35219979081`. Independent log checks confirmed 309 top-level tests and
+668 test pass events, with no failures. Both earlier failure cases and all
+15 scope comparison cases passed. Three generation drift checks and hosted
+service cleanup also passed. The four excluded live tests have separate gates.
+See the [core record](database-credential-core-evidence.json). This pass does
+not establish the cause of either earlier failure.
+
+The complete live Gateway workflow with this compiler remains pending. The
+verified results below do not qualify that unfinished check.
 
 ## API, SQL, and journal results
 
