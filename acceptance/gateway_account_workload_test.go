@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
+	"testing"
 	"time"
 
 	"google.golang.org/grpc/status"
@@ -22,12 +24,13 @@ func (w *browserGatewayWorkload) startAccountDeletionWorkflow(gatewayID string) 
 		} `json:"credential"`
 	}
 	accounts := []account{}
-	for _, name := range []string{"gateway-automation-one", "gateway-automation-two", "gateway-automation-three"} {
+	for index, name := range []string{"gateway-automation-one", "gateway-automation-two", "gateway-automation-three"} {
 		input, _ := json.Marshal(map[string]string{"name": name, "role": "openshell-admin"})
 		response := w.owner.api(t, "POST", "/gateways/"+gatewayID+"/service_accounts", input)
 		code, data := response.StatusCode, response.Body
 		if code != 201 {
-			t.Fatal("Gateway automation identity creation failed", code)
+			w.accountCreationFailure(gatewayID, index+1, code, data)
+			t.Fatal("Gateway automation identity creation failed", code, accountCreationProblem(data))
 		}
 		var row account
 		if json.Unmarshal(data, &row) != nil || row.ID == "" || row.ClientID == "" || row.Credential.Secret == "" {
@@ -96,5 +99,78 @@ FROM service_accounts WHERE id=$1 AND gateway_id=$2`, row.ID, gatewayID).Scan(&c
 			}
 		}
 		t.Log("Gateway deletion closed three accounts and their cleanup audits; token issuance was denied and all three provider clients were absent after durable account cleanup")
+	}
+}
+
+// Only fixed API error codes can enter diagnostics. A response can contain a
+// credential or an upstream error, so do not record its body or reason field.
+func accountCreationProblem(data []byte) string {
+	var problem struct {
+		Code string `json:"code"`
+	}
+	if len(data) > 4096 || json.Unmarshal(data, &problem) != nil {
+		return "unrecognized_response"
+	}
+	switch problem.Code {
+	case "gateway_not_ready", "operation_pending", "service_account_name_exists",
+		"gateway_quota_exceeded", "creator_quota_exceeded", "keycloak_unavailable",
+		"not_found", "role_not_allowed", "internal_error", "unauthorized",
+		"invalid_request", "service_unavailable":
+		return problem.Code
+	default:
+		return "unrecognized_response"
+	}
+}
+
+func (w *browserGatewayWorkload) accountCreationFailure(gatewayID string, attempt, status int, body []byte) {
+	t := w.t
+	t.Helper()
+	record := struct {
+		Attempt            int    `json:"attempt"`
+		Status             int    `json:"status"`
+		Problem            string `json:"problem"`
+		StateRead          bool   `json:"state_read"`
+		Generation         int64  `json:"generation"`
+		WorkloadGeneration int64  `json:"workload_generation"`
+		Healthy            bool   `json:"healthy"`
+		Running            bool   `json:"running"`
+		Deleting           bool   `json:"deleting"`
+	}{Attempt: attempt, Status: status, Problem: accountCreationProblem(body)}
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+	err := w.f.db.QueryRowContext(ctx, `SELECT stego_generation,
+COALESCE((stego_observations->>'workload')::bigint,0),
+COALESCE(status='Healthy',false),COALESCE(phase='Running',false),deleted_at IS NOT NULL
+FROM gateways WHERE id=$1`, gatewayID).Scan(&record.Generation, &record.WorkloadGeneration, &record.Healthy, &record.Running, &record.Deleting)
+	record.StateRead = err == nil
+	data, err := json.MarshalIndent(record, "", "  ")
+	if err != nil {
+		t.Log("Cannot encode account creation failure state")
+		return
+	}
+	t.Logf("Gateway account creation failure state: %s", data)
+	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
+		if err := os.WriteFile(filepath.Join(directory, "gateway-account-creation-failure.json"), append(data, '\n'), 0600); err != nil {
+			t.Log("Cannot save account creation failure state")
+		}
+	}
+}
+
+func TestAccountCreationProblemExcludesPrivateResponseData(t *testing.T) {
+	for _, input := range []string{
+		`{"code":"private-credential","reason":"private-credential"}`,
+		`{"credential":{"client_secret":"private-credential"}}`,
+		`{"code":"gateway_not_ready"} trailing`,
+		`{"code":"gateway_not_ready","reason":"` + strings.Repeat("x", 4096) + `"}`,
+	} {
+		if got := accountCreationProblem([]byte(input)); got != "unrecognized_response" {
+			t.Fatal("private or invalid response was accepted")
+		}
+	}
+	for _, code := range []string{"gateway_not_ready", "operation_pending", "service_account_name_exists"} {
+		input := `{"code":"` + code + `","reason":"private-credential"}`
+		if got := accountCreationProblem([]byte(input)); got != code {
+			t.Fatal("fixed error code was not retained")
+		}
 	}
 }
