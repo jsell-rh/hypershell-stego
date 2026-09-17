@@ -54,7 +54,7 @@ passed. These tests cover stored journals, provider failures, access rules,
 concurrent registration, event rollback, and recovery from saved checkpoints.
 They do not prove whole-database restore or distributed writer fencing. See the
 [journal record](provisioner-rollout-journal-evidence.json). The full application
-suite remains in progress.
+suite failed later; see the result below.
 
 ## Provider job verification
 
@@ -68,3 +68,44 @@ The provider job now checks committed generation with the pinned compiler before
 it builds or starts the provider test. The generation step alone receives the
 GitHub read token. Compiler and registry input changes also trigger this job.
 The new result remains pending.
+
+## CNPG application result
+
+[Run 35217578495](https://github.com/jsell-rh/hypershell-stego/actions/runs/35217578495)
+passed all 11 required tests at `b65439f`. The complete browser Gateway workflow
+took 711.81 seconds. Independent checks matched 1,416 source files and 415
+generated hashes before and after the tests. The compiler package and Gateway
+console image matched their verified records. All three screenshots were
+reviewed: the workspace, invalid JSON feedback, and editor selection were
+visible. No global policy was submitted.
+
+The workflow covered REST and gRPC access, filtered lists, denied requests,
+event delivery, login and logout, provider outage, and process restart. Gateway
+Pod replacement and namespace replacement retained provider data and SQL
+identities. CNPG primary replacement took 67.18 seconds and retained database
+and role identities, credentials, provider data, and installation data. Account
+cleanup and Gateway deletion passed. Worker logs, metrics, and traces passed
+the correlation checks.
+
+Both live provisioner startup checks confirmed one replica and `Recreate`.
+The final object collection was empty after deletion, so the independent check
+uses the verified generated template and those two live API assertions. The
+test Pod scheduled without delay or a manual placement change. Independent
+cleanup found no test runtime, private fixtures, allocations, or either test
+volume. The shared test Lease was empty. See the
+[CNPG evidence](provisioner-rollout-cnpg-evidence.json).
+
+This pass does not explain the earlier main CNPG RPC timeout. It does not
+qualify the later database credential API, distributed writer fencing, or live
+Kata isolation. The latter test remains deferred.
+
+## Failed hosted application result
+
+[Run 35216177325](https://github.com/jsell-rh/hypershell-stego/actions/runs/35216177325)
+failed at `4897fc1`. The core job had 306 passing top-level tests and two failures:
+the final cleanup recovery event exceeded its read deadline, and the unrelated
+Keycloak client response comparison failed. Hosted service cleanup passed.
+The deadline case passed in the later two-case repeat; its earlier failure
+remains unexplained. The client comparison now follows the provider's scope-set
+contract. Its repeat remains pending. The CNPG pass does not replace these
+failed results, and application promotion remains pending.
