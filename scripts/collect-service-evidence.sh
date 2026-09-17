@@ -18,7 +18,7 @@ collect_service_evidence() {
         [ -s worker-image.json ] || exit 1
       fi
       if [ "$3" = 1 ]; then
-        for file in namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
+        for file in gateway-console-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
           [ -s "$file" ] || exit 1
         done
       fi
@@ -34,7 +34,7 @@ collect_service_evidence() {
       fi
     fi
     set --
-    for file in deployment.exit image.json console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts network-endpoint-change.request network-endpoint-change.ack; do
+    for file in deployment.exit image.json console-image.json gateway-console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts network-endpoint-change.request network-endpoint-change.ack; do
       if [ -e "$file" ]; then set -- "$@" "$file"; fi
     done
     tar cf - "$@"

@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-regeneration missing-screen missing-sql missing-network missing-public failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-sql missing-network missing-public failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$results"
-  for file in deployment.exit image.json worker-image.json console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json; do
+  for file in deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json; do
     printf 'record\n' > "$test_work/$file"
   done
   result=0
@@ -61,6 +61,7 @@ for scenario in service browser workload public configured-public log-failure ar
     configured-public) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; STEGO_TEST_GATEWAY_PUBLIC_CONFIG=configured.json ;;
     log-failure|archive-failure|truncated) expected=1 ;;
     missing-image) expected=1; rm "$test_work/image.json" ;;
+    missing-gateway-console-image) expected=1; rm "$test_work/gateway-console-image.json" ;;
     missing-regeneration) expected=1; rm "$test_work/after-tests.sha256" ;;
     missing-screen) expected=1; rm "$test_work/browser-artifacts/verify.json.png" ;;
     missing-sql) expected=1; rm "$test_work/browser-artifacts/postgres-server.json" ;;
@@ -77,6 +78,11 @@ for scenario in service browser workload public configured-public log-failure ar
     printf 'Evidence collection case failed: %s\n' "$scenario" >&2
     exit 1
   fi
-  if [[ $observed == 0 ]]; then tar tf "$results/evidence.tar" >/dev/null; fi
+  if [[ $observed == 0 ]]; then
+    tar tf "$results/evidence.tar" >/dev/null
+    if [[ $workload == 1 && $result == 0 ]]; then
+      cmp "$test_work/gateway-console-image.json" <(tar xOf "$results/evidence.tar" gateway-console-image.json)
+    fi
+  fi
 done
-printf 'Service evidence collection passed 19 cases.\n'
+printf 'Service evidence collection passed 20 cases.\n'
