@@ -40,7 +40,7 @@ func postgresSignalKey(attrs []*commonpb.KeyValue, log bool) (string, bool) {
 	}
 	operation := signalAttribute(attrs, "operation").GetStringValue()
 	switch operation {
-	case "ensure", "delete", "read", "server-identity", "quarantine":
+	case "ensure", "delete", "read", "server-identity", "quarantine", "schema":
 	default:
 		return "", false
 	}
@@ -239,5 +239,43 @@ func TestPostgresSignalEvidenceRequiresControllerAndLog(t *testing.T) {
 	other.log(record)
 	if !other.invalid {
 		t.Fatal("undeclared SQL field was accepted")
+	}
+}
+
+func TestPostgresSignalEvidenceAcceptsManagedSchema(t *testing.T) {
+	attrs := []*commonpb.KeyValue{}
+	for _, item := range [][2]string{{"db.system.name", "postgresql"}, {"operation", "schema"}, {"outcome", "success"}} {
+		attrs = append(attrs, &commonpb.KeyValue{Key: item[0], Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: item[1]}}})
+	}
+	trace, child, parent := make([]byte, 16), make([]byte, 8), make([]byte, 8)
+	trace[0], child[0], parent[0] = 1, 2, 3
+	s := postgresSignalState{}
+	s.span("stego/controller", &tracepb.Span{TraceId: trace, SpanId: parent})
+	s.span("stego/postgres-client", &tracepb.Span{
+		Name: "postgres.database.schema", Kind: tracepb.Span_SPAN_KIND_CLIENT,
+		TraceId: trace, SpanId: child, ParentSpanId: parent, Attributes: attrs,
+	})
+	s.log(&logpb.LogRecord{
+		EventName: "postgres.database.completed",
+		Body:      &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "PostgreSQL database operation completed"}},
+		TraceId:   trace, SpanId: child,
+		Attributes: append(append([]*commonpb.KeyValue{}, attrs...), &commonpb.KeyValue{
+			Key: "duration_seconds", Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_DoubleValue{DoubleValue: 0.1}},
+		}),
+	})
+	sum := 0.1
+	s.metric(&metricpb.Metric{
+		Name: "stego.postgres.database.duration", Unit: "s",
+		Data: &metricpb.Metric_Histogram{Histogram: &metricpb.Histogram{
+			AggregationTemporality: metricpb.AggregationTemporality_AGGREGATION_TEMPORALITY_CUMULATIVE,
+			DataPoints:             []*metricpb.HistogramDataPoint{{Attributes: attrs, Count: 1, Sum: &sum}},
+		}},
+	})
+	if s.invalid || !s.correlated["schema/success"] || !s.metrics["schema/success"] {
+		t.Fatal("managed schema logs, traces, and metrics did not pass the SQL signal contract")
+	}
+	attrs[1].Value = &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "private-operation"}}
+	if _, valid := postgresSignalKey(attrs, false); valid {
+		t.Fatal("an unknown SQL operation was accepted")
 	}
 }
