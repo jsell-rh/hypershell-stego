@@ -32,3 +32,38 @@ Source commit, source archive hash, compiler pin, toolchain version, executable
 hash, terminal container state, limits, and raw measurements remain in the CI
 artifact. These measurements provide a baseline. They do not establish a
 production SLO, end-to-end cleanup capacity, or complete enterprise readiness.
+
+## First measured baseline
+
+[Run 35202114784](https://github.com/jsell-rh/hypershell-stego/actions/runs/35202114784)
+passed at `dd8529e33dd1b8fb32989e96a53956607f190eb5`, with compiler
+`00573709fb15a2a54de4242aa8fdbabee325179a` and Go 1.26.8 on Linux amd64.
+All six required samples passed, with three timed scans per sample. Every scan
+retained all expected grant and user identities. The container exited with
+status zero and was not killed for memory use. CI verified container removal.
+There was no separate operator inspection of the hosted runner after cleanup.
+
+| Synthetic grants | Rows per scan | Pages per scan | Median time | Observed time range | Median allocated bytes per scan |
+| --- | --- | --- | --- | --- | --- |
+| 10,000 | 10,001 | 101 | 0.1028 s | 0.1017–0.1029 s | 15,004,778 |
+| 100,000 | 100,001 | 1,001 | 1.0207 s | 1.0085–1.0333 s | 149,765,877 |
+
+The process maximum RSS was 46,186,496 bytes, about 44.05 MiB. This differs
+from cumulative allocation bytes: the garbage collector can reuse memory during
+a scan. It is the high-water mark for the complete test process, including setup.
+These two input sizes show approximately proportional scan time in this fixture.
+They do not establish that relationship at other sizes or under concurrent load.
+
+Independent verification checked the exact source archive, compiler pin,
+executable hash, toolchain version, terminal container state, resource limits,
+raw measurements, and result parser. The executable was not run locally.
+
+| Record | SHA-256 |
+| --- | --- |
+| Source archive | `bfc13fde4adb11cb96835129b47907e43b032a77871345f169bd0d816dedcd92` |
+| Test executable | `9867c14512449ada3526447865e613e5ab12b06adf5f8ff3658c9a4f439817b8` |
+| Raw measurements | `ce814d6c96fae328e6e3db1e647477e791dc7d1f421907b55a72a66206712412` |
+
+This closes the first complete retained-grant scan baseline. Full account and
+journal cleanup costs, provider calls, transport, concurrent load, and complete
+controller recovery remain separate requirements. No production SLO is claimed.
