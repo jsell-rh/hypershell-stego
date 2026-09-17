@@ -9,6 +9,15 @@ on:
       - 'acceptance/keycloak_test.go'
       - 'out/keycloak/**'
       - 'internal/serviceaccountkeycloak/**'
+      - '.stego/compiler-revision'
+      - '.stego/compiler-sha256'
+      - '.stego/tooling-revision'
+      - '.stego/config.yaml'
+      - 'registry/**'
+      - 'service.yaml'
+      - 'scripts/generate.sh'
+      - 'scripts/prepare-compiler.sh'
+      - 'scripts/verified_generation.py'
 
 permissions:
   contents: read
@@ -49,6 +58,11 @@ jobs:
         with:
           go-version: '1.26.8'
           cache: true
+      - name: Check generated source
+        timeout-minutes: 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/generate.sh --check
       - name: Check unknown clients through the generated runtime
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable

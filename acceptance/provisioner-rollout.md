@@ -55,3 +55,16 @@ concurrent registration, event rollback, and recovery from saved checkpoints.
 They do not prove whole-database restore or distributed writer fencing. See the
 [journal record](provisioner-rollout-journal-evidence.json). The full application
 suite remains in progress.
+
+## Provider job verification
+
+The earlier provider run at `bf7b8da` passed its 61-client cleanup test, including
+20 stored journals at restart and preservation of the unrelated client. That
+job copied the compiler pin but did not check generation. Its result proves the
+committed runtime at that source; it does not prove compiler adoption. See the
+[scoped record](provisioner-rollout-prior-provider-evidence.json).
+
+The provider job now checks committed generation with the pinned compiler before
+it builds or starts the provider test. The generation step alone receives the
+GitHub read token. Compiler and registry input changes also trigger this job.
+The new result remains pending.
