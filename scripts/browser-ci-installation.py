@@ -18,6 +18,9 @@ def normalize(item):
     value.pop('status', None)
     value['metadata'] = {k: value['metadata'][k] for k in ['name', 'namespace'] if k in value['metadata']}
     if value['kind'] == 'ValidatingAdmissionPolicy':
+        # Kubernetes omits an empty optional variable list on readback.
+        if value['spec'].get('variables') in (None, []):
+            value['spec'].pop('variables', None)
         match = value['spec']['matchConstraints']
         match.setdefault('matchPolicy', 'Equivalent')
         match.setdefault('namespaceSelector', {})
@@ -33,6 +36,54 @@ def normalize(item):
         value['spec'].setdefault('ingress', [])
         value['spec'].setdefault('egress', [])
     return value
+
+
+def installation_inventory(record, data):
+    """Match the complete bounded manifest set to its recorded identities."""
+    if record.get('namespace') != NAMESPACE or not isinstance(record.get('resources'), list):
+        raise RuntimeError('The cluster installation record differs')
+    expected = {}
+    for name in MANIFESTS:
+        document = json.loads(data[name + '.json'])
+        if (not isinstance(document, dict) or document.get('apiVersion') != 'v1' or
+                document.get('kind') != 'List' or not isinstance(document.get('items'), list) or
+                len(document['items']) > 64):
+            raise RuntimeError('The cluster manifest inventory differs')
+        for item in document['items']:
+            if not isinstance(item, dict) or not isinstance(item.get('metadata'), dict):
+                raise RuntimeError('A cluster manifest identity is invalid')
+            kind, name = item.get('kind'), item['metadata'].get('name')
+            versions = {'ClusterRole': 'rbac.authorization.k8s.io/v1',
+                        'ClusterRoleBinding': 'rbac.authorization.k8s.io/v1',
+                        'ValidatingAdmissionPolicy': 'admissionregistration.k8s.io/v1',
+                        'ValidatingAdmissionPolicyBinding': 'admissionregistration.k8s.io/v1'}
+            if (not isinstance(kind, str) or kind not in versions or item.get('apiVersion') != versions[kind] or
+                    not isinstance(name, str) or not name.startswith(NAMESPACE + '.') or
+                    'namespace' in item['metadata'] or (kind, name) in expected):
+                raise RuntimeError('A cluster manifest identity is invalid or repeated')
+            expected[kind, name] = item
+    if not expected or len(record['resources']) != len(expected):
+        raise RuntimeError('The cluster installation inventory differs')
+    ids = {}
+    for item in record['resources']:
+        if (not isinstance(item, dict) or set(item) != {'kind', 'name', 'uid'} or
+                not all(isinstance(item[key], str) and item[key] for key in ['kind', 'name', 'uid'])):
+            raise RuntimeError('A recorded cluster identity is invalid')
+        key = item['kind'], item['name']
+        if key not in expected or key in ids:
+            raise RuntimeError('A recorded cluster identity is unexpected or repeated')
+        ids[key] = item['uid']
+    if ids.keys() != expected.keys():
+        raise RuntimeError('The cluster installation inventory differs')
+    return expected, ids
+
+
+def verify_installation_resources(record, data, get):
+    expected, ids = installation_inventory(record, data)
+    for key, item in expected.items():
+        actual = get(*key)
+        if actual['metadata']['uid'] != ids[key] or normalize(actual) != normalize(item):
+            raise RuntimeError('An installed cluster resource changed: ' + key[0] + '/' + key[1])
 
 
 def verify_fixture_network(fixture, get):
@@ -94,17 +145,7 @@ def main():
     if not data['fs-group'].isdigit() or int(data['fs-group']) < 1 or data['fs-group'] != namespace['metadata']['annotations']['openshift.io/sa.scc.supplemental-groups'].split('/')[0]:
         raise RuntimeError('The browser CI group changed')
     record = json.loads(data['cluster-installation.json'])
-    ids = {(r['kind'], r['name']): r['uid'] for r in record['resources']}
-    observed = set()
-    for name in MANIFESTS:
-        for expected in json.loads(data[name + '.json'])['items']:
-            key = expected['kind'], expected['metadata']['name']
-            actual = get(*key)
-            if key in observed or key not in ids or actual['metadata']['uid'] != ids[key] or normalize(actual) != normalize(expected):
-                raise RuntimeError('An installed cluster resource changed: ' + key[0] + '/' + key[1])
-            observed.add(key)
-    if observed != set(ids) or len(ids) != 19:
-        raise RuntimeError('The cluster installation inventory differs')
+    verify_installation_resources(record, data, get)
     if args.action in {'inspect', 'prepare'}:
         for name in ['kubernetes-endpoints.json', 'kubernetes-service.json']:
             (args.results / name).write_text(data[name])

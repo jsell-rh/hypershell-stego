@@ -30,6 +30,7 @@ jobs:
       - name: Check the render boundary
         run: |
           python3 -B scripts/test_browser_cluster_installation.py
+          python3 -B scripts/test_browser_installation_inventory.py
           python3 -B scripts/test_browser_inspection.py
       - name: Prepare the frozen inspection source
         env:

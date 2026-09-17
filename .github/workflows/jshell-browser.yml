@@ -39,6 +39,7 @@ jobs:
           python3 scripts/test_ci_credentials.py
           python3 scripts/test_service_startup.py
           python3 scripts/test_browser_cluster_installation.py
+          python3 scripts/test_browser_installation_inventory.py
           python3 scripts/test_browser_inspection.py
           python3 scripts/test_public_gateway_fixture.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go

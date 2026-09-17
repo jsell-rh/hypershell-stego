@@ -179,6 +179,7 @@ jobs:
       - run: timeout 15s python3 scripts/test_gateway_endpoint_fixture.py
       - run: timeout 15s python3 scripts/test_gateway_endpoint_change.py
       - run: timeout 15s python3 scripts/test_browser_cluster_installation.py
+      - run: timeout 15s python3 scripts/test_browser_installation_inventory.py
       - run: timeout 15s python3 scripts/test_browser_public_permissions.py
       - run: timeout 15s python3 scripts/test_browser_inspection.py
       - run: timeout 15s python3 scripts/test_cleanup_browser_ci.py
