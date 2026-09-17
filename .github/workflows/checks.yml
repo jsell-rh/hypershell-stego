@@ -130,6 +130,7 @@ jobs:
             ${{ runner.temp }}/rendered-browser/*.png
             ${{ runner.temp }}/rendered-browser/*.txt
             ${{ runner.temp }}/rendered-browser/*.network.json
+            ${{ runner.temp }}/rendered-browser/browser-startup-signals.json
 
   cnpg-gateway-workflow:
     if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.cnpg_only)

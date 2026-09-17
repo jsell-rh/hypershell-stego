@@ -170,6 +170,7 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 }
 
 type httpDiagnosticCollector struct {
+	startup         startupSignalEvidence
 	dashboard       *dashboardSignalEvidence
 	workers         *workerSignalEvidence
 	unavailable     atomic.Bool
@@ -242,6 +243,7 @@ func diagnosticCollectorAt(t *testing.T, hostname, address string, authenticated
 			}
 			return nil, status.Error(codes.Unavailable, "private-collector-fault")
 		}
+		signals.startup.collect(request)
 		if signals.dashboard != nil {
 			if response, handled := signals.dashboard.collect(request); handled {
 				return response, nil

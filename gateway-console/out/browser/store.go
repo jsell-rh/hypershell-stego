@@ -64,7 +64,7 @@ func newStore(ctx context.Context, db *sql.DB, keys ...[]byte) (*sessionStore, e
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 	if err := schema.Verify(ctx, db); err != nil {
-		return nil, errors.New("browser session schema or permissions differ")
+		return nil, errors.Join(errors.New("browser session schema or permissions differ"), err)
 	}
 	return &sessionStore{db: db, aead: readers[0], readers: readers}, nil
 }

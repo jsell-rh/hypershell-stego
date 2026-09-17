@@ -56,76 +56,162 @@ type Backend struct {
 	permits                    chan struct{}
 }
 
+// NewBrowserBackendWithTelemetry binds startup to the process telemetry runtime.
+// Generated assembly closes the backend before it closes that runtime.
+func NewBrowserBackendWithTelemetry(runtime *telemetry.Runtime, ctx context.Context, db *sql.DB) (*Backend, error) {
+	if runtime == nil || ctx == nil {
+		return nil, errors.New("browser startup requires a runtime and context")
+	}
+	return NewBrowserBackend(runtime.Context(ctx), db)
+}
+
 // NewBrowserBackend uses compiler-owned database, HTTP, and telemetry resources.
 // Use schema.Bootstrap before startup. OAuth tokens stay in encrypted server state.
 func NewBrowserBackend(ctx context.Context, db *sql.DB) (*Backend, error) {
-	if os.Getenv("STEGO_HTTP_TLS_CERT") == "" || os.Getenv("STEGO_HTTP_TLS_KEY") == "" {
-		return nil, errors.New("browser backend requires HTTPS")
+	if err := startupStep(ctx, telemetry.StartupBrowserTransport, func(context.Context) error {
+		if ctx == nil || db == nil {
+			return errors.New("browser startup requires a context and database")
+		}
+		if os.Getenv("STEGO_HTTP_TLS_CERT") == "" || os.Getenv("STEGO_HTTP_TLS_KEY") == "" {
+			return errors.New("browser backend requires HTTPS")
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
 	o := options{Origin: os.Getenv("STEGO_BROWSER_ORIGIN"), Upstream: os.Getenv("STEGO_BROWSER_API_URL"), UpstreamCA: os.Getenv("STEGO_BROWSER_API_CA_FILE"), Issuer: os.Getenv("STEGO_BROWSER_ISSUER"), IssuerCA: os.Getenv("STEGO_BROWSER_ISSUER_CA_FILE"), ClientID: os.Getenv("STEGO_BROWSER_CLIENT_ID"), SecretFile: os.Getenv("STEGO_BROWSER_CLIENT_SECRET_FILE"), KeyFile: os.Getenv("STEGO_BROWSER_SESSION_KEY_FILE")}
 	return newBackend(ctx, db, o)
 }
+
+// The outcome contains no error text. A panic retains its normal behavior and
+// records an aborted step. The action keeps its original deadline and context.
+func startupStep(ctx context.Context, stage telemetry.StartupStage, action func(context.Context) error) error {
+	ctx, finish := telemetry.TraceStartup(ctx, stage)
+	outcome := "aborted"
+	defer func() { finish(outcome) }()
+	err := action(ctx)
+	switch {
+	case err == nil:
+		outcome = "success"
+	case errors.Is(err, context.DeadlineExceeded):
+		outcome = "deadline"
+	case errors.Is(err, context.Canceled):
+		outcome = "canceled"
+	default:
+		outcome = "failure"
+	}
+	return err
+}
 func newBackend(ctx context.Context, db *sql.DB, o options) (*Backend, error) {
-	origin, err := httpsURL(o.Origin)
-	if err != nil || origin.Path != "" || origin.RawQuery != "" || origin.ForceQuery {
-		return nil, errors.New("browser backend requires an HTTPS origin")
-	}
-	if o.Upstream != "" || o.UpstreamCA != "" {
-		return nil, errors.New("local application address is compiler-owned")
-	}
-	issuer, err := httpsURL(o.Issuer)
-	if err != nil || cookieHost(issuer) == cookieHost(origin) {
-		return nil, errors.New("browser issuer requires a separate HTTPS cookie host")
-	}
-	raw, err := client.ReadPrivateFile(o.KeyFile)
-	if err != nil {
-		return nil, errSession
-	}
-	keys, err := sessionKeys(raw)
-	clear(raw)
+	var origin *url.URL
+	err := startupStep(ctx, telemetry.StartupBrowserConfiguration, func(context.Context) error {
+		if ctx == nil || db == nil {
+			return errors.New("browser startup requires a context and database")
+		}
+		var err error
+		origin, err = httpsURL(o.Origin)
+		if err != nil || origin.Path != "" || origin.RawQuery != "" || origin.ForceQuery {
+			return errors.New("browser backend requires an HTTPS origin")
+		}
+		if o.Upstream != "" || o.UpstreamCA != "" {
+			return errors.New("local application address is compiler-owned")
+		}
+		issuer, err := httpsURL(o.Issuer)
+		if err != nil || cookieHost(issuer) == cookieHost(origin) {
+			return errors.New("browser issuer requires a separate HTTPS cookie host")
+		}
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	store, err := newStore(ctx, db, keys...)
+	var keys [][]byte
+	err = startupStep(ctx, telemetry.StartupBrowserSessionKeys, func(context.Context) error {
+		raw, err := client.ReadPrivateFile(o.KeyFile)
+		if err != nil {
+			return errSession
+		}
+		defer clear(raw)
+		keys, err = sessionKeys(raw)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		for _, key := range keys {
+			clear(key)
+		}
+	}()
+	var store *sessionStore
+	err = startupStep(ctx, telemetry.StartupBrowserSessionSchema, func(step context.Context) error {
+		var err error
+		store, err = newStore(step, db, keys...)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	// The store has copied these keys. Clear them before network discovery.
 	for _, key := range keys {
 		clear(key)
 	}
+	var upstream *client.Client
+	err = startupStep(ctx, telemetry.StartupBrowserUpstream, func(context.Context) error {
+		upstream = client.NewLocalApplication()
+		return nil
+	})
 	if err != nil {
 		return nil, err
 	}
-	upstream := client.NewLocalApplication()
-	provider, err := discover(ctx, o)
+	var provider *oauthProvider
+	err = startupStep(ctx, telemetry.StartupBrowserDiscovery, func(step context.Context) error {
+		var err error
+		provider, err = discover(step, o)
+		return err
+	})
 	if err != nil {
 		upstream.Close()
 		return nil, err
 	}
-	authorization, _ := httpsURL(provider.metadata.Authorization)
-	if cookieHost(authorization) == cookieHost(origin) {
+	err = startupStep(ctx, telemetry.StartupBrowserAuthorization, func(context.Context) error {
+		authorization, _ := httpsURL(provider.metadata.Authorization)
+		if cookieHost(authorization) == cookieHost(origin) {
+			return errors.New("browser authorization requires a separate HTTPS cookie host")
+		}
+		return nil
+	})
+	if err != nil {
 		provider.close()
 		upstream.Close()
-		return nil, errors.New("browser authorization requires a separate HTTPS cookie host")
+		return nil, err
 	}
 	b := &Backend{store: store, provider: provider, upstream: upstream, origin: origin, permits: make(chan struct{}, client.MaxConcurrentRequests)}
-	if json.Unmarshal([]byte(generatedConfiguration), &b.config) != nil {
+	err = startupStep(ctx, telemetry.StartupBrowserRoutes, func(context.Context) error {
+		if json.Unmarshal([]byte(generatedConfiguration), &b.config) != nil {
+			return errors.New("invalid generated browser configuration")
+		}
+		if b.config.LogoutScope == "identity_provider" {
+			var err error
+			b.logoutTarget, b.logoutOrigin, err = provider.logoutTarget(origin)
+			if err != nil {
+				return err
+			}
+		}
+		for _, route := range b.config.Routes {
+			pattern := regexp.QuoteMeta(route)
+			pattern = strings.ReplaceAll(pattern, `\{id\}`, `[^/]+`)
+			compiled, err := regexp.Compile("^" + pattern + "$")
+			if err != nil {
+				return errors.New("invalid generated browser route")
+			}
+			b.routes = append(b.routes, compiled)
+		}
+		return nil
+	})
+	if err != nil {
 		b.Close()
-		return nil, errors.New("invalid generated browser configuration")
-	}
-	if b.config.LogoutScope == "identity_provider" {
-		b.logoutTarget, b.logoutOrigin, err = provider.logoutTarget(origin)
-		if err != nil {
-			b.Close()
-			return nil, err
-		}
-	}
-	for _, route := range b.config.Routes {
-		pattern := regexp.QuoteMeta(route)
-		pattern = strings.ReplaceAll(pattern, `\{id\}`, `[^/]+`)
-		compiled, err := regexp.Compile("^" + pattern + "$")
-		if err != nil {
-			b.Close()
-			return nil, errors.New("invalid generated browser route")
-		}
-		b.routes = append(b.routes, compiled)
+		return nil, err
 	}
 	return b, nil
 }

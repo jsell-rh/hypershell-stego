@@ -3,6 +3,7 @@ package acceptance
 import (
 	"bytes"
 	"encoding/hex"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -15,8 +16,9 @@ import (
 
 type dashboardSignalEvidence struct {
 	sync.Mutex
-	traces, logs    map[string]bool
-	metric, invalid bool
+	traces, logs map[string]bool
+	metrics      map[string]bool
+	invalid      bool
 }
 
 // Consume only this dashboard's resource. Management console and worker
@@ -54,7 +56,15 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 	d.Lock()
 	defer d.Unlock()
 	if d.traces == nil {
-		d.traces, d.logs = map[string]bool{}, map[string]bool{}
+		d.traces, d.logs, d.metrics = map[string]bool{}, map[string]bool{}, map[string]bool{}
+	}
+	relayInstance := func(resource *resourcepb.Resource) string {
+		id := signalAttribute(resource.GetAttributes(), "stego.relay.instance.id").GetStringValue()
+		if len(resource.GetAttributes()) != 3 || signalAttribute(resource.GetAttributes(), "stego.relay.service.name").GetStringValue() != "hypershell-gateway-console" || !telemetryInstancePattern.MatchString(id) {
+			d.invalid = true
+			return ""
+		}
+		return id
 	}
 	validRoute := func(route string) bool {
 		switch route {
@@ -64,7 +74,11 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 		d.invalid = true
 		return false
 	}
-	record := func(target map[string]bool, trace, span []byte, route string) {
+	record := func(target map[string]bool, instance string, trace, span []byte, route string) {
+		if !telemetryInstancePattern.MatchString(instance) {
+			d.invalid = true
+			return
+		}
 		if !validRoute(route) {
 			return
 		}
@@ -75,7 +89,7 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 		if route != "/workspaces/{id}" {
 			return
 		}
-		key := hex.EncodeToString(trace) + hex.EncodeToString(span)
+		key := instance + "/" + hex.EncodeToString(trace) + hex.EncodeToString(span)
 		if len(target) >= 32 && !target[key] {
 			d.invalid = true
 			return
@@ -88,7 +102,7 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 			for _, scope := range resource.ScopeSpans {
 				for _, span := range scope.Spans {
 					if span.Name == "dashboard.document.rendered" {
-						record(d.traces, span.TraceId, span.SpanId, signalAttribute(span.Attributes, "http.route").GetStringValue())
+						record(d.traces, relayInstance(resource.Resource), span.TraceId, span.SpanId, signalAttribute(span.Attributes, "http.route").GetStringValue())
 					}
 				}
 			}
@@ -98,7 +112,7 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 			for _, scope := range resource.ScopeLogs {
 				for _, entry := range scope.LogRecords {
 					if entry.Body.GetStringValue() == "dashboard.document.rendered" {
-						record(d.logs, entry.TraceId, entry.SpanId, signalAttribute(entry.Attributes, "http.route").GetStringValue())
+						record(d.logs, relayInstance(resource.Resource), entry.TraceId, entry.SpanId, signalAttribute(entry.Attributes, "http.route").GetStringValue())
 					}
 				}
 			}
@@ -113,7 +127,12 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 					for _, point := range metric.GetSum().GetDataPoints() {
 						route := signalAttribute(point.Attributes, "http.route").GetStringValue()
 						if validRoute(route) && route == "/workspaces/{id}" && (point.GetAsInt() > 0 || point.GetAsDouble() > 0) {
-							d.metric = true
+							id := relayInstance(resource.Resource)
+							if !telemetryInstancePattern.MatchString(id) || len(d.metrics) >= 32 && !d.metrics[id] {
+								d.invalid = true
+							} else {
+								d.metrics[id] = true
+							}
 						}
 					}
 				}
@@ -123,23 +142,29 @@ func (d *dashboardSignalEvidence) collect(request any) (any, bool) {
 	return response, true
 }
 
-func (d *dashboardSignalEvidence) require(t *testing.T) {
+// The caller holds the evidence lock.
+func (d *dashboardSignalEvidence) readyInstance() string {
+	for key := range d.traces {
+		id, _, _ := strings.Cut(key, "/")
+		if d.logs[key] && d.metrics[id] {
+			return id
+		}
+	}
+	return ""
+}
+
+func (d *dashboardSignalEvidence) require(t *testing.T) string {
 	t.Helper()
 	deadline := time.Now().Add(15 * time.Second)
 	for {
 		d.Lock()
-		invalid, ready := d.invalid, false
-		for key := range d.traces {
-			if d.logs[key] && d.metric {
-				ready = true
-			}
-		}
+		invalid, instance := d.invalid, d.readyInstance()
 		d.Unlock()
 		if invalid {
 			t.Fatal("dashboard signal exceeded its route or evidence limits")
 		}
-		if ready {
-			return
+		if instance != "" {
+			return instance
 		}
 		if time.Now().After(deadline) {
 			t.Fatal("dashboard did not deliver correlated logs, traces, and metrics")

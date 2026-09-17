@@ -77,14 +77,14 @@ func run() (stegoErr error) {
 	}
 	defer applicationMonitor.Close()
 	stegoStage = "component[3].constructor[0]"
-	browserBackend, err := browser.NewBrowserBackend(ctx, db)
+	browserBackendWithTelemetry, err := browser.NewBrowserBackendWithTelemetry(tracingRuntime, ctx, db)
 	if err != nil {
 		return err
 	}
-	defer browserBackend.Close()
+	defer browserBackendWithTelemetry.Close()
 
 	mux := http.NewServeMux()
-	mux.Handle("/", browserBackend)
+	mux.Handle("/", browserBackendWithTelemetry)
 
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -116,7 +116,7 @@ func run() (stegoErr error) {
 			return stegoServeHTTP(ctx, listener, stegoHTTPServerWithErrorLog(topMux, tracingRuntime.HTTPErrorLog()), 10*time.Second)
 		}},
 		{name: "health-check[0]", run: applicationMonitor.Run},
-		{name: "browser-backend[0]", run: browserBackend.Run},
+		{name: "browser-backend[0]", run: browserBackendWithTelemetry.Run},
 	})
 }
 

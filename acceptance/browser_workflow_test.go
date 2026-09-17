@@ -611,6 +611,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 				t.Fatal("console restart retained its pool metric identity")
 			}
 		}
+		signals.startup.require(t, "hypershell-console", snapshot.Instance)
 		poolSnapshots[phase] = snapshot
 	}
 	checkConsolePool("initial")
@@ -694,7 +695,8 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 			if signals.dashboard == nil {
 				t.Fatal("dashboard telemetry collector is missing")
 			}
-			signals.dashboard.require(t)
+			dashboardInstance := signals.dashboard.require(t)
+			signals.startup.require(t, "hypershell-gateway-console", dashboardInstance)
 		}
 		workload.checkEarlyDeletion(early)
 		if workload.public != nil && rendered != nil {
@@ -918,6 +920,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 			}
 		}
 	}
+	signals.startup.save(t)
 	t.Log("Generated console passed real Keycloak login, Gateway creation, grants, REST and gRPC access, event delivery, process restart, session key rotation, renewal, and logout")
 }
 

@@ -11,7 +11,7 @@ collect_service_evidence() {
         [ -s "$file" ] || exit 1
       done
       if [ "$2" = 1 ]; then
-        for file in console-image.json provisioner-image.json browser-artifacts/verify.json browser-artifacts/verify.json.png; do
+        for file in console-image.json provisioner-image.json browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json; do
           [ -s "$file" ] || exit 1
         done
       else

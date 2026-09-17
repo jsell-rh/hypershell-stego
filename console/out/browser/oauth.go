@@ -125,7 +125,7 @@ func discover(ctx context.Context, o options) (*oauthProvider, error) {
 	provider, err := oidc.NewProvider(oidc.ClientContext(ctx, httpClient), o.Issuer)
 	if err != nil {
 		transport.close()
-		return nil, errors.New("OIDC discovery failed")
+		return nil, errors.Join(errors.New("OIDC discovery failed"), ctx.Err())
 	}
 	p := &oauthProvider{provider: provider, transport: transport, options: o}
 	if provider.Claims(&p.metadata) != nil {
