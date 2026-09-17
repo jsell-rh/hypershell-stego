@@ -103,3 +103,30 @@ bytes. It retains compiler signature records without building STEGO through
 `go run`. These management asset changes require new CI checks. The old
 unverified `STEGO_BIN` override is rejected; an operator can supply a signed
 package with `STEGO_COMPILER_PACKAGE`.
+
+## API and management asset evidence
+
+The API workflow passed all 52 required tests in
+[run 35207301648](https://github.com/jsell-rh/hypershell-stego/actions/runs/35207301648)
+at source `dbe7ce673f977a2f97b599aa95c4ccd1e18a8704`. Independent verification
+matched all 1,389 source files and four snapshots of 415 generated-file hashes.
+The actual compiler bytes in the test Pod matched the published package. Its
+signature records also matched. Independent cleanup at 10:00:45 UTC found no
+test runtime, fixtures, allocations, or Lease holder. See the
+[API record](verified-generation-api-evidence.json).
+
+The management asset candidate passed in
+[run 35208266325](https://github.com/jsell-rh/hypershell-stego/actions/runs/35208266325)
+at source `9b6e08d369c3885fe78a72284f21caff03967751`. Independent verification
+matched the exact source archive, both captures, all 54 ZIP entries, and the
+committed 852,967-byte bundle. Compiler signature records matched the published
+package. See the [asset record](verified-generation-management-assets-evidence.json).
+Three small stub checks also passed for token removal, changed assets, and
+rejection of the old unverified binary override.
+
+Full hosted run `35208313876` and public Gateway run `35208318088` test source
+`9b6e08d`. Their results remain pending. This source adds the management asset
+checks to the preceding compiler integration. The API runner and generated
+application output are unchanged from `dbe7ce6`. CNPG qualification for the new
+compiler transfer path also remains required. These results do not complete the
+enterprise goal or establish production capacity.
