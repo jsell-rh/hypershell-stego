@@ -36,6 +36,28 @@ Keep the exact source, compiler, executable hash, raw measurements, terminal
 container state, and resource limits with each result. A missing result is not
 a pass. The broader enterprise and application goals remain open.
 
+## Initial production target
+
+The user set these targets on 2026-09-17:
+
+- 100 Gateways per instance
+- 100 API service accounts per Gateway, or 10,000 across the instance
+- Gateway cleanup within 30 seconds with healthy dependencies
+
+Measure cleanup from acceptance of the durable deletion request to confirmed
+cleanup of the Gateway's owned resources, accounts, SQL state, and credentials.
+A quick HTTP 202 response does not complete this measurement. Retain resources
+that the ownership and retention policy requires, including an external
+PostgreSQL server supplied by the operator.
+
+These values are performance targets. They must not become schema bounds,
+registration limits, or fixed compiler limits. Larger installations can have
+thousands of Gateways when their resources and providers support the load.
+Record hardware, provider versions, active load, deletion concurrency, and
+latency samples with each capacity result. Check degraded dependencies and
+larger scales separately. Run bounded capacity tests only in CI or the cluster.
+The protocol-fixture baseline below does not prove this production target.
+
 ## Verified baseline
 
 [Run 35203107357](https://github.com/jsell-rh/hypershell-stego/actions/runs/35203107357)
