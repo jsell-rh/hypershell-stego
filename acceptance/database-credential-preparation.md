@@ -27,3 +27,34 @@ archive; the CI patch omitted it because it was untracked. See the
 Application checks are pending. The new deleted-record assertion requires the
 jshell Gateway SQL test; hosted core tests do not run it.
 Do not use this branch as a qualified deployment until those checks pass.
+
+## Verified hosted results
+
+At application source `c55b2e2`, provider run `35219968953` passed in
+123.06 seconds. Independent checks confirmed all 61 protected closure records,
+20 journals at process restart, denied account creation, preservation of the
+unrelated client, generation, and cleanup. All 15 comparison cases and the
+cleanup deadline case also passed. This repeat had equal raw client response
+bytes. It does not explain the earlier scope-array difference or event timeout.
+See the [provider record](database-credential-provider-evidence.json).
+
+The rendered management console passed in 78.12 seconds in browser job
+`105197440700` of run `35219979081`. Login, Gateway creation, grants, REST and
+gRPC access, events, restart, session renewal, key rotation, and logout passed.
+All eight startup stages had correlated logs, traces, and metrics for three
+process instances. Both screenshots were reviewed. They show a Gateway still
+in provisioning and the empty account list after deletion. This hosted fixture
+does not run the real Gateway. See the
+[browser record](database-credential-browser-evidence.json).
+
+The Gateway console module passed run `35219945091`. Independent checks matched
+129 source files, repeat generation, dependency checks, the image executable,
+and the verified compiler installer. The executable changed with the new common
+tracing operation. See the [module record](database-credential-module-evidence.json).
+Regeneration run `35220022601` matched all 415 files, produced an empty review
+patch, and passed all three drift checks. See the
+[repeat generation record](database-credential-regeneration-evidence.json).
+
+The dedicated API/SQL run, journal checks, full core suite, and complete live
+Gateway workflow with this compiler remain pending. These hosted passes do not
+qualify those unfinished checks.
