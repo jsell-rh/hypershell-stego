@@ -2,6 +2,9 @@ name: Regenerate with the pinned compiler
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - .stego/compiler-revision
 
 permissions:
   contents: read
