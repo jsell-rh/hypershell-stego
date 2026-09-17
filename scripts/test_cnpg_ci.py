@@ -97,6 +97,24 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_missing_or_invalid_public_gateway_stops_before_cluster_access(self):
+        runner = ci.module('cnpg_ci_public_preflight', 'check-cnpg-ci.py')
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory); config = root / 'public.json'; results = root / 'results'
+            argv = ['check-cnpg-ci.py', '--source', str(root), '--repository', str(root),
+                    '--kubeconfig', str(root / 'credentials'), '--results', str(results)]
+            for data in [None, '', '[]', '{}', '{"domain":"example.test","domain":"other.test"}']:
+                if data is not None:
+                    config.write_text(data)
+                with self.subTest(data=data), patch.dict(os.environ, {'STEGO_TEST_GATEWAY_PUBLIC_CONFIG': '' if data is None else str(config)}), \
+                     patch.object(sys, 'argv', argv), patch.object(runner, 'gateway_ca_input', return_value=b'validated CA'), \
+                     patch.object(runner, 'require_context_credentials') as credentials, patch.object(runner.ci, 'module') as module:
+                    with self.assertRaises(ValueError):
+                        runner.main()
+                    credentials.assert_not_called()
+                    module.assert_not_called()
+                    self.assertFalse(results.exists())
+
     def test_invalid_gateway_ca_stops_before_cluster_access(self):
         runner = ci.module('cnpg_ci_ca_preflight', 'check-cnpg-ci.py')
         with tempfile.TemporaryDirectory() as directory:

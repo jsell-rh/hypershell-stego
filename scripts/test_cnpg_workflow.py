@@ -166,7 +166,7 @@ class CNPGWorkflowTests(unittest.TestCase):
         self.assertEqual(before, after)
         self.assertFalse(any(o['kind'] == 'Secret' and o['metadata']['name'] == 'cnpg-credentials' for o in after['items']))
 
-    def evidence(self, directory, change=None):
+    def evidence(self, directory, change=None, dashboard=None):
         root = Path(directory)
         installation = {'namespace': 'stego-cnpg-database-ci', 'namespace_uid': 'namespace-uid', 'cluster_uid': 'cluster-uid'}
         restart = dict(installation, cluster_spec_unchanged=True, sql_object_ids_unchanged=True,
@@ -179,12 +179,42 @@ class CNPGWorkflowTests(unittest.TestCase):
         (root / 'deployment.log').write_text('--- PASS: TestGeneratedKubernetesBrowserGatewayWorkflow (400.00s)\n')
         (root / 'cleanup.json').write_text(json.dumps({'namespace_retained': 'stego-service-ci', 'test_resources_absent': True, 'allocations_absent': True}))
         with tarfile.open(root / 'evidence.tar', 'w') as archive:
-            for name, value in {'deployment.exit': b'0\n', 'first.sha256': b'generated\n', 'second.sha256': b'generated\n',
-                                'after-tests.sha256': b'generated\n', 'browser-artifacts/cnpg-restart.json': json.dumps(restart).encode()}.items():
+            values = {'deployment.exit': b'0\n', 'first.sha256': b'generated\n', 'second.sha256': b'generated\n',
+                      'after-tests.sha256': b'generated\n', 'browser-artifacts/cnpg-restart.json': json.dumps(restart).encode()}
+            values.update({'browser-artifacts/gateway-dashboard/' + name: json.dumps(value).encode() for name, value in (dashboard or {}).items()})
+            for name, value in values.items():
                 item = tarfile.TarInfo(name)
                 item.size = len(value)
                 archive.addfile(item, io.BytesIO(value))
         return installation
+
+    def test_public_gate_requires_dashboard_editor_recovery_and_logout(self):
+        phases = {'dashboard-' + phase + '.json': {'id': 'a' * 27, 'workspace': 'rendered-dashboard', 'verified': True}
+                  for phase in ['create', 'reload', 'verify']}
+        editor = 'dashboard-create.json.editor.json'
+        phases[editor] = dict.fromkeys(['rendered', 'line_layout', 'syntax_colors', 'selection_rendered', 'keyboard_input',
+                                      'invalid_json_rejected', 'json_worker', 'json_error_marker'], True)
+        phases[editor].update(content_policy_violations=[], policy_submitted=False)
+        changes = [lambda values: values.clear()]
+        for name in phases:
+            changes.append(lambda values, name=name: values.pop(name))
+        for field in ['rendered', 'line_layout', 'syntax_colors', 'selection_rendered', 'keyboard_input',
+                      'invalid_json_rejected', 'json_worker', 'json_error_marker']:
+            changes.append(lambda values, field=field: values[editor].update({field: False}))
+        changes += [lambda v: v['dashboard-reload.json'].update(id='b' * 27),
+                    lambda v: v['dashboard-reload.json'].update(verified=False),
+                    lambda v: v['dashboard-verify.json'].update(session='retained-test-session'),
+                    lambda v: v[editor].update(content_policy_violations=['style-src-attr']),
+                    lambda v: v[editor].update(policy_submitted=True)]
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            installation = self.evidence(root, dashboard=phases)
+            runner.verify_application(root, installation, require_dashboard=True)
+            for change in changes:
+                values = copy.deepcopy(phases); change(values)
+                installation = self.evidence(root, dashboard=values)
+                with self.subTest(change=change), self.assertRaises(RuntimeError):
+                    runner.verify_application(root, installation, require_dashboard=True)
 
     def test_result_requires_cnpg_identity_recovery_and_complete_job(self):
         with tempfile.TemporaryDirectory() as directory:

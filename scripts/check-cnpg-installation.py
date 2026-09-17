@@ -71,7 +71,35 @@ def verify_source(source, repository):
     return record
 
 
-def verify_application(directory, installation):
+def verify_dashboard(archive):
+    def document(name):
+        path = 'browser-artifacts/gateway-dashboard/' + name
+        entries = [item for item in archive.getmembers() if item.name == path]
+        if len(entries) != 1 or not entries[0].isfile() or not 0 < entries[0].size <= 65536:
+            raise RuntimeError('Required dashboard evidence is missing or invalid')
+        value = json.loads(archive.extractfile(entries[0]).read())
+        if not isinstance(value, dict):
+            raise RuntimeError('Required dashboard evidence is not an object')
+        return value
+    gateway = None
+    for phase in ['create', 'reload', 'verify']:
+        value = document('dashboard-' + phase + '.json')
+        if value.get('verified') is not True or value.get('workspace') != 'rendered-dashboard' or not isinstance(value.get('id'), str) or not re.fullmatch(r'[0-9A-Za-z]{27}', value['id']):
+            raise RuntimeError('Dashboard creation and recovery were not verified')
+        if gateway is not None and gateway != value['id']:
+            raise RuntimeError('Dashboard recovery has a different Gateway identity')
+        gateway = value['id']
+        if phase == 'verify' and 'session' in value:
+            raise RuntimeError('Dashboard final evidence retains a browser session')
+    editor = document('dashboard-create.json.editor.json')
+    for field in ['rendered', 'line_layout', 'syntax_colors', 'selection_rendered', 'keyboard_input', 'invalid_json_rejected', 'json_worker', 'json_error_marker']:
+        if editor.get(field) is not True:
+            raise RuntimeError('Dashboard editor behavior was not verified')
+    if editor.get('content_policy_violations') != [] or editor.get('policy_submitted') is not False:
+        raise RuntimeError('Dashboard editor content policy or draft state differs')
+
+
+def verify_application(directory, installation, *, require_dashboard=False):
     job = json.loads((directory / 'job-status.json').read_text())
     if not any(c['type'] == 'Complete' and c['status'] == 'True' for c in job.get('status', {}).get('conditions', [])):
         raise RuntimeError('The browser Job did not complete')
@@ -88,6 +116,8 @@ def verify_application(directory, installation):
         if len(set(generation)) != 1:
             raise RuntimeError('CNPG workflow generation records differ')
         restart = json.loads(archive.extractfile('browser-artifacts/cnpg-restart.json').read())
+        if require_dashboard:
+            verify_dashboard(archive)
     for key in ['namespace', 'namespace_uid', 'cluster_uid']:
         if restart[key] != installation[key]:
             raise RuntimeError('CNPG restart evidence has a different installation identity')

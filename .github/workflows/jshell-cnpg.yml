@@ -74,6 +74,14 @@ jobs:
           test -n "$CI_KUBECONFIG"
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Write the public test configuration
+        env:
+          PUBLIC_CONFIG: ${{ vars.JSHELL_GATEWAY_PUBLIC_CONFIG }}
+        run: |
+          test -n "$PUBLIC_CONFIG"
+          umask 077
+          printf '%s' "$PUBLIC_CONFIG" > "$RUNNER_TEMP/public-gateway.json"
+          echo "STEGO_TEST_GATEWAY_PUBLIC_CONFIG=$RUNNER_TEMP/public-gateway.json" >> "$GITHUB_ENV"
       - name: Run the complete CNPG Gateway workflow
         run: |
           python3 scripts/check-cnpg-ci.py \

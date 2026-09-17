@@ -19,6 +19,7 @@ from types import SimpleNamespace
 import cnpg_ci as ci
 from ci_credentials import CNPG_SECONDS, require_context_credentials
 from kubernetes_endpoint_bindings import kubernetes_endpoints
+from public_gateway_fixture import read_config as read_public_gateway_config
 
 
 def resource_owned(value, holder, cluster_uid):
@@ -110,6 +111,12 @@ def gateway_ca_input(value):
     return data
 
 
+def public_gateway_input(value):
+    if not value or not Path(value).is_file():
+        raise ValueError('The CNPG dashboard gate requires explicit public Gateway configuration')
+    return read_public_gateway_config(value)
+
+
 def prepare_allocation_check(source, directory, client):
     # The outer cleanup must work even when the browser child never starts.
     # Read the operator's immutable inputs and build the existing read-only
@@ -138,6 +145,7 @@ def main():
     parser.add_argument('--results', type=Path, required=True)
     args = parser.parse_args()
     gateway_ca = gateway_ca_input(os.environ.get('STEGO_TEST_GATEWAY_INTERNAL_CA_FILE'))
+    public_gateway = public_gateway_input(os.environ.get('STEGO_TEST_GATEWAY_PUBLIC_CONFIG'))
     source = args.source.resolve()
     context = 'jshell-ci'
     if args.kubeconfig.is_symlink() or not args.kubeconfig.is_file() or args.kubeconfig.stat().st_mode & 0o077:
@@ -152,6 +160,8 @@ def main():
     os.umask(0o077)
     gateway_ca_file = args.results.resolve() / 'gateway-internal-ca.pem'
     gateway_ca_file.write_bytes(gateway_ca)
+    public_gateway_file = args.results.resolve() / 'public-gateway.json'
+    public_gateway_file.write_text(json.dumps(public_gateway) + '\n')
     fixture = ci.module('cnpg_ci_fixture_runner', 'cnpg-installation-fixture.py')
     lock = ci.module('cnpg_ci_live_lock', 'jshell_live_lock.py')
     holder = 'stego-cnpg-live-' + secrets.token_hex(8)
@@ -344,13 +354,15 @@ def main():
             STEGO_TEST_PREINSTALLED='1', STEGO_TEST_BROWSER_DEPLOYMENT='1', STEGO_TEST_BROWSER_WORKLOAD='1',
             STEGO_TEST_GATEWAY_CLUSTER_ISSUER=record['issuer'], STEGO_TEST_RESULTS=str((args.results / 'browser').resolve()),
             STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(gateway_ca_file),
+            STEGO_TEST_GATEWAY_PUBLIC_CONFIG=str(public_gateway_file), STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='1',
             STEGO_TEST_CNPG_FIXTURE='1', STEGO_TEST_HELD_LEASE_HOLDER=holder, STEGO_TEST_HELD_LEASE_UID=settings.lease_uid)
         with (args.results / 'browser-run.log').open('w') as log:
             result = subprocess.run(['bash', str(source / 'scripts/check-service-deployment.sh')], cwd=source, env=environment,
                                     stdout=log, stderr=subprocess.STDOUT).returncode
         if result:
             raise RuntimeError('CNPG browser workflow failed; inspect its saved Job and logs')
-        state['restart'] = workflow.verify_application(args.results / 'browser', ready)
+        state['restart'] = workflow.verify_application(args.results / 'browser', ready, require_dashboard=True)
+        state['dashboard_verified'] = True
         state['phase'] = 'application_passed'; save()
     finally:
         app_absent()

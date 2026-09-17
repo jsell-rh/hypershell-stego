@@ -1,3 +1,16 @@
+The CNPG CI gate now requires the operator's public Gateway configuration.
+It validates and captures that input before cluster access, then passes the
+captured file to the browser Job with public Gateway checks required. It uses
+the same separate generated dashboard backend as the external PostgreSQL test.
+
+A passing result must include dashboard creation, recovery with the same Gateway
+identity, logout, and all editor assertions. Missing artifacts, retained final
+browser sessions, CSP violations, or incomplete editor checks fail verification.
+The existing CNPG primary replacement, retained SQL data, and cleanup checks
+remain required. The small input and evidence checks passed; this expanded
+CNPG gate still requires a live run. Earlier results below have their original
+scope and do not prove this public dashboard workflow.
+
 The network isolation source `6062269` passed generation, complete frozen-source
 verification, and 17 focused source and inspection checks. The prior source
 `7e23873` failed final source verification because that verifier did not account
