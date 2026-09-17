@@ -18,6 +18,12 @@ against the exact source and two independent builds. Its immutable release and
 common installer were also checked. The compiler SHA-256 is
 `2913c048a2ddd64ca55af9ad4af485167ea6c07718fa55c577b475cb55608160`.
 
-CI regeneration and application checks are pending. The new deleted-record
-assertion requires the jshell Gateway SQL test; hosted core tests do not run it.
+CI regeneration passed in run `35219768157`. Independent checks matched all
+415 archived files, the exact source, the installed release record, and all
+three drift checks. The new credentials file was imported from the verified
+archive; the CI patch omitted it because it was untracked. See the
+[generation record](database-credential-generation-evidence.json).
+
+Application checks are pending. The new deleted-record assertion requires the
+jshell Gateway SQL test; hosted core tests do not run it.
 Do not use this branch as a qualified deployment until those checks pass.
