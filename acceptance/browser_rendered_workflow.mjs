@@ -81,7 +81,7 @@ async function dashboardEditor(workspace,heading){
   const targets=await command('/goog/cdp/execute',{cmd:'Target.getTargets',params:{}});
   assert.ok(Array.isArray(targets.targetInfos) && targets.targetInfos.length<=128,'unexpected browser target inventory');
   return targets.targetInfos.some(target=>{
-   if(target.type!=='worker')return false;
+   if(target.type!=='worker'||!URL.canParse(target.url))return false;
    const url=new URL(target.url);
    return url.origin===input.origin && /^\/assets\/json\.[0-9a-f]+\.worker\.js$/.test(url.pathname);
   });
