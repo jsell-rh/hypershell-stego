@@ -54,6 +54,7 @@ def main():
     probes.append({'case': 'lasting_token', 'allowed': False, 'denial_source': namespace + '.stego-ci-no-legacy-tokens'})
     denied = [
         ('allocator_identity_delete', ['-n', namespace, 'delete', 'serviceaccount', 'hypershell-namespace-allocation', '--dry-run=server', '-o', 'name'], None),
+        ('workload_identity_delete', ['-n', namespace, 'delete', 'serviceaccount', 'hypershell-gateway-workload', '--dry-run=server', '-o', 'name'], None),
         ('foreign_secret', ['-n', 'default', 'get', 'secret', 'browser-ci-denied-probe', '-o', 'name'], None),
         ('cluster_role', ['create', '--dry-run=server', '-f', '-', '-o', 'name'], {'apiVersion': 'rbac.authorization.k8s.io/v1', 'kind': 'ClusterRole', 'metadata': {'name': namespace + '.denied-probe'}, 'rules': []}),
         ('installation_write', ['-n', namespace, 'patch', 'configmap', 'browser-ci-installation', '--dry-run=server', '--type=merge', '-p', '{"metadata":{"labels":{"probe":"denied"}}}', '-o', 'name'], None),

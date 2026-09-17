@@ -21,6 +21,25 @@ setup = load('setup', 'prepare-browser-ci.py')
 installation = load('installation', 'browser-ci-installation.py')
 
 class BrowserCI(unittest.TestCase):
+    def test_operator_installs_control_accounts_after_the_guard(self):
+        actions = []
+        setup.prepare_control_accounts(lambda: actions.append('guard'), actions.append)
+        self.assertEqual(actions[0], 'guard')
+        self.assertEqual([item['metadata']['name'] for item in actions[1:]],
+                         ['hypershell-namespace-allocation', 'hypershell-gateway-workload'])
+        for item in actions[1:]:
+            self.assertEqual(item['metadata']['namespace'], setup.NAMESPACE)
+            self.assertEqual(item['metadata']['labels'], setup.OWNER)
+            self.assertIs(item['automountServiceAccountToken'], False)
+
+    def test_failed_guard_installation_does_not_create_control_accounts(self):
+        created = []
+        def fail():
+            raise RuntimeError('guard installation failed')
+        with self.assertRaisesRegex(RuntimeError, 'guard installation failed'):
+            setup.prepare_control_accounts(fail, created.append)
+        self.assertEqual(created, [])
+
     def test_inspection_checks_profile_without_cluster_writes(self):
         for mismatch in (False, True):
             with self.subTest(mismatch=mismatch), tempfile.TemporaryDirectory() as directory:
@@ -129,7 +148,7 @@ class BrowserCI(unittest.TestCase):
                     self.assertEqual(set(rule['resourceNames']), {
                         setup.NAMESPACE + '.hypershell-namespace-allocation.' + name
                         for name in ['allocation', 'ownership', 'resources', 'service-accounts',
-                                     'namespace-reservations', 'account-issuers']})
+                                     'namespace-reservations', 'account-issuers', 'control-accounts']})
         ci = next(o for o in objects if o['kind'] == 'Role' and o['metadata']['name'] == 'browser-ci')
         rbac = [r for r in ci['rules'] if r['apiGroups'] == ['rbac.authorization.k8s.io']]
         self.assertEqual(rbac, [{'apiGroups': ['rbac.authorization.k8s.io'], 'resources': ['roles'], 'resourceNames': ['service-check'], 'verbs': ['get', 'patch', 'update']}])

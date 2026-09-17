@@ -16,6 +16,15 @@ NAMESPACE = 'stego-service-ci'
 OWNER = {'app.kubernetes.io/managed-by': 'stego-browser-ci'}
 
 
+def prepare_control_accounts(install_policies, create):
+    """Install the common guard before the fixture control accounts."""
+    install_policies()
+    for name in ['hypershell-namespace-allocation', 'hypershell-gateway-workload']:
+        create({'apiVersion': 'v1', 'kind': 'ServiceAccount',
+                'metadata': {'name': name, 'namespace': NAMESPACE, 'labels': OWNER},
+                'automountServiceAccountToken': False})
+
+
 def module(name, path):
     spec = importlib.util.spec_from_file_location(name, path)
     value = importlib.util.module_from_spec(spec)
@@ -44,7 +53,7 @@ def ci_objects(fixture, policies):
     ]
     for item in objects:
         if item['kind'] == 'ClusterRole':
-            names = [NAMESPACE + '.hypershell-namespace-allocation.' + suffix for suffix in ['allocation', 'ownership', 'resources', 'service-accounts', 'namespace-reservations', 'account-issuers']]
+            names = [NAMESPACE + '.hypershell-namespace-allocation.' + suffix for suffix in ['allocation', 'ownership', 'resources', 'service-accounts', 'namespace-reservations', 'account-issuers', 'control-accounts']]
             item['rules'].append({'apiGroups': ['admissionregistration.k8s.io'], 'resources': ['validatingadmissionpolicies', 'validatingadmissionpolicybindings'], 'resourceNames': names, 'verbs': ['get']})
         if item['kind'] == 'ClusterRoleBinding':
             item['subjects'].append({'kind': 'ServiceAccount', 'name': 'hypershell-ci', 'namespace': 'stego-ci-access'})
@@ -129,10 +138,13 @@ def main():
         else:
             raise RuntimeError('OpenShift did not assign the fixture group')
         objects = ci_objects(fixture, json.loads((source / 'deploy/ci/jshell.json').read_text()))
-        # Policy is active before CI receives its RoleBinding.
+        # Activate CI only after both its limits and the generated control
+        # policy, accounts, and immutable installation record are ready.
         objects.sort(key=lambda item: item['kind'] not in {'ValidatingAdmissionPolicy', 'ValidatingAdmissionPolicyBinding'})
+        grants = [item for item in objects if item['kind'] in {'RoleBinding', 'ClusterRoleBinding'}]
         for item in objects:
-            create(item)
+            if item not in grants:
+                create(item)
         for item in objects:
             if item['kind'] != 'ValidatingAdmissionPolicy':
                 continue
@@ -146,9 +158,9 @@ def main():
                 time.sleep(0.5)
             else:
                 raise RuntimeError('CI admission policy type checking did not finish')
-        subprocess.run(['python3', str(source / 'scripts/prepare-browser-cluster.py'), '--context', args.context, '--namespace', NAMESPACE,
-                        '--fs-group', group, '--results', str(args.results), '--workload'], cwd=source, check=True, timeout=240)
-        create({'apiVersion': 'v1', 'kind': 'ServiceAccount', 'metadata': {'name': 'hypershell-namespace-allocation', 'namespace': NAMESPACE, 'labels': OWNER}, 'automountServiceAccountToken': False})
+        prepare_control_accounts(lambda: subprocess.run(
+            ['python3', str(source / 'scripts/prepare-browser-cluster.py'), '--context', args.context, '--namespace', NAMESPACE,
+             '--fs-group', group, '--results', str(args.results), '--workload'], cwd=source, check=True, timeout=240), create)
         data = {'namespace-uid': namespace['metadata']['uid'], 'fs-group': group, 'issuer': args.issuer,
                 'kubernetes-endpoints.json': (args.results / 'kubernetes-endpoints.json').read_text(),
                 'kubernetes-service.json': (args.results / 'kubernetes-service.json').read_text(),
@@ -156,6 +168,8 @@ def main():
         for path in sorted((args.results / 'cluster-manifests').glob('*.json')):
             data[path.name] = path.read_text()
         create({'apiVersion': 'v1', 'kind': 'ConfigMap', 'metadata': {'name': 'browser-ci-installation', 'namespace': NAMESPACE, 'labels': OWNER}, 'immutable': True, 'data': data})
+        for item in grants:
+            create(item)
         record['complete'] = True; save()
         print('Installed the fixed browser CI namespace and its immutable manifest record.')
     finally:
