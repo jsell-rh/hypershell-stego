@@ -33,3 +33,11 @@ published image binary matches the checked module build. All 134 downloaded Go
 module files also match, including the inherited repository license. The API
 now uses that checked module revision for the console deployment and schema
 packages. This result does not qualify a running dashboard or the full compiler.
+
+The automatic API run `35178368373` at the earlier main revision stopped during
+regeneration. Its read-only Pod had no writable user cache setting, so the Git
+registry tried to create `/.cache`. Two setup tests passed; 49 required checks
+were not run. The Job and private fixtures were removed, and the test lease
+was released. The shared test Job now sets `XDG_CACHE_HOME=/work/cache` inside
+its existing writable volume. The root filesystem remains read-only. A new
+API cluster run is required.

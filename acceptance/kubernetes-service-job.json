@@ -474,6 +474,10 @@
                     "value": "/work/cache"
                   },
                   {
+                    "name": "XDG_CACHE_HOME",
+                    "value": "/work/cache"
+                  },
+                  {
                     "name": "TMPDIR",
                     "value": "/work/tmp"
                   },
