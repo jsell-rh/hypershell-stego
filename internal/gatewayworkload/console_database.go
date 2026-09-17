@@ -103,33 +103,17 @@ func (k *Kubernetes) loadConsoleState(ctx context.Context, gw *pb.Gateway, creat
 			return convert(value), err
 		},
 		Initialize: func(operation context.Context) (map[string]string, error) {
-			server, err := postgres.DatabaseServerIdentity(operation, config)
+			prepared, err := postgres.PrepareDatabaseCredentials(operation, config, k.consoleDatabaseKey(gw))
 			if err != nil {
 				return nil, err
 			}
-			config.ServerIdentity = server
-			names, err := postgres.DatabaseNames(k.consoleDatabaseKey(gw))
-			if err != nil {
-				return nil, err
-			}
-			var absent bool
-			err = postgres.ReadRow(operation, config, `SELECT NOT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1) AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$2 OR rolname=$3)`, []any{names.Database, names.Owner, names.User}, &absent)
-			if err != nil {
-				return nil, err
-			}
-			if !absent {
-				return nil, errors.New("console keys are missing for existing SQL state")
-			}
-			password, err := postgres.NewDatabasePassword()
-			if err != nil {
-				return nil, err
-			}
+			config.ServerIdentity = prepared.ServerIdentity
 			key := make([]byte, 32)
 			if _, err = rand.Read(key); err != nil {
 				return nil, errors.New("console key generation failed")
 			}
 			values := map[string]string{"session-key": base64.StdEncoding.EncodeToString(key)}
-			for name, value := range map[string]string{"database-password": password, "database-server": server, "database-destination": k.destination(config)} {
+			for name, value := range map[string]string{"database-password": prepared.Password, "database-server": prepared.ServerIdentity, "database-destination": k.destination(config)} {
 				values[name] = base64.StdEncoding.EncodeToString([]byte(value))
 			}
 			return values, nil

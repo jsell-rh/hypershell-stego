@@ -182,23 +182,11 @@ func (k *Kubernetes) loadLocalState(ctx context.Context, gw *pb.Gateway, create 
 // This callback supplies Gateway key policy. STEGO retains the resulting data
 // before the worker can create or use its external database.
 func (k *Kubernetes) newStateData(ctx context.Context, gw *pb.Gateway, config *sql.Options) (map[string]string, error) {
-	server, err := sql.DatabaseServerIdentity(ctx, *config)
+	prepared, err := sql.PrepareDatabaseCredentials(ctx, *config, k.databaseKey(gw))
 	if err != nil {
 		return nil, err
 	}
-	config.ServerIdentity = server
-	names, err := sql.DatabaseNames(k.databaseKey(gw))
-	if err != nil {
-		return nil, err
-	}
-	var absent bool
-	err = sql.ReadRow(ctx, *config, `SELECT NOT EXISTS(SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1) AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_roles WHERE rolname=$2 OR rolname=$3)`, []any{names.Database, names.Owner, names.User}, &absent)
-	if err != nil {
-		return nil, err
-	}
-	if !absent {
-		return nil, errors.New("Gateway keys are missing for existing SQL state")
-	}
+	config.ServerIdentity = prepared.ServerIdentity
 	keys, err := newKeys()
 	if err != nil {
 		return nil, err
@@ -211,11 +199,7 @@ func (k *Kubernetes) newStateData(ctx context.Context, gw *pb.Gateway, config *s
 		}
 		values[key] = encoded
 	}
-	password, err := sql.NewDatabasePassword()
-	if err != nil {
-		return nil, err
-	}
-	for key, value := range map[string]string{"database-password": password, "database-server": server, "database-destination": k.destination(*config)} {
+	for key, value := range map[string]string{"database-password": prepared.Password, "database-server": prepared.ServerIdentity, "database-destination": k.destination(*config)} {
 		values[key] = base64.StdEncoding.EncodeToString([]byte(value))
 	}
 	return values, nil

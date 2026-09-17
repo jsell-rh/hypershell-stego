@@ -407,6 +407,11 @@ func TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer(t *testing.T) {
 	if _, err := k.databaseCredentials(ctx, first, firstState, selected); !errors.Is(err, sql.ErrDatabaseDeleted) {
 		t.Fatal("a late retry restored deleted SQL", err)
 	}
+	// The SQL tombstone also prevents new application credentials. Catalog
+	// absence alone is not permission to reuse the same durable resource key.
+	if candidate, err := k.newStateData(ctx, first, &selected); !errors.Is(err, sql.ErrDatabaseDeleted) || candidate != nil {
+		t.Fatal("deleted Gateway received new credentials", err)
+	}
 	checkData(secondCredentials, "second")
 	var preserved string
 	if err := adminConn.QueryRow(ctx, "SELECT value FROM installation_data").Scan(&preserved); err != nil || preserved != "keep" {
