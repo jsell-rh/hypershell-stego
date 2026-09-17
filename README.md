@@ -55,15 +55,20 @@ separate qualification requirement.
 
 ## Verification state
 
-The latest main application checks use source `0175b0b` and compiler
-`83592bee5a17de6936cf521b94629e2a225a8d37`. The
-[public browser workflow](acceptance/startup-main-browser-evidence.md),
-[API and core checks](acceptance/main-api-core-evidence.md), and
-[CNPG workflow](acceptance/main-cnpg-workflow-evidence.md) passed. Both browser
-workflows verified all 415 generated-file hashes and 48 matching startup
-log/span pairs from six browser instances, with no failed startup pairs.
-The CNPG run needed one secondary database Pod replacement for scheduling.
-Independent cleanup passed. These records retain the limits of each check.
+The common registry and browser composition now have complete application
+checks with compiler `00573709fb15a2a54de4242aa8fdbabee325179a`. The
+[composition record](acceptance/common-browser-composition.md) identifies each
+source and result. The full suite and public workflow passed at `af43205`.
+The corrected API gate passed all 52 required tests at `442e7ff`. The CNPG
+workflow passed all 11 required tests at `854bbb1` in 766.91 seconds.
+
+Both deployed browser workflows verified all 415 generated-file hashes and 48
+matching startup log/span pairs from six browser instances, with no failed
+pairs. CNPG primary replacement preserved SQL identities, credentials, keys,
+and data. The CNPG fixture needed one secondary Pod replacement for scheduling.
+Independent runtime, volume, and Lease cleanup passed. These records retain
+the limits of each check. Earlier [main workflow records](acceptance/main-cnpg-workflow-evidence.md)
+remain available.
 
 The following table records earlier checks. Their results and limits apply to
 their listed source revisions.
@@ -90,7 +95,7 @@ The earlier CNPG run needed one manual replacement of its secondary database Pod
 free CPU for the existing test Job. One console then restarted three times
 before it became ready, with no configuration change. Its log identifies
 browser initialization but not the cause. The result does not prove startup
-without assistance. The latest main workflows above include the generated
+without assistance. The later workflows above include the generated
 startup diagnostics added after this result. Production capacity remains open.
 
 These results do not establish complete parity, production capacity, backup and

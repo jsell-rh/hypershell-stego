@@ -96,9 +96,9 @@ Its total context permits the three recovery windows. Normal delivery checks
 retain their five-second bound. No runtime or generated code changed. The API
 list now also requires the existing deterministic unfinished-claim test, which
 checks that the original event identity survives lease expiry without a manual
-reset. All 14 small Job-observation tests passed locally. The corrected API
-result and CNPG qualification remain open. The failed run remains part of the
-record. These results do not complete the enterprise goal.
+reset. All 14 small Job-observation tests passed locally. At that stage, the
+corrected API result and CNPG qualification were still open. The failed run
+remains part of the record. These results do not complete the enterprise goal.
 
 Independent checks of the failed API archive matched all 1,365 source files and
 both generation passes. Fifty of 51 required tests passed; the restart fixture
@@ -115,6 +115,31 @@ passed in 9.61 seconds. The deterministic unfinished-claim test passed in
 Independent cleanup at `2026-09-17T08:20:36Z` found no test runtime, fixtures,
 allocations, or Lease holder. See the [API result](common-browser-api-evidence.json).
 
-CNPG qualification is the remaining application check for this composition
-change. Production capacity, full parity, backup and restore, and the broader
-enterprise requirements remain open.
+## Complete CNPG Gateway workflow
+
+The [CNPG workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35199255353)
+passed all 11 required tests at `854bbb1`. The complete rendered workflow took
+766.91 seconds. Independent checks matched all 1,368 source files and all 415
+generated-file hashes before and after the test and in the saved archive.
+The console executable matches the checked Gateway module. All three saved
+screenshots were viewed. Six browser instances supplied 48 matching startup
+log/span pairs with complete metrics and no failed pairs.
+
+Database primary replacement preserved SQL identities, Gateway credentials and
+keys, provider data, and installation data. Namespace recovery, filtered reads,
+denied writes, account cleanup, durable deletion, and linked PostgreSQL telemetry
+passed. Provisioner outage denied two account requests without creating rows.
+Recovery preserved SQL and credential identities without account write retries.
+The final provisioner record matches the independent live capture.
+
+One identity-checked replacement of the owned secondary database Pod was needed
+for scheduling. The same application test Pod then ran. The primary Pod, PVC
+identities, and volume bindings were preserved. PV identities were recorded only
+after this request. Resource limits and unrelated workloads were not changed.
+This result does not prove fixture placement without intervention.
+
+Independent cleanup at `2026-09-17T08:46:58Z` found no test runtime, fixtures,
+allocations, or retained volumes. The shared Lease had no holder. See the
+[CNPG record](common-browser-cnpg-evidence.json). This completes the application
+checks for the common browser composition change. Production capacity, full
+parity, backup and restore, and the broader enterprise requirements remain open.
