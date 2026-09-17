@@ -25,7 +25,7 @@ import (
 )
 
 type role struct{ Name, Scope string }
-type binding struct{ Role, ExternalRole, ServiceAccount, Namespace, ExternalNamespace string }
+type binding struct{ Role, ExternalRole, ServiceAccount, Namespace, ExternalNamespace, SubjectProfile, SubjectPrefix string }
 type identityField struct{ Field, Key string }
 type networkPeer struct {
 	Direction, Namespace, ExternalNamespace, PodLabel, PodValue, Protocol string
@@ -74,7 +74,7 @@ func New(client *kube.Client, controlNamespace string) (*Allocator, error) {
 		return nil, errors.New("allocator requires a client and a control namespace")
 	}
 	var config configuration
-	if err := json.Unmarshal([]byte("{\"Service\":\"hypershell\",\"Allocator\":\"hypershell-namespace-allocation\",\"Roles\":[{\"Name\":\"sandbox-count\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]}]},{\"Name\":\"gateway-state\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\"],\"verbs\":[\"create\",\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]}]},{\"Name\":\"gateway-worker\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\",\"services\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"serviceaccounts\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]},{\"apiGroups\":[\"apps\"],\"resources\":[\"deployments\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"cert-manager.io\"],\"resources\":[\"certificates\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes\"],\"verbs\":[\"create\",\"delete\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes/custom-host\"],\"verbs\":[\"create\"]}]},{\"Name\":\"gateway-runtime\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"agents.x-k8s.io\"],\"resources\":[\"sandboxes\",\"sandboxes/status\"],\"verbs\":[\"create\",\"delete\",\"get\",\"list\",\"patch\",\"update\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"events\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\"]}]},{\"Name\":\"gateway-reviews\",\"Scope\":\"cluster\",\"Rules\":[{\"apiGroups\":[\"authentication.k8s.io\"],\"resources\":[\"tokenreviews\"],\"verbs\":[\"create\"]},{\"apiGroups\":[\"\"],\"resources\":[\"nodes\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"namespaces\"],\"verbs\":[\"get\"]}]}],\"Profiles\":[{\"ServiceAccounts\":[\"gateway\",\"console\"],\"NetworkEndpoints\":[\"kubernetes\"],\"NetworkPeers\":[{\"Direction\":\"ingress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-ingress\",\"PodLabel\":\"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"ingress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"egress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-dns\",\"PodLabel\":\"dns.operator.openshift.io/daemonset-dns\",\"PodValue\":\"default\",\"Protocol\":\"UDP\",\"Port\":5353},{\"Direction\":\"egress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-dns\",\"PodLabel\":\"dns.operator.openshift.io/daemonset-dns\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":5353},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":5432},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"identity-fixture\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":19093},{\"Direction\":\"ingress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-ingress\",\"PodLabel\":\"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"ingress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"ingress\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app.kubernetes.io/name\",\"PodValue\":\"hypershell-gateway-console\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"egress\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app.kubernetes.io/name\",\"PodValue\":\"openshell-gateway\",\"Protocol\":\"TCP\",\"Port\":8080}],\"NetworkIsolation\":true,\"IdentityConfigMap\":\"\",\"IdentityLabels\":null,\"IdentityAnnotations\":null,\"Name\":\"gateway\",\"Prefix\":\"openshell-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":16,\"Bindings\":[{\"Role\":\"gateway-worker\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"},{\"Role\":\"gateway-runtime\",\"ExternalRole\":\"\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"gateway-reviews\",\"ExternalRole\":\"\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"\",\"ExternalRole\":\"system:openshift:scc:nonroot-v2\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"\",\"ExternalRole\":\"system:openshift:scc:nonroot-v2\",\"ServiceAccount\":\"console\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\"},{\"Role\":\"sandbox-count\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-sandbox-count\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"}],\"Quota\":{\"limits.cpu\":\"4500m\",\"limits.ephemeral-storage\":\"768Mi\",\"limits.memory\":\"2560Mi\",\"pods\":\"3\",\"requests.storage\":\"2Gi\"}},{\"NetworkIsolation\":true,\"IdentityConfigMap\":\"openshell-state-identity\",\"IdentityLabels\":null,\"IdentityAnnotations\":[{\"Field\":\"sha256\",\"Key\":\"hypershell.redhat.io/state-identity\"}],\"Name\":\"gateway-state\",\"Prefix\":\"openshell-state-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":40,\"Bindings\":[{\"Role\":\"gateway-state\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"64Mi\",\"limits.memory\":\"64Mi\",\"pods\":\"0\",\"requests.storage\":\"0\"}},{\"NetworkIsolation\":true,\"IdentityConfigMap\":\"gateway-console-state-identity\",\"IdentityLabels\":null,\"IdentityAnnotations\":[{\"Field\":\"sha256\",\"Key\":\"hypershell.redhat.io/console-state-identity\"}],\"Name\":\"gateway-console-state\",\"Prefix\":\"openshell-console-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":40,\"Bindings\":[{\"Role\":\"gateway-state\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"64Mi\",\"limits.memory\":\"64Mi\",\"pods\":\"0\",\"requests.storage\":\"0\"}}]}"), &config); err != nil {
+	if err := json.Unmarshal([]byte("{\"Service\":\"hypershell\",\"Allocator\":\"hypershell-namespace-allocation\",\"Roles\":[{\"Name\":\"sandbox-count\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]}]},{\"Name\":\"gateway-state\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\"],\"verbs\":[\"create\",\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]}]},{\"Name\":\"gateway-worker\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"\"],\"resources\":[\"configmaps\",\"secrets\",\"services\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"serviceaccounts\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resourceNames\":[\"stego-allocation\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"get\"]},{\"apiGroups\":[\"networking.k8s.io\"],\"resources\":[\"networkpolicies\"],\"verbs\":[\"list\"]},{\"apiGroups\":[\"apps\"],\"resources\":[\"deployments\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"cert-manager.io\"],\"resources\":[\"certificates\"],\"verbs\":[\"create\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes\"],\"verbs\":[\"create\",\"delete\",\"get\",\"patch\"]},{\"apiGroups\":[\"route.openshift.io\"],\"resources\":[\"routes/custom-host\"],\"verbs\":[\"create\"]}]},{\"Name\":\"gateway-runtime\",\"Scope\":\"namespace\",\"Rules\":[{\"apiGroups\":[\"agents.x-k8s.io\"],\"resources\":[\"sandboxes\",\"sandboxes/status\"],\"verbs\":[\"create\",\"delete\",\"get\",\"list\",\"patch\",\"update\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"events\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"pods\"],\"verbs\":[\"get\"]}]},{\"Name\":\"gateway-reviews\",\"Scope\":\"cluster\",\"Rules\":[{\"apiGroups\":[\"authentication.k8s.io\"],\"resources\":[\"tokenreviews\"],\"verbs\":[\"create\"]},{\"apiGroups\":[\"\"],\"resources\":[\"nodes\"],\"verbs\":[\"get\",\"list\",\"watch\"]},{\"apiGroups\":[\"\"],\"resources\":[\"namespaces\"],\"verbs\":[\"get\"]}]}],\"Profiles\":[{\"ServiceAccounts\":[\"gateway\",\"console\"],\"NetworkEndpoints\":[\"kubernetes\"],\"NetworkPeers\":[{\"Direction\":\"ingress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-ingress\",\"PodLabel\":\"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"ingress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"egress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-dns\",\"PodLabel\":\"dns.operator.openshift.io/daemonset-dns\",\"PodValue\":\"default\",\"Protocol\":\"UDP\",\"Port\":5353},{\"Direction\":\"egress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-dns\",\"PodLabel\":\"dns.operator.openshift.io/daemonset-dns\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":5353},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":5432},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"identity-fixture\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"egress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":19093},{\"Direction\":\"ingress\",\"Namespace\":\"external\",\"ExternalNamespace\":\"openshift-ingress\",\"PodLabel\":\"ingresscontroller.operator.openshift.io/deployment-ingresscontroller\",\"PodValue\":\"default\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"ingress\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app\",\"PodValue\":\"stego-fixture\",\"Protocol\":\"TCP\",\"Port\":8443},{\"Direction\":\"ingress\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app.kubernetes.io/name\",\"PodValue\":\"hypershell-gateway-console\",\"Protocol\":\"TCP\",\"Port\":8080},{\"Direction\":\"egress\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"PodLabel\":\"app.kubernetes.io/name\",\"PodValue\":\"openshell-gateway\",\"Protocol\":\"TCP\",\"Port\":8080}],\"NetworkIsolation\":true,\"IdentityConfigMap\":\"\",\"IdentityLabels\":null,\"IdentityAnnotations\":null,\"Name\":\"gateway\",\"Prefix\":\"openshell-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":16,\"Bindings\":[{\"Role\":\"gateway-worker\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"},{\"Role\":\"gateway-runtime\",\"ExternalRole\":\"\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"},{\"Role\":\"gateway-reviews\",\"ExternalRole\":\"\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"},{\"Role\":\"\",\"ExternalRole\":\"system:openshift:scc:nonroot-v2\",\"ServiceAccount\":\"gateway\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"},{\"Role\":\"\",\"ExternalRole\":\"system:openshift:scc:nonroot-v2\",\"ServiceAccount\":\"console\",\"Namespace\":\"allocated\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"},{\"Role\":\"sandbox-count\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-sandbox-count\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"}],\"Quota\":{\"limits.cpu\":\"4500m\",\"limits.ephemeral-storage\":\"768Mi\",\"limits.memory\":\"2560Mi\",\"pods\":\"3\",\"requests.storage\":\"2Gi\"}},{\"NetworkIsolation\":true,\"IdentityConfigMap\":\"openshell-state-identity\",\"IdentityLabels\":null,\"IdentityAnnotations\":[{\"Field\":\"sha256\",\"Key\":\"hypershell.redhat.io/state-identity\"}],\"Name\":\"gateway-state\",\"Prefix\":\"openshell-state-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":40,\"Bindings\":[{\"Role\":\"gateway-state\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"64Mi\",\"limits.memory\":\"64Mi\",\"pods\":\"0\",\"requests.storage\":\"0\"}},{\"NetworkIsolation\":true,\"IdentityConfigMap\":\"gateway-console-state-identity\",\"IdentityLabels\":null,\"IdentityAnnotations\":[{\"Field\":\"sha256\",\"Key\":\"hypershell.redhat.io/console-state-identity\"}],\"Name\":\"gateway-console-state\",\"Prefix\":\"openshell-console-\",\"OwnerLabel\":\"hypershell.redhat.io/gateway-id\",\"Manager\":\"hypershell-gateway-controller\",\"SuffixLength\":40,\"Bindings\":[{\"Role\":\"gateway-state\",\"ExternalRole\":\"\",\"ServiceAccount\":\"hypershell-gateway-workload\",\"Namespace\":\"control\",\"ExternalNamespace\":\"\",\"SubjectProfile\":\"\",\"SubjectPrefix\":\"\"}],\"Quota\":{\"limits.cpu\":\"1\",\"limits.ephemeral-storage\":\"64Mi\",\"limits.memory\":\"64Mi\",\"pods\":\"0\",\"requests.storage\":\"0\"}}]}"), &config); err != nil {
 		return nil, errors.New("invalid generated allocation configuration")
 	}
 	endpoints, err := allocationEndpointBindings(config, os.Getenv("STEGO_ALLOCATION_NETWORK_ENDPOINTS"))
@@ -191,6 +191,26 @@ func hasServiceAccount(p profile, alias string) bool {
 	return false
 }
 
+func accountIdentities(p profile) []string {
+	result := append([]string(nil), p.ServiceAccounts...)
+	for _, b := range p.Bindings {
+		if b.Namespace != "profile" {
+			continue
+		}
+		found := false
+		for _, alias := range result {
+			if alias == b.ServiceAccount {
+				found = true
+				break
+			}
+		}
+		if !found {
+			result = append(result, b.ServiceAccount)
+		}
+	}
+	return result
+}
+
 func (a *Allocator) serviceAccountName(p profile, ownerID, alias string) string {
 	// The full digest includes the installation and owner domain. JSON array
 	// encoding keeps each field separate, including punctuation in owner IDs.
@@ -248,7 +268,7 @@ func (a *Allocator) RequireServiceAccount(ctx context.Context, profileName, name
 }
 
 func (a *Allocator) requireServiceAccountNames(p profile, current kube.Object, ownerID string) error {
-	for _, alias := range p.ServiceAccounts {
+	for _, alias := range accountIdentities(p) {
 		if kube.String(current, "metadata", "annotations", serviceAccountAnnotation+alias) != a.serviceAccountName(p, ownerID, alias) {
 			return errors.New("allocation ServiceAccount identity differs from its owner")
 		}
@@ -273,7 +293,7 @@ func (a *Allocator) checkExistingServiceAccountNames(ctx context.Context, p prof
 	if kube.String(current, "metadata", "deletionTimestamp") != "" {
 		return ErrPending
 	}
-	for _, alias := range p.ServiceAccounts {
+	for _, alias := range accountIdentities(p) {
 		value := kube.Nested(current, "metadata", "annotations", serviceAccountAnnotation+alias)
 		if value != nil && value != a.serviceAccountName(p, ownerID, alias) {
 			return errors.New("allocation ServiceAccount identity differs from its owner")
@@ -285,7 +305,7 @@ func (a *Allocator) checkExistingServiceAccountNames(ctx context.Context, p prof
 func (a *Allocator) bindingObject(p profile, name string, index int, owner kube.Owner) (string, kube.Object) {
 	b := p.Bindings[index]
 	serviceAccount := b.ServiceAccount
-	if b.Namespace == "allocated" && hasServiceAccount(p, b.ServiceAccount) {
+	if (b.Namespace == "allocated" && hasServiceAccount(p, b.ServiceAccount)) || b.Namespace == "profile" {
 		serviceAccount = a.serviceAccountName(p, owner[p.OwnerLabel], b.ServiceAccount)
 	}
 	roleName, scope := b.ExternalRole, "namespace"
@@ -303,6 +323,9 @@ func (a *Allocator) bindingObject(p profile, name string, index int, owner kube.
 	}
 	if b.Namespace == "external" {
 		ns = b.ExternalNamespace
+	}
+	if b.Namespace == "profile" {
+		ns = b.SubjectPrefix + strings.TrimPrefix(name, p.Prefix)
 	}
 	kind, collection, bindingName := "RoleBinding", "/apis/rbac.authorization.k8s.io/v1/namespaces/"+name+"/rolebindings", fmt.Sprintf("stego-%s-%d", a.marker, index)
 	if scope == "cluster" {
@@ -437,7 +460,7 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 	meta["labels"].(kube.Object)["pod-security.kubernetes.io/enforce"] = "restricted"
 	if len(p.ServiceAccounts) != 0 {
 		annotations := kube.Object{}
-		for _, alias := range p.ServiceAccounts {
+		for _, alias := range accountIdentities(p) {
 			annotations[serviceAccountAnnotation+alias] = a.serviceAccountName(p, ownerID, alias)
 		}
 		meta["annotations"] = annotations
@@ -474,6 +497,17 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 	proof["metadata"].(kube.Object)["namespace"] = name
 	if _, err = a.client.Ensure(ctx, "/apis/rbac.authorization.k8s.io/v1/namespaces/"+name+"/rolebindings", proof, owner); err != nil {
 		return err
+	}
+	// Create local accounts before checking peers. This permits two profiles to
+	// depend on each other without granting workload permissions before both exist.
+	for _, b := range p.Bindings {
+		if b.Namespace != "profile" {
+			continue
+		}
+		peerName := b.SubjectPrefix + strings.TrimPrefix(name, p.Prefix)
+		if _, err = a.RequireServiceAccount(ctx, b.SubjectProfile, peerName, ownerID, b.ServiceAccount); err != nil {
+			return err
+		}
 	}
 	for i := range p.Bindings {
 		collection, desired := a.bindingObject(p, name, i, owner)

@@ -1,0 +1,30 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260398201",
+  "source": "06f5f86aa2608135198b78d4db2731d9a44c29be",
+  "compiler": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+  "compiler_sha256": "4bdc57eefa29568e8474518d138c1caab20ed44fd62dbfd9202ba6839a07b3ae",
+  "checked_at": "2026-09-17T18:44:25.503036+00:00",
+  "source_archive_sha256": "e37913b58c1df555523952078c4eab1e8d9a03fa522adce73ba5816742efaac4",
+  "generated_archive_sha256": "b588d4b804a659637030d9d5d2aec8065fed0fb658414dd88db72c1f83e0b85f",
+  "generation_log_sha256": "552efda4ab5fc4fd7550ca86f5b7a432da65be69cfaf7a1bc91eb5d39796f406",
+  "generated_files_matched": 415,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/deploy/allocation/allocation.go",
+    "out/deploy/render/worker-namespace-allocation.json.tmpl"
+  ],
+  "release_verification_matched": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false,
+  "application_allocation_policy_unchanged": true,
+  "only_added_policy_resources": [
+    "ValidatingAdmissionPolicy/control-accounts",
+    "ValidatingAdmissionPolicyBinding/control-accounts",
+    "ClusterRole/control-account-installer"
+  ],
+  "installer_role_bound": false,
+  "consumer_workflow_passed": false
+}

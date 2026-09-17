@@ -21,3 +21,9 @@ The compiler comes from its published immutable release. The common installer
 verified the exact revision, compiler hash, and signatures. The same source
 passed full compiler CI and the live control-account regression. Hosted
 regeneration and the complete consumer workflow remain required.
+
+Hosted regeneration passed at `06f5f86`. The imported archive matches all 415
+output files and modes. All three drift checks passed. The compiler installation
+record matches the verified release. The application allocation policy is
+unchanged. The generated manifest adds the account guard, its binding, and an
+unbound installer role. The live consumer workflow remains required.

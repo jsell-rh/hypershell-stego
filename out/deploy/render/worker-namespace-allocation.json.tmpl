@@ -480,6 +480,79 @@
       }
     },
     {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.control-accounts"
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConditions": [
+          {
+            "expression": "request.namespace == '{{.Namespace}}' \u0026\u0026 request.operation == 'CREATE'",
+            "name": "selected-identity"
+          }
+        ],
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "serviceaccounts"
+              ]
+            }
+          ]
+        },
+        "validations": [
+          {
+            "expression": "object != null \u0026\u0026 (!((has(object.metadata.name) \u0026\u0026 object.metadata.name in [\"hypershell-gateway-workload\",\"hypershell-namespace-allocation\",\"hypershell-sandbox-count\"]) || (has(object.metadata.generateName) \u0026\u0026 object.metadata.generateName != '' \u0026\u0026 [\"hypershell-gateway-workload\",\"hypershell-namespace-allocation\",\"hypershell-sandbox-count\"].exists(name, name.startsWith(object.metadata.generateName)))) || authorizer.path(\"/stego.dev/control-account-installation/{{.Namespace}}/hypershell-namespace-allocation\").check('get').allowed())",
+            "message": "Control account names require a trusted installer"
+          }
+        ],
+        "variables": null
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.control-accounts"
+      },
+      "spec": {
+        "policyName": "{{.Namespace}}.hypershell-namespace-allocation.control-accounts",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "{{.Namespace}}.hypershell-namespace-allocation.control-account-installer"
+      },
+      "rules": [
+        {
+          "nonResourceURLs": [
+            "/stego.dev/control-account-installation/{{.Namespace}}/hypershell-namespace-allocation"
+          ],
+          "verbs": [
+            "get"
+          ]
+        }
+      ]
+    },
+    {
       "apiVersion": "rbac.authorization.k8s.io/v1",
       "kind": "ClusterRole",
       "metadata": {
