@@ -3,6 +3,7 @@ package acceptance
 import (
 	"context"
 	"crypto/rsa"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -28,6 +29,7 @@ func (p *kubernetesBrowser) startProvisioner(f *fixture, k *keycloakFixture, key
 	options := rpc.Options{Address: p.host(name) + ":9090", CAFile: id.config.CAFile, TokenFile: tokenFile}
 	start := func() (func(), func() string) {
 		stop, logs := p.start(name, "..", os.Getenv("STEGO_TEST_PROVISIONER_IMAGE"), id, env, files, "--rpc-process", "provisioner")
+		p.checkProvisionerDeployment(name)
 		checkProvisionerIdentity(p.t, key, options)
 		return stop, logs
 	}
@@ -72,4 +74,37 @@ func checkProvisionerIdentity(t *testing.T, key *rsa.PrivateKey, options rpc.Opt
 			t.Fatal("deployed RPC identity rule failed", status.Code(err), probe.want)
 		}
 	}
+}
+
+// Check the selected rollout policy after each provisioner startup.
+// Recreate controls planned upgrades. It is not a distributed writer fence.
+func (p *kubernetesBrowser) checkProvisionerDeployment(name string) {
+	p.t.Helper()
+	var deployment struct {
+		Metadata struct {
+			UID        string
+			Generation int64
+		}
+		Spec struct {
+			Replicas *int
+			Strategy struct {
+				Type          string
+				RollingUpdate json.RawMessage
+			}
+		}
+		Status struct {
+			ObservedGeneration                                          int64
+			Replicas, UpdatedReplicas, ReadyReplicas, AvailableReplicas int
+		}
+	}
+	if err := json.Unmarshal(p.command(nil, "get", "deployment/"+name, "-o", "json"), &deployment); err != nil {
+		p.t.Fatal("cannot inspect the provisioner Deployment", err)
+	}
+	if deployment.Metadata.UID == "" || deployment.Spec.Replicas == nil || *deployment.Spec.Replicas != 1 || deployment.Spec.Strategy.Type != "Recreate" || len(deployment.Spec.Strategy.RollingUpdate) != 0 {
+		p.t.Fatal("provisioner Deployment must select one replica and Recreate")
+	}
+	if deployment.Status.ObservedGeneration != deployment.Metadata.Generation || deployment.Status.Replicas != 1 || deployment.Status.UpdatedReplicas != 1 || deployment.Status.ReadyReplicas != 1 || deployment.Status.AvailableReplicas != 1 {
+		p.t.Fatal("provisioner Deployment has not reached its selected revision")
+	}
+	p.t.Log("Live provisioner Deployment selects one replica and Recreate")
 }

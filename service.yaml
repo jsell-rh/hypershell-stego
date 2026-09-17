@@ -125,6 +125,7 @@ overrides:
       - name: provisioner
         component: grpc-application
         process: provisioner
+        rollout_strategy: Recreate
         network_peers:
           - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-workload, port: 9090, protocol: TCP}
           - {direction: ingress, namespace: self, pod_label: app.kubernetes.io/name, pod_value: hypershell, port: 9090, protocol: TCP}
