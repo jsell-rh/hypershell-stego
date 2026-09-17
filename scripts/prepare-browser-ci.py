@@ -44,7 +44,7 @@ def ci_objects(fixture, policies):
     ]
     for item in objects:
         if item['kind'] == 'ClusterRole':
-            names = [NAMESPACE + '.hypershell-namespace-allocation.' + suffix for suffix in ['allocation', 'ownership', 'resources']]
+            names = [NAMESPACE + '.hypershell-namespace-allocation.' + suffix for suffix in ['allocation', 'ownership', 'resources', 'service-accounts', 'namespace-reservations', 'account-issuers']]
             item['rules'].append({'apiGroups': ['admissionregistration.k8s.io'], 'resources': ['validatingadmissionpolicies', 'validatingadmissionpolicybindings'], 'resourceNames': names, 'verbs': ['get']})
         if item['kind'] == 'ClusterRoleBinding':
             item['subjects'].append({'kind': 'ServiceAccount', 'name': 'hypershell-ci', 'namespace': 'stego-ci-access'})

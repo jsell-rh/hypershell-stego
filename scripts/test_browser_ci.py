@@ -123,6 +123,13 @@ class BrowserCI(unittest.TestCase):
             for rule in role['rules']:
                 self.assertLessEqual(set(rule['verbs']), {'get', 'list'})
                 self.assertFalse(set(rule['resources']) & {'secrets', 'pods', 'tokenreviews'})
+                if rule['apiGroups'] == ['admissionregistration.k8s.io']:
+                    self.assertEqual(rule['verbs'], ['get'])
+                    self.assertEqual(set(rule['resources']), {'validatingadmissionpolicies', 'validatingadmissionpolicybindings'})
+                    self.assertEqual(set(rule['resourceNames']), {
+                        setup.NAMESPACE + '.hypershell-namespace-allocation.' + name
+                        for name in ['allocation', 'ownership', 'resources', 'service-accounts',
+                                     'namespace-reservations', 'account-issuers']})
         ci = next(o for o in objects if o['kind'] == 'Role' and o['metadata']['name'] == 'browser-ci')
         rbac = [r for r in ci['rules'] if r['apiGroups'] == ['rbac.authorization.k8s.io']]
         self.assertEqual(rbac, [{'apiGroups': ['rbac.authorization.k8s.io'], 'resources': ['roles'], 'resourceNames': ['service-check'], 'verbs': ['get', 'patch', 'update']}])
