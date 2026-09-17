@@ -1,13 +1,13 @@
 {
-  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35179449177",
-  "source": "a55618b3d03eaf10346832dea61678a5b3f48383",
-  "compiler": "7cd7f68b6c4f48cf002934e838085f4b15257d61",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180446968",
+  "source": "eacee52dee8fb15c85656f660233d98785310878",
+  "compiler": "83592bee5a17de6936cf521b94629e2a225a8d37",
   "source_files_match": 130,
   "repeated_generation_matches": true,
-  "browser_image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:0bfe8d5a20a19974941c98f97b60064bc88323b49c9bc3b94873d5d87bd52c47",
-  "image_id": "sha256:102a6635a2e89235b45168a38ca4cbc53f924b6f73d51f0444c32de0b419f6d5",
+  "browser_image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:70c75bf2ed1d751939af33252bed658b708771459f17e2f4e9724e8572e896da",
+  "image_id": "sha256:7178d2cb088a536d7d6dc3381b7772782bf6e9ed31adea03510b271f89face5d",
   "binary_sha256": "07a677758dcc555968926360cdd2fb4c1227b4a5835d8fc6c117774211babc06",
-  "generated_source_sha256": "9e411b653ac4652a6ad5be54ebd6d47b569de61e1cfd7247826ec88c87f01586",
+  "generated_source_sha256": "89445b1bf2c5a113c494eee0d616065fb38f7066fcb0321e9fa6637240ceb1a0",
   "nonroot_user": "65532:65532",
   "entrypoint": [
     "/service"
@@ -15,9 +15,9 @@
   "binary_matches_module": true,
   "pulled_digest_matches_build": true,
   "scope": "Generated source, dependency scan, module builds, exact image binary, and published image digest passed. This does not prove a running Gateway dashboard or anonymous image pull access.",
-  "module_version": "v0.0.0-20260917034657-a55618b3d03e",
+  "module_version": "v0.0.0-20260917040301-eacee52dee8f",
   "downloaded_module_files_match": 134,
-  "module_sum": "h1:+rZ1no0mXgAoMjDJPJI4pbC/1/wl6Cr5p/YZ1Jsgmg8=",
+  "module_sum": "h1:PGzgTFiiXpzid6niJFPJkXQ0YMhcEZxQ/On9P2SXeYQ=",
   "module_go_mod_sum": "h1:bYK/CJYelVUBBzEMRaKTitU2L2MsEuKFt23bRb5j+Ck=",
   "inherited_license_matches": true
 }
