@@ -3,9 +3,13 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
+	"sort"
+	"strings"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
@@ -48,7 +52,28 @@ func (w *browserGatewayWorkload) checkAllocatedWorkloadAccounts(id, namespace st
 		if kube.String(deployment, "spec", "template", "spec", "serviceAccountName") != name || kube.Nested(deployment, "spec", "template", "spec", "automountServiceAccountToken") != target.token {
 			w.t.Fatal("workload account or token mount differs", target.alias)
 		}
-		records[target.alias] = map[string]any{"name": name, "uid": kube.String(account, "metadata", "uid"), "deployment_uid": kube.String(deployment, "metadata", "uid"), "pod_token_mount": target.token, "account_token_mount": false}
+		selector, ok := kube.Nested(deployment, "spec", "selector", "matchLabels").(map[string]any)
+		if !ok || len(selector) == 0 || len(selector) > 8 {
+			w.t.Fatal("allocated workload selector is unavailable", target.alias)
+		}
+		labels := make([]string, 0, len(selector))
+		for key, value := range selector {
+			label, ok := value.(string)
+			if !ok || key == "" || label == "" {
+				w.t.Fatal("allocated workload selector is invalid", target.alias)
+			}
+			labels = append(labels, key+"="+label)
+		}
+		sort.Strings(labels)
+		pods, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+namespace+"/pods?limit=4&labelSelector="+url.QueryEscape(strings.Join(labels, ",")), nil)
+		if err != nil || code != http.StatusOK {
+			w.t.Fatal("allocated workload Pod read failed", target.alias)
+		}
+		podUID, err := allocatedWorkloadPodIdentity(pods, namespace, name, target.token)
+		if err != nil {
+			w.t.Fatal("allocated workload Pod differs", target.alias, err)
+		}
+		records[target.alias] = map[string]any{"name": name, "uid": kube.String(account, "metadata", "uid"), "deployment_uid": kube.String(deployment, "metadata", "uid"), "pod_uid": podUID, "pod_token_mount": target.token, "account_token_mount": false}
 	}
 	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
 		data, err := json.Marshal(map[string]any{"gateway_id": id, "namespace": namespace, "namespace_uid": namespaceUID, "accounts": records})
@@ -66,4 +91,45 @@ func (w *browserGatewayWorkload) checkAllocatedWorkloadAccounts(id, namespace st
 		}
 	}
 	w.t.Log("Gateway and console use separate allocated accounts with explicit Pod token settings")
+}
+
+// Inspect one complete, bounded Pod list after the Gateway reports readiness.
+// A terminating Pod can overlap its replacement. It cannot establish readiness.
+func allocatedWorkloadPodIdentity(page kube.Object, namespace, account string, token bool) (string, error) {
+	items, ok := page["items"].([]any)
+	if !ok || len(items) == 0 || len(items) > 4 || kube.String(page, "apiVersion") != "v1" || kube.String(page, "kind") != "PodList" || kube.String(page, "metadata", "resourceVersion") == "" || kube.String(page, "metadata", "continue") != "" {
+		return "", errors.New("Pod inventory is incomplete")
+	}
+	uid := ""
+	for _, value := range items {
+		pod, ok := value.(map[string]any)
+		if !ok || kube.String(pod, "metadata", "namespace") != namespace || kube.String(pod, "metadata", "uid") == "" {
+			return "", errors.New("Pod identity is invalid")
+		}
+		if kube.String(pod, "metadata", "deletionTimestamp") != "" {
+			continue
+		}
+		if uid != "" || kube.String(pod, "spec", "serviceAccountName") != account || kube.Nested(pod, "spec", "automountServiceAccountToken") != token || kube.String(pod, "status", "phase") != "Running" {
+			return "", errors.New("Pod account, token setting, or state differs")
+		}
+		conditions, ok := kube.Nested(pod, "status", "conditions").([]any)
+		ready := 0
+		for _, value := range conditions {
+			condition, valid := value.(map[string]any)
+			if !valid {
+				return "", errors.New("Pod readiness is invalid")
+			}
+			if condition["type"] == "Ready" && condition["status"] == "True" {
+				ready++
+			}
+		}
+		if !ok || ready != 1 {
+			return "", errors.New("Pod is not ready")
+		}
+		uid = kube.String(pod, "metadata", "uid")
+	}
+	if uid == "" {
+		return "", errors.New("No current Pod is ready")
+	}
+	return uid, nil
 }
