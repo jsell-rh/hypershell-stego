@@ -32,6 +32,36 @@ class InspectionBoundary(unittest.TestCase):
         with self.assertRaises(ValueError):
             inspection.endpoint_change_declaration(changed)
 
+    def test_endpoint_change_keeps_account_fields_and_rejects_ambiguous_profiles(self):
+        source = (ROOT / 'service.yaml').read_text()
+        accounts = '        service_accounts: [gateway, console]\n'
+        self.assertIn(accounts, source)
+        for original in [source, source.replace(accounts, '', 1), source.replace(accounts, '        # Account names belong to the allocator.\n' + accounts, 1)]:
+            changed = inspection.endpoint_change_declaration(original)
+            self.assertEqual(changed.replace('[kubernetes, network-probe]', '[kubernetes]', 1), original)
+        invalid = [
+            source.replace('      - name: gateway\n', '      - name: other\n', 1),
+            source.replace('      - name: gateway-state\n        network_isolation:', '      - name: gateway\n        network_isolation:', 1),
+            source.replace('        network_endpoints: [kubernetes]\n', '', 1),
+            source.replace('        network_endpoints: [kubernetes]\n', '        network_endpoints: [kubernetes]\n' * 2, 1),
+            source.replace('        network_isolation: true\n', '        network_isolation: false\n', 1),
+        ]
+        for original in invalid:
+            with self.subTest(original=original[:40]), self.assertRaises(ValueError):
+                inspection.endpoint_change_declaration(original)
+
+    def test_account_inspection_is_read_only_and_namespace_scoped(self):
+        role = inspection.inspection_roles()[0]
+        accounts = [r for r in role['Rules'] if 'serviceaccounts' in r['resources']]
+        self.assertEqual(role['Scope'], 'namespace')
+        self.assertEqual(accounts, [{'apiGroups': [''], 'resources': ['serviceaccounts'], 'verbs': ['get']}])
+        deployments = [r for r in role['Rules'] if r['resources'] == ['deployments']]
+        self.assertEqual(deployments, [{'apiGroups': ['apps'], 'resources': ['deployments'], 'verbs': ['get', 'list', 'watch'], 'resourceNames': ['hypershell-gateway-console', 'openshell-gateway']}])
+        fixture = copy.deepcopy(self.fixture)
+        next(r for r in fixture['Roles'][0]['Rules'] if r['resources'] == ['serviceaccounts'])['verbs'].append('create')
+        with self.assertRaises(ValueError):
+            inspection.verify_runtime(go(self.original), go(fixture))
+
     def test_endpoint_change_preserves_runtime_and_other_configuration(self):
         changed = copy.deepcopy(self.original)
         gateway = next(p for p in changed['Profiles'] if p['Name'] == 'gateway')

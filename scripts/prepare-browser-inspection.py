@@ -33,7 +33,8 @@ ROLES = '''      - name: fixture-gateway-inspector
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
           - {api_group: "", resources: [pods], verbs: [get, list, watch, create, delete]}
           - {api_group: "", resources: [pods/log], verbs: [get]}
-          - {api_group: apps, resources: [deployments], resource_names: [openshell-gateway], verbs: [get, list, watch]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
+          - {api_group: apps, resources: [deployments], resource_names: [hypershell-gateway-console, openshell-gateway], verbs: [get, list, watch]}
           - {api_group: cert-manager.io, resources: [certificates], resource_names: [openshell-public-tls], verbs: [get]}
           - {api_group: cert-manager.io, resources: [certificates/status], resource_names: [openshell-public-tls], verbs: [update]}
       - name: fixture-state-inspector
@@ -89,10 +90,21 @@ def declaration(source):
 
 
 def endpoint_change_declaration(source):
-    anchor = '      - name: gateway\n        network_isolation: true\n        network_endpoints: [kubernetes]\n'
-    if source.count(anchor) != 1 or 'network-probe' in source:
+    if source.count('    allocation_profiles:\n') != 1 or source.count('    workers:\n') != 1 or 'network-probe' in source:
         raise ValueError('The Gateway endpoint test boundary differs')
-    return source.replace(anchor, anchor.replace('[kubernetes]', '[kubernetes, network-probe]'), 1)
+    before, profiles = source.split('    allocation_profiles:\n', 1)
+    profiles, after = profiles.split('    workers:\n', 1)
+    matches = list(re.finditer(r'^      - name: gateway\n.*?(?=^      - name: |\Z)', profiles, re.MULTILINE | re.DOTALL))
+    if len(matches) != 1:
+        raise ValueError('The Gateway endpoint profile is missing or repeated')
+    match = matches[0]
+    block = match.group()
+    endpoint = '        network_endpoints: [kubernetes]\n'
+    if block.count(endpoint) != 1 or block.count('        network_isolation: true\n') != 1:
+        raise ValueError('The Gateway endpoint test requires one isolated endpoint')
+    changed = block.replace(endpoint, endpoint.replace('[kubernetes]', '[kubernetes, network-probe]'), 1)
+    profiles = profiles[:match.start()] + changed + profiles[match.end():]
+    return before + '    allocation_profiles:\n' + profiles + '    workers:\n' + after
 
 
 def verify_endpoint_change_runtime(before, after):
@@ -132,7 +144,8 @@ def inspection_roles():
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['hypershell-gateway-console-files', 'openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
             quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']), rule('', 'pods/log', ['get']),
-            rule('apps', 'deployments', ['get', 'list', 'watch'], ['openshell-gateway']),
+            rule('', 'serviceaccounts', ['get']),
+            rule('apps', 'deployments', ['get', 'list', 'watch'], ['hypershell-gateway-console', 'openshell-gateway']),
             rule('cert-manager.io', 'certificates', ['get'], ['openshell-public-tls']),
             rule('cert-manager.io', 'certificates/status', ['update'], ['openshell-public-tls'])]},
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
