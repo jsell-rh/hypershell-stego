@@ -1,0 +1,50 @@
+{
+  "browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35251755813",
+    "source": "c253c04d7fa098fe4ec90604b9f7109ca205bea6",
+    "job": 105305549411,
+    "checked_at": "2026-09-17T17:24:18.912119+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 91.19,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "1a8fcf9850e9b1a2b1b15586157c23dd7731c1bf986465fc280790f6ef2c68bb",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "cae650677b6e917df1ef4bd5b26a6fc8a1bf8830313bea4ec4f94f5f5b24f37f"
+    },
+    "screenshot_scope": "Provisioning Gateway with commands not yet available; healthy account fixture with an empty account list after deletion. This hosted fixture does not run a real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate.",
+    "screenshots_reviewed_at": "2026-09-17T17:24:25.687041+00:00"
+  },
+  "image_and_ui": {
+    "run": 35251755813,
+    "checks": {
+      "image": {
+        "generated_images": 7,
+        "build_and_entrypoint_user_checks_passed": true,
+        "job": 105305549375,
+        "source": "c253c04d7fa098fe4ec90604b9f7109ca205bea6",
+        "log_sha256": "d056c37eec825065bd55472b94e9813f86b4f8a751e06229451885ece4327e58"
+      },
+      "web-console": {
+        "ui_tests_passed": 231,
+        "test_groups": [
+          7,
+          166,
+          58
+        ],
+        "generation_drift_checks": 3,
+        "job": 105305549116,
+        "source": "c253c04d7fa098fe4ec90604b9f7109ca205bea6",
+        "log_sha256": "2267325824d40b73a150a2d1c270faeedcef926564e4e6763ed0c1cca1eb68f9"
+      }
+    },
+    "scope": "Generated image builds and configured entrypoint/user checks, UI tests, and console generation at the named source. This does not prove the new live account workflow."
+  },
+  "scope": "Completed hosted browser, UI, and image checks at c253c04. The core suite and complete live Gateway workflow remain in progress."
+}

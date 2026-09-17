@@ -20,3 +20,10 @@ installation and all six policy manifests are unchanged. See the
 
 The complete live browser repeat remains required. This focused result does not
 establish that the live workflow passes.
+
+The correction is on main at `c253c04`. The hosted browser check passed in
+91.19 seconds. All three browser instances supplied eight startup stages with
+logs, traces, and metrics. Both screenshots were reviewed. Seven generated image
+checks and 231 UI tests also passed. See the
+[main evidence](pod-readiness-main-evidence.json). Core and live Gateway checks
+are still in progress.
