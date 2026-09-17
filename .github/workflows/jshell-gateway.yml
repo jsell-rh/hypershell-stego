@@ -6,6 +6,8 @@ on:
     branches: [main]
     paths-ignore:
       - '**/*.md'
+      # These records describe completed checks and are not runtime inputs.
+      - 'acceptance/*-evidence.json'
 
 permissions:
   contents: read
