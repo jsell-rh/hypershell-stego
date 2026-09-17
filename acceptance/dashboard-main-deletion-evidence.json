@@ -1,0 +1,123 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35170428686",
+  "source": "a29edb57b5be8bb03734373cd35816769b691fd3",
+  "compiler": "db75a77da272fe05bbf6fdc3a3d1e0fede298f70",
+  "result": "failure",
+  "test_seconds": 791.79,
+  "failure": "The remaining Gateway cleanup did not finish after the identity-provider fixture reached its 600-second deadline. The full browser test permits 900 seconds.",
+  "main_gateway_deletion_passed": true,
+  "automation_account_cleanup": {
+    "account_ids": [
+      "3JR21eFXiXo9ojHOgXvOj2egzku",
+      "3JR21nVg7BprWoTEucb2jcs4ils",
+      "3JR21vhUMlJjvBvtr5AxelGHYSn"
+    ],
+    "accounts_used_actual_gateway": 3,
+    "checked_after_durable_account_cleanup": true,
+    "cleanup_audits": 3,
+    "gateway_id": "3JR18HvS6BtFKxlwzcGdEG2eeH6",
+    "metadata_closed": 3,
+    "provider_clients_absent": 3,
+    "token_issuance_denied": 3
+  },
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "screenshots_viewed": true,
+  "recovery_checks": {
+    "database_and_role_oids_unchanged": true,
+    "other_gateway_sql_unchanged": true,
+    "provider_data_unchanged": true,
+    "source_data_unchanged": true,
+    "sql_credentials_unchanged": true,
+    "ungranted_rpc_denied": true,
+    "viewer_lists_filtered": true,
+    "viewer_membership_recovered": true,
+    "viewer_writes_denied": true,
+    "workspace_and_gateway_revocation_verified": true
+  },
+  "sql_denial_checks": {
+    "cleanup_pending": true,
+    "other_gateway_ready": true,
+    "source_data_unchanged": true,
+    "sql_object_ids_unchanged": true,
+    "sqlstate": "42501"
+  },
+  "dashboard_signout_and_password_prompt_passed": true,
+  "dashboard_and_worker_telemetry_passed": true,
+  "previous_http_409_recurred": false,
+  "previous_http_409_cause": "Not identified. The diagnostic change adds no retry or application behavior change.",
+  "identity_fixture": {
+    "checked_at": "2026-09-17T01:44:13.216671+00:00",
+    "run": 35170428686,
+    "name": "identity-fixture",
+    "uid": "b75de508-a156-4b9e-b6ab-ef857444a887",
+    "created_at": "2026-09-17T01:33:29Z",
+    "deadline_seconds": 600,
+    "phase": "Failed",
+    "reason": "DeadlineExceeded",
+    "message": "Pod was active on the node longer than the specified deadline",
+    "conditions": [
+      {
+        "type": "PodReadyToStartContainers",
+        "status": "False",
+        "reason": null
+      },
+      {
+        "type": "Initialized",
+        "status": "True",
+        "reason": null
+      },
+      {
+        "type": "Ready",
+        "status": "False",
+        "reason": "PodFailed"
+      },
+      {
+        "type": "ContainersReady",
+        "status": "False",
+        "reason": "PodFailed"
+      },
+      {
+        "type": "PodScheduled",
+        "status": "True",
+        "reason": null
+      }
+    ]
+  },
+  "generation": {
+    "files": 412,
+    "repeated_and_archived_hashes_match": true,
+    "manifest_sha256": "fc17e084b2fb7551a8d2182def4906de6a410470555ccc11ed72596f396c7053"
+  },
+  "evidence_sha256": {
+    "browser-artifacts/gateway-dashboard/dashboard-create.json": "ccc1411841563da80033818af33619fea1186e299d93689967e6586aa69a2fe5",
+    "browser-artifacts/gateway-dashboard/dashboard-reload.json": "ccc1411841563da80033818af33619fea1186e299d93689967e6586aa69a2fe5",
+    "browser-artifacts/gateway-dashboard/dashboard-verify.json": "65861ea0e63fd8a397291c0a1fe7caf9247b6d40c0aa7b740369daf864a0cfb1",
+    "browser-artifacts/gateway-account-deletion.json": "622fbe765d3120ce443ffc00ea98892eb230390c611570a2b0ca25577370098b",
+    "browser-artifacts/sql-cleanup-denial.json": "9bad90f1e6e12af39e0427b40f16913815a85597aec106c346b034eccdf8996a",
+    "browser-artifacts/namespace-replacement.json": "1958741f13012327184bcfcf00dd8c6879ff64bec24abb4ac532a1340409095a"
+  },
+  "cleanup_checked_at": "2026-09-17T01:48:04.164057+00:00",
+  "cleanup_runtime_absent": true,
+  "cleanup_allocations_absent": true,
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "e7c45623d6d38832a054146cd91cadaf2534a15c24371e8308e5a1e639e9abef",
+  "deployment_log_sha256": "0c7feaeb73b7a74b4e76ba691f6f19904a090967572059c0c627efe2f4aed3b5",
+  "not_proved": [
+    "Cleanup of every fixture Gateway and final managed-cluster deletion",
+    "Final PostgreSQL telemetry check",
+    "Complete public Gateway workflow",
+    "Expanded CNPG dashboard workflow"
+  ],
+  "correction": "Hypershell a5d1d16 gives the full browser workload a 900-second identity fixture. Other identity tests keep 600 seconds. CPU, memory, and outer Job limits are unchanged."
+}
