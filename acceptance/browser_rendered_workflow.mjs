@@ -54,17 +54,39 @@ async function dashboardEditor(workspace,heading){
  await click('[data-testid="set-global-policy"]');
  await element('.monaco-editor textarea.inputarea');
  await until(()=>script(`const node=document.querySelector('.monaco-editor .view-lines');if(!node)return false;const box=node.getBoundingClientRect();return box.width>200 && box.height>100 && node.innerText.trim().length>0;`),'visible policy editor');
+ await until(()=>script(`
+  const lines=[...document.querySelectorAll('.monaco-editor .view-lines > .view-line')].slice(0,3).map(node=>node.getBoundingClientRect());
+  return lines.length===3 && lines.every(box=>box.height>=10 && box.width>0) && lines.slice(1).every((box,index)=>box.top>=lines[index].top+lines[index].height*0.8);
+ `),'separate editor line positions');
+ await until(()=>script(`
+  const spans=[...document.querySelectorAll('.monaco-editor .view-line [class*="mtk"]')].filter(node=>node.textContent.trim()).slice(0,256);
+  return new Set(spans.map(node=>getComputedStyle(node).color)).size>=2;
+ `),'editor syntax colors');
  await click('.monaco-editor .view-lines');
  await until(()=>script(`return document.activeElement?.matches('.monaco-editor textarea.inputarea')===true;`),'editor keyboard focus');
  await command('/actions',{actions:[{type:'key',id:'editor',actions:[
   {type:'keyDown',value:'\uE009'},{type:'keyDown',value:'a'},
   {type:'keyUp',value:'a'},{type:'keyUp',value:'\uE009'},
+ ]}]});
+ await until(()=>script(`return [...document.querySelectorAll('.monaco-editor .selected-text')].some(node=>{const box=node.getBoundingClientRect();const style=getComputedStyle(node);return box.width>0 && box.height>0 && style.backgroundColor!=='rgba(0, 0, 0, 0)' && style.backgroundColor!=='transparent';});`),'visible editor selection');
+ await writeFile(outputPath+'.editor-selection.png',Buffer.from(await command('/screenshot'),'base64'));
+ await command('/actions',{actions:[{type:'key',id:'editor',actions:[
   {type:'keyDown',value:'\uE017'},{type:'keyUp',value:'\uE017'},
  ]}]});
  // An opening brace alone becomes valid JSON when the editor adds its pair.
  await type('.monaco-editor textarea.inputarea','{invalid');
  await until(()=>script(`return document.querySelector('.monaco-editor .view-lines')?.innerText.includes('invalid');`),'invalid policy input');
  await until(()=>script(`return document.body.innerText.includes('Invalid JSON') && document.querySelector('[data-testid="confirm-global-policy"]')?.disabled;`),'invalid policy rejection');
+ await until(async()=>{
+  const targets=await command('/goog/cdp/execute',{cmd:'Target.getTargets',params:{}});
+  assert.ok(Array.isArray(targets.targetInfos) && targets.targetInfos.length<=128,'unexpected browser target inventory');
+  return targets.targetInfos.some(target=>{
+   if(target.type!=='worker')return false;
+   const url=new URL(target.url);
+   return url.origin===input.origin && /^\/assets\/json\.[0-9a-f]+\.worker\.js$/.test(url.pathname);
+  });
+ },'same-origin JSON worker');
+ await until(()=>script(`return [...document.querySelectorAll('.monaco-editor .squiggly-error')].some(node=>{const box=node.getBoundingClientRect();return box.width>0 && box.height>0;});`),'JSON editor error marker');
  assert.deepEqual(await script('return window.stegoEditorPolicyViolations'),[],'editor violated the browser content policy');
  await writeFile(outputPath+'.editor.png',Buffer.from(await command('/screenshot'),'base64'));
  // Close the draft without changing the Gateway policy.
@@ -72,7 +94,7 @@ async function dashboardEditor(workspace,heading){
  await command(`/element/${cancel[elementKey]}/click`,{});
  await command('/url',{url:input.origin+'/workspaces/'+workspace});
  await heading(workspace);
- await writeFile(outputPath+'.editor.json',JSON.stringify({rendered:true,keyboard_input:true,invalid_json_rejected:true,content_policy_violations:[],policy_submitted:false}));
+ await writeFile(outputPath+'.editor.json',JSON.stringify({rendered:true,line_layout:true,syntax_colors:true,selection_rendered:true,keyboard_input:true,invalid_json_rejected:true,json_worker:true,json_error_marker:true,content_policy_violations:[],policy_submitted:false}));
 }
 try {
  if(phase==='close'){try{await command('',undefined,'DELETE');}catch(error){if(!error.message.includes('invalid session id'))throw error;}process.exit(0);}

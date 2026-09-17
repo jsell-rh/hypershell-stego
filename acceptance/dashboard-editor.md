@@ -138,3 +138,16 @@ No live run may qualify this change until compiler checks, rebuilt assets,
 image and module checks, and final repeat generation pass. The editor gate must
 then prove layout, keyboard input, selection, workers, and content-policy
 compliance before later access, recovery, telemetry, and deletion checks.
+
+The rendered test now checks three separate line positions, at least two syntax
+colors, and a visible selection after native Ctrl+A. It saves the selection
+screenshot before replacing the text. After invalid input, it requires a
+same-origin JSON worker in the browser target inventory and a visible editor
+error marker. The application's error message alone does not satisfy these
+checks. The [target inventory command](https://github.com/ChromeDevTools/devtools-protocol/blob/master/json/browser_protocol.json)
+is read through the existing ChromeDriver session. No worker identifiers or
+Gateway URLs are written to the result file. The policy record still describes
+document events; it does not claim to capture every worker policy event.
+
+These added assertions passed syntax checks only. Their rendered behavior still
+requires the next complete cluster run.
