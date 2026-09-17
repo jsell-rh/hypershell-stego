@@ -61,9 +61,9 @@ verification in STEGO run `35204243151` at source
 `00573709fb15a2a54de4242aa8fdbabee325179a`, with SHA-256
 `e5894237467e81c6a3e7a7c8abd436192a74174726384c2f30716e63db3101bb`.
 
-Two historical upstream dashboard capture jobs still build compiler `9792927`
-from source. They are outside the three application module entry points. Their
-migration needs separate asset and fixture checks. Automatic compiler release
+The historical upstream dashboard capture jobs now select the same signed
+compiler package and pinned registry. Their separate asset and fixture checks
+are pending. They are outside the three application module entry points. Automatic compiler release
 qualification and complete offline build inputs also remain open.
 
 

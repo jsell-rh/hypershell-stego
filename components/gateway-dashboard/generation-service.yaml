@@ -5,7 +5,10 @@ name: dashboard-build-check
 archetype: browser-service
 language: go
 overrides:
+  browser-telemetry:
+    service_name: hypershell-gateway-console
   browser-backend:
+    telemetry_service_name: hypershell-gateway-console
     dynamic_styles: true
     api_prefix: /api
     routes: ["/", "/gateway", "/global-policy", "/settings", "/workspaces", "/workspaces/{id}", "/workspaces/{id}/sandboxes/{id}", "/workspaces/{id}/providers/{id}"]

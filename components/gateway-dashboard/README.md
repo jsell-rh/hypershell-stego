@@ -49,8 +49,10 @@ The [next run](../../acceptance/dashboard-packaging-evidence.json) passed both
 dependency checks, UI types and build, and all eight selected router tests.
 The remaining failure was STEGO's former 1 MiB captured ZIP limit. The compiler
 candidate now has typed input limits: 4 MiB for assets, 1 MiB for protocol and
-callback files, and the existing 8 MiB combined limit. The build-only compiler
-pin is in `compiler-revision`; it does not change the main application's pin.
+callback files, and the existing 8 MiB combined limit. Both source and private deployment checks now use the root compiler pin and
+the common STEGO installer. They retain signature records and use the same
+pinned Git registry as the application modules. Separate compiler pins are no
+longer required.
 The next CI run must capture the actual assets twice, generate a fresh browser
 backend, check repeated generation, and build that backend. The small
 `generation-service.yaml` is a compiler check, not a deployment declaration.
@@ -66,8 +68,8 @@ rendered editor and terminal tests remain open.
 The next CI job builds a rootless, read-only test image from the checked upstream
 binary, then publishes it under `hypershell-stego-dashboard-ci`. It records the
 registry digest and keeps the image archive. Package publication is limited to
-this job; the source job has read-only permissions. A separate compiler pin in
-`private-compiler-revision` selects the private application candidate.
+this job; the source job has read-only permissions. The private application check uses the same signed compiler package as the
+source check. GitHub tokens are scoped to installation steps only.
 
 The job inserts that real image digest into `private-service.yaml`, generates
 and builds the browser backend, and checks the resulting two-container deployment.
@@ -111,3 +113,10 @@ verified the published image against the checked binary. The captured bundle
 and image are now selected by the Gateway console. Its current generated module
 and the live workflow still require qualification. No live result is claimed
 for these new checks.
+
+
+The signed compiler migration is pending hosted CI qualification. The source
+check must reproduce the committed Gateway console asset bundle byte for byte.
+Both fresh browser fixtures select common browser telemetry with the service
+name used by those assets. No compiler build or local registry copy is required.
+These fixture changes do not replace the separate live Gateway workflow checks.

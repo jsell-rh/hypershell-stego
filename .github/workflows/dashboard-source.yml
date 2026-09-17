@@ -6,6 +6,10 @@ on:
     paths:
       - .github/workflows/dashboard-source.yml
       - components/gateway-dashboard/**
+      - scripts/prepare-compiler.sh
+      - .stego/compiler-revision
+      - .stego/compiler-sha256
+      - .stego/tooling-revision
       - gateway-console/out/browsertelemetry/**
       - gateway-console/out/browser/sessionclient/**
       - gateway-console/out/browser/dom/**
@@ -152,6 +156,18 @@ jobs:
         run: |
           set -euo pipefail
           npm audit --omit=dev --audit-level=low --json > "$RUNNER_TEMP/dashboard-source/npm-audit.json"
+      - name: Install the selected compiler for asset checks
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/dashboard-compiler-setup"
+          mkdir -p "$RUNNER_TEMP/dashboard-source/compiler"
+          cp "$RUNNER_TEMP/dashboard-compiler-setup/installation.json" "$RUNNER_TEMP/dashboard-source/compiler/"
+          cp "$RUNNER_TEMP/dashboard-compiler-setup/tooling-revision" "$RUNNER_TEMP/dashboard-source/compiler/"
+          for file in build.json SHA256SUMS provenance.jsonl verified.json; do
+            cp "$RUNNER_TEMP/dashboard-compiler-setup/verified/$file" "$RUNNER_TEMP/dashboard-source/compiler/"
+          done
       - name: Check the real assets against the STEGO bundle contract
         id: assets
         if: steps.frontend.outcome == 'success'
@@ -161,36 +177,31 @@ jobs:
           set -euo pipefail
           find upstream-dashboard/frontend/dist -type f -printf '%P %s\n' | sort > "$RUNNER_TEMP/dashboard-source/assets.txt"
           tar -C upstream-dashboard/frontend/dist -cf "$RUNNER_TEMP/dashboard-source/assets.tar" .
-          revision=$(cat components/gateway-dashboard/compiler-revision)
-          [[ $revision =~ ^[0-9a-f]{40}$ ]]
+          revision=$(cat .stego/compiler-revision)
           printf '%s\n' "$revision" > "$RUNNER_TEMP/dashboard-source/compiler-revision"
-          git init -q "$RUNNER_TEMP/dashboard-compiler"
-          git -C "$RUNNER_TEMP/dashboard-compiler" remote add origin https://github.com/jsell-rh/stego.git
-          git -C "$RUNNER_TEMP/dashboard-compiler" fetch -q --depth=1 origin "$revision"
-          git -C "$RUNNER_TEMP/dashboard-compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
-          test "$(git -C "$RUNNER_TEMP/dashboard-compiler" rev-parse HEAD)" = "$revision"
-          (cd "$RUNNER_TEMP/dashboard-compiler"; go build -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/dashboard-stego" ./cmd/stego)
-          "$RUNNER_TEMP/dashboard-stego" assets \
+          unset GH_TOKEN GITHUB_TOKEN STEGO_REGISTRY STEGO_MODULE STEGO_GO_VERSION
+          compiler="$RUNNER_TEMP/dashboard-compiler-setup/verified/stego-linux-amd64"
+          timeout --signal=TERM --kill-after=5s 30s "$compiler" assets \
             --directory upstream-dashboard/frontend/dist \
             --output "$RUNNER_TEMP/dashboard-source/build.zip" 2>&1 | tee "$RUNNER_TEMP/dashboard-source/asset-contract.log"
-          "$RUNNER_TEMP/dashboard-stego" assets \
+          timeout --signal=TERM --kill-after=5s 30s "$compiler" assets \
             --directory upstream-dashboard/frontend/dist \
             --output "$RUNNER_TEMP/dashboard-source/repeated.zip"
           cmp "$RUNNER_TEMP/dashboard-source/build.zip" "$RUNNER_TEMP/dashboard-source/repeated.zip"
-          export STEGO_REGISTRY="$RUNNER_TEMP/dashboard-compiler/registry"
-          mkdir -p "$RUNNER_TEMP/dashboard-build-check/ui"
+          cmp "$RUNNER_TEMP/dashboard-source/build.zip" gateway-console/ui/build.zip
+          mkdir -p "$RUNNER_TEMP/dashboard-build-check/ui" "$RUNNER_TEMP/dashboard-build-check/.stego"
+          cp gateway-console/.stego/config.yaml "$RUNNER_TEMP/dashboard-build-check/.stego/config.yaml"
           cd "$RUNNER_TEMP/dashboard-build-check"
-          "$RUNNER_TEMP/dashboard-stego" init --archetype browser-service
           cp "$GITHUB_WORKSPACE/components/gateway-dashboard/generation-service.yaml" service.yaml
           cp "$RUNNER_TEMP/dashboard-source/build.zip" ui/build.zip
           printf 'module example.test/dashboard\n\ngo 1.26.8\n' > go.mod
-          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee "$RUNNER_TEMP/dashboard-source/generation.log"
-          "$RUNNER_TEMP/dashboard-stego" deps 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
-          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee "$RUNNER_TEMP/dashboard-source/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" deps 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
           cp .stego/state.yaml "$RUNNER_TEMP/dashboard-source/first-state.yaml"
-          "$RUNNER_TEMP/dashboard-stego" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
           cmp .stego/state.yaml "$RUNNER_TEMP/dashboard-source/first-state.yaml"
-          "$RUNNER_TEMP/dashboard-stego" drift 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" drift 2>&1 | tee -a "$RUNNER_TEMP/dashboard-source/generation.log"
           go build -mod=readonly -o "$RUNNER_TEMP/dashboard-source/generated-browser" ./out 2>&1 | tee "$RUNNER_TEMP/dashboard-source/generated-build.log"
           tar -cf "$RUNNER_TEMP/dashboard-source/generated-source.tar" service.yaml go.mod go.sum .stego out
       - name: Require all source checks
@@ -312,23 +323,29 @@ jobs:
               assert built[field] == published[field], field
           (root / "registry-verification.json").write_text(json.dumps({"image_id": published["Id"], "pulled_digest_matches_build": True}, indent=2) + "\n")
           PY
+      - name: Install the selected compiler for private generation
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/dashboard-private-compiler-setup"
+          mkdir -p "$RUNNER_TEMP/dashboard-private/compiler"
+          cp "$RUNNER_TEMP/dashboard-private-compiler-setup/installation.json" "$RUNNER_TEMP/dashboard-private/compiler/"
+          cp "$RUNNER_TEMP/dashboard-private-compiler-setup/tooling-revision" "$RUNNER_TEMP/dashboard-private/compiler/"
+          for file in build.json SHA256SUMS provenance.jsonl verified.json; do
+            cp "$RUNNER_TEMP/dashboard-private-compiler-setup/verified/$file" "$RUNNER_TEMP/dashboard-private/compiler/"
+          done
       - name: Generate the private browser and deployment for the real image
         run: |
           set -euo pipefail
           root="$RUNNER_TEMP/dashboard-private"
-          revision=$(cat components/gateway-dashboard/private-compiler-revision)
-          [[ $revision =~ ^[0-9a-f]{40}$ ]]
-          git init -q "$root/compiler"
-          git -C "$root/compiler" remote add origin https://github.com/jsell-rh/stego.git
-          git -C "$root/compiler" fetch -q --depth=1 origin "$revision"
-          git -C "$root/compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
-          test "$(git -C "$root/compiler" rev-parse HEAD)" = "$revision"
-          (cd "$root/compiler"; go build -mod=readonly -trimpath -buildvcs=true -o "$root/stego" ./cmd/stego)
+          revision=$(cat .stego/compiler-revision)
+          unset GH_TOKEN GITHUB_TOKEN STEGO_REGISTRY STEGO_MODULE STEGO_GO_VERSION
+          compiler="$RUNNER_TEMP/dashboard-private-compiler-setup/verified/stego-linux-amd64"
           printf '%s\n' "$revision" > "$root/compiler-revision"
-          export STEGO_REGISTRY="$root/compiler/registry"
-          mkdir -p "$root/browser/ui"
+          mkdir -p "$root/browser/ui" "$root/browser/.stego"
+          cp gateway-console/.stego/config.yaml "$root/browser/.stego/config.yaml"
           cd "$root/browser"
-          "$root/stego" init --archetype browser-service
           cp "$root/source/build.zip" ui/build.zip
           cp "$GITHUB_WORKSPACE/components/gateway-dashboard/private-service.yaml" service.yaml
           python3 - <<'PY'
@@ -344,13 +361,13 @@ jobs:
           (root / "application-image").write_text(selected[0] + "\n")
           PY
           printf 'module example.test/dashboard-private\n\ngo 1.26.8\n' > go.mod
-          "$root/stego" apply 2>&1 | tee "$root/generation.log"
-          "$root/stego" deps 2>&1 | tee -a "$root/generation.log"
-          "$root/stego" apply 2>&1 | tee -a "$root/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee "$root/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" deps 2>&1 | tee -a "$root/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee -a "$root/generation.log"
           cp .stego/state.yaml "$root/first-state.yaml"
-          "$root/stego" apply 2>&1 | tee -a "$root/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" apply 2>&1 | tee -a "$root/generation.log"
           cmp .stego/state.yaml "$root/first-state.yaml"
-          "$root/stego" drift 2>&1 | tee -a "$root/generation.log"
+          timeout --signal=TERM --kill-after=5s 5m "$compiler" drift 2>&1 | tee -a "$root/generation.log"
           go build -mod=readonly -o "$root/generated-browser" ./out 2>&1 | tee "$root/generated-build.log"
           go build -mod=readonly -o "$root/render" ./out/deploy/render
           "$root/render" --namespace=dashboard-check \
@@ -371,5 +388,6 @@ jobs:
             ${{ runner.temp }}/dashboard-private/application-image
             ${{ runner.temp }}/dashboard-private/compiler-revision
             ${{ runner.temp }}/dashboard-private/generated-browser
+            ${{ runner.temp }}/dashboard-private/compiler/*
           if-no-files-found: error
           retention-days: 7
