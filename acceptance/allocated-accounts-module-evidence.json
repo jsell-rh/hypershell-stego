@@ -1,0 +1,19 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35237917011",
+  "source": "25f4182d11f34d7ddfac1aaafea50a84f699bdcc",
+  "compiler": "09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb",
+  "compiler_sha256": "eb87abafbb795753f95d705445264976734c37691897fc2f418268111d6e714e",
+  "checked_at": "2026-09-17T15:06:55.149403+00:00",
+  "source_archive_sha256": "752d602335d83904158c15f9e0f300baeb0221673d1f909b2f5b4ec49c422a06",
+  "generated_archive_sha256": "a90d068796d6cd50b7961938a5421c847f2e317c903d275829007a50cd50ada8",
+  "generation_log_sha256": "33c812fb6cfe6b2457da873233684d6c876d994820bd57ce255f3948a8e57caf",
+  "generated_files_matched": 415,
+  "changed_files": [
+    ".stego/state.yaml",
+    "go.sum"
+  ],
+  "release_verification_matched": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false,
+  "scope": "The root module checksum and dependency snapshots match the selected console source. Application tests remain pending."
+}
