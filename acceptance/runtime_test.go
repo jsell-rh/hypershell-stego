@@ -234,13 +234,27 @@ func readGatewayEvent(t *testing.T, consumer *kgo.Client, id, eventType, kind st
 	t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	wasFailed := t.Failed()
+	var polls, fetchErrors, records, olderRecords, otherKeys int
+	defer func() {
+		if !wasFailed && t.Failed() {
+			// Counts include the final canceled poll. They contain no broker
+			// addresses, record contents, headers, or resource identifiers.
+			t.Logf("event consumer polls=%d fetch_errors=%d records=%d below_minimum_offset=%d other_keys=%d context_done=%t", polls, fetchErrors, records, olderRecords, otherKeys, ctx.Err() != nil)
+		}
+	}()
 	for ctx.Err() == nil {
 		fetches := consumer.PollRecords(ctx, 1)
+		polls++
+		fetchErrors += len(fetches.Errors())
 		for _, record := range fetches.Records() {
+			records++
 			if len(minimumOffset) != 0 && record.Offset < minimumOffset[0] {
+				olderRecords++
 				continue
 			}
 			if string(record.Key) != id {
+				otherKeys++
 				continue
 			}
 			var payload map[string]string
@@ -302,6 +316,7 @@ func logQueueState(t testing.TB, f *fixture) {
 		return
 	}
 	defer rows.Close()
+	groups := 0
 	for rows.Next() {
 		var kind, code string
 		var count, attempts int64
@@ -310,11 +325,16 @@ func logQueueState(t testing.TB, f *fixture) {
 			t.Log("queue diagnostic failed", err)
 			return
 		}
+		groups++
 		t.Logf("queue kind=%s code=%s count=%d attempts=%d available_in=%.3fs lease_left=%.3fs", kind, code, count, attempts, available, lease)
 	}
 	if err := rows.Err(); err != nil {
 		t.Log("queue diagnostic failed", err)
+		return
 	}
+	// An empty result must differ from a missing or failed observation. Ten
+	// groups can be a partial result because the query has a fixed limit.
+	t.Logf("queue diagnostic completed groups=%d limit=10", groups)
 }
 
 // runtimeOutput captures process output without racing with startup detection.
