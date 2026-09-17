@@ -241,3 +241,23 @@ Pod's compiler bytes and transferred signature records matched the selected
 published package. Independent cleanup passed before the next queued workflow.
 The public Gateway and CNPG checks for this main revision are still queued or
 running; this API result does not replace their complete browser workflows.
+
+The automatic main public workflow also passed at `8852dd3` in
+[run 35212810418](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212810418).
+All 11 required tests passed; the complete browser workflow took 685.09 seconds.
+Independent checks matched all 1,398 source files, 415 generated-file hashes,
+the actual compiler transfer, the image executable, and the provisioner restart
+record. Six browser instances supplied all 48 startup log/span pairs with metrics
+and no failed pairs. All three screenshots were reviewed. The workspace, JSON
+error, disabled submit button, and editor selection were visible. Independent
+cleanup passed before the queued CNPG test started. Evidence archive SHA-256:
+`4351305a4dea76e75a2becacbf1f0ea550e04f131af46a3d8aa8592da4540531`.
+
+The main core job in
+[run 35212810788](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212810788)
+passed at the same source. Independent log inspection confirmed 307 top-level
+passes and 651 test pass events. Four live checks remain assigned to separate
+jobs. Core log SHA-256:
+`489f746b2cfe18187d1a360e7607a74676b30be4e20519b9fc854974be057c70`.
+The CNPG job in that run is still in progress. These results do not qualify the
+newer compiler adoption branch or close the full enterprise goal.
