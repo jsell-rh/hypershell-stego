@@ -14,6 +14,14 @@ does not establish Sandbox support, VM isolation, or a passing current workload.
 The credential-mount restriction for the workload and workspace-copy helper
 remains in the prototype's rejection rules.
 
+The [CI run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35266280159)
+passed at `b5c536c`. Generated-source verification and all 28 required recovery
+tests passed. Independent checks confirmed the source revision, test results,
+removal of mutation code, and the retained constructor guard. Evidence is stored
+under `~/.local/state/stego/runs/upstream-sandbox-setup-20260917/`.
+This result covers compilation, generated output, and the selected recovery
+tests. It does not cover live Sandbox or Kata execution.
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks
