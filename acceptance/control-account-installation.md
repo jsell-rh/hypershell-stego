@@ -15,3 +15,9 @@ Ten small local fixture checks passed, including failure before account creation
 when policy installation fails. The new compiler pin, regenerated output, and
 complete live consumer workflow are still required. This preparation does not
 establish consumer adoption or close the enterprise goal.
+
+The compiler, common registry, and installer tooling now select `931f712`.
+The compiler comes from its published immutable release. The common installer
+verified the exact revision, compiler hash, and signatures. The same source
+passed full compiler CI and the live control-account regression. Hosted
+regeneration and the complete consumer workflow remain required.
