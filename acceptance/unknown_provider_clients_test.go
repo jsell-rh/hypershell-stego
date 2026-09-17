@@ -5,9 +5,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"os"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -196,7 +198,27 @@ func TestUnknownGatewayClientsCloseAcrossProcessRestart(t *testing.T) {
 	}
 	afterForeign := admin(http.MethodGet, "/clients/"+foreign.Provider, nil)
 	if afterForeign.StatusCode != http.StatusOK || !bytes.Equal(beforeForeign.Body, afterForeign.Body) {
-		t.Fatal("cleanup changed the unrelated client")
+		// Report fixed field names and comparison results, never provider values.
+		decode := func(raw []byte) (map[string]any, bool) {
+			d := json.NewDecoder(bytes.NewReader(raw))
+			d.UseNumber()
+			var value map[string]any
+			if d.Decode(&value) != nil || value == nil {
+				return nil, false
+			}
+			return value, d.Decode(new(any)) == io.EOF
+		}
+		before, beforeOK := decode(beforeForeign.Body)
+		after, afterOK := decode(afterForeign.Body)
+		changed := []string{}
+		for _, field := range []string{"id", "clientId", "name", "secret", "enabled", "attributes", "defaultClientScopes", "optionalClientScopes", "protocolMappers", "access", "redirectUris", "webOrigins"} {
+			a, aPresent := before[field]
+			b, bPresent := after[field]
+			if aPresent != bPresent || !reflect.DeepEqual(a, b) {
+				changed = append(changed, field)
+			}
+		}
+		t.Fatalf("unrelated client check failed: HTTP=%d valid_JSON=%t same_JSON_value=%t changed_known_fields=%v", afterForeign.StatusCode, beforeOK && afterOK, beforeOK && afterOK && reflect.DeepEqual(before, after), changed)
 	}
 
 	raw, err := os.ReadFile(k.stateKeysFile)

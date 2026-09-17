@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/provider-discovery.yml'
       - 'acceptance/unknown_provider_clients_test.go'
+      - 'acceptance/gateway_observation_deadline_test.go'
       - 'acceptance/keycloak_test.go'
       - 'out/keycloak/**'
       - 'internal/serviceaccountkeycloak/**'
@@ -74,14 +75,15 @@ jobs:
           cp .stego/compiler-revision "$RUNNER_TEMP/provider-discovery/compiler-revision"
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=6m ./acceptance \
-            -run '^TestUnknownGatewayClientsCloseAcrossProcessRestart$' \
+            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestGatewayCleanupDeadlineReopensConfirmation)$' \
             | tee "$RUNNER_TEMP/provider-discovery/tests.log"
           python3 - "$RUNNER_TEMP/provider-discovery/tests.log" <<'PY'
           import re, sys
           from pathlib import Path
           log = Path(sys.argv[1]).read_text()
-          if not re.search(r'^--- PASS: TestUnknownGatewayClientsCloseAcrossProcessRestart ', log, re.M):
-              raise SystemExit('The real provider discovery result is missing')
+          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestGatewayCleanupDeadlineReopensConfirmation']:
+              if not re.search(r'^--- PASS: ' + name + ' ', log, re.M):
+                  raise SystemExit('A required cleanup result is missing: ' + name)
           PY
           git diff --exit-code
       - name: Remove any remaining test provider
