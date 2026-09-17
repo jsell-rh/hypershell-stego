@@ -1,0 +1,28 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35197241667",
+  "source": "308fbcb9d63e6e5a455b5bdce2e34ea0215d609c",
+  "result": "failure",
+  "source_files_match": 1365,
+  "required": 51,
+  "passed": 50,
+  "failed": [
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart"
+  ],
+  "skipped": [],
+  "source_and_two_generation_snapshots_match": true,
+  "test_log_sha256": "ed8a7e5a62ba776beb62066d6bc297038453a5194ec88ec560e3c7fee447b533",
+  "failure_events_sha256": "b073a2c0417dd3e819772fd1b28c726657d79dedb018aeb81ef56aea487ac792",
+  "cleanup": {
+    "checked_at": "2026-09-17T08:09:20.026312+00:00",
+    "api_run": 35197241667,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": ""
+  },
+  "scope": "The restart fixture rejected a retained claim before its generated lease expired. The failed run is not a pass. The corrected fixture needs a separate result."
+}

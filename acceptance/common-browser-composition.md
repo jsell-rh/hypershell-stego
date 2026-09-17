@@ -99,3 +99,12 @@ checks that the original event identity survives lease expiry without a manual
 reset. All 14 small Job-observation tests passed locally. The corrected API
 result and CNPG qualification remain open. The failed run remains part of the
 record. These results do not complete the enterprise goal.
+
+Independent checks of the failed API archive matched all 1,365 source files and
+both generation passes. Fifty of 51 required tests passed; the restart fixture
+was the only failed required test. No required test was skipped. Cleanup at
+`2026-09-17T08:09:20Z` found no test resources or Lease holder. See the
+[failed API record](common-browser-api-failure.json) and the
+[core result](common-browser-core-evidence.json).
+The [corrected API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35198198149)
+uses fixture source `442e7ff`. Its result is pending.
