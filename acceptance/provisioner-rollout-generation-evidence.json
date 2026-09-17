@@ -1,0 +1,21 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35215892388",
+  "source": "bf7b8da29b6073d3274caee28e10c8e785088a91",
+  "compiler": "4fc880bcec6bc2555aca6b5c86bb8b893eaf8254",
+  "compiler_sha256": "380a6e4f2bfcdc0b8dc067b1ac908d34583ef8b69ffeca7e40b5cb461537979d",
+  "checked_at": "2026-09-17T11:30:36.996348+00:00",
+  "source_archive_sha256": "a31171b89d7e4d6543cc490fabf743022452ff50018f40bbbd46519716916726",
+  "generated_archive_sha256": "c3254adf4ddc2eb6674b60351a275d2afe1324c3f40cb5c8209edf6dceb122c4",
+  "generation_log_sha256": "fc3b730b4be0850eec2c980576037338796ecffc1c95ef407dbbb43ecb13144c",
+  "generated_files_matched": 414,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/deploy/render/rpc-provisioner.json.tmpl"
+  ],
+  "release_verification_matched": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false
+}
