@@ -15,16 +15,17 @@ admission limits. A regression test reads the application Job's actual deadline
 and checks the dependency budget against it. It also checks both generated
 templates and their admission policies.
 
-This change has not been applied to the running cluster test. Run 35224348179
-retains its original source and limits. Its final result is still required.
-The new fixture requires a checked installation update before a live repeat.
+Run 35224348179 passed with its original source and limits. See the
+[complete workflow record](postgres-signal-cnpg.md). That result does not prove
+the new fixture lifetime. The installation update below supplies the required
+cluster configuration for a repeat.
 
 Hosted run [35226222533](https://github.com/jsell-rh/hypershell-stego/actions/runs/35226222533)
 passed at source `52f1ecb`. Independent checks matched the source archive and
 all 40 tests: 18 CI boundary tests, 14 database fixture tests, and eight
 credential tests. The dependency-budget regression passed. See the
-[evidence record](cnpg-fixture-lifetime-evidence.json). These are offline checks;
-the new database budget has not been installed or tested on the cluster.
+[evidence record](cnpg-fixture-lifetime-evidence.json). These are offline checks. The later installation check below verifies the
+cluster policy. A complete workflow with the new budget remains separate.
 
 
 The installation update completed at 13:35:20 UTC on 2026-09-17, after the
