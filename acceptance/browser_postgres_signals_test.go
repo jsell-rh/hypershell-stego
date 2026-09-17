@@ -40,7 +40,7 @@ func postgresSignalKey(attrs []*commonpb.KeyValue, log bool) (string, bool) {
 	}
 	operation := signalAttribute(attrs, "operation").GetStringValue()
 	switch operation {
-	case "ensure", "delete", "read", "server-identity", "quarantine", "schema":
+	case "ensure", "delete", "read", "server-identity", "quarantine", "schema", "prepare":
 	default:
 		return "", false
 	}
@@ -186,7 +186,7 @@ func (w *workerSignalEvidence) checkPostgres(t *testing.T, public bool, endpoint
 				}
 			}
 		}
-		ready = ready && combined["delete/failure"] && combined["delete/success"]
+		ready = ready && combined["delete/failure"] && combined["delete/success"] && combined["prepare/success"]
 		if public {
 			ready = ready && combined["schema/success"]
 		}
@@ -246,8 +246,17 @@ func TestPostgresSignalEvidenceRequiresControllerAndLog(t *testing.T) {
 }
 
 func TestPostgresSignalEvidenceAcceptsManagedSchema(t *testing.T) {
+	testPostgresSignalEvidenceOperation(t, "schema")
+}
+
+func TestPostgresSignalEvidenceAcceptsCredentialPreparation(t *testing.T) {
+	testPostgresSignalEvidenceOperation(t, "prepare")
+}
+
+func testPostgresSignalEvidenceOperation(t *testing.T, operation string) {
+	t.Helper()
 	attrs := []*commonpb.KeyValue{}
-	for _, item := range [][2]string{{"db.system.name", "postgresql"}, {"operation", "schema"}, {"outcome", "success"}} {
+	for _, item := range [][2]string{{"db.system.name", "postgresql"}, {"operation", operation}, {"outcome", "success"}} {
 		attrs = append(attrs, &commonpb.KeyValue{Key: item[0], Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: item[1]}}})
 	}
 	trace, child, parent := make([]byte, 16), make([]byte, 8), make([]byte, 8)
@@ -255,7 +264,7 @@ func TestPostgresSignalEvidenceAcceptsManagedSchema(t *testing.T) {
 	s := postgresSignalState{}
 	s.span("stego/controller", &tracepb.Span{TraceId: trace, SpanId: parent})
 	s.span("stego/postgres-client", &tracepb.Span{
-		Name: "postgres.database.schema", Kind: tracepb.Span_SPAN_KIND_CLIENT,
+		Name: "postgres.database." + operation, Kind: tracepb.Span_SPAN_KIND_CLIENT,
 		TraceId: trace, SpanId: child, ParentSpanId: parent, Attributes: attrs,
 	})
 	s.log(&logpb.LogRecord{
@@ -274,8 +283,8 @@ func TestPostgresSignalEvidenceAcceptsManagedSchema(t *testing.T) {
 			DataPoints:             []*metricpb.HistogramDataPoint{{Attributes: attrs, Count: 1, Sum: &sum}},
 		}},
 	})
-	if s.invalid || !s.correlated["schema/success"] || !s.metrics["schema/success"] {
-		t.Fatal("managed schema logs, traces, and metrics did not pass the SQL signal contract")
+	if s.invalid || !s.correlated[operation+"/success"] || !s.metrics[operation+"/success"] {
+		t.Fatal("database operation signals did not pass the SQL contract", operation)
 	}
 	attrs[1].Value = &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: "private-operation"}}
 	if _, valid := postgresSignalKey(attrs, false); valid {
