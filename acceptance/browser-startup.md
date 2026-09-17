@@ -98,3 +98,35 @@ The [full application check](startup-core-workflow-evidence.json) passed at
 Four named live tests were excluded from that job. The rendered management
 browser, web console, and service image jobs also passed. CNPG and Sandbox were
 not selected; this result does not supply their missing evidence.
+
+The [CNPG startup run](startup-cnpg-failure-evidence.json) at `c0c2d23` failed
+in run `35182853953`. Its complete browser test stopped after 644.44 seconds.
+CNPG primary replacement and namespace recovery passed before that failure.
+The first automation account in the final deletion setup received HTTP 409
+with `gateway_not_ready`. The saved current workload observation was neither
+healthy nor running.
+
+The generated RPC logs contain six `GetCredentials` calls with `UNAVAILABLE`
+during the test's deliberate provisioner restart. Calls then recovered. The
+provisioner process readiness check did not wait for Gateway controller
+recovery. The test proceeded to account creation while the controller's
+unavailable observation was still current. This record explains this run;
+it does not establish the cause of older failures.
+
+All 1,356 captured source hashes match the failed revision. All 415 generation
+hashes match the two snapshots before the test and the saved generated archive.
+The test did not reach the final generation snapshot, complete startup signal
+record, or Gateway account deletion check. This is a failed gate. Independent
+cleanup at `2026-09-17T05:07:14Z` found no test workloads, allocations, volumes,
+or held lease. One secondary Pod replacement was needed for scheduling; the
+primary and storage identities were preserved. Unattended scheduling remains
+unverified.
+
+The revised test holds the provisioner down until both Gateways have current
+unavailable observations. It requires HTTP 409 for account creation and no
+account rows from those denied requests. After provisioner restart, it waits
+for both Gateways to become healthy and verifies retained SQL and credential
+identities. Account writes are not retried. Successful public workflow evidence
+must contain `provisioner-restart.json`. Production code and readiness rules
+are unchanged. The focused diagnostic check and evidence collection cases
+passed locally. Complete workflow qualification is still required.

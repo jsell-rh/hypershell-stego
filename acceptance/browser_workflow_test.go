@@ -487,7 +487,15 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 			if workload != nil {
 				providerConfig = append(providerConfig, workload.consoleProvisionerPolicy(key)...)
 			}
-			providerSettings, providerLogs, restartProvider = deployment.startProvisioner(f, k, key, providerConfig)
+			var restart func(func())
+			providerSettings, providerLogs, restart = deployment.startProvisioner(f, k, key, providerConfig)
+			restartProvider = func() {
+				if workload == nil || workload.public == nil {
+					restart(nil)
+					return
+				}
+				workload.checkProvisionerRestart(restart)
+			}
 			if workload != nil {
 				workload.setConsoleProvisioner(providerSettings)
 				workload.checkConsoleProvisionerAccess(key)

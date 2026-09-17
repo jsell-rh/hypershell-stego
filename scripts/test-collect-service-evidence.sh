@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public missing-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$results"
-  for file in deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json; do
+  for file in deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
     printf 'record\n' > "$test_work/$file"
   done
   result=0
@@ -67,6 +67,7 @@ for scenario in service browser workload public configured-public log-failure ar
     missing-startup) expected=1; rm "$test_work/browser-artifacts/browser-startup-signals.json" ;;
     missing-sql) expected=1; rm "$test_work/browser-artifacts/postgres-server.json" ;;
     missing-network) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-recovery.json" ;;
+    missing-provisioner-restart) expected=1; rm "$test_work/browser-artifacts/provisioner-restart.json" ;;
     missing-public) expected=1; rm "$test_work/browser-artifacts/gateway-public-certificate-rotation.json" ;;
     missing-endpoint) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-endpoint-replacement.json" ;;
     missing-endpoint-ack) expected=1; rm "$test_work/network-endpoint-change.ack" ;;
@@ -86,4 +87,4 @@ for scenario in service browser workload public configured-public log-failure ar
     fi
   fi
 done
-printf 'Service evidence collection passed 20 cases.\n'
+printf 'Service evidence collection cases passed.\n'

@@ -1,0 +1,150 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35182853953",
+  "source": "c0c2d23615fe42cabfbc2351f6c2be7155973159",
+  "compiler": "83592bee5a17de6936cf521b94629e2a225a8d37",
+  "gate_passed": false,
+  "failed_test": "TestGeneratedKubernetesBrowserGatewayWorkflow",
+  "test_seconds": 644.44,
+  "failure": {
+    "attempt": 1,
+    "status": 409,
+    "problem": "gateway_not_ready",
+    "state_read": true,
+    "generation": 2,
+    "workload_generation": 2,
+    "healthy": false,
+    "running": false,
+    "deleting": false
+  },
+  "source_files_match": 1356,
+  "generation_before_test_files_match": 415,
+  "generation_after_test_verified": false,
+  "startup_signals_final_record_present": false,
+  "gateway_account_deletion_verified": false,
+  "cnpg_restart": {
+    "cluster_spec_unchanged": true,
+    "cluster_uid": "a2dcb6b7-8860-4524-a51c-93c70b0a2fdd",
+    "gateway_credentials_and_keys_unchanged": true,
+    "installation_data_unchanged": true,
+    "namespace": "stego-cnpg-database-ci",
+    "namespace_uid": "d57b0776-5a99-45d6-a1cc-7b031a555359",
+    "new_primary": "gateway-database-2",
+    "new_primary_pod_uid": "9322376b-1372-4e66-8290-409ad6960be7",
+    "old_pod_uid": "0b18d468-f3e7-44f2-bf91-83cbc953cac5",
+    "old_primary": "gateway-database-1",
+    "primary_changed": true,
+    "provider_data_unchanged": true,
+    "ready_instances": 2,
+    "seconds": 75.731310562,
+    "sql_object_ids_unchanged": true
+  },
+  "credential_rpc_recovery": [
+    {
+      "timestamp": "2026-09-17T05:02:58.685289752Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 0.002473387
+    },
+    {
+      "timestamp": "2026-09-17T05:02:58.775604282Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 3.064e-05
+    },
+    {
+      "timestamp": "2026-09-17T05:03:00.378166917Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 5.1819e-05
+    },
+    {
+      "timestamp": "2026-09-17T05:03:00.482950378Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 4.1075e-05
+    },
+    {
+      "timestamp": "2026-09-17T05:03:02.789061127Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 2.45e-05
+    },
+    {
+      "timestamp": "2026-09-17T05:03:03.019367382Z",
+      "rpc.response.status_code": "UNAVAILABLE",
+      "duration_seconds": 2.9535e-05
+    },
+    {
+      "timestamp": "2026-09-17T05:03:07.696535699Z",
+      "rpc.response.status_code": "OK",
+      "duration_seconds": 0.433544779
+    },
+    {
+      "timestamp": "2026-09-17T05:03:07.802514132Z",
+      "rpc.response.status_code": "OK",
+      "duration_seconds": 0.433058518
+    },
+    {
+      "timestamp": "2026-09-17T05:03:08.558368373Z",
+      "rpc.response.status_code": "OK",
+      "duration_seconds": 0.29905201
+    },
+    {
+      "timestamp": "2026-09-17T05:03:08.744385256Z",
+      "rpc.response.status_code": "OK",
+      "duration_seconds": 0.365363447
+    }
+  ],
+  "cause": "The test restarted the console credential provisioner. Its replacement became ready before Gateway controller recovery finished. The next account creation required a healthy Gateway, but the test had not awaited that recovery.",
+  "cause_scope": "This run. The cause of older failures is not established by this record.",
+  "gateway_console_image": {
+    "run": 35182853953,
+    "source": "c0c2d23615fe42cabfbc2351f6c2be7155973159",
+    "checked_at": "2026-09-17T04:53:29.080515+00:00",
+    "job_uid": "2f57f945-2215-4a38-a96c-e09b1b283559",
+    "digest": "sha256:9c53ab7c62ea8ebcf11b2163c309edf66504a81be5bb17fc78f7bc4a33e37597",
+    "record_sha256": "8217037eeb25d05e1f4efe947ca3b729ec5e0eb0da8d90721a2b71dc6d5e4767",
+    "binary_sha256": "07a677758dcc555968926360cdd2fb4c1227b4a5835d8fc6c117774211babc06",
+    "user": "65532:65532",
+    "entrypoint": [
+      "/service"
+    ],
+    "compressed_layer_matches_published_manifest": true,
+    "uncompressed_layer_matches_image_config": true,
+    "binary_matches_qualified_module": true,
+    "qualified_module_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180446968",
+    "qualified_module_source": "eacee52dee8fb15c85656f660233d98785310878"
+  },
+  "scheduling_intervention": {
+    "checked_at": "2026-09-17T04:45:54.951716+00:00",
+    "run": 35182853953,
+    "cluster_uid": "a2dcb6b7-8860-4524-a51c-93c70b0a2fdd",
+    "primary": "gateway-database-1",
+    "replica_uid": "bcd5b064-11e1-4ae7-aa55-e4ad1ba7692e",
+    "application_pod_uid": "9ea4b30f-bd24-4c50-8a73-1cd5ccd65941",
+    "reason": "The secondary reserves 100 millicores on the only node with enough memory for the application test Pod. Reschedule this owned secondary to let the existing test Pod run.",
+    "resource_limits_changed": false,
+    "unrelated_workloads_changed": false,
+    "delete_accepted": true,
+    "verified_at": "2026-09-17T04:47:06.165030+00:00",
+    "same_application_pod_running": true,
+    "primary_preserved": true,
+    "claim_and_volume_identities_preserved": true,
+    "replacement_replica_uid": "9322376b-1372-4e66-8290-409ad6960be7",
+    "ready_instances": 2
+  },
+  "cleanup": {
+    "checked_at": "2026-09-17T05:07:14.693415+00:00",
+    "cnpg_run": 35182853953,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": "",
+    "retained_test_volumes": [],
+    "test_volumes_checked": [
+      "pvc-9705bf10-aa84-4534-8fb1-37891b0044aa",
+      "pvc-f287da58-e0db-475c-b70c-1fd4038ebc71"
+    ]
+  },
+  "archive_sha256": "a1779a683497bc22bb3a2f3531e1ce6c46209e202ab73e0c7e7cf50fda1e9e80",
+  "log_sha256": "132f5cd83bc6772cf83a04ca56f11b3d64c65f9a843f074ac1909eafb5d3bc84"
+}

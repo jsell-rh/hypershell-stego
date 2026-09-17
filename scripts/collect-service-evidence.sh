@@ -23,7 +23,7 @@ collect_service_evidence() {
         done
       fi
       if [ "$4" = 1 ]; then
-        for file in browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json; do
+        for file in browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
           [ -s "$file" ] || exit 1
         done
       fi
