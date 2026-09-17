@@ -104,6 +104,11 @@ func TestIdentityCleanupDeadlineReopensConfirmation(t *testing.T) {
 func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool) {
 	sqlResource, identityResource := resource == "sql", resource == "identity"
 	f := database(t)
+	t.Cleanup(func() {
+		if t.Failed() {
+			logQueueState(t, f)
+		}
+	})
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)

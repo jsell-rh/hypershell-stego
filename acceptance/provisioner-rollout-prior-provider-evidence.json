@@ -1,0 +1,14 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35215892315",
+  "source": "bf7b8da29b6073d3274caee28e10c8e785088a91",
+  "checked_at": "2026-09-17T11:55:09.703680+00:00",
+  "seconds": 125.35,
+  "owned_clients_closed": 61,
+  "journals_at_restart": 20,
+  "provider_cleanup_verified": true,
+  "source_archive_sha256": "a31171b89d7e4d6543cc490fabf743022452ff50018f40bbbd46519716916726",
+  "test_log_sha256": "b19326e6cfa29d6e73a6279688290c41f9478c09b0cb40b06cc0effdc824d9c9",
+  "declared_compiler_revision": "4fc880bcec6bc2555aca6b5c86bb8b893eaf8254",
+  "generation_checked": false,
+  "scope": "The committed provider runtime at this source passed. The copied compiler pin does not prove generation with that compiler. A generation check is required before treating this job as compiler adoption evidence."
+}

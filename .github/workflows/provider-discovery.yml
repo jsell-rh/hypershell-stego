@@ -6,9 +6,19 @@ on:
     paths:
       - '.github/workflows/provider-discovery.yml'
       - 'acceptance/unknown_provider_clients_test.go'
+      - 'acceptance/gateway_observation_deadline_test.go'
       - 'acceptance/keycloak_test.go'
       - 'out/keycloak/**'
       - 'internal/serviceaccountkeycloak/**'
+      - '.stego/compiler-revision'
+      - '.stego/compiler-sha256'
+      - '.stego/tooling-revision'
+      - '.stego/config.yaml'
+      - 'registry/**'
+      - 'service.yaml'
+      - 'scripts/generate.sh'
+      - 'scripts/prepare-compiler.sh'
+      - 'scripts/verified_generation.py'
 
 permissions:
   contents: read
@@ -49,6 +59,11 @@ jobs:
         with:
           go-version: '1.26.8'
           cache: true
+      - name: Check generated source
+        timeout-minutes: 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/generate.sh --check
       - name: Check unknown clients through the generated runtime
         env:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
@@ -60,14 +75,15 @@ jobs:
           cp .stego/compiler-revision "$RUNNER_TEMP/provider-discovery/compiler-revision"
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=6m ./acceptance \
-            -run '^TestUnknownGatewayClientsCloseAcrossProcessRestart$' \
+            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestGatewayCleanupDeadlineReopensConfirmation|TestUnrelatedClientSnapshotComparison)$' \
             | tee "$RUNNER_TEMP/provider-discovery/tests.log"
           python3 - "$RUNNER_TEMP/provider-discovery/tests.log" <<'PY'
           import re, sys
           from pathlib import Path
           log = Path(sys.argv[1]).read_text()
-          if not re.search(r'^--- PASS: TestUnknownGatewayClientsCloseAcrossProcessRestart ', log, re.M):
-              raise SystemExit('The real provider discovery result is missing')
+          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestGatewayCleanupDeadlineReopensConfirmation', 'TestUnrelatedClientSnapshotComparison']:
+              if not re.search(r'^--- PASS: ' + name + ' ', log, re.M):
+                  raise SystemExit('A required cleanup result is missing: ' + name)
           PY
           git diff --exit-code
       - name: Remove any remaining test provider
