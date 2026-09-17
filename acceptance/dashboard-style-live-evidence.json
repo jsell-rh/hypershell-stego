@@ -1,0 +1,50 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35165794034",
+  "source": "c383e950731f26d6e6007465d24b3fddf9b504ab",
+  "compiler": "979292750de036413b0aebee1227f20d4c022bf4",
+  "result": "failure",
+  "test_seconds": 326.93,
+  "failure": "The console state inspection role cannot read the allocation NetworkPolicy. The namespace verification returns HTTP 403.",
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "screenshots_viewed": true,
+  "screenshots": {
+    ".editor-selection.png": {
+      "bytes": 63265,
+      "sha256": "4f76d4e054b4a6193d8fc98992be035d54cd6cbd0fe93db0e5bd60985c160c43"
+    },
+    ".editor.png": {
+      "bytes": 45451,
+      "sha256": "887b1ff8d180fa48fc2a05843ed6e10917fd8325179ff09160bc38757f0f712f"
+    },
+    ".png": {
+      "bytes": 48311,
+      "sha256": "cc153bf0db582c485c3a386363b7b98be9997ef39c0c3801cb07dbb80e319ceb"
+    }
+  },
+  "repeated_generation_file_hashes": 412,
+  "repeated_generation_matches": true,
+  "actual_browser_trust_checked": true,
+  "job_uid": "bf21462a-7cf8-4b5f-b5d6-1443df0c6646",
+  "cleanup_checked_at": "2026-09-17T00:31:38.250311+00:00",
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "9ec5d594eb081792744f1b1c0f1365b8228322584764f24f2aec5213a68fd42f",
+  "deployment_log_sha256": "6d9c0a96a3f552f9fde8ff70aed10bca43382a04f8da9c4a836153d7aefeaabf",
+  "not_proved": [
+    "Later namespace and database recovery",
+    "Dashboard viewer revocation",
+    "Authenticated correlation of all three dashboard telemetry signals",
+    "Final Gateway deletion"
+  ],
+  "scope": "The rendered editor passed with no document CSP violations. This run does not qualify the complete public Gateway workflow."
+}

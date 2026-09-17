@@ -47,6 +47,9 @@ ROLES = '''      - name: fixture-gateway-inspector
         scope: namespace
         rules:
           - {api_group: "", resources: [secrets], resource_names: [gateway-console-state], verbs: [get]}
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
 '''
 BINDINGS = [
     ('          - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}\n',
@@ -171,7 +174,7 @@ def inspection_roles():
         {'Name': 'fixture-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota, *network]},
         {'Name': 'fixture-console-state-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['gateway-console-state'])]},
+            rule('', 'secrets', ['get'], ['gateway-console-state']), quota, *network]},
     ]
 
 

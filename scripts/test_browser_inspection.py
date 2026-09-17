@@ -57,12 +57,17 @@ class InspectionBoundary(unittest.TestCase):
                 continue
             profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
 
-    def test_console_state_gets_only_its_named_read_grant(self):
+    def test_console_state_inspection_checks_isolation_with_read_only_grants(self):
         original = next(p for p in self.original['Profiles'] if p['Name'] == 'gateway-console-state')
         fixture = next(p for p in self.fixture['Profiles'] if p['Name'] == 'gateway-console-state')
         self.assertEqual(original['Bindings'], fixture['Bindings'][:-1])
         role = next(r for r in self.fixture['Roles'] if r['Name'] == 'fixture-console-state-inspector')
-        self.assertEqual(role['Rules'], [{'apiGroups': [''], 'resources': ['secrets'], 'resourceNames': ['gateway-console-state'], 'verbs': ['get']}])
+        self.assertEqual(role['Rules'], [
+            {'apiGroups': [''], 'resources': ['secrets'], 'resourceNames': ['gateway-console-state'], 'verbs': ['get']},
+            {'apiGroups': [''], 'resources': ['resourcequotas'], 'resourceNames': ['stego-allocation'], 'verbs': ['get']},
+            {'apiGroups': ['networking.k8s.io'], 'resources': ['networkpolicies'], 'resourceNames': ['stego-allocation'], 'verbs': ['get']},
+            {'apiGroups': ['networking.k8s.io'], 'resources': ['networkpolicies'], 'verbs': ['list']},
+        ])
         self.assertEqual(fixture['Bindings'][-1]['Role'], role['Name'])
         fixture['Bindings'].append(copy.deepcopy(self.fixture['Profiles'][0]['Bindings'][-1]))
         with self.assertRaises(ValueError):
@@ -82,6 +87,10 @@ class InspectionBoundary(unittest.TestCase):
             lambda c: c['Profiles'][0]['Bindings'].reverse(),
             lambda c: c['Profiles'][0]['Quota'].update(pods='50'),
             lambda c: c['Roles'][2]['Rules'][0]['verbs'].append('delete'),
+            lambda c: c['Roles'][2]['Rules'][1].pop('resourceNames'),
+            lambda c: c['Roles'][2]['Rules'][2]['verbs'].append('patch'),
+            lambda c: c['Roles'][2]['Rules'][3]['resources'].append('secrets'),
+            lambda c: c['Roles'][2]['Rules'].pop(),
         ]
         for change in changes:
             config = copy.deepcopy(self.fixture)
