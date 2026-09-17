@@ -1,0 +1,234 @@
+{
+  "observed_at": "2026-09-17T14:24:39.120093+00:00",
+  "installation_id": "57997a20e039ad44d9430c6210f75d98",
+  "applied": false,
+  "required_prior_run": 35232271576,
+  "bindings": [
+    {
+      "expected": {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-cnpg-ci-observer",
+        "namespace": "",
+        "state": "created",
+        "uid": "3cc1d0c1-eb7e-4500-9489-97a8d6d9d187"
+      },
+      "resource_version": "6275988",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "stego-cnpg-ci-observer"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "cnpg-manager",
+            "namespace": "stego-cnpg-operator-ci"
+          }
+        ]
+      },
+      "content_sha256": "0f9e06251dbd1d1f18de9d1374e6624f14168a01167730b9b8b8fdc301f6601a"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "cnpg-manager",
+        "namespace": "stego-cnpg-operator-ci",
+        "state": "created",
+        "uid": "d59e6acf-532f-4a73-b506-b57618a08b5c"
+      },
+      "resource_version": "6275994",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "stego-cnpg-ci-manager"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "cnpg-manager",
+            "namespace": "stego-cnpg-operator-ci"
+          }
+        ]
+      },
+      "content_sha256": "f1efb381d1bc9ba31d3a6bb3a110c266d8ede8563c4d88030039cbdaaba59cd7"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "cnpg-manager",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "042484d6-dcaf-42cd-bf49-f9d87bc52559"
+      },
+      "resource_version": "6276034",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "stego-cnpg-ci-manager"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "cnpg-manager",
+            "namespace": "stego-cnpg-operator-ci"
+          }
+        ]
+      },
+      "content_sha256": "f1efb381d1bc9ba31d3a6bb3a110c266d8ede8563c4d88030039cbdaaba59cd7"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "database-nonroot",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "9cff04b1-aa19-401b-aae3-083c397b4ad0"
+      },
+      "resource_version": "6276039",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "system:openshift:scc:nonroot-v2"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "gateway-database",
+            "namespace": "stego-cnpg-database-ci"
+          }
+        ]
+      },
+      "content_sha256": "b24c415702c734d93bcd96f3876df18c8a3a48acf36fd4d40d8a4f28168d94dd"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "fixture-observer",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "8468ba3a-53d9-40e7-915d-16535e70f825"
+      },
+      "resource_version": "6276041",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Role",
+          "name": "fixture-observer"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "service-check",
+            "namespace": "stego-service-ci"
+          }
+        ]
+      },
+      "content_sha256": "80f1d2326622fbd5e958c75ad29a183c3e9714dd1783b4b910c87101f32cdbcb"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci",
+        "namespace": "stego-cnpg-operator-ci",
+        "state": "created",
+        "uid": "eff5d657-a3f8-4464-bc5a-d838590b08e2"
+      },
+      "resource_version": "6276072",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Role",
+          "name": "cnpg-ci"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "hypershell-ci",
+            "namespace": "stego-ci-access"
+          }
+        ]
+      },
+      "content_sha256": "77c0da1735d9f249112f13bdb080520029145ab01740eb19fc9d1e53fc901589"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "527efd51-a3d5-4c7b-997f-9fd9e79d1ccf"
+      },
+      "resource_version": "6276074",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Role",
+          "name": "cnpg-ci"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "hypershell-ci",
+            "namespace": "stego-ci-access"
+          }
+        ]
+      },
+      "content_sha256": "77c0da1735d9f249112f13bdb080520029145ab01740eb19fc9d1e53fc901589"
+    },
+    {
+      "expected": {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci-fixture",
+        "namespace": "stego-service-ci",
+        "state": "created",
+        "uid": "724d85a6-7ff0-40b9-8781-d8c144cd7725"
+      },
+      "resource_version": "6276076",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "Role",
+          "name": "cnpg-ci-fixture"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "hypershell-ci",
+            "namespace": "stego-ci-access"
+          }
+        ]
+      },
+      "content_sha256": "f801d2298cd5b0680f5325331d68c27262abf063e1a1b0aac19b51db250402ff"
+    },
+    {
+      "expected": {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-cnpg-ci-installation-reader",
+        "namespace": "",
+        "state": "created",
+        "uid": "09c19658-4adf-484c-955a-562eb7afc193"
+      },
+      "resource_version": "6276078",
+      "content": {
+        "roleRef": {
+          "apiGroup": "rbac.authorization.k8s.io",
+          "kind": "ClusterRole",
+          "name": "stego-cnpg-ci-installation-reader"
+        },
+        "subjects": [
+          {
+            "kind": "ServiceAccount",
+            "name": "hypershell-ci",
+            "namespace": "stego-ci-access"
+          }
+        ]
+      },
+      "content_sha256": "7e4d93691333d00d4f9a73f10d6d2b0f6fd0d62f001245602c579268a50a42c2"
+    }
+  ],
+  "scope": "Remove only these UID-checked bindings after the external workflow is terminal and cleanup is verified. Keep CRDs, namespaces, roles, and other workloads unchanged."
+}

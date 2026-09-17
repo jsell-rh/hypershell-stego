@@ -97,3 +97,16 @@ It removed unused handwritten RBAC declarations and made the allocator check
 explicit before Kubernetes writes. These results apply to `04e8e70`, before
 the external-only fixture change. See the
 [allocation evidence](namespace-allocation-authority-evidence.json).
+
+## Retired test access
+
+A read-only cluster check found nine role bindings from the old CNPG test
+installation. Their object identities, subjects, and role references match the
+installation record. This includes access for the CI runner, old operator,
+database service account, and application test fixture.
+
+The [removal plan](retired-cnpg-access-plan.json) records those exact bindings.
+Removal is pending until the current external workflow is terminal and its
+cleanup is verified. The removal must hold the test lease and use object
+identity and version checks. Shared CRDs, namespaces, roles, and unrelated
+workloads remain outside this access change.
