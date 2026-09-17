@@ -1,0 +1,20 @@
+{
+  "checked_at": "2026-09-17T11:17:40.620534+00:00",
+  "source": "514deeb152ae7bb6adaef78261b2b18fc43787d8",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35212864442",
+  "compiler": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+  "source_archive_sha256": "daf776085bc0b7cc8baae749f5827daade34b57578a287334be76d46b8ca2965",
+  "asset_sha256": "677404ba290aa54e40fe78e656a6cbd31df273820036e7453b2cbd24eaaac6ec",
+  "asset_bytes": 852967,
+  "asset_entries": 54,
+  "matches_qualified_bundle": true,
+  "scope": "Exact source, compiler, ZIP entries, and checksums passed. The bundle matches the qualified branch artifact. Complete application behavior remains a separate gate.",
+  "compiler_records": {
+    "source": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+    "compiler_sha256": "93a74182dd6b90e55d703ab1f472fbba180a253177003cdee0cf7b830030b6d4",
+    "signature_records_match_published_package": true
+  },
+  "repeated_capture_matches": true,
+  "matches_committed_bundle": true,
+  "inputs_unchanged_at_adoption": "762824b647c6a1545e6a617468b40d9950fa082a"
+}

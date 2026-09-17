@@ -109,3 +109,12 @@ Both signature-record sets matched the published compiler. See the
 The complete hosted application suite remains in progress. These component
 checks do not replace the complete Gateway workflows or production capacity
 measurements.
+
+The management console asset check in
+[run 35212864442](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212864442)
+was also checked independently. The source archive and signed compiler records
+match. The repeated 54-entry bundle matches the committed bundle, with SHA-256
+`677404ba290aa54e40fe78e656a6cbd31df273820036e7453b2cbd24eaaac6ec`.
+Its build inputs did not change between source `514deeb` and adoption `762824b`.
+See the [asset record](unknown-provider-console-assets-evidence.json). This
+result does not replace the complete application tests.
