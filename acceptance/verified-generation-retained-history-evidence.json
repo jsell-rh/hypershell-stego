@@ -1,0 +1,80 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033022",
+  "source": "8bb2965f907aef1edb7c41e0f07b0ac542bc168c",
+  "checked_at": "2026-09-17T10:15:18.097871+00:00",
+  "source_archive_sha256": "b371eb6d57c4277a7507c74e6cfca52a73335b6d5dc367073f9965a6fafeb2b8",
+  "binary_sha256": "5774cd9f98f264d4a3b6db415dff0cbad9282b14e352819ad7919c22d2e954c6",
+  "binary_build_revision_verified": true,
+  "saved_results_recomputed": true,
+  "container_limits_verified": true,
+  "terminal_state_verified": true,
+  "cleanup_step_passed": true,
+  "local_benchmark_executed": false,
+  "measurements": {
+    "samples": {
+      "10000": [
+        {
+          "ns/op": 120535293.0,
+          "pages/op": 101.0,
+          "process-max-rss-B": 45326336.0,
+          "rows/op": 10001.0,
+          "B/op": 15004789.0,
+          "allocs/op": 149412.0
+        },
+        {
+          "ns/op": 123925296.0,
+          "pages/op": 101.0,
+          "process-max-rss-B": 45580288.0,
+          "rows/op": 10001.0,
+          "B/op": 15004944.0,
+          "allocs/op": 149412.0
+        },
+        {
+          "ns/op": 120434721.0,
+          "pages/op": 101.0,
+          "process-max-rss-B": 45666304.0,
+          "rows/op": 10001.0,
+          "B/op": 15004634.0,
+          "allocs/op": 149413.0
+        }
+      ],
+      "100000": [
+        {
+          "ns/op": 1192769670.0,
+          "pages/op": 1001.0,
+          "process-max-rss-B": 46182400.0,
+          "rows/op": 100001.0,
+          "B/op": 149765469.0,
+          "allocs/op": 1490834.0
+        },
+        {
+          "ns/op": 1204056589.0,
+          "pages/op": 1001.0,
+          "process-max-rss-B": 46354432.0,
+          "rows/op": 100001.0,
+          "B/op": 149765832.0,
+          "allocs/op": 1490830.0
+        },
+        {
+          "ns/op": 1196301979.0,
+          "pages/op": 1001.0,
+          "process-max-rss-B": 46592000.0,
+          "rows/op": 100001.0,
+          "B/op": 149766090.0,
+          "allocs/op": 1490829.0
+        }
+      ]
+    },
+    "iterations_per_sample": 3,
+    "container_limits": {
+      "NanoCpus": 1000000000,
+      "Memory": 805306368,
+      "MemorySwap": 805306368,
+      "PidsLimit": 128,
+      "Privileged": false,
+      "ReadonlyRootfs": true,
+      "NetworkMode": "host"
+    },
+    "scope": "Complete SQL cursor scans with domain authorization and row validation. Provider calls, transport, and complete controller recovery are excluded. Process RSS is a high-water mark that includes setup and earlier cases. Hosted-runner timings do not establish a production SLO."
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033066",
+  "source": "8bb2965f907aef1edb7c41e0f07b0ac542bc168c",
+  "checked_at": "2026-09-17T10:15:17.305304+00:00",
+  "source_archive_sha256": "b371eb6d57c4277a7507c74e6cfca52a73335b6d5dc367073f9965a6fafeb2b8",
+  "binary_sha256": "5774cd9f98f264d4a3b6db415dff0cbad9282b14e352819ad7919c22d2e954c6",
+  "binary_build_revision_verified": true,
+  "saved_results_recomputed": true,
+  "container_limits_verified": true,
+  "terminal_state_verified": true,
+  "cleanup_step_passed": true,
+  "local_benchmark_executed": false,
+  "measurements": {
+    "samples": [
+      {
+        "ns/op": 4812380549.0,
+        "accounts/op": 1000.0,
+        "cycles/op": 30.0,
+        "journals/op": 2000.0,
+        "process-max-rss-B": 51146752.0,
+        "provider-deletes/op": 2000.0,
+        "B/op": 232860400.0,
+        "allocs/op": 3020519.0
+      },
+      {
+        "ns/op": 4441828845.0,
+        "accounts/op": 1000.0,
+        "cycles/op": 30.0,
+        "journals/op": 2000.0,
+        "process-max-rss-B": 53583872.0,
+        "provider-deletes/op": 2000.0,
+        "B/op": 232856960.0,
+        "allocs/op": 3020499.0
+      },
+      {
+        "ns/op": 4831530468.0,
+        "accounts/op": 1000.0,
+        "cycles/op": 30.0,
+        "journals/op": 2000.0,
+        "process-max-rss-B": 53768192.0,
+        "provider-deletes/op": 2000.0,
+        "B/op": 232849480.0,
+        "allocs/op": 3020331.0
+      }
+    ],
+    "iterations_per_sample": 1,
+    "container_limits": {
+      "NanoCpus": 1000000000,
+      "Memory": 805306368,
+      "MemorySwap": 805306368,
+      "PidsLimit": 128,
+      "Privileged": false,
+      "ReadonlyRootfs": true,
+      "NetworkMode": "host"
+    },
+    "scope": "Generated SQL, encrypted journals, common Keycloak HTTPS client, account audits, provider inventory, scope closure, and store/client reconstruction. The HTTPS server is a protocol fixture. Process RSS includes setup. Real Keycloak capacity, process/database restart, REST/gRPC, other Gateway controllers, and production SLOs are not established."
+  }
+}

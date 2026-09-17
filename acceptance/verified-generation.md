@@ -133,3 +133,25 @@ checks to the preceding compiler integration. The API runner and generated
 application output are unchanged from `dbe7ce6`. CNPG qualification for the new
 compiler transfer path also remains required. These results do not complete the
 enterprise goal or establish production capacity.
+
+
+## Bounded capacity checks
+
+At source `8bb2965`, the saved cleanup and retained-history checks passed
+independent inspection. The source archive, test binary hash, embedded source
+revision, container limits, terminal state, and CI cleanup step matched each
+record. The saved measurements also matched a separate verifier run. No
+benchmark ran on the developer workstation.
+
+[Cleanup run 35206033066](https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033066)
+completed all three samples. Each sample removed 1,000 accounts and 2,000 journal
+entries through 2,000 provider delete calls in 30 bounded cycles. Each sample
+took 4.44 through 4.84 seconds. The provider was an HTTPS protocol fixture; these
+numbers do not establish real Keycloak capacity or a production service target.
+See the [cleanup record](verified-generation-cleanup-costs-evidence.json).
+
+[History run 35206033022](https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033022)
+completed all six samples. It read 10,001 or 100,001 rows through 101 or 1,001
+pages, respectively. This check covers SQL cursor scans, domain authorization,
+and row validation. It does not measure provider calls or a complete controller
+workflow. See the [history record](verified-generation-retained-history-evidence.json).
