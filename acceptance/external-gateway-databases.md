@@ -140,6 +140,12 @@ remaining test workloads, fixtures, allocated namespaces, or held test lease.
 
 At the same source, the separate API gate passed 52 required tests. The journal
 gate passed 28 required tests. The hosted browser gate also passed. The hosted
-core repeat was still running when this record was written. See the
-[main branch evidence](external-gateway-main-evidence.json). These results do
-not prove RDS failover, Sandbox VM isolation, or production capacity.
+core repeat then passed in
+[run 35235034256](https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034256):
+311 top-level tests, 670 test cases, three generation checks, and container
+cleanup. Four declared live tests use separate workflows. Independent checks
+matched the earlier required tests and both earlier failure cases. Its log SHA256
+is `79241b95d11261566b21e878f06987e80452e445b1dca68759190b8c8c880e9b`.
+The [main branch evidence](external-gateway-main-evidence.json) was saved before
+the core job finished. These results do not prove RDS failover, Sandbox VM
+isolation, or production capacity.
