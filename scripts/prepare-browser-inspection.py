@@ -113,47 +113,11 @@ def verify_endpoint_worker_template(before, after):
         raise ValueError('The endpoint test changed more than the worker allocation annotation')
 
 
-def cnpg_declaration(source, namespace):
-    if not re.fullmatch(r'stego-cnpg-database-[a-z0-9](?:[a-z0-9-]*[a-z0-9])?', namespace) or len(namespace) > 63:
-        raise ValueError('Use a dedicated CNPG installation namespace')
-    anchor = ('        external_endpoints: [kubernetes, gateway-postgres]\n'
-              '        optional_external_endpoints: [gateway-public]\n'
-              '        files_secret: hypershell-gateway-workload-files\n'
-              '        network_peers:\n')
-    peer = ('          - {direction: egress, namespace: ' + namespace +
-            ', pod_label: cnpg.io/cluster, pod_value: gateway-database, port: 5432, protocol: TCP}\n')
-    if source.count(anchor) != 1 or peer in source:
-        raise ValueError('The CNPG fixture network boundary differs')
-    allocation_anchor = '        network_endpoints: [kubernetes]\n        network_peers:\n'
-    allocation_peer = ('          - {direction: egress, namespace: external, external_namespace: ' + namespace +
-                       ', pod_label: cnpg.io/cluster, pod_value: gateway-database, port: 5432, protocol: TCP}\n')
-    if source.count(allocation_anchor) != 1 or allocation_peer in source:
-        raise ValueError('The CNPG allocation network boundary differs')
-    return source.replace(anchor, anchor + peer, 1).replace(allocation_anchor, allocation_anchor + allocation_peer, 1)
-
-
-def verify_cnpg_manifests(before, after, namespace):
-    original, fixture = json.loads(before), json.loads(after)
-    matches = [o for o in fixture['items'] if o['kind'] == 'NetworkPolicy' and o['metadata']['name'] == 'hypershell-gateway-workload']
-    if len(matches) != 1:
-        raise ValueError('The Gateway worker network policy is missing or repeated')
-    expected = {'ports': [{'port': 5432, 'protocol': 'TCP'}], 'to': [{
-        'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': namespace}},
-        'podSelector': {'matchLabels': {'cnpg.io/cluster': 'gateway-database'}}}]}
-    rules = matches[0]['spec']['egress']
-    if rules.count(expected) != 1:
-        raise ValueError('The CNPG peer must select one namespace, Cluster label, and SQL port')
-    rules.remove(expected)
-    if original != fixture:
-        raise ValueError('The CNPG fixture changed unrelated worker resources')
-
-
 def allocation_config(source):
     match = re.search(r'json.Unmarshal\(\[\]byte\(("(?:[^"\\]|\\.)*")\), &config\)', source)
     if not match:
         raise ValueError('The generated allocation configuration is missing')
     return json.loads(json.loads(match[1]))
-
 
 
 def inspection_roles():
@@ -178,28 +142,8 @@ def inspection_roles():
     ]
 
 
-def remove_cnpg_peer(config, namespace):
-    profiles = [p for p in config['Profiles'] if p['Name'] == 'gateway']
-    expected = {'Direction': 'egress', 'Namespace': 'external', 'ExternalNamespace': namespace,
-                'PodLabel': 'cnpg.io/cluster', 'PodValue': 'gateway-database', 'Protocol': 'TCP', 'Port': 5432}
-    if len(profiles) != 1 or not profiles[0]['NetworkPeers'] or profiles[0]['NetworkPeers'].pop(0) != expected:
-        raise ValueError('The CNPG allocation must add one exact database Pod peer')
-
-
-def verify_cnpg_runtime(before, after, namespace):
+def verify_runtime(before, after):
     original, fixture = allocation_config(before), allocation_config(after)
-    remove_cnpg_peer(fixture, namespace)
-    if original != fixture:
-        raise ValueError('The CNPG allocation must add one exact database Pod peer')
-    pattern = r'json.Unmarshal\(\[\]byte\(("(?:[^"\\]|\\.)*")\), &config\)'
-    if re.sub(pattern, 'CONFIG', before) != re.sub(pattern, 'CONFIG', after):
-        raise ValueError('The CNPG fixture changed the allocation runtime')
-
-
-def verify_runtime(before, after, cnpg_namespace=None):
-    original, fixture = allocation_config(before), allocation_config(after)
-    if cnpg_namespace is not None:
-        remove_cnpg_peer(fixture, cnpg_namespace)
     additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state', 'fixture-console-state-inspector': 'gateway-console-state'}
     roles = [r for r in fixture['Roles'] if r['Name'] in additions]
     if roles != inspection_roles():
@@ -219,7 +163,6 @@ def verify_runtime(before, after, cnpg_namespace=None):
     if re.sub(pattern, 'CONFIG', before) != re.sub(pattern, 'CONFIG', after):
         raise ValueError('The fixture changed the allocation runtime')
     return roles
-
 
 
 def verify_manifests(before, after):
@@ -258,7 +201,7 @@ def verify_manifests(before, after):
         raise ValueError('The fixture changed unrelated deployment or admission rules')
 
 
-def check_render(source, destination, env, cnpg_namespace=None, network_baseline=None, endpoint_change=False):
+def check_render(source, destination, env, network_baseline=None, endpoint_change=False):
     with tempfile.TemporaryDirectory(prefix='stego-inspection-render-') as directory:
         renders = []
         binaries = []
@@ -272,15 +215,6 @@ def check_render(source, destination, env, cnpg_namespace=None, network_baseline
                 '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64, '--worker', 'namespace-allocation',
                 '--egress', 'kubernetes=192.0.2.1:443', *flags], env=env, timeout=5))
         verify_manifests(*renders)
-        if cnpg_namespace:
-            original_binary = str(Path(directory) / 'original')
-            subprocess.run(['go', 'build', '-p=1', '-mod=readonly', '-trimpath', '-o', original_binary, './out/deploy/render'],
-                           cwd=source, env=env, check=True, timeout=45)
-            binaries[0] = original_binary
-            cnpg_renders = [subprocess.check_output([binary, '--namespace', 'stego-service-inspection', '--fs-group', '10001',
-                '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64, '--worker', 'gateway-workload',
-                '--egress', 'kubernetes=192.0.2.1:443', '--egress', 'gateway-postgres=192.0.2.2:5432'], env=env, timeout=5) for binary in binaries]
-            verify_cnpg_manifests(*cnpg_renders, cnpg_namespace)
         record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
                   'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
                   'scope': 'Three namespace roles, allocator bind names, and declared namespace binding cases only.'}
@@ -305,11 +239,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--compiler', required=True, type=Path)
     parser.add_argument('--destination', required=True, type=Path)
-    parser.add_argument('--cnpg-database-namespace', help='Add one CNPG installation network peer')
     parser.add_argument('--network-endpoint-change', action='store_true', help='Add one Gateway endpoint for the direct address-change test')
     args = parser.parse_args()
-    if args.cnpg_database_namespace and args.network_endpoint_change:
-        raise ValueError('Prepare CNPG and direct address-change fixtures separately')
     source = Path(__file__).resolve().parent.parent
     destination = args.destination.resolve()
     compiler = args.compiler.resolve()
@@ -333,8 +264,6 @@ def main():
         hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
     config = destination / 'service.yaml'
     declared = declaration(config.read_text())
-    if args.cnpg_database_namespace:
-        declared = cnpg_declaration(declared, args.cnpg_database_namespace)
     if args.network_endpoint_change:
         declared = endpoint_change_declaration(declared)
     config.write_text(declared)
@@ -345,16 +274,16 @@ def main():
     subprocess.run([str(compiler), 'drift'], cwd=destination, env=env, check=True, timeout=30)
     changed = {name for name, digest in hashes.items() if hashlib.sha256((destination / name).read_bytes()).hexdigest() != digest}
     allowed = {'service.yaml', '.stego/state.yaml', 'out/deploy/allocation/allocation.go', 'out/deploy/render/worker-namespace-allocation.json.tmpl'}
-    if args.cnpg_database_namespace or args.network_endpoint_change:
+    if args.network_endpoint_change:
         allowed.add('out/deploy/render/worker-gateway-workload.json.tmpl')
     if args.network_endpoint_change:
         allowed.add('out/deploy/render/worker-sandbox-count.json.tmpl')
     if changed != allowed:
         raise ValueError('Unexpected fixture output changes: ' + ', '.join(sorted(changed)))
     runtime = 'out/deploy/allocation/allocation.go'
-    with tempfile.TemporaryDirectory(prefix='stego-cnpg-network-baseline-') as directory:
+    with tempfile.TemporaryDirectory(prefix='stego-network-baseline-') as directory:
         baseline = source
-        if args.cnpg_database_namespace or args.network_endpoint_change:
+        if args.network_endpoint_change:
             # Generate the network-only baseline with the pinned compiler.
             # Then compare the inspection roles against that exact baseline.
             baseline = Path(directory)
@@ -363,21 +292,17 @@ def main():
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copy2(source / name, target)
             declared = (source / 'service.yaml').read_text()
-            declared = (cnpg_declaration(declared, args.cnpg_database_namespace) if args.cnpg_database_namespace
-                        else endpoint_change_declaration(declared))
+            declared = endpoint_change_declaration(declared)
             (baseline / 'service.yaml').write_text(declared)
             subprocess.run([str(compiler), 'apply'], cwd=baseline, env=env, check=True, timeout=60)
-            if args.cnpg_database_namespace:
-                verify_cnpg_runtime((source / runtime).read_text(), (baseline / runtime).read_text(), args.cnpg_database_namespace)
-            else:
-                verify_endpoint_change_runtime((source / runtime).read_text(), (baseline / runtime).read_text())
-                for worker in ('gateway-workload', 'sandbox-count'):
-                    name = 'out/deploy/render/worker-' + worker + '.json.tmpl'
-                    verify_endpoint_worker_template((source / name).read_text(), (baseline / name).read_text())
-                    if (baseline / name).read_bytes() != (destination / name).read_bytes():
-                        raise ValueError('The inspection roles changed an unrelated worker template')
+            verify_endpoint_change_runtime((source / runtime).read_text(), (baseline / runtime).read_text())
+            for worker in ('gateway-workload', 'sandbox-count'):
+                name = 'out/deploy/render/worker-' + worker + '.json.tmpl'
+                verify_endpoint_worker_template((source / name).read_text(), (baseline / name).read_text())
+                if (baseline / name).read_bytes() != (destination / name).read_bytes():
+                    raise ValueError('The inspection roles changed an unrelated worker template')
         roles = verify_runtime((baseline / runtime).read_text(), (destination / runtime).read_text())
-        render = check_render(source, destination, env, args.cnpg_database_namespace, baseline, args.network_endpoint_change)
+        render = check_render(source, destination, env, baseline, args.network_endpoint_change)
 
     # Files that appear during generation also need an explicit review.
     observed = {str(p.relative_to(destination)) for p in destination.rglob('*') if p.is_file()}
@@ -387,8 +312,6 @@ def main():
               'source_sha256': hashes, 'fixture_sha256': {name: hashlib.sha256((destination / name).read_bytes()).hexdigest() for name in hashes},
               'changed_files': sorted(changed), 'inspection_roles': roles, 'render': render,
               'scope': 'Production source with three namespace inspection roles and three appended bindings. Production binding indices and runtime code are unchanged.'}
-    if args.cnpg_database_namespace:
-        record['cnpg_installation'] = {'namespace': args.cnpg_database_namespace, 'cluster': 'gateway-database', 'scope': 'One database namespace and Pod selector on TCP port 5432 for the worker and allocated Gateways; no added Kubernetes permission.'}
     if args.network_endpoint_change:
         record['network_endpoint_change'] = {'endpoint': 'network-probe', 'scope': 'One operator-bound endpoint name in the Gateway allocation profile; no added Kubernetes permission.'}
     write_inspection_record(destination / 'acceptance/browser-inspection-source.json', record)

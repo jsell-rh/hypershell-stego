@@ -140,7 +140,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	for name, source := range map[string]string{"tls.crt": filepath.Join(apiDirectory, "server.pem"), "tls.key": filepath.Join(apiDirectory, "server-key.pem"), "database-ca.pem": os.Getenv("STEGO_TEST_POSTGRES_CA_FILE"), "kafka-ca.pem": config.CAFile, "kafka-client.pem": config.ClientCertificateFile, "kafka-key.pem": config.ClientKeyFile} {
 		files[name] = read(source)
 	}
-	environment := map[string]string{"DATABASE_URL_FILE": "/var/run/stego/database-url", "DATABASE_PROVIDER": "cnpg", "STEGO_KAFKA_BROKERS": fixtureHost + ":19092", "STEGO_KAFKA_TOPIC": config.Topic, "STEGO_KAFKA_AUTHENTICATION": "mtls", "STEGO_KAFKA_CA_FILE": "/var/run/stego/kafka-ca.pem", "STEGO_KAFKA_CLIENT_CERTIFICATE_FILE": "/var/run/stego/kafka-client.pem", "STEGO_KAFKA_CLIENT_KEY_FILE": "/var/run/stego/kafka-key.pem", "OTEL_SERVICE_NAME": "hypershell-deployment"}
+	environment := map[string]string{"DATABASE_URL_FILE": "/var/run/stego/database-url", "STEGO_KAFKA_BROKERS": fixtureHost + ":19092", "STEGO_KAFKA_TOPIC": config.Topic, "STEGO_KAFKA_AUTHENTICATION": "mtls", "STEGO_KAFKA_CA_FILE": "/var/run/stego/kafka-ca.pem", "STEGO_KAFKA_CLIENT_CERTIFICATE_FILE": "/var/run/stego/kafka-client.pem", "STEGO_KAFKA_CLIENT_KEY_FILE": "/var/run/stego/kafka-key.pem", "OTEL_SERVICE_NAME": "hypershell-deployment"}
 	for _, entry := range auth {
 		name, value, _ := strings.Cut(entry, "=")
 		if name == "STEGO_AUTH_PUBLIC_KEY_FILE" {

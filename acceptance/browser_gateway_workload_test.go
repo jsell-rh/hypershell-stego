@@ -50,7 +50,6 @@ type browserGatewayWorkload struct {
 	restarts            []func()
 	gatewayIDs          []string
 	sqlFixture          *pgx.ConnConfig
-	cnpgFixture         *browserCNPGFixture
 	databaseOptions     postgres.Options
 	databaseConfig      []byte
 	databaseEndpoints   []string

@@ -28,9 +28,6 @@ func (w *browserGatewayWorkload) prepareDatabase(sessions *fixture) {
 	}
 	defer connection.Close(ctx)
 	known := map[string]bool{"postgres": true, "template0": true, "template1": true}
-	if w.cnpgFixture != nil {
-		known["installation"] = true
-	}
 	for _, f := range []*fixture{w.f, sessions} {
 		c, e := pgx.ParseConfig(f.dsn)
 		if e != nil {
@@ -110,43 +107,30 @@ func (w *browserGatewayWorkload) prepareDatabase(sessions *fixture) {
 			exec("REVOKE CONNECT,TEMPORARY ON DATABASE " + quote(name) + " FROM PUBLIC")
 		}
 	}
-	if w.cnpgFixture != nil {
-		// CNPG uses this database for primary recovery and pg_rewind. Keep
-		// its maintenance access explicit when removing the public grant.
-		exec("GRANT CONNECT ON DATABASE postgres TO streaming_replica")
+	ca, err := os.ReadFile(os.Getenv("STEGO_TEST_POSTGRES_CA_FILE"))
+	if err != nil {
+		w.t.Fatal("supplied SQL CA is unavailable")
 	}
-	var ca []byte
 	host, namespace, serviceName := w.p.host("fixture"), w.p.namespace, "fixture"
-	if w.cnpgFixture == nil {
-		ca, err = os.ReadFile(os.Getenv("STEGO_TEST_POSTGRES_CA_FILE"))
-		if err != nil {
-			w.t.Fatal("supplied SQL CA is unavailable")
-		}
-	} else {
-		ca = []byte(w.cnpgFixture.CA)
-		host, namespace, serviceName = config.Host, w.cnpgFixture.Namespace, w.cnpgFixture.Cluster+"-rw"
-	}
 	w.databaseOptions = postgres.Options{Host: host, Port: config.Port, Database: ledger, User: admin, Password: password, CA: ca}
-	// Bind the Service address before translation. The CNPG inspection profile
-	// adds a namespace and Pod selector, so replacement Pod IPs need no update.
+	// Bind both the Service address and its test Pod address. The cluster can
+	// enforce the rule before or after Service address translation.
 	service, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+namespace+"/services/"+serviceName, nil)
 	ip := net.ParseIP(kube.String(service, "spec", "clusterIP"))
 	if err != nil || code != 200 || ip == nil {
 		w.t.Fatal("supplied SQL Service address is unavailable")
 	}
 	w.databaseEndpoints = append(w.databaseEndpoints, net.JoinHostPort(ip.String(), "5432"))
-	if w.cnpgFixture == nil {
-		podName := os.Getenv("HOSTNAME")
-		if podName == "" {
-			w.t.Fatal("supplied SQL fixture Pod name is unavailable")
-		}
-		pod, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+w.p.namespace+"/pods/"+podName, nil)
-		ip = net.ParseIP(kube.String(pod, "status", "podIP"))
-		if err != nil || code != 200 || ip == nil || kube.String(pod, "metadata", "labels", "app") != "stego-fixture" || kube.String(pod, "metadata", "deletionTimestamp") != "" {
-			w.t.Fatal("supplied SQL fixture Pod address is unavailable")
-		}
-		w.databaseEndpoints = append(w.databaseEndpoints, net.JoinHostPort(ip.String(), "5432"))
+	podName := os.Getenv("HOSTNAME")
+	if podName == "" {
+		w.t.Fatal("supplied SQL fixture Pod name is unavailable")
 	}
+	pod, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+w.p.namespace+"/pods/"+podName, nil)
+	ip = net.ParseIP(kube.String(pod, "status", "podIP"))
+	if err != nil || code != 200 || ip == nil || kube.String(pod, "metadata", "labels", "app") != "stego-fixture" || kube.String(pod, "metadata", "deletionTimestamp") != "" {
+		w.t.Fatal("supplied SQL fixture Pod address is unavailable")
+	}
+	w.databaseEndpoints = append(w.databaseEndpoints, net.JoinHostPort(ip.String(), "5432"))
 	w.databaseConfig, err = json.Marshal(map[string]any{"host": w.databaseOptions.Host, "port": w.databaseOptions.Port, "database": ledger, "user": admin, "password": password, "ca": string(ca)})
 	if err != nil {
 		w.t.Fatal("cannot encode the supplied SQL configuration")
@@ -167,9 +151,6 @@ func (w *browserGatewayWorkload) prepareDatabase(sessions *fixture) {
 
 func (w *browserGatewayWorkload) requireInstallationData(ctx context.Context) {
 	w.t.Helper()
-	if w.cnpgFixture != nil {
-		w.requireCNPGInstallation()
-	}
 	var preserved string
 	err := postgres.ReadRow(ctx, w.databaseOptions, "SELECT value FROM public.installation_data", nil, &preserved)
 	if err != nil {

@@ -14,7 +14,7 @@ import time
 import unittest
 from unittest import mock
 
-from ci_credentials import API_SECONDS, BROWSER_SECONDS, CNPG_SECONDS, SUBJECT, require_context_credentials, require_credentials
+from ci_credentials import API_SECONDS, BROWSER_SECONDS, SUBJECT, require_context_credentials, require_credentials
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -30,8 +30,7 @@ class Credentials(unittest.TestCase):
     def test_job_budgets_and_collection_margin(self):
         self.assertEqual(API_SECONDS, 20 * 60 + 5 * 60)
         self.assertEqual(BROWSER_SECONDS, 30 * 60 + 5 * 60)
-        self.assertEqual(CNPG_SECONDS, BROWSER_SECONDS + 10 * 60)
-        for budget in (API_SECONDS, BROWSER_SECONDS, CNPG_SECONDS):
+        for budget in (API_SECONDS, BROWSER_SECONDS):
             value = config()
             require_credentials(value, budget, now=13600-budget)
             with self.assertRaisesRegex(RuntimeError, 'too little time'):
@@ -40,7 +39,7 @@ class Credentials(unittest.TestCase):
     def test_context_read_uses_selected_file_and_keeps_failures_private(self):
         reply = subprocess.CompletedProcess([], 0, stdout=json.dumps(config()).encode())
         with mock.patch('ci_credentials.time.time', return_value=10000), mock.patch.object(subprocess, 'run', return_value=reply) as run:
-            token, cluster = require_context_credentials('selected', CNPG_SECONDS, '/private/config')
+            token, cluster = require_context_credentials('selected', BROWSER_SECONDS, '/private/config')
             self.assertEqual(token, config()['users'][0]['user']['token'])
             self.assertEqual(cluster['server'], 'https://cluster.example')
         run.assert_called_once_with(['oc', '--context=selected', '--kubeconfig=/private/config',
@@ -50,10 +49,10 @@ class Credentials(unittest.TestCase):
                       subprocess.TimeoutExpired(['oc'], 30, output=b'private-marker'),
                       subprocess.CalledProcessError(1, ['oc'], output=b'private-marker')]:
             with mock.patch.object(subprocess, 'run', side_effect=error), self.assertRaisesRegex(RuntimeError, '^CI credential inspection failed$'):
-                require_context_credentials('selected', CNPG_SECONDS)
+                require_context_credentials('selected', BROWSER_SECONDS)
         with mock.patch.object(subprocess, 'run', return_value=subprocess.CompletedProcess([], 0, stdout=b'private-marker')):
             with self.assertRaisesRegex(RuntimeError, '^CI credential inspection failed$'):
-                require_context_credentials('selected', CNPG_SECONDS)
+                require_context_credentials('selected', BROWSER_SECONDS)
 
     def test_cleanup_can_use_remaining_valid_time(self):
         require_credentials(config(), 0, now=13599)
@@ -123,34 +122,6 @@ class Credentials(unittest.TestCase):
             calls = [json.loads(line) for line in (root / 'calls').read_text().splitlines()]
             self.assertEqual(calls, [['--context=explicit-ci', 'config', 'view', '--raw', '--minify', '-o', 'json']])
             self.assertNotIn(b'header.', result.stderr)
-
-    def test_cnpg_refuses_short_credentials_before_installation(self):
-        spec = importlib.util.spec_from_file_location('cnpg_gate', ROOT / 'scripts/check-cnpg-installation.py')
-        runner = importlib.util.module_from_spec(spec); spec.loader.exec_module(runner)
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            private = root / 'private'
-            private.write_text('private fixture')
-            private.chmod(0o600)
-            args = ['check', '--operator-context', 'explicit-operator', '--ci-kubeconfig', str(private),
-                    '--source', str(ROOT), '--repository', str(ROOT), '--results', str(root / 'result')]
-            now = int(time.time())
-            # Enough time for the browser alone, but not for CNPG installation.
-            value = config(iat=now-1000, exp=now+2600)
-            result = subprocess.CompletedProcess([], 0, stdout=json.dumps(value).encode())
-            record = {'cnpg_installation': {'namespace': 'stego-cnpg-database-test'}}
-            with mock.patch.object(sys, 'argv', args), mock.patch.object(runner, 'verify_source', return_value=record), \
-                 mock.patch.object(runner, 'module', side_effect=AssertionError('Installation started before the credential check')) as modules, \
-                 mock.patch.object(subprocess, 'run', return_value=result) as run:
-                with self.assertRaisesRegex(RuntimeError, 'too little time'):
-                    runner.main()
-            modules.assert_not_called()
-            self.assertFalse((root / 'result').exists())
-            self.assertEqual(run.call_count, 1)
-            command = run.call_args.args[0]
-            self.assertIn('--context=jshell-ci', command)
-            self.assertIn('--kubeconfig=' + str(private), command)
-            self.assertEqual(command[-6:], ['config', 'view', '--raw', '--minify', '-o', 'json'])
 
 
 if __name__ == '__main__':

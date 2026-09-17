@@ -71,22 +71,6 @@ def fixture(ns, directory, browser, workload, issuer):
             for item in job['items']:
                 if item['kind'] == 'Job':
                     item['spec']['template']['spec']['containers'][0]['env'].append({'name': 'STEGO_TEST_UNRELATED_NETWORK_HOST', 'value': host})
-    cnpg = os.environ.get('STEGO_TEST_CNPG_FIXTURE', '0')
-    if cnpg not in ('0', '1'):
-        raise ValueError('Invalid CNPG fixture flag')
-    if cnpg == '1':
-        if workload != '1' or browser != '1':
-            raise ValueError('CNPG requires the complete Gateway browser workflow')
-        record = json.loads((PROJECT / 'acceptance/browser-inspection-source.json').read_text())
-        if record.get('cnpg_installation', {}).get('cluster') != 'gateway-database':
-            raise ValueError('CNPG requires a prepared installation inspection source')
-        for item in job['items']:
-            if item['kind'] == 'Job':
-                spec = item['spec']['template']['spec']
-                spec['volumes'].append({'name': 'cnpg-fixture', 'secret': {'secretName': 'cnpg-credentials', 'defaultMode': 0o440}})
-                test = spec['containers'][0]
-                test['volumeMounts'].append({'name': 'cnpg-fixture', 'mountPath': '/cnpg-installation', 'readOnly': True})
-                test['env'].append({'name': 'STEGO_TEST_GATEWAY_SQL_FIXTURE_FILE', 'value': '/cnpg-installation/fixture.json'})
     from public_gateway_fixture import apply_public_fixture
     apply_public_fixture(job, ns, workload, browser)
     from internal_gateway_fixture import apply_internal_fixture

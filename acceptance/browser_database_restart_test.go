@@ -5,10 +5,10 @@ import (
 	"encoding/json"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"reflect"
 	"time"
 
+	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -23,12 +23,7 @@ func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 		w.t.Fatal("database restart setup could not read provider")
 	}
 	beforeObjects := w.gatewaySQLObjectIDs()
-	var cnpgEvidence map[string]any
-	if w.cnpgFixture == nil {
-		w.restartSidecarDatabase()
-	} else {
-		cnpgEvidence = w.restartCNPGDatabase()
-	}
+	w.restartSidecarDatabase()
 	for _, gateway := range w.gatewayIDs {
 		w.check(gateway)
 	}
@@ -45,21 +40,7 @@ func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
 	w.requireInstallationData(ctx)
-	if cnpgEvidence == nil {
-		w.t.Log("PostgreSQL sidecar restart preserved Gateway keys, credentials, provider data, and installation data")
-	} else {
-		cnpgEvidence["sql_object_ids_unchanged"] = true
-		cnpgEvidence["gateway_credentials_and_keys_unchanged"] = true
-		cnpgEvidence["provider_data_unchanged"] = true
-		cnpgEvidence["installation_data_unchanged"] = true
-		if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-			data, err := json.MarshalIndent(cnpgEvidence, "", "  ")
-			if err != nil || os.WriteFile(filepath.Join(directory, "cnpg-restart.json"), append(data, '\n'), 0600) != nil {
-				w.t.Fatal("cannot write CNPG restart evidence")
-			}
-		}
-		w.t.Log("CNPG database Pod replacement preserved SQL object IDs, Gateway keys, credentials, provider data, and installation data")
-	}
+	w.t.Log("PostgreSQL sidecar restart preserved Gateway SQL object IDs, keys, credentials, provider data, and installation data")
 }
 
 func (w *browserGatewayWorkload) restartSidecarDatabase() {
@@ -126,4 +107,21 @@ func (w *browserGatewayWorkload) restartSidecarDatabase() {
 		}
 		time.Sleep(time.Second)
 	}
+}
+
+func (w *browserGatewayWorkload) gatewaySQLObjectIDs() map[string][3]string {
+	w.t.Helper()
+	result := map[string][3]string{}
+	for _, id := range w.gatewayIDs {
+		options, _ := w.sqlOptions(id)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		var objects [3]string
+		err := postgres.ReadRow(ctx, options, `SELECT d.oid::text,r.oid::text,d.datdba::text FROM pg_catalog.pg_database d JOIN pg_catalog.pg_roles r ON r.rolname=current_user WHERE d.datname=current_database()`, nil, &objects[0], &objects[1], &objects[2])
+		cancel()
+		if err != nil || objects[0] == "" || objects[1] == "" || objects[2] == "" {
+			w.t.Fatal("database restart SQL identity read failed")
+		}
+		result[id] = objects
+	}
+	return result
 }

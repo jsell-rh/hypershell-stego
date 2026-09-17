@@ -2,7 +2,6 @@ package acceptance
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"net"
 	"os"
@@ -13,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 )
 
@@ -51,62 +49,6 @@ func (k *kubeFixture) apply(t *testing.T, objects ...map[string]any) {
 		t.Fatal(err)
 	}
 	k.must(t, string(body), "apply", "-f", "-")
-}
-func kubernetesFixture(t *testing.T) *kubeFixture {
-	t.Helper()
-	config := os.Getenv("STEGO_TEST_KUBECONFIG")
-	if config == "" {
-		if os.Getenv("STEGO_REQUIRE_KUBERNETES") == "1" {
-			t.Fatal("Kubernetes is required")
-		}
-		t.Skip("set STEGO_TEST_KUBECONFIG to an isolated kind cluster with cert-manager")
-	}
-	k := &kubeFixture{config: config}
-	contextName := os.Getenv("STEGO_TEST_CONTEXT")
-	if contextName == "" {
-		t.Fatal("Kubernetes tests require an explicit context")
-	}
-	k.context = contextName
-	if !strings.HasPrefix(contextName, "kind-stego-") {
-		t.Fatal("database test requires a kind-stego- context")
-	}
-	name := "stego-db-" + uuid.NewString()[:8]
-	meta := func(n string) map[string]any { return map[string]any{"name": n} }
-	k.apply(t, map[string]any{"apiVersion": "v1", "kind": "Namespace", "metadata": meta(name)}, map[string]any{"apiVersion": "v1", "kind": "ServiceAccount", "metadata": map[string]any{"name": name, "namespace": name}},
-		map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRole", "metadata": meta(name), "rules": []any{
-			map[string]any{"apiGroups": []string{""}, "resources": []string{"namespaces", "secrets", "configmaps", "persistentvolumeclaims", "services"}, "verbs": []string{"get", "create", "patch", "delete"}},
-			map[string]any{"apiGroups": []string{""}, "resources": []string{"pods"}, "verbs": []string{"get"}},
-			map[string]any{"apiGroups": []string{"postgresql.cnpg.io"}, "resources": []string{"clusters"}, "verbs": []string{"get", "create", "patch", "delete"}},
-			map[string]any{"apiGroups": []string{"apps"}, "resources": []string{"deployments"}, "verbs": []string{"get", "create", "patch"}},
-			map[string]any{"apiGroups": []string{"cert-manager.io"}, "resources": []string{"certificates"}, "verbs": []string{"get", "create", "patch"}},
-		}}, map[string]any{"apiVersion": "rbac.authorization.k8s.io/v1", "kind": "ClusterRoleBinding", "metadata": meta(name), "roleRef": map[string]any{"apiGroup": "rbac.authorization.k8s.io", "kind": "ClusterRole", "name": name}, "subjects": []any{map[string]any{"kind": "ServiceAccount", "name": name, "namespace": name}}},
-		map[string]any{"apiVersion": "cert-manager.io/v1", "kind": "ClusterIssuer", "metadata": meta(name + "-self"), "spec": map[string]any{"selfSigned": map[string]any{}}})
-	t.Cleanup(func() {
-		k.must(t, "", "delete", "clusterrole,clusterrolebinding,clusterissuer", name, "--ignore-not-found=true")
-		k.must(t, "", "delete", "clusterissuer", name+"-self", "--ignore-not-found=true")
-		k.must(t, "", "-n", "cert-manager", "delete", "certificate,secret", name, "--ignore-not-found=true")
-		k.must(t, "", "delete", "namespace", name, "--wait=false", "--ignore-not-found=true")
-	})
-	k.apply(t, map[string]any{"apiVersion": "cert-manager.io/v1", "kind": "Certificate", "metadata": map[string]any{"name": name, "namespace": "cert-manager"}, "spec": map[string]any{"isCA": true, "commonName": "STEGO isolated database test CA", "secretName": name, "issuerRef": map[string]any{"name": name + "-self", "kind": "ClusterIssuer"}, "privateKey": map[string]any{"algorithm": "ECDSA", "size": 256}}})
-	k.must(t, "", "-n", "cert-manager", "wait", "certificate/"+name, "--for=condition=Ready", "--timeout=60s")
-	k.apply(t, map[string]any{"apiVersion": "cert-manager.io/v1", "kind": "ClusterIssuer", "metadata": meta(name), "spec": map[string]any{"ca": map[string]any{"secretName": name}}})
-	directory := t.TempDir()
-	caEncoded := strings.TrimSpace(string(k.must(t, "", "config", "view", "--raw", "--minify", "-o", "jsonpath={.clusters[0].cluster.certificate-authority-data}")))
-	ca, err := base64.StdEncoding.DecodeString(caEncoded)
-	if err != nil {
-		t.Fatal(err)
-	}
-	token := k.must(t, "", "-n", name, "create", "token", name, "--duration=1h")
-	caPath, tokenPath := filepath.Join(directory, "ca.pem"), filepath.Join(directory, "token")
-	if err := os.WriteFile(caPath, ca, 0600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(tokenPath, token, 0600); err != nil {
-		t.Fatal(err)
-	}
-	address := strings.TrimSpace(string(k.must(t, "", "config", "view", "--minify", "-o", "jsonpath={.clusters[0].cluster.server}")))
-	k.options = gatewayworkload.Options{ServerURL: address, CAFile: caPath, TokenFile: tokenPath, ClusterIssuer: name}
-	return k
 }
 func startDatabaseController(t *testing.T, binary string, k *kubeFixture, address, ca, bearer string, settings ...string) (func(), func() string) {
 	t.Helper()

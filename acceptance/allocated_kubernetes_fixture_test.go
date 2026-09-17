@@ -25,9 +25,6 @@ import (
 // This fixture does not test worker Deployments or NetworkPolicies.
 func allocatedKubernetesFixture(t *testing.T, cluster string, workers ...string) map[string]*kubeFixture {
 	t.Helper()
-	if os.Getenv("STEGO_TEST_ALLOCATED_FIXTURE") == "1" {
-		return suppliedAllocationFixture(t, cluster, workers...)
-	}
 	config := os.Getenv("STEGO_TEST_KUBECONFIG")
 	if config == "" {
 		if os.Getenv("STEGO_REQUIRE_KUBERNETES") == "1" {
@@ -100,94 +97,6 @@ func allocatedKubernetesFixture(t *testing.T, cluster string, workers ...string)
 		result[worker] = &kubeFixture{config: config, options: gatewayworkload.Options{ServerURL: server, CAFile: caPath, TokenFile: tokenPath, ControlNamespace: namespace, ClusterID: cluster}}
 	}
 	return result
-}
-
-// The bounded cluster runner supplies generated roles and short-lived tokens.
-// The driver token can inspect the test database and the named allocator role.
-// It cannot change that role or read other application Secrets.
-func suppliedAllocationFixture(t *testing.T, cluster string, workers ...string) map[string]*kubeFixture {
-	t.Helper()
-	namespace, contextName := os.Getenv("STEGO_TEST_NAMESPACE"), os.Getenv("STEGO_TEST_KUBERNETES_CONTEXT")
-	k := &kubeFixture{config: os.Getenv("STEGO_TEST_KUBECONFIG"), context: contextName}
-	if !strings.HasPrefix(namespace, "stego-cnpg-live-") || contextName == "" || k.config == "" {
-		t.Fatal("bounded allocation fixture identity is missing")
-	}
-	if name := strings.TrimSpace(string(k.must(t, "", "config", "current-context"))); name != contextName {
-		t.Fatal("bounded allocation fixture context differs")
-	}
-	result := map[string]*kubeFixture{}
-	for _, worker := range workers {
-		path := "/cnpg-credentials/" + worker
-		if data, err := os.ReadFile(path); err != nil || len(strings.TrimSpace(string(data))) == 0 {
-			t.Fatal("bounded worker credential is missing")
-		}
-		result[worker] = &kubeFixture{config: k.config, context: contextName, options: gatewayworkload.Options{
-			ServerURL: "https://kubernetes.default.svc", CAFile: "/cnpg-credentials/ca.crt", TokenFile: path,
-			ControlNamespace: namespace, ClusterID: cluster,
-		}}
-	}
-	return result
-}
-
-func prepareCNPGTestOperator(t *testing.T, namespace, id string) {
-	t.Helper()
-	if os.Getenv("STEGO_TEST_ALLOCATED_FIXTURE") != "1" {
-		return
-	}
-	body, err := json.Marshal(map[string]string{"namespace": namespace, "id": id})
-	if err != nil || os.WriteFile("/work/cnpg-request.tmp", body, 0600) != nil || os.Rename("/work/cnpg-request.tmp", "/work/cnpg-request.json") != nil {
-		t.Fatal("cannot request the bounded CNPG operator")
-	}
-	until := time.Now().Add(150 * time.Second)
-	for {
-		if _, err := os.Stat("/work/operator-ready"); err == nil {
-			return
-		} else if !errors.Is(err, os.ErrNotExist) {
-			t.Fatal(err)
-		}
-		if time.Now().After(until) {
-			t.Fatal("bounded CNPG operator setup timed out")
-		}
-		time.Sleep(time.Second)
-	}
-}
-
-func startCNPGTestOperator(t *testing.T, allocator *kubeFixture, namespace, id string) {
-	t.Helper()
-	if os.Getenv("STEGO_TEST_ALLOCATED_FIXTURE") != "1" {
-		return
-	}
-	c := allocator.workerClient(t)
-	defer c.Close()
-	a, err := allocation.New(c, allocator.options.ControlNamespace)
-	if err != nil {
-		t.Fatal(err)
-	}
-	ctx, cancel := context.WithTimeout(context.Background(), 45*time.Second)
-	defer cancel()
-	for {
-		err := a.RequireNamespace(ctx, "database", namespace, id)
-		if err == nil {
-			break
-		}
-		if !errors.Is(err, allocation.ErrPending) || ctx.Err() != nil {
-			t.Fatal("CNPG operator namespace allocation", err)
-		}
-		time.Sleep(time.Second)
-	}
-	for {
-		if _, err := os.Stat("/work/driver-ready"); err == nil {
-			break
-		} else if !errors.Is(err, os.ErrNotExist) {
-			t.Fatal(err)
-		}
-		if ctx.Err() != nil {
-			t.Fatal("CNPG test driver setup timed out")
-		}
-		time.Sleep(time.Second)
-	}
-	allocator.must(t, "", "-n", "cnpg-system", "patch", "job", "cnpg-test-lifetime", "--type=merge", "-p", `{"spec":{"suspend":false}}`)
-	allocator.must(t, "", "-n", "cnpg-system", "patch", "deployment", "cnpg-controller-manager", "--type=merge", "-p", `{"spec":{"replicas":1}}`)
 }
 
 // The host changes only namespace deletion in the frozen generated role. The

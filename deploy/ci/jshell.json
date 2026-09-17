@@ -186,7 +186,6 @@
           "resourceNames": [
             "cli-test-postgres",
             "database-tls",
-            "cnpg-credentials",
             "count-credentials"
           ],
           "verbs": [
@@ -351,7 +350,7 @@
           },
           {
             "name": "secrets",
-            "expression": "[\"cli-test-postgres\", \"database-tls\", \"cnpg-credentials\", \"count-credentials\"]"
+            "expression": "[\"cli-test-postgres\", \"database-tls\", \"count-credentials\"]"
           }
         ]
       }
@@ -416,7 +415,7 @@
             "message": "CI cannot create lasting service account token Secrets"
           },
           {
-            "expression": "!('system:serviceaccounts:stego-ci-access' in request.userInfo.groups) || object.metadata.name in [\"cli-test-postgres\", \"database-tls\", \"cnpg-credentials\", \"count-credentials\"]",
+            "expression": "!('system:serviceaccounts:stego-ci-access' in request.userInfo.groups) || object.metadata.name in [\"cli-test-postgres\", \"database-tls\", \"count-credentials\"]",
             "message": "CI can create only declared test Secrets"
           }
         ]

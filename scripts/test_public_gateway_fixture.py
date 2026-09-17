@@ -75,7 +75,7 @@ class PublicGatewayFixture(unittest.TestCase):
         script = Path(__file__).parent / 'render-service-fixture.py'
         environment = dict(os.environ, STEGO_TEST_GATEWAY_PUBLIC_CONFIG=config_path,
                            STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(root / 'ca.pem'),
-                           STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='1', STEGO_TEST_CNPG_FIXTURE='0')
+                           STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='1')
         subprocess.run([sys.executable, str(script), 'stego-service-ci', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())

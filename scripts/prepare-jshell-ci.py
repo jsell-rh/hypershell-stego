@@ -2,7 +2,7 @@
 """Create the restricted CI identity and write an expiring private kubeconfig.
 
 Run as the operator. This script never prints a token. It does not grant CI
-permission to install cluster roles, admission policies, or CNPG operators.
+permission to install cluster roles, admission policies, or database operators.
 """
 
 import argparse

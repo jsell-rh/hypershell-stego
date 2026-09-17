@@ -13,10 +13,6 @@ import time
 SUBJECT = 'system:serviceaccount:stego-ci-access:hypershell-ci'
 API_SECONDS = 25 * 60
 BROWSER_SECONDS = 35 * 60
-CNPG_SECONDS = 45 * 60
-# The database and operator must outlive the 30-minute application Job, its
-# database readiness wait, and cleanup. This remains below the credential gate.
-CNPG_RUNTIME_SECONDS = 40 * 60
 
 
 def require_credentials(config, minimum_seconds, now=None):
@@ -69,7 +65,7 @@ def require_context_credentials(context, minimum_seconds, kubeconfig=None):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--context', required=True)
-    budgets = {'api': API_SECONDS, 'browser': BROWSER_SECONDS, 'cnpg': CNPG_SECONDS}
+    budgets = {'api': API_SECONDS, 'browser': BROWSER_SECONDS}
     parser.add_argument('--gate', choices=list(budgets), required=True)
     args = parser.parse_args(argv)
     require_context_credentials(args.context, budgets[args.gate])

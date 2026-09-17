@@ -51,7 +51,7 @@ jobs:
           echo "STEGO_COMPILER_PACKAGE=$RUNNER_TEMP/compiler-setup/verified" >> "$GITHUB_ENV"
           unset GH_TOKEN GITHUB_TOKEN
           # Match the operator's fixed network profile for both database modes.
-          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source" --cnpg-database-namespace stego-cnpg-database-ci
+          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source"
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
@@ -93,7 +93,6 @@ jobs:
           KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig
           STEGO_TEST_CONTEXT: jshell-ci
           STEGO_TEST_PREINSTALLED: '1'
-          STEGO_TEST_CNPG_FIXTURE: '0'
           STEGO_TEST_BROWSER_DEPLOYMENT: '1'
           STEGO_TEST_BROWSER_WORKLOAD: '1'
           STEGO_TEST_GATEWAY_CLUSTER_ISSUER: acp-hypershell-test-ca

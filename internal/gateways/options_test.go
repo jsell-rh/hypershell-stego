@@ -8,7 +8,6 @@ import (
 )
 
 func TestControlPlaneConfigurationFailsClosed(t *testing.T) {
-	t.Setenv("DATABASE_PROVIDER", "")
 	for _, raw := range []string{"", `[]`, `["subject-a","subject-b"]`} {
 		t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", raw)
 		options, err := OptionsFromEnvironment()
@@ -60,7 +59,6 @@ func TestCleanupRequiresAnExactGrant(t *testing.T) {
 }
 
 func TestCleanupConfigurationDoesNotFallBackToControllerAccess(t *testing.T) {
-	t.Setenv("DATABASE_PROVIDER", "")
 	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", `["worker"]`)
 	for _, raw := range []string{"", `[]`} {
 		t.Setenv("HYPERSHELL_CLEANUP_GRANTS", raw)
@@ -81,7 +79,6 @@ func TestCleanupConfigurationDoesNotFallBackToControllerAccess(t *testing.T) {
 }
 
 func TestControllerWriteConfigurationFailsClosed(t *testing.T) {
-	t.Setenv("DATABASE_PROVIDER", "")
 	t.Setenv("HYPERSHELL_CONTROL_PLANE_SUBJECTS", `["worker"]`)
 	t.Setenv("HYPERSHELL_CLEANUP_GRANTS", `[{"issuer":"https://issuer.example","subject":"worker","resource":"Gateway","operation":"observe.workload","target":"a"}]`)
 	for _, raw := range []string{"", `[]`} {

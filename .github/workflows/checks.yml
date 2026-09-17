@@ -7,11 +7,6 @@ on:
       - '**/*.md'
   pull_request:
   workflow_dispatch:
-    inputs:
-      cnpg_only:
-        description: Run only the complete CNPG Gateway workflow
-        type: boolean
-        default: false
 
 env:
   # CI uses the runner's loopback address for its database fixture.
@@ -27,7 +22,6 @@ concurrency:
 
 jobs:
   acceptance:
-    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     name: acceptance (${{ matrix.suite }})
     strategy:
       fail-fast: false
@@ -133,11 +127,6 @@ jobs:
             ${{ runner.temp }}/rendered-browser/*.network.json
             ${{ runner.temp }}/rendered-browser/browser-startup-signals.json
 
-  cnpg-gateway-workflow:
-    if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.cnpg_only)
-    uses: ./.github/workflows/jshell-cnpg.yml
-    secrets: inherit
-
   sandbox-workload:
     # Deferred by the user on 2026-09-15. No Kata test cluster is available.
     # Keep this gate visibly skipped until its restricted live runner is ready.
@@ -171,7 +160,6 @@ jobs:
           STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
 
   service-image:
-    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
@@ -188,10 +176,6 @@ jobs:
       - run: timeout 15s python3 scripts/test_browser_cluster_installation.py
       - run: timeout 15s python3 scripts/test_browser_public_permissions.py
       - run: timeout 15s python3 scripts/test_browser_inspection.py
-      - run: timeout 15s python3 scripts/test_cnpg_test_operator.py
-      - run: timeout 15s python3 scripts/test_cnpg_installation_fixture.py
-      - run: timeout 15s python3 scripts/test_cnpg_ci.py
-      - run: timeout 15s python3 scripts/test_cnpg_workflow.py
       - run: timeout 15s python3 scripts/test_cleanup_browser_ci.py
       - run: bash -n scripts/check-external-egress.sh
       - name: Build the generated service image
@@ -219,7 +203,6 @@ jobs:
           done
 
   web-console:
-    if: github.event_name != 'workflow_dispatch' || !inputs.cnpg_only
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:

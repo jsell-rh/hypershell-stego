@@ -16,7 +16,7 @@ import (
 	"google.golang.org/grpc/metadata"
 )
 
-// SQL effects use a controlled provider here. Real CNPG connection and cleanup
+// SQL effects use a controlled provider here. Real PostgreSQL connection and cleanup
 // checks remain a separate required gate.
 type sharedCleanupProvider struct {
 	cluster, gateway string

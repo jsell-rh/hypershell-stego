@@ -41,14 +41,12 @@ logout, the API proxy, and browser telemetry. OAuth tokens stay out of browser
 JavaScript. Hypershell retains the React application and its domain behavior.
 The upstream per-Gateway dashboard uses its own generated Go browser backend.
 STEGO supplies its authentication, deployment, lifecycle, browser client, and
-telemetry. Its public and expanded CNPG workflows passed. The CNPG fixture now
-permits database ingress from the separate console Pods through a narrow
-[network rule](acceptance/dashboard-cnpg-network-evidence.json). The complete
-[CNPG result](acceptance/dashboard-cnpg-workflow-evidence.json) includes primary
-replacement, dashboard recovery, durable deletion, and independent cleanup.
+telemetry. Earlier public and CNPG test results remain in the acceptance
+records. The current database model uses only an operator-supplied PostgreSQL
+server. See [the database contract](acceptance/external-gateway-databases.md).
 
 The API has no database catalog or `database_id`. Installation supplies
-co-located external PostgreSQL or CNPG. Controllers create an isolated logical
+co-located external PostgreSQL. Controllers create an isolated logical
 database and login for each Gateway. The external-server tests use PostgreSQL
 fixtures; they do not create RDS. Public Gateway TLS uses router passthrough and
 an operator-selected issuer. Gateway namespace traffic is restricted to declared
@@ -124,8 +122,7 @@ and recreation; startup never performs that teardown.
 
 Use the [full contract workflow](.github/workflows/checks.yml),
 [API workflow](.github/workflows/jshell-gateway.yml),
-[public browser workflow](.github/workflows/jshell-browser.yml), and
-[CNPG workflow](.github/workflows/jshell-cnpg.yml) for qualification.
+[complete public browser workflow](.github/workflows/jshell-browser.yml) for qualification.
 Run heavy checks in CI or the restricted jshell environment. Use the saved
 context explicitly, keep one live cluster test at a time, and verify cleanup
 before the next test. Do not use Playwright or run performance tests on the
