@@ -75,13 +75,13 @@ jobs:
           cp .stego/compiler-revision "$RUNNER_TEMP/provider-discovery/compiler-revision"
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=6m ./acceptance \
-            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestGatewayCleanupDeadlineReopensConfirmation)$' \
+            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestGatewayCleanupDeadlineReopensConfirmation|TestUnrelatedClientSnapshotComparison)$' \
             | tee "$RUNNER_TEMP/provider-discovery/tests.log"
           python3 - "$RUNNER_TEMP/provider-discovery/tests.log" <<'PY'
           import re, sys
           from pathlib import Path
           log = Path(sys.argv[1]).read_text()
-          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestGatewayCleanupDeadlineReopensConfirmation']:
+          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestGatewayCleanupDeadlineReopensConfirmation', 'TestUnrelatedClientSnapshotComparison']:
               if not re.search(r'^--- PASS: ' + name + ' ', log, re.M):
                   raise SystemExit('A required cleanup result is missing: ' + name)
           PY

@@ -423,3 +423,21 @@ confirmed cleanup, and continued use of a different Gateway credential. The
 private journal API also passed separately on jshell in run `35045870319`.
 The [complete record](common-account-lifecycle-20260916.md) includes source IDs,
 checks, cleanup, artifact hashes, and remaining limits.
+
+## Unrelated client response comparison
+
+Run `35218939463` on `9c500f4` failed the unrelated client check after
+125.92 seconds. Generation passed. The read returned HTTP 200, and the
+`defaultClientScopes` JSON value differed. That record cannot distinguish a
+scope change from a change in scope order. The protected journal checks were
+not reached. Provider and service cleanup passed. The separate cleanup deadline
+test passed in 25.96 seconds; the earlier event timeout remains unexplained.
+
+The test now compares default and optional scope names as sets. Keycloak 26.7.3
+builds both response arrays from map keys in
+[ModelToRepresentation](https://github.com/keycloak/keycloak/blob/26.7.3/server-spi-private/src/main/java/org/keycloak/models/utils/ModelToRepresentation.java).
+The comparison rejects missing arrays, invalid values, and duplicate names.
+All other JSON values must stay equal, including unknown fields. Negative
+cases check scope changes, credentials, ownership, other array order, and large
+numbers. Production cleanup code is unchanged. The new real-provider result is
+pending. A pass must also authenticate all 61 protected cleanup journals.

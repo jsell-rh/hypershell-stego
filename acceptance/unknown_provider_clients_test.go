@@ -10,6 +10,7 @@ import (
 	"net/url"
 	"os"
 	"reflect"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -197,19 +198,10 @@ func TestUnknownGatewayClientsCloseAcrossProcessRestart(t *testing.T) {
 		}
 	}
 	afterForeign := admin(http.MethodGet, "/clients/"+foreign.Provider, nil)
-	if afterForeign.StatusCode != http.StatusOK || !bytes.Equal(beforeForeign.Body, afterForeign.Body) {
+	before, beforeOK := clientSnapshot(beforeForeign.Body)
+	after, afterOK := clientSnapshot(afterForeign.Body)
+	if afterForeign.StatusCode != http.StatusOK || !beforeOK || !afterOK || !reflect.DeepEqual(before, after) {
 		// Report fixed field names and comparison results, never provider values.
-		decode := func(raw []byte) (map[string]any, bool) {
-			d := json.NewDecoder(bytes.NewReader(raw))
-			d.UseNumber()
-			var value map[string]any
-			if d.Decode(&value) != nil || value == nil {
-				return nil, false
-			}
-			return value, d.Decode(new(any)) == io.EOF
-		}
-		before, beforeOK := decode(beforeForeign.Body)
-		after, afterOK := decode(afterForeign.Body)
 		changed := []string{}
 		for _, field := range []string{"id", "clientId", "name", "secret", "enabled", "attributes", "defaultClientScopes", "optionalClientScopes", "protocolMappers", "access", "redirectUris", "webOrigins"} {
 			a, aPresent := before[field]
@@ -218,7 +210,10 @@ func TestUnknownGatewayClientsCloseAcrossProcessRestart(t *testing.T) {
 				changed = append(changed, field)
 			}
 		}
-		t.Fatalf("unrelated client check failed: HTTP=%d valid_JSON=%t same_JSON_value=%t changed_known_fields=%v", afterForeign.StatusCode, beforeOK && afterOK, beforeOK && afterOK && reflect.DeepEqual(before, after), changed)
+		t.Fatalf("unrelated client check failed: HTTP=%d valid_snapshot=%t changed_known_fields=%v", afterForeign.StatusCode, beforeOK && afterOK, changed)
+	}
+	if !bytes.Equal(beforeForeign.Body, afterForeign.Body) {
+		t.Log("Unrelated client response encoding changed; scope membership and all other JSON values stayed equal")
 	}
 
 	raw, err := os.ReadFile(k.stateKeysFile)
@@ -274,4 +269,76 @@ func TestUnknownGatewayClientsCloseAcrossProcessRestart(t *testing.T) {
 		t.Fatal("restart reopened account creation", code)
 	}
 	t.Logf("Unknown provider cleanup retained %d closed protected identities; %d journals and a checkpoint survived API/provisioner restart; the matching-name unrelated client was unchanged", checked, interruptedCount)
+}
+
+// Keycloak returns scope names from a map. Compare those two fields as sets.
+// All other fields, including unknown fields and array order, stay significant.
+func clientSnapshot(raw []byte) (map[string]any, bool) {
+	d := json.NewDecoder(bytes.NewReader(raw))
+	d.UseNumber()
+	var value map[string]any
+	if d.Decode(&value) != nil || value == nil || d.Decode(new(any)) != io.EOF {
+		return nil, false
+	}
+	for _, field := range []string{"defaultClientScopes", "optionalClientScopes"} {
+		items, ok := value[field].([]any)
+		if !ok {
+			return nil, false
+		}
+		names := make([]string, len(items))
+		for i, item := range items {
+			name, ok := item.(string)
+			if !ok || name == "" {
+				return nil, false
+			}
+			names[i] = name
+		}
+		slices.Sort(names)
+		for i := 1; i < len(names); i++ {
+			if names[i] == names[i-1] {
+				return nil, false
+			}
+		}
+		value[field] = names
+	}
+	return value, true
+}
+
+func TestUnrelatedClientSnapshotComparison(t *testing.T) {
+	const original = `{"defaultClientScopes":["profile","email"],"optionalClientScopes":[],"enabled":true,"secret":"fixture","attributes":{"owner":"foreign"},"other":[1,2],"counter":9007199254740993}`
+	before, ok := clientSnapshot([]byte(original))
+	if !ok {
+		t.Fatal("invalid comparison fixture")
+	}
+	for _, tc := range []struct {
+		name, from, to string
+		wantEqual      bool
+	}{
+		{"same", "", "", true},
+		{"scope_order", `["profile","email"]`, `["email","profile"]`, true},
+		{"scope_added", `["profile","email"]`, `["profile","email","roles"]`, false},
+		{"scope_removed", `["profile","email"]`, `["profile"]`, false},
+		{"scope_duplicate", `["profile","email"]`, `["profile","email","email"]`, false},
+		{"scope_type", `["profile","email"]`, `["profile",1]`, false},
+		{"scope_null", `["profile","email"]`, `null`, false},
+		{"scope_missing", `"defaultClientScopes":["profile","email"],`, ``, false},
+		{"optional_added", `"optionalClientScopes":[]`, `"optionalClientScopes":["roles"]`, false},
+		{"disabled", `true`, `false`, false},
+		{"credential_changed", `"fixture"`, `"changed"`, false},
+		{"owner_changed", `"foreign"`, `"managed"`, false},
+		{"other_order", `[1,2]`, `[2,1]`, false},
+		{"large_number", `9007199254740993`, `9007199254740992`, false},
+		{"trailing_value", `9007199254740993}`, `9007199254740993}{}`, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			raw := original
+			if tc.from != "" {
+				raw = strings.Replace(raw, tc.from, tc.to, 1)
+			}
+			after, valid := clientSnapshot([]byte(raw))
+			if got := valid && reflect.DeepEqual(before, after); got != tc.wantEqual {
+				t.Fatalf("snapshot equality = %t, want %t", got, tc.wantEqual)
+			}
+		})
+	}
 }
