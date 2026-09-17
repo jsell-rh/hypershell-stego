@@ -1,0 +1,13 @@
+{
+  "run": 35251253553,
+  "source": "46e9273825b3f219a95f48e36c46350a3e807031",
+  "checked_at": "2026-09-17T17:16:35.685418+00:00",
+  "source_inventory_files": 1445,
+  "pod_evidence_cases": 54,
+  "account_dependency_cases": 12,
+  "required_top_level_passes": 2,
+  "log_sha256": "ef421a796170c8ccdf8822e9bcc298c38f5efd7a74c925dab6dcad5c9521e875",
+  "installation_and_all_six_manifests_unchanged": true,
+  "cluster_writes": false,
+  "scope": "Hosted race checks and exact rendered policy bytes. The live browser repeat remains required."
+}

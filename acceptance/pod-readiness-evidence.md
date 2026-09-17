@@ -12,5 +12,11 @@ workload Pods are ready. Account and token errors, incomplete inventories,
 multiple current Pods, and invalid readiness data still cause failure.
 Terminating Pods must also use the required account and token setting.
 
-The focused CI checks and the complete live browser repeat are pending.
-This change does not establish that the live workflow passes.
+[Focused run 35251253553](https://github.com/jsell-rh/hypershell-stego/actions/runs/35251253553)
+passed at `46e9273`. Independent checks confirmed all 54 Pod cases, 12 account
+dependency cases, both race-test packages, and the source inventory. The rendered
+installation and all six policy manifests are unchanged. See the
+[focused evidence](pod-readiness-focused-evidence.json).
+
+The complete live browser repeat remains required. This focused result does not
+establish that the live workflow passes.
