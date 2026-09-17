@@ -6,6 +6,8 @@ import json
 from pathlib import Path
 import urllib.request
 
+from ci_credentials import CNPG_RUNTIME_SECONDS
+
 APP_NS = 'stego-service-ci'
 OPERATOR_NS = 'stego-cnpg-operator-ci'
 DATABASE_NS = 'stego-cnpg-database-ci'
@@ -188,7 +190,7 @@ def build(documents, endpoints, issuer, storage_class):
         'items': [{'key': 'tls.crt', 'path': 'apiserver.crt'}, {'key': 'tls.key', 'path': 'apiserver.key'}]}})
     container.setdefault('volumeMounts', []).append({'name': 'webhook-cert', 'mountPath': '/etc/cnpg-webhook', 'readOnly': True})
     operator_job = resource('Job', 'cnpg-operator', OPERATOR_NS, 'batch/v1', spec={
-        'activeDeadlineSeconds': 2400, 'backoffLimit': 0, 'ttlSecondsAfterFinished': 0, 'template': pod})
+        'activeDeadlineSeconds': CNPG_RUNTIME_SECONDS, 'backoffLimit': 0, 'ttlSecondsAfterFinished': 0, 'template': pod})
     database_job = next(o for o in server_objects if o['kind'] == 'Job')
     cluster = next(o for o in server_objects if o['kind'] == 'Cluster')
     templates = {'operator-job': operator_job, 'database-job': database_job, 'cluster': cluster}
@@ -200,7 +202,7 @@ def policies(templates):
     base = json.loads((Path(__file__).resolve().parent.parent / 'deploy/ci/jshell.json').read_text())
     original = next(o for o in base['items'] if o['kind'] == 'ValidatingAdmissionPolicy' and o['metadata']['name'] == 'stego-ci-bounded-jobs')
     result = []
-    for ns, key, maximum in [(OPERATOR_NS, 'operator-job', 2400), (DATABASE_NS, 'database-job', 1500)]:
+    for ns, key, maximum in [(OPERATOR_NS, 'operator-job', CNPG_RUNTIME_SECONDS), (DATABASE_NS, 'database-job', CNPG_RUNTIME_SECONDS)]:
         policy = copy.deepcopy(original)
         name = ns + '.bounded-jobs'
         policy['metadata'] = {'name': name, 'labels': dict(OWNER)}

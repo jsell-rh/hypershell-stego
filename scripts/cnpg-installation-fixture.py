@@ -15,6 +15,8 @@ import secrets
 import subprocess
 import time
 
+from ci_credentials import CNPG_RUNTIME_SECONDS
+
 LABEL = 'stego.test/cnpg-run'
 CLUSTER = 'gateway-database'
 IMAGE = 'ghcr.io/cloudnative-pg/postgresql:18.6-system-trixie@sha256:14e57107afc9bcdd085ed6593c67743723718f167da512326ddb2f7904cc4576'
@@ -81,7 +83,7 @@ def definitions(namespace, database_namespace, storage_class, endpoints, operato
             {'apiGroups': [''], 'resources': ['pods'], 'verbs': ['get', 'delete']}]),
         binding('fixture-observer', 'fixture-observer', 'service-check', namespace, 'Role'),
         network,
-        item('Job', 'database-lifetime', 'batch/v1', spec={'backoffLimit': 0, 'activeDeadlineSeconds': 1500, 'ttlSecondsAfterFinished': 0,
+        item('Job', 'database-lifetime', 'batch/v1', spec={'backoffLimit': 0, 'activeDeadlineSeconds': CNPG_RUNTIME_SECONDS, 'ttlSecondsAfterFinished': 0,
             'template': {'spec': {'restartPolicy': 'Never', 'automountServiceAccountToken': False,
                 'securityContext': {'runAsNonRoot': True, 'seccompProfile': {'type': 'RuntimeDefault'}},
                 'containers': [{'name': 'deadline', 'image': DEADLINE_IMAGE, 'command': ['/bin/sleep', '3600'],
