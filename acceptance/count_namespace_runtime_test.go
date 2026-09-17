@@ -65,7 +65,18 @@ func (k *countKubernetes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 5 {
-		result := kube.Object{"metadata": kube.Object{"name": parts[4], "uid": ns.uid, "resourceVersion": "1", "labels": kube.Object{allocation.MarkerLabel: k.allocator.Marker(), allocation.ProfileLabel: "gateway", "hypershell.redhat.io/gateway-id": ns.owner, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}}}
+		annotations := kube.Object{}
+		for _, alias := range []string{"gateway", "console"} {
+			name, err := k.allocator.ServiceAccountName("gateway", parts[4], ns.owner, alias)
+			if err != nil {
+				k.invalid++
+				k.mu.Unlock()
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			annotations["stego.dev/service-account-"+alias] = name
+		}
+		result := kube.Object{"metadata": kube.Object{"name": parts[4], "uid": ns.uid, "resourceVersion": "1", "annotations": annotations, "labels": kube.Object{allocation.MarkerLabel: k.allocator.Marker(), allocation.ProfileLabel: "gateway", "hypershell.redhat.io/gateway-id": ns.owner, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}}}
 		k.mu.Unlock()
 		_ = json.NewEncoder(w).Encode(result)
 		return
