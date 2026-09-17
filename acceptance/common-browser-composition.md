@@ -77,5 +77,25 @@ fixtures, or allocated namespaces and roles. The shared Lease had no holder.
 See the [exact source and result record](common-browser-public-evidence.json).
 
 The corrected [full suite](https://github.com/jsell-rh/hypershell-stego/actions/runs/35195371309)
-is still running. Separate API and CNPG qualification remains open. This
-public workflow result does not complete the enterprise goal.
+passed its core, browser, console, and service-image jobs. The core log contains
+307 top-level passes and 651 passing test events. Four named live tests were
+excluded from the core suite. CNPG and Sandbox jobs were not selected. The core
+log SHA-256 is `2ef2fd88e328a606221ae4700d495b6bc5e04e186045321b5853cde2caec575d`.
+
+## API restart fixture correction
+
+The separate [API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35197241667)
+reported a failure in the cluster deletion restart test. A `rolebinding.created`
+event still had a valid lease with 23.525 seconds left. The fixture required an
+empty queue within five seconds. The exact claim response was not captured;
+this is consistent with a retained claim after cancellation.
+
+The generated runtime already permits recovery after its 30-second lease.
+The fixture now uses the existing bounded recovery helper after each restart.
+Its total context permits the three recovery windows. Normal delivery checks
+retain their five-second bound. No runtime or generated code changed. The API
+list now also requires the existing deterministic unfinished-claim test, which
+checks that the original event identity survives lease expiry without a manual
+reset. All 14 small Job-observation tests passed locally. The corrected API
+result and CNPG qualification remain open. The failed run remains part of the
+record. These results do not complete the enterprise goal.

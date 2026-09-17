@@ -35,7 +35,8 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
-	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
+	// Permit three bounded lease recovery windows and the API checks.
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
 	defer cancel()
 	admin := token(t, key, "operator", "platform:admin")
 	owner := token(t, key, "owner", "gateway:creator")
@@ -50,6 +51,9 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 		stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 		_, connection = grpcClient(t, grpcAddress, apiTLS)
 		state = control.NewGatewayIdentityServiceClient(connection)
+		// A claim can commit before the stopped process receives its receipt.
+		// Require recovery within the generated lease and delivery bounds.
+		awaitQueueEmptyAfterRestart(t, f)
 	}
 	var ids []string
 	for _, name := range []string{"first", "second"} {

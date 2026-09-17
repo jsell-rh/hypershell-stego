@@ -59,6 +59,7 @@ REQUIRED = [
     "TestGatewayWorkflowThroughGeneratedRESTProcess",
     "TestGatewayWorkflowAcrossRESTAndGRPC",
     "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+    "TestGeneratedRuntimeRecoversUnfinishedClaim",
     "TestGatewayWatchThroughGeneratedRuntime",
     "TestNamespaceCountWorkflowThroughGeneratedWorker",
     "TestPlacementWorkflowThroughGeneratedRuntime",
