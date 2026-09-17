@@ -26,8 +26,9 @@ archive; the CI patch omitted it because it was untracked. See the
 
 The dedicated API and SQL checks passed, including the new deleted-record
 assertion. The first complete live Gateway workflow with this compiler failed at the
-PostgreSQL telemetry check. Do not use this branch as a qualified deployment
-until the corrected workflow passes.
+PostgreSQL telemetry check. The corrected complete workflow later passed at
+`d9cd7e3`; see [the workflow record](postgres-signal-cnpg.md). Later source
+changes retain their own qualification requirements.
 
 ## Verified hosted results
 
@@ -64,8 +65,9 @@ service cleanup also passed. The four excluded live tests have separate gates.
 See the [core record](database-credential-core-evidence.json). This pass does
 not establish the cause of either earlier failure.
 
-The complete live Gateway workflow has not passed with this compiler. The
-verified results below do not qualify that failed check.
+The later complete workflow passed all 11 required tests, including credential
+preparation telemetry. That result does not change the earlier failed run.
+The API and journal results below have separate scopes.
 
 ## API, SQL, and journal results
 
@@ -100,7 +102,9 @@ application telemetry test did not permit that operation. The corrected test
 permits `prepare` and requires its correlated logs, traces, and metrics. It
 still rejects unknown operations. The failed run retained an invalid flag,
 so this contract defect does not exclude another invalid field or identity.
-The complete workflow must pass again with the corrected contract.
+The complete workflow passed again with the corrected contract in run
+`35224348179`. Its exact source and limits are in the
+[complete workflow record](postgres-signal-cnpg.md).
 
 Independent cleanup confirmed that the test resources, both volumes, and
 the shared test Lease holder were absent. The previous failure remains in
