@@ -19,8 +19,9 @@ passed all 28 required tests, with no failed or skipped tests in the saved log.
 Independent verification compared the result list with the required set in the
 exact tested workflow source.
 
-The API, public browser, and full main suite have separate active checks. These
-module and journal results do not establish their completion. The prior branch
+The [main API gate](common-browser-main-api-evidence.md) also passed all 52
+required checks. The public browser and full main suite have separate active
+checks. These module and journal results do not establish their completion. The prior branch
 qualification remains in [the composition record](common-browser-composition.md).
 The full enterprise goal remains open.
 
