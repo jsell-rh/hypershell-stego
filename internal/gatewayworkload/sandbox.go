@@ -12,7 +12,6 @@ import (
 )
 
 const admissionAPI = "/apis/admissionregistration.k8s.io/v1"
-const mutationAPI = "/apis/admissionregistration.k8s.io/v1beta1"
 
 // The operator selects and installs the isolated runtime. Admission prevents
 // an application request from selecting a different runtime or host access.
@@ -32,7 +31,8 @@ func sandboxAdmission(id, ns, runtimeClass, supervisor string) []resource {
 		fmt.Sprintf("variables.containers.all(c, !has(c.securityContext) || !has(c.securityContext.capabilities) || !has(c.securityContext.capabilities.add) || c.securityContext.capabilities.add.all(a, c.image == %q && ((c.name == 'openshell-network-init' && a in ['NET_ADMIN','NET_RAW','CHOWN','FOWNER']) || (c.name == 'openshell-supervisor-network' && a in ['SYS_PTRACE','DAC_READ_SEARCH']))))", supervisor),
 		fmt.Sprintf("variables.containers.all(c, !(c.name in ['openshell-network-init','openshell-supervisor-network']) || c.image == %q)", supervisor),
 		"variables.containers.all(c, c.name in ['agent','workspace-init','openshell-network-init','openshell-supervisor-network'])",
-		"variables.containers.all(c, !(c.name in ['agent','workspace-init']) || (has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot && has(c.securityContext.runAsUser) && c.securityContext.runAsUser != 0 && has(c.securityContext.allowPrivilegeEscalation) && !c.securityContext.allowPrivilegeEscalation && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop && (!has(c.volumeMounts) || c.volumeMounts.all(m, !(m.name in ['openshell-client-tls','openshell-sa-token'])))))",
+		"variables.containers.all(c, c.name != 'agent' || (has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot && has(c.securityContext.runAsUser) && c.securityContext.runAsUser != 0 && has(c.securityContext.allowPrivilegeEscalation) && !c.securityContext.allowPrivilegeEscalation && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop))",
+		"variables.containers.all(c, !(c.name in ['agent','workspace-init']) || !has(c.volumeMounts) || c.volumeMounts.all(m, !(m.name in ['openshell-client-tls','openshell-sa-token'])))",
 		"variables.containers.all(c, !has(c.volumeDevices) || size(c.volumeDevices) == 0)",
 		"variables.containers.all(c, !has(c.resources) || !has(c.resources.claims) || size(c.resources.claims) == 0)",
 		"variables.containers.all(c, !has(c.resources) || ((!has(c.resources.limits) || c.resources.limits.all(k, k in ['cpu','memory','ephemeral-storage'])) && (!has(c.resources.requests) || c.resources.requests.all(k, k in ['cpu','memory','ephemeral-storage']))))",
@@ -79,7 +79,7 @@ func (k *Kubernetes) ensureSandbox(ctx context.Context, id, ns, gatewayCore stri
 	if _, err := k.ensure(ctx, core+"/serviceaccounts", definition("v1", "ServiceAccount", Name+"-sandbox", id), id); err != nil {
 		return err
 	}
-	entries := append(sandboxMutation(id, ns), sandboxAdmission(id, ns, runtimeClass, k.options.SupervisorImage)...)
+	entries := sandboxAdmission(id, ns, runtimeClass, k.options.SupervisorImage)
 	for _, entry := range entries {
 		if _, err := k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
@@ -88,13 +88,9 @@ func (k *Kubernetes) ensureSandbox(ctx context.Context, id, ns, gatewayCore stri
 	probe := definition("v1", "Pod", "isolation-check", id)
 	probe["spec"] = object{"runtimeClassName": runtimeClass, "serviceAccountName": Name + "-sandbox", "automountServiceAccountToken": false,
 		"securityContext": object{"runAsNonRoot": true, "runAsUser": 1000, "seccompProfile": object{"type": "RuntimeDefault"}},
-		"initContainers":  []object{{"name": "workspace-init", "image": k.options.SandboxImage, "securityContext": object{"runAsUser": 0}}},
-		"volumes":         []object{{"name": "openshell-sidecar-state", "emptyDir": object{}}},
 		"containers":      []object{{"name": "agent", "image": k.options.SandboxImage, "securityContext": object{"runAsNonRoot": true, "runAsUser": 1000, "allowPrivilegeEscalation": false, "capabilities": object{"drop": []string{"ALL"}}}}}}
-	if result, _, err := k.client.Request(ctx, http.MethodPost, core+"/pods?dryRun=All", probe); err != nil {
+	if _, _, err := k.client.Request(ctx, http.MethodPost, core+"/pods?dryRun=All", probe); err != nil {
 		return err
-	} else if !sandboxSocketInMemory(result) {
-		return ErrPending
 	}
 	delete(probe["spec"].(object), "runtimeClassName")
 	if _, code, _ := k.client.Request(ctx, http.MethodPost, core+"/pods?dryRun=All", probe); code != http.StatusForbidden {
@@ -160,35 +156,4 @@ func (k *Kubernetes) ensureSandbox(ctx context.Context, id, ns, gatewayCore stri
 func sandboxRestrictedNamespace(ns object) object {
 	ns["metadata"].(object)["labels"].(object)["pod-security.kubernetes.io/enforce"] = "restricted"
 	return ns
-}
-
-// The pinned driver uses a disk volume for its Unix socket and runs workspace
-// setup as root. Adapt these fields before the Pod can start. Validation still
-// applies to the final Pod. No caller can use this policy to choose a runtime.
-func sandboxMutation(id, ns string) []resource {
-	policy := definition("admissionregistration.k8s.io/v1beta1", "MutatingAdmissionPolicy", ns, id)
-	policy["spec"] = object{
-		"failurePolicy": "Fail", "reinvocationPolicy": "IfNeeded",
-		"matchConstraints": object{"resourceRules": []object{{"apiGroups": []string{""}, "apiVersions": []string{"v1"}, "operations": []string{"CREATE"}, "resources": []string{"pods"}}}},
-		"matchConditions":  []object{{"name": "sandbox-namespace", "expression": fmt.Sprintf("request.namespace == %q", ns)}},
-		"mutations": []object{
-			{"patchType": "JSONPatch", "jsonPatch": object{"expression": `has(object.spec.volumes) && object.spec.volumes.exists(v, v.name == 'openshell-sidecar-state' && has(v.emptyDir)) ? [JSONPatch{op: 'add', path: '/spec/volumes/' + string(object.spec.volumes.map(v, v.name).indexOf('openshell-sidecar-state')) + '/emptyDir', value: {'medium': 'Memory', 'sizeLimit': '16Mi'}}] : []`}},
-			{"patchType": "JSONPatch", "jsonPatch": object{"expression": `has(object.spec.initContainers) && object.spec.initContainers.exists(c, c.name == 'workspace-init') && object.spec.containers.exists(c, c.name == 'agent' && has(c.securityContext) && has(c.securityContext.runAsUser)) ? [JSONPatch{op: 'add', path: '/spec/initContainers/' + string(object.spec.initContainers.map(c, c.name).indexOf('workspace-init')) + '/securityContext', value: Object.spec.initContainers.securityContext{runAsNonRoot: true, runAsUser: object.spec.containers.filter(c, c.name == 'agent')[0].securityContext.runAsUser, allowPrivilegeEscalation: false, capabilities: Object.spec.initContainers.securityContext.capabilities{drop: ['ALL']}}}] : []`}},
-		},
-	}
-	binding := definition("admissionregistration.k8s.io/v1beta1", "MutatingAdmissionPolicyBinding", ns, id)
-	binding["spec"] = object{"policyName": ns}
-	return []resource{{mutationAPI + "/mutatingadmissionpolicies", policy}, {mutationAPI + "/mutatingadmissionpolicybindings", binding}}
-}
-
-func sandboxSocketInMemory(pod object) bool {
-	spec, _ := pod["spec"].(map[string]any)
-	volumes, _ := spec["volumes"].([]any)
-	for _, value := range volumes {
-		volume, _ := value.(map[string]any)
-		if kube.String(volume, "name") == "openshell-sidecar-state" {
-			return kube.String(volume, "emptyDir", "medium") == "Memory" && kube.String(volume, "emptyDir", "sizeLimit") == "16Mi"
-		}
-	}
-	return false
 }

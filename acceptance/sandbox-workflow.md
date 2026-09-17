@@ -1,5 +1,19 @@
 # Sandbox execution gate
 
+On 2026-09-17, the user selected the current Hypershell and OpenShell setup.
+The prototype no longer changes the workspace-copy helper's user or the shared
+socket volume. Its mutation policy and beta API feature setup are removed. The
+deferred test no longer requires those adjustments. Keep upstream Pod settings;
+do not add a mutation service or maintain an OpenShell fork for these fields.
+
+The reference grants the Sandbox account access to OpenShift's privileged SCC.
+The variant must provide that declared account binding through STEGO's trusted
+allocator, with separate namespace and permission controls. The existing
+constructor guard remains active until that path is complete. Removing mutation
+does not establish Sandbox support, VM isolation, or a passing current workload.
+The credential-mount restriction for the workload and workspace-copy helper
+remains in the prototype's rejection rules.
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks

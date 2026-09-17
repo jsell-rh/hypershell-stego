@@ -202,23 +202,6 @@ func sandboxAdmissionChecks(t *testing.T, k *kubeFixture, ns string) {
 	}
 	original := list.Items[0]
 	spec := original["spec"].(map[string]any)
-	socketInMemory := false
-	for _, item := range spec["volumes"].([]any) {
-		v := item.(map[string]any)
-		if v["name"] == "openshell-sidecar-state" {
-			d, _ := v["emptyDir"].(map[string]any)
-			socketInMemory = d["medium"] == "Memory" && d["sizeLimit"] == "16Mi"
-		}
-	}
-	if !socketInMemory {
-		t.Fatal("sandbox socket is not in guest memory")
-	}
-	for _, item := range spec["initContainers"].([]any) {
-		c := item.(map[string]any)
-		if c["name"] == "workspace-init" && c["securityContext"].(map[string]any)["runAsUser"] == float64(0) {
-			t.Fatal("workspace setup runs as root")
-		}
-	}
 	if spec["runtimeClassName"] != os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") {
 		t.Fatal("sandbox selected a different runtime")
 	}

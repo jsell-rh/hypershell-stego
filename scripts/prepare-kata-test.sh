@@ -56,8 +56,6 @@ limits.append({'type': 'RLIMIT_NPROC', 'soft': 512, 'hard': 512})
 (root / 'opt/kata/stego-base-spec.json').write_text(json.dumps(spec))
 config = {
     'kind': 'Cluster', 'apiVersion': 'kind.x-k8s.io/v1alpha4',
-    'featureGates': {'MutatingAdmissionPolicy': True},
-    'runtimeConfig': {'admissionregistration.k8s.io/v1beta1': 'true'},
     'kubeadmConfigPatches': ['kind: KubeletConfiguration\napiVersion: kubelet.config.k8s.io/v1beta1\npodPidsLimit: 512\n'],
     'containerdConfigPatches': ['''[plugins."io.containerd.cri.v1.runtime".containerd.runtimes.kata]
   runtime_type = "io.containerd.kata.v2"
