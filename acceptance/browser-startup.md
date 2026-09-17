@@ -171,3 +171,13 @@ This qualifies the revised startup and provisioner recovery workflow. It does
 not explain the earlier recovered browser startup failure or the empty archive
 in run `35184753568`. Those failure records remain unchanged. Production
 capacity, live Kata isolation, and the full enterprise goal remain open.
+
+The [main browser repeat](startup-main-browser-evidence.md) at `0175b0b`
+passed all 11 required tests in run `35188311004`. The complete workflow took
+653.82 seconds. All 1,360 source hashes and 415 generation hashes match.
+Six browser runtime instances supplied 48 matching successful startup log/span
+pairs and complete metrics. Three screenshots were reviewed. Provisioner
+outage denial, recovery, and complete deletion passed again.
+The completed browser runtime, fixtures, and allocations were independently
+confirmed absent. The queued API test already owned the shared lease, so the
+cleanup record does not claim that all test namespaces were empty.
