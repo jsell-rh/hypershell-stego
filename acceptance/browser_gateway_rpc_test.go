@@ -36,7 +36,10 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	if roots == nil {
 		w.t.Fatal("operator-supplied Gateway trust is missing")
 	}
-	connection, err := grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
+	newConnection := func() (*grpc.ClientConn, error) {
+		return grpc.NewClient("passthrough:///"+address, grpc.WithTransportCredentials(credentials.NewTLS(&tls.Config{MinVersion: tls.VersionTLS13, RootCAs: roots})), grpc.WithDisableRetry(), grpc.WithDisableServiceConfig(), grpc.WithDefaultCallOptions(grpc.MaxCallRecvMsgSize(64<<10), grpc.MaxCallSendMsgSize(64<<10)))
+	}
+	connection, err := newConnection()
 	if err != nil {
 		w.t.Fatal("Gateway RPC connection failed")
 	}
@@ -45,29 +48,32 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 	if err != nil {
 		w.t.Fatal(err)
 	}
-	w.call = func(method, bearer, input string) (*dynamicpb.Message, error) {
-		w.t.Helper()
-		descriptor := service.Methods().ByName(protoreflect.Name(method))
-		if descriptor == nil {
-			w.t.Fatal("Gateway method absent")
+	connectionCall := func(connection *grpc.ClientConn) gatewayCall {
+		return func(method, bearer, input string) (*dynamicpb.Message, error) {
+			w.t.Helper()
+			descriptor := service.Methods().ByName(protoreflect.Name(method))
+			if descriptor == nil {
+				w.t.Fatal("Gateway method absent")
+			}
+			request := dynamicpb.NewMessage(descriptor.Input())
+			if err := protojson.Unmarshal([]byte(input), request); err != nil {
+				w.t.Fatal(err)
+			}
+			response := dynamicpb.NewMessage(descriptor.Output())
+			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			if bearer != "" {
+				ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
+			}
+			options := []grpc.CallOption{}
+			if method == "GetProvider" {
+				options = append(options, grpc.WaitForReady(true))
+			}
+			err := connection.Invoke(ctx, "/openshell.v1.OpenShell/"+method, request, response, options...)
+			return response, err
 		}
-		request := dynamicpb.NewMessage(descriptor.Input())
-		if err := protojson.Unmarshal([]byte(input), request); err != nil {
-			w.t.Fatal(err)
-		}
-		response := dynamicpb.NewMessage(descriptor.Output())
-		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		if bearer != "" {
-			ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
-		}
-		options := []grpc.CallOption{}
-		if method == "GetProvider" {
-			options = append(options, grpc.WaitForReady(true))
-		}
-		err := connection.Invoke(ctx, "/openshell.v1.OpenShell/"+method, request, response, options...)
-		return response, err
 	}
+	w.call = connectionCall(connection)
 	owner := w.identity.browserLogin(w.t, w.audience(id), "console-alice")
 	other := w.identity.browserLogin(w.t, w.audience(id), "console-bob")
 	apiToken := w.identity.browserLogin(w.t, "hypershell", "console-alice")
@@ -116,8 +122,23 @@ func (w *browserGatewayWorkload) checkRPC(id string) {
 		w.t.Fatal("Gateway Pod was not replaced")
 	}
 	after, err := w.call("GetProvider", owner, `{"name":"browser-provider"}`)
-	if err != nil || !proto.Equal(before, after) {
-		w.t.Fatal("Gateway lost provider data after replacement", status.Code(err))
+	if err != nil {
+		originalState := connection.GetState()
+		w.recordReadinessFailure(id)
+		// One read on a new connection can separate connection recovery from
+		// persistent data failure. It cannot turn the original failure into a pass.
+		probeConnection, probeSetupErr := newConnection()
+		if probeSetupErr != nil {
+			w.t.Log("Gateway recovery probe connection setup failed")
+		} else {
+			probe, probeErr := connectionCall(probeConnection)("GetProvider", owner, `{"name":"browser-provider"}`)
+			w.t.Logf("Gateway recovery probe: original_state=%s fresh_state=%s fresh_status=%s saved_data_matches=%t", originalState, probeConnection.GetState(), status.Code(probeErr), probeErr == nil && proto.Equal(before, probe))
+			_ = probeConnection.Close()
+		}
+		w.t.Fatal("Gateway provider read failed after replacement", status.Code(err))
+	}
+	if !proto.Equal(before, after) {
+		w.t.Fatal("Gateway provider data changed after replacement")
 	}
 	w.recordPublicRPC(gateway)
 	w.t.Log("Browser-created OpenShell Gateway passed verified RPC, denied calls, and provider data recovery after Pod replacement")
