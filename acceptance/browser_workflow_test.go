@@ -311,7 +311,7 @@ func (b *consoleBrowser) api(t *testing.T, method, path string, body []byte) web
 func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, request any) string {
 	t.Helper()
 	for _, name := range []string{"index.js", "index.d.ts", "package.json"} {
-		generated, err := os.ReadFile(filepath.Join("../out/browsertelemetry", name))
+		generated, err := os.ReadFile(filepath.Join("../console/out/browsertelemetry", name))
 		if err != nil {
 			t.Fatal(err)
 		}

@@ -4,6 +4,6 @@
     "typescript": "6.0.3"
   },
   "dependencies": {
-    "@stego/browser-telemetry": "file:../../out/browsertelemetry"
+    "@stego/browser-telemetry": "file:../../console/out/browsertelemetry"
   }
 }
