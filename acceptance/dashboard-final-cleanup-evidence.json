@@ -1,0 +1,118 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35171991156",
+  "source": "4dd7d214ea2077b02589a73f56f1334c5dac89c4",
+  "compiler": "db75a77da272fe05bbf6fdc3a3d1e0fede298f70",
+  "result": "failure",
+  "test_seconds": 673.62,
+  "failure": "The SQL telemetry check rejects the documented schema operation. The saved logs contain 79 successful and two canceled schema events.",
+  "main_gateway_deletion_passed": true,
+  "all_gateway_cleanup_passed": true,
+  "final_cluster_deletion_passed": true,
+  "supplied_postgres_and_installation_data_retained": true,
+  "automation_account_cleanup": {
+    "account_ids": [
+      "3JR4s1pV3645uz4O0pTyz8EkKEq",
+      "3JR4sHDJ5MRL75AcXifcthtOlPW",
+      "3JR4sHx4EKxmTOZRIT8YN6yx8Jn"
+    ],
+    "accounts_used_actual_gateway": 3,
+    "checked_after_durable_account_cleanup": true,
+    "cleanup_audits": 3,
+    "gateway_id": "3JR3y7TWYLJXO4pyXXU8iVZql0e",
+    "metadata_closed": 3,
+    "provider_clients_absent": 3,
+    "token_issuance_denied": 3
+  },
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "screenshots_viewed": true,
+  "recovery_checks": {
+    "database_and_role_oids_unchanged": true,
+    "other_gateway_sql_unchanged": true,
+    "provider_data_unchanged": true,
+    "source_data_unchanged": true,
+    "sql_credentials_unchanged": true,
+    "ungranted_rpc_denied": true,
+    "viewer_lists_filtered": true,
+    "viewer_membership_recovered": true,
+    "viewer_writes_denied": true,
+    "workspace_and_gateway_revocation_verified": true
+  },
+  "sql_denial_checks": {
+    "cleanup_pending": true,
+    "other_gateway_ready": true,
+    "source_data_unchanged": true,
+    "sql_object_ids_unchanged": true,
+    "sqlstate": "42501"
+  },
+  "dashboard_signout_and_password_prompt_passed": true,
+  "dashboard_and_worker_telemetry_passed": true,
+  "previous_http_409_recurred": false,
+  "previous_http_409_cause": "Not identified. The diagnostic change adds no retry or application behavior change.",
+  "identity_fixture": {
+    "checked_at": "2026-09-17T01:57:30.289706+00:00",
+    "run": 35171991156,
+    "job_uid": "14c1d253-27c4-40d9-910f-63225d6b820e",
+    "pod_uid": "6d275dab-916b-400f-b6b3-ba3c0a244c57",
+    "created_at": "2026-09-17T01:56:49Z",
+    "deadline_seconds": 900,
+    "phase": "Running",
+    "image": "quay.io/keycloak/keycloak@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54",
+    "limits": {
+      "cpu": "1",
+      "ephemeral-storage": "1Gi",
+      "memory": "1Gi"
+    },
+    "non_root": true,
+    "privilege_escalation": false,
+    "service_account_token": false
+  },
+  "schema_diagnosis": {
+    "run": 35171991156,
+    "source": "4dd7d214ea2077b02589a73f56f1334c5dac89c4",
+    "failure": "PostgreSQL worker signals have invalid fields or identity",
+    "documented_operation_missing_from_test": "schema",
+    "local_schema_event_outcomes": {
+      "success": 79,
+      "canceled": 2
+    },
+    "application_runtime_changed": false
+  },
+  "generation": {
+    "files": 412,
+    "repeated_and_archived_hashes_match": true,
+    "manifest_sha256": "fc17e084b2fb7551a8d2182def4906de6a410470555ccc11ed72596f396c7053",
+    "after_test_manifest_present": false
+  },
+  "evidence_sha256": {
+    "browser-artifacts/gateway-dashboard/dashboard-create.json": "11ed2716c1d4ce7a83da1901b5873df8a02b7d42fd2de7edf631fe5fae79de20",
+    "browser-artifacts/gateway-dashboard/dashboard-reload.json": "11ed2716c1d4ce7a83da1901b5873df8a02b7d42fd2de7edf631fe5fae79de20",
+    "browser-artifacts/gateway-dashboard/dashboard-verify.json": "09242b8763aec4a749e60e6ae70fbbce854113e1209bc6e26d19cbaed6ee9c74",
+    "browser-artifacts/gateway-account-deletion.json": "9e09adead7d71ac4134f1f219bc622581fb65a473ce3cff51a18aaf7eb24dee7",
+    "browser-artifacts/sql-cleanup-denial.json": "91f7fa03c52b2c9f56e4326665b8ea757198550c19b1d477f179ec8b72cad870",
+    "browser-artifacts/namespace-replacement.json": "f0a3511fc1e1908b0b414b5ed243270047e944639e912872a7ed2851663dd1ea"
+  },
+  "cleanup_checked_at": "2026-09-17T02:08:59.825043+00:00",
+  "cleanup_runtime_absent": true,
+  "cleanup_allocations_absent": true,
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "5dddf1c719ddf467a040182c4f0cb6194859102c0797d9d34a47ca4ab45ec4cd",
+  "deployment_log_sha256": "b0c10c35a94660900365be5c9605fa446ba4eb229b488be35f1d2beaadcb50b7",
+  "not_proved": [
+    "Final PostgreSQL telemetry check",
+    "Final browser log privacy check",
+    "Complete public Gateway workflow",
+    "Expanded CNPG dashboard workflow"
+  ],
+  "correction": "The acceptance check must accept the documented schema operation. Generated and application runtime code do not change."
+}
