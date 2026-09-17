@@ -1,0 +1,244 @@
+{
+  "consumer_source": "fed00424692419dee22768d7c50de712253167f3",
+  "compiler_source": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+  "installation_plan": {
+    "run": 35260879782,
+    "source": "fed00424692419dee22768d7c50de712253167f3",
+    "checked_at": "2026-09-17T18:53:44.583253+00:00",
+    "source_files": 1450,
+    "compiler": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+    "compiler_records_match_published_package": true,
+    "fixture_changes_verified": true,
+    "resources": 28,
+    "added": [
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-account-installer",
+        "sha256": "ebd3c518e9b8fb3ac99a0c65db2c125aaa8558df1642f9697a5365c6395a3395"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts",
+        "sha256": "93c676c7eb90b34c034e5a9ea8dbddaa8bbe84b9069cd736c74c9c0b7c89a584"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts",
+        "sha256": "dcc5af78a068a8729e662a0cb7eadf052c5e8562dceaee104e878b488740f398"
+      }
+    ],
+    "changed": [],
+    "policy_expressions": [],
+    "rbac_delta_verified": true,
+    "unchanged_manifests": 5,
+    "plan_sha256": "a7272df2dcba5425b6092ac3272f943dcc0b6b4bf32b46ab8033fbccb7b5b1fb",
+    "prior_installation_uid": "c4e2dbd6-8663-41d2-9aaa-4194f5ed283e",
+    "cluster_writes": false,
+    "scope": "Exact source and compiler records, fixture changes, full RBAC delta, policy resource boundary, and reviewed account expressions. Server validation and the live application workflow remain required.",
+    "account_readiness_cases": 12,
+    "pod_evidence_cases": 54,
+    "required_account_tests": 2,
+    "account_test_log_sha256": "7e6d9bad4deb05f26c1393241443ed2c72bc92d79834fa90fe4c91718645947e"
+  },
+  "installation": {
+    "source": "fed00424692419dee22768d7c50de712253167f3",
+    "plan_run": 35260879782,
+    "old_config_uid": "c4e2dbd6-8663-41d2-9aaa-4194f5ed283e",
+    "changes": [
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts",
+        "uid": "39143d96-ce93-469a-9c1e-58afa60df04e"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts",
+        "uid": "d331859d-4180-42e2-b0c4-d3e17699ecfd"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-account-installer",
+        "uid": "69b51c69-613e-4785-ae35-a25ba9f63310"
+      }
+    ],
+    "dry_runs": [
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-account-installer"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts"
+      },
+      {
+        "kind": "ValidatingAdmissionPolicyBinding",
+        "name": "stego-service-ci.hypershell-namespace-allocation.control-accounts"
+      },
+      {
+        "kind": "ClusterRole",
+        "name": "stego-service-ci"
+      }
+    ],
+    "phase": "complete",
+    "updated_at": "2026-09-17T18:54:07.990360+00:00",
+    "retained_accounts": [
+      {
+        "name": "hypershell-namespace-allocation",
+        "uid": "778e00ed-19dc-4cf7-be7f-23e7031950cc"
+      },
+      {
+        "name": "hypershell-gateway-workload",
+        "uid": "1f8401d7-12e4-4e0f-99e1-12f12b9b161d"
+      },
+      {
+        "name": "service-check",
+        "uid": "fc357d98-24f5-4c93-b955-b779fcf0ab61"
+      }
+    ],
+    "policy_type_check": "success",
+    "new_config_uid": "7cda8d74-aaff-4565-97e4-c5a0a9d03e79"
+  },
+  "generated_console": {
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "compiler": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260668439",
+    "job": 105335270351,
+    "checked_at": "2026-09-17T18:47:24.072889+00:00",
+    "generated_files": 129,
+    "generated_archive_sha256": "1493340096adcb784519034b3774f8e6ac5df694c22a3db951bbb74426054b3b",
+    "compiler_records_match_release": true,
+    "committed_generation_matches": true,
+    "vulnerability_check_passed": true,
+    "image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:e54071b18539676abb71c923ee6a31bdc28c60a925404594d843cdbb0466b87e",
+    "image_binary_sha256": "580c19a212cce2a391ef36cec12a6f6cae06548d9e5363960848055ca767a093",
+    "private_deployment_verified": true,
+    "generation_log_sha256": "409142a37acac0fc3ec1000fecfb67ae34172cb531e2f3f05d7f73923e773edd",
+    "local_binary_executed": false,
+    "live_workflow_verified": false
+  },
+  "hosted_browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260667946",
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "job": 105335274878,
+    "checked_at": "2026-09-17T18:50:06.049886+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 97.12,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "899f7896e94519b6bc1407ee98078df3fc87a02e5aeb13f17e2711eb1ceb4270",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "cae650677b6e917df1ef4bd5b26a6fc8a1bf8830313bea4ec4f94f5f5b24f37f"
+    },
+    "screenshot_scope": "Provisioning Gateway with commands not yet available; healthy account fixture with an empty account list after deletion. This hosted fixture does not run a real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate.",
+    "screenshot_observations": [
+      "The account fixture is healthy and its service account list is empty after deletion.",
+      "The Gateway fixture is provisioning. The connection view shows pending command placeholders."
+    ]
+  },
+  "hosted_images_and_ui": {
+    "run": 35260667946,
+    "checks": {
+      "image": {
+        "generated_images": 7,
+        "build_and_entrypoint_user_checks_passed": true,
+        "job": 105335274663,
+        "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+        "log_sha256": "765ae8536bc8881a6b5e81b0ffdd86158b06929b7c218dd1d53fe3622baa82f3"
+      },
+      "web-console": {
+        "ui_tests_passed": 231,
+        "test_groups": [
+          7,
+          166,
+          58
+        ],
+        "generation_drift_checks": 3,
+        "job": 105335274975,
+        "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+        "log_sha256": "3bccc756e2b1690ad291ee11ed2571ac7a9429eb09f1337b1a5caeadc3728af0"
+      }
+    },
+    "scope": "Generated image builds and configured entrypoint/user checks, UI tests, and console generation at the named source. This does not prove the new live account workflow."
+  },
+  "provider": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260740177",
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "required_tests": [
+      "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+      "TestGatewayCleanupDeadlineReopensConfirmation",
+      "TestUnrelatedClientSnapshotComparison",
+      "TestPostgresSignalEvidenceRequiresControllerAndLog",
+      "TestPostgresSignalEvidenceAcceptsManagedSchema",
+      "TestPostgresSignalEvidenceAcceptsCredentialPreparation"
+    ],
+    "passed_cases": 21,
+    "source_archive_matched": true,
+    "test_log_sha256": "a5a29f6fee4fb93a2b59657e05fd09cec789c130f88f71e8cc0ab5e9fde42c64",
+    "provider_cleanup_verified": true
+  },
+  "journal": {
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260737632",
+    "job": 105335508297,
+    "required_tests": [
+      "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+      "TestConsoleDomainPolicy",
+      "TestConsoleFailureDoesNotBlockGrantRemoval",
+      "TestConsoleProviderStateJournalSeparatesNativeScope",
+      "TestConsoleProviderStateReadGrantIsReadOnly",
+      "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+      "TestDeletionRequiresExplicitPrivilegedState",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayClosureContinuesAfterConsoleFailure",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestGatewayIdentityControllerWorkflow",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryRegistersPastFailedClientRead",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayUserLoginFollowsStoredGrants",
+      "TestIdentityConditionDuringProviderTimeoutAndDesiredChange",
+      "TestIdentityPublicationRequiresProviderSuccess",
+      "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+      "TestInventoryRPCsDenyUnverifiedCaller",
+      "TestProviderStateJournalScopeAndObservation",
+      "TestSQLComponentRejectsUnknownValues"
+    ],
+    "test_pass_cases": 56,
+    "log_sha256": "705ded0a052453102b62372e4cec22d072dd4a9a2bc442d4e04749b22daa2016",
+    "passed": true,
+    "live_cluster_workflow": false
+  },
+  "preserved_plan_failure": {
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260685516",
+    "job": 105335339054,
+    "failed_steps": [
+      "Prepare the frozen inspection source"
+    ],
+    "log_sha256": "92d24c1885f616bf89862be430b6e04b2cfcf5f13a0d441537cca3c9a8f0d80c",
+    "errors": [
+      "2026-09-17T18:48:26.5313518Z ValueError: The fixture changed a production binding",
+      "2026-09-17T18:48:26.5456799Z ##[error]Process completed with exit code 1."
+    ],
+    "cluster_writes": false
+  },
+  "live_browser_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502",
+  "live_browser_verified": false,
+  "core_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260667946",
+  "core_verified": false,
+  "enterprise_goal_complete": false,
+  "scope": "The common policy is installed and its resource identities are verified. Hosted application checks use a7052b4. The fixture verifier correction at fed0042 passed the exact source policy plan. Full core and live consumer qualification remain pending."
+}

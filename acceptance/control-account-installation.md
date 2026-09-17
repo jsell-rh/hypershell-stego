@@ -27,3 +27,22 @@ output files and modes. All three drift checks passed. The compiler installation
 record matches the verified release. The application allocation policy is
 unchanged. The generated manifest adds the account guard, its binding, and an
 unbound installer role. The live consumer workflow remains required.
+
+The corrected fixture verifier at `fed0042` passed the hosted installation plan
+[35260879782](https://github.com/jsell-rh/hypershell-stego/actions/runs/35260879782).
+The plan checks 1,450 source files and 68 account cases. It preserves the 25
+installed resources and adds only the generated guard, its binding, and the
+unbound installer role. The fixture adds its fixed account to the reserved names.
+The verifier rejects other account, permission, and guard changes.
+
+The operator installed the plan on jshell. Server validation and policy type
+checks passed. All 28 installed resources match the record. The allocator,
+workload, and fixture account identities are unchanged. CI gained only read
+access to the new policy. The immutable installation record was replaced with
+UID preconditions. Cleanup passed and the lease was released.
+
+Hosted checks passed for the generated console, seven images, 231 UI tests,
+the rendered browser workflow, provider recovery, and 28 required journal tests.
+The earlier plan failure is retained in the evidence record. Full core checks
+and the [live consumer run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502)
+remain pending. This result does not close the enterprise goal.
