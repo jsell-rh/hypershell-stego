@@ -68,7 +68,7 @@
     },
     "scope": "Generated image builds and configured entrypoint/user checks, UI tests, and console generation at the named source. This does not prove the new live account workflow."
   },
-  "scope": "Completed main API and hosted browser/image/UI checks. The public Gateway browser repeat failed. The core suite is still running.",
+  "scope": "Completed main API and hosted core/browser/image/UI checks. The public Gateway browser repeat failed and its correction requires a new live result.",
   "live_browser": {
     "run": 35248320996,
     "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
@@ -90,5 +90,25 @@
       "empty": true
     },
     "fix_status": "CI pending; no replacement live run started"
+  },
+  "core": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35248321021",
+    "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+    "job_id": 105294071990,
+    "core_result": "success",
+    "test_pass_events": 720,
+    "top_level_passes": 313,
+    "separate_live_exclusions": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "acceptance_seconds": 1679.993,
+    "log_sha256": "587208ff692e2fcb5b17145de76a5bf29c4c75178e2928f37177f2e3d1d47f35",
+    "generation_drift_checks": 3,
+    "hosted_service_cleanup_passed": true,
+    "previous_failure_cases_passed": true,
+    "scope": "Core tests at this exact source. Browser and live cluster workflows have separate evidence. A pass does not establish the cause of earlier failures."
   }
 }
