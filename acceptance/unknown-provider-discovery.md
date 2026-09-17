@@ -58,5 +58,26 @@ verified release. See the [generation record](unknown-provider-generation-eviden
 The first workflow definition used the runner context before a runner was
 available. That definition was corrected before this passing generation run.
 
-The application discovery rerun and complete application checks remain pending.
+The application discovery rerun passed, as recorded below. Complete application
+checks remain in progress.
 No domain adapter or ownership policy changed for this fix.
+
+
+## Verified application result
+
+[Run 35213091188](https://github.com/jsell-rh/hypershell-stego/actions/runs/35213091188)
+passed at source `762824b` in 119.55 seconds. Independent checks matched the
+source archive and compiler pin. The test body, provider fixture, and domain
+adapters are unchanged from the failed run.
+
+Twenty durable journals and the discovery checkpoint survived the API and
+provisioner restart. Cleanup then removed all 61 owned provider clients. All 61
+closure journals authenticated and retained their provider identities. The
+account scope sealed, account rows remained absent, and new account requests
+were denied before and after restart. The matching-name foreign client remained
+unchanged. Provider containers were absent after cleanup, and hosted service
+cleanup passed. See the [verified result](unknown-provider-after-fix-evidence.json).
+
+This result proves the discovered failure is fixed through generated common
+code for this bounded workflow. It is not a production capacity target or proof
+of all enterprise requirements. Full application checks remain in progress.

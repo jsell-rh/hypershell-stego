@@ -1,0 +1,21 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35213091188",
+  "source": "762824b647c6a1545e6a617468b40d9950fa082a",
+  "compiler_revision": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+  "checked_at": "2026-09-17T11:01:06.098498+00:00",
+  "seconds": 119.55,
+  "owned_clients_closed": 61,
+  "journals_at_restart": 20,
+  "api_and_provisioner_restart": true,
+  "account_scope_sealed": true,
+  "account_rows_absent": true,
+  "matching_name_foreign_client_unchanged": true,
+  "all_closure_journals_authenticated": true,
+  "account_creation_denied_before_and_after_restart": true,
+  "same_acceptance_test_and_domain_adapters_as_failed_run": true,
+  "source_archive_sha256": "67796c7b707887353738a4a31d4371d3dc45591190121b082dccf15da71bdddf",
+  "test_log_sha256": "54de9eccc86f5bc958f0d1259e2983965b740e9f9f2baa1aa65a0e65e9c2f0a7",
+  "test_provider_containers_absent": true,
+  "hosted_service_cleanup_passed": true,
+  "scope": "61 real unknown clients, current and legacy ownership, with generated API/provisioner restart. This is not a production capacity result or a complete workload cleanup gate."
+}
