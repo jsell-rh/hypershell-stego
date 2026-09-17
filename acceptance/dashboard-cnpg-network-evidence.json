@@ -1,0 +1,65 @@
+{
+  "source_fix": "f91bb90f07495c65a953039b54fe613313e44590",
+  "regression_test_source": "337ec717aaee6dd630b16e5d1506d401721fae4c",
+  "finding": "The CNPG fixture database ingress rule required a Gateway Pod label. The generated console Pod does not have that label.",
+  "generated_console_pod_labels": {
+    "app.kubernetes.io/name": "hypershell-gateway-console"
+  },
+  "generated_manifest_sha256": "d29540c92b933ee33b9b1c94e66fa8f326e40755ee4633c895fe69129a2f1234",
+  "new_peer": {
+    "namespaceSelector": {
+      "matchLabels": {
+        "stego.dev/allocator": "5305aa89c5f40a73316e60bd033ec8ab",
+        "stego.dev/allocation-profile": "gateway"
+      }
+    },
+    "podSelector": {
+      "matchLabels": {
+        "app.kubernetes.io/name": "hypershell-gateway-console"
+      }
+    }
+  },
+  "ports": [
+    {
+      "port": 5432,
+      "protocol": "TCP"
+    }
+  ],
+  "policy_uid": "c9f7bc1f-c6cd-4436-a335-de73bddc0055",
+  "policy_spec_sha256": "4878e83cf4d42a4f3097d86f9747b97b4ffbd76e68160bbcf3370ebf41829228",
+  "restricted_ci_read_and_exact_policy_check_passed": true,
+  "policy_updated_at": "2026-09-17T03:00:00.181467+00:00",
+  "ci_network_permission": {
+    "apiGroups": [
+      "networking.k8s.io"
+    ],
+    "resources": [
+      "networkpolicies"
+    ],
+    "resourceNames": [
+      "database"
+    ],
+    "verbs": [
+      "get"
+    ]
+  },
+  "cancelled_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35176225705",
+  "cancelled_run_cleanup": {
+    "run": 35176225705,
+    "source": "57afdfe8e05ca3e99953dfe3eced859cd494bf37",
+    "checked_at": "2026-09-17T02:58:42.746831+00:00",
+    "runtime": [],
+    "fixture_resources": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "cnpg_children": [],
+    "private_fixture": [],
+    "volumes_absent": true,
+    "lease_empty": true,
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59"
+  },
+  "runtime_and_resource_limits_changed": false,
+  "full_cnpg_workflow": "Required; not yet proved with this correction"
+}

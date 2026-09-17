@@ -39,7 +39,9 @@ JavaScript. Hypershell retains the React application and its domain behavior.
 The upstream per-Gateway dashboard uses its own generated Go browser backend.
 STEGO supplies its authentication, deployment, lifecycle, browser client, and
 telemetry. Its public workflow passed. The expanded CNPG workflow failed during
-Gateway provisioning; its cause remains under investigation.
+Gateway provisioning. The CNPG fixture omitted database ingress for the
+separate console Pods. That [network rule is corrected](acceptance/dashboard-cnpg-network-evidence.json);
+the full workflow must pass before CNPG dashboard qualification.
 
 The API has no database catalog or `database_id`. Installation supplies
 co-located external PostgreSQL or CNPG. Controllers create an isolated logical
