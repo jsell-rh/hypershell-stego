@@ -1,0 +1,207 @@
+{
+  "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+  "api": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034001",
+    "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+    "required_tests_passed": 52,
+    "source_files_match": 1434,
+    "generation_hashes_match": 416,
+    "independent_cleanup": {
+      "api_run": 35235034001,
+      "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+      "checked_at": "2026-09-17T14:50:06.235957+00:00",
+      "api_jobs": [],
+      "api_fixtures": [],
+      "lease_holder": "stego-service-ci",
+      "next_workflow": {
+        "run": 35235034044,
+        "job": 105252189486,
+        "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+        "started_at": "2026-09-17T14:48:43Z",
+        "api_completed_at": "2026-09-17T14:48:40Z"
+      },
+      "scope": "API resources are absent. The next browser workflow holds the shared lease. This check does not claim that all test namespaces are empty."
+    },
+    "scope": "API creation, access, events, deletion, restart, and regeneration at the named source. This does not prove a rendered Gateway dashboard.",
+    "new_sql_credential_preparation_and_deleted_record_rejection": true,
+    "compiler": "b8fdfd6946a740430a2a4f41cf9aaae03a6d6793",
+    "compiler_sha256": "2913c048a2ddd64ca55af9ad4af485167ea6c07718fa55c577b475cb55608160",
+    "live_compiler_matches_published_package": true,
+    "signature_records_match_published_package": true
+  },
+  "journal": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034047",
+    "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+    "checked_at": "2026-09-17T14:53:17.196621+00:00",
+    "required_tests_passed": 28,
+    "required_tests": [
+      "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+      "TestConsoleDomainPolicy",
+      "TestConsoleFailureDoesNotBlockGrantRemoval",
+      "TestConsoleProviderStateJournalSeparatesNativeScope",
+      "TestConsoleProviderStateReadGrantIsReadOnly",
+      "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+      "TestDeletionRequiresExplicitPrivilegedState",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayClosureContinuesAfterConsoleFailure",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestGatewayIdentityControllerWorkflow",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryRegistersPastFailedClientRead",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayUserLoginFollowsStoredGrants",
+      "TestIdentityConditionDuringProviderTimeoutAndDesiredChange",
+      "TestIdentityPublicationRequiresProviderSuccess",
+      "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+      "TestInventoryRPCsDenyUnverifiedCaller",
+      "TestProviderStateJournalScopeAndObservation",
+      "TestSQLComponentRejectsUnknownValues"
+    ],
+    "generated_source_check_passed": true,
+    "hosted_service_cleanup_passed": true,
+    "sha256": "5013640bd006234626a05e22c31bd20f6a5d36076aae7be2f5b4955e17eef7bb",
+    "bytes": 74252,
+    "scope": "Retained journal, provider failure, authorization, concurrent registration, event rollback, and checkpoint recovery. This does not prove database restore or cross-process fencing."
+  },
+  "hosted_browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034256",
+    "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+    "job": 105248640874,
+    "checked_at": "2026-09-17T14:53:33.912937+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 101.24,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "36ac96e149e7dad70caebd20c1cef88343f52b61d9dbdd96f4a847c34674c79f",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "a6795d915472878e9119dccc59bddba0107e6378cce1b367fd51c489b702b117"
+    },
+    "screenshot_scope": "Provisioning Gateway with commands not yet available; healthy account fixture with an empty account list after deletion. This hosted fixture does not run a real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate."
+  },
+  "live_gateway": {
+    "run_attempt": 1,
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034044",
+    "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+    "compiler": "b8fdfd6946a740430a2a4f41cf9aaae03a6d6793",
+    "seconds": 666.88,
+    "source_files_match": 1434,
+    "generation_hashes_match": 416,
+    "gateway_console_image_matches_qualified_record": true,
+    "dashboard_session_and_reload": true,
+    "editor_checks": 8,
+    "account_cleanup_counts": 3,
+    "postgres_signals_complete": true,
+    "cleanup": {
+      "run": 35235034044,
+      "source": "d0d52501d90b4a1c80bf0905a778fbe63cc0a74b",
+      "checked_at": "2026-09-17T15:09:22.686990+00:00",
+      "test_job_uid": "6d5fd0cb-d038-4c36-9528-a0f170ecc692",
+      "runtime": [],
+      "fixtures": [],
+      "allocations": [],
+      "ci_jobs": [],
+      "lease_holder": "",
+      "empty": true
+    },
+    "screenshots": {
+      "dashboard-create.json.png": "6b0853ade8f6c2e35c17375d1edd2c74926f1dfd81409e72e4e111185df8fd1b",
+      "dashboard-create.json.editor.png": "f899b60e3f22fb81c6ff1391edc09f66b050e6eea550960cc3d6fbf3a5c54f31",
+      "dashboard-create.json.editor-selection.png": "90d36cec6489f64efaae15f40907ca050a2935a7fe86c7bbdade8fa415f98cca"
+    },
+    "screenshots_viewed": true,
+    "startup": {
+      "failed_pairs": {
+        "hypershell-console": {
+          "15af6f9a-69ee-45ea-a70a-d99768ceced9": [],
+          "469a98da-225f-481c-8d06-d458ae2ad0bf": [],
+          "a101785f-b693-46a7-9847-6cbff78461f3": []
+        },
+        "hypershell-gateway-console": {
+          "3fe430a4-829d-4ea6-bd46-0299a2521e4e": [],
+          "8d122c5c-cee2-4b9f-b88d-622b0f2de5ae": [],
+          "e3c58e8d-8035-4f49-ae91-cbb701db14db": []
+        }
+      },
+      "complete_instances": {
+        "hypershell-console": [
+          "15af6f9a-69ee-45ea-a70a-d99768ceced9",
+          "469a98da-225f-481c-8d06-d458ae2ad0bf",
+          "a101785f-b693-46a7-9847-6cbff78461f3"
+        ],
+        "hypershell-gateway-console": [
+          "3fe430a4-829d-4ea6-bd46-0299a2521e4e",
+          "8d122c5c-cee2-4b9f-b88d-622b0f2de5ae",
+          "e3c58e8d-8035-4f49-ae91-cbb701db14db"
+        ]
+      },
+      "sha256": "9700c8c22495f4ff224e0da299ff227e52f50c98ceaa24a8f061ec653c597985",
+      "same_relay_instance_required_by_test": true
+    },
+    "scope": "External PostgreSQL Gateway workflow with generated browser startup and relay telemetry at the named source. The live Kata isolation test is deferred.",
+    "required_tests_passed": 11,
+    "namespace_recovery_checks": {
+      "database_and_role_oids_unchanged": true,
+      "other_gateway_sql_unchanged": true,
+      "provider_data_unchanged": true,
+      "source_data_unchanged": true,
+      "sql_credentials_unchanged": true,
+      "ungranted_rpc_denied": true,
+      "viewer_lists_filtered": true,
+      "viewer_membership_recovered": true,
+      "viewer_writes_denied": true,
+      "workspace_and_gateway_revocation_verified": true
+    },
+    "sql_cleanup_denial_checks": {
+      "cleanup_pending": true,
+      "other_gateway_ready": true,
+      "source_data_unchanged": true,
+      "sql_object_ids_unchanged": true,
+      "sqlstate": "42501"
+    },
+    "database_restart": "PostgreSQL process restart in the same fixture Pod; no RDS failover claim",
+    "not_proved": [
+      "RDS failover",
+      "Live Kata isolation",
+      "Production capacity and remaining enterprise requirements"
+    ],
+    "provisioner_recovery": {
+      "account_write_retries": 0,
+      "current_unavailable_observations": true,
+      "denied_account_requests": 2,
+      "denied_requests_created_no_accounts": true,
+      "gateways": 2,
+      "running_healthy_gateways_after_restart": true,
+      "sql_and_credential_identities_preserved": true
+    },
+    "provisioner_recovery_matches_live_capture": true,
+    "evidence_archive_sha256": "8e879794579004a850ba4dcd5dba78cbb2584047234f0ccc190a2937476ce4a7",
+    "compiler_transfer_matches_live_capture": true,
+    "compiler_records_match_published_package": true,
+    "compiler_sha256": "2913c048a2ddd64ca55af9ad4af485167ea6c07718fa55c577b475cb55608160",
+    "provisioner_rollout": "Recreate",
+    "live_provisioner_startup_observations": 2,
+    "scheduling_delay_seconds": 0.0,
+    "failed_rpc_recovery_probe_used": false,
+    "observed_job_deadline_seconds": 1800,
+    "rollout_evidence": "Hash-verified generated template and two live API assertions; final object collection is empty after cleanup",
+    "screenshot_scope": "The dashboard shows an active workspace. Invalid JSON disables submission. Selection and scrolling work in the policy editor. No Sandbox was started."
+  },
+  "limits": [
+    "The hosted core repeat was still running when this record was written.",
+    "The live Sandbox test remains deferred.",
+    "This test does not prove RDS failover or production capacity."
+  ]
+}
