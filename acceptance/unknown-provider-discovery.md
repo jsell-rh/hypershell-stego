@@ -118,3 +118,12 @@ match. The repeated 54-entry bundle matches the committed bundle, with SHA-256
 Its build inputs did not change between source `514deeb` and adoption `762824b`.
 See the [asset record](unknown-provider-console-assets-evidence.json). This
 result does not replace the complete application tests.
+
+The full hosted adoption check passed at `762824b` in
+[run 35213094291](https://github.com/jsell-rh/hypershell-stego/actions/runs/35213094291).
+Independent core-log inspection confirmed 308 top-level passes and 652 test pass
+events. The unknown-client restart test passed once in this complete suite.
+Four live checks remain assigned to separate jobs. The rendered browser,
+service image, and web-console jobs also passed. See the
+[core record](unknown-provider-core-evidence.json). Live checks for a newer
+compiler selection remain separate; this result applies only to `762824b`.
