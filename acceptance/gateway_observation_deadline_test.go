@@ -142,8 +142,19 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	if code != 201 || json.Unmarshal(data, &created) != nil {
 		t.Fatal("create resource", code)
 	}
+	eventObservation := 0
 	event := func(action, kind string) {
 		t.Helper()
+		eventObservation++
+		wasFailed := t.Failed()
+		defer func() {
+			if !wasFailed && t.Failed() {
+				// Capture the queue before the enclosing test stops the API.
+				// The failure and its ten-second limit remain unchanged.
+				t.Logf("event observation=%d queue before API shutdown", eventObservation)
+				logQueueState(t, f)
+			}
+		}()
 		readGatewayEvent(t, consumer, created.ID, action, "gateway."+kind)
 	}
 	event("Create", "created")
