@@ -13,7 +13,7 @@ import (
 func CompilerBuild() buildidentity.Record {
 	var record buildidentity.Record
 	// The compiler supplies this JSON value from a typed record during generation.
-	if err := json.Unmarshal([]byte("{\"go_version\":\"go1.26.8\",\"goos\":\"linux\",\"goarch\":\"amd64\",\"module_version\":\"v0.0.0-20260917000013-979292750de0\",\"vcs\":\"git\",\"revision\":\"979292750de036413b0aebee1227f20d4c022bf4\",\"source_state\":\"clean\"}"), &record); err != nil {
+	if err := json.Unmarshal([]byte("{\"go_version\":\"go1.26.8\",\"goos\":\"linux\",\"goarch\":\"amd64\",\"module_version\":\"v0.0.0-20260917005839-db75a77da272\",\"vcs\":\"git\",\"revision\":\"db75a77da272fe05bbf6fdc3a3d1e0fede298f70\",\"source_state\":\"clean\"}"), &record); err != nil {
 		panic("invalid generated compiler build record")
 	}
 	return record

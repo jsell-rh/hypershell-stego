@@ -295,6 +295,9 @@ func (b *Backend) confirmLogout(w http.ResponseWriter, r *http.Request) {
 	if b.logoutOrigin != "" {
 		w.Header().Set("Content-Security-Policy", strings.Replace(w.Header().Get("Content-Security-Policy"), "form-action 'self'", "form-action 'self' "+b.logoutOrigin, 1))
 	}
+	// Native form navigation needs the same-origin Origin header. The browser
+	// changes it to null under no-referrer. Cross-origin referrers remain hidden.
+	w.Header().Set("Referrer-Policy", "same-origin")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	_ = logoutPage.Execute(w, struct {
 		CSRF     string

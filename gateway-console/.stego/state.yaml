@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/gateway-console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            registry_ref: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: 4a7f6a141c8ebde46905beb6a8a3348498797857d662622a0c972f9832ff9ad1
+                sha256: 20fdf58f6792ff8160e424740732342e358f3a5484532d0140f8bb554ac93e91
                 mode: 420
             go.mod:
                 exists: true
@@ -27,37 +27,37 @@ last_applied:
                 exists: true
                 sha256: 68c9fc1c68cd61cd2af9455d5eacd09644a8bc555fd5f2723ad386599d36b7ba
                 mode: 420
-        sha256: 3ac631cade633449b9b660e0215994f98523222a92926cf4d5708535502d8cdc
+        sha256: 9f906588c1f6bb3e6300374d99562cd918ab049bd1be1ad9a77c47df8bb77422
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260917000013-979292750de0
+        module_version: v0.0.0-20260917005839-db75a77da272
         vcs: git
-        revision: 979292750de036413b0aebee1227f20d4c022bf4
+        revision: db75a77da272fe05bbf6fdc3a3d1e0fede298f70
         source_state: clean
     service_hash: 0d7cc3dcd2381b397653a15ff36eb50a3b9df2e3699648021fffb16b6f63b863
-    registry_sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
-    registry_content_sha256: 7188cd86565a70d6e4ac4b3586df5d6d5e7172147bd87bf3c5f55a06c8899e4e
+    registry_sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
+    registry_content_sha256: 97a97d730ea446f7474c9eaf74151052763af1c7cb44c0b5767941c16438db83
     components:
         browser-backend:
-            version: 4.2.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            version: 4.2.1
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         browser-telemetry:
             version: 1.2.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         health-check:
             version: 1.1.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         kubernetes-service:
             version: 1.18.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         otel-tracing:
             version: 1.15.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
         postgres-adapter:
             version: 4.9.0
-            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+            sha: 7831fd755dd51edfbafef6979fc87035c13771201bfbfb9ff8c18b92d1f9a273
     files:
         browser/backend.go: 304cf0261ef7e9a2c46049872f8b0f0b7694fa36c4cab57386d9424e795bc72e
         browser/client/client.go: 1000bca2a6f2916db09a0ac64969cb8b5d5911794913008c5bb9daffe8c94aaa
@@ -67,7 +67,7 @@ last_applied:
         browser/dom/monaco-loader.cjs: fd530b097f11d9807bb0dae096f6286ba48c78da8550bbe28fd6a45960c14a60
         browser/dom/monaco-patches.json: 3ea3e12be4af6593a602dd87e6b3cde81311a6ce9c76d715986f2a8aac411c43
         browser/dom/package.json: 294d4ce230a8881172bde0d62559dd52a6b07431080e1fa36cebcc4b896e05f9
-        browser/handlers.go: 0054400481d466428df9cc1939dfd26df0ca22c944cc63b14b3a05e36798b947
+        browser/handlers.go: 3f8d2f337ac922addd970f2556f13969bb0098540eed28c141c0af5c1fec1d5f
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
         browser/oauth.go: a9459f07974859019f9ea2871e26787da029325123dd0ecf4a272f34d23a85b5
         browser/public/assets/02f7d6c6946e23f6f4d6.woff2: ad58f7fcae1bb271807d629e3d7bf370be17b13436c1753720db1f389d8cc114
