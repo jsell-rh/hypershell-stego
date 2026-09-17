@@ -1,0 +1,86 @@
+name: Real provider discovery and cleanup
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/provider-discovery.yml'
+      - 'acceptance/unknown_provider_clients_test.go'
+      - 'acceptance/keycloak_test.go'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-discovery-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  discovery:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 12
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 1GiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+      STEGO_REQUIRE_POSTGRES: '1'
+      STEGO_REQUIRE_KEYCLOAK: '1'
+      STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK: '1'
+    services:
+      postgres:
+        image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+        env:
+          POSTGRES_PASSWORD: stego_test
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --cpus=1 --memory=512m --pids-limit=256
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check unknown clients through the generated runtime
+        env:
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/provider-discovery"
+          git rev-parse HEAD > "$RUNNER_TEMP/provider-discovery/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/provider-discovery/source-archive.sha256"
+          cp .stego/compiler-revision "$RUNNER_TEMP/provider-discovery/compiler-revision"
+          go mod verify
+          go test -v -race -count=1 -mod=readonly -timeout=6m ./acceptance \
+            -run '^TestUnknownGatewayClientsCloseAcrossProcessRestart$' \
+            | tee "$RUNNER_TEMP/provider-discovery/tests.log"
+          python3 - "$RUNNER_TEMP/provider-discovery/tests.log" <<'PY'
+          import re, sys
+          from pathlib import Path
+          log = Path(sys.argv[1]).read_text()
+          if not re.search(r'^--- PASS: TestUnknownGatewayClientsCloseAcrossProcessRestart ', log, re.M):
+              raise SystemExit('The real provider discovery result is missing')
+          PY
+          git diff --exit-code
+      - name: Remove any remaining test provider
+        if: always()
+        timeout-minutes: 1
+        run: |
+          mkdir -p "$RUNNER_TEMP/provider-discovery"
+          docker ps -aq --filter 'label=stego.test=hypershell-keycloak' --filter "label=stego.test.run=$GITHUB_RUN_ID" | xargs -r docker rm --force
+          test -z "$(docker ps -aq --filter 'label=stego.test=hypershell-keycloak' --filter "label=stego.test.run=$GITHUB_RUN_ID")"
+          printf '{"test_provider_containers_absent":true}\n' > "$RUNNER_TEMP/provider-discovery/cleanup.json"
+      - name: Save the result
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: provider-discovery-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/provider-discovery
+          retention-days: 14
+          if-no-files-found: error

@@ -80,7 +80,7 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 	if err := os.Chmod(realmFile, 0444); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"run", "--detach", "--name", name, "--memory=2g", "--cpus=2", "--publish", bindIP + "::8443",
+	args := []string{"run", "--detach", "--name", name, "--label", "stego.test=hypershell-keycloak", "--label", "stego.test.run=" + os.Getenv("GITHUB_RUN_ID"), "--memory=2g", "--cpus=2", "--pids-limit=512", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=1000:0", "--publish", bindIP + "::8443",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server.pem") + ",target=/certs/server.pem,readonly",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server-key.pem") + ",target=/certs/server-key.pem,readonly",
 		"--mount", "type=bind,source=" + realmFile + ",target=/opt/keycloak/data/import/workflow-realm.json,readonly",
