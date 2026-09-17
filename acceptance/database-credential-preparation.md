@@ -105,3 +105,13 @@ The complete workflow must pass again with the corrected contract.
 Independent cleanup confirmed that the test resources, both volumes, and
 the shared test Lease holder were absent. The previous failure remains in
 the evidence record.
+
+The focused contract check passed in
+[run 35223819383](https://github.com/jsell-rh/hypershell-stego/actions/runs/35223819383)
+at source `e98b01f`. Independent checks confirmed all three PostgreSQL signal
+tests, including credential preparation with a controller parent, log, trace,
+and metric. The provider workflow closed 61 protected identities and retained
+20 journals across restart. All 15 comparison cases, the deadline case,
+generation, and cleanup passed. See the
+[contract check record](postgres-signal-contract-evidence.json). This focused
+pass does not replace the complete CNPG workflow.
