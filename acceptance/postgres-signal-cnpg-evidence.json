@@ -1,0 +1,472 @@
+{
+  "run_attempt": 1,
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35224348179",
+  "source": "d9cd7e3d6a78b24577f1a0f8f0c435352aa8800d",
+  "compiler": "b8fdfd6946a740430a2a4f41cf9aaae03a6d6793",
+  "seconds": 728.81,
+  "source_files_match": 1432,
+  "generation_hashes_match": 416,
+  "gateway_console_image_matches_qualified_record": true,
+  "dashboard_session_and_reload": true,
+  "editor_checks": 8,
+  "account_cleanup_counts": 3,
+  "postgres_signals_complete": true,
+  "cleanup": {
+    "checked_at": "2026-09-17T13:28:00.622870+00:00",
+    "cnpg_run": 35224348179,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": "",
+    "retained_test_volumes": [],
+    "test_volumes_checked": [
+      "pvc-03f0a682-22aa-4288-98d2-5da5f3495512",
+      "pvc-2ba7d23e-6ee1-4f87-b725-4e0bc5eff779"
+    ]
+  },
+  "screenshots": {
+    "dashboard-create.json.png": "9be62bee9bb3cc91463928b8518261fbf2bf6cceb3e4613595eb82ec9015fdd3",
+    "dashboard-create.json.editor.png": "4cec5426838f86f06a6c1b4d5d2411bfdcafdadda64156acf7b8e95ed8b6549a",
+    "dashboard-create.json.editor-selection.png": "912f9d4db832e91ef65e40c353b45059401178960f8e4347e8966dfc13915270"
+  },
+  "screenshots_viewed": true,
+  "startup": {
+    "failed_pairs": {
+      "hypershell-console": {
+        "76c5e595-b7fa-4bbd-80ca-be1fe8ad148d": [],
+        "83872c76-dc8d-424c-8ce9-301a3f205a89": [],
+        "f3491271-5870-4a6a-b0ef-16ff2a5b16d4": []
+      },
+      "hypershell-gateway-console": {
+        "259f300d-a8c5-409c-82fd-7ee18455cb02": [],
+        "7d0f37aa-167f-4dd2-9dac-8ad0b5c40ede": [],
+        "e7423e6d-2092-48a6-bc9d-19372b580f42": []
+      }
+    },
+    "complete_instances": {
+      "hypershell-console": [
+        "76c5e595-b7fa-4bbd-80ca-be1fe8ad148d",
+        "83872c76-dc8d-424c-8ce9-301a3f205a89",
+        "f3491271-5870-4a6a-b0ef-16ff2a5b16d4"
+      ],
+      "hypershell-gateway-console": [
+        "259f300d-a8c5-409c-82fd-7ee18455cb02",
+        "7d0f37aa-167f-4dd2-9dac-8ad0b5c40ede",
+        "e7423e6d-2092-48a6-bc9d-19372b580f42"
+      ]
+    },
+    "sha256": "b08aa112eb66fee991b8901ab27e919f21e7816a1c158c698e46c0581528c206",
+    "same_relay_instance_required_by_test": true
+  },
+  "scope": "Complete CNPG Gateway workflow with generated browser startup and relay telemetry at the named source. The live Kata isolation test is deferred.",
+  "provisioner_recovery": {
+    "account_write_retries": 0,
+    "current_unavailable_observations": true,
+    "denied_account_requests": 2,
+    "denied_requests_created_no_accounts": true,
+    "gateways": 2,
+    "running_healthy_gateways_after_restart": true,
+    "sql_and_credential_identities_preserved": true
+  },
+  "provisioner_recovery_matches_live_capture": true,
+  "evidence_archive_sha256": "e2949bddbfa011c1679957f99fff80ee73e4b0442d6f5be0f6fe104df3d540ca",
+  "scheduling_without_intervention": true,
+  "required_tests_passed": 11,
+  "scheduling_intervention": null,
+  "not_proved": [
+    "Live Kata isolation",
+    "Production capacity and remaining enterprise requirements"
+  ],
+  "cnpg_restart": {
+    "cluster_spec_unchanged": true,
+    "cluster_uid": "3a68f3ad-f9d0-4cdb-a71f-b64713c785b3",
+    "gateway_credentials_and_keys_unchanged": true,
+    "installation_data_unchanged": true,
+    "namespace": "stego-cnpg-database-ci",
+    "namespace_uid": "d57b0776-5a99-45d6-a1cc-7b031a555359",
+    "new_primary": "gateway-database-2",
+    "new_primary_pod_uid": "573b5e75-1055-43ab-b54f-20df5b0848de",
+    "old_pod_uid": "95ff2331-7973-445d-b998-1a5a81f3813d",
+    "old_primary": "gateway-database-1",
+    "primary_changed": true,
+    "provider_data_unchanged": true,
+    "ready_instances": 2,
+    "seconds": 67.347529135,
+    "sql_object_ids_unchanged": true
+  },
+  "cnpg_cleanup": {
+    "runtime_absent": true,
+    "volumes_absent": true,
+    "private_fixture_absent": true,
+    "installation_retained": true
+  },
+  "cnpg_admission": [
+    {
+      "name": "operator-job-accepted",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": true
+    },
+    {
+      "name": "operator-job-missing-deadline",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-job-suspended",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-job-delayed-cleanup",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-accepted",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": true
+    },
+    {
+      "name": "database-job-missing-deadline",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-suspended",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-delayed-cleanup",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-command",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-environment",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-probe-command",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-network-label",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-command",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-scope",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-environment-source",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-lifecycle",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-probe-command",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-executable-mount",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "cluster-accepted",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": true
+    },
+    {
+      "name": "cluster-instance-count",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    },
+    {
+      "name": "cluster-storage-size",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    },
+    {
+      "name": "cluster-missing-owner",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    }
+  ],
+  "cnpg_network_policy": {
+    "uid": "c9f7bc1f-c6cd-4436-a335-de73bddc0055",
+    "resource_version": "7052686",
+    "spec": {
+      "egress": [
+        {
+          "ports": [
+            {
+              "port": 5432,
+              "protocol": "TCP"
+            },
+            {
+              "port": 8000,
+              "protocol": "TCP"
+            }
+          ],
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "stego-cnpg-database-ci"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "cnpg.io/cluster": "gateway-database"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ports": [
+            {
+              "port": 5353,
+              "protocol": "UDP"
+            },
+            {
+              "port": 5353,
+              "protocol": "TCP"
+            }
+          ],
+          "to": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "openshift-dns"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "ports": [
+            {
+              "port": 6443,
+              "protocol": "TCP"
+            }
+          ],
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "172.20.0.1/32"
+              }
+            }
+          ]
+        },
+        {
+          "ports": [
+            {
+              "port": 443,
+              "protocol": "TCP"
+            }
+          ],
+          "to": [
+            {
+              "ipBlock": {
+                "cidr": "172.30.0.1/32"
+              }
+            }
+          ]
+        }
+      ],
+      "ingress": [
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "stego-cnpg-database-ci"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "cnpg.io/cluster": "gateway-database"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 5432,
+              "protocol": "TCP"
+            },
+            {
+              "port": 8000,
+              "protocol": "TCP"
+            }
+          ]
+        },
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "stego-cnpg-operator-ci"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "cloudnative-pg"
+                }
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 8000,
+              "protocol": "TCP"
+            }
+          ]
+        },
+        {
+          "from": [
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "stego-service-ci"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app": "stego-fixture"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "kubernetes.io/metadata.name": "stego-service-ci"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "hypershell-gateway-workload"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "stego.dev/allocation-profile": "gateway",
+                  "stego.dev/allocator": "5305aa89c5f40a73316e60bd033ec8ab"
+                }
+              },
+              "podSelector": {
+                "matchLabels": {
+                  "app.kubernetes.io/name": "hypershell-gateway-console"
+                }
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "stego.dev/allocation-profile": "gateway",
+                  "stego.dev/allocator": "5305aa89c5f40a73316e60bd033ec8ab"
+                }
+              },
+              "podSelector": {
+                "matchExpressions": [
+                  {
+                    "key": "stego.test/network-probe",
+                    "operator": "Exists"
+                  }
+                ]
+              }
+            },
+            {
+              "namespaceSelector": {
+                "matchLabels": {
+                  "stego.dev/allocation-profile": "gateway",
+                  "stego.dev/allocator": "5305aa89c5f40a73316e60bd033ec8ab"
+                }
+              },
+              "podSelector": {
+                "matchExpressions": [
+                  {
+                    "key": "hypershell.redhat.io/gateway-id",
+                    "operator": "Exists"
+                  }
+                ]
+              }
+            }
+          ],
+          "ports": [
+            {
+              "port": 5432,
+              "protocol": "TCP"
+            }
+          ]
+        }
+      ],
+      "podSelector": {
+        "matchLabels": {
+          "cnpg.io/cluster": "gateway-database"
+        }
+      },
+      "policyTypes": [
+        "Ingress",
+        "Egress"
+      ]
+    },
+    "spec_sha256": "4878e83cf4d42a4f3097d86f9747b97b4ffbd76e68160bbcf3370ebf41829228"
+  },
+  "namespace_recovery_checks": {
+    "database_and_role_oids_unchanged": true,
+    "other_gateway_sql_unchanged": true,
+    "provider_data_unchanged": true,
+    "source_data_unchanged": true,
+    "sql_credentials_unchanged": true,
+    "ungranted_rpc_denied": true,
+    "viewer_lists_filtered": true,
+    "viewer_membership_recovered": true,
+    "viewer_writes_denied": true,
+    "workspace_and_gateway_revocation_verified": true
+  },
+  "sql_cleanup_denial_checks": {
+    "cleanup_pending": true,
+    "other_gateway_ready": true,
+    "source_data_unchanged": true,
+    "sql_object_ids_unchanged": true,
+    "sqlstate": "42501"
+  },
+  "journal_contains_only_resource_identity": true,
+  "compiler_transfer_matches_live_capture": true,
+  "compiler_records_match_published_package": true,
+  "compiler_sha256": "2913c048a2ddd64ca55af9ad4af485167ea6c07718fa55c577b475cb55608160",
+  "provisioner_rollout": "Recreate",
+  "live_provisioner_startup_observations": 2,
+  "scheduling_delay_seconds": 246.0,
+  "failed_rpc_recovery_probe_used": false,
+  "rollout_evidence": "Hash-verified generated template and two live API assertions; final object collection is empty after cleanup",
+  "screenshot_review": "Dashboard, invalid JSON rejection, and policy text selection are visible. The policy was not submitted."
+}
