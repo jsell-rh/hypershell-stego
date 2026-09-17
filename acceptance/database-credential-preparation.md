@@ -55,6 +55,24 @@ Regeneration run `35220022601` matched all 415 files, produced an empty review
 patch, and passed all three drift checks. See the
 [repeat generation record](database-credential-regeneration-evidence.json).
 
-The dedicated API/SQL run, journal checks, full core suite, and complete live
-Gateway workflow with this compiler remain pending. These hosted passes do not
-qualify those unfinished checks.
+The full core suite and complete live Gateway workflow with this compiler
+remain pending. The verified results below do not qualify those unfinished
+checks.
+
+## API, SQL, and journal results
+
+At source `c55b2e2`, the dedicated jshell API run `35219966768` passed all 52
+required tests. Independent checks matched 1,421 source files, 416 generated
+hashes, the live compiler bytes, and the published signature records. The SQL
+workflow exercised common credential preparation and rejected new credentials
+for a deleted Gateway's retained SQL record. Creation, access rules, events,
+delete, restart, and regeneration also passed. Independent cleanup confirmed
+that test resources were absent and the shared test Lease was empty.
+See the [API record](database-credential-api-evidence.json).
+
+Journal run `35219971392` passed all 28 required tests exactly once, with no
+failed or skipped test. Generation and hosted service cleanup passed. The tests
+cover protected journals, access rules, provider failure, concurrent registration,
+event rollback, and checkpoint recovery. They do not prove whole-database
+restore or distributed writer fencing. See the
+[journal record](database-credential-journal-evidence.json).
