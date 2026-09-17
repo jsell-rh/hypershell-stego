@@ -7,6 +7,8 @@ on:
       - '.github/workflows/provider-discovery.yml'
       - 'acceptance/unknown_provider_clients_test.go'
       - 'acceptance/keycloak_test.go'
+      - 'out/keycloak/**'
+      - 'internal/serviceaccountkeycloak/**'
 
 permissions:
   contents: read

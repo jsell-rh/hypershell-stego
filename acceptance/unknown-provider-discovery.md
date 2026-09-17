@@ -40,3 +40,23 @@ Source inspection found that common closure selected legacy ownership for an
 unknown current client when both ownership formats were configured. A common
 STEGO fix is under test. This initial failure alone does not prove that diagnosis
 or qualify the fix. The same application workflow must pass after adoption.
+
+
+## Compiler adoption
+
+The work branch selects compiler and common registry `e206b41`. The immutable
+compiler release passed all six source checks and the signed artifact checks.
+Its uploaded files were downloaded and compared with the independently verified
+package before publication. The common installer then verified the published
+release without executing the compiler on the workstation.
+
+[Hosted regeneration 35212905594](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212905594)
+passed for all three modules. Independent inspection matched all 414 archived
+files after import. Only the generated provider closure, embedded CLI compiler
+identity, and three state files changed. The installer result matched the
+verified release. See the [generation record](unknown-provider-generation-evidence.json).
+The first workflow definition used the runner context before a runner was
+available. That definition was corrected before this passing generation run.
+
+The application discovery rerun and complete application checks remain pending.
+No domain adapter or ownership policy changed for this fix.

@@ -1,0 +1,21 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35212905594",
+  "source": "80b2dd8fb23d8b50b36fa94d014a053f93f281e7",
+  "compiler": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+  "compiler_sha256": "93a74182dd6b90e55d703ab1f472fbba180a253177003cdee0cf7b830030b6d4",
+  "checked_at": "2026-09-17T10:56:19.064405+00:00",
+  "source_archive_sha256": "5b7279e7e07c9a4dcfa06c94308d1eb6fd01224e713f016e1069e9b684dfae3a",
+  "generated_archive_sha256": "eff8cdd0239dc611578fdaa2d5fb43275e17b93cdf4d76cfe06129c44fc1556f",
+  "generation_log_sha256": "16393d37d2319d52efce410f10a6cd1a103fda279f77fd13402d2eeaa9284289",
+  "generated_files_matched": 414,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/keycloak/client_lifecycle.go"
+  ],
+  "release_verification_matched": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false
+}
