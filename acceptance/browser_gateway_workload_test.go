@@ -241,8 +241,7 @@ func (w *browserGatewayWorkload) check(id string) {
 				}
 			}
 			data, _ := json.Marshal(object)
-			if err == nil && code == 200 && json.Unmarshal(data, &state) == nil && state.Metadata.Generation > 0 && state.Status.ObservedGeneration >= state.Metadata.Generation && state.Status.ReadyReplicas == 1 && state.Status.UpdatedReplicas == 1 {
-				w.checkAllocatedWorkloadAccounts(id, gateway.Namespace)
+			if err == nil && code == 200 && json.Unmarshal(data, &state) == nil && state.Metadata.Generation > 0 && state.Status.ObservedGeneration >= state.Metadata.Generation && state.Status.ReadyReplicas == 1 && state.Status.UpdatedReplicas == 1 && w.checkAllocatedWorkloadAccounts(id, gateway.Namespace) {
 				w.requirePublicEndpoint(gateway)
 				w.t.Log("Browser Gateway has current controller observations and a ready OpenShell Deployment")
 				return
