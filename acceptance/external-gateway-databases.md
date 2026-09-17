@@ -127,3 +127,25 @@ Independent checks confirmed their absence, five denied old permissions, and
 two retained permissions for the current test. Shared CRDs, namespaces, roles,
 and unrelated workloads were unchanged. See the
 [removal evidence](retired-cnpg-access-evidence.json).
+
+## Main branch repeat
+
+The complete workflow passed again at `d0d5250` in
+[run 35235034044](https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034044).
+All eleven required tests passed. The main workflow took 666.88 seconds.
+Independent checks matched 1,434 source files, 416 generated-file hashes,
+the published compiler, the console image, and the live recovery records.
+The three dashboard images were reviewed. Independent cluster reads found no
+remaining test workloads, fixtures, allocated namespaces, or held test lease.
+
+At the same source, the separate API gate passed 52 required tests. The journal
+gate passed 28 required tests. The hosted browser gate also passed. The hosted
+core repeat then passed in
+[run 35235034256](https://github.com/jsell-rh/hypershell-stego/actions/runs/35235034256):
+311 top-level tests, 670 test cases, three generation checks, and container
+cleanup. Four declared live tests use separate workflows. Independent checks
+matched the earlier required tests and both earlier failure cases. Its log SHA256
+is `79241b95d11261566b21e878f06987e80452e445b1dca68759190b8c8c880e9b`.
+The [main branch evidence](external-gateway-main-evidence.json) was saved before
+the core job finished. These results do not prove RDS failover, Sandbox VM
+isolation, or production capacity.
