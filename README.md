@@ -38,10 +38,11 @@ logout, the API proxy, and browser telemetry. OAuth tokens stay out of browser
 JavaScript. Hypershell retains the React application and its domain behavior.
 The upstream per-Gateway dashboard uses its own generated Go browser backend.
 STEGO supplies its authentication, deployment, lifecycle, browser client, and
-telemetry. Its public workflow passed. The expanded CNPG workflow failed during
-Gateway provisioning. The CNPG fixture omitted database ingress for the
-separate console Pods. That [network rule is corrected](acceptance/dashboard-cnpg-network-evidence.json);
-the full workflow must pass before CNPG dashboard qualification.
+telemetry. Its public and expanded CNPG workflows passed. The CNPG fixture now
+permits database ingress from the separate console Pods through a narrow
+[network rule](acceptance/dashboard-cnpg-network-evidence.json). The complete
+[CNPG result](acceptance/dashboard-cnpg-workflow-evidence.json) includes primary
+replacement, dashboard recovery, durable deletion, and independent cleanup.
 
 The API has no database catalog or `database_id`. Installation supplies
 co-located external PostgreSQL or CNPG. Controllers create an isolated logical
@@ -57,6 +58,7 @@ separate qualification requirement.
 | --- | --- |
 | `ca8814f`, [dashboard application checks](acceptance/dashboard-signout-full-evidence.json) | All 302 expected top-level tests passed. Four declared live tests were skipped. CNPG and Sandbox jobs were not selected. |
 | `e8bb965`, [complete public dashboard workflow](acceptance/dashboard-public-workflow-evidence.json) | Passed in 670.99 seconds. Editor behavior, access, events, restart, sign-out, recovery, durable deletion, and linked logs, metrics, and traces passed. All 412 generated-file hashes matched. Independent cleanup passed. |
+| `aed33a9`, [complete CNPG dashboard workflow](acceptance/dashboard-cnpg-workflow-evidence.json) | Passed in 768.33 seconds. Primary replacement preserved SQL identities, credentials, keys, and data. Dashboard, access, recovery, deletion, and linked telemetry passed. All 412 generated-file hashes and three viewed screenshots matched the final archive. Independent runtime and volume cleanup passed. |
 | `0d74978`, [expanded CNPG dashboard workflow](acceptance/dashboard-cnpg-readiness-evidence.json) | Failed after 325.96 seconds because Gateway provisioning did not finish. Repeated generation and independent runtime and volume cleanup passed. Dashboard, primary replacement, and final application deletion remain unproved in this run. |
 | `85706c6`, [full application](acceptance/core-window-evidence-20260916.json) | Core, rendered browser, image, and console jobs passed. The saved log has 483 passes and four named test exclusions. CNPG and Sandbox were not selected. |
 | `120711a`, [API workflow](acceptance/api-window-evidence-20260916.json) | All 51 required checks passed, with no failures or skips. All four generation snapshots matched. Independent checks confirmed resource and Lease cleanup. |
@@ -69,6 +71,13 @@ use the runtime from `85706c6` and compiler `af67e7b`. They establish the earlie
 Gateway deletion and provider recovery behavior. The earlier CNPG result does
 not establish the expanded dashboard workflow. Historical results remain in
 [the repository record](acceptance/repository-history-20260916.md).
+
+The CNPG run needed one manual replacement of its secondary database Pod to
+free CPU for the existing test Job. One console then restarted three times
+before it became ready, with no configuration change. Its log identifies
+browser initialization but not the cause. The result does not prove startup
+without assistance. STEGO needs more precise startup diagnostics that exclude
+credentials and other private input.
 
 These results do not establish complete parity, production capacity, backup and
 restore, or every deployment recovery case. The user deferred the live Kata
