@@ -3,8 +3,9 @@
 This branch is under qualification. It pins the published common compiler at
 `09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb`. The exact source passed the full compiler
 suite and focused account checks. The signed immutable release and all four
-assets were independently verified. Generated output still needs its CI update.
-Do not deploy this branch before regeneration and the application checks.
+assets were independently verified. CI generation passed and its checked output
+is committed. Do not deploy this branch before the application checks and
+installation-policy review.
 
 The Gateway allocation profile declares two account aliases: `gateway` and
 `console`. STEGO owns their names, creation, owner checks, token defaults,
@@ -31,7 +32,12 @@ namespace, account, and deployment UIDs without credentials. The network probe
 also uses the checked generated account name. Authorization checks require
 worker account creation and patch to be denied.
 
-Only formatting and source checks have run for this draft. Required next steps
-are regeneration in CI, hosted application checks,
-a reviewed installation-policy update, and the complete bounded cluster workflow.
+Regeneration run `35237067181` passed at `c1f2875`. Independent checks matched
+all 415 generated files and all three drift checks. The three deployment
+renderer copies match the common renderer that passed its focused tests. The
+allocation configuration changes only the two account aliases and worker
+account permissions. See the [generation record](allocated-accounts-generation-evidence.json).
+
+Hosted application checks, installation-policy review,
+and the complete bounded cluster workflow remain required.
 Do not change cluster policy while the current main browser test is active.

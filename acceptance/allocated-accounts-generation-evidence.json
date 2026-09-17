@@ -1,0 +1,26 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35237067181",
+  "source": "c1f2875567f2676e35e9fe4a5dd53c0d24484b2e",
+  "compiler": "09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb",
+  "compiler_sha256": "eb87abafbb795753f95d705445264976734c37691897fc2f418268111d6e714e",
+  "checked_at": "2026-09-17T14:59:34.015383+00:00",
+  "source_archive_sha256": "0e77263f818bb55f4eb95ad6618ea8b774e32975cfae010b181aa9cf3608d5d8",
+  "generated_archive_sha256": "a6a158ed8076332b6682ed35c39084c2c0e7a60af1a98844616c363b010edeba",
+  "generation_log_sha256": "08b0f526ae273bb0237535df8ef25156adb69195cfdfe5898d5d30d6ffb49cd0",
+  "generated_files_matched": 415,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "console/out/deploy/resources.go",
+    "gateway-console/.stego/state.yaml",
+    "gateway-console/out/deploy/resources.go",
+    "out/cli/command/version.go",
+    "out/deploy/allocation/allocation.go",
+    "out/deploy/render/worker-namespace-allocation.json.tmpl",
+    "out/deploy/resources.go"
+  ],
+  "release_verification_matched": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false,
+  "scope": "Generated code and signed compiler identity only. Hosted application and live account adoption checks remain pending."
+}
