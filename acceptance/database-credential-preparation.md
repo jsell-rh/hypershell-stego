@@ -25,8 +25,9 @@ archive; the CI patch omitted it because it was untracked. See the
 [generation record](database-credential-generation-evidence.json).
 
 The dedicated API and SQL checks passed, including the new deleted-record
-assertion. The complete live Gateway workflow with this compiler remains
-pending. Do not use this branch as a qualified deployment until it passes.
+assertion. The first complete live Gateway workflow with this compiler failed at the
+PostgreSQL telemetry check. Do not use this branch as a qualified deployment
+until the corrected workflow passes.
 
 ## Verified hosted results
 
@@ -63,8 +64,8 @@ service cleanup also passed. The four excluded live tests have separate gates.
 See the [core record](database-credential-core-evidence.json). This pass does
 not establish the cause of either earlier failure.
 
-The complete live Gateway workflow with this compiler remains pending. The
-verified results below do not qualify that unfinished check.
+The complete live Gateway workflow has not passed with this compiler. The
+verified results below do not qualify that failed check.
 
 ## API, SQL, and journal results
 
@@ -83,3 +84,24 @@ cover protected journals, access rules, provider failure, concurrent registratio
 event rollback, and checkpoint recovery. They do not prove whole-database
 restore or distributed writer fencing. See the
 [journal record](database-credential-journal-evidence.json).
+
+## Failed complete CNPG workflow
+
+Run `35220931665` at source `fd8285d` failed after 751.33 seconds in
+`TestGeneratedKubernetesBrowserGatewayWorkflow`. Ten preceding tests passed.
+Independent checks matched 1,428 source files, all 416 generated hashes before
+the tests, and the live compiler package. The test reached Gateway deletion
+and database retention checks before it rejected PostgreSQL telemetry.
+Generation after the tests was not reached. See the
+[failure record](database-credential-cnpg-failure-evidence.json).
+
+The generated runtime emits the common `prepare` database operation. The
+application telemetry test did not permit that operation. The corrected test
+permits `prepare` and requires its correlated logs, traces, and metrics. It
+still rejects unknown operations. The failed run retained an invalid flag,
+so this contract defect does not exclude another invalid field or identity.
+The complete workflow must pass again with the corrected contract.
+
+Independent cleanup confirmed that the test resources, both volumes, and
+the shared test Lease holder were absent. The previous failure remains in
+the evidence record.
