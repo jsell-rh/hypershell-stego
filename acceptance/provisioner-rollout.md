@@ -44,5 +44,14 @@ Gateway console. See the [module record](provisioner-rollout-module-evidence.jso
 The first module and journal jobs at input-only source `bf7b8da` failed their
 committed-generation checks before the generated files were applied. Their logs
 show the generation-state differences. Those runs are not passes. The module
-repeat above uses the committed generated source; the journal repeat and full
-application suite remain in progress.
+repeat above uses the committed generated source.
+
+The journal repeat at `4897fc1` passed in
+[run 35216258643](https://github.com/jsell-rh/hypershell-stego/actions/runs/35216258643).
+Independent checks found each of the 28 required tests exactly once, with no
+failed or skipped test. Generated-source checks and hosted service cleanup also
+passed. These tests cover stored journals, provider failures, access rules,
+concurrent registration, event rollback, and recovery from saved checkpoints.
+They do not prove whole-database restore or distributed writer fencing. See the
+[journal record](provisioner-rollout-journal-evidence.json). The full application
+suite remains in progress.
