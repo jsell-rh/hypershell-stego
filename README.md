@@ -14,7 +14,7 @@ Git revision as their compiler. Only the API has a local application archetype.
 Both consoles use the common browser archetype, including browser telemetry.
 There are no local copies of common component declarations. Application output
 paths are set in `service.yaml`. See the [registry model](registry/README.md)
-and the [Gateway console registry result](acceptance/composed-registry-module-evidence.json).
+and the [common browser composition record](acceptance/common-browser-composition.md).
 The generated runtime stays in Git for review and repeatable builds.
 
 ## Current application behavior

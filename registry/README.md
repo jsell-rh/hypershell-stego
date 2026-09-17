@@ -25,4 +25,4 @@ STEGO also permits an explicit `vendor` path for a pinned Git registry. That
 checkout must retain its Git metadata and match the selected commit. This
 option supplies registry inputs only. Hypershell still fetches and builds its
 pinned compiler, so registry vendoring alone does not provide an offline build.
-See the [STEGO registry contract](https://github.com/jsell-rh/stego/blob/83592bee5a17de6936cf521b94629e2a225a8d37/specs/registry-composition.md).
+See the [STEGO registry contract](https://github.com/jsell-rh/stego/blob/00573709fb15a2a54de4242aa8fdbabee325179a/specs/registry-composition.md).

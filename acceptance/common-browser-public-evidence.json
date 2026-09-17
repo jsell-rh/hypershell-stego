@@ -1,0 +1,78 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35195368755",
+  "source": "af43205ab5b45fe73f95b68e31f1650f5709c106",
+  "compiler": "00573709fb15a2a54de4242aa8fdbabee325179a",
+  "seconds": 662.0,
+  "source_files_match": 1363,
+  "generation_hashes_match": 415,
+  "gateway_console_image_matches_qualified_record": true,
+  "dashboard_session_and_reload": true,
+  "editor_checks": 8,
+  "account_cleanup_counts": 3,
+  "postgres_signals_complete": true,
+  "cleanup": {
+    "checked_at": "2026-09-17T07:57:58.683304+00:00",
+    "run": 35195368755,
+    "source": "af43205ab5b45fe73f95b68e31f1650f5709c106",
+    "ci": {
+      "conclusion": "success",
+      "headSha": "af43205ab5b45fe73f95b68e31f1650f5709c106",
+      "status": "completed"
+    },
+    "test_job_uid": "b3f89b3c-33a8-49ad-961e-7e6216d6c82a",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "lease_holder": "",
+    "empty": true
+  },
+  "screenshots": {
+    "dashboard-create.json.png": "255009263384912a7e1f1071f2dc26db7198629ed4d4e9edd5809027d63dc176",
+    "dashboard-create.json.editor.png": "0ca9caa4d892f654dba1d4d647eee1577848e69091893582a9770c182607ef7c",
+    "dashboard-create.json.editor-selection.png": "3d103a5c2d9ed0afcc5a1340f80391ba088a5817be89cda1a2c07a56379ab77c"
+  },
+  "screenshots_viewed": true,
+  "startup": {
+    "failed_pairs": {
+      "hypershell-console": {
+        "182b05a0-2a77-4787-94b8-8f9cce90d94d": [],
+        "7fb1de22-a239-4c77-8506-4694fbc9e751": [],
+        "be5f3679-dca6-4a7e-8963-5c08dbab0086": []
+      },
+      "hypershell-gateway-console": {
+        "33db13d2-9f8a-4605-98a6-2d46599ff9b2": [],
+        "a6801fe1-242d-4e0f-9b6a-fa936ebfa1c1": [],
+        "d9fea73e-d653-4031-b88c-2af97e39db4e": []
+      }
+    },
+    "complete_instances": {
+      "hypershell-console": [
+        "182b05a0-2a77-4787-94b8-8f9cce90d94d",
+        "7fb1de22-a239-4c77-8506-4694fbc9e751",
+        "be5f3679-dca6-4a7e-8963-5c08dbab0086"
+      ],
+      "hypershell-gateway-console": [
+        "33db13d2-9f8a-4605-98a6-2d46599ff9b2",
+        "a6801fe1-242d-4e0f-9b6a-fa936ebfa1c1",
+        "d9fea73e-d653-4031-b88c-2af97e39db4e"
+      ]
+    },
+    "sha256": "3e29bd60d856ec526f3a0bf71da95211b76e5178929184adab22f239efa22c23",
+    "same_relay_instance_required_by_test": true
+  },
+  "scope": "Complete public Gateway workflow with generated browser startup and relay telemetry at the named source. The CNPG workflow has a separate result.",
+  "required_tests_passed": 11,
+  "provisioner_recovery": {
+    "account_write_retries": 0,
+    "current_unavailable_observations": true,
+    "denied_account_requests": 2,
+    "denied_requests_created_no_accounts": true,
+    "gateways": 2,
+    "running_healthy_gateways_after_restart": true,
+    "sql_and_credential_identities_preserved": true
+  },
+  "screenshots_viewed_at": "2026-09-17T07:58:43.388287+00:00",
+  "screenshot_observation": "The workspace, invalid JSON message, disabled submit button, and editor selection are visible. No policy was submitted."
+}

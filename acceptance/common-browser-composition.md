@@ -50,8 +50,32 @@ Independent inspection at `2026-09-17T07:36:04Z` found no test Jobs, Pods,
 Deployments, StatefulSets, Services, or Routes in either test namespace. The
 live-test Lease had no holder. The cancelled run is not a pass.
 
+The saved first core log confirms `ENOENT` for the old package path. Its
+SHA-256 is `41d8e79ea8d51408d4e0194e72f2ca738c79f00bfc00f0927671737d841c0723`.
+The [journal recovery check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35194997813)
+passed all 28 required checks. Its result log SHA-256 is
+`283bf50c094c3f8d6ecd63b6e46a1922ad97a18a71e2a9f038286fde15ce6d43`.
+
+## Complete public Gateway workflow
+
+The corrected [public workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35195368755)
+passed all 11 required tests at `af43205`. The complete rendered workflow took
+662 seconds. Independent checks matched all 1,363 source hashes and all 415
+repeated generated-file hashes. The image executable matched the checked Gateway
+module. All three saved screenshots were viewed. The workspace, invalid JSON
+message, disabled submit button, and editor selection were visible.
+
+The test covered Gateway creation and grants, REST and gRPC access, event
+delivery, restart, confirmed sign-out, SQL isolation, namespace recovery,
+account cleanup, and durable Gateway deletion. A provisioner outage denied two
+new account requests without creating rows. Recovery preserved SQL and
+credential identities. Six browser instances exported all 48 matching startup
+log/span pairs with metrics. No failed startup pairs were recorded.
+
+Independent inspection at `2026-09-17T07:57:58Z` found no test runtime,
+fixtures, or allocated namespaces and roles. The shared Lease had no holder.
+See the [exact source and result record](common-browser-public-evidence.json).
+
 The corrected [full suite](https://github.com/jsell-rh/hypershell-stego/actions/runs/35195371309)
-and [public workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35195368755)
-are separate required results. Complete application, API, CNPG, restart, and
-cleanup qualification remains open. These generation and module checks do not
-establish full application behavior or complete the enterprise goal.
+is still running. Separate API and CNPG qualification remains open. This
+public workflow result does not complete the enterprise goal.
