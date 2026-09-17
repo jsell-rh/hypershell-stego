@@ -1,10 +1,10 @@
 # Allocated workload accounts
 
-This branch is a draft. It requires the common account readiness API from
-STEGO source `09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb`. That source is under
-qualification. The compiler pin and generated output still use the previous
-package. Do not deploy this branch before compiler publication, regeneration,
-and the application checks.
+This branch is under qualification. It pins the published common compiler at
+`09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb`. The exact source passed the full compiler
+suite and focused account checks. The signed immutable release and all four
+assets were independently verified. Generated output still needs its CI update.
+Do not deploy this branch before regeneration and the application checks.
 
 The Gateway allocation profile declares two account aliases: `gateway` and
 `console`. STEGO owns their names, creation, owner checks, token defaults,
@@ -32,6 +32,6 @@ also uses the checked generated account name. Authorization checks require
 worker account creation and patch to be denied.
 
 Only formatting and source checks have run for this draft. Required next steps
-are the signed compiler release, regeneration in CI, hosted application checks,
+are regeneration in CI, hosted application checks,
 a reviewed installation-policy update, and the complete bounded cluster workflow.
 Do not change cluster policy while the current main browser test is active.
