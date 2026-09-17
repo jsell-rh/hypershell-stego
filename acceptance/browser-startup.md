@@ -26,3 +26,10 @@ separation, repeated export, private fields, invalid signal types, and the
 required archive file. Full compiler CI and application workflow qualification
 are still required. This candidate does not establish the cause of the earlier
 CNPG browser startup failure or replace the qualified dashboard evidence.
+
+The [Gateway console module check](dashboard-startup-module-evidence.json)
+passed at `a55618b`. All 130 archived source files match the candidate. The
+published image binary matches the checked module build. All 134 downloaded Go
+module files also match, including the inherited repository license. The API
+now uses that checked module revision for the console deployment and schema
+packages. This result does not qualify a running dashboard or the full compiler.
