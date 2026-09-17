@@ -128,7 +128,8 @@ Three small stub checks also passed for token removal, changed assets, and
 rejection of the old unverified binary override.
 
 Full hosted run `35208313876` and public Gateway run `35208318088` test source
-`9b6e08d`. Their results remain pending. This source adds the management asset
+`9b6e08d`. The full hosted result is pending; the public workflow passed the
+independent checks below. This source adds the management asset
 checks to the preceding compiler integration. The API runner and generated
 application output are unchanged from `dbe7ce6`. CNPG qualification for the new
 compiler transfer path also remains required. These results do not complete the
@@ -155,3 +156,31 @@ completed all six samples. It read 10,001 or 100,001 rows through 101 or 1,001
 pages, respectively. This check covers SQL cursor scans, domain authorization,
 and row validation. It does not measure provider calls or a complete controller
 workflow. See the [history record](verified-generation-retained-history-evidence.json).
+
+
+## Public Gateway evidence
+
+[Run 35208318088](https://github.com/jsell-rh/hypershell-stego/actions/runs/35208318088)
+passed all 11 required tests at source `9b6e08d369c3885fe78a72284f21caff03967751`.
+The complete browser workflow took 734.50 seconds. Independent checks matched
+all 1,390 source files, three snapshots of 415 generated-file hashes, the
+actual dashboard image, and the signed compiler records transferred to the
+exact test Pod. No test failed or was skipped.
+
+The workflow covered creation, owner and viewer grants, REST and gRPC access,
+denied requests, event delivery, process restart, database isolation, workload
+recovery, account lifecycle, and durable deletion. The live provisioner outage
+record matched the archived result: denied requests created no accounts, and
+both Gateways recovered without account write retries or changed database and
+credential identities. All six expected browser instances exported eight
+startup stages with correlated log/span pairs and metrics, with no failed pairs.
+
+The three saved dashboard and editor screenshots were reviewed. The first
+image observer stopped with an error whose cause was not retained. The same
+healthy test continued; a later capture verified the image without a test
+restart. The final artifact matched that capture.
+
+Independent cleanup at 10:23:50 UTC found no test runtime, fixtures, allocated
+namespaces, or test lock holder. See the
+[public record](verified-generation-public-evidence.json). CNPG remains a
+separate required check for the new compiler transfer path.
