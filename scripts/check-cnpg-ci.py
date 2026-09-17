@@ -137,6 +137,16 @@ def prepare_allocation_check(source, directory, client):
     return directory
 
 
+def verify_database_network_policy(client, installation, endpoints):
+    expected = ci.database_network_policy(endpoints)
+    entries = [item for item in installation['resources'] if item['kind'] == 'NetworkPolicy' and item['name'] == 'database' and item.get('namespace') == ci.DATABASE_NS]
+    current = client.get('networkpolicy', 'database', ci.DATABASE_NS)
+    if len(entries) != 1 or not current or current['metadata'].get('uid') != entries[0].get('uid') or current['metadata'].get('labels', {}).get('app.kubernetes.io/managed-by') != 'stego-cnpg-ci' or current.get('spec') != expected['spec']:
+        raise RuntimeError('The installed CNPG database network policy differs from this workflow')
+    return {'uid': current['metadata']['uid'], 'resource_version': current['metadata']['resourceVersion'],
+            'spec': current['spec'], 'spec_sha256': hashlib.sha256(json.dumps(current['spec'], sort_keys=True, separators=(',', ':')).encode()).hexdigest()}
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--source', type=Path, required=True)
@@ -201,6 +211,7 @@ def main():
         (False, 'patch', 'validatingwebhookconfigurations.admissionregistration.k8s.io', None),
         (False, 'create', 'rolebindings', ci.DATABASE_NS),
         (False, 'patch', 'networkpolicies', ci.DATABASE_NS),
+        (True, 'get', 'networkpolicies/database', ci.DATABASE_NS),
         (False, 'get', 'secrets', ci.OPERATOR_NS),
         (False, 'create', 'pods/exec', ci.OPERATOR_NS),
         (False, 'delete', 'configmaps/' + ci.CONFIG, ci.APP_NS),
@@ -214,6 +225,9 @@ def main():
         access.append({'verb': verb, 'resource': resource, 'namespace': namespace, 'allowed': expected})
     fixture.write(args.results / 'cnpg-ci-access.json', access)
     allocation_check = prepare_allocation_check(source, args.results.resolve() / 'allocation-check', client)
+    endpoints = [(address.rsplit(':', 1)[0].strip('[]'), int(address.rsplit(':', 1)[1])) for address in kubernetes_endpoints(allocation_check)]
+    network = verify_database_network_policy(client, record, endpoints)
+    fixture.write(args.results / 'cnpg-ci-network-policy.json', network)
     lock.acquire(context, holder, ci.APP_NS, 'service-check')
     settings.lease_uid = lock.lease(context)['metadata']['uid']
     state = {'source_base_commit': frozen['source_base_commit'], 'compiler_revision': frozen['compiler_revision'],

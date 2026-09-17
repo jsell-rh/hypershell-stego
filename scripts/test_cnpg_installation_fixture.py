@@ -1,5 +1,6 @@
 """Check bounded installation resources and cleanup after partial failure."""
 import copy
+import hashlib
 import importlib.util
 import json
 from pathlib import Path
@@ -144,6 +145,20 @@ class InstallationTests(unittest.TestCase):
         ]:
             with self.subTest(database=database, endpoints=endpoints), self.assertRaises(ValueError):
                 fixture.definitions(namespace, database, storage, endpoints)
+
+    def test_console_database_peer_requires_its_allocated_gateway_namespace(self):
+        items = fixture.definitions('stego-service-ci', 'stego-cnpg-database-ci', 'gp3-csi', [('192.0.2.1', 6443)])
+        policy = next(o['spec'] for o in items if o['kind'] == 'NetworkPolicy')
+        selector = {'matchLabels': {'app.kubernetes.io/name': 'hypershell-gateway-console'}}
+        peers = [(rule, peer) for rule in policy['ingress'] for peer in rule['from'] if peer.get('podSelector') == selector]
+        self.assertEqual(len(peers), 1)
+        rule, peer = peers[0]
+        marker = hashlib.sha256(b'stego-service-ci.hypershell-namespace-allocation').hexdigest()[:32]
+        self.assertEqual(peer['namespaceSelector'], {'matchLabels': {
+            'stego.dev/allocator': marker, 'stego.dev/allocation-profile': 'gateway'}})
+        self.assertEqual(rule['ports'], [{'port': 5432, 'protocol': 'TCP'}])
+        # The console deliberately lacks the Gateway Service selector label.
+        self.assertNotIn('matchExpressions', peer['podSelector'])
 
     def test_empty_or_different_lease_cannot_install(self):
         with tempfile.TemporaryDirectory() as directory:

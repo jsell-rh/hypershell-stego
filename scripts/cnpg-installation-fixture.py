@@ -56,6 +56,8 @@ def definitions(namespace, database_namespace, storage_class, endpoints, operato
     marker = hashlib.sha256((namespace + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]
     gateway_peer = {'namespaceSelector': {'matchLabels': {'stego.dev/allocator': marker, 'stego.dev/allocation-profile': 'gateway'}},
                     'podSelector': {'matchExpressions': [{'key': 'hypershell.redhat.io/gateway-id', 'operator': 'Exists'}]}}
+    console_peer = {'namespaceSelector': gateway_peer['namespaceSelector'],
+                    'podSelector': {'matchLabels': {'app.kubernetes.io/name': 'hypershell-gateway-console'}}}
     probe_peer = {'namespaceSelector': gateway_peer['namespaceSelector'],
                   'podSelector': {'matchExpressions': [{'key': 'stego.test/network-probe', 'operator': 'Exists'}]}}
     network = item('NetworkPolicy', 'database', 'networking.k8s.io/v1', spec={
@@ -63,7 +65,7 @@ def definitions(namespace, database_namespace, storage_class, endpoints, operato
         'ingress': [
             {'from': [cluster_peer], 'ports': sql + [{'port': 8000, 'protocol': 'TCP'}]},
             {'from': [peer(operator_namespace, {'app.kubernetes.io/name': 'cloudnative-pg'})], 'ports': [{'port': 8000, 'protocol': 'TCP'}]},
-            {'from': [peer(namespace, {'app': 'stego-fixture'}), peer(namespace, {'app.kubernetes.io/name': 'hypershell-gateway-workload'}), probe_peer, gateway_peer], 'ports': sql}],
+            {'from': [peer(namespace, {'app': 'stego-fixture'}), peer(namespace, {'app.kubernetes.io/name': 'hypershell-gateway-workload'}), console_peer, probe_peer, gateway_peer], 'ports': sql}],
         'egress': [
             {'to': [cluster_peer], 'ports': sql + [{'port': 8000, 'protocol': 'TCP'}]},
             {'to': [{'namespaceSelector': {'matchLabels': {'kubernetes.io/metadata.name': 'openshift-dns'}}}],

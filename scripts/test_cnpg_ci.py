@@ -1,5 +1,6 @@
 """Check the fixed CNPG CI authority and lifetime boundaries."""
 import unittest
+import copy
 import tempfile
 import json
 import os
@@ -40,6 +41,8 @@ class CNPGCIBoundary(unittest.TestCase):
         self.assertTrue(all(set(r['verbs']) <= {'get', 'list'} for r in roles['stego-cnpg-ci-installation-reader']['rules']))
         ci_roles = [o for o in objects if o['kind'] == 'Role' and o['metadata']['name'] == 'cnpg-ci']
         self.assertEqual({o['metadata']['namespace'] for o in ci_roles}, {ci.OPERATOR_NS, ci.DATABASE_NS})
+        network_reads = [(o['metadata']['namespace'], r) for o in ci_roles for r in o['rules'] if 'networkpolicies' in r['resources']]
+        self.assertEqual(network_reads, [(ci.DATABASE_NS, {'apiGroups': ['networking.k8s.io'], 'resources': ['networkpolicies'], 'resourceNames': ['database'], 'verbs': ['get']})])
         self.assertFalse(any(resource in {'roles', 'rolebindings', 'namespaces', 'certificates', 'deployments'} and not set(r['verbs']) <= {'get', 'list'} for o in ci_roles for r in o['rules'] for resource in r['resources']))
 
     def test_operator_uses_supplied_certificate_and_bounded_job(self):
@@ -97,6 +100,30 @@ class CNPGCIBoundary(unittest.TestCase):
 
 
 class RuntimeCleanupBoundary(unittest.TestCase):
+    def test_database_network_policy_rejects_stale_or_wider_installation(self):
+        runner = ci.module('cnpg_ci_network_policy', 'check-cnpg-ci.py')
+        policy = ci.database_network_policy([('10.0.0.1', 443)])
+        policy['metadata'].update(uid='policy-uid', resourceVersion='1', labels=dict(ci.OWNER))
+        installation = {'resources': [{'kind': 'NetworkPolicy', 'name': 'database', 'namespace': ci.DATABASE_NS, 'uid': 'policy-uid'}]}
+        client = Mock()
+        client.get.return_value = policy
+        result = runner.verify_database_network_policy(client, installation, [('10.0.0.1', 443)])
+        self.assertEqual(result['spec'], policy['spec'])
+        self.assertEqual(len(result['spec_sha256']), 64)
+        for change in ('stale', 'wide', 'different-owner', 'different-uid'):
+            value = copy.deepcopy(policy)
+            if change == 'stale':
+                value['spec']['ingress'][-1]['from'] = [peer for peer in value['spec']['ingress'][-1]['from'] if peer.get('podSelector') != {'matchLabels': {'app.kubernetes.io/name': 'hypershell-gateway-console'}}]
+            elif change == 'wide':
+                value['spec']['ingress'].append({})
+            elif change == 'different-owner':
+                value['metadata']['labels'] = {}
+            else:
+                value['metadata']['uid'] = 'replacement'
+            client.get.return_value = value
+            with self.subTest(change=change), self.assertRaisesRegex(RuntimeError, 'network policy differs'):
+                runner.verify_database_network_policy(client, installation, [('10.0.0.1', 443)])
+
     def test_missing_or_invalid_public_gateway_stops_before_cluster_access(self):
         runner = ci.module('cnpg_ci_public_preflight', 'check-cnpg-ci.py')
         with tempfile.TemporaryDirectory() as directory:

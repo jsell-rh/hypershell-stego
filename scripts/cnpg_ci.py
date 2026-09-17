@@ -46,10 +46,14 @@ def service_account(name, namespace):
     return {'kind': 'ServiceAccount', 'name': name, 'namespace': namespace}
 
 
-def endpoint_rules(endpoints):
+def database_network_policy(endpoints):
     fixture = module('cnpg_ci_server_definitions', 'cnpg-installation-fixture.py')
     items = fixture.definitions(APP_NS, DATABASE_NS, 'gp3-csi', endpoints, operator_namespace=OPERATOR_NS)
-    network = next(o for o in items if o['kind'] == 'NetworkPolicy')
+    return next(o for o in items if o['kind'] == 'NetworkPolicy')
+
+
+def endpoint_rules(endpoints):
+    network = database_network_policy(endpoints)
     return [o for o in network['spec']['egress'] if any('ipBlock' in p for p in o.get('to', []))]
 
 
@@ -128,6 +132,7 @@ def build(documents, endpoints, issuer, storage_class):
         {'apiGroups': [''], 'resources': ['secrets'], 'verbs': ['get', 'list', 'create', 'delete']},
         {'apiGroups': [''], 'resources': ['pods', 'persistentvolumeclaims', 'services', 'configmaps'], 'verbs': ['get', 'list', 'delete']},
         {'apiGroups': ['rbac.authorization.k8s.io'], 'resources': ['roles', 'rolebindings'], 'verbs': ['get', 'list']},
+        {'apiGroups': ['networking.k8s.io'], 'resources': ['networkpolicies'], 'resourceNames': ['database'], 'verbs': ['get']},
     ])]:
         objects.append(resource('Role', 'cnpg-ci', ns, 'rbac.authorization.k8s.io/v1', rules=rules))
         objects.append(binding('cnpg-ci', ns, 'cnpg-ci', ci))
