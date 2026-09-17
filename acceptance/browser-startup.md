@@ -148,3 +148,26 @@ failures report their exit status. Missing evidence still fails the gate.
 Small local tests cover missing, empty, and multiple missing files, retained
 archives, transport failures, and truncated archives. The CNPG workflow runs
 these checks before cluster use. Complete CNPG qualification remains open.
+
+The [complete CNPG run](startup-cnpg-workflow-evidence.json), `35186648964`
+at `cf232b0`, passed all 11 required tests. The complete browser workflow took
+737.75 seconds. All 1,359 source hashes match that commit. All 415 generated-file
+hashes match both initial snapshots, the final snapshot, and the saved archive.
+The console image matches the previously verified module binary. Three management
+console instances and three Gateway console instances supplied 48 matching
+successful startup log/span pairs, with complete metrics and no failed pairs.
+All three dashboard screenshots were reviewed.
+
+The saved provisioner recovery record matches an independent live capture.
+Both Gateways denied account creation during the outage. Controllers recovered
+without account write retries or changes to SQL and credential identities.
+The workflow also passed CNPG primary replacement, namespace replacement,
+access checks, credential encryption, three-account cleanup, final Gateway
+and managed-cluster deletion, and correlated PostgreSQL telemetry.
+Independent cleanup at `2026-09-17T06:04:12Z` found no remaining test resources,
+allocations, volumes, or held lease. No scheduling intervention was required.
+
+This qualifies the revised startup and provisioner recovery workflow. It does
+not explain the earlier recovered browser startup failure or the empty archive
+in run `35184753568`. Those failure records remain unchanged. Production
+capacity, live Kata isolation, and the full enterprise goal remain open.
