@@ -29,16 +29,16 @@ class BrowserCI(unittest.TestCase):
                 for name in installation.MANIFESTS:
                     objects = []
                     for index in range(4 if name == 'hypershell-namespace-allocation' else 3):
-                        identity = name + '-' + str(index)
+                        identity = installation.NAMESPACE + '.' + name + '-' + str(index)
                         obj = {'apiVersion': 'rbac.authorization.k8s.io/v1', 'kind': 'ClusterRole',
                                'metadata': {'name': identity, 'uid': identity}, 'rules': []}
                         resources[('ClusterRole', identity)] = obj
                         objects.append(obj)
                         inventory.append({'kind': 'ClusterRole', 'name': identity, 'uid': identity})
-                    data[name + '.json'] = json.dumps({'items': objects})
+                    data[name + '.json'] = json.dumps({'apiVersion': 'v1', 'kind': 'List', 'items': objects})
                 data.update({'namespace-uid': 'namespace-uid', 'fs-group': '10001', 'issuer': 'test-ca',
                              'kubernetes-endpoints.json': '{}', 'kubernetes-service.json': '{}',
-                             'cluster-installation.json': json.dumps({'resources': inventory})})
+                             'cluster-installation.json': json.dumps({'namespace': installation.NAMESPACE, 'resources': inventory})})
                 owner = {'app.kubernetes.io/managed-by': 'stego-browser-ci'}
                 resources[('configmap', 'browser-ci-installation')] = {
                     'immutable': True, 'metadata': {'labels': owner}, 'data': data}
