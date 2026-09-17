@@ -231,3 +231,13 @@ A separate real-provider test for clients without account records failed after
 API/provisioner restart. Its common STEGO closure fix has passed compiler and
 provider checks, but application adoption is still pending. These complete
 Gateway results do not qualify that additional discovery case.
+
+## Main API check
+
+[Main API run 35212810434](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212810434)
+passed all 52 required tests at `8852dd3`. Independent inspection matched all
+1,398 source files and four sets of 415 generated-file hashes. The exact test
+Pod's compiler bytes and transferred signature records matched the selected
+published package. Independent cleanup passed before the next queued workflow.
+The public Gateway and CNPG checks for this main revision are still queued or
+running; this API result does not replace their complete browser workflows.
