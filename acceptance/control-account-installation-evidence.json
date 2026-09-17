@@ -236,9 +236,234 @@
     "cluster_writes": false
   },
   "live_browser_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502",
-  "live_browser_verified": false,
+  "live_browser_verified": true,
   "core_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260667946",
-  "core_verified": false,
+  "core_verified": true,
   "enterprise_goal_complete": false,
-  "scope": "The common policy is installed and its resource identities are verified. Hosted application checks use a7052b4. The fixture verifier correction at fed0042 passed the exact source policy plan. Full core and live consumer qualification remain pending."
+  "scope": "The common policy is installed. Full core, live browser, and separate API checks passed with the same runtime source. Both live runs have independent cleanup records. Account retirement, external grants, Sandbox setup, capacity, and the broader enterprise requirements remain open.",
+  "core": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35260667946",
+    "source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "job_id": 105335274374,
+    "core_result": "success",
+    "test_pass_events": 738,
+    "top_level_passes": 313,
+    "separate_live_exclusions": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "acceptance_seconds": 1557.284,
+    "log_sha256": "216d385002b8c772832e2aa1244229cb4992917da7ca907210bd99a1372f6aab",
+    "generation_drift_checks": 3,
+    "hosted_service_cleanup_passed": true,
+    "previous_failure_cases_passed": true,
+    "scope": "Core tests at this exact source. Browser and live cluster workflows have separate evidence. A pass does not establish the cause of earlier failures."
+  },
+  "live_browser": {
+    "run_attempt": 1,
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502",
+    "source": "fed00424692419dee22768d7c50de712253167f3",
+    "compiler": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+    "seconds": 687.2,
+    "source_files_match": 1450,
+    "generation_hashes_match": 416,
+    "gateway_console_image_matches_qualified_record": true,
+    "dashboard_session_and_reload": true,
+    "editor_checks": 8,
+    "account_cleanup_counts": 3,
+    "postgres_signals_complete": true,
+    "cleanup": {
+      "run": 35261639502,
+      "source": "fed00424692419dee22768d7c50de712253167f3",
+      "checked_at": "2026-09-17T19:16:04.364273+00:00",
+      "test_job_uid": "5672b262-2e4a-4d1b-bb07-32a6481fcc34",
+      "runtime": [],
+      "fixtures": [],
+      "allocations": [],
+      "ci_jobs": [],
+      "lease_holder": "",
+      "empty": true
+    },
+    "screenshots": {
+      "dashboard-create.json.png": "dbbe6a356fba300ee3bf0a7f155754d4ec629df2bf9eab71f22167b34ca910d9",
+      "dashboard-create.json.editor.png": "c397260290b4ce661529220df279ed5a3bbfed1c6fa03afc4e53f9b2bc07ef60",
+      "dashboard-create.json.editor-selection.png": "6c94fd54c42bb5207bc6cf1451829b94e686295824d6309dca444fc849a38e07"
+    },
+    "screenshots_viewed": true,
+    "startup": {
+      "failed_pairs": {
+        "hypershell-console": {
+          "5edd432d-0f0f-4b52-9a09-470aef02b369": [],
+          "a0b1d3e5-86b2-4d89-b0cd-ef58e9a47041": [],
+          "df4272f6-ca2f-47f3-a438-7f17a4f77ee6": []
+        },
+        "hypershell-gateway-console": {
+          "2d5d0f20-6ff1-4685-8413-a973044ee026": [],
+          "3df81592-4ae5-497a-9d39-1a735e2bd017": [],
+          "4df111e6-8d8e-45d4-b8a6-1d9b7680ac76": []
+        }
+      },
+      "complete_instances": {
+        "hypershell-console": [
+          "5edd432d-0f0f-4b52-9a09-470aef02b369",
+          "a0b1d3e5-86b2-4d89-b0cd-ef58e9a47041",
+          "df4272f6-ca2f-47f3-a438-7f17a4f77ee6"
+        ],
+        "hypershell-gateway-console": [
+          "2d5d0f20-6ff1-4685-8413-a973044ee026",
+          "3df81592-4ae5-497a-9d39-1a735e2bd017",
+          "4df111e6-8d8e-45d4-b8a6-1d9b7680ac76"
+        ]
+      },
+      "sha256": "e87f3b219acf08c367deb4107cdc19427f48c30cc5e5149e3e6a4ad6c85c7830",
+      "same_relay_instance_required_by_test": true
+    },
+    "scope": "External PostgreSQL Gateway workflow with generated browser startup and relay telemetry at the named source. The live Kata isolation test is deferred.",
+    "required_tests_passed": 11,
+    "namespace_recovery_checks": {
+      "database_and_role_oids_unchanged": true,
+      "other_gateway_sql_unchanged": true,
+      "provider_data_unchanged": true,
+      "source_data_unchanged": true,
+      "sql_credentials_unchanged": true,
+      "ungranted_rpc_denied": true,
+      "viewer_lists_filtered": true,
+      "viewer_membership_recovered": true,
+      "viewer_writes_denied": true,
+      "workspace_and_gateway_revocation_verified": true
+    },
+    "sql_cleanup_denial_checks": {
+      "cleanup_pending": true,
+      "other_gateway_ready": true,
+      "source_data_unchanged": true,
+      "sql_object_ids_unchanged": true,
+      "sqlstate": "42501"
+    },
+    "database_restart": "PostgreSQL process restart in the same fixture Pod; no RDS failover claim",
+    "not_proved": [
+      "RDS failover",
+      "Live Kata isolation",
+      "Production capacity and remaining enterprise requirements"
+    ],
+    "provisioner_recovery": {
+      "account_write_retries": 0,
+      "current_unavailable_observations": true,
+      "denied_account_requests": 2,
+      "denied_requests_created_no_accounts": true,
+      "gateways": 2,
+      "running_healthy_gateways_after_restart": true,
+      "sql_and_credential_identities_preserved": true
+    },
+    "provisioner_recovery_matches_live_capture": true,
+    "evidence_archive_sha256": "bccaedec068c3f25fab56d643bf25d6f5b453dc6e7103c6c4b40021a337f4399",
+    "compiler_transfer_matches_live_capture": true,
+    "compiler_records_match_published_package": true,
+    "compiler_sha256": "4bdc57eefa29568e8474518d138c1caab20ed44fd62dbfd9202ba6839a07b3ae",
+    "provisioner_rollout": "Recreate",
+    "live_provisioner_startup_observations": 2,
+    "scheduling_delay_seconds": 0.0,
+    "failed_rpc_recovery_probe_used": false,
+    "observed_job_deadline_seconds": 1800,
+    "rollout_evidence": "Hash-verified generated template and two live API assertions; final object collection is empty after cleanup",
+    "independent_cleanup_verified": true,
+    "evidence_tar_sha256": "bccaedec068c3f25fab56d643bf25d6f5b453dc6e7103c6c4b40021a337f4399",
+    "deployment_log_sha256": "3c63fe9f23adfd562a7f89a830bd73634eab58e5b7324889eafa3b413d66b31c",
+    "screenshot_observations": [
+      "The upstream dashboard shows the active test workspace and an empty Sandbox list.",
+      "Invalid JSON is marked and the apply action is disabled.",
+      "The policy editor displays selected text and the valid apply action. The test did not submit the policy."
+    ]
+  },
+  "live_accounts": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502",
+    "source": "fed00424692419dee22768d7c50de712253167f3",
+    "record_sha256": "e02d23a375aeba06fef698c460cb37f813fc4a860941d2b20c2617e4484241c3",
+    "readiness_observations": 24,
+    "gateways": 2,
+    "namespace_incarnations": 3,
+    "account_objects": 6,
+    "distinct_owner_and_alias_names": 4,
+    "names_preserved_across_namespace_replacement": true,
+    "account_and_pod_uids_change_after_namespace_replacement": true,
+    "gateway_pod_replacement_observed": true,
+    "explicit_pod_token_settings": true,
+    "worker_account_writes_denied": true,
+    "scope": "Live account and ready Pod observations from the complete workflow. The shared cluster Sandbox guard remains active."
+  },
+  "source_coverage": {
+    "runtime_source": "a7052b4e8f6f4bedd33986a87649032056f91bba",
+    "browser_fixture_source": "fed00424692419dee22768d7c50de712253167f3",
+    "api_source": "75f76ba0f3e50b0b6292f7ecc663c15413cfccdf",
+    "fixture_changes": [
+      "scripts/prepare-browser-inspection.py",
+      "scripts/test_browser_inspection.py"
+    ],
+    "api_source_evidence_only_changes": [
+      "acceptance/control-account-installation-evidence.json",
+      "acceptance/control-account-installation.md"
+    ],
+    "runtime_files_unchanged": true,
+    "generated_files_unchanged": true,
+    "scope": "The core, console, provider, and journal results cover the same runtime files. The browser run also tests the fixture correction. The API source adds evidence only."
+  },
+  "api_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35263895912",
+  "api_verified": true,
+  "api": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35263895912",
+    "source": "75f76ba0f3e50b0b6292f7ecc663c15413cfccdf",
+    "required_tests_passed": 52,
+    "source_files_match": 1451,
+    "generation_hashes_match": 416,
+    "independent_cleanup": {
+      "api_run": 35263895912,
+      "source": "75f76ba0f3e50b0b6292f7ecc663c15413cfccdf",
+      "checked_at": "2026-09-17T19:26:13.934530+00:00",
+      "api_jobs": [],
+      "api_fixtures": [],
+      "lease_holder": "",
+      "scope": "The completed API test has no remaining Jobs, Pods, or owned fixtures. The shared Lease is free."
+    },
+    "scope": "API creation, access, events, deletion, restart, and regeneration at the named source. This does not prove a rendered Gateway dashboard.",
+    "new_sql_credential_preparation_and_deleted_record_rejection": true,
+    "compiler": "931f712bda4507623bdf3bee8a359b9aeee7f86d",
+    "compiler_sha256": "4bdc57eefa29568e8474518d138c1caab20ed44fd62dbfd9202ba6839a07b3ae",
+    "live_compiler_matches_published_package": true,
+    "signature_records_match_published_package": true,
+    "test_pass_events": 64,
+    "test_package_results": [
+      {
+        "package": "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+        "action": "pass",
+        "seconds": 2.92
+      },
+      {
+        "package": "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+        "action": "pass",
+        "seconds": 1.014
+      },
+      {
+        "package": "github.com/jsell-rh/hypershell-stego/acceptance",
+        "action": "pass",
+        "seconds": 335.456
+      }
+    ],
+    "evidence_hashes": {
+      "tests.jsonl": "75567ed160037835242197967e08ffe4267a2ad78b096b485202044fdf298e16",
+      "source-sha256.json": "f8e92071a433ca27e87da61d63533429dadd5a72d9558b933d6533031fd155e9",
+      "required-tests.json": "d6bdc1c2d3d2126cc978a3fbdaf736f429dfb973c202ee202a10e726bb2cdae7",
+      "job-final.json": "f118ff4cfeda3beb51ee4bdb30ee9291ec24e65f49a5c5cf93cc7d42e8a38e62",
+      "verification.json": "ab8404e07102cc32799882e8249582a37753aa783298d6560c000a1e0342cb31",
+      "committed.sha256": "053d6c7adbd16d958c507e7f0aaaad4cf0aca9c699c291cfc1e7aaaab8719478",
+      "first.sha256": "053d6c7adbd16d958c507e7f0aaaad4cf0aca9c699c291cfc1e7aaaab8719478",
+      "second.sha256": "053d6c7adbd16d958c507e7f0aaaad4cf0aca9c699c291cfc1e7aaaab8719478",
+      "after.sha256": "053d6c7adbd16d958c507e7f0aaaad4cf0aca9c699c291cfc1e7aaaab8719478",
+      "generated.tar": "bc6849248b78b6b5d4fb463900718d5cd6edab1320d31882f7c07f8d4ac3afc4",
+      "cleanup.json": "07bfe22f1770e190a901e545dfeb2a12764be6ee2d353d8a3fe1223b10f05573"
+    },
+    "job": 105346117321,
+    "artifact_id": 10515794343,
+    "run_attempt": 1
+  }
 }

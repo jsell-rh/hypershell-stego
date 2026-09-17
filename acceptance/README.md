@@ -2,6 +2,8 @@ Use [the repository overview](../README.md) and [the current provider inventory
 record](provider-inventory.md) for the latest source and qualification state.
 The [common registry and browser composition](common-browser-composition.md)
 now has complete public, API, core, and CNPG results.
+The [control-account installation record](control-account-installation.md)
+contains the current compiler adoption and live application results.
 The entries below preserve earlier implementation stages. Their statements
 about pending work apply to those stages unless a later record updates them.
 Run heavy checks in CI; do not run the aggregate commands below on the developer

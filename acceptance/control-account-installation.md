@@ -1,48 +1,50 @@
 # Control account installation
 
-The browser fixture uses the generated STEGO control account guard. The operator
-creates the allocator and Gateway workload accounts after the generated policy
-is installed. Both accounts have automatic token mounting disabled. CI receives
-its bindings only after the policies, accounts, and immutable installation record
-are ready. Neither CI nor an application worker receives the installer capability.
+Hypershell uses compiler `931f712` and its common STEGO registry. The generated
+policy reserves allocator and declared control-worker account names. A separate
+trusted installer creates these accounts after the policy is installed. Neither
+CI nor an application worker receives the installer capability. Automatic token
+mounting is disabled on the allocator and workload accounts.
 
-The browser CI identity can read the new admission policy. Its permission check
-also requires deletion of the workload account to be denied. Existing checks
-still require denial of allocator account deletion, cluster role creation,
-foreign secret reads, and installation record changes.
+The operator installed the generated policy on jshell. The reviewed plan
+preserves 25 resources and adds the guard, its binding, and an unbound installer
+role. Server validation and policy type checks passed. All 28 installed resources
+match the record. Three existing account identities are unchanged. CI gained only
+read access to the new policy. The immutable installation record was replaced
+with UID preconditions. Installation cleanup passed and the lease was released.
 
-Ten small local fixture checks passed, including failure before account creation
-when policy installation fails. The new compiler pin, regenerated output, and
-complete live consumer workflow are still required. This preparation does not
-establish consumer adoption or close the enterprise goal.
+The fixture verifier at `fed0042` passed 68 account cases in
+[the plan run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35260879782).
+It permits the declared fixture account in the reserved names. It rejects other
+account, permission, and guard changes. The earlier failed plan is retained in
+[the evidence record](control-account-installation-evidence.json).
 
-The compiler, common registry, and installer tooling now select `931f712`.
-The compiler comes from its published immutable release. The common installer
-verified the exact revision, compiler hash, and signatures. The same source
-passed full compiler CI and the live control-account regression. Hosted
-regeneration and the complete consumer workflow remain required.
+The [full live workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502)
+passed all 11 required tests at `fed0042`. The main test took 687.2 seconds.
+Independent checks matched 1,450 source files, 416 generated hashes, the published
+compiler, and the actual console image. The workflow includes login, owner
+grants, REST and gRPC, filtered lists, denied requests, events, account lifecycle,
+and durable deletion. Recovery passed after Gateway Pod, PostgreSQL process,
+namespace, and provisioner replacement. Complete browser startup telemetry and
+SQL signals passed. All three dashboard screenshots were reviewed.
 
-Hosted regeneration passed at `06f5f86`. The imported archive matches all 415
-output files and modes. All three drift checks passed. The compiler installation
-record matches the verified release. The application allocation policy is
-unchanged. The generated manifest adds the account guard, its binding, and an
-unbound installer role. The live consumer workflow remains required.
+The workflow recorded 24 ready-Pod account observations across two Gateways and
+three namespace incarnations. Account names remained stable after namespace
+replacement; account and Pod UIDs changed. Worker account writes were denied.
+Independent cleanup found no remaining test resources or held lease.
 
-The corrected fixture verifier at `fed0042` passed the hosted installation plan
-[35260879782](https://github.com/jsell-rh/hypershell-stego/actions/runs/35260879782).
-The plan checks 1,450 source files and 68 account cases. It preserves the 25
-installed resources and adds only the generated guard, its binding, and the
-unbound installer role. The fixture adds its fixed account to the reserved names.
-The verifier rejects other account, permission, and guard changes.
+Hosted checks passed at `a7052b4`: 738 core cases, 313 top-level tests, three
+generation checks, the rendered browser workflow, seven images, 231 UI tests,
+the generated console module, provider recovery, and 28 required journal tests.
+The runtime files are unchanged at `fed0042`; that commit changes only the fixture
+verifier and its tests. Source `75f76ba` adds evidence only. The separate
+[API gate](https://github.com/jsell-rh/hypershell-stego/actions/runs/35263895912)
+passed all 52 required tests at that source. Independent checks matched 1,451
+source files, 416 generated hashes across four snapshots, and the live compiler
+with its published signature records. The completed Job, its Pods, and owned
+fixtures are absent; the shared lease is free.
 
-The operator installed the plan on jshell. Server validation and policy type
-checks passed. All 28 installed resources match the record. The allocator,
-workload, and fixture account identities are unchanged. CI gained only read
-access to the new policy. The immutable installation record was replaced with
-UID preconditions. Cleanup passed and the lease was released.
-
-Hosted checks passed for the generated console, seven images, 231 UI tests,
-the rendered browser workflow, provider recovery, and 28 required journal tests.
-The earlier plan failure is retained in the evidence record. Full core checks
-and the [live consumer run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35261639502)
-remain pending. This result does not close the enterprise goal.
+This result does not establish automatic account retirement or control of
+arbitrary external grants. Sandbox setup, live Kata isolation, production
+capacity, and the broader enterprise requirements remain open. The PostgreSQL
+restart uses the same fixture Pod; it does not establish RDS failover behavior.

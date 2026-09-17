@@ -55,6 +55,15 @@ separate qualification requirement.
 
 ## Verification state
 
+The current control-account policy is installed and verified on jshell. With
+compiler `931f712`, the complete live browser workflow passed all 11 required
+tests, and the core suite passed 738 cases. Account recovery and denied worker
+writes passed. Independent browser cleanup found no test resources or held lease.
+The separate API gate passed all 52 required tests, with matching source,
+regeneration, and compiler records. Its cleanup also passed. See the
+[current account installation record](acceptance/control-account-installation.md).
+
+The following database results apply to earlier source revisions.
 The external PostgreSQL change passed its hosted and complete public Gateway
 workflows. The hosted core run at `29a238a` passed 311 top-level tests and three
 generation checks. The live run at `62e82d5` passed all eleven required tests in
