@@ -1,0 +1,142 @@
+{
+  "gateway_console_image": {
+    "checked_at": "2026-09-17T02:19:26.137533+00:00",
+    "job_uid": "897d0f23-7641-4552-9729-104c441bc84d",
+    "source": "e8bb9652508a4dae76658b1f3705263e0add83ac",
+    "digest": "sha256:527943f5067714b3e6dca6f252981cbf188d46185792db167e70a5fd538aa8aa",
+    "binary_sha256": "f48a297519c99d8b5eaf142189a50e9f1ffab02734717cae31a584485ec1eb1a",
+    "record_sha256": "cbbe396e063cadbd270e78e2ccd2a48d93e1bfe65578846d4fa916e021f97c78",
+    "user": "65532:65532",
+    "entrypoint": [
+      "/service"
+    ],
+    "binary_matches_qualified_module": true,
+    "qualified_module_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35168795823",
+    "qualified_module_source": "a19b61173534f8dbd6bd42bd3f1ec0bc90db8185"
+  },
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35173393321",
+  "source": "e8bb9652508a4dae76658b1f3705263e0add83ac",
+  "compiler": "db75a77da272fe05bbf6fdc3a3d1e0fede298f70",
+  "result": "success",
+  "test_seconds": 670.99,
+  "complete_gateway_workflow_passed": true,
+  "supplied_postgres_and_installation_data_retained": true,
+  "final_cluster_deletion_passed": true,
+  "automation_account_cleanup": {
+    "account_ids": [
+      "3JR7ZlLvTOSOf9vydAE3aVYYW0S",
+      "3JR7Zwk1bZ7XaPAn9VHGPZ8zAFv",
+      "3JR7a0N5AufmibZlWaGs1ImH0YV"
+    ],
+    "accounts_used_actual_gateway": 3,
+    "checked_after_durable_account_cleanup": true,
+    "cleanup_audits": 3,
+    "gateway_id": "3JR6fdR3Gl72nddFA4tLtX9Ceac",
+    "metadata_closed": 3,
+    "provider_clients_absent": 3,
+    "token_issuance_denied": 3
+  },
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "screenshots_viewed": true,
+  "recovery_checks": {
+    "database_and_role_oids_unchanged": true,
+    "other_gateway_sql_unchanged": true,
+    "provider_data_unchanged": true,
+    "source_data_unchanged": true,
+    "sql_credentials_unchanged": true,
+    "ungranted_rpc_denied": true,
+    "viewer_lists_filtered": true,
+    "viewer_membership_recovered": true,
+    "viewer_writes_denied": true,
+    "workspace_and_gateway_revocation_verified": true
+  },
+  "sql_denial_checks": {
+    "cleanup_pending": true,
+    "other_gateway_ready": true,
+    "source_data_unchanged": true,
+    "sql_object_ids_unchanged": true,
+    "sqlstate": "42501"
+  },
+  "dashboard_signout_and_password_prompt_passed": true,
+  "dashboard_and_worker_telemetry_passed": true,
+  "postgres_signals": {
+    "198c4515-6ca9-4cca-aed2-2739ed3c5190": {
+      "delete/failure": true,
+      "delete/success": true,
+      "ensure/success": true,
+      "schema/success": true
+    },
+    "425cfb5f-4491-4995-bd10-fde3dc759f87": {
+      "ensure/failure": true,
+      "ensure/success": true,
+      "schema/success": true
+    },
+    "52b4cb10-1054-4dae-9c93-862debf6fab9": {
+      "ensure/success": true
+    },
+    "8759e3be-71c4-4259-9a6a-29455a6fcb56": {
+      "ensure/success": true,
+      "read/success": true,
+      "schema/success": true,
+      "server-identity/busy": true,
+      "server-identity/success": true
+    }
+  },
+  "previous_http_409_recurred": false,
+  "previous_http_409_cause": "Not identified. The diagnostic change adds no retry or application behavior change.",
+  "identity_fixture": {
+    "checked_at": "2026-09-17T02:19:10.611028+00:00",
+    "run": 35173393321,
+    "job_uid": "897d0f23-7641-4552-9729-104c441bc84d",
+    "pod_uid": "b31ab606-5243-4ed8-b721-2ae996f859d1",
+    "created_at": "2026-09-17T02:18:58Z",
+    "deadline_seconds": 900,
+    "phase": "Running",
+    "image": "quay.io/keycloak/keycloak@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54",
+    "limits": {
+      "cpu": "1",
+      "ephemeral-storage": "1Gi",
+      "memory": "1Gi"
+    },
+    "non_root": true,
+    "privilege_escalation": false,
+    "service_account_token": false
+  },
+  "generation": {
+    "files": 412,
+    "before_after_and_archived_hashes_match": true,
+    "manifest_sha256": "fc17e084b2fb7551a8d2182def4906de6a410470555ccc11ed72596f396c7053"
+  },
+  "evidence_sha256": {
+    "browser-artifacts/gateway-dashboard/dashboard-create.json": "322ec20addeb7c88f1a7bc87dc61b885a6736f8ac77da51a3d1895008b0c997c",
+    "browser-artifacts/gateway-dashboard/dashboard-reload.json": "322ec20addeb7c88f1a7bc87dc61b885a6736f8ac77da51a3d1895008b0c997c",
+    "browser-artifacts/gateway-dashboard/dashboard-verify.json": "9d974d31f8ed3bb6237fd73292e6c13e21f32e48e1a4db644b5867e84e47c1d0",
+    "browser-artifacts/gateway-account-deletion.json": "9f97407d78566e40c1d1721bb063c986e3655ac8d7fc409300d7c6b2bc542ae7",
+    "browser-artifacts/sql-cleanup-denial.json": "8bb9c1e036c968479201bcbee492dd7c41c60feb585c4eb838f6adcbe43cbfc4",
+    "browser-artifacts/namespace-replacement.json": "8f332b48ac82925577830acf3c180e802988f7f2cef33ecf58dac8324ac196f2",
+    "browser-artifacts/postgres-signals.json": "939d19c20a596c8dcc06b4657367cf229703ecb2a5b96bf0b6f1a043593a25e2"
+  },
+  "cleanup_checked_at": "2026-09-17T02:31:24.995531+00:00",
+  "cleanup_runtime_absent": true,
+  "cleanup_allocations_absent": true,
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "daa3d0531b0273642fe18930dfa4f594c8d56d985a6c0f86ce763bdcf6f6448d",
+  "deployment_log_sha256": "bb88ef2b0c2fc5000b8422b32718525ac1a13374c12ac07013d0c740e2dbf8e8",
+  "not_proved": [
+    "Expanded CNPG dashboard workflow",
+    "Live Kata isolation",
+    "Production capacity and remaining enterprise requirements"
+  ],
+  "viewed_screenshots_match_archive": true
+}
