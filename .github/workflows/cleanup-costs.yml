@@ -1,0 +1,101 @@
+name: Account and journal cleanup costs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/cleanup-costs.yml'
+      - 'acceptance/cleanup_costs_linux_test.go'
+      - 'scripts/verify-cleanup-costs.py'
+      - 'scripts/verify-retained-history.py'
+      - 'scripts/test_cleanup_costs.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup-costs-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  inventory:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 1GiB
+      GOWORK: 'off'
+      CGO_ENABLED: '0'
+    services:
+      postgres:
+        image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+        env:
+          POSTGRES_PASSWORD: stego_test
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --cpus=1 --memory=512m --pids-limit=256
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check the result verifier
+        run: python3 -B scripts/test_cleanup_costs.py
+      - name: Build the exact checked source
+        timeout-minutes: 10
+        run: |
+          mkdir -p "$RUNNER_TEMP/cleanup-costs"
+          go test -c -p=2 -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/cleanup-costs/acceptance.test" ./acceptance
+          git diff --exit-code
+          git rev-parse HEAD > "$RUNNER_TEMP/cleanup-costs/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/cleanup-costs/source-archive.sha256"
+          cp .stego/compiler-revision "$RUNNER_TEMP/cleanup-costs/compiler-revision"
+          go version > "$RUNNER_TEMP/cleanup-costs/toolchain.txt"
+          sha256sum "$RUNNER_TEMP/cleanup-costs/acceptance.test" > "$RUNNER_TEMP/cleanup-costs/binary.sha256"
+      - name: Measure complete cleanup in a bounded container
+        timeout-minutes: 6
+        env:
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
+        run: |
+          set -o pipefail
+          docker create --name stego-cleanup-costs --network=host \
+            --cpus=1 --memory=768m --memory-swap=768m --pids-limit=128 \
+            --read-only --cap-drop=ALL --security-opt=no-new-privileges \
+            --user=65532:65532 --tmpfs /tmp:rw,nosuid,nodev,size=67108864 \
+            --mount "type=bind,source=$RUNNER_TEMP/cleanup-costs/acceptance.test,target=/acceptance.test,readonly" \
+            --env STEGO_TEST_POSTGRES_DSN --env STEGO_REQUIRE_POSTGRES=1 --env STEGO_CAPACITY_CI=1 \
+            --env STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK=1 \
+            --env GOMAXPROCS=1 --env GOMEMLIMIT=512MiB \
+            --entrypoint /acceptance.test \
+            postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2 \
+            -test.run='^$' -test.bench='^BenchmarkGatewayAccountJournalCleanup$' \
+            -test.benchtime=1x -test.count=3 -test.timeout=4m -test.cpu=1 -test.benchmem
+          timeout --signal=TERM --kill-after=5s 5m docker start --attach stego-cleanup-costs \
+            | tee "$RUNNER_TEMP/cleanup-costs/benchmark.txt"
+          docker inspect --format '{{json .State}}' stego-cleanup-costs > "$RUNNER_TEMP/cleanup-costs/container-state.json"
+          docker inspect --format '{{json .HostConfig}}' stego-cleanup-costs > "$RUNNER_TEMP/cleanup-costs/container-limits.json"
+          python3 scripts/verify-cleanup-costs.py "$RUNNER_TEMP/cleanup-costs"
+      - name: Save terminal state and remove the test container
+        if: always()
+        run: |
+          mkdir -p "$RUNNER_TEMP/cleanup-costs"
+          if docker container inspect stego-cleanup-costs >/dev/null 2>&1; then
+            docker inspect --format '{{json .State}}' stego-cleanup-costs > "$RUNNER_TEMP/cleanup-costs/cleanup-container-state.json"
+            docker rm --force stego-cleanup-costs
+          fi
+          test -z "$(docker ps -aq --filter name='^/stego-cleanup-costs$')"
+      - name: Save the source and measurement records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: cleanup-costs-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/cleanup-costs/
+          if-no-files-found: error
+          retention-days: 14

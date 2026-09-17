@@ -6,7 +6,7 @@ import re
 import sys
 
 
-def verify(log, state, limits):
+def verify_container(log, state, limits):
     if len(log.encode()) > 1 << 20 or "PASS" not in log.splitlines():
         raise ValueError("The benchmark did not finish")
     if "FAIL" in log or "SKIP" in log:
@@ -24,6 +24,11 @@ def verify(log, state, limits):
         raise ValueError("The test container has unexpected capabilities")
     if "no-new-privileges" not in limits.get("SecurityOpt", []):
         raise ValueError("The test container can gain privileges")
+    return expected
+
+
+def verify(log, state, limits):
+    expected = verify_container(log, state, limits)
     rows = {10000: [], 100000: []}
     for line in log.splitlines():
         if not line.startswith("BenchmarkRetainedGrantInventory/"):
