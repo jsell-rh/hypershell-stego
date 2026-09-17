@@ -5,6 +5,7 @@ Production declarations and generated files stay unchanged. STEGO generates
 both the allocator and its admission rules from the fixture declaration.
 """
 import argparse
+import copy
 import hashlib
 import json
 import os
@@ -167,7 +168,7 @@ def verify_runtime(before, after):
         if len(profiles) != 1:
             raise ValueError('The inspection profile is missing')
         binding = profiles[0]['Bindings'].pop()
-        if binding != {'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''}:
+        if binding != {'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': '', 'SubjectProfile': '', 'SubjectPrefix': ''}:
             raise ValueError('The fixture changed a production binding')
     if original != fixture:
         raise ValueError('The fixture changed the production allocation configuration')
@@ -199,7 +200,26 @@ def verify_manifests(before, after):
         if rule.get('verbs') == ['bind']:
             for role in inspection_roles():
                 rule['resourceNames'].remove(base + '.' + role['Name'])
-    # Only the allocator's allowed RoleBinding cases can change. Ownership,
+    # The fixture adds service-check to the reserved control names. Require
+    # both exact name lists to change, with every other guard field preserved.
+    guard_key = ('ValidatingAdmissionPolicy', base + '.control-accounts')
+    if guard_key not in original or guard_key not in fixture:
+        raise ValueError('The control account guard is missing')
+    expected_guard = copy.deepcopy(original[guard_key])
+    validations = expected_guard['spec']['validations']
+    if len(validations) != 1:
+        raise ValueError('The control account guard has an unexpected rule set')
+    names = ['hypershell-gateway-workload', 'hypershell-namespace-allocation', 'hypershell-sandbox-count']
+    before_names = json.dumps(names, separators=(',', ':'))
+    after_names = json.dumps(names + ['service-check'], separators=(',', ':'))
+    expression = validations[0]['expression']
+    if expression.count(before_names) != 2:
+        raise ValueError('The control account name rules differ')
+    validations[0]['expression'] = expression.replace(before_names, after_names)
+    if fixture[guard_key] != expected_guard:
+        raise ValueError('The fixture changed the control account guard beyond its reserved name')
+    fixture[guard_key] = original[guard_key]
+    # Only the allocator's allowed RoleBinding cases can also change. Ownership,
     # quotas, cluster bindings, and all namespace objects must remain equal.
     key = ('ValidatingAdmissionPolicy', base + '.allocation')
     for objects in (original, fixture):
@@ -230,7 +250,7 @@ def check_render(source, destination, env, network_baseline=None, endpoint_chang
         verify_manifests(*renders)
         record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
                   'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
-                  'scope': 'Three namespace roles, allocator bind names, and declared namespace binding cases only.'}
+                  'scope': 'Three namespace roles, allocator bind names, declared namespace binding cases, and the reserved fixture control account only.'}
         if endpoint_change:
             from gateway_endpoint_fixture import policy_change
             transitions = []

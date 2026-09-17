@@ -85,7 +85,7 @@ class InspectionBoundary(unittest.TestCase):
             role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector', 'gateway-console-state': 'fixture-console-state-inspector'}.get(profile['Name'])
             if role is None:
                 continue
-            profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': ''})
+            profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': '', 'SubjectProfile': '', 'SubjectPrefix': ''})
 
     def test_console_state_inspection_checks_isolation_with_read_only_grants(self):
         original = next(p for p in self.original['Profiles'] if p['Name'] == 'gateway-console-state')
@@ -114,6 +114,8 @@ class InspectionBoundary(unittest.TestCase):
             lambda c: c['Roles'][0]['Rules'].append({'apiGroups': ['*'], 'resources': ['*'], 'verbs': ['*']}),
             lambda c: c['Profiles'][0]['Bindings'][-1].update(Namespace='allocated'),
             lambda c: c['Profiles'][0]['Bindings'][-1].update(ServiceAccount='other'),
+            lambda c: c['Profiles'][0]['Bindings'][-1].update(SubjectProfile='gateway'),
+            lambda c: c['Profiles'][0]['Bindings'][-1].update(SubjectPrefix='foreign-'),
             lambda c: c['Profiles'][0]['Bindings'].reverse(),
             lambda c: c['Profiles'][0]['Quota'].update(pods='50'),
             lambda c: c['Roles'][2]['Rules'][0]['verbs'].append('delete'),
@@ -174,7 +176,14 @@ class InspectionBoundary(unittest.TestCase):
                 {'expression': 'KEEP_QUOTAS', 'message': 'quota'}]}},
             {'kind': 'Deployment', 'metadata': {'name': 'worker'}, 'spec': {'replicas': 1}},
         ]}
+        template = (ROOT / 'out/deploy/render/worker-namespace-allocation.json.tmpl').read_text()
+        rendered = json.loads(template.replace('{{.FSGroup}}', '1').replace('{{.Namespace}}', 'stego-service-inspection'))
+        guard = next(item for item in rendered['items'] if item['kind'] == 'ValidatingAdmissionPolicy' and item['metadata']['name'] == base + '.control-accounts')
+        original['items'].append(guard)
         fixture = copy.deepcopy(original)
+        names = json.dumps(['hypershell-gateway-workload', 'hypershell-namespace-allocation', 'hypershell-sandbox-count'], separators=(',', ':'))
+        extended = names[:-1] + ',"service-check"]'
+        fixture['items'][3]['spec']['validations'][0]['expression'] = guard['spec']['validations'][0]['expression'].replace(names, extended)
         for role in inspection.inspection_roles():
             fixture['items'][0]['rules'][0]['resourceNames'].append(base + '.' + role['Name'])
             fixture['items'].append({'apiVersion': 'rbac.authorization.k8s.io/v1', 'kind': 'ClusterRole',
@@ -184,7 +193,13 @@ class InspectionBoundary(unittest.TestCase):
         changes = [
             lambda c: c['items'][1]['spec']['validations'][1].update(expression='true'),
             lambda c: c['items'][2]['spec'].update(replicas=20),
-            lambda c: c['items'][3]['rules'][0].pop('resourceNames'),
+            lambda c: c['items'][4]['rules'][0].pop('resourceNames'),
+            lambda c: c['items'][3]['spec'].update(failurePolicy='Ignore'),
+            lambda c: c['items'][3]['spec']['validations'][0].update(expression='true'),
+            lambda c: c['items'][3]['spec']['validations'][0].update(expression=guard['spec']['validations'][0]['expression']),
+            lambda c: c['items'][3]['spec']['validations'][0].update(expression=c['items'][3]['spec']['validations'][0]['expression'].replace('service-check', 'other')),
+            lambda c: c['items'][3]['spec']['matchConditions'][0].update(expression='false'),
+            lambda c: c['items'].pop(3),
             lambda c: c['items'].append(copy.deepcopy(c['items'][2])),
         ]
         for change in changes:
