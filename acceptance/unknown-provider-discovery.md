@@ -81,3 +81,31 @@ cleanup passed. See the [verified result](unknown-provider-after-fix-evidence.js
 This result proves the discovered failure is fixed through generated common
 code for this bounded workflow. It is not a production capacity target or proof
 of all enterprise requirements. Full application checks remain in progress.
+
+
+## Additional adoption checks
+
+[Journal recovery 35213136456](https://github.com/jsell-rh/hypershell-stego/actions/runs/35213136456)
+passed all 28 required checks at `762824b`. Independent inspection confirmed
+provider failures, authorization, concurrent registration, event rollback,
+checkpoint recovery, clean regeneration, and hosted service cleanup. See the
+[journal record](unknown-provider-journal-evidence.json).
+
+[Gateway console 35213091169](https://github.com/jsell-rh/hypershell-stego/actions/runs/35213091169)
+passed at the same source. Independent inspection matched 129 source files,
+repeated generation state, the installer record, and the binary in the image
+pulled by digest. The browser binary is unchanged from the prior qualified
+compiler. See the [module record](unknown-provider-module-evidence.json).
+
+[Dashboard source 35212864402](https://github.com/jsell-rh/hypershell-stego/actions/runs/35212864402)
+passed at `514deeb`. All dashboard build inputs and generated browser support
+are unchanged at `762824b`. Independent reconstruction matched the source tree,
+all 13 UI tests, 77 assets, and the repeated bundle. The private image contained
+the checked binary; its generated browser retained all eight document routes.
+Both signature-record sets matched the published compiler. See the
+[source record](unknown-provider-dashboard-source-evidence.json) and
+[private image record](unknown-provider-dashboard-private-evidence.json).
+
+The complete hosted application suite remains in progress. These component
+checks do not replace the complete Gateway workflows or production capacity
+measurements.

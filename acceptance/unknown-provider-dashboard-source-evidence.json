@@ -1,0 +1,39 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35212864402",
+  "source": "514deeb152ae7bb6adaef78261b2b18fc43787d8",
+  "build_tree": "adee8a80c7b0dcb745c72252d204043c1765a4dd",
+  "source_matches_application_inputs": true,
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "passed_ui_tests": 13,
+  "session_client_tests": 4,
+  "common_browser_files_sha256": {
+    "gateway-console/out/browser/dom/index.d.ts": "781eb07995e7fb8fafc70b63217d533de3db5bf9563236a674954fdc83f5cddc",
+    "gateway-console/out/browser/dom/index.js": "8a5a206f454218b98d48d62e095226bc2c84236e7ec52c98a448ec511ae9a633",
+    "gateway-console/out/browser/dom/monaco-loader.cjs": "fd530b097f11d9807bb0dae096f6286ba48c78da8550bbe28fd6a45960c14a60",
+    "gateway-console/out/browser/dom/monaco-patches.json": "3ea3e12be4af6593a602dd87e6b3cde81311a6ce9c76d715986f2a8aac411c43",
+    "gateway-console/out/browser/dom/package.json": "294d4ce230a8881172bde0d62559dd52a6b07431080e1fa36cebcc4b896e05f9",
+    "gateway-console/out/browser/sessionclient/index.d.ts": "b1fc960fd59cd1da7d1d549f6234076bdae8a85139010926d12d83ddd5b7eef1",
+    "gateway-console/out/browser/sessionclient/index.js": "6385d0d4020e51655dcc447097fde56cca6b9a7087296fbbb049fdde24a22fd0",
+    "gateway-console/out/browser/sessionclient/package.json": "476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080",
+    "gateway-console/out/browsertelemetry/index.d.ts": "7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8",
+    "gateway-console/out/browsertelemetry/index.js": "8c8b4bbcb161aee03071934aa5f62a6f616ddcb0b1cb2ce9f270bbbe3075e172",
+    "gateway-console/out/browsertelemetry/package.json": "6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90"
+  },
+  "asset_bundle_sha256": "68c9fc1c68cd61cd2af9455d5eacd09644a8bc555fd5f2723ad386599d36b7ba",
+  "repeated_asset_capture_matches": true,
+  "asset_files": 77,
+  "compiler": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+  "scope": "Source, dependencies, assets, and generated backend checks passed. No live browser or cluster result is claimed.",
+  "compiler_records": {
+    "source": "e206b41cb079280d9ed467f3cd3e7bd5d6037cdc",
+    "compiler_sha256": "93a74182dd6b90e55d703ab1f472fbba180a253177003cdee0cf7b830030b6d4",
+    "signature_records_match_published_package": true
+  },
+  "matches_committed_asset_bundle": true
+}
