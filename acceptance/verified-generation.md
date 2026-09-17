@@ -181,8 +181,7 @@ restart. The final artifact matched that capture.
 
 Independent cleanup at 10:23:50 UTC found no test runtime, fixtures, allocated
 namespaces, or test lock holder. See the
-[public record](verified-generation-public-evidence.json). CNPG remains a
-separate required check for the new compiler transfer path.
+[public record](verified-generation-public-evidence.json). The CNPG result is recorded below.
 
 
 ## Complete hosted result
@@ -195,5 +194,40 @@ skipped. The acceptance package took 1,498.117 seconds. See the
 [latest core record](verified-generation-latest-core-evidence.json).
 
 CNPG run `35210319947` tests the same application code at `231b0bb`; only evidence
-JSON and Markdown files differ. Its final result is pending. Sandbox was not
+JSON and Markdown files differ. Its final result passed, as recorded below. Sandbox was not
 selected in the hosted run; the live Kata check remains deferred.
+
+
+## Complete CNPG result
+
+[Run 35210319947](https://github.com/jsell-rh/hypershell-stego/actions/runs/35210319947)
+passed all 11 required tests at source `231b0bb`. The complete browser workflow
+took 756.03 seconds. Independent checks matched 1,396 source files, three sets
+of 415 generated-file hashes, the actual dashboard image, and signed compiler
+records captured from the exact test Pod. The source differs from `9b6e08d`
+only in evidence files.
+
+CNPG primary replacement preserved SQL object IDs, keys, credentials, provider
+data, and installation data. The workflow passed REST and gRPC access rules,
+filtered lists, denied writes, event delivery, process restart, namespace
+recovery, database isolation, encrypted credentials, and durable deletion.
+The provisioner outage record matched the live capture. All six expected
+browser instances exported all eight startup stages with correlated logs,
+traces, and metrics. The three saved dashboard and editor images were reviewed.
+
+The fixture needed one scheduling intervention before the application test.
+A guarded replacement moved only the CNPG secondary Pod. The same application
+Job and Pod then started. The primary identity, Cluster specification, and both
+PVC/PV bindings were checked before and after that replacement. No resource
+limits or unrelated workloads changed. This run does not prove automatic
+fixture placement on a cluster with fragmented free capacity.
+
+Independent cleanup at 10:52:34 UTC found no test runtime, fixtures, allocated
+namespaces, retained test volumes, or test lock holder. See the
+[CNPG record](verified-generation-cnpg-evidence.json). The live Kata gate remains
+deferred. Production capacity and the other enterprise requirements remain open.
+
+A separate real-provider test for clients without account records failed after
+API/provisioner restart. Its common STEGO closure fix has passed compiler and
+provider checks, but application adoption is still pending. These complete
+Gateway results do not qualify that additional discovery case.
