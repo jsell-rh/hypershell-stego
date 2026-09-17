@@ -1,0 +1,72 @@
+{
+  "api": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35248320877",
+    "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+    "required_tests_passed": 52,
+    "source_files_match": 1443,
+    "generation_hashes_match": 416,
+    "independent_cleanup": {
+      "api_run": 35248320877,
+      "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+      "checked_at": "2026-09-17T16:53:26.139536+00:00",
+      "api_jobs": [],
+      "api_fixtures": [],
+      "lease_holder": "",
+      "scope": "The completed API test has no remaining Jobs, Pods, or owned fixtures. The shared Lease is free."
+    },
+    "scope": "API creation, access, events, deletion, restart, and regeneration at the named source. This does not prove a rendered Gateway dashboard.",
+    "new_sql_credential_preparation_and_deleted_record_rejection": true,
+    "compiler": "09efc7c7e588ecf9a2e3b4d7f3b536cac48b81eb",
+    "compiler_sha256": "eb87abafbb795753f95d705445264976734c37691897fc2f418268111d6e714e",
+    "live_compiler_matches_published_package": true,
+    "signature_records_match_published_package": true
+  },
+  "hosted_browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35248321021",
+    "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+    "job": 105294071978,
+    "checked_at": "2026-09-17T16:50:43.469873+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 75.71,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "76ba97c44ef7c8b3ec384c058b7fa561f50a55d6e22a263e973e0e0ed7f0a401",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "8f171fa3dbf35b3c2f2bf883bf7fd9404854ce61ebfb51b2a6001e09a0106e1f"
+    },
+    "screenshot_scope": "Provisioning Gateway with commands not yet available; healthy account fixture with an empty account list after deletion. This hosted fixture does not run a real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate.",
+    "screenshots_reviewed_at": "2026-09-17T16:51:26.604444+00:00"
+  },
+  "image_and_ui": {
+    "run": 35248321021,
+    "checks": {
+      "image": {
+        "generated_images": 7,
+        "build_and_entrypoint_user_checks_passed": true,
+        "job": 105294072304,
+        "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+        "log_sha256": "bf2bb894f9692f13db33699386907d74af8017e6c6c3c47eef10074d64ad943a"
+      },
+      "web-console": {
+        "ui_tests_passed": 231,
+        "test_groups": [
+          7,
+          166,
+          58
+        ],
+        "generation_drift_checks": 3,
+        "job": 105294071711,
+        "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+        "log_sha256": "3cbedf2fd4802c0ed7a21796da4b516373d8d4967a646204fb1cbb4f07c3481e"
+      }
+    },
+    "scope": "Generated image builds and configured entrypoint/user checks, UI tests, and console generation at the named source. This does not prove the new live account workflow."
+  },
+  "scope": "Completed main API and hosted checks. The separate public Gateway browser repeat and core suite are still running."
+}

@@ -103,3 +103,18 @@ backup and restore, cross-process fencing, and production capacity remain open.
 The first capacity targets are 100 Gateways per instance, 100 service accounts
 per Gateway, and healthy Gateway cleanup within 30 seconds. These are targets,
 not hard limits. This workflow does not prove that capacity.
+
+
+## Main repeat
+
+At main source `110d9c4`, API run `35248320877` passed all 52 required tests.
+Independent checks matched 1,443 source files, 416 generated hashes, and all
+four published compiler package hashes. The completed API Job and its fixtures
+were absent, and the shared lease was free at 16:53:26 UTC on 2026-09-17.
+
+The hosted browser job in run `35248321021` passed in 75.71 seconds. Three
+instances supplied all eight startup stages with matching logs, traces, and
+metrics. Fixture and container cleanup passed. Both browser images were reviewed.
+Seven generated image builds and 231 UI checks also passed. The core suite and
+separate public Gateway browser repeat remain in progress. See the
+[main evidence record](allocated-workload-accounts-main-evidence.json).
