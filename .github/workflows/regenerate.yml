@@ -1,0 +1,62 @@
+name: Regenerate with the pinned compiler
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: regenerate-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  generate:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 768MiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+      STEGO_GENERATION_ROOT: ${{ runner.temp }}/generation
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+          cache-dependency-path: |
+            go.sum
+            console/go.sum
+            gateway-console/go.sum
+      - name: Verify the compiler and regenerate all modules
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/generate.sh
+      - name: Save generated files for review
+        run: |
+          mkdir -p "$RUNNER_TEMP/regenerated"
+          git rev-parse HEAD > "$RUNNER_TEMP/regenerated/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/regenerated/source-archive.sha256"
+          cp .stego/compiler-revision .stego/compiler-sha256 "$RUNNER_TEMP/regenerated/"
+          git diff --binary > "$RUNNER_TEMP/regenerated/generation.patch"
+          tar -cf "$RUNNER_TEMP/regenerated/generated.tar" \
+            out .stego/state.yaml go.mod go.sum \
+            console/out console/.stego/state.yaml console/go.mod console/go.sum \
+            gateway-console/out gateway-console/.stego/state.yaml gateway-console/go.mod gateway-console/go.sum
+          sha256sum "$RUNNER_TEMP/regenerated/generated.tar" > "$RUNNER_TEMP/regenerated/generated.sha256"
+      - name: Retain generation and compiler verification records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: regenerated-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/regenerated
+            ${{ runner.temp }}/generation/**/compiler-version.json
+            ${{ runner.temp }}/generation/**/generation.log
+            ${{ runner.temp }}/generation/**/compiler-setup/installation.json
+          retention-days: 14
+          if-no-files-found: error
