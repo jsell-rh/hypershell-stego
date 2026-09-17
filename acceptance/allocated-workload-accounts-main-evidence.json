@@ -68,5 +68,27 @@
     },
     "scope": "Generated image builds and configured entrypoint/user checks, UI tests, and console generation at the named source. This does not prove the new live account workflow."
   },
-  "scope": "Completed main API and hosted checks. The separate public Gateway browser repeat and core suite are still running."
+  "scope": "Completed main API and hosted browser/image/UI checks. The public Gateway browser repeat failed. The core suite is still running.",
+  "live_browser": {
+    "run": 35248320996,
+    "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+    "conclusion": "failure",
+    "deployment_log_sha256": "6e3813157a2acc568f66f65092561f3fa982b14c7c1c9658af11a3275fbd3b4d",
+    "failure": "allocated workload Pod differs console Pod is not ready",
+    "stage": "baseline checks before public egress removal",
+    "main_test_seconds": 267.86,
+    "independent_cleanup": {
+      "run": 35248320996,
+      "source": "110d9c4eeb5d830ec8b8d1d03a780a5e5fbfbc47",
+      "checked_at": "2026-09-17T17:09:20.695712+00:00",
+      "test_job_uid": "28407517-c111-42f9-a433-089dcecadff6",
+      "runtime": [],
+      "fixtures": [],
+      "allocations": [],
+      "ci_jobs": [],
+      "lease_holder": "",
+      "empty": true
+    },
+    "fix_status": "CI pending; no replacement live run started"
+  }
 }

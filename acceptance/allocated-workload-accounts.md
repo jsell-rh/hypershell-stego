@@ -116,5 +116,8 @@ The hosted browser job in run `35248321021` passed in 75.71 seconds. Three
 instances supplied all eight startup stages with matching logs, traces, and
 metrics. Fixture and container cleanup passed. Both browser images were reviewed.
 Seven generated image builds and 231 UI checks also passed. The core suite and
-separate public Gateway browser repeat remain in progress. See the
+separate public Gateway browser repeat have separate results. The core suite
+is still running. The public browser repeat failed before the network fault:
+a console Pod was not ready after earlier API and Deployment observations.
+Independent cleanup passed. A test-observer correction is under CI review. See the
 [main evidence record](allocated-workload-accounts-main-evidence.json).
