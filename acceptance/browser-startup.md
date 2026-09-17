@@ -45,6 +45,25 @@ The test binds these checks to the pool identity before restart, after restart,
 and after key rotation. Both saved management screenshots were inspected. This
 result does not replace the separate live public Gateway dashboard test.
 
+The [complete public workflow](startup-public-workflow-evidence.json) then passed
+at `bf83eef` in 667.64 seconds. All 1,351 captured source files match that commit.
+All 415 generation hashes match before and after the workflow and in the saved
+archive. The Gateway console image contains the qualified module binary.
+Three dashboard screenshots were inspected. The active workspace, invalid JSON
+denial, syntax colors, and text selection are visible.
+
+The management console and Gateway console each supplied three observed runtime
+instances. All six have eight matching startup log/span pairs, duration metrics,
+and zero active-stage counts. No failed stage pair is present in that record.
+The test requires dashboard document signals and startup signals from the same
+relay instance. SQL isolation, controller recovery, filtered access, denied
+requests, account use and deletion, and final Gateway deletion passed. The
+supplied PostgreSQL server and installation data remained. Independent cluster
+cleanup passed at `2026-09-17T04:30:02Z`; no test workload or allocation remained,
+and the shared test lease was empty. This qualifies the public workflow at the
+named source. The API runner recovery and complete CNPG workflow still need
+their separate results. The earlier recovered CNPG startup cause remains unknown.
+
 The automatic API run `35178368373` at the earlier main revision stopped during
 regeneration. Its read-only Pod had no writable user cache setting, so the Git
 registry tried to create `/.cache`. Two setup tests passed; 49 required checks

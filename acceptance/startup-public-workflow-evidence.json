@@ -1,0 +1,75 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180785681",
+  "source": "bf83eefa2a28a62988c270dd20d20e0199cf6d4a",
+  "compiler": "83592bee5a17de6936cf521b94629e2a225a8d37",
+  "seconds": 667.64,
+  "source_files_match": 1351,
+  "generation_hashes_match": 415,
+  "gateway_console_image_matches_qualified_record": true,
+  "dashboard_session_and_reload": true,
+  "editor_checks": 8,
+  "account_cleanup_counts": 3,
+  "postgres_signals_complete": true,
+  "cleanup": {
+    "checked_at": "2026-09-17T04:30:02.788262+00:00",
+    "run": 35180785681,
+    "source": "bf83eefa2a28a62988c270dd20d20e0199cf6d4a",
+    "ci": {
+      "conclusion": "success",
+      "headSha": "bf83eefa2a28a62988c270dd20d20e0199cf6d4a",
+      "status": "completed"
+    },
+    "test_job_uid": "b99ae229-865d-49b3-a7e7-a35846eaf543",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "lease_holder": "",
+    "empty": true
+  },
+  "screenshots": {
+    "dashboard-create.json.png": "007ea55069f53e5652e30bba0d974ba6d4e3c9e8a3aa720192856b875495e3a9",
+    "dashboard-create.json.editor.png": "666259d6a0676c75dae130d12a84d1327724ecd152862b4c4f975bcea4764c79",
+    "dashboard-create.json.editor-selection.png": "df5e89f8cc147fdfb46d6996dc203c273cf7d0f7c911ec66be337e2cfae2cc38"
+  },
+  "screenshots_viewed": true,
+  "startup": {
+    "complete_instances": {
+      "hypershell-console": [
+        "16155e46-8b04-42d2-9bd1-fe47920890e6",
+        "aa76ed69-4c3d-4968-84a0-74e6d0ac5772",
+        "d3986548-efdf-45ae-ab93-9e37278a5d69"
+      ],
+      "hypershell-gateway-console": [
+        "810ebc45-f666-41a7-921c-e9f1ec7b106c",
+        "98abe690-ead8-4a8e-afdb-0c4a60b0d646",
+        "cd3e2022-0002-4750-a3fa-19b1ee40ebbd"
+      ]
+    },
+    "sha256": "de6cb632273c979558dc77226425c8e8963c0060fb40dc93409acb283913f5c2",
+    "same_relay_instance_required_by_test": true,
+    "observed_runtime_instances": 6,
+    "matched_stage_pairs": 48,
+    "failed_stage_pairs": []
+  },
+  "scope": "Complete public Gateway workflow with generated browser startup and relay telemetry at the named source. The original recovered CNPG startup cause remains unknown.",
+  "gateway_console_image": {
+    "run": 35180785681,
+    "source": "bf83eefa2a28a62988c270dd20d20e0199cf6d4a",
+    "checked_at": "2026-09-17T04:17:45.331116+00:00",
+    "job_uid": "b99ae229-865d-49b3-a7e7-a35846eaf543",
+    "digest": "sha256:9c53ab7c62ea8ebcf11b2163c309edf66504a81be5bb17fc78f7bc4a33e37597",
+    "record_sha256": "8217037eeb25d05e1f4efe947ca3b729ec5e0eb0da8d90721a2b71dc6d5e4767",
+    "binary_sha256": "07a677758dcc555968926360cdd2fb4c1227b4a5835d8fc6c117774211babc06",
+    "user": "65532:65532",
+    "entrypoint": [
+      "/service"
+    ],
+    "compressed_layer_matches_published_manifest": true,
+    "uncompressed_layer_matches_image_config": true,
+    "binary_matches_qualified_module": true,
+    "qualified_module_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180446968",
+    "qualified_module_source": "eacee52dee8fb15c85656f660233d98785310878"
+  }
+}
