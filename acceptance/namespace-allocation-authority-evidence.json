@@ -1,0 +1,46 @@
+{
+  "source": "04e8e704e5a4a57963adf0d9df620db286fbd793",
+  "core": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35229791210",
+    "source": "04e8e704e5a4a57963adf0d9df620db286fbd793",
+    "job_id": 105230585436,
+    "core_result": "success",
+    "test_pass_events": 670,
+    "top_level_passes": 311,
+    "separate_live_exclusions": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "acceptance_seconds": 1671.312,
+    "log_sha256": "ec97b415c1331295dbf961672d03a7acf7daee705dfecf9ea3036cd567d5abe0",
+    "generation_drift_checks": 3,
+    "hosted_service_cleanup_passed": true,
+    "previous_failure_cases_passed": true,
+    "scope": "Core tests at this exact source. Browser and live cluster workflows have separate evidence. A pass does not establish the cause of earlier failures."
+  },
+  "browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35229791210",
+    "source": "04e8e704e5a4a57963adf0d9df620db286fbd793",
+    "job": 105230585391,
+    "checked_at": "2026-09-17T13:57:09.193847+00:00",
+    "required_test": "TestGeneratedBrowserGatewayWorkflow",
+    "seconds": 97.86,
+    "passed": true,
+    "fixture_and_service_cleanup_steps_passed": true,
+    "browser_removal_output_present": true,
+    "log_sha256": "cd010df1e52724a45ce1653770fe289f3fa5783272e1fe81d6e8c69f1125776d",
+    "startup_instances": 3,
+    "complete_startup_stages_per_instance": 8,
+    "screenshots_reviewed": true,
+    "screenshots": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29"
+    },
+    "screenshot_scope": "The account fixture is healthy and has no accounts after deletion. The created Gateway is provisioning and its connection commands are placeholders. This hosted fixture does not run the real Gateway.",
+    "scope": "Hosted rendered management console, authorization, events, sessions, generated browser startup signals, and account lifecycle. The complete live Gateway workflow remains separate."
+  },
+  "change": "Remove unused handwritten Gateway RBAC declarations. Require the generated allocator before Kubernetes writes.",
+  "scope": "The constructor and durable state path already required allocation. This result does not establish a previously reachable authorization bypass. It predates the external-only test changes."
+}

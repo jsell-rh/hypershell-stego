@@ -90,3 +90,10 @@ See the [policy evidence](external-gateway-policy-evidence.json).
 The default regeneration path also passed after the CI workflow change. All
 415 generated files matched the committed output, with an empty change patch.
 The [last retired CNPG result](retired-cnpg-final.md) remains available separately.
+
+The preceding namespace-allocation change passed 311 top-level core tests,
+670 total test cases, three generation checks, and the hosted browser workflow.
+It removed unused handwritten RBAC declarations and made the allocator check
+explicit before Kubernetes writes. These results apply to `04e8e70`, before
+the external-only fixture change. See the
+[allocation evidence](namespace-allocation-authority-evidence.json).
