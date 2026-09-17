@@ -10,7 +10,14 @@ The SQL workflow also requires a deleted Gateway's retained SQL record to reject
 new application credentials. Existing checks cover separate logical databases,
 limited logins, cross-database denial, stored keys, restart, and cleanup.
 
-This branch is a draft. It requires `postgres-client` 1.5.0. The qualified
-compiler pin and generated runtime still use the preceding component version.
-Compiler release qualification, pin updates, regeneration, and application
-checks are pending. Do not use this draft as a qualified deployment.
+This branch selects compiler and common registry
+`b8fdfd6946a740430a2a4f41cf9aaae03a6d6793`, including `postgres-client` 1.5.0.
+The common compiler, SQL lifecycle, provider, storage, and example checks passed
+in run `35217276981`. The signed main package from run `35218936816` was checked
+against the exact source and two independent builds. Its immutable release and
+common installer were also checked. The compiler SHA-256 is
+`2913c048a2ddd64ca55af9ad4af485167ea6c07718fa55c577b475cb55608160`.
+
+CI regeneration and application checks are pending. The new deleted-record
+assertion requires the jshell Gateway SQL test; hosted core tests do not run it.
+Do not use this branch as a qualified deployment until those checks pass.
