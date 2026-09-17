@@ -27,8 +27,8 @@ required archive file. All six compiler jobs passed in
 [35180190820](https://github.com/jsell-rh/stego/actions/runs/35180190820).
 Native logout passed in
 [35180190817](https://github.com/jsell-rh/stego/actions/runs/35180190817).
-Application workflow qualification is still required. This candidate does not establish the cause of the earlier
-CNPG browser startup failure or replace the qualified dashboard evidence.
+Source-specific application results are below. This candidate does not establish
+the cause of the earlier CNPG browser startup failure.
 
 The [Gateway console module check](dashboard-startup-module-evidence.json)
 passed at `eacee52`. All 130 archived source files match the candidate. The
@@ -61,8 +61,8 @@ requests, account use and deletion, and final Gateway deletion passed. The
 supplied PostgreSQL server and installation data remained. Independent cluster
 cleanup passed at `2026-09-17T04:30:02Z`; no test workload or allocation remained,
 and the shared test lease was empty. This qualifies the public workflow at the
-named source. The API runner recovery and complete CNPG workflow still need
-their separate results. The earlier recovered CNPG startup cause remains unknown.
+named source. The complete CNPG workflow still needs its separate result. The
+earlier recovered CNPG startup cause remains unknown.
 
 The automatic API run `35178368373` at the earlier main revision stopped during
 regeneration. Its read-only Pod had no writable user cache setting, so the Git
@@ -85,4 +85,16 @@ response is lost. It must observe a matching terminal Job condition. If it
 cannot verify completion, it retains the Job, fixture, and lease for inspection.
 The recovery checks cover lost writes, lost responses, delayed completion,
 replacement Jobs, read failures, and deadlines. Fourteen observation tests and
-eight credential tests passed locally. A new live API run must qualify this fix.
+eight credential tests passed locally. The [live API recovery result](api-startup-recovery-evidence.json)
+then passed at `8c37bb2` in run `35182200900`. All 51 required tests passed.
+All 1,354 source hashes match that commit, and all 415 generated-file hashes
+match the four snapshots and saved archive. The saved original Job reached
+`Complete`. Independent cleanup at `2026-09-17T04:40:59Z` found no test
+resources, allocations, or held lease. This qualifies the runner in the complete
+API workflow. Transport-loss cases also retain their focused test coverage.
+
+The [full application check](startup-core-workflow-evidence.json) passed at
+`bf83eef`. The core job passed 307 top-level tests and 651 checks with subtests.
+Four named live tests were excluded from that job. The rendered management
+browser, web console, and service image jobs also passed. CNPG and Sandbox were
+not selected; this result does not supply their missing evidence.
