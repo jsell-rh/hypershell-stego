@@ -55,6 +55,16 @@ separate qualification requirement.
 
 ## Verification state
 
+The external PostgreSQL change passed its hosted and complete public Gateway
+workflows. The hosted core run at `29a238a` passed 311 top-level tests and three
+generation checks. The live run at `62e82d5` passed all eleven required tests in
+669.65 seconds, with 416 matching generated-file hashes, six complete browser
+startup records, and independent cleanup. The nine retired CNPG test role
+bindings were removed and their permission changes were checked. See the
+[current database contract and evidence](acceptance/external-gateway-databases.md).
+Production capacity and the other enterprise requirements remain open.
+
+The following composition records apply to earlier source revisions.
 The common registry and browser composition now have complete application
 checks with compiler `00573709fb15a2a54de4242aa8fdbabee325179a`. The
 [composition record](acceptance/common-browser-composition.md) identifies each

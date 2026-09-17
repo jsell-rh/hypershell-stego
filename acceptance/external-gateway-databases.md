@@ -54,9 +54,9 @@ test records remain unchanged. This change does not delete a deployed server
 or migrate existing data. A server endpoint change still requires an explicit
 data migration; reconciliation must not silently create an empty replacement.
 
-The new source requires hosted checks and a complete external PostgreSQL
-workflow result before qualification. Earlier CNPG results remain evidence
-for their recorded source only.
+The external-only source passed its hosted checks and complete PostgreSQL
+workflow. Earlier CNPG results remain evidence for their recorded source only.
+Production capacity, RDS failover, and the deferred live Kata test remain open.
 
 ## Hosted evidence
 
@@ -70,10 +70,23 @@ The same run passed 231 UI tests, three generation checks, and builds and
 entrypoint/user checks for seven generated images. The core job also passed:
 311 top-level tests, 670 total test cases, three generation checks, and hosted
 container cleanup. Four named tests have separate live workflows.
-The complete external PostgreSQL cluster workflow is running at `62e82d5`
-in [run 35232271576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35232271576). See the
-[hosted evidence](external-gateway-hosted-evidence.json) for exact jobs and hashes.
-These results do not qualify the complete application change.
+The complete external PostgreSQL cluster workflow passed at `62e82d5`
+in [run 35232271576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35232271576).
+All eleven required tests passed. The main workflow took 669.65 seconds. Checks
+matched all 1,427 source files and 416 generated-file hashes, published compiler
+bytes, the deployed console image, and the live provisioner recovery record.
+See the [hosted evidence](external-gateway-hosted-evidence.json) and
+[complete live evidence](external-gateway-live-evidence.json).
+
+The live workflow covered Gateway creation, owner grants, filtered and denied
+REST and gRPC access, events, account operations, the upstream dashboard,
+PostgreSQL process restart, namespace replacement, provisioner recovery, and
+durable deletion. Six browser instances each exported all eight startup stages
+with matching logs, traces, and metrics. SQL telemetry included preparation,
+failed cleanup, recovery, and successful deletion. The three screenshots were
+reviewed. Independent cleanup found no remaining test workloads, fixtures,
+allocated namespaces, or held test lease. No scheduling change was required.
+These results qualify this application change, not the full enterprise goal.
 
 ## Test installation policy
 
@@ -108,7 +121,9 @@ installation record. This includes access for the CI runner, old operator,
 database service account, and application test fixture.
 
 The [removal plan](retired-cnpg-access-plan.json) records those exact bindings.
-Removal is pending until the current external workflow is terminal and its
-cleanup is verified. The removal must hold the test lease and use object
-identity and version checks. Shared CRDs, namespaces, roles, and unrelated
-workloads remain outside this access change.
+After the external workflow and independent cleanup passed, all nine bindings
+were removed under the test lease with object identity and version checks.
+Independent checks confirmed their absence, five denied old permissions, and
+two retained permissions for the current test. Shared CRDs, namespaces, roles,
+and unrelated workloads were unchanged. See the
+[removal evidence](retired-cnpg-access-evidence.json).

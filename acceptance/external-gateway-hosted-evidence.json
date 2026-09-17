@@ -77,7 +77,9 @@
   "external_live_workflow": {
     "run": 35232271576,
     "source": "62e82d5e8c09ca363decd37a109154a41a32e570",
-    "status": "in_progress"
+    "status": "completed",
+    "conclusion": "success",
+    "evidence": "external-gateway-live-evidence.json"
   },
   "sandbox": "deferred by the user; not tested",
   "scope": "Hosted checks only. The complete external PostgreSQL Gateway workflow requires a separate cluster result."

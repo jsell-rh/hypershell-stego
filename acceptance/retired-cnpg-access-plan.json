@@ -1,9 +1,10 @@
 {
   "observed_at": "2026-09-17T14:24:39.120093+00:00",
   "installation_id": "57997a20e039ad44d9430c6210f75d98",
+  "prior_cleanup_required": "/home/jsell/.local/state/stego/runs/external-gateway-databases-20260917/live/independent-cleanup.json",
+  "prior_run_required": 35232271576,
   "applied": false,
-  "required_prior_run": 35232271576,
-  "bindings": [
+  "access_objects": [
     {
       "expected": {
         "kind": "ClusterRoleBinding",

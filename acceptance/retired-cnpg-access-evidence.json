@@ -1,0 +1,132 @@
+{
+  "removal": {
+    "installation_id": "57997a20e039ad44d9430c6210f75d98",
+    "prior_run": 35232271576,
+    "plan_sha256": "6fc0b7221ac844335295d5c5808024956dc071da0c421c9c70b0b47a4f27e278",
+    "removed": [
+      {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-cnpg-ci-observer",
+        "namespace": "",
+        "state": "created",
+        "uid": "3cc1d0c1-eb7e-4500-9489-97a8d6d9d187"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "cnpg-manager",
+        "namespace": "stego-cnpg-operator-ci",
+        "state": "created",
+        "uid": "d59e6acf-532f-4a73-b506-b57618a08b5c"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "cnpg-manager",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "042484d6-dcaf-42cd-bf49-f9d87bc52559"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "database-nonroot",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "9cff04b1-aa19-401b-aae3-083c397b4ad0"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "fixture-observer",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "8468ba3a-53d9-40e7-915d-16535e70f825"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci",
+        "namespace": "stego-cnpg-operator-ci",
+        "state": "created",
+        "uid": "eff5d657-a3f8-4464-bc5a-d838590b08e2"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci",
+        "namespace": "stego-cnpg-database-ci",
+        "state": "created",
+        "uid": "527efd51-a3d5-4c7b-997f-9fd9e79d1ccf"
+      },
+      {
+        "kind": "RoleBinding",
+        "name": "cnpg-ci-fixture",
+        "namespace": "stego-service-ci",
+        "state": "created",
+        "uid": "724d85a6-7ff0-40b9-8781-d8c144cd7725"
+      },
+      {
+        "kind": "ClusterRoleBinding",
+        "name": "stego-cnpg-ci-installation-reader",
+        "namespace": "",
+        "state": "created",
+        "uid": "09c19658-4adf-484c-955a-562eb7afc193"
+      }
+    ],
+    "complete": true,
+    "phase": "complete",
+    "updated_at": "2026-09-17T14:36:06.443416+00:00"
+  },
+  "verification": {
+    "checked_at": "2026-09-17T14:36:15.605412+00:00",
+    "removed_bindings_absent": 9,
+    "permission_checks": [
+      {
+        "identity": "system:serviceaccount:stego-ci-access:hypershell-ci",
+        "verb": "create",
+        "resource": "jobs.batch",
+        "namespace": "stego-cnpg-operator-ci",
+        "allowed": false
+      },
+      {
+        "identity": "system:serviceaccount:stego-ci-access:hypershell-ci",
+        "verb": "create",
+        "resource": "jobs.batch",
+        "namespace": "stego-cnpg-database-ci",
+        "allowed": false
+      },
+      {
+        "identity": "system:serviceaccount:stego-ci-access:hypershell-ci",
+        "verb": "create",
+        "resource": "clusters.postgresql.cnpg.io",
+        "namespace": "stego-cnpg-database-ci",
+        "allowed": false
+      },
+      {
+        "identity": "system:serviceaccount:stego-service-ci:service-check",
+        "verb": "get",
+        "resource": "clusters.postgresql.cnpg.io",
+        "namespace": "stego-cnpg-database-ci",
+        "allowed": false
+      },
+      {
+        "identity": "system:serviceaccount:stego-cnpg-operator-ci:cnpg-manager",
+        "verb": "create",
+        "resource": "pods",
+        "namespace": "stego-cnpg-database-ci",
+        "allowed": false
+      },
+      {
+        "identity": "system:serviceaccount:stego-ci-access:hypershell-ci",
+        "verb": "create",
+        "resource": "jobs.batch",
+        "namespace": "stego-service-ci",
+        "allowed": true
+      },
+      {
+        "identity": "system:serviceaccount:stego-service-ci:service-check",
+        "verb": "get",
+        "resource": "pods",
+        "namespace": "stego-service-ci",
+        "allowed": true
+      }
+    ],
+    "lease_empty": true,
+    "scope": "Live RBAC decisions through operator impersonation with the service account groups. This does not claim token authentication, Pod execution, or application behavior."
+  }
+}
