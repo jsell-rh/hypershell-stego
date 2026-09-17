@@ -115,8 +115,12 @@ and the live workflow still require qualification. No live result is claimed
 for these new checks.
 
 
-The signed compiler migration is pending hosted CI qualification. The source
-check must reproduce the committed Gateway console asset bundle byte for byte.
+The signed compiler migration passed both jobs in run `35207605684` at source
+`24d80ae`. Independent inspection matched all 77 assets to the committed Gateway
+console bundle and confirmed all 13 UI tests passed. The private image binary,
+published digest, repeated generation, and deployment checks also passed. See
+the [source record](../../acceptance/dashboard-signed-compiler-source-evidence.json)
+and [private application record](../../acceptance/dashboard-signed-compiler-private-evidence.json).
 Both fresh browser fixtures select common browser telemetry with the service
 name used by those assets. No compiler build or local registry copy is required.
 These fixture changes do not replace the separate live Gateway workflow checks.

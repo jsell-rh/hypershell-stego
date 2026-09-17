@@ -1,0 +1,44 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35207605684",
+  "source": "24d80ae8623cb4d5b44d3fe2864156e9e418d7a8",
+  "private_compiler": "00573709fb15a2a54de4242aa8fdbabee325179a",
+  "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:1ed81abe87a659115656bbe6c6c7aec452c1cda412ae1f51739947b5f5b805f8",
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "image_user": "65532:65532",
+  "image_binary_matches_checked_source": true,
+  "only_regular_image_file": "dashboard",
+  "registry_verification": {
+    "image_id": "sha256:da0cf2ea2ab7f925d2f266487c5a772478cb58ae8dc3490b3b0999ffbdbfc4e0",
+    "pulled_digest_matches_build": true
+  },
+  "repeated_generation_state_equal": true,
+  "declared_document_routes": 8,
+  "deployment_verification": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:1ed81abe87a659115656bbe6c6c7aec452c1cda412ae1f51739947b5f5b805f8",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "CI built and published the upstream image, then pulled it by digest and compared it with the checked build. The generated private browser built with all eight document routes. Live Pod, rendered editor, terminal, and Gateway lifecycle checks remain open.",
+  "sha256": {
+    "dashboard-image.tar": "2a8d78dbe3ee8ac870f5e5c3b2dcfeb3f7cb7dda1031d6c2804ca0d8ea3c1d39",
+    "generated-source.tar": "39c43befc2daa943c4e8abc449ddb8ca16797e32336d6169ca4f25a8a3c9f7a0",
+    "generated-browser": "3a0609c5befeb2c5237e979504cdff201e23e2e7e24c64b28043bfdd20232762",
+    "deployment.json": "95f11d6711717f44ffcca576bf34256b16011a4401aeb63a0403db170e5ef2f5",
+    "generation.log": "ac5975b3b35d08ab93d22d269fae047cad2316601586139c122c85b7752b1d6a",
+    "published-image-inspect.json": "fcbfdc0158c0688ba1a60bc39896345669de8decbd5d30fe60f2e5b01c637aad",
+    "registry-verification.json": "2bc0a0dbc0d612ef5c4bde38465ffe55789906913bcbb28bf487a002608fce7a"
+  },
+  "compiler_records": {
+    "source": "00573709fb15a2a54de4242aa8fdbabee325179a",
+    "compiler_sha256": "e5894237467e81c6a3e7a7c8abd436192a74174726384c2f30716e63db3101bb",
+    "signature_records_match_published_package": true
+  }
+}

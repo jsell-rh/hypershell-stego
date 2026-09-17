@@ -63,7 +63,8 @@ verification in STEGO run `35204243151` at source
 
 The historical upstream dashboard capture jobs now select the same signed
 compiler package and pinned registry. Their separate asset and fixture checks
-are pending. They are outside the three application module entry points. Automatic compiler release
+passed in run `35207605684` at source `24d80ae`. Independent inspection matched
+the committed assets, generated deployment, image binary, and signature records. They are outside the three application module entry points. Automatic compiler release
 qualification and complete offline build inputs also remain open.
 
 
@@ -86,3 +87,10 @@ image jobs. Core remains in progress. CNPG and Sandbox were not selected in that
 hosted dispatch. The previous main CNPG run is a separate result and does not
 qualify the new compiler transfer path. Live API, public Gateway, and CNPG
 checks at this source remain required before main promotion.
+
+
+The historical source and private application jobs now use compiler `0057370`
+through the common installer. Their separate compiler pins and source builds
+are removed. The asset bundle is byte-for-byte identical to the committed
+Gateway console input. These checks do not change the application's selected
+upstream image or replace live API, public Gateway, and CNPG evidence.
