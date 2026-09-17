@@ -82,8 +82,11 @@ passed all 28 required tests at the same source. Independent inspection found
 no failed or skipped events in its saved result. See the
 [journal record](verified-generation-journal-evidence.json).
 
-Full run `35206051129` has passed its rendered-browser, management-console, and
-image jobs. Core remains in progress. CNPG and Sandbox were not selected in that
+Full run `35206051129` passed its core, rendered-browser, management-console, and
+image jobs. Independent inspection of the core log found 307 top-level passes
+and 651 passing events, with only the four declared live-test exclusions. The
+acceptance package took 1,518.46 seconds. See the
+[core record](verified-generation-core-evidence.json). CNPG and Sandbox were not selected in that
 hosted dispatch. The previous main CNPG run is a separate result and does not
 qualify the new compiler transfer path. Live API, public Gateway, and CNPG
 checks at this source remain required before main promotion.

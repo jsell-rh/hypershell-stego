@@ -1,0 +1,17 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35206051129",
+  "source": "8bb2965f907aef1edb7c41e0f07b0ac542bc168c",
+  "job_id": 105151986506,
+  "core_result": "success",
+  "test_pass_events": 651,
+  "top_level_passes": 307,
+  "separate_live_exclusions": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow"
+  ],
+  "acceptance_seconds": 1518.46,
+  "log_sha256": "c6d937397710fba8c5c2c395ddf2adb9d64e8ff9e86087f36d8321f1c0ea52c4",
+  "scope": "The core suite at this exact source. Rendered and live cluster tests have separate results."
+}
