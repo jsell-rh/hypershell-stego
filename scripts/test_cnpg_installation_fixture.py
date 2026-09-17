@@ -108,7 +108,7 @@ class InstallationTests(unittest.TestCase):
         binding = next(o for o in items if o['kind'] == 'RoleBinding' and o['metadata']['name'] == 'fixture-observer')
         self.assertEqual(binding['subjects'], [{'kind': 'ServiceAccount', 'name': 'service-check', 'namespace': 'stego-service-ci'}])
         job = next(o for o in items if o['kind'] == 'Job')
-        self.assertEqual(job['spec']['activeDeadlineSeconds'], 1500)
+        self.assertEqual(job['spec']['activeDeadlineSeconds'], 2400)
         pod = job['spec']['template']['spec']
         self.assertFalse(pod['automountServiceAccountToken'])
         self.assertTrue(pod['securityContext']['runAsNonRoot'])

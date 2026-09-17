@@ -1,0 +1,26 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35226222533",
+  "job": 105218382240,
+  "source": "52f1ecb27dd732d8679f154462eebf5e1f66d794",
+  "checked_at": "2026-09-17T13:19:44.363522+00:00",
+  "source_archive_sha256": "294e16e088b749b659219104d24975ab65b2d6f4784f05e0b87375a471438a39",
+  "test_counts": {
+    "test_cnpg_ci": 18,
+    "test_cnpg_installation_fixture": 14,
+    "test_ci_credentials": 8
+  },
+  "test_log_sha256": {
+    "test_cnpg_ci": "907f0c9677850d95c30ad6e1612a28b59680e1c589a8580205ae8bffa49777d1",
+    "test_cnpg_installation_fixture": "be92353188c2ba4a99fad366c889b58723601c84ea7863cfd9c0866cb0833db5",
+    "test_ci_credentials": "1b4e46a97723fada114dcaef29eb3fbd4f7121a4b21255f94379d7e2778e5c80"
+  },
+  "required_dependency_budget_test_passed": true,
+  "application_job_seconds": 1800,
+  "database_job_seconds": 2400,
+  "operator_job_seconds": 2400,
+  "credential_gate_seconds": 2700,
+  "database_readiness_and_cleanup_reserve_seconds": 540,
+  "installed_on_cluster": false,
+  "complete_gateway_workflow_passed": false,
+  "scope": "Offline fixture, admission template, authority, and credential tests. The current live workflow retains its original 1500-second database limit. A checked installation update is required before using this budget in a live repeat."
+}

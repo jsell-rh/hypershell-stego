@@ -1,0 +1,33 @@
+{
+  "complete": true,
+  "source": "acc5cd2aa22cde3661df3a4c65b164f8b701e670",
+  "started_at": "2026-09-17T13:35:18.140200+00:00",
+  "old_config_uid": "de0b2ff3-986f-44bf-b792-d730a834ca6b",
+  "policy_uid": "1ce76068-9e47-4a54-8723-6bdd0e64886c",
+  "steps": [
+    "prepared",
+    "lease-acquired",
+    "policy-update-requested",
+    "policy-verified",
+    "configuration-deletion-requested",
+    "configuration-creation-requested",
+    "configuration-created",
+    "deadline-admission-checked",
+    "deadline-admission-checked",
+    "configuration-verified",
+    "lease-released"
+  ],
+  "new_config_uid": "0b4ac7c0-47cf-4e7d-a1e5-0fe647bfbed6",
+  "admission_probes": [
+    {
+      "seconds": 2400,
+      "allowed": true
+    },
+    {
+      "seconds": 2401,
+      "allowed": false
+    }
+  ],
+  "verified_at": "2026-09-17T13:35:20.329738+00:00",
+  "lease_empty": true
+}

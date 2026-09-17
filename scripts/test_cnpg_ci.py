@@ -14,6 +14,23 @@ import cnpg_ci as ci
 
 
 class CNPGCIBoundary(unittest.TestCase):
+    def test_dependencies_outlive_the_application_job(self):
+        from ci_credentials import CNPG_SECONDS, CNPG_RUNTIME_SECONDS
+        objects, templates = self.build()
+        application = json.loads((Path(__file__).resolve().parent.parent / 'acceptance/kubernetes-service-job.json').read_text())
+        job = next(item for item in application['items'] if item['kind'] == 'Job')
+        application_seconds = job['spec']['activeDeadlineSeconds']
+        self.assertEqual(application_seconds, 1800)
+        # Include the six-minute database readiness wait and three minutes for cleanup.
+        self.assertGreaterEqual(CNPG_RUNTIME_SECONDS, application_seconds + 360 + 180)
+        self.assertLess(CNPG_RUNTIME_SECONDS, CNPG_SECONDS)
+        for name in ['database-job', 'operator-job']:
+            self.assertEqual(templates[name]['spec']['activeDeadlineSeconds'], CNPG_RUNTIME_SECONDS)
+        for namespace in [ci.OPERATOR_NS, ci.DATABASE_NS]:
+            policy = next(item for item in objects if item['kind'] == 'ValidatingAdmissionPolicy' and item['metadata']['name'] == namespace + '.bounded-jobs')
+            rules = [item['expression'] for item in policy['spec']['validations'] if 'activeDeadlineSeconds' in item['expression']]
+            self.assertTrue(any('activeDeadlineSeconds <= ' + str(CNPG_RUNTIME_SECONDS) in rule for rule in rules))
+
     def build(self):
         fixture = [
             {'kind': 'ClusterRole', 'metadata': {'name': 'cnpg-manager'}, 'rules': [
@@ -58,7 +75,7 @@ class CNPGCIBoundary(unittest.TestCase):
         self.assertEqual(env['WEBHOOK_CERT_DIR'], '/etc/cnpg-webhook')
         self.assertEqual(env['MANAGE_WEBHOOK_CONFIGURATIONS'], 'false')
         self.assertEqual(pod['containers'][0]['resources']['limits']['memory'], '512Mi')
-        self.assertEqual(templates['database-job']['spec']['activeDeadlineSeconds'], 1500)
+        self.assertEqual(templates['database-job']['spec']['activeDeadlineSeconds'], 2400)
         self.assertEqual(templates['cluster']['spec']['instances'], 2)
         webhook = next(o for o in objects if o['kind'] == 'ValidatingWebhookConfiguration')
         self.assertEqual(webhook['webhooks'][0]['namespaceSelector'], {'matchLabels': {'kubernetes.io/metadata.name': ci.DATABASE_NS}})

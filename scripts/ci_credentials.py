@@ -14,6 +14,9 @@ SUBJECT = 'system:serviceaccount:stego-ci-access:hypershell-ci'
 API_SECONDS = 25 * 60
 BROWSER_SECONDS = 35 * 60
 CNPG_SECONDS = 45 * 60
+# The database and operator must outlive the 30-minute application Job, its
+# database readiness wait, and cleanup. This remains below the credential gate.
+CNPG_RUNTIME_SECONDS = 40 * 60
 
 
 def require_credentials(config, minimum_seconds, now=None):
