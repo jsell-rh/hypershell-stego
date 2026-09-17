@@ -1,0 +1,24 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35198198149",
+  "source": "442e7ff796222aa607de1a6fe1f326f26d2991b2",
+  "required_tests_passed": 52,
+  "source_files_match": 1365,
+  "generation_hashes_match": 415,
+  "independent_cleanup": {
+    "checked_at": "2026-09-17T08:20:36.061182+00:00",
+    "api_run": 35198198149,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": ""
+  },
+  "scope": "API creation, access, events, deletion, restart, and regeneration at the named source. This does not prove a rendered Gateway dashboard.",
+  "regression_tests": {
+    "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart": 9.61,
+    "TestGeneratedRuntimeRecoversUnfinishedClaim": 33.81
+  }
+}

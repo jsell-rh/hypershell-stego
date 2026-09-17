@@ -107,4 +107,14 @@ was the only failed required test. No required test was skipped. Cleanup at
 [failed API record](common-browser-api-failure.json) and the
 [core result](common-browser-core-evidence.json).
 The [corrected API run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35198198149)
-uses fixture source `442e7ff`. Its result is pending.
+uses fixture source `442e7ff`. It passed all 52 required tests with no failures
+or skips. Independent checks matched all 1,365 source files and all 415
+generated-file hashes across four snapshots. The corrected parent restart test
+passed in 9.61 seconds. The deterministic unfinished-claim test passed in
+33.81 seconds and preserved the original event identity after lease expiry.
+Independent cleanup at `2026-09-17T08:20:36Z` found no test runtime, fixtures,
+allocations, or Lease holder. See the [API result](common-browser-api-evidence.json).
+
+CNPG qualification is the remaining application check for this composition
+change. Production capacity, full parity, backup and restore, and the broader
+enterprise requirements remain open.
