@@ -1,0 +1,43 @@
+{
+  "plan": {
+    "run": 35231754652,
+    "source": "62e82d5e8c09ca363decd37a109154a41a32e570",
+    "checked_at": "2026-09-17T14:12:28.708983+00:00",
+    "source_files": 1427,
+    "compiler": "b8fdfd6946a740430a2a4f41cf9aaae03a6d6793",
+    "compiler_records_match_published_package": true,
+    "resources": 19,
+    "changes": [
+      {
+        "manifest": "hypershell-namespace-allocation",
+        "kind": "ValidatingAdmissionPolicy",
+        "name": "stego-service-ci.hypershell-namespace-allocation.allocation",
+        "path": "/spec/validations/6/expression",
+        "before_sha256": "297d28b83565a8f4d9cabfa7733b880dd2b20949258aa8764d17454873a56a5f",
+        "after_sha256": "616958eb572eb8e77c14b30c872fc9eb10a09ba42ad35065e8b89eef058c5e7d"
+      }
+    ],
+    "plan_sha256": "0718c832c4ac5677ae7f513db3b4cef479aeb1a321e419782246363695faada9",
+    "prior_installation_uid": "7b1a8e09-812e-4fb0-b771-7fbfb52b65f0",
+    "cluster_writes": false
+  },
+  "update": {
+    "source": "62e82d5e8c09ca363decd37a109154a41a32e570",
+    "plan_run": 35231754652,
+    "new_config_uid": "ead6db1d-c208-4a22-8157-55810afc90a7",
+    "policy_uid_preserved": true,
+    "immutable_record_matches_plan": true,
+    "policy_validations_match_plan": true,
+    "type_check_passed": true,
+    "scope": "Readback after the single-rule update. The external application run is separate."
+  },
+  "regeneration": {
+    "run": 35231742392,
+    "source": "62e82d5e8c09ca363decd37a109154a41a32e570",
+    "compiler": "b8fdfd6946a740430a2a4f41cf9aaae03a6d6793",
+    "generated_files_match": 415,
+    "generation_patch_empty": true,
+    "archive_sha256": "b6d9ebb180327e22a68bc3d0a4fc3f9e097c02deb326adbb0e1ba226bf3bad60",
+    "scope": "Automatic regeneration after the workflow change. Every saved generated file matches the committed source. The policy-plan job was not selected."
+  }
+}

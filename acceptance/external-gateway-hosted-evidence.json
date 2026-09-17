@@ -55,7 +55,11 @@
     "scope": "Generated API, management console, provisioner, and four worker image builds and entrypoint/user checks. This is not a live deployment result."
   },
   "core": "pending",
-  "external_live_workflow": "not started",
+  "external_live_workflow": {
+    "run": 35232271576,
+    "source": "62e82d5e8c09ca363decd37a109154a41a32e570",
+    "status": "in_progress"
+  },
   "sandbox": "deferred by the user; not tested",
   "scope": "Hosted checks only. The complete external PostgreSQL Gateway workflow requires a separate cluster result."
 }

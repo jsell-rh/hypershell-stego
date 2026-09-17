@@ -68,6 +68,25 @@ The two screenshots were reviewed. The fixture does not run a real Gateway.
 
 The same run passed 231 UI tests, three generation checks, and builds and
 entrypoint/user checks for seven generated images. The core job remains active.
-The complete external PostgreSQL cluster workflow has not started. See the
+The complete external PostgreSQL cluster workflow is running at `62e82d5`
+in [run 35232271576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35232271576). See the
 [hosted evidence](external-gateway-hosted-evidence.json) for exact jobs and hashes.
 These results do not qualify the complete application change.
+
+## Test installation policy
+
+CI rendered the new installation policy without cluster access. Independent
+checks matched all 1,427 source files, the published compiler records, and the
+19 generated cluster resources. Only one network validation expression changed:
+it no longer permits the old CNPG destination.
+
+After the previous workflow and independent cleanup passed, the operator
+applied that exact expression with object identity and version checks. A server
+dry run and policy type check passed. The immutable installation record was
+replaced under the test lease. Readback confirmed the planned rules and the
+unchanged policy identity. No test workload was active during this update.
+See the [policy evidence](external-gateway-policy-evidence.json).
+
+The default regeneration path also passed after the CI workflow change. All
+415 generated files matched the committed output, with an empty change patch.
+The [last retired CNPG result](retired-cnpg-final.md) remains available separately.
