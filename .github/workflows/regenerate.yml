@@ -2,6 +2,12 @@ name: Regenerate with the pinned compiler
 
 on:
   workflow_dispatch:
+    inputs:
+      installation_inputs:
+        description: Optional public browser installation inputs; render a policy plan instead of regeneration
+        required: false
+        default: ''
+        type: string
   push:
     paths:
       - .stego/compiler-revision
@@ -15,7 +21,14 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  policy-plan:
+    if: github.event_name == 'workflow_dispatch' && inputs.installation_inputs != ''
+    uses: ./.github/workflows/browser-policy-plan.yml
+    with:
+      installation_inputs: ${{ inputs.installation_inputs }}
+
   generate:
+    if: github.event_name != 'workflow_dispatch' || inputs.installation_inputs == ''
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     env:

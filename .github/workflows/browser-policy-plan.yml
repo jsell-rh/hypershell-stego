@@ -1,7 +1,7 @@
 name: Render browser test installation policy
 
 on:
-  workflow_dispatch:
+  workflow_call:
     inputs:
       installation_inputs:
         description: Public file group and Kubernetes endpoint records from the saved test installation
