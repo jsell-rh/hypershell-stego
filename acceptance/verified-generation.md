@@ -128,8 +128,7 @@ Three small stub checks also passed for token removal, changed assets, and
 rejection of the old unverified binary override.
 
 Full hosted run `35208313876` and public Gateway run `35208318088` test source
-`9b6e08d`. The full hosted result is pending; the public workflow passed the
-independent checks below. This source adds the management asset
+`9b6e08d`. Both runs passed the independent checks below. This source adds the management asset
 checks to the preceding compiler integration. The API runner and generated
 application output are unchanged from `dbe7ce6`. CNPG qualification for the new
 compiler transfer path also remains required. These results do not complete the
@@ -184,3 +183,17 @@ Independent cleanup at 10:23:50 UTC found no test runtime, fixtures, allocated
 namespaces, or test lock holder. See the
 [public record](verified-generation-public-evidence.json). CNPG remains a
 separate required check for the new compiler transfer path.
+
+
+## Complete hosted result
+
+[Full run 35208313876](https://github.com/jsell-rh/hypershell-stego/actions/runs/35208313876)
+passed its core, rendered-browser, management-console, and image jobs at
+`9b6e08d`. Independent inspection found 307 top-level passes and 651 passing
+test events in the core log. Only the four declared live-test exclusions were
+skipped. The acceptance package took 1,498.117 seconds. See the
+[latest core record](verified-generation-latest-core-evidence.json).
+
+CNPG run `35210319947` tests the same application code at `231b0bb`; only evidence
+JSON and Markdown files differ. Its final result is pending. Sandbox was not
+selected in the hosted run; the live Kata check remains deferred.
