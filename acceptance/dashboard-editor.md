@@ -115,12 +115,13 @@ checks did not run. All 404 repeated-generation hashes matched. CI retained the
 failure artifacts, and an independent operator check confirmed complete test
 cleanup and an empty lease. No deployed workflow pass is claimed.
 
-## Common dynamic-style candidate
+## Common dynamic-style integration
 
-The development branch selects STEGO candidate
-`979292750de036413b0aebee1227f20d4c022bf4`. Compiler qualification is still in
-progress. All three targets passed repeat generation and drift checks. The
-input-manifest check passed. This is candidate generation, not a live result.
+The development branch selects STEGO compiler
+`979292750de036413b0aebee1227f20d4c022bf4`. All six compiler jobs passed in
+[CI](https://github.com/jsell-rh/stego/actions/runs/35164702730). All three targets
+passed repeat generation and drift checks. The input-manifest check passed.
+These results do not prove a deployed editor.
 
 The Gateway console declares `dynamic_styles: true`. STEGO generates the
 document nonce, DOM render helpers, and source-verified Monaco adapter. The
@@ -130,9 +131,12 @@ before it records the build tree. No common adapter code is handwritten here.
 
 STEGO's [browser and adapter CI](https://github.com/jsell-rh/stego/actions/runs/35164702752)
 passed six browser groups and 11 exact dependency files. The updated Hypershell
-source, captured assets, image, and Gateway console module still require their
-checks. The currently selected bundle and application image are from the earlier
-qualified build. They have not yet been replaced by the new source build.
+[source and image check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35164983445)
+also passed. Independent comparison verified the build tree, five common DOM
+files, 77 captured assets, repeated generation, and the published image binary.
+The Gateway console now selects this bundle and image. Its input contract and
+repeat generation passed after adoption. The resulting module still requires
+qualification and adoption by the root service.
 
 No live run may qualify this change until compiler checks, rebuilt assets,
 image and module checks, and final repeat generation pass. The editor gate must

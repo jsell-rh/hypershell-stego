@@ -1,0 +1,15 @@
+{
+  "compiler": "979292750de036413b0aebee1227f20d4c022bf4",
+  "compiler_ci": "https://github.com/jsell-rh/stego/actions/runs/35164702730",
+  "source_ci": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35164983445",
+  "asset_files_match": 77,
+  "asset_bundle_sha256": "68c9fc1c68cd61cd2af9455d5eacd09644a8bc555fd5f2723ad386599d36b7ba",
+  "repeated_generation": [
+    {
+      "target": "/home/jsell/code/scratch/hypershell-dashboard-20260916/gateway-console",
+      "repeated_state_equal": true,
+      "state_sha256": "5142ca9b4c9b24ce51c532bd905bdccc2f9453805fb553d7eeb916ff3ba7d895"
+    }
+  ],
+  "scope": "Source, image, and generation checks passed. The root service must adopt the checked resulting module before the live workflow runs."
+}

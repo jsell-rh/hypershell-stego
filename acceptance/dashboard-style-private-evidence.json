@@ -1,0 +1,41 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35164983445",
+  "source": "52db843adcd8867642315ab8de7b3fb4afcb1452",
+  "private_compiler": "979292750de036413b0aebee1227f20d4c022bf4",
+  "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6cec0376ab3f48d2b3da085237ae940cc7a6b34f4a72e515865e99ea0f90d7bb",
+  "source_outcomes": {
+    "backend": "success",
+    "frontend": "success",
+    "router": "success",
+    "dependencies": "success",
+    "assets": "success"
+  },
+  "image_user": "65532:65532",
+  "image_binary_matches_checked_source": true,
+  "only_regular_image_file": "dashboard",
+  "registry_verification": {
+    "image_id": "sha256:020feb6a7eabd073474bf6ca48a14acdb684ec83c65673e28f435d7552078ecd",
+    "pulled_digest_matches_build": true
+  },
+  "repeated_generation_state_equal": true,
+  "declared_document_routes": 8,
+  "deployment_verification": {
+    "application_image": "ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6cec0376ab3f48d2b3da085237ae940cc7a6b34f4a72e515865e99ea0f90d7bb",
+    "private_listener": true,
+    "separate_mounts": true,
+    "browser_service_only": true,
+    "scope": "Generated image binding and deployment checks only. No live Pod or rendered dashboard result is claimed."
+  },
+  "scope": "CI built and published the upstream image, then pulled it by digest and compared it with the checked build. The generated private browser built with all eight document routes. Live Pod, rendered editor, terminal, and Gateway lifecycle checks remain open.",
+  "sha256": {
+    "dashboard-image.tar": "f2fedc95dd43f49cf0068921cfc4356ffec3946ffbd389f6234811a75ff1bb26",
+    "generated-source.tar": "289b8956be31d23197fce8a763b1496c5c8d8a4eb840e4f8ebc77acc9d61f0f2",
+    "generated-browser": "878fa7bcb6c0db7f90fa429913d3c03bd33925cfdbd8cff7c28eed1145f77896",
+    "deployment.json": "d4875e849300a43fcebd0cb80fb7c0899be2aa8c05dd02576243058f066a801f",
+    "generation.log": "07a20918489565291ed488b2ede6325233133c7210aafe6d74274ef605771c68",
+    "published-image-inspect.json": "e8ceed8a6f5e9c2682059755746e90dd3976f577ebbaa8a71dfc43862be965e1",
+    "registry-verification.json": "a25c78754c621bebe55840025cadf7691a4b5202bbd11c7834d3127495035034"
+  },
+  "compiler_ci": "https://github.com/jsell-rh/stego/actions/runs/35164702730",
+  "compiler_jobs_passed": 6
+}

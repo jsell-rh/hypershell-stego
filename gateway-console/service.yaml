@@ -19,7 +19,7 @@ overrides:
   kubernetes-service:
     local_applications:
       - port: 8000
-        image: ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:c8959418c35ece701387accceb9cf2f8110d7f44489c2ee2c7f72b8000cf2814
+        image: ghcr.io/jsell-rh/hypershell-stego-dashboard-ci@sha256:6cec0376ab3f48d2b3da085237ae940cc7a6b34f4a72e515865e99ea0f90d7bb
         listen_env: LISTEN_ADDRESS
         port_env: PORT
         env_secret: dashboard-application-env

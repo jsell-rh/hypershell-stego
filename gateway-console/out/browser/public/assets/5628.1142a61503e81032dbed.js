@@ -1,1 +1,0 @@
-"use strict";(self.webpackChunkopenshell_dashboard=self.webpackChunkopenshell_dashboard||[]).push([[5628],{45628(e,s,h){h.r(s)}}]);
