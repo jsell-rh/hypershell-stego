@@ -1,0 +1,23 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180081993",
+  "source": "9ac3c73a84d19431f417334391ee51cf06fc05a9",
+  "required_tests_passed": 51,
+  "ci_conclusion": "failure",
+  "gate_passed": false,
+  "terminal_job_verified": false,
+  "source_files_match": 1351,
+  "generation_hashes_match": 415,
+  "independent_cleanup": {
+    "checked_at": "2026-09-17T04:07:48.687398+00:00",
+    "api_run": 35180081993,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": ""
+  },
+  "scope": "All required test events and generation hashes match the named source. The runner timed out during collection acknowledgement. Its saved Job was still active. Independent cleanup passed, but the API gate failed and needs a new run."
+}

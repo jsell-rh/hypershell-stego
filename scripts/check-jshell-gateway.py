@@ -171,8 +171,15 @@ exit "$code"
         }}}}
     (result / "job.json").write_text(json.dumps(job, indent=2) + "\n")
     targets = [("Secret", "cli-test-postgres"), ("Secret", "database-tls"), ("ConfigMap", "database-ca"), ("Job", name)]
-    pod_name, code = None, None
+    pod_name, code, job_uid = None, None, None
     started, collected, stopped = False, False, False
+
+    def current_job():
+        current = get("Job", name)
+        if current is not None and current["metadata"]["uid"] != job_uid:
+            raise observer.UnobservedJob("The test Job identity changed")
+        return current
+
     print("Gateway API Job: " + namespace + "/" + name, flush=True)
     lock.acquire(args.context, name, namespace, name)
     try:
@@ -194,14 +201,18 @@ exit "$code"
             for (kind, resource), value in zip(targets, values):
                 obj = {"apiVersion": "v1", "kind": kind, "metadata": {"name": resource, "namespace": namespace, "labels": label}, **value}
                 oc("create", "-f", "-", data=json.dumps(obj).encode())
-        oc("create", "-f", "-", data=json.dumps(job).encode())
+        created = json.loads(oc("create", "-f", "-", "-o", "json", data=json.dumps(job).encode()))
+        job_uid = created["metadata"]["uid"]
         deadline = time.monotonic() + 1200
         while not pod_name:
             pods = json.loads(oc("get", "pods", "-l", "job-name=" + name, "-o", "json"))["items"]
             if len(pods) == 1:
+                if not any(owner.get("uid") == job_uid and owner.get("controller") is True
+                           for owner in pods[0]["metadata"].get("ownerReferences", [])):
+                    raise RuntimeError("The test Pod belongs to another Job")
                 pod_name = pods[0]["metadata"]["name"]
                 break
-            current = get("Job", name)
+            current = current_job()
             if not current or any(c["type"] == "Failed" and c["status"] == "True" for c in current.get("status", {}).get("conditions", [])) or time.monotonic() > deadline:
                 raise RuntimeError("The test Job did not start")
             time.sleep(2)
@@ -213,7 +224,7 @@ exit "$code"
         try:
             code = observer.wait_for_result(
                 lambda: oc("exec", pod_name, "-c", "test", "--", "sh", "-c", 'if [ -f /work/result ]; then cat /work/result; fi'),
-                lambda: get("Job", name), deadline)
+                current_job, deadline)
         except observer.StoppedJob:
             stopped = True
             raise
@@ -221,22 +232,29 @@ exit "$code"
             data = oc("exec", pod_name, "-c", "test", "--", "sh", "-c", 'if [ -f /work/"$1" ]; then cat /work/"$1"; fi', "collect", path, timeout=90)
             (result / path).write_bytes(data)
         collected = True
-        oc("exec", pod_name, "-c", "test", "--", "touch", "/work/collected")
-        oc("wait", "--for=condition=" + ("Complete" if code == 0 else "Failed"), "job/" + name, "--timeout=60s", timeout=80)
-        (result / "job-final.json").write_text(json.dumps(get("Job", name), indent=2) + "\n")
         events = [json.loads(line) for line in (result / "tests.jsonl").read_text().splitlines()]
         passed = {event["Test"] for event in events if event.get("Action") == "pass" and "Test" in event}
         failed = [event.get("Test", event.get("Package")) for event in events if event.get("Action") == "fail"]
         missing = sorted(set(REQUIRED) - passed)
         proof = {"required": REQUIRED, "passed": sorted(passed), "failed": failed, "missing": missing, "exit_code": code}
         (result / "verification.json").write_text(json.dumps(proof, indent=2) + "\n")
+        final = observer.wait_for_completion(
+            lambda: oc("exec", pod_name, "-c", "test", "--", "touch", "/work/collected", timeout=15),
+            current_job, job_uid, min(deadline, time.monotonic() + 90))
+        stopped = True
+        (result / "job-final.json").write_text(json.dumps(final, indent=2) + "\n")
+        expected_condition = "Complete" if code == 0 else "Failed"
+        if not any(c.get("type") == expected_condition and c.get("status") == "True"
+                   for c in final.get("status", {}).get("conditions", [])):
+            raise RuntimeError("The terminal Job condition differs from its saved result")
         print(json.dumps(proof), flush=True)
         if code != 0 or missing or failed:
             raise RuntimeError("The Gateway API gate failed; inspect the saved results")
     finally:
-        if started and not collected and not stopped:
-            (result / "retained.json").write_text(json.dumps({"job": name, "namespace": namespace, "reason": "result_not_collected", "lease_retained": True}) + "\n")
-            print("The Job result is not collected. Retain its fixture and Lease for inspection.", flush=True)
+        if started and not stopped:
+            reason = "completion_not_verified" if collected else "result_not_collected"
+            (result / "retained.json").write_text(json.dumps({"job": name, "namespace": namespace, "reason": reason, "lease_retained": True}) + "\n")
+            print("The Job is not verified as stopped. Retain its fixture and Lease for inspection.", flush=True)
         else:
             # Keep the Lease if cleanup or an ownership check fails.
             for kind, resource in reversed(targets):
@@ -247,6 +265,8 @@ exit "$code"
                 if meta.get("labels", {}).get("stego.test/run") != name:
                     raise RuntimeError("CI cleanup refuses a resource with another owner")
                 if kind == "Job":
+                    if job_uid is not None and meta["uid"] != job_uid:
+                        raise RuntimeError("CI cleanup refuses a replacement Job")
                     (result / "job-final.json").write_text(json.dumps(current, indent=2) + "\n")
                 group = "/apis/batch/v1" if kind == "Job" else "/api/v1"
                 path = group + "/namespaces/" + namespace + "/" + {"Job": "jobs", "Secret": "secrets", "ConfigMap": "configmaps"}[kind] + "/" + resource
