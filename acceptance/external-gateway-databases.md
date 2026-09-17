@@ -67,7 +67,9 @@ each supplied correlated startup logs, traces, and metrics for all eight stages.
 The two screenshots were reviewed. The fixture does not run a real Gateway.
 
 The same run passed 231 UI tests, three generation checks, and builds and
-entrypoint/user checks for seven generated images. The core job remains active.
+entrypoint/user checks for seven generated images. The core job also passed:
+311 top-level tests, 670 total test cases, three generation checks, and hosted
+container cleanup. Four named tests have separate live workflows.
 The complete external PostgreSQL cluster workflow is running at `62e82d5`
 in [run 35232271576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35232271576). See the
 [hosted evidence](external-gateway-hosted-evidence.json) for exact jobs and hashes.
