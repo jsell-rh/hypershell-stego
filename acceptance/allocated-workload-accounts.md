@@ -118,5 +118,6 @@ metrics. Fixture and container cleanup passed. Both browser images were reviewed
 Seven generated image builds and 231 UI checks also passed. The core suite passed with 720 test cases, including 313 top-level tests,
 and three checks found no generation drift. The public browser repeat failed before the network fault:
 a console Pod was not ready after earlier API and Deployment observations.
-Independent cleanup passed. A test-observer correction is under CI review. See the
+Independent cleanup passed. The correction and its successful main repeat are recorded in
+[the Pod readiness evidence](pod-readiness-evidence.md). See the
 [main evidence record](allocated-workload-accounts-main-evidence.json).
