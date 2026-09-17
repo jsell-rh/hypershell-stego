@@ -1,0 +1,45 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35167085887",
+  "source": "5f87ed6237296bbb5419e1adc54f1610f85c708d",
+  "compiler": "979292750de036413b0aebee1227f20d4c022bf4",
+  "result": "failure",
+  "test_seconds": 504.29,
+  "failure": "The generated browser backend returned HTTP 403 when the native sign-out form was submitted. The browser did not reach identity-provider sign-out.",
+  "failure_screenshot_viewed": true,
+  "failure_screenshot_sha256": "51bc3b685784574a443a1e73d790dbdce625aa0da5e10b072ea84e02b84dde3f",
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "passed_before_failure": [
+    "Verified dashboard HTTPS and protected-document access",
+    "Native editor layout, syntax colors, selection, keyboard input, JSON worker, and invalid JSON marker",
+    "No document content-policy violations during the editor checks",
+    "Gateway RPC, denied calls, and provider data recovery after Pod replacement",
+    "SQL isolation, unsafe privilege rejection, operator repair, and PostgreSQL restart",
+    "Controller replacement and workload namespace replacement",
+    "Viewer grants, workspace membership, filtered lists, denied writes, and both access-removal paths",
+    "Fixed namespace limits, admission denials, and live worker permissions",
+    "Dashboard reload with the retained browser session"
+  ],
+  "not_proved": [
+    "Identity-provider sign-out",
+    "Authenticated correlation of all three dashboard telemetry signals",
+    "Final Gateway deletion",
+    "Complete public Gateway workflow"
+  ],
+  "cleanup_checked_at": "2026-09-17T00:53:49.565965+00:00",
+  "cleanup_lease_empty": true,
+  "cleanup_runtime_absent": true,
+  "artifact_sha256": "30bbd5b8c2f1b285e466e1ef638895851f9e98890230172e432992597c7d2f2f",
+  "deployment_log_sha256": "39724d9b87d416ad50e73289f834148e2d7686b76e47a12c1b578513c8257144",
+  "scope": "This failed run supplies recovery and access evidence. It does not qualify the complete application."
+}
