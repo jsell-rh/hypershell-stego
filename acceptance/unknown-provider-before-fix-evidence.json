@@ -1,0 +1,15 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35211358466",
+  "source": "11db3e92e19d0e5c4143c2d604a4b690c0408b26",
+  "compiler_revision": "00573709fb15a2a54de4242aa8fdbabee325179a",
+  "checked_at": "2026-09-17T10:42:48.673217+00:00",
+  "result": "failed",
+  "failure": "The scope read reached the test deadline after partial discovery and API/provisioner restart. Cleanup completion was not proved.",
+  "seconds": 225.16,
+  "source_archive_sha256": "a5b264028b31fcfcea39a22e4dc2cdf612c9922ca3b4cc1964006062de4c9bf8",
+  "test_log_sha256": "c6f6b698568c95bd8fe024fdeda06898bd932765173cce37db718b22e72f9095",
+  "job_log_sha256": "216fab8c60c15b859ab25633d53b07cc6e4edc521c4d2296aa10cf663aeb32e8",
+  "test_provider_containers_absent": true,
+  "hosted_service_cleanup_passed": true,
+  "scope": "Real Keycloak clients without account records, including current and legacy ownership. This result does not by itself identify the cause."
+}

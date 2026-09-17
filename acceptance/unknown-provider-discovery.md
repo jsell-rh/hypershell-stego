@@ -25,3 +25,18 @@ It does not restart PostgreSQL or the separate state API fixture, and it does no
 claim complete Gateway workload or identity cleanup. Those controllers have
 separate complete-workflow gates. The result is pending. A failed or incomplete
 run cannot qualify the implementation.
+
+
+## Initial result
+
+[Run 35211358466](https://github.com/jsell-rh/hypershell-stego/actions/runs/35211358466)
+failed on source `11db3e9` with compiler `0057370`. Partial discovery and the
+API/provisioner restart completed, but the scope did not seal before the test
+deadline. The test took 225.16 seconds. Provider containers were absent after
+cleanup, and hosted service cleanup passed. The source archive and compiler pin
+match the retained result. See [the failure record](unknown-provider-before-fix-evidence.json).
+
+Source inspection found that common closure selected legacy ownership for an
+unknown current client when both ownership formats were configured. A common
+STEGO fix is under test. This initial failure alone does not prove that diagnosis
+or qualify the fix. The same application workflow must pass after adoption.
