@@ -135,8 +135,12 @@ passed six browser groups and 11 exact dependency files. The updated Hypershell
 also passed. Independent comparison verified the build tree, five common DOM
 files, 77 captured assets, repeated generation, and the published image binary.
 The Gateway console now selects this bundle and image. Its input contract and
-repeat generation passed after adoption. The resulting module still requires
-qualification and adoption by the root service.
+repeat generation passed after adoption. The [resulting module check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35165523591)
+passed at `2cdfbaf`. All 129 archived source files and 124 downloaded module
+output and dependency files matched. The image binary and published digest also
+matched. The root service now selects
+`v0.0.0-20260917001118-2cdfbaf8c571`. Root generation ran after its final dependency
+files changed, and repeated state matched.
 
 No live run may qualify this change until compiler checks, rebuilt assets,
 image and module checks, and final repeat generation pass. The editor gate must
