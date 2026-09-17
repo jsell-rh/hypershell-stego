@@ -200,8 +200,12 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 		return data
 	}
 	realmConfig := keycloakTestRealm()
+	identityDeadlineSeconds := 600
 	if os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		realmConfig["accessTokenLifespan"] = 900
+		// Keep the provider available for the full 15-minute Gateway test,
+		// including the final controller and supplied-database cleanup.
+		identityDeadlineSeconds = 900
 	}
 	realm, err := json.Marshal(realmConfig)
 	if err != nil {
@@ -223,7 +227,7 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 	apply(object{"apiVersion": "v1", "kind": "Service", "metadata": meta, "spec": object{"selector": labels, "ports": []any{object{"port": 8443}}}})
 	apply(object{"apiVersion": "v1", "kind": "Pod", "metadata": object{"name": name, "namespace": namespace, "labels": labels}, "spec": object{
 		"restartPolicy":                "Never",
-		"automountServiceAccountToken": false, "terminationGracePeriodSeconds": 20, "activeDeadlineSeconds": 600,
+		"automountServiceAccountToken": false, "terminationGracePeriodSeconds": 20, "activeDeadlineSeconds": identityDeadlineSeconds,
 		"securityContext": object{"runAsNonRoot": true, "seccompProfile": object{"type": "RuntimeDefault"}},
 		"containers": []any{object{"name": "keycloak", "image": keycloakImage,
 			"args":            []string{"start", "--db=dev-file", "--cache=local", "--http-enabled=false", "--hostname=https://" + host + ":8443", "--https-certificate-file=/certs/tls.crt", "--https-certificate-key-file=/certs/tls.key", "--https-protocols=TLSv1.3", "--import-realm"},
