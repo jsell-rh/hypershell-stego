@@ -159,6 +159,12 @@ class InstallationTests(unittest.TestCase):
         self.assertEqual(rule['ports'], [{'port': 5432, 'protocol': 'TCP'}])
         # The console deliberately lacks the Gateway Service selector label.
         self.assertNotIn('matchExpressions', peer['podSelector'])
+        template = Path(__file__).resolve().parent.parent / 'gateway-console/out/deploy/render/manifest.json.tmpl'
+        rendered = json.loads(template.read_text().replace('{{.FSGroup}}', '1000'))
+        deployment = next(item for item in rendered['items'] if item['kind'] == 'Deployment')
+        labels = deployment['spec']['template']['metadata']['labels']
+        self.assertNotIn('hypershell.redhat.io/gateway-id', labels)
+        self.assertTrue(all(labels.get(key) == value for key, value in selector['matchLabels'].items()))
 
     def test_empty_or_different_lease_cannot_install(self):
         with tempfile.TemporaryDirectory() as directory:
