@@ -38,7 +38,8 @@ logout, the API proxy, and browser telemetry. OAuth tokens stay out of browser
 JavaScript. Hypershell retains the React application and its domain behavior.
 The upstream per-Gateway dashboard uses its own generated Go browser backend.
 STEGO supplies its authentication, deployment, lifecycle, browser client, and
-telemetry. Its public workflow passed; the expanded CNPG workflow is in progress.
+telemetry. Its public workflow passed. The expanded CNPG workflow failed during
+Gateway provisioning; its cause remains under investigation.
 
 The API has no database catalog or `database_id`. Installation supplies
 co-located external PostgreSQL or CNPG. Controllers create an isolated logical
@@ -54,6 +55,7 @@ separate qualification requirement.
 | --- | --- |
 | `ca8814f`, [dashboard application checks](acceptance/dashboard-signout-full-evidence.json) | All 302 expected top-level tests passed. Four declared live tests were skipped. CNPG and Sandbox jobs were not selected. |
 | `e8bb965`, [complete public dashboard workflow](acceptance/dashboard-public-workflow-evidence.json) | Passed in 670.99 seconds. Editor behavior, access, events, restart, sign-out, recovery, durable deletion, and linked logs, metrics, and traces passed. All 412 generated-file hashes matched. Independent cleanup passed. |
+| `0d74978`, [expanded CNPG dashboard workflow](acceptance/dashboard-cnpg-readiness-evidence.json) | Failed after 325.96 seconds because Gateway provisioning did not finish. Repeated generation and independent runtime and volume cleanup passed. Dashboard, primary replacement, and final application deletion remain unproved in this run. |
 | `85706c6`, [full application](acceptance/core-window-evidence-20260916.json) | Core, rendered browser, image, and console jobs passed. The saved log has 483 passes and four named test exclusions. CNPG and Sandbox were not selected. |
 | `120711a`, [API workflow](acceptance/api-window-evidence-20260916.json) | All 51 required checks passed, with no failures or skips. All four generation snapshots matched. Independent checks confirmed resource and Lease cleanup. |
 | `d53f843`, [public Gateway workflow](acceptance/browser-window-evidence-20260916.json) | Passed in 498.58 seconds. All 269 generation hashes matched. Test and independent operator cleanup checks passed. |

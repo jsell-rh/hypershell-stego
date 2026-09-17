@@ -1,0 +1,202 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35174817413",
+  "source": "0d74978bfe9b2758b9c70ae27a73ce4e410c514a",
+  "compiler": "db75a77da272fe05bbf6fdc3a3d1e0fede298f70",
+  "result": "failure",
+  "test_seconds": 325.96,
+  "failure": "Gateway provisioning did not complete before the readiness deadline. The cause is not yet established.",
+  "generation": {
+    "files": 412,
+    "first_second_and_archived_hashes_match": true,
+    "manifest_sha256": "fc17e084b2fb7551a8d2182def4906de6a410470555ccc11ed72596f396c7053",
+    "after_test_manifest_present": false
+  },
+  "observed_worker_sql_operations": {
+    "server-identity/busy": 2,
+    "server-identity/success": 8,
+    "read/success": 150,
+    "ensure/success": 96,
+    "schema/success": 38
+  },
+  "observed_public_health_calls": 42,
+  "observed_console_credential_calls": 34,
+  "gateway_console_image": {
+    "digest": "sha256:527943f5067714b3e6dca6f252981cbf188d46185792db167e70a5fd538aa8aa",
+    "archived": true,
+    "user": "65532:65532",
+    "entrypoint": [
+      "/service"
+    ]
+  },
+  "cnpg_admission": [
+    {
+      "name": "operator-job-accepted",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": true
+    },
+    {
+      "name": "operator-job-missing-deadline",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-job-suspended",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-job-delayed-cleanup",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-accepted",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": true
+    },
+    {
+      "name": "database-job-missing-deadline",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-suspended",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-job-delayed-cleanup",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-command",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-environment",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-probe-command",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "database-lifetime-network-label",
+      "policy": "stego-cnpg-database-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-command",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-scope",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-environment-source",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-lifecycle",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-probe-command",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "operator-executable-mount",
+      "policy": "stego-cnpg-operator-ci.bounded-jobs",
+      "allowed": false
+    },
+    {
+      "name": "cluster-accepted",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": true
+    },
+    {
+      "name": "cluster-instance-count",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    },
+    {
+      "name": "cluster-storage-size",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    },
+    {
+      "name": "cluster-missing-owner",
+      "policy": "stego-cnpg-database-ci.bounded-cluster",
+      "allowed": false
+    }
+  ],
+  "journal_contains_only_resource_identity": true,
+  "scheduling_intervention": {
+    "checked_at": "2026-09-17T02:38:08.516342+00:00",
+    "run": 35174817413,
+    "cluster_uid": "1c1c3d1c-1655-42b2-b93b-edcb0495fb41",
+    "primary": "gateway-database-1",
+    "replica_uid": "888a612e-e3e3-4978-bc58-7db0b9de2678",
+    "replica_node": "ip-10-0-1-214.ec2.internal",
+    "application_pod_uid": "9dd37a12-f666-48b8-ad76-670205816b37",
+    "reason": "The secondary reserves 100 millicores on the only node with enough memory for the application test Pod. Reschedule this owned secondary to let the existing test Pod run.",
+    "resource_limits_changed": false,
+    "unrelated_workloads_changed": false,
+    "delete_accepted": true,
+    "verified_at": "2026-09-17T02:39:38.210504+00:00",
+    "replacement_uid": "8f3b567d-b76d-45cc-a88b-3890746a3fd1",
+    "replacement_node": "ip-10-0-1-187.ec2.internal",
+    "application_node": "ip-10-0-1-214.ec2.internal",
+    "same_application_pod_running": true,
+    "ready_instances": 2,
+    "primary_preserved": true,
+    "claim_and_volume_identities_preserved": true
+  },
+  "cleanup": {
+    "checked_at": "2026-09-17T02:53:42.668996+00:00",
+    "context": "default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell",
+    "namespace": "stego-service-ci",
+    "allocator": "5305aa89c5f40a73316e60bd033ec8ab",
+    "runtime": [],
+    "fixture_resources": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "cnpg_children": [],
+    "private_fixture": [],
+    "volumes_checked": [
+      {
+        "name": "pvc-8a436552-2f1b-4658-bb1d-9f1f47ae7bd3",
+        "uid": "0394bda8-d2ed-4c49-bf27-b451b145ecf8"
+      },
+      {
+        "name": "pvc-dc777fbb-0dc8-442a-8767-6d7449804c26",
+        "uid": "a5e02074-3ca6-490f-9762-7b159c42b584"
+      }
+    ],
+    "lease": "",
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "installation_config_uid": "de0b2ff3-986f-44bf-b792-d730a834ca6b"
+  },
+  "artifact_sha256": "d411f9a109cc41f972803dc4826d1645104fc5ad11e3ca2f0eef7b49d4625993",
+  "deployment_log_sha256": "a76ec767d976a1c30dd5fd76c76555b05598905065ef9b64f594a0ce0a051c7b",
+  "not_proved": [
+    "Complete CNPG dashboard workflow",
+    "CNPG primary replacement in this run",
+    "Full telemetry correlation and final application deletion in this run",
+    "Unattended CI scheduling",
+    "Live Kata isolation",
+    "Production capacity and remaining enterprise requirements"
+  ]
+}
