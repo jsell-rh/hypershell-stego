@@ -33,3 +33,16 @@ three generation-state files, the CLI compiler identity, and the provisioner
 Deployment template changed. Parsed old and new manifests differ only in that
 Deployment's strategy. Permissions, network rules, probes, limits, and other
 resources are identical. See the [generation record](provisioner-rollout-generation-evidence.json).
+
+The generated Gateway console check passed at `4897fc1` in
+[run 35216103989](https://github.com/jsell-rh/hypershell-stego/actions/runs/35216103989).
+Independent checks matched 129 source files, repeated generation, dependencies,
+the image executable, and the pulled image digest. The installer record matches
+the published compiler. The executable is identical to the earlier qualified
+Gateway console. See the [module record](provisioner-rollout-module-evidence.json).
+
+The first module and journal jobs at input-only source `bf7b8da` failed their
+committed-generation checks before the generated files were applied. Their logs
+show the generation-state differences. Those runs are not passes. The module
+repeat above uses the committed generated source; the journal repeat and full
+application suite remain in progress.
