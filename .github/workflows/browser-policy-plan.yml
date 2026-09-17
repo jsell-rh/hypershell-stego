@@ -1,0 +1,87 @@
+name: Render browser test installation policy
+
+on:
+  workflow_dispatch:
+    inputs:
+      installation_inputs:
+        description: Public file group and Kubernetes endpoint records from the saved test installation
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  plan:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GOMAXPROCS: '1'
+      GOMEMLIMIT: 256MiB
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check the render boundary
+        run: |
+          python3 -B scripts/test_browser_cluster_installation.py
+          python3 -B scripts/test_browser_inspection.py
+      - name: Prepare the frozen inspection source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
+          python3 -B scripts/prepare-browser-inspection.py \
+            --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" \
+            --destination "$RUNNER_TEMP/browser-source"
+      - name: Render the public installation inputs without cluster access
+        env:
+          INSTALLATION_INPUTS: ${{ inputs.installation_inputs }}
+        run: |
+          python3 -B - <<'PY'
+          import json, os
+          from pathlib import Path
+          raw = os.environ['INSTALLATION_INPUTS']
+          if len(raw.encode()) > 65536:
+              raise ValueError('The public installation input exceeds its limit')
+          value = json.loads(raw)
+          if set(value) != {'fs_group', 'kubernetes-endpoints.json', 'kubernetes-service.json'}:
+              raise ValueError('The public installation input fields differ')
+          group = value['fs_group']
+          if type(group) is not int or not 0 < group < 2**31:
+              raise ValueError('The file group is invalid')
+          root = Path(os.environ['RUNNER_TEMP']) / 'policy-plan'
+          root.mkdir(mode=0o700)
+          for name in ('kubernetes-endpoints.json', 'kubernetes-service.json'):
+              if not isinstance(value[name], dict):
+                  raise ValueError('The Kubernetes endpoint record is invalid')
+              (root / name).write_text(json.dumps(value[name]) + '\n')
+          (root / 'fs-group').write_text(str(group) + '\n')
+          PY
+          python3 -B "$RUNNER_TEMP/browser-source/scripts/prepare-browser-cluster.py" \
+            --context plan-only --namespace stego-service-ci \
+            --fs-group "$(cat "$RUNNER_TEMP/policy-plan/fs-group")" \
+            --results "$RUNNER_TEMP/policy-plan" --workload --render-only
+          git rev-parse HEAD > "$RUNNER_TEMP/policy-plan/source-commit"
+          cp "$RUNNER_TEMP/browser-source/acceptance/browser-inspection-source.json" "$RUNNER_TEMP/policy-plan/"
+          tar -C "$RUNNER_TEMP/browser-source" -cf "$RUNNER_TEMP/policy-plan/inspection-source.tar" \
+            service.yaml .stego/state.yaml out/deploy out/kubernetes out/postgres
+          git diff --exit-code
+      - name: Save the policy plan
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: browser-policy-plan-${{ github.run_id }}-${{ github.run_attempt }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/policy-plan
+            ${{ runner.temp }}/compiler-setup/installation.json
+            ${{ runner.temp }}/compiler-setup/verified/*.json
+            ${{ runner.temp }}/compiler-setup/verified/*.jsonl
+            ${{ runner.temp }}/compiler-setup/verified/SHA256SUMS
