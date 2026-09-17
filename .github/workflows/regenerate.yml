@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - .stego/compiler-revision
+      - .github/workflows/regenerate.yml
 
 permissions:
   contents: read
@@ -22,7 +23,6 @@ jobs:
       GOMEMLIMIT: 768MiB
       GOFLAGS: -p=2
       GOWORK: 'off'
-      STEGO_GENERATION_ROOT: ${{ runner.temp }}/generation
     steps:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
@@ -38,6 +38,7 @@ jobs:
       - name: Verify the compiler and regenerate all modules
         env:
           GH_TOKEN: ${{ github.token }}
+          STEGO_GENERATION_ROOT: ${{ runner.temp }}/generation
         run: scripts/generate.sh
       - name: Save generated files for review
         run: |
