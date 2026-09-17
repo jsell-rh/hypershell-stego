@@ -23,6 +23,7 @@ archetypes to select common components. Keep Gateway policy in application code.
 
 STEGO also permits an explicit `vendor` path for a pinned Git registry. That
 checkout must retain its Git metadata and match the selected commit. This
-option supplies registry inputs only. Hypershell still fetches and builds its
-pinned compiler, so registry vendoring alone does not provide an offline build.
+option supplies registry inputs only. Hypershell uses the signed compiler package through the common STEGO installer.
+Registry vendoring alone does not provide an offline build. See the
+[compiler installation contract](../acceptance/verified-generation.md).
 See the [STEGO registry contract](https://github.com/jsell-rh/stego/blob/00573709fb15a2a54de4242aa8fdbabee325179a/specs/registry-composition.md).

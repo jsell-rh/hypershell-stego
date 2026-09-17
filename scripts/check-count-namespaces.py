@@ -9,6 +9,7 @@ import argparse
 import hashlib
 import importlib.util
 import json
+import os
 from pathlib import Path
 import secrets
 import subprocess
@@ -27,7 +28,11 @@ def main():
     spec = importlib.util.spec_from_file_location("stego_live_lock", root / "scripts/jshell_live_lock.py")
     live_lock = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(live_lock)
-    result = Path(tempfile.mkdtemp(prefix="hypershell-count-live-"))
+    record_root = Path(os.environ.get("XDG_STATE_HOME", str(Path.home() / ".local/state"))) / "stego/count-tests"
+    if not record_root.is_absolute():
+        raise RuntimeError("Require an absolute persistent state directory")
+    record_root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    result = Path(tempfile.mkdtemp(prefix="run-", dir=record_root))
     namespace = "stego-count-live-" + uuid.uuid4().hex[:8]
     marker = hashlib.sha256((namespace + ".hypershell-namespace-allocation").encode()).hexdigest()[:32]
     (result / "namespace").write_text(namespace + "\n")
@@ -49,6 +54,14 @@ def main():
     required.add("scripts/jshell_live_lock.py")
     if not required.issubset(names):
         raise RuntimeError("Track the live test and runner before freezing source")
+    compiler_setup = result / "compiler-setup"
+    prepare = ["bash", str(root / "scripts/prepare-compiler.sh"), str(compiler_setup)]
+    if os.environ.get("STEGO_COMPILER_PACKAGE"):
+        prepare.append(os.environ["STEGO_COMPILER_PACKAGE"])
+    subprocess.run(prepare, cwd=root, check=True, timeout=900)
+    with tarfile.open(result / "compiler.tar", "w") as compiler_archive:
+        for compiler_file in ["stego-linux-amd64", "build.json", "SHA256SUMS", "provenance.jsonl", "verified.json"]:
+            compiler_archive.add(compiler_setup / "verified" / compiler_file, arcname=compiler_file, recursive=False)
     hashes = {}
     with tarfile.open(result / "source.tar", "w") as archive:
         for name in sorted(set(names)):
@@ -64,11 +77,11 @@ while [ ! -f /work/start ]; do sleep 1; done
 cd /work/application
 (
 set -e
-bash scripts/generate.sh
+STEGO_VERIFIED_COMPILER=/work/compiler/stego-linux-amd64 bash scripts/generate.sh
 find out console/out -type f | sort > /work/generated-files
 printf '%s\n' .stego/state.yaml console/.stego/state.yaml go.mod go.sum console/go.mod console/go.sum >> /work/generated-files
 xargs sha256sum < /work/generated-files > /work/first.sha256
-bash scripts/generate.sh
+STEGO_VERIFIED_COMPILER=/work/compiler/stego-linux-amd64 bash scripts/generate.sh
 xargs sha256sum < /work/generated-files > /work/second.sha256
 cmp /work/first.sha256 /work/second.sha256
 tar cf /work/generated.tar out console/out .stego/state.yaml console/.stego/state.yaml go.mod go.sum console/go.mod console/go.sum
@@ -139,6 +152,7 @@ exit "$code"
             time.sleep(1)
         oc("wait", "--for=condition=Ready", "pod/" + pod, "--timeout=120s", timeout=135)
         oc("exec", "-i", pod, "--", "tar", "xf", "-", "-C", "/work/application", data=(result / "source.tar").read_bytes(), timeout=120)
+        oc("exec", "-i", pod, "--", "sh", "-c", "mkdir -m 700 /work/compiler; tar xf - -C /work/compiler", data=(result / "compiler.tar").read_bytes(), timeout=120)
         oc("exec", pod, "--", "touch", "/work/start")
 
         def exists(name):

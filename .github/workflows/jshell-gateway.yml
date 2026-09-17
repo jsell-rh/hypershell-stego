@@ -47,6 +47,8 @@ jobs:
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
       - name: Run the Gateway API gate
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           python3 scripts/check-jshell-gateway.py \
             --kubeconfig="$RUNNER_TEMP/jshell.kubeconfig" --context=jshell-ci \
@@ -65,5 +67,9 @@ jobs:
             ${{ runner.temp }}/gateway-api/*.log
             ${{ runner.temp }}/gateway-api/*.sha256
             ${{ runner.temp }}/gateway-api/generated.tar
+            ${{ runner.temp }}/gateway-api/compiler-setup/installation.json
+            ${{ runner.temp }}/gateway-api/compiler-setup/verified/*.json
+            ${{ runner.temp }}/gateway-api/compiler-setup/verified/*.jsonl
+            ${{ runner.temp }}/gateway-api/compiler-setup/verified/SHA256SUMS
           retention-days: 7
           if-no-files-found: error

@@ -43,18 +43,15 @@ jobs:
           python3 scripts/test_public_gateway_fixture.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go
       - name: Prepare the frozen inspection source
-        timeout-minutes: 5
+        timeout-minutes: 15
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          revision=$(cat .stego/compiler-revision)
-          [[ $revision =~ ^[0-9a-f]{40}$ ]]
-          git init -q "$RUNNER_TEMP/compiler"
-          git -C "$RUNNER_TEMP/compiler" remote add origin https://github.com/jsell-rh/stego.git
-          git -C "$RUNNER_TEMP/compiler" fetch -q --depth=1 origin "$revision"
-          git -C "$RUNNER_TEMP/compiler" -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
-          test "$(git -C "$RUNNER_TEMP/compiler" rev-parse HEAD)" = "$revision"
-          (cd "$RUNNER_TEMP/compiler"; GOWORK=off go build -mod=readonly -trimpath -buildvcs=true -o "$RUNNER_TEMP/stego" ./cmd/stego)
+          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
+          echo "STEGO_COMPILER_PACKAGE=$RUNNER_TEMP/compiler-setup/verified" >> "$GITHUB_ENV"
+          unset GH_TOKEN GITHUB_TOKEN
           # Match the operator's fixed network profile for both database modes.
-          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/stego" --destination "$RUNNER_TEMP/browser-source" --cnpg-database-namespace stego-cnpg-database-ci
+          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source" --cnpg-database-namespace stego-cnpg-database-ci
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
@@ -114,6 +111,11 @@ jobs:
           if-no-files-found: error
           path: |
             ${{ runner.temp }}/gateway-browser/cleanup.json
+            ${{ runner.temp }}/gateway-browser/compiler-transfer.json
+            ${{ runner.temp }}/gateway-browser/compiler-setup/installation.json
+            ${{ runner.temp }}/gateway-browser/compiler-setup/verified/*.json
+            ${{ runner.temp }}/gateway-browser/compiler-setup/verified/*.jsonl
+            ${{ runner.temp }}/gateway-browser/compiler-setup/verified/SHA256SUMS
             ${{ runner.temp }}/gateway-browser/allocation-*.json
             ${{ runner.temp }}/gateway-browser/installation.json
             ${{ runner.temp }}/gateway-browser/cluster-installation.json

@@ -3,18 +3,15 @@
 set -eu
 trap '[ ! -e /work/registry-auth.json ] || unlink /work/registry-auth.json' EXIT
 cd /work/application
-revision=$(cat .stego/compiler-revision)
-git init -q /work/compiler
-git -C /work/compiler remote add origin https://github.com/jsell-rh/stego.git
-git -C /work/compiler fetch -q --depth=1 origin "$revision"
-git -C /work/compiler -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
-test "$(git -C /work/compiler rev-parse HEAD)" = "$revision"
-(cd /work/compiler && go build -mod=readonly -trimpath -buildvcs=true -o /work/stego ./cmd/stego)
+# The host authenticated and compared these bytes before it started this Pod.
+(cd /work/compiler && sha256sum --check SHA256SUMS)
+compiler=/work/compiler/stego-linux-amd64
+
 for pass in first second; do
- /work/stego apply
- /work/stego deps
- /work/stego apply
- /work/stego drift
+ "$compiler" apply
+ "$compiler" deps
+ "$compiler" apply
+ "$compiler" drift
  find out -type f -print > /work/generated-files
  printf '%s\n' .stego/state.yaml go.mod go.sum >> /work/generated-files
  sort -o /work/generated-files /work/generated-files
@@ -40,4 +37,5 @@ export STEGO_TEST_OC=/work/oc
 go test -v -race -mod=readonly -count=1 -timeout=8m -run '^TestGeneratedKubernetesServiceGatewayWorkflow$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
+(cd /work/compiler && sha256sum --check SHA256SUMS)
 tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum

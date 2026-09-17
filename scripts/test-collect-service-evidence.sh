@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
-  mkdir -p "$test_work/browser-artifacts" "$results"
-  for file in deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+  mkdir -p "$test_work/browser-artifacts" "$test_work/compiler" "$results"
+  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
     printf 'record\n' > "$test_work/$file"
   done
   result=0
@@ -60,6 +60,8 @@ for scenario in service browser workload public configured-public log-failure ar
     workload) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
     configured-public) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; STEGO_TEST_GATEWAY_PUBLIC_CONFIG=configured.json ;;
     log-failure|archive-failure|truncated) expected=1 ;;
+    missing-compiler-transfer) expected=1; rm "$test_work/compiler-transfer.json" ;;
+    missing-compiler-signatures) expected=1; rm "$test_work/compiler/provenance.jsonl" ;;
     missing-image) expected=1; rm "$test_work/image.json" ;;
     missing-gateway-console-image) expected=1; rm "$test_work/gateway-console-image.json" ;;
     missing-regeneration) expected=1; rm "$test_work/after-tests.sha256" ;;

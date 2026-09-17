@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+compiler_token=${GH_TOKEN:-${GITHUB_TOKEN:-}}
+unset GH_TOKEN GITHUB_TOKEN
 
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$project"
@@ -22,7 +24,8 @@ export STEGO_REQUIRE_POSTGRES=1
 export STEGO_REQUIRE_KEYCLOAK=1
 export GOWORK=off
 go mod verify
-scripts/generate.sh --check
+GH_TOKEN="$compiler_token" scripts/generate.sh --check
+unset compiler_token
 case "$suite" in
   core)
     # CI runs the excluded workflow in its separate required browser job.

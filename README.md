@@ -16,6 +16,8 @@ There are no local copies of common component declarations. Application output
 paths are set in `service.yaml`. See the [registry model](registry/README.md)
 and the [common browser composition record](acceptance/common-browser-composition.md).
 The generated runtime stays in Git for review and repeatable builds.
+Generation uses the [signed compiler package](acceptance/verified-generation.md)
+through the common STEGO installer. All three modules use the same checked bytes.
 
 ## Current application behavior
 

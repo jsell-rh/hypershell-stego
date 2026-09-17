@@ -16,7 +16,10 @@ if [[ -n ${STEGO_TEST_RESULTS:-} ]]; then
   results=$STEGO_TEST_RESULTS
   mkdir -m 700 -- "$results"
 else
-  results=$(mktemp -d "${TMPDIR:-/tmp}/stego-service-results.XXXXXXXX")
+  record_root=${XDG_STATE_HOME:-$HOME/.local/state}/stego/service-tests
+  [[ $record_root == /* ]]
+  mkdir -p -- "$record_root"
+  results=$(mktemp -d "$record_root/run.XXXXXXXX")
 fi
 chmod 700 "$results"
 oc_cmd=(oc --context "$STEGO_TEST_CONTEXT" --request-timeout=30s)
@@ -40,6 +43,11 @@ if [[ $preinstalled == 1 ]]; then
   # again under the Lease before any Role or workload change.
   python3 scripts/browser-ci-installation.py inspect --context "$STEGO_TEST_CONTEXT" --results "$results"
 fi
+# Verify the compiler before the test takes the Lease or changes resources.
+prepare_args=("$results/compiler-setup")
+if [[ -n ${STEGO_COMPILER_PACKAGE:-} ]]; then prepare_args+=("$STEGO_COMPILER_PACKAGE"); fi
+bash scripts/prepare-compiler.sh "${prepare_args[@]}"
+unset GH_TOKEN GITHUB_TOKEN
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"
 held_lease=${STEGO_TEST_HELD_LEASE_HOLDER:-}
@@ -257,6 +265,38 @@ test -s "$results/registry-ca.crt"
 tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd console gateway-console
 sha256sum "$results/application.tar" > "$results/application.sha256"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'mkdir -p /work/application; tar xf - -C /work/application' < "$results/application.tar"
+# The compiler was authenticated on the host. Transfer it through the verified
+# Kubernetes connection, then compare the actual Pod bytes before execution.
+tar -cf "$results/compiler.tar" -C "$results/compiler-setup/verified" \
+  stego-linux-amd64 build.json SHA256SUMS provenance.jsonl verified.json
+"${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c \
+  'mkdir -m 700 /work/compiler; tar xf - -C /work/compiler' < "$results/compiler.tar"
+"${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sha256sum /work/compiler/stego-linux-amd64 \
+  > "$results/compiler-pod.sha256"
+"${oc_cmd[@]}" -n "$namespace" get pod "$pod" -o json | python3 -c \
+  'import json,sys; p=json.load(sys.stdin); print(json.dumps({"metadata":{"uid":p["metadata"]["uid"],"ownerReferences":[{k:v[k] for k in ["kind","name","uid"]} for v in p["metadata"].get("ownerReferences",[])]}}))' \
+  > "$results/compiler-pod.json"
+"${oc_cmd[@]}" -n "$namespace" get job service-check -o jsonpath='{.metadata.uid}' > "$results/compiler-job-uid"
+python3 - "$results" "$revision" <<'COMPILER_TRANSFER'
+import hashlib, json, sys
+from pathlib import Path
+root, revision = Path(sys.argv[1]), sys.argv[2]
+record = json.loads((root / 'compiler-setup/verified/verified.json').read_text())
+digest = hashlib.sha256((root / 'compiler-setup/verified/stego-linux-amd64').read_bytes()).hexdigest()
+if record['source_revision'] != revision or record['artifact']['sha256'] != digest:
+    raise SystemExit('The authenticated compiler changed before transfer')
+if (root / 'compiler-pod.sha256').read_text() != digest + '  /work/compiler/stego-linux-amd64\n':
+    raise SystemExit('The Pod compiler differs from the authenticated compiler')
+pod = json.loads((root / 'compiler-pod.json').read_text())
+owner = [v for v in pod['metadata']['ownerReferences'] if v['kind'] == 'Job' and v['name'] == 'service-check']
+if len(owner) != 1 or owner[0]['uid'] != (root / 'compiler-job-uid').read_text():
+    raise SystemExit('The compiler transfer Pod has no matching test Job owner')
+result = {'source_revision': revision, 'compiler_sha256': digest, 'pod_uid': pod['metadata']['uid'],
+          'job_uid': owner[0]['uid'], 'pod_bytes_match_authenticated_compiler': True}
+(root / 'compiler-transfer.json').write_text(json.dumps(result, indent=2) + '\n')
+COMPILER_TRANSFER
+"${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c \
+  'cat > /work/compiler-transfer.json' < "$results/compiler-transfer.json"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/oc; chmod 755 /work/oc' < "$(command -v oc)"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/registry-ca.crt' < "$results/registry-ca.crt"
 printf '%s\n' "$group" | "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/fs-group'

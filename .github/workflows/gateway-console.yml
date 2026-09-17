@@ -7,6 +7,11 @@ on:
       - .github/workflows/gateway-console.yml
       - gateway-console/**
       - scripts/generate-gateway-console.sh
+      - scripts/generate.sh
+      - scripts/prepare-compiler.sh
+      - .stego/tooling-revision
+      - .stego/compiler-revision
+      - .stego/compiler-sha256
       - scripts/check-gateway-console-inputs.py
       - scripts/check-dashboard-deployment.py
 
@@ -39,8 +44,11 @@ jobs:
           go-version: '1.26.8'
           cache: true
           cache-dependency-path: gateway-console/go.sum
+      - name: Check compiler selection
+        run: timeout 15s python3 -B scripts/test_verified_generation.py
       - name: Verify exact inputs and committed generation
         env:
+          GH_TOKEN: ${{ github.token }}
           STEGO_GENERATION_ROOT: ${{ runner.temp }}/gateway-console-generation
         run: scripts/generate-gateway-console.sh --check
       - name: Check dependencies and build both entry points
@@ -131,3 +139,8 @@ jobs:
             ${{ runner.temp }}/gateway-console/*
             ${{ runner.temp }}/gateway-console-generation/*/generation.log
             ${{ runner.temp }}/gateway-console-generation/*/first-state.yaml
+            ${{ runner.temp }}/gateway-console-generation/*/compiler-setup/installation.json
+            ${{ runner.temp }}/gateway-console-generation/*/compiler-setup/*-revision
+            ${{ runner.temp }}/gateway-console-generation/*/compiler-setup/verified/*.json
+            ${{ runner.temp }}/gateway-console-generation/*/compiler-setup/verified/*.jsonl
+            ${{ runner.temp }}/gateway-console-generation/*/compiler-setup/verified/SHA256SUMS

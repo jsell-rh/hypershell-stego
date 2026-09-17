@@ -5,18 +5,12 @@ trap '[ ! -e /work/registry-auth.json ] || unlink /work/registry-auth.json' EXIT
 cd /work/application
 # Keep the compiler registry cache on the writable test volume.
 export XDG_CACHE_HOME=/work/cache
-revision=$(cat .stego/compiler-revision)
-git init -q /work/compiler
-git -C /work/compiler remote add origin https://github.com/jsell-rh/stego.git
-git -C /work/compiler fetch -q --depth=1 origin "$revision"
-git -C /work/compiler -c advice.detachedHead=false checkout -q --detach FETCH_HEAD
-test "$(git -C /work/compiler rev-parse HEAD)" = "$revision"
-(cd /work/compiler && go build -mod=readonly -trimpath -buildvcs=true -o /work/stego ./cmd/stego)
-STEGO_GENERATION_ROOT=/work/generation bash scripts/generate-gateway-console.sh
+# The host authenticated and compared these bytes before it started this Pod.
+(cd /work/compiler && sha256sum --check SHA256SUMS)
+compiler=/work/compiler/stego-linux-amd64
+
 for pass in first second; do
- for target in . console; do
-  (cd "$target"; /work/stego apply; /work/stego deps; /work/stego apply; /work/stego drift)
- done
+ STEGO_VERIFIED_COMPILER="$compiler" STEGO_GENERATION_ROOT=/work/generation bash scripts/generate.sh
  find out console/out gateway-console/out -type f -print > /work/generated-files
  printf '%s\n' .stego/state.yaml go.mod go.sum console/.stego/state.yaml console/go.mod console/go.sum gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum >> /work/generated-files
  sort -o /work/generated-files /work/generated-files
@@ -64,4 +58,5 @@ export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 go test -v -race -mod=readonly -count=1 -timeout=15m -run '^TestGeneratedKubernetesBrowserGatewayWorkflow$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
+(cd /work/compiler && sha256sum --check SHA256SUMS)
 tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum gateway-console/out gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum

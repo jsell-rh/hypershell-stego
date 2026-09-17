@@ -111,6 +111,14 @@ def main():
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=root).decode().split("\0")
     if "scripts/check-jshell-gateway.py" not in names:
         raise RuntimeError("Track the runner before freezing source")
+    compiler_setup = result / "compiler-setup"
+    prepare = ["bash", str(root / "scripts/prepare-compiler.sh"), str(compiler_setup)]
+    if os.environ.get("STEGO_COMPILER_PACKAGE"):
+        prepare.append(os.environ["STEGO_COMPILER_PACKAGE"])
+    subprocess.run(prepare, cwd=root, check=True, timeout=900)
+    with tarfile.open(result / "compiler.tar", "w") as compiler_archive:
+        for compiler_file in ["stego-linux-amd64", "build.json", "SHA256SUMS", "provenance.jsonl", "verified.json"]:
+            compiler_archive.add(compiler_setup / "verified" / compiler_file, arcname=compiler_file, recursive=False)
     hashes = {}
     with tarfile.open(result / "source.tar", "w") as archive:
         for path in sorted(set(names)):
@@ -143,10 +151,10 @@ snapshot committed
 go mod verify
 STEGO_REQUIRE_GATEWAY_SQL=1 go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload -run '^TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer$' > /work/tests.jsonl
 go test -json -race -mod=readonly -count=1 -timeout=3m ./internal/cleanupmetrics >> /work/tests.jsonl
-bash scripts/generate.sh
+STEGO_VERIFIED_COMPILER=/work/compiler/stego-linux-amd64 bash scripts/generate.sh
 snapshot first
 cmp /work/committed.sha256 /work/first.sha256
-bash scripts/generate.sh
+STEGO_VERIFIED_COMPILER=/work/compiler/stego-linux-amd64 bash scripts/generate.sh
 snapshot second
 cmp /work/first.sha256 /work/second.sha256
 tar cf /work/generated.tar -T /work/generated-files
@@ -219,6 +227,7 @@ exit "$code"
             time.sleep(2)
         oc("wait", "--for=condition=Ready", "pod/" + pod_name, "--timeout=150s", timeout=170)
         oc("exec", "-i", pod_name, "-c", "test", "--", "tar", "xf", "-", "-C", "/work/application", data=(result / "source.tar").read_bytes(), timeout=120)
+        oc("exec", "-i", pod_name, "-c", "test", "--", "sh", "-c", "mkdir -m 700 /work/compiler; tar xf - -C /work/compiler", data=(result / "compiler.tar").read_bytes(), timeout=120)
         # The start write can succeed even if its response is lost.
         started = True
         oc("exec", pod_name, "-c", "test", "--", "touch", "/work/start")

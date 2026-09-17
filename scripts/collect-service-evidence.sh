@@ -18,7 +18,7 @@ collect_service_evidence() {
       fi
     }
     if [ "$1" = 0 ]; then
-      for file in deployment.exit image.json first.sha256 second.sha256 after-tests.sha256 generated.tar; do
+      for file in deployment.exit image.json first.sha256 second.sha256 after-tests.sha256 generated.tar compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS; do
         require_evidence "$file"
       done
       if [ "$2" = 1 ]; then
@@ -45,7 +45,7 @@ collect_service_evidence() {
       fi
     fi
     set --
-    for file in deployment.exit image.json console-image.json gateway-console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts network-endpoint-change.request network-endpoint-change.ack; do
+    for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit image.json console-image.json gateway-console-image.json worker-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts network-endpoint-change.request network-endpoint-change.ack; do
       if [ -e "$file" ]; then set -- "$@" "$file"; fi
     done
     # Keep available evidence even when a required file is absent.

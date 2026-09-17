@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
+compiler_token=${GH_TOKEN:-${GITHUB_TOKEN:-}}
+unset GH_TOKEN GITHUB_TOKEN
 
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 cd "$project"
@@ -14,4 +16,5 @@ for package in hypershell-domain-probes hypershell-gateway-management-ui hypersh
 done
 pnpm --filter @openshift-online/hypershell-web-console build
 scripts/check-console-assets.sh
-scripts/generate.sh --check
+GH_TOKEN="$compiler_token" scripts/generate.sh --check
+unset compiler_token
