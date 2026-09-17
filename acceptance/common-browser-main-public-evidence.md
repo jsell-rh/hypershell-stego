@@ -50,6 +50,50 @@ credential had less than the required 45 minutes left. Independent cleanup at
 holder. Its log SHA-256 is
 `49a492a465cf0554ee76ac403a1eb72ab01f9e72db3e3be4d36c313294b889f1`.
 The restricted credential was refreshed. Only the failed job was selected for
-attempt 2 at the same source; its result is pending. The Sandbox job is skipped under the user's deferral.
+attempt 2 at the same source. It passed, as recorded below. The Sandbox job is skipped under the user's deferral.
 These results do not complete the enterprise goal or establish production
 capacity, full application parity, or live Kata isolation.
+
+
+## Main CNPG result
+
+Attempt 2 of [run 35201603844](https://github.com/jsell-rh/hypershell-stego/actions/runs/35201603844)
+passed all 11 required tests at source
+`881379731d3b78be8344637942b6160e0e138c53`. The complete Gateway browser workflow
+took 733.57 seconds. Independent verification matched all 1,369 source files
+and all 415 generated-file hashes before and after the test. The original
+application Job UID was `140351cf-52bf-4c69-bf3c-1ea20b820756`.
+
+Primary replacement completed in 67.23 seconds and preserved SQL object IDs,
+Gateway keys, credentials, provider data, and installation data. Controllers
+recovered a lost workload namespace. Access checks denied unsafe SQL privileges
+and kept viewer lists filtered. Both Gateways denied account creation while the
+provisioner was unavailable and recovered after controller restart without
+account write retries. The live recovery record captured at 09:45:41 UTC
+matches the final archive. Browser and REST deletion removed Gateway accounts,
+SQL state, namespaces, roles, and keys while the other Gateway and supplied
+database remained available as required.
+
+Six browser instances supplied all 48 matching startup log/span pairs, with
+metrics and no failed pairs. The console binary matched the qualified module.
+All three saved screenshots were viewed: the active workspace, invalid JSON
+with disabled submission, and editor selection. No policy was submitted.
+
+The application initially waited for cluster capacity. It then scheduled on a
+new node without operator intervention. A prepared secondary replacement action
+stopped at its precondition before any DELETE. Original Pod and volume identity
+records confirm that no manual rescheduling occurred. This result does not
+measure cluster capacity or determine why the new node joined.
+
+Independent cleanup at `2026-09-17T09:49:31Z` found no test runtime, fixtures,
+allocations, or API Jobs. Both original database volumes were absent:
+`pvc-8c36ad4c-71b9-47d7-93ea-f3e9c91d4bab` and
+`pvc-32e5f480-e5b9-465d-b9f7-93398839b2f9`. The shared Lease had no holder.
+The evidence archive SHA-256 is
+`7449b1c3b5bf07e7a4cd8e601da345e89b902e43a39e4efc0940ec4d3783c380`.
+The startup signal record SHA-256 is
+`d62f24ef47e98b090b67175ccf081d8192f27b9623e38bf5923f98e7c93d45de`.
+
+This completes the current main common-browser workflow checks. It does not
+qualify the later signed compiler transfer change, establish production
+capacity, or complete the enterprise goal. Live Kata isolation remains deferred.
