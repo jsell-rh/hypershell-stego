@@ -44,7 +44,12 @@ this suite and have separate test gates. No failed event was found. The
 acceptance package took 1,557.094 seconds. The saved core log SHA-256 is
 `4e178feb9d37d26b021115e8567f4232e459a56768eb4d211d8a8c6197f916a2`.
 
-The browser, console, and service-image jobs also passed. The CNPG job in that
-run is still active. The Sandbox job is skipped under the user's deferral.
+The browser, console, and service-image jobs also passed. The first CNPG attempt stopped before resource creation because the saved CI
+credential had less than the required 45 minutes left. Independent cleanup at
+`2026-09-17T09:20:06Z` found no runtime, fixtures, allocations, volumes, or Lease
+holder. Its log SHA-256 is
+`49a492a465cf0554ee76ac403a1eb72ab01f9e72db3e3be4d36c313294b889f1`.
+The restricted credential was refreshed. Only the failed job was selected for
+attempt 2 at the same source; its result is pending. The Sandbox job is skipped under the user's deferral.
 These results do not complete the enterprise goal or establish production
 capacity, full application parity, or live Kata isolation.
