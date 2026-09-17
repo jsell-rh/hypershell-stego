@@ -65,7 +65,7 @@ class EndpointBoundary(unittest.TestCase):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 fixture.address(value)
 
-    def test_mode_requires_the_exact_declaration_and_separate_cnpg(self):
+    def test_mode_requires_the_exact_declaration_and_rejects_retired_cnpg(self):
         for record in [{'network_endpoint_change': {'endpoint': 'kubernetes'}},
                        {'network_endpoint_change': True},
                        {'network_endpoint_change': {'endpoint': 'network-probe'}, 'cnpg_installation': {'cluster': 'gateway-database'}}]:

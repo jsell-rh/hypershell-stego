@@ -50,7 +50,7 @@ jobs:
           bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
           echo "STEGO_COMPILER_PACKAGE=$RUNNER_TEMP/compiler-setup/verified" >> "$GITHUB_ENV"
           unset GH_TOKEN GITHUB_TOKEN
-          # Match the operator's fixed network profile for both database modes.
+          # Use the operator's fixed network profile for supplied PostgreSQL.
           python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source"
       - name: Install the pinned OpenShift client
         timeout-minutes: 3

@@ -255,9 +255,9 @@ rejects `database_id`, including empty and null values. See the
 
 The earlier [database workload workflow](database-workflow.md) provisioned a
 PostgreSQL server from a Gateway creation event. That controller is retired.
-Installation now supplies RDS or CNPG. The Gateway controller creates one
+The operator now supplies PostgreSQL. The Gateway controller creates one
 logical database and restricted login per Gateway through STEGO's common SQL
-runtime. See [the current workflow and open checks](controller-local-database.md).
+runtime. See [the current database contract](external-gateway-databases.md).
 
 The Gateway workload gate also checks deletion before the workload controller
 first starts, followed by API restart and automatic database cleanup. The
@@ -305,10 +305,10 @@ upgrade. It preserves the reference metadata behavior. Neither this port nor
 the reference network controller sets up tunnels. The complete Hypershell port
 and production acceptance remain open.
 
-The [generated apply workflow](cli-apply.md) now creates and patches
-catalogs and Gateways from resource documents. It checks dry runs without API
-contact, complete preflight, partial failures, access, events, restart, and both
-database modes. The common runtime is supplied by STEGO. Remaining apply kinds,
+The earlier [generated apply workflow](cli-apply.md) checked catalogs and
+Gateways from resource documents, including the retired database modes. Its
+checks cover dry runs without API contact, complete preflight, partial failures,
+access, events, and restart. STEGO supplies the common runtime. Remaining apply kinds,
 Kustomize rendering, and the complete CLI port remain open.
 
 [Controller runtime](controller-runtime.md) records the common STEGO lifecycle
@@ -326,11 +326,10 @@ or skipped result fails. Request and workflow deadlines remain in each test.
 The [CI evidence](ci-evidence.md#separate-browser-result) records the latest
 failure and the added browser resource samples.
 
-The [CNPG database workflow](cnpg-database.md) tests shared Cluster creation,
-encrypted SQL, restart, repair, and cleanup through the generated runtime.
-The [CNPG Gateway workflow](cnpg-gateway.md) adds the real Gateway application,
-separate SQL identities and keys, restart, and SQL-confirmed cleanup. Its record
-states the test result and limits.
+The retired [CNPG database workflow](cnpg-database.md) and
+[CNPG Gateway workflow](cnpg-gateway.md) retain their results for earlier
+source revisions. They are not supported installation paths or current CI gates.
+The [external PostgreSQL workflow](external-gateway-databases.md) replaces them.
 
 The [Go SDK workflow](go-sdk.md) checks typed Gateway operations through the
 generated SDK, including atomic creation, denied and filtered access, rollback,
