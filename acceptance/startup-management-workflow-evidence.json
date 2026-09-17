@@ -1,0 +1,20 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35180587730",
+  "job": 105072547428,
+  "source": "bf83eefa2a28a62988c270dd20d20e0199cf6d4a",
+  "compiler": "83592bee5a17de6936cf521b94629e2a225a8d37",
+  "seconds": 96.89,
+  "management_runtime_instances": 3,
+  "stages_per_instance": 8,
+  "correlated_logs_and_spans": 24,
+  "duration_metrics_complete": true,
+  "active_stages_returned_to_zero": true,
+  "evidence_sha256": "c26d9dc16ae71bc0fef14e3761d8756a8ee78dacd25be752d4ac39ffe5f81f0a",
+  "scope": "Rendered management console with restart and key rotation. The public Gateway dashboard still needs its separate live result.",
+  "screenshots": {
+    "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29",
+    "accounts-delete.json.png": "b92689ede952cde4e9c2d0f50a7ffb758952aec1c2e9ca572ded8c7d12635610"
+  },
+  "screenshots_viewed": true,
+  "screenshot_scope": "The management Gateway page is still provisioning in this fixture. The account page shows an empty list after deletion. These images do not prove a live Gateway endpoint."
+}

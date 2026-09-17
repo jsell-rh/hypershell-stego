@@ -37,6 +37,14 @@ module files also match, including the inherited repository license. The API
 now uses that checked module revision for the console deployment and schema
 packages. This result does not qualify a running dashboard.
 
+The [rendered management workflow](startup-management-workflow-evidence.json)
+passed at `bf83eef` with compiler `83592be` in 96.89 seconds. Its three process
+instances each exported all eight startup stages. All 24 log/span pairs match;
+duration metrics are present, and all active-stage counts returned to zero.
+The test binds these checks to the pool identity before restart, after restart,
+and after key rotation. Both saved management screenshots were inspected. This
+result does not replace the separate live public Gateway dashboard test.
+
 The automatic API run `35178368373` at the earlier main revision stopped during
 regeneration. Its read-only Pod had no writable user cache setting, so the Git
 registry tried to create `/.cache`. Two setup tests passed; 49 required checks
