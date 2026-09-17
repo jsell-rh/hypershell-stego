@@ -8,6 +8,7 @@ overrides:
   health-check:
     database: true
   browser-backend:
+    dynamic_styles: true
     api_prefix: /api/v1
     routes: ["/", "/gateway", "/global-policy", "/settings", "/workspaces", "/workspaces/{id}", "/workspaces/{id}/sandboxes/{id}", "/workspaces/{id}/providers/{id}"]
     asset_bundle: ui/build.zip

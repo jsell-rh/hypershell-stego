@@ -5,11 +5,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/gateway-console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            registry_ref: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: cde82db12ad729637e63a1fa0e0cf95c8da01442f47ab8930b0199fe5014c09b
+                sha256: 4a7f6a141c8ebde46905beb6a8a3348498797857d662622a0c972f9832ff9ad1
                 mode: 420
             go.mod:
                 exists: true
@@ -21,47 +21,52 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: 506dd88fb814e7732bf4bfac8f635ec67a5131776b512a41eb1310a0b23ff71a
+                sha256: 49660df84754dab9d1b1d679c2c6795f4718af3bca3619deeca119682eddc37a
                 mode: 420
             ui/build.zip:
                 exists: true
                 sha256: d33d5b3e7ab0f05c5311fbd960872729f0d99b43b757b3f77c986eb25e0b7a2d
                 mode: 420
-        sha256: 6137ce9f8dcd9b64f457094b3a83a40c865108dd3c6c12b1c86d0c8674153001
+        sha256: ef7f5ca4cf674b1cf482f1893b83b6ee83e27d40d3e9675f6bc6e07a4be0332a
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260916230502-8e0fae6f2827
+        module_version: v0.0.0-20260917000013-979292750de0
         vcs: git
-        revision: 8e0fae6f28276e192e8497c8acad487c765f3bb5
+        revision: 979292750de036413b0aebee1227f20d4c022bf4
         source_state: clean
-    service_hash: 506dd88fb814e7732bf4bfac8f635ec67a5131776b512a41eb1310a0b23ff71a
-    registry_sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
-    registry_content_sha256: c45cbb9eeddc5cce7a82d61225610797a3d848e08ae7d82ecdb430157a59ca46
+    service_hash: 49660df84754dab9d1b1d679c2c6795f4718af3bca3619deeca119682eddc37a
+    registry_sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
+    registry_content_sha256: 7188cd86565a70d6e4ac4b3586df5d6d5e7172147bd87bf3c5f55a06c8899e4e
     components:
         browser-backend:
-            version: 4.1.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            version: 4.2.0
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         browser-telemetry:
             version: 1.2.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         health-check:
             version: 1.1.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         kubernetes-service:
             version: 1.18.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         otel-tracing:
             version: 1.15.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
         postgres-adapter:
             version: 4.9.0
-            sha: d1f9179723919e4830fe156305241ed764fb76e3a615d306f4dd3999226a3324
+            sha: 529eb10882572b5756f09533c8ffa1d7ab3fdc68202d0bb449ccf398a987902a
     files:
-        browser/backend.go: db2d4df4d6903d69f56af73d851403131d22393f8fceae3982289eedcd0c3197
+        browser/backend.go: f7f57e9d68f2787e8381ffcbcafeebb263e5db8dfcc7750311e3ea2058e7057c
         browser/client/client.go: 1000bca2a6f2916db09a0ac64969cb8b5d5911794913008c5bb9daffe8c94aaa
         browser/client/socket.go: 4d2e33e95559d76c345d8197c7e5b77d3a00c129c5c32035ed1a4fdfbcff190e
+        browser/dom/index.d.ts: 781eb07995e7fb8fafc70b63217d533de3db5bf9563236a674954fdc83f5cddc
+        browser/dom/index.js: 8a5a206f454218b98d48d62e095226bc2c84236e7ec52c98a448ec511ae9a633
+        browser/dom/monaco-loader.cjs: fd530b097f11d9807bb0dae096f6286ba48c78da8550bbe28fd6a45960c14a60
+        browser/dom/monaco-patches.json: 3ea3e12be4af6593a602dd87e6b3cde81311a6ce9c76d715986f2a8aac411c43
+        browser/dom/package.json: 294d4ce230a8881172bde0d62559dd52a6b07431080e1fa36cebcc4b896e05f9
         browser/handlers.go: 0054400481d466428df9cc1939dfd26df0ca22c944cc63b14b3a05e36798b947
         browser/keys.go: 91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1
         browser/oauth.go: a9459f07974859019f9ea2871e26787da029325123dd0ecf4a272f34d23a85b5

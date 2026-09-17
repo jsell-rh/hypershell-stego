@@ -114,3 +114,27 @@ Later recovery, viewer revocation, complete telemetry correlation, and deletion
 checks did not run. All 404 repeated-generation hashes matched. CI retained the
 failure artifacts, and an independent operator check confirmed complete test
 cleanup and an empty lease. No deployed workflow pass is claimed.
+
+## Common dynamic-style candidate
+
+The development branch selects STEGO candidate
+`979292750de036413b0aebee1227f20d4c022bf4`. Compiler qualification is still in
+progress. All three targets passed repeat generation and drift checks. The
+input-manifest check passed. This is candidate generation, not a live result.
+
+The Gateway console declares `dynamic_styles: true`. STEGO generates the
+document nonce, DOM render helpers, and source-verified Monaco adapter. The
+dashboard webpack configuration selects that generated adapter and maps its
+common module. The source workflow copies and checks the five generated files
+before it records the build tree. No common adapter code is handwritten here.
+
+STEGO's [browser and adapter CI](https://github.com/jsell-rh/stego/actions/runs/35164702752)
+passed six browser groups and 11 exact dependency files. The updated Hypershell
+source, captured assets, image, and Gateway console module still require their
+checks. The currently selected bundle and application image are from the earlier
+qualified build. They have not yet been replaced by the new source build.
+
+No live run may qualify this change until compiler checks, rebuilt assets,
+image and module checks, and final repeat generation pass. The editor gate must
+then prove layout, keyboard input, selection, workers, and content-policy
+compliance before later access, recovery, telemetry, and deletion checks.

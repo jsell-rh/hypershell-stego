@@ -6,6 +6,7 @@ archetype: browser-service
 language: go
 overrides:
   browser-backend:
+    dynamic_styles: true
     api_prefix: /api
     routes: ["/", "/gateway", "/global-policy", "/settings", "/workspaces", "/workspaces/{id}", "/workspaces/{id}/sandboxes/{id}", "/workspaces/{id}/providers/{id}"]
     asset_bundle: ui/build.zip

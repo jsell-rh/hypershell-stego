@@ -10,6 +10,7 @@ overrides:
   health-check:
     database: true
   browser-backend:
+    dynamic_styles: true
     telemetry_service_name: hypershell-gateway-console
     logout_scope: identity_provider
     api_prefix: /api/v1

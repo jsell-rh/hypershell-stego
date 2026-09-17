@@ -21,10 +21,20 @@ module.exports = {
   },
   resolve: {
     extensions: ['.ts', '.tsx', '.js'],
-    alias: { '~': path.resolve(__dirname, 'src'), '@stego/browser-client': path.resolve(__dirname, 'stego/browser-client/index.js') },
+    alias: {
+      '~': path.resolve(__dirname, 'src'),
+      '@stego/browser-client': path.resolve(__dirname, 'stego/browser-client/index.js'),
+      '@stego/browser-dom': path.resolve(__dirname, 'stego/browser-dom/index.js'),
+    },
   },
   module: {
     rules: [
+      {
+        test: /\.js$/,
+        include: /node_modules[\\/]monaco-editor[\\/]esm[\\/]/,
+        enforce: 'pre',
+        loader: path.resolve(__dirname, 'stego/browser-dom/monaco-loader.cjs'),
+      },
       {
         test: /\.tsx?$/,
         loader: 'ts-loader',
