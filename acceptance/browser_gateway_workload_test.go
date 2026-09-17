@@ -249,6 +249,7 @@ func (w *browserGatewayWorkload) check(id string) {
 			}
 		}
 		if time.Now().After(deadline) {
+			w.recordReadinessFailure(id)
 			for _, logs := range w.outputs {
 				w.t.Log(logs())
 			}
