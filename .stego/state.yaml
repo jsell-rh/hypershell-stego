@@ -101,11 +101,11 @@ last_applied:
                 mode: 420
             go.mod:
                 exists: true
-                sha256: bafa7d8f05481802be555847b643d29e6f91cc16815b46181a905d1035766833
+                sha256: b1bee15b336bcf1af66d959d0e6648dae6e4aa256000c83ca412a30eebf06d79
                 mode: 420
             go.sum:
                 exists: true
-                sha256: e2617fb9bf3a73ffea633c876bd8da4f1f50c73a14a497e7e9ff3d3fed0cf8f9
+                sha256: 7164928f47bd3a0ddc71fb6c0be5938c0b6c470983119fe451e57cf584a01911
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
@@ -131,7 +131,7 @@ last_applied:
                 exists: true
                 sha256: dc03b707d77507f25cbaf08f91ee32621a17d2137bb0e3fb3354db5f6eee337f
                 mode: 420
-        sha256: c0d1bb542f6818fabfb6b9518be56cce3e8979191a491eebcfd3a3cc1837ea76
+        sha256: 7d4d88d21687eed4cf0b3b1cec5085cd4a734dd5cc1e87ebd0226a124e4a640f
     compiler_build:
         go_version: go1.26.8
         goos: linux
