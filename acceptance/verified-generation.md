@@ -52,8 +52,8 @@ source identity, different module revisions, symbolic links, and removal of
 GitHub token variables before all three modules execute. The service evidence
 checks reject missing compiler records. Shell, Python, and workflow YAML syntax
 checks pass. These checks use small stub files; they do not execute the real
-compiler on the workstation. Real generation and application checks for this
-integration remain pending in CI.
+compiler on the workstation. Real module generation and journal recovery have now passed in CI. Full core
+and live cluster application checks for this integration remain pending.
 
 The common installer separately passed real release and local-package signature
 verification in STEGO run `35204243151` at source
@@ -65,3 +65,24 @@ Two historical upstream dashboard capture jobs still build compiler `9792927`
 from source. They are outside the three application module entry points. Their
 migration needs separate asset and fixture checks. Automatic compiler release
 qualification and complete offline build inputs also remain open.
+
+
+## First consumer evidence
+
+At source `8bb2965f907aef1edb7c41e0f07b0ac542bc168c`,
+[module run 35206033034](https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033034)
+passed. Independent inspection matched all 129 selected module source files,
+repeated generation, the generated image binary, and the published compiler
+signature records. The generated binary SHA-256 is unchanged from the preceding
+qualified module. See the [module record](verified-generation-module-evidence.json).
+
+[Journal run 35206033030](https://github.com/jsell-rh/hypershell-stego/actions/runs/35206033030)
+passed all 28 required tests at the same source. Independent inspection found
+no failed or skipped events in its saved result. See the
+[journal record](verified-generation-journal-evidence.json).
+
+Full run `35206051129` has passed its rendered-browser, management-console, and
+image jobs. Core remains in progress. CNPG and Sandbox were not selected in that
+hosted dispatch. The previous main CNPG run is a separate result and does not
+qualify the new compiler transfer path. Live API, public Gateway, and CNPG
+checks at this source remain required before main promotion.
