@@ -1,0 +1,50 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35169043109",
+  "source": "ca8814f358ea5fe5eaa7e26855be013f63f910bd",
+  "compiler": "db75a77da272fe05bbf6fdc3a3d1e0fede298f70",
+  "result": "failure",
+  "test_seconds": 550.45,
+  "failure": "Account creation returned HTTP 409 during final Gateway deletion setup. The saved response does not identify the error code.",
+  "passed_before_failure": [
+    "Verified public dashboard TLS and rendered editor checks",
+    "Native dashboard confirmation and identity-provider sign-out, followed by a password login prompt",
+    "Authenticated correlated dashboard traces, logs, and metrics",
+    "Worker metrics and correlated traces and logs",
+    "SQL isolation, unsafe privilege rejection, repair, and PostgreSQL restart",
+    "Controller and namespace replacement with data and access rules retained",
+    "Filtered lists, denied writes, and both viewer access removal paths",
+    "Envelope encryption and altered ciphertext rejection",
+    "Browser backend restart, key rotation, and telemetry collector recovery",
+    "Rendered service-account creation, token use at the actual Gateway, revoke, and delete"
+  ],
+  "editor": {
+    "rendered": true,
+    "line_layout": true,
+    "syntax_colors": true,
+    "selection_rendered": true,
+    "keyboard_input": true,
+    "invalid_json_rejected": true,
+    "json_worker": true,
+    "json_error_marker": true,
+    "content_policy_violations": [],
+    "policy_submitted": false
+  },
+  "dashboard_phase_sha256": {
+    "dashboard-create.json": "174e4f6aded7bd280c337f2c395defb733afae8ff21d226f288a78dbac25a2d1",
+    "dashboard-reload.json": "174e4f6aded7bd280c337f2c395defb733afae8ff21d226f288a78dbac25a2d1",
+    "dashboard-verify.json": "2b59ea03ecf96c740bbdbae0fdcd120bd031a800c9606b8c17d12b3c9cab3884",
+    "dashboard-create.json.editor.json": "c78c47d673d94c54fcf0f8b63553fe6c6ee3ca5b592d4c2781634e962b35db31"
+  },
+  "not_proved": [
+    "Final Gateway deletion with three automation identities",
+    "Complete public Gateway workflow",
+    "Expanded CNPG dashboard workflow"
+  ],
+  "cleanup_checked_at": "2026-09-17T01:23:23.459742+00:00",
+  "cleanup_runtime_absent": true,
+  "cleanup_allocations_absent": true,
+  "cleanup_lease_empty": true,
+  "artifact_sha256": "91a126a2fecd5d3dc665acc33f89fe8dabd311b2125f78d78149ed182e7e6992",
+  "deployment_log_sha256": "be5d02bf8f5b6a2020ada11b4220b873a5c48757506718c0c9fd70b72b67c86d",
+  "scope": "This failed run proves the listed checks only. The application gate remains open."
+}
