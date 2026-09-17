@@ -130,3 +130,21 @@ identities. Account writes are not retried. Successful public workflow evidence
 must contain `provisioner-restart.json`. Production code and readiness rules
 are unchanged. The focused diagnostic check and evidence collection cases
 passed locally. Complete workflow qualification is still required.
+
+The [next CNPG run](startup-cnpg-collection-failure-evidence.json),
+`35184753568` at `fdd11d3`, passed all 11 application tests. The complete
+browser test took 742.70 seconds. Its log confirms the deliberate provisioner
+outage and controller recovery check. All 1,358 source hashes match the commit.
+The original Job reached `Complete`, but the outer runner failed during evidence
+collection. The downloaded archive has zero bytes. This is a failed gate.
+The saved output does not identify a missing file or a transport failure.
+Final generation, browser images, and telemetry records cannot be verified.
+Independent cleanup at `2026-09-17T05:36:59Z` found no test resources,
+allocations, volumes, or held lease. No scheduling intervention was required.
+
+The collector now reports each missing or empty required file. It creates an
+archive of the available evidence even if a required file is absent. Transfer
+failures report their exit status. Missing evidence still fails the gate.
+Small local tests cover missing, empty, and multiple missing files, retained
+archives, transport failures, and truncated archives. The CNPG workflow runs
+these checks before cluster use. Complete CNPG qualification remains open.

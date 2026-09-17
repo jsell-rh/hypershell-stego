@@ -1,0 +1,43 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35184753568",
+  "source": "fdd11d3760d23857fe32b5573f445fefcb0ee035",
+  "compiler": "83592bee5a17de6936cf521b94629e2a225a8d37",
+  "conclusion": "failure",
+  "failure_stage": "service_evidence_collection",
+  "source_files_match": 1358,
+  "required_test_log_passes": 11,
+  "browser_test_seconds": 742.7,
+  "job_uid": "c7ad6ce6-3a18-4b1c-806c-5eb04ad28bec",
+  "original_job_complete": true,
+  "evidence_archive_bytes": 0,
+  "provisioner_recovery_assertion_passed": true,
+  "independent_cleanup": {
+    "checked_at": "2026-09-17T05:36:59.252285+00:00",
+    "cnpg_run": 35184753568,
+    "api_jobs": [],
+    "api_fixtures": [],
+    "service_runtime": [],
+    "service_fixtures": [],
+    "allocations": [],
+    "cnpg_operator_runtime": [],
+    "cnpg_runtime": [],
+    "lease_holder": "",
+    "retained_test_volumes": [],
+    "test_volumes_checked": [
+      "pvc-42fbb77c-6d7d-4ff9-9c25-5a35c29f8052",
+      "pvc-9830dc54-f6a3-4044-a3a2-410cfe9b1598"
+    ]
+  },
+  "artifact_sha256": {
+    "browser/deployment.log": "5cb390b5c52ad2a52a179082769b4bb337682b04eb86ace0fdcf834c897d3783",
+    "browser/evidence.tar": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "browser/job-status.json": "f978663e3b4e5e84211067abc7cfd80f67f9866f9bd598a4187933b32f3870a2",
+    "browser/cleanup.json": "179eec722abf20ace66a7c69315ad9a7758b5305c67c476dddc3956f074b7232"
+  },
+  "limits": [
+    "The CI gate failed although all 11 application tests passed.",
+    "The missing or empty file, or transport failure, is not identified by the saved output.",
+    "The archive has no final generation snapshots, browser images, startup records, or provisioner recovery record to verify.",
+    "No scheduling intervention occurred in this run. Production capacity is not proved."
+  ]
+}
