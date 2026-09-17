@@ -24,7 +24,10 @@ func consoleOwner(id string) kube.Owner {
 
 // consoleResources uses the separately generated browser module. The allocator
 // owns network policy. No Gateway Service selector label can enter these Pods.
-func consoleResources(gw *pb.Gateway, image string, group uint64, digest string, pullSecrets ...string) ([]resource, error) {
+func consoleResources(gw *pb.Gateway, image string, group uint64, digest, serviceAccount string, pullSecrets ...string) ([]resource, error) {
+	if serviceAccount == "" {
+		return nil, errors.New("console requires its allocated ServiceAccount")
+	}
 	ns, err := Namespace(gw.GetMetadata().GetId())
 	if err != nil || ns != gw.GetNamespace() {
 		return nil, errors.New("console placement does not match its Gateway")
@@ -33,7 +36,7 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest string,
 	if err != nil || len(raw) != 32 || hex.EncodeToString(raw) != digest {
 		return nil, errors.New("console configuration digest is invalid")
 	}
-	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id), ImagePullSecrets: pullSecrets})
+	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id), ImagePullSecrets: pullSecrets, ExistingServiceAccount: serviceAccount})
 	if err != nil {
 		return nil, err
 	}
@@ -47,7 +50,7 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest string,
 		switch entry.Kind {
 		case "NetworkPolicy":
 			continue
-		case "ServiceAccount", "Service":
+		case "Service":
 		case "Deployment":
 			spec, _ := entry.Object["spec"].(map[string]any)
 			template, _ := spec["template"].(map[string]any)
@@ -70,7 +73,7 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest string,
 		}
 		result = append(result, resource{path: entry.Collection, object: entry.Object})
 	}
-	if len(result) != 3 || !seen["NetworkPolicy"] || !seen["Deployment"] || !seen["Service"] || !seen["ServiceAccount"] {
+	if len(result) != 2 || !seen["NetworkPolicy"] || !seen["Deployment"] || !seen["Service"] {
 		return nil, errors.New("console deployment is incomplete")
 	}
 	return result, nil
@@ -98,6 +101,13 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 	expected, err := Namespace(id)
 	if err != nil || ns != expected {
 		return errors.New("console placement is invalid")
+	}
+	serviceAccount, err := k.allocation.RequireServiceAccount(ctx, "gateway", ns, id, "console")
+	if err != nil {
+		if errors.Is(err, allocation.ErrPending) {
+			return ErrPending
+		}
+		return err
 	}
 	if err := k.allocation.RequireNamespace(ctx, "gateway", ns, id); err != nil {
 		if errors.Is(err, allocation.ErrPending) {
@@ -133,7 +143,7 @@ func (k *Kubernetes) EnsureConsole(ctx context.Context, gw *pb.Gateway, version 
 	if err != nil {
 		return err
 	}
-	entries, err := consoleResources(gw, k.options.Console.Image, group, digest, pullSecrets...)
+	entries, err := consoleResources(gw, k.options.Console.Image, group, digest, serviceAccount, pullSecrets...)
 	if err != nil {
 		return err
 	}

@@ -49,6 +49,9 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 	}
 	checks := []check{
 		{"gateway-workload", gateway, "apps", "deployments", "create", true},
+		{"gateway-workload", gateway, "", "serviceaccounts", "get", true},
+		{"gateway-workload", gateway, "", "serviceaccounts", "create", false},
+		{"gateway-workload", gateway, "", "serviceaccounts", "patch", false},
 		{"gateway-workload", state, "", "pods", "create", false},
 		{"gateway-workload", state, "", "persistentvolumeclaims", "create", false},
 		{"gateway-workload", state, "postgresql.cnpg.io", "clusters", "create", false},

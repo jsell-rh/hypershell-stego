@@ -150,7 +150,8 @@ overrides:
       - name: gateway-worker
         scope: namespace
         rules:
-          - {api_group: "", resources: [secrets, configmaps, services, serviceaccounts], verbs: [get, create, patch]}
+          - {api_group: "", resources: [secrets, configmaps, services], verbs: [get, create, patch]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
           - {api_group: apps, resources: [deployments], verbs: [get, create, patch]}
@@ -171,6 +172,7 @@ overrides:
           - {api_group: "", resources: [namespaces], verbs: [get]}
     allocation_profiles:
       - name: gateway
+        service_accounts: [gateway, console]
         network_isolation: true
         network_endpoints: [kubernetes]
         network_peers:
@@ -197,10 +199,10 @@ overrides:
           - {resource: requests.storage, value: 2Gi}
         bindings:
           - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}
-          - {role: gateway-runtime, service_account: openshell-gateway, namespace: allocated}
-          - {role: gateway-reviews, service_account: openshell-gateway, namespace: allocated}
-          - {external_role: "system:openshift:scc:nonroot-v2", service_account: openshell-gateway, namespace: allocated}
-          - {external_role: "system:openshift:scc:nonroot-v2", service_account: hypershell-gateway-console, namespace: allocated}
+          - {role: gateway-runtime, service_account: gateway, namespace: allocated}
+          - {role: gateway-reviews, service_account: gateway, namespace: allocated}
+          - {external_role: "system:openshift:scc:nonroot-v2", service_account: gateway, namespace: allocated}
+          - {external_role: "system:openshift:scc:nonroot-v2", service_account: console, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
       - name: gateway-state
         network_isolation: true

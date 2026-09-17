@@ -17,11 +17,11 @@ import (
 func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 	gw, release := records(t)
 	digest := strings.Repeat("a", 64)
-	entries, err := consoleResources(gw, release.Image, 65532, digest)
+	entries, err := consoleResources(gw, release.Image, 65532, digest, "allocated-console")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 3 {
+	if len(entries) != 2 {
 		t.Fatal("unexpected resource count", len(entries))
 	}
 	kinds := map[string]bool{}
@@ -35,6 +35,9 @@ func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 			t.Fatal("resource escaped Gateway namespace", kind)
 		}
 		if kind == "Deployment" {
+			if kube.String(entry.object, "spec", "template", "spec", "serviceAccountName") != "allocated-console" {
+				t.Fatal("console does not use the allocated account")
+			}
 			if kube.String(entry.object, "spec", "template", "metadata", "labels", ownerLabel) != "" {
 				t.Fatal("console Pod matches Gateway Service")
 			}
@@ -43,23 +46,26 @@ func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 			}
 		}
 	}
-	if !kinds["Service"] || !kinds["ServiceAccount"] || !kinds["Deployment"] || kinds["NetworkPolicy"] {
+	if !kinds["Service"] || kinds["ServiceAccount"] || !kinds["Deployment"] || kinds["NetworkPolicy"] {
 		t.Fatal("worker resource set is incorrect", kinds)
 	}
 	for _, invalid := range []string{"", strings.Repeat("A", 64), strings.Repeat("a", 63)} {
-		if _, err := consoleResources(gw, release.Image, 65532, invalid); err == nil {
+		if _, err := consoleResources(gw, release.Image, 65532, invalid, "allocated-console"); err == nil {
 			t.Fatal("invalid digest accepted")
 		}
 	}
+	if _, err := consoleResources(gw, release.Image, 65532, digest, ""); err == nil {
+		t.Fatal("missing account accepted")
+	}
 	gw.Namespace = "foreign"
-	if _, err := consoleResources(gw, release.Image, 65532, digest); err == nil {
+	if _, err := consoleResources(gw, release.Image, 65532, digest, "allocated-console"); err == nil {
 		t.Fatal("foreign namespace accepted")
 	}
 }
 
 func TestConsolePrivateImageUsesGeneratedPodReference(t *testing.T) {
 	gw, release := records(t)
-	entries, err := consoleResources(gw, release.Image, 65532, strings.Repeat("a", 64), consoleName+"-image-pull")
+	entries, err := consoleResources(gw, release.Image, 65532, strings.Repeat("a", 64), "allocated-console", consoleName+"-image-pull")
 	if err != nil {
 		t.Fatal(err)
 	}

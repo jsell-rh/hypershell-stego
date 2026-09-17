@@ -155,6 +155,13 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 		return errors.New("Gateway supervisor image differs from controller configuration")
 	}
 	id, ns := gw.Metadata.Id, gw.Namespace
+	serviceAccount, err := k.allocation.RequireServiceAccount(ctx, "gateway", ns, id, "gateway")
+	if err != nil {
+		if errors.Is(err, allocation.ErrPending) {
+			return ErrPending
+		}
+		return err
+	}
 	if err := k.allocation.RequireNamespace(ctx, "gateway", ns, id); err != nil {
 		if errors.Is(err, allocation.ErrPending) {
 			return ErrPending
@@ -224,7 +231,7 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if _, err = k.ensure(ctx, core+"/configmaps", config, id); err != nil {
 		return err
 	}
-	for _, entry := range resources(gw, sandboxNS, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(append(append([]byte(nil), crt...), publicCertificate...))), k.options.PublicDomain != "") {
+	for _, entry := range resources(gw, serviceAccount, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(append(append([]byte(nil), crt...), publicCertificate...))), k.options.PublicDomain != "") {
 		if _, err = k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
 		}

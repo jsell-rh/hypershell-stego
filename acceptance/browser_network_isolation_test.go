@@ -14,6 +14,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
 
@@ -146,10 +147,20 @@ func (w *browserGatewayWorkload) gatewayNetworkProbe(namespace, id string, targe
 	if err != nil {
 		w.t.Fatal(err)
 	}
+	allocator, err := allocation.New(w.kubernetes, w.p.namespace)
+	if err != nil {
+		w.t.Fatal(err)
+	}
+	check, stop := context.WithTimeout(context.Background(), 10*time.Second)
+	account, err := allocator.RequireServiceAccount(check, "gateway", namespace, id, "gateway")
+	stop()
+	if err != nil {
+		w.t.Fatal("network probe account is not ready", err)
+	}
 	name := "network-probe-" + uuid.NewString()[:8]
 	collection := "/api/v1/namespaces/" + namespace + "/pods"
 	pod := kube.Object{"apiVersion": "v1", "kind": "Pod", "metadata": kube.Object{"name": name, "namespace": namespace, "labels": kube.Object{"stego.test/network-probe": id}}, "spec": kube.Object{
-		"restartPolicy": "Never", "activeDeadlineSeconds": 90, "terminationGracePeriodSeconds": 1, "serviceAccountName": "openshell-gateway", "automountServiceAccountToken": false,
+		"restartPolicy": "Never", "activeDeadlineSeconds": 90, "terminationGracePeriodSeconds": 1, "serviceAccountName": account, "automountServiceAccountToken": false,
 		"securityContext": kube.Object{"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "seccompProfile": kube.Object{"type": "RuntimeDefault"}},
 		"containers": []any{kube.Object{"name": "probe", "image": "docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393", "imagePullPolicy": "IfNotPresent", "command": []string{"node", "-e", gatewayNetworkProbe, string(encoded)},
 			"securityContext": kube.Object{"readOnlyRootFilesystem": true, "allowPrivilegeEscalation": false, "capabilities": kube.Object{"drop": []string{"ALL"}}},

@@ -84,16 +84,19 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 			t.Fatal("public SNI differs from the assigned hostname")
 		}
 		gw, release := records(t)
-		rendered := resources(gw, namespace, release, oidcConfig{}, object{}, object{}, object{}, "hash", enabled)
+		rendered := resources(gw, "allocated-gateway", release, oidcConfig{}, object{}, object{}, object{}, "hash", enabled)
 		var found bool
 		for _, entry := range rendered {
-			if entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" {
+			if entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" || entry.object["kind"] == "ServiceAccount" {
 				t.Fatal("Gateway workload declares authority owned by the allocator")
 			}
 			if entry.object["kind"] != "Deployment" {
 				continue
 			}
 			spec := entry.object["spec"].(object)["template"].(object)["spec"].(object)
+			if spec["serviceAccountName"] != "allocated-gateway" || spec["automountServiceAccountToken"] != true {
+				t.Fatal("Gateway does not use its allocated account and explicit token mount")
+			}
 			for _, volume := range spec["volumes"].([]object) {
 				if volume["name"] == "public-tls" {
 					found = true

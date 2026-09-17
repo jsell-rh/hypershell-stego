@@ -66,13 +66,11 @@ type resource struct {
 	object object
 }
 
-func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string, publicTLS bool) []resource {
+func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string, publicTLS bool) []resource {
 	id, ns := gw.Metadata.Id, gw.Namespace
 	core := "/api/v1/namespaces/" + ns
 	result := []resource{}
 	add := func(path string, o object) { result = append(result, resource{path, o}) }
-	add(core+"/serviceaccounts", definition("v1", "ServiceAccount", Name, id))
-	add("/api/v1/namespaces/"+sandboxNS+"/serviceaccounts", definition("v1", "ServiceAccount", Name+"-sandbox", id))
 	service := definition("v1", "Service", Name, id)
 	service["spec"] = object{"type": "ClusterIP", "selector": object{ownerLabel: id}, "ports": []object{{"name": "grpc", "port": 8080, "targetPort": "grpc"}}}
 	add(core+"/services", service)
@@ -96,7 +94,7 @@ func resources(gw *pb.Gateway, sandboxNS string, release *pb.GatewayRelease, oid
 	container := object{"name": Name, "image": release.GetImage(), "imagePullPolicy": "IfNotPresent", "args": []string{"--config", "/etc/openshell-config/gateway.toml", "--drivers", "kubernetes"}, "env": env, "ports": []object{{"name": "grpc", "containerPort": 8080}, {"name": "health", "containerPort": 8081}}, "volumeMounts": mounts, "securityContext": object{"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "capabilities": object{"drop": []string{"ALL"}}}, "resources": object{"requests": object{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "32Mi"}, "limits": object{"cpu": "500m", "memory": "512Mi", "ephemeral-storage": "256Mi"}}, "readinessProbe": object{"httpGet": object{"path": "/readyz", "port": "health"}, "periodSeconds": 2}, "livenessProbe": object{"httpGet": object{"path": "/healthz", "port": "health"}, "periodSeconds": 10}, "startupProbe": object{"httpGet": object{"path": "/healthz", "port": "health"}, "periodSeconds": 2, "failureThreshold": 60}}
 	encoded, _ := json.Marshal([]any{config, dbData, keys, oidc, certificateHash})
 	deployment := definition("apps/v1", "Deployment", Name, id)
-	deployment["spec"] = object{"replicas": 1, "strategy": object{"type": "Recreate"}, "selector": object{"matchLabels": object{ownerLabel: id}}, "template": object{"metadata": object{"labels": object{ownerLabel: id, "app.kubernetes.io/name": Name}, "annotations": object{"hypershell.redhat.io/config-sha256": hex.EncodeToString(sha256sum(encoded))}}, "spec": object{"serviceAccountName": Name, "automountServiceAccountToken": true, "securityContext": object{"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "fsGroup": 1000, "seccompProfile": object{"type": "RuntimeDefault"}}, "containers": []object{container}, "volumes": volumes}}}
+	deployment["spec"] = object{"replicas": 1, "strategy": object{"type": "Recreate"}, "selector": object{"matchLabels": object{ownerLabel: id}}, "template": object{"metadata": object{"labels": object{ownerLabel: id, "app.kubernetes.io/name": Name}, "annotations": object{"hypershell.redhat.io/config-sha256": hex.EncodeToString(sha256sum(encoded))}}, "spec": object{"serviceAccountName": serviceAccount, "automountServiceAccountToken": true, "securityContext": object{"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "fsGroup": 1000, "seccompProfile": object{"type": "RuntimeDefault"}}, "containers": []object{container}, "volumes": volumes}}}
 	add("/apis/apps/v1/namespaces/"+ns+"/deployments", deployment)
 	return result
 }
