@@ -25,3 +25,14 @@ all 40 tests: 18 CI boundary tests, 14 database fixture tests, and eight
 credential tests. The dependency-budget regression passed. See the
 [evidence record](cnpg-fixture-lifetime-evidence.json). These are offline checks;
 the new database budget has not been installed or tested on the cluster.
+
+
+The installation update completed at 13:35:20 UTC on 2026-09-17, after the
+previous application and admission tests ended and their cleanup was checked.
+The database policy and immutable configuration now permit 2,400 seconds.
+The policy UID, other installation identities, operator template, and remaining
+configuration data were preserved. Server dry-runs accepted 2,400 seconds and
+rejected 2,401 seconds through the required policy. The live-test Lease was
+released. No Job or Pod was started by this update. See the
+[installation record](cnpg-fixture-lifetime-installation.json). A full Gateway
+run with the new fixture budget remains required.
