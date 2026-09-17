@@ -187,6 +187,9 @@ func (w *workerSignalEvidence) checkPostgres(t *testing.T, public bool, endpoint
 			}
 		}
 		ready = ready && combined["delete/failure"] && combined["delete/success"]
+		if public {
+			ready = ready && combined["schema/success"]
+		}
 		w.Unlock()
 		if invalid {
 			t.Fatal("PostgreSQL worker signals have invalid fields or identity")
