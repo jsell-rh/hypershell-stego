@@ -441,3 +441,20 @@ All other JSON values must stay equal, including unknown fields. Negative
 cases check scope changes, credentials, ownership, other array order, and large
 numbers. Production cleanup code is unchanged. The new real-provider result is
 pending. A pass must also authenticate all 61 protected cleanup journals.
+
+## Scope comparison repeat
+
+[Run 35219632796](https://github.com/jsell-rh/hypershell-stego/actions/runs/35219632796)
+passed at `790d3f5` with compiler `4fc880b`. Independent checks matched the source
+archive, generated-source check, all 61 protected closure records, and cleanup.
+Twenty journals and the discovery checkpoint survived process restart. The
+unrelated client stayed equal, and account creation remained denied. The
+provider test took 125.68 seconds. All 15 comparison cases passed. The cleanup
+deadline case passed in 26.03 seconds.
+
+This run had equal raw response bytes. It does not establish whether the earlier
+scope-array difference was only an order change, because that failure did not
+retain set membership. The comparison now follows the provider contract and
+still rejects changed scope membership. The earlier event timeout also remains
+unexplained. This result precedes adoption of the new SQL credential API.
+See the [repeat record](provider-scope-repeat-evidence.json).
