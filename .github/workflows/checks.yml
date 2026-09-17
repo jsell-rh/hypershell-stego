@@ -180,6 +180,7 @@ jobs:
       - run: timeout 15s scripts/test-collect-service-evidence.sh
       - run: timeout 15s python3 scripts/test_ci_credentials.py
       - run: timeout 15s python3 -B scripts/test_verified_generation.py
+      - run: timeout 15s python3 -B scripts/test_console_asset_compiler.py
       - run: timeout 15s python3 scripts/test_browser_ci.py
       - run: timeout 15s python3 scripts/test_network_peer_fixture.py
       - run: timeout 15s python3 scripts/test_gateway_endpoint_fixture.py

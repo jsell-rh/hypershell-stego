@@ -6,6 +6,13 @@ on:
     paths:
       - .github/workflows/console-assets.yml
       - components/web-console/**
+      - scripts/prepare-compiler.sh
+      - scripts/check-console-assets.sh
+      - scripts/check-web-console.sh
+      - scripts/test_console_asset_compiler.py
+      - .stego/compiler-revision
+      - .stego/compiler-sha256
+      - .stego/tooling-revision
       - packages/gateway-management-ui/**
       - console/out/browsertelemetry/**
       - out/tssdk/**
@@ -31,9 +38,6 @@ jobs:
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
-      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
-        with:
-          go-version: '1.26.8'
       - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38
         with:
           node-version: '24.18.1'
@@ -42,6 +46,20 @@ jobs:
           npm install --prefix "$RUNNER_TEMP/pnpm" --ignore-scripts --no-audit --no-fund pnpm@11.15.1
           echo "$RUNNER_TEMP/pnpm/node_modules/.bin" >> "$GITHUB_PATH"
           "$RUNNER_TEMP/pnpm/node_modules/.bin/pnpm" install --frozen-lockfile --ignore-scripts
+      - name: Check asset compiler selection
+        run: timeout 15s python3 -B scripts/test_console_asset_compiler.py
+      - name: Install the selected compiler package
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/console-compiler-setup"
+          mkdir -p "$RUNNER_TEMP/console-assets/compiler"
+          cp "$RUNNER_TEMP/console-compiler-setup/installation.json" "$RUNNER_TEMP/console-assets/compiler/"
+          cp "$RUNNER_TEMP/console-compiler-setup/tooling-revision" "$RUNNER_TEMP/console-assets/compiler/"
+          for file in build.json SHA256SUMS provenance.jsonl verified.json; do
+            cp "$RUNNER_TEMP/console-compiler-setup/verified/$file" "$RUNNER_TEMP/console-assets/compiler/"
+          done
       - name: Build the candidate from committed source
         run: |
           pnpm --filter @openshift-online/hypershell-domain-probes build
@@ -51,8 +69,12 @@ jobs:
           revision=$(cat .stego/compiler-revision)
           [[ $revision =~ ^[0-9a-f]{40}$ ]]
           mkdir -p "$RUNNER_TEMP/console-assets"
-          GOWORK=off go run "github.com/jsell-rh/stego/cmd/stego@$revision" assets \
+          compiler="$RUNNER_TEMP/console-compiler-setup/verified/stego-linux-amd64"
+          timeout --signal=TERM --kill-after=5s 30s "$compiler" assets \
             --directory components/web-console/build/client --output "$RUNNER_TEMP/console-assets/build.zip"
+          timeout --signal=TERM --kill-after=5s 30s "$compiler" assets \
+            --directory components/web-console/build/client --output "$RUNNER_TEMP/console-assets/repeated.zip"
+          cmp "$RUNNER_TEMP/console-assets/build.zip" "$RUNNER_TEMP/console-assets/repeated.zip"
           git diff --exit-code
           git rev-parse HEAD > "$RUNNER_TEMP/console-assets/source-commit"
           git archive HEAD | sha256sum > "$RUNNER_TEMP/console-assets/source-archive.sha256"

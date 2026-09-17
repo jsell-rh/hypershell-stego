@@ -94,3 +94,12 @@ through the common installer. Their separate compiler pins and source builds
 are removed. The asset bundle is byte-for-byte identical to the committed
 Gateway console input. These checks do not change the application's selected
 upstream image or replace live API, public Gateway, and CNPG evidence.
+
+
+The management console asset checker and candidate workflow also use the common
+installer. The checker requires the captured assets to match the committed
+bundle. The candidate workflow captures assets twice and requires identical
+bytes. It retains compiler signature records without building STEGO through
+`go run`. These management asset changes require new CI checks. The old
+unverified `STEGO_BIN` override is rejected; an operator can supply a signed
+package with `STEGO_COMPILER_PACKAGE`.
