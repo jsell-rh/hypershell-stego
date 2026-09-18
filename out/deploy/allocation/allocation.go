@@ -32,6 +32,7 @@ type networkPeer struct {
 	Port                                                                  int
 }
 type profile struct {
+	PodSecurity                         string
 	ServiceAccounts                     []string
 	NetworkEndpoints                    []string
 	NetworkPeers                        []networkPeer
@@ -446,6 +447,13 @@ func (a *Allocator) prune(ctx context.Context, p profile, name string, owner kub
 	return nil
 }
 
+func podSecurityLevel(p profile) string {
+	if p.PodSecurity == "isolated-runtime" {
+		return "privileged"
+	}
+	return "restricted"
+}
+
 // Ensure applies limits before it grants permissions. Each write checks the
 // existing owner. A conflict requires a new observation by the controller.
 func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID string) error {
@@ -457,7 +465,7 @@ func (a *Allocator) Ensure(ctx context.Context, profileName, name, ownerID strin
 		return err
 	}
 	meta := metadata(name, owner)
-	meta["labels"].(kube.Object)["pod-security.kubernetes.io/enforce"] = "restricted"
+	meta["labels"].(kube.Object)["pod-security.kubernetes.io/enforce"] = podSecurityLevel(p)
 	if len(p.ServiceAccounts) != 0 {
 		annotations := kube.Object{}
 		for _, alias := range accountIdentities(p) {
@@ -851,6 +859,9 @@ func (a *Allocator) NamespaceUID(ctx context.Context, profileName, name, ownerID
 	}
 	if kube.String(current, "metadata", "deletionTimestamp") != "" {
 		return "", ErrPending
+	}
+	if p.PodSecurity == "isolated-runtime" && kube.String(current, "metadata", "labels", "pod-security.kubernetes.io/enforce") != podSecurityLevel(p) {
+		return "", errors.New("namespace Pod security differs from its allocation")
 	}
 	if err = a.requireServiceAccountNames(p, current, ownerID); err != nil {
 		return "", err
