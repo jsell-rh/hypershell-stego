@@ -29,9 +29,12 @@ and account restrictions, host-access denials, and exact capability grants.
 All 16 policies type-checked. The writer also lacked three tested cluster and
 account permissions. Cleanup needed a separate UID-checked recovery; all 60
 test resource paths were then absent and the test lease was released.
-See the [STEGO result record](https://github.com/jsell-rh/stego/blob/7878553/specs/isolated-allocation.md).
+See the [STEGO result record](https://github.com/jsell-rh/stego/blob/e88c299/specs/isolated-allocation.md).
 
-This common policy is not yet adopted here. The next application work must
+The [signed compiler release](https://github.com/jsell-rh/stego/releases/tag/compiler-1ab6aeaad1e9862386c1d8c3d67e124f6814b048)
+is available. Its exact source passed the full compiler suite; the published
+package passed independent download and signature checks. It is not yet adopted
+here. The next application work must
 connect the Sandbox allocation profile and its declared SCC and peer bindings,
 then remove cluster-policy writes from the workload client. OpenShell container,
 image, credential-mount, and placement rules remain application policy. Network
