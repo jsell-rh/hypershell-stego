@@ -170,6 +170,14 @@ overrides:
           - {api_group: authentication.k8s.io, resources: [tokenreviews], verbs: [create]}
           - {api_group: "", resources: [nodes], verbs: [get, list, watch]}
           - {api_group: "", resources: [namespaces], verbs: [get]}
+      - name: sandbox-worker
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], verbs: [get, create, patch]}
+          - {api_group: "", resources: [pods], verbs: [get, create]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
     allocation_profiles:
       - name: gateway
         service_accounts: [gateway, console]
@@ -187,6 +195,8 @@ overrides:
           - {direction: ingress, namespace: control, pod_label: app, pod_value: stego-fixture, port: 8443, protocol: TCP}
           - {direction: ingress, namespace: allocated, pod_label: app.kubernetes.io/name, pod_value: hypershell-gateway-console, port: 8080, protocol: TCP}
           - {direction: egress, namespace: allocated, pod_label: app.kubernetes.io/name, pod_value: openshell-gateway, port: 8080, protocol: TCP}
+          - {direction: ingress, namespace: profile, peer_profile: sandbox, pod_exists_label: agents.x-k8s.io/sandbox-name-hash, port: 8080, protocol: TCP}
+          - {direction: egress, namespace: profile, peer_profile: sandbox, pod_exists_label: agents.x-k8s.io/sandbox-name-hash, port: 2222, protocol: TCP}
         namespace_prefix: openshell-
         suffix_length: 16
         owner_label: hypershell.redhat.io/gateway-id
@@ -204,6 +214,51 @@ overrides:
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: gateway, namespace: allocated}
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: console, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
+      - name: sandbox
+        service_accounts: [sandbox]
+        namespace_prefix: openshell-sandbox-
+        suffix_length: 16
+        owner_label: hypershell.redhat.io/gateway-id
+        manager: hypershell-gateway-controller
+        pod_security: isolated-runtime
+        pod_runtime_class: kata
+        pod_service_account: sandbox
+        pod_annotations: [openshell.io/sandbox-id, agents.x-k8s.io/propagated-labels, agents.x-k8s.io/propagated-annotations]
+        pod_capability_grants:
+          - name: openshell-network-init
+            image: quay.io/opendatahub/odh-openshell-supervisor:v0.0.109-rhaiv.0@sha256:96e21135c18bc9f6f4d1dfd0cccae3c91769ef4d87da2e470eca4b56a24b2152
+            capabilities: [NET_ADMIN, NET_RAW, CHOWN, FOWNER]
+          - name: openshell-supervisor-network
+            image: quay.io/opendatahub/odh-openshell-supervisor:v0.0.109-rhaiv.0@sha256:96e21135c18bc9f6f4d1dfd0cccae3c91769ef4d87da2e470eca4b56a24b2152
+            capabilities: [SYS_PTRACE, DAC_READ_SEARCH]
+        pod_validations:
+          - expression: "variables.containers.all(c, c.name in ['agent','workspace-init','openshell-network-init','openshell-supervisor-network'])"
+            message: Sandbox container names must match OpenShell
+          - expression: "variables.containers.all(c, !(c.name in ['openshell-network-init','openshell-supervisor-network']) || c.image == 'quay.io/opendatahub/odh-openshell-supervisor:v0.0.109-rhaiv.0@sha256:96e21135c18bc9f6f4d1dfd0cccae3c91769ef4d87da2e470eca4b56a24b2152')"
+            message: Sandbox network helpers must use the selected supervisor image
+          - expression: "variables.containers.all(c, c.name != 'agent' || (has(c.securityContext) && has(c.securityContext.runAsNonRoot) && c.securityContext.runAsNonRoot && has(c.securityContext.runAsUser) && c.securityContext.runAsUser != 0 && has(c.securityContext.allowPrivilegeEscalation) && !c.securityContext.allowPrivilegeEscalation && has(c.securityContext.capabilities) && has(c.securityContext.capabilities.drop) && 'ALL' in c.securityContext.capabilities.drop))"
+            message: Sandbox workloads must run as a non-root user without extra capabilities
+          - expression: "variables.containers.all(c, !(c.name in ['agent','workspace-init']) || !has(c.volumeMounts) || c.volumeMounts.all(m, !(m.name in ['openshell-client-tls','openshell-sa-token'])))"
+            message: Sandbox workloads and workspace helpers cannot mount client credentials
+          - expression: "!has(object.spec.volumes) || object.spec.volumes.all(v, has(v.emptyDir) || (has(v.image) && v.image.reference == 'quay.io/opendatahub/odh-openshell-supervisor:v0.0.109-rhaiv.0@sha256:96e21135c18bc9f6f4d1dfd0cccae3c91769ef4d87da2e470eca4b56a24b2152') || (has(v.secret) && v.name == 'openshell-client-tls' && v.secret.secretName == 'openshell-client-tls') || (has(v.projected) && v.name == 'openshell-sa-token' && v.projected.sources.all(s, has(s.serviceAccountToken) && has(s.serviceAccountToken.audience) && s.serviceAccountToken.audience == 'openshell-gateway' && has(s.serviceAccountToken.expirationSeconds) && s.serviceAccountToken.expirationSeconds <= 3600)) || (has(v.persistentVolumeClaim) && v.name == 'workspace' && has(object.metadata.ownerReferences) && object.metadata.ownerReferences.exists(o, o.kind == 'Sandbox' && o.apiVersion.startsWith('agents.x-k8s.io/') && has(o.controller) && o.controller && v.persistentVolumeClaim.claimName == 'workspace-' + o.name)))"
+            message: Sandbox storage must match OpenShell workspace and identity rules
+        network_isolation: true
+        network_peers:
+          - {direction: egress, namespace: external, external_namespace: openshift-dns, pod_label: dns.operator.openshift.io/daemonset-dns, pod_value: default, port: 5353, protocol: UDP}
+          - {direction: egress, namespace: external, external_namespace: openshift-dns, pod_label: dns.operator.openshift.io/daemonset-dns, pod_value: default, port: 5353, protocol: TCP}
+          - {direction: egress, namespace: profile, peer_profile: gateway, pod_label: app.kubernetes.io/name, pod_value: openshell-gateway, port: 8080, protocol: TCP}
+          - {direction: ingress, namespace: profile, peer_profile: gateway, pod_label: app.kubernetes.io/name, pod_value: openshell-gateway, port: 2222, protocol: TCP}
+        quota:
+          - {resource: pods, value: "32"}
+          - {resource: limits.cpu, value: "64"}
+          - {resource: limits.memory, value: 64Gi}
+          - {resource: limits.ephemeral-storage, value: 16Gi}
+          - {resource: requests.storage, value: 64Gi}
+        bindings:
+          - {role: sandbox-worker, service_account: hypershell-gateway-workload, namespace: control}
+          - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
+          - {role: gateway-runtime, service_account: gateway, namespace: profile, subject_profile: gateway}
+          - {external_role: "system:openshift:scc:privileged", service_account: sandbox, namespace: allocated}
       - name: gateway-state
         network_isolation: true
         identity_config_map: openshell-state-identity
