@@ -1,0 +1,53 @@
+name: Sandbox adapter checks
+
+on:
+  push:
+    paths:
+      - '.github/workflows/sandbox-adapter.yml'
+      - 'internal/gatewayworkload/sandbox*'
+      - 'internal/gatewayworkload/resources.go'
+      - 'internal/namespaceallocation/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sandbox-adapter-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  adapter:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 768MiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check the application adapter with generated clients
+        run: |
+          set -o pipefail
+          mkdir -p "$RUNNER_TEMP/sandbox-adapter"
+          git rev-parse HEAD > "$RUNNER_TEMP/sandbox-adapter/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/sandbox-adapter/source-archive.sha256"
+          go mod verify
+          go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation \
+            | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"
+          git diff --exit-code
+      - name: Retain the adapter results
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: sandbox-adapter-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/sandbox-adapter
+          if-no-files-found: error
+          retention-days: 14

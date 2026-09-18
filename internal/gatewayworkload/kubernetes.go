@@ -220,14 +220,15 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 		return err
 	}
 	sandboxNS := ns
+	sandboxAccount := Name + "-sandbox"
 	if k.options.SandboxRuntimeClass != "" {
 		sandboxNS, _ = SandboxNamespace(id)
-		if err := k.ensureSandbox(ctx, id, sandboxNS, core, k.internalRoots); err != nil {
+		if sandboxAccount, err = k.ensureSandbox(ctx, id, sandboxNS, core, k.internalRoots); err != nil {
 			return err
 		}
 	}
 	config := definition("v1", "ConfigMap", Name+"-config", id)
-	config["data"] = object{"gateway.toml": configuration(ns, sandboxNS, k.options), "trust.pem": k.trust}
+	config["data"] = object{"gateway.toml": configuration(ns, sandboxNS, sandboxAccount, k.options), "trust.pem": k.trust}
 	if _, err = k.ensure(ctx, core+"/configmaps", config, id); err != nil {
 		return err
 	}

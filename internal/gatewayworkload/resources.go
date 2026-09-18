@@ -8,7 +8,7 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 )
 
-func configuration(ns, sandboxNS string, o Options) string {
+func configuration(ns, sandboxNS, sandboxAccount string, o Options) string {
 	topology := "combined"
 	if o.SandboxRuntimeClass != "" {
 		topology = "sidecar"
@@ -49,7 +49,7 @@ gateway_id = "openshell-gateway"
 ttl_secs = 3600
 [openshell.drivers.kubernetes]
 grpc_endpoint = "https://openshell-gateway.%s.svc.cluster.local:8080"
-service_account_name = "openshell-gateway-sandbox"
+service_account_name = %q
 supervisor_sideload_method = "image-volume"
 default_runtime_class_name = %q
 sa_token_ttl_secs = 3600
@@ -58,7 +58,7 @@ topology = %q
 [openshell.drivers.kubernetes.sidecar]
 proxy_uid = 1337
 process_binary_aware_network_policy = true
-`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, publicTLS, ns, o.SandboxRuntimeClass, topology)
+`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, publicTLS, ns, sandboxAccount, o.SandboxRuntimeClass, topology)
 }
 
 type resource struct {

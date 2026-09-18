@@ -73,7 +73,7 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 		if enabled {
 			options.PublicDomain = "example.test"
 		}
-		config := configuration(namespace, namespace, options)
+		config := configuration(namespace, namespace, "sandbox-account", options)
 		if strings.Contains(config, "%!") || !strings.Contains(config, `grpc_endpoint = "https://openshell-gateway.`+namespace+`.svc.cluster.local:8080"`) || !strings.Contains(config, `cert_path = "/etc/openshell-tls/tls.crt"`) {
 			t.Fatal("public TLS changed internal configuration")
 		}
