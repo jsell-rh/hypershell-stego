@@ -1,0 +1,141 @@
+{
+  "compiler_revision": "1ab6aeaad1e9862386c1d8c3d67e124f6814b048",
+  "core": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35347816185",
+    "source": "bc03f5dc545db0b7c22032a6eb3cf7a285dc4983",
+    "checked_at": "2026-09-18T13:33:15.488280+00:00",
+    "jobs": {
+      "acceptance (core)": "success",
+      "web-console": "success",
+      "service-image": "success",
+      "acceptance (browser)": "success",
+      "sandbox-workload": "skipped"
+    },
+    "passing_top_level_tests": 313,
+    "passing_packages": [
+      "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+      "github.com/jsell-rh/hypershell-stego/internal/cli",
+      "github.com/jsell-rh/hypershell-stego/internal/gateways",
+      "github.com/jsell-rh/hypershell-stego/contracts",
+      "github.com/jsell-rh/hypershell-stego/internal/httpapi",
+      "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "github.com/jsell-rh/hypershell-stego/internal/sandboxcount",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccounts",
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayidentity",
+      "github.com/jsell-rh/hypershell-stego/acceptance"
+    ],
+    "required_tests": [
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGatewayGrantWorkflowAcrossTransportsAndRestart",
+      "TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart",
+      "TestGatewayLogsMetricsAndTracesAcrossRestart",
+      "TestGatewayDatabaseTLSAndListenerAcrossRestart",
+      "TestGatewayDurableDeletionThroughGeneratedTransports"
+    ],
+    "skipped_tests": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "generated_source_check_passed": true,
+    "browser_workflow_passed_separately": true,
+    "core_log_sha256": "962b1c238fa9b8bca34148242d2d4c250762b4ebace4544521586a770cb7496f",
+    "sandbox_allocation_enabled": false,
+    "live_kata_checked": false,
+    "scope": "Compiler adoption, generated source, application transports, events, authorization, browser workflow, and restart behavior. The separate live Kubernetes and Kata gates are not proved by this run."
+  },
+  "browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35347816185",
+    "source": "bc03f5dc545db0b7c22032a6eb3cf7a285dc4983",
+    "job": 105608455085,
+    "test": "TestGeneratedBrowserGatewayWorkflow",
+    "test_passed": true,
+    "test_elapsed_seconds": 99.64,
+    "startup_instances_with_log_metric_trace_pairs": 3,
+    "screenshots_reviewed": [
+      "accounts-delete.json.png"
+    ],
+    "artifacts": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "browser-resources.txt": "595013dcaeebba1725bb3050e90aab5644f1c0772fa5fd50a405f8cc743c047d",
+      "browser-startup-signals.json": "60446bd2bd100235703ef2f04b8df4acca170a46407f8cc0b118f80ff98c2155",
+      "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29"
+    },
+    "core_suite_complete": false
+  },
+  "provider_and_journal": {
+    "source": "bc03f5dc545db0b7c22032a6eb3cf7a285dc4983",
+    "provider_discovery": {
+      "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35348884156",
+      "source_archive_verified": true,
+      "tests": [
+        "TestPostgresSignalEvidenceRequiresControllerAndLog",
+        "TestPostgresSignalEvidenceAcceptsManagedSchema",
+        "TestPostgresSignalEvidenceAcceptsCredentialPreparation",
+        "TestGatewayCleanupDeadlineReopensConfirmation",
+        "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+        "TestUnrelatedClientSnapshotComparison"
+      ],
+      "provider_cleanup_verified": true
+    },
+    "journal": {
+      "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35348886750",
+      "tests": [
+        "TestGatewayClosureContinuesAfterConsoleFailure",
+        "TestConsoleDomainPolicy",
+        "TestGatewayInventoryRegistersPastFailedClientRead",
+        "TestInventoryRPCsDenyUnverifiedCaller",
+        "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+        "TestDeletionRequiresExplicitPrivilegedState",
+        "TestIdentityPublicationRequiresProviderSuccess",
+        "TestConsoleFailureDoesNotBlockGrantRemoval",
+        "TestProviderStateJournalScopeAndObservation",
+        "TestConsoleProviderStateJournalSeparatesNativeScope",
+        "TestConsoleProviderStateReadGrantIsReadOnly",
+        "TestSQLComponentRejectsUnknownValues",
+        "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+        "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+        "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+        "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+        "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+        "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+        "TestGatewayIdentityControllerWorkflow",
+        "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+        "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+        "TestGatewayCleanupRecoversJournalOmittedByProvider",
+        "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+        "TestGatewayJournalClosureRollsBackWithFinalEvent",
+        "TestGatewayUserLoginFollowsStoredGrants",
+        "TestGatewayProviderStateAcrossGRPCAndRestart",
+        "TestGatewayDeletionBeforeWorkloadStartup",
+        "TestIdentityConditionDuringProviderTimeoutAndDesiredChange"
+      ],
+      "failures": 0,
+      "skips": 0
+    },
+    "core_suite_complete": false,
+    "hashes": {
+      "provider-discovery/ci.json": "338ac713cd972916ba5754f295a70eaed23ab880f3d1cc99621bb887f0e92700",
+      "provider-discovery/job.log": "c49188cc002c68025d2d6b22113dc29ce43fb7d700d10d182027861bd5fc8b3b",
+      "provider-discovery/result/cleanup.json": "61e23bb6437febd3384ead2cafc8770f568002ee8cfd4b6191ac1af34e5e6459",
+      "provider-discovery/result/compiler-revision": "c01f542cb5f45ea284dfb87c4d12c5bd768bead41e5645e94866e045e0f337c1",
+      "provider-discovery/result/source-archive.sha256": "25d44a9ea31cbdb23c301e923473ffcabe351521c1475f261a784dc266c5aa13",
+      "provider-discovery/result/source-commit": "c06c7fa88717f4f4da4595e3dcff26a3ffe6f19708a0a9cec1462997f21e2777",
+      "provider-discovery/result/tests.log": "c559a6ad5bec2db831715437d10d7e5ff3b70bf130f2690f6c4233b79cf5ec14",
+      "journal/ci.json": "82bc3cfbe18cc884d90ae472b43a59ff2fc97e328e78b034bd96c7ab1e8529b2",
+      "journal/job.log": "ebe16c68ba867ef94468f619311255eabd9453ce85fdc2585b8c9d167cddca2c",
+      "journal/result/tests.jsonl": "ce471c371dad326a175712d4fb2baab687accf1e3ad03ce51638f3b370cf8ada"
+    }
+  },
+  "sandbox_constructor_guard_retained": true
+}
