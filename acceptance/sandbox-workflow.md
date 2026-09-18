@@ -22,6 +22,23 @@ under `~/.local/state/stego/runs/upstream-sandbox-setup-20260917/`.
 This result covers compilation, generated output, and the selected recovery
 tests. It does not cover live Sandbox or Kata execution.
 
+On 2026-09-18, STEGO's common isolated-runtime allocation policy passed 31
+server dry-run admission requests on jshell at compiler source `19cb3e2`.
+These include the root workspace helper and ordinary socket volume, runtime
+and account restrictions, host-access denials, and exact capability grants.
+All 16 policies type-checked. The writer also lacked three tested cluster and
+account permissions. Cleanup needed a separate UID-checked recovery; all 60
+test resource paths were then absent and the test lease was released.
+See the [STEGO result record](https://github.com/jsell-rh/stego/blob/7878553/specs/isolated-allocation.md).
+
+This common policy is not yet adopted here. The next application work must
+connect the Sandbox allocation profile and its declared SCC and peer bindings,
+then remove cluster-policy writes from the workload client. OpenShell container,
+image, credential-mount, and placement rules remain application policy. Network
+controller annotation updates also need a check. Keep the constructor guard
+until the complete path is verified. These admission results do not establish
+Sandbox execution or VM isolation.
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks
