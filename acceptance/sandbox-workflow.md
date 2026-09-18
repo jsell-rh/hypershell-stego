@@ -33,8 +33,14 @@ See the [STEGO result record](https://github.com/jsell-rh/stego/blob/e88c299/spe
 
 The [signed compiler release](https://github.com/jsell-rh/stego/releases/tag/compiler-1ab6aeaad1e9862386c1d8c3d67e124f6814b048)
 is available. Its exact source passed the full compiler suite; the published
-package passed independent download and signature checks. It is not yet adopted
-here. The next application work must
+package passed independent download and signature checks. This compiler is now adopted here.
+The [application checks](https://github.com/jsell-rh/hypershell-stego/actions/runs/35347816185)
+passed at `bc03f5d`, with 313 top-level tests in the core suite and the rendered
+browser workflow in its separate job. Provider discovery and journal recovery
+also passed. Four tests that need separate database or live Kubernetes fixtures
+were skipped. The Kata job remains deferred. See the
+[adoption record](isolated-compiler-adoption-evidence.json).
+The next application work must
 connect the Sandbox allocation profile and its declared SCC and peer bindings,
 then remove cluster-policy writes from the workload client. OpenShell container,
 image, credential-mount, and placement rules remain application policy. Network
