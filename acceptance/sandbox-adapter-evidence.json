@@ -1,0 +1,28 @@
+{
+  "source": "bfb35eba9a43dc4ae298f486d09bc81ec4c780d6",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351125950",
+  "checked_at": "2026-09-18T13:37:52.707067+00:00",
+  "source_archive_verified": true,
+  "race_detector_enabled": true,
+  "passing_top_level_tests": 61,
+  "passing_packages": [
+    "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+    "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+    "github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
+  ],
+  "required_passes": [
+    "TestSeparateSandboxCountPreservesGatewayIdentity",
+    "TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange",
+    "TestSandboxSetupUsesBoundedDryRuns",
+    "TestSandboxSetupRejectsChangedOrMissingGuards",
+    "TestSandboxProbeRetainsUpstreamSetup",
+    "TestSandboxWithoutAllocationCannotReachKubernetes",
+    "TestCountWatchesFollowVerifiedNamespaces"
+  ],
+  "skipped_tests": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+  ],
+  "generated_profile_present": false,
+  "live_kata_execution": false,
+  "log_sha256": "9edcd3838e53e1bc09ad5749c822c4ece0d57e1664d7d8b4498b6792aec8f9b4"
+}

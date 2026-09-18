@@ -40,13 +40,27 @@ browser workflow in its separate job. Provider discovery and journal recovery
 also passed. Four tests that need separate database or live Kubernetes fixtures
 were skipped. The Kata job remains deferred. See the
 [adoption record](isolated-compiler-adoption-evidence.json).
-The next application work must
-connect the Sandbox allocation profile and its declared SCC and peer bindings,
-then remove cluster-policy writes from the workload client. OpenShell container,
-image, credential-mount, and placement rules remain application policy. Network
-controller annotation updates also need a check. Keep the constructor guard
-until the complete path is verified. These admission results do not establish
-Sandbox execution or VM isolation.
+The Sandbox candidate now declares its allocation profile, account binding,
+Pod rules, and related network peers. Its workload client uses STEGO's namespace
+and account checks. It no longer writes namespaces, accounts, or admission
+policies. Cleanup waits for both Gateway and Sandbox namespaces to be absent,
+including when the operator disables new Sandbox creation. The count controller
+watches the allocated Sandbox namespace and preserves the public Gateway
+namespace in API updates.
+
+The [adapter check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35351125950)
+passed at `bfb35eb`: 61 top-level tests in three packages with the race detector.
+One SQL test was skipped because this check has no database fixture. Tests cover
+positive and negative admission dry runs, changed setup rejection, namespace
+cleanup, count updates, namespace UID replacement, and stale event rejection.
+See the [adapter record](sandbox-adapter-evidence.json).
+
+This branch still needs the next signed compiler and regenerated output. The
+current generated output has no Sandbox profile. These adapter checks cannot
+establish the complete allocation path. Network-controller annotations and
+Sandbox network behavior also need checks. Keep the constructor guard until
+the complete path is verified. OpenShell container, image, credential-mount,
+and placement rules remain application policy. Live Kata execution is deferred.
 
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
