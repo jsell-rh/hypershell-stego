@@ -47,7 +47,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 			return err
 		}
 	}
-	controller, err := sandboxcount.New(source, namespaces, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), resync)
+	controller, err := sandboxcount.New(source, namespaces, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), resync, sandboxcount.Options{SandboxEnabled: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS") != ""})
 	if err != nil {
 		return err
 	}

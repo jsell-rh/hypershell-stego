@@ -46,14 +46,20 @@ func (s *namespacePods) Observe(ctx context.Context, c kube.Collection, apply fu
 }
 
 type namespaceProof struct {
-	mu    sync.Mutex
-	uids  map[string]string
-	calls map[string]int
-	fail  bool
+	mu      sync.Mutex
+	uids    map[string]string
+	calls   map[string]int
+	fail    bool
+	sandbox bool
 }
 
 func (p *namespaceProof) NamespaceUID(ctx context.Context, profile, name, id string) (string, error) {
-	if _, err := (namespaceFixture{}).NamespaceUID(ctx, profile, name, id); err != nil {
+	if p.sandbox {
+		expected, err := gatewayworkload.SandboxNamespace(id)
+		if err != nil || profile != "sandbox" || name != expected {
+			return "", errors.New("wrong Sandbox allocation request")
+		}
+	} else if _, err := (namespaceFixture{}).NamespaceUID(ctx, profile, name, id); err != nil {
 		return "", err
 	}
 	p.mu.Lock()
@@ -96,7 +102,7 @@ func TestCountWatchesFollowVerifiedNamespaces(t *testing.T) {
 	c, err := New(source, proof, api, &writerFixture{state: api, write: func(r *control.SetObservedSandboxCountRequest) error {
 		writes <- countWrite{Namespace: r.Namespace, ClusterId: r.ClusterId, Count: r.Count}
 		return nil
-	}}, cluster, time.Second)
+	}}, cluster, time.Second, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -193,7 +199,7 @@ func TestCountStopsWhenAllocationIdentityCannotBeVerified(t *testing.T) {
 	api := &apiFixture{rows: []*pb.Gateway{row}}
 	proof := &namespaceProof{uids: map[string]string{row.Namespace: "uid-one"}, calls: map[string]int{}}
 	source := &namespacePods{opened: make(chan openedNamespace, 1)}
-	c, err := New(source, proof, api, &writerFixture{state: api, write: func(*control.SetObservedSandboxCountRequest) error { return nil }}, cluster, time.Second)
+	c, err := New(source, proof, api, &writerFixture{state: api, write: func(*control.SetObservedSandboxCountRequest) error { return nil }}, cluster, time.Second, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -212,4 +218,72 @@ func TestCountStopsWhenAllocationIdentityCannotBeVerified(t *testing.T) {
 		t.Fatal("identity failure kept the worker active", err)
 	}
 	takeNamespace(t, watch.stopped)
+}
+
+func TestSeparateSandboxCountPreservesGatewayIdentity(t *testing.T) {
+	cluster := ksuid.New().String()
+	row := gateway(cluster)
+	ns, err := gatewayworkload.SandboxNamespace(row.GetMetadata().GetId())
+	if err != nil {
+		t.Fatal(err)
+	}
+	api := &apiFixture{rows: []*pb.Gateway{row}}
+	proof := &namespaceProof{sandbox: true, uids: map[string]string{ns: "first-uid"}, calls: map[string]int{}}
+	source := &namespacePods{opened: make(chan openedNamespace, 4)}
+	writes := make(chan countWrite, 32)
+	c, err := New(source, proof, api, &writerFixture{state: api, write: func(r *control.SetObservedSandboxCountRequest) error {
+		writes <- countWrite{Namespace: r.Namespace, ClusterId: r.ClusterId, Count: r.Count}
+		return nil
+	}}, cluster, time.Second, Options{SandboxEnabled: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan error, 1)
+	go func() { done <- c.Run(ctx) }()
+	t.Cleanup(func() { cancel(); takeNamespace(t, done) })
+	watch := takeNamespace(t, source.opened)
+	if watch.namespace != ns {
+		t.Fatal("count did not watch the allocated Sandbox namespace")
+	}
+	waitCount := func(want int32) {
+		t.Helper()
+		for {
+			got := takeNamespace(t, writes)
+			if got.Namespace != row.Namespace || got.ClusterId != cluster {
+				t.Fatal("count lost the Gateway identity", got)
+			}
+			if got.Count == want {
+				return
+			}
+		}
+	}
+	if err := watch.apply(kube.Change{Type: "REPLACE", Objects: []kube.Object{record("first", ns, "Running", "1")}}); err != nil {
+		t.Fatal(err)
+	}
+	waitCount(1)
+	if err := watch.apply(kube.Change{Type: "ADDED", Object: record("second", ns, "Pending", "2")}); err != nil {
+		t.Fatal(err)
+	}
+	waitCount(2)
+	proof.mu.Lock()
+	proof.uids[ns] = "replacement-uid"
+	proof.mu.Unlock()
+	replacement := takeNamespace(t, source.opened)
+	if replacement.namespace != ns {
+		t.Fatal("wrong replacement namespace")
+	}
+	takeNamespace(t, watch.stopped)
+	if err := replacement.apply(kube.Change{Type: "REPLACE"}); err != nil {
+		t.Fatal(err)
+	}
+	waitCount(0)
+	if err := watch.apply(kube.Change{Type: "ADDED", Object: record("late", ns, "Running", "3")}); err == nil {
+		t.Fatal("old namespace accepted a count event")
+	}
+	proof.mu.Lock()
+	defer proof.mu.Unlock()
+	if proof.calls[ns] == 0 || proof.calls[row.Namespace] != 0 {
+		t.Fatal("count checked the wrong allocation")
+	}
 }

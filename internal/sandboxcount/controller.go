@@ -25,18 +25,24 @@ type Source interface {
 type NamespaceSource interface {
 	NamespaceUID(context.Context, string, string, string) (string, error)
 }
-type Controller struct {
-	watches    *kube.WatchSet
-	allocation NamespaceSource
-	gateways   pb.GatewayServiceClient
-	counts     control.GatewayIdentityServiceClient
-	cluster    string
-	resync     time.Duration
-	mu         sync.Mutex
-	states     map[string]*observation
+type Options struct {
+	SandboxEnabled bool
 }
 
-func New(source Source, namespaces NamespaceSource, gateways pb.GatewayServiceClient, counts control.GatewayIdentityServiceClient, cluster string, resync time.Duration) (*Controller, error) {
+type Controller struct {
+	watches     *kube.WatchSet
+	allocation  NamespaceSource
+	gateways    pb.GatewayServiceClient
+	counts      control.GatewayIdentityServiceClient
+	cluster     string
+	resync      time.Duration
+	mu          sync.Mutex
+	states      map[string]*observation
+	sandbox     bool
+	assignments map[string]string
+}
+
+func New(source Source, namespaces NamespaceSource, gateways pb.GatewayServiceClient, counts control.GatewayIdentityServiceClient, cluster string, resync time.Duration, options Options) (*Controller, error) {
 	if _, err := gatewayworkload.Namespace(cluster); err != nil || source == nil || namespaces == nil || gateways == nil || counts == nil {
 		return nil, errors.New("sandbox count controller requires clients and a cluster ID")
 	}
@@ -50,7 +56,7 @@ func New(source Source, namespaces NamespaceSource, gateways pb.GatewayServiceCl
 	if err != nil {
 		return nil, err
 	}
-	return &Controller{watches: watches, allocation: namespaces, gateways: gateways, counts: counts, cluster: cluster, resync: resync, states: map[string]*observation{}}, nil
+	return &Controller{watches: watches, allocation: namespaces, gateways: gateways, counts: counts, cluster: cluster, resync: resync, states: map[string]*observation{}, sandbox: options.SandboxEnabled, assignments: map[string]string{}}, nil
 }
 func denied(err error) bool {
 	return errors.Is(err, kube.ErrWatchSetContract) || status.Code(err) == codes.Unauthenticated || status.Code(err) == codes.PermissionDenied
@@ -107,7 +113,7 @@ func (c *Controller) observe(ctx context.Context, sink *runtime.KeySink[string])
 			return errors.New("sandbox namespace has no baseline reset")
 		}
 		err := state.consume(event.Change)
-		changed := event.Change.Type == "REPLACE" || state.changed[ns]
+		changed := event.Change.Type == "REPLACE" || len(state.changed) > 0
 		clear(state.changed)
 		c.mu.Unlock()
 		if err != nil {
@@ -126,12 +132,13 @@ func (c *Controller) reconcile(ctx context.Context, ns string) error {
 		c.mu.Unlock()
 		return nil
 	}
-	ready, count := state.ready, state.counts[ns]
+	gatewayNamespace := c.assignments[ns]
+	ready, count := state.ready, state.counts[gatewayNamespace]
 	c.mu.Unlock()
-	if !ready {
+	if !ready || gatewayNamespace == "" {
 		return runtime.ErrNotReady
 	}
-	_, err := c.counts.SetObservedSandboxCount(ctx, &control.SetObservedSandboxCountRequest{Namespace: ns, ClusterId: c.cluster, Count: count})
+	_, err := c.counts.SetObservedSandboxCount(ctx, &control.SetObservedSandboxCountRequest{Namespace: gatewayNamespace, ClusterId: c.cluster, Count: count})
 	if status.Code(err) == codes.FailedPrecondition {
 		return nil
 	}
@@ -143,6 +150,7 @@ func (c *Controller) reconcile(ctx context.Context, ns string) error {
 // this controller's newer observation. The count remains advisory.
 func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) error {
 	namespaces := []string{}
+	assignments := map[string]string{}
 	scopes := []kube.CollectionScope{}
 	seen := map[string]bool{}
 	for page := int32(1); ; page++ {
@@ -181,8 +189,16 @@ func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) er
 				if state.GetDeleted() || current.GetClusterId() != c.cluster {
 					continue
 				}
+				profile, watchNamespace := "gateway", ns
+				if c.sandbox {
+					profile = "sandbox"
+					watchNamespace, err = gatewayworkload.SandboxNamespace(id)
+					if err != nil {
+						return fmt.Errorf("%w: Sandbox namespace is invalid", kube.ErrWatchSetContract)
+					}
+				}
 				call, stop = context.WithTimeout(ctx, 5*time.Second)
-				uid, err := c.allocation.NamespaceUID(call, "gateway", ns, id)
+				uid, err := c.allocation.NamespaceUID(call, profile, watchNamespace, id)
 				stop()
 				if errors.Is(err, allocation.ErrPending) {
 					continue
@@ -190,8 +206,9 @@ func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) er
 				if err != nil {
 					return fmt.Errorf("%w: Gateway namespace identity could not be verified", kube.ErrWatchSetContract)
 				}
-				scopes = append(scopes, kube.CollectionScope{Collection: kube.Collection{Path: "/api/v1/namespaces/" + ns + "/pods", LabelSelector: SandboxLabel}, Identity: uid})
-				namespaces = append(namespaces, ns)
+				scopes = append(scopes, kube.CollectionScope{Collection: kube.Collection{Path: "/api/v1/namespaces/" + watchNamespace + "/pods", LabelSelector: SandboxLabel}, Identity: uid})
+				namespaces = append(namespaces, watchNamespace)
+				assignments[watchNamespace] = ns
 			}
 		}
 		if len(result.Items) < 100 {
@@ -201,6 +218,9 @@ func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) er
 	if err := c.watches.Replace(ctx, scopes); err != nil {
 		return err
 	}
+	c.mu.Lock()
+	c.assignments = assignments
+	c.mu.Unlock()
 	for _, ns := range namespaces {
 		if err := enqueue(ns); err != nil {
 			return err

@@ -7,6 +7,8 @@ on:
       - 'internal/gatewayworkload/sandbox*'
       - 'internal/gatewayworkload/resources.go'
       - 'internal/namespaceallocation/**'
+      - 'internal/sandboxcount/**'
+      - 'internal/sandboxcountapp/**'
   workflow_dispatch:
 
 permissions:
@@ -40,7 +42,7 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/sandbox-adapter/source-commit"
           git archive HEAD | sha256sum > "$RUNNER_TEMP/sandbox-adapter/source-archive.sha256"
           go mod verify
-          go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation \
+          go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/sandboxcount ./internal/sandboxcountapp \
             | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"
           git diff --exit-code
       - name: Retain the adapter results

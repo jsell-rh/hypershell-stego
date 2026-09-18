@@ -222,7 +222,7 @@ func TestCountWritesSerializeAndRecoverFromCache(t *testing.T) {
 		mu.Unlock()
 		return nil
 	}}
-	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second)
+	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,7 +296,7 @@ func TestCountAccessLossStopsWatch(t *testing.T) {
 	api := &apiFixture{rows: []*pb.Gateway{{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}}}
 	c, err := New(source, namespaceFixture{}, api, &writerFixture{state: api, write: func(*control.SetObservedSandboxCountRequest) error {
 		return status.Error(codes.PermissionDenied, "denied")
-	}}, cluster, time.Second)
+	}}, cluster, time.Second, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -339,7 +339,7 @@ func TestCountWaitsForReplacementAfterReset(t *testing.T) {
 		}
 		return nil
 	}}
-	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second)
+	c, err := New(source, namespaceFixture{}, api, writer, cluster, time.Second, Options{})
 	if err != nil {
 		t.Fatal(err)
 	}
