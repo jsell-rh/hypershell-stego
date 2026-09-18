@@ -28,11 +28,13 @@ type Controller struct {
 	sources   []runtime.Source[string]
 	cluster   string
 	console   bool
+	sandbox   bool
 }
 
 // Options contains operator configuration for this managed cluster.
 type Options struct {
-	ConsoleDomain string
+	ConsoleDomain  string
+	SandboxEnabled bool
 }
 
 var ErrPending = errors.New("namespace cleanup is pending")
@@ -54,7 +56,7 @@ func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClien
 	if err != nil {
 		return nil, err
 	}
-	return &Controller{allocator: allocator, state: state, cluster: cluster, console: options.ConsoleDomain != "", sources: []runtime.Source[string]{tag("gateway:", gatewaySource)}}, nil
+	return &Controller{allocator: allocator, state: state, cluster: cluster, console: options.ConsoleDomain != "", sandbox: options.SandboxEnabled, sources: []runtime.Source[string]{tag("gateway:", gatewaySource)}}, nil
 }
 
 func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
@@ -115,6 +117,15 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 			if err := c.remove(ctx, "gateway", name, id); err != nil {
 				return err
 			}
+			// Remove retained Sandbox allocations even when new Sandbox
+			// creation is disabled. The Gateway must stop creating work first.
+			sandboxName, err := gatewayworkload.SandboxNamespace(id)
+			if err != nil {
+				return err
+			}
+			if err := c.remove(ctx, "sandbox", sandboxName, id); err != nil {
+				return err
+			}
 			sqlHistory := response.GetCleanupTargets()["sql"]
 			if sqlHistory == nil {
 				return errors.New("Gateway allocation has no SQL cleanup history")
@@ -151,7 +162,17 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 				return err
 			}
 		}
-		return c.allocator.Ensure(ctx, "gateway", name, id)
+		if err := c.allocator.Ensure(ctx, "gateway", name, id); err != nil {
+			return err
+		}
+		if c.sandbox {
+			sandboxName, err := gatewayworkload.SandboxNamespace(id)
+			if err != nil {
+				return err
+			}
+			return c.allocator.Ensure(ctx, "sandbox", sandboxName, id)
+		}
+		return nil
 	default:
 		return errors.New("namespace work key has an unknown resource kind")
 	}

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
@@ -84,7 +85,7 @@ func TestGatewayAllocationRequiresCurrentPlacement(t *testing.T) {
 				if len(writes.calls) != 2 || writes.calls[0] != "ensure:gateway-state:"+stateName+":"+id || writes.calls[1] != "ensure:gateway:"+ns+":"+id {
 					t.Fatal(writes.calls)
 				}
-			} else if len(writes.calls) != 1 || writes.calls[0] != tc.action+":gateway:"+ns+":"+id {
+			} else if len(writes.calls) != 2 || writes.calls[0] != tc.action+":gateway:"+ns+":"+id || !strings.HasPrefix(writes.calls[1], "delete:sandbox:") {
 				t.Fatal(writes.calls)
 			}
 		})
@@ -138,10 +139,10 @@ func TestStateAllocationRemainsUntilSQLCleanupCompletes(t *testing.T) {
 			c := &Controller{allocator: writes, state: a, cluster: cluster}
 			err := c.reconcile(context.Background(), "gateway:"+id)
 			if sqlComplete && workloadComplete {
-				if err != nil || len(writes.calls) != 3 || writes.calls[2] != "delete:gateway-state:"+stateName+":"+id || writes.calls[1] != "delete:gateway-console-state:openshell-console-"+stateName[len("openshell-state-"):]+":"+id {
+				if err != nil || len(writes.calls) != 4 || writes.calls[3] != "delete:gateway-state:"+stateName+":"+id || writes.calls[2] != "delete:gateway-console-state:openshell-console-"+stateName[len("openshell-state-"):]+":"+id {
 					t.Fatal("completed state was not removed", err, writes.calls)
 				}
-			} else if !errors.Is(err, ErrPending) || len(writes.calls) != 1 || writes.calls[0] != "delete:gateway:"+ns+":"+id {
+			} else if !errors.Is(err, ErrPending) || len(writes.calls) != 2 || writes.calls[0] != "delete:gateway:"+ns+":"+id {
 				t.Fatal("SQL state was removed early", sqlComplete, workloadComplete, err, writes.calls)
 			}
 		}
@@ -186,5 +187,30 @@ func TestConsoleAllocationConfiguration(t *testing.T) {
 		} else if err == nil {
 			t.Fatalf("invalid console domain accepted: %q", domain)
 		}
+	}
+}
+
+func TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange(t *testing.T) {
+	id, cluster := ksuid.New().String(), ksuid.New().String()
+	ns, _ := gatewayworkload.Namespace(id)
+	sandbox, _ := gatewayworkload.SandboxNamespace(id)
+	api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: true}}, "sql": {Targets: map[string]bool{cluster: true}}}}}
+	writes := &allocations{done: true}
+	controller := &Controller{allocator: writes, state: api, cluster: cluster, sandbox: true}
+	if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
+		t.Fatal(err)
+	}
+	if len(writes.calls) != 3 || writes.calls[1] != "ensure:gateway:"+ns+":"+id || writes.calls[2] != "ensure:sandbox:"+sandbox+":"+id {
+		t.Fatal("Sandbox did not follow Gateway allocation", writes.calls)
+	}
+	// A new process can disable creation after an earlier process allocated it.
+	restarted := &Controller{allocator: writes, state: api, cluster: cluster}
+	api.row.Deleted = true
+	writes.calls = nil
+	if err := restarted.reconcile(context.Background(), "gateway:"+id); err != nil {
+		t.Fatal(err)
+	}
+	if len(writes.calls) != 4 || writes.calls[0] != "delete:gateway:"+ns+":"+id || writes.calls[1] != "delete:sandbox:"+sandbox+":"+id {
+		t.Fatal("disabled option orphaned Sandbox allocation", writes.calls)
 	}
 }

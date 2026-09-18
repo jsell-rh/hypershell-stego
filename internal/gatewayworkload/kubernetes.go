@@ -288,6 +288,17 @@ func (k *Kubernetes) Delete(ctx context.Context, gw *pb.Gateway) error {
 	if !gone {
 		return ErrPending
 	}
+	sandboxName, err := SandboxNamespace(id)
+	if err != nil {
+		return err
+	}
+	gone, err = k.allocation.NamespaceGone(ctx, "sandbox", sandboxName, id)
+	if err != nil {
+		return err
+	}
+	if !gone {
+		return ErrPending
+	}
 	return nil
 }
 
