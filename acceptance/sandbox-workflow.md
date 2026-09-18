@@ -61,7 +61,11 @@ source checks passed. Commit `c6c185b` contains the generated Sandbox profile,
 account binding, and related network rules. See the
 [generation record](sandbox-generation-evidence.json).
 
-The full application checks at `c6c185b` are in progress. The earlier adapter
+The core application suite at `c6c185b` is in progress. The separate rendered
+browser workflow passed in 97.91 seconds. Three console starts had matching
+logs, metrics, and traces for all eight startup stages. Six provider checks and
+28 journal recovery checks passed. The provider source and cleanup records
+were verified. See the [application record](sandbox-application-evidence.json). The earlier adapter
 checks used the prior generated output and cannot establish the complete
 allocation path. Network-controller annotations and Sandbox network behavior
 also need checks. Keep the constructor guard until

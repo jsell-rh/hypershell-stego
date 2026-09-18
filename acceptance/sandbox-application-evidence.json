@@ -1,0 +1,93 @@
+{
+  "browser": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351953666",
+    "source": "c6c185b73af723ab5ae9fbaf0a33dfab8746dbe3",
+    "job": 105621960386,
+    "test": "TestGeneratedBrowserGatewayWorkflow",
+    "test_passed": true,
+    "test_elapsed_seconds": 97.91,
+    "startup_instances_with_log_metric_trace_pairs": 3,
+    "screenshots_reviewed": [
+      "accounts-delete.json.png"
+    ],
+    "memory_peak_bytes": 490287104,
+    "memory_limit_bytes": 1610612736,
+    "oom_or_pid_limit_events": false,
+    "artifacts": {
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+      "browser-resources.txt": "a57f2851f0783faeb305e45b21dd1d0683c76e92246478f2368036c90884ebae",
+      "browser-startup-signals.json": "44838f71d74b72ee44e6d102b62a4917905f37ef4541868c463b841cb1b15c2b",
+      "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29"
+    },
+    "job_log_sha256": "0fda04f09a0942a8ff159f38d24b9ef165af212a20eb68cce03bbf9d024135a8",
+    "core_suite_complete": false,
+    "checked_at": "2026-09-18T13:51:02.216431+00:00"
+  },
+  "provider_and_journal": {
+    "source": "c6c185b73af723ab5ae9fbaf0a33dfab8746dbe3",
+    "provider_discovery": {
+      "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351979938",
+      "source_archive_verified": true,
+      "tests": [
+        "TestPostgresSignalEvidenceRequiresControllerAndLog",
+        "TestPostgresSignalEvidenceAcceptsManagedSchema",
+        "TestPostgresSignalEvidenceAcceptsCredentialPreparation",
+        "TestGatewayCleanupDeadlineReopensConfirmation",
+        "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+        "TestUnrelatedClientSnapshotComparison"
+      ],
+      "provider_cleanup_verified": true
+    },
+    "journal": {
+      "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351982799",
+      "tests": [
+        "TestGatewayClosureContinuesAfterConsoleFailure",
+        "TestConsoleDomainPolicy",
+        "TestGatewayInventoryRegistersPastFailedClientRead",
+        "TestInventoryRPCsDenyUnverifiedCaller",
+        "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+        "TestDeletionRequiresExplicitPrivilegedState",
+        "TestIdentityPublicationRequiresProviderSuccess",
+        "TestConsoleFailureDoesNotBlockGrantRemoval",
+        "TestProviderStateJournalScopeAndObservation",
+        "TestConsoleProviderStateJournalSeparatesNativeScope",
+        "TestConsoleProviderStateReadGrantIsReadOnly",
+        "TestSQLComponentRejectsUnknownValues",
+        "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+        "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+        "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+        "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+        "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+        "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+        "TestGatewayIdentityControllerWorkflow",
+        "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+        "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+        "TestGatewayCleanupRecoversJournalOmittedByProvider",
+        "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+        "TestGatewayJournalClosureRollsBackWithFinalEvent",
+        "TestGatewayUserLoginFollowsStoredGrants",
+        "TestGatewayProviderStateAcrossGRPCAndRestart",
+        "TestGatewayDeletionBeforeWorkloadStartup",
+        "TestIdentityConditionDuringProviderTimeoutAndDesiredChange"
+      ],
+      "failures": 0,
+      "skips": 0
+    },
+    "core_suite_complete": false,
+    "hashes": {
+      "provider-discovery/ci.json": "04a7e1cf6c2b41b6c9876ec76c8ef6242baacba80a9804636cea504ec9950d91",
+      "provider-discovery/job.log": "8de64000c7fdf4193b75509ca1050b541551c3c4d862e72f9015b52073bf8518",
+      "provider-discovery/result/cleanup.json": "61e23bb6437febd3384ead2cafc8770f568002ee8cfd4b6191ac1af34e5e6459",
+      "provider-discovery/result/compiler-revision": "1fa179f04a0dd6d6aa42351c8ebfecffb42a5375874034823f8b756ba261afd3",
+      "provider-discovery/result/source-archive.sha256": "229354425b1e897dadcde7aa98b2c39636ab91c13d8d3e3b7c7d45df13fbd76b",
+      "provider-discovery/result/source-commit": "a22496a2e031ea8e0ff2b9a61944c20a8224d392fde4190528bc67051591a3d0",
+      "provider-discovery/result/tests.log": "e4274b6fecdd3bf923a7f24f55adc367ea291cd79b748459d83d20b0d83fd4d8",
+      "journal/ci.json": "a069b80e2276670752072340b42cb4932a7537765b8571f82d56b0ab0da4ebd1",
+      "journal/job.log": "91679093deffa162f8604dbbbff45f46c2cd5d9560ddbe335cacc77bc6f3b80c",
+      "journal/result/tests.jsonl": "146b941a00334d4bf2358c169d73fc5c86a0d2d7d0c1b7105ebbb551bb865f93"
+    }
+  },
+  "core_suite_pending": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351953666",
+  "live_kata_checked": false,
+  "sandbox_enabled": false
+}
