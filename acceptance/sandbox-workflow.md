@@ -55,10 +55,16 @@ positive and negative admission dry runs, changed setup rejection, namespace
 cleanup, count updates, namespace UID replacement, and stale event rejection.
 See the [adapter record](sandbox-adapter-evidence.json).
 
-This branch still needs the next signed compiler and regenerated output. The
-current generated output has no Sandbox profile. These adapter checks cannot
-establish the complete allocation path. Network-controller annotations and
-Sandbox network behavior also need checks. Keep the constructor guard until
+The branch now selects signed compiler `0fcdf3b`. Hosted regeneration passed at
+`71663d9`. All 415 artifact files matched the applied output, and signature and
+source checks passed. Commit `c6c185b` contains the generated Sandbox profile,
+account binding, and related network rules. See the
+[generation record](sandbox-generation-evidence.json).
+
+The full application checks at `c6c185b` are in progress. The earlier adapter
+checks used the prior generated output and cannot establish the complete
+allocation path. Network-controller annotations and Sandbox network behavior
+also need checks. Keep the constructor guard until
 the complete path is verified. OpenShell container, image, credential-mount,
 and placement rules remain application policy. Live Kata execution is deferred.
 
