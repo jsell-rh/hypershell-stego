@@ -141,11 +141,11 @@ class InspectionBoundary(unittest.TestCase):
     def test_fixed_additions_preserve_runtime_and_original_bindings(self):
         self.assertEqual(inspection.verify_runtime(go(self.original), go(self.fixture)), inspection.inspection_roles())
 
-    def test_sandbox_inspector_cannot_read_credentials_or_change_accounts(self):
+    def test_sandbox_inspector_reads_only_client_identity_and_cannot_change_accounts(self):
         role = next(r for r in self.fixture['Roles'] if r['Name'] == 'fixture-sandbox-inspector')
         self.assertEqual(role['Scope'], 'namespace')
         self.assertEqual({r for rule in role['Rules'] for r in rule['resources']},
-                         {'resourcequotas', 'networkpolicies', 'pods', 'pods/log', 'serviceaccounts', 'rolebindings'})
+                         {'secrets', 'resourcequotas', 'networkpolicies', 'pods', 'pods/log', 'serviceaccounts', 'rolebindings'})
         accounts = next(rule for rule in role['Rules'] if rule['resources'] == ['serviceaccounts'])
         self.assertEqual(accounts['verbs'], ['get'])
         for change in [lambda r: r['Rules'].append({'apiGroups': [''], 'resources': ['secrets'], 'verbs': ['get']}),
@@ -155,6 +155,33 @@ class InspectionBoundary(unittest.TestCase):
             change(next(r for r in config['Roles'] if r['Name'] == role['Name']))
             with self.assertRaises(ValueError):
                 inspection.verify_runtime(go(self.original), go(config))
+
+    def test_sandbox_setup_reads_are_limited_to_named_objects(self):
+        checks = [
+            ('fixture-gateway-inspector', 'configmaps', ['openshell-gateway-config']),
+            ('fixture-gateway-inspector', 'secrets', [
+                'hypershell-gateway-console-files', 'openshell-client-tls',
+                'openshell-gateway-db-credentials', 'openshell-gateway-keys',
+                'openshell-public-tls', 'openshell-server-tls']),
+            ('fixture-sandbox-inspector', 'secrets', ['openshell-client-tls']),
+        ]
+        for role_name, resource, names in checks:
+            role = next(r for r in self.fixture['Roles'] if r['Name'] == role_name)
+            rules = [r for r in role['Rules'] if r['resources'] == [resource]]
+            self.assertEqual(rules, [{'apiGroups': [''], 'resources': [resource],
+                                    'verbs': ['get'], 'resourceNames': names}])
+            for change in [
+                lambda r: r.pop('resourceNames'),
+                lambda r: r['resourceNames'].append('unrelated'),
+                lambda r: r['verbs'].append('list'),
+                lambda r: r['verbs'].append('update'),
+                lambda r: r.update(apiGroups=['*']),
+            ]:
+                config = copy.deepcopy(self.fixture)
+                target = next(r for r in config['Roles'] if r['Name'] == role_name)
+                change(next(r for r in target['Rules'] if r['resources'] == [resource]))
+                with self.subTest(role=role_name, resource=resource), self.assertRaises(ValueError):
+                    inspection.verify_runtime(go(self.original), go(config))
 
     def test_undeclared_or_broader_permissions_are_rejected(self):
         changes = [

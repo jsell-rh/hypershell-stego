@@ -28,7 +28,8 @@ def write_inspection_record(path, record):
 ROLES = '''      - name: fixture-gateway-inspector
         scope: namespace
         rules:
-          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls, hypershell-gateway-console-files], verbs: [get]}
+          - {api_group: "", resources: [configmaps], resource_names: [openshell-gateway-config], verbs: [get]}
+          - {api_group: "", resources: [secrets], resource_names: [openshell-client-tls, openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls, hypershell-gateway-console-files], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
@@ -55,6 +56,7 @@ ROLES = '''      - name: fixture-gateway-inspector
       - name: fixture-sandbox-inspector
         scope: namespace
         rules:
+          - {api_group: "", resources: [secrets], resource_names: [openshell-client-tls], verbs: [get]}
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
@@ -155,7 +157,8 @@ def inspection_roles():
     network = [rule('networking.k8s.io', 'networkpolicies', ['get'], ['stego-allocation']), rule('networking.k8s.io', 'networkpolicies', ['list'])]
     return [
         {'Name': 'fixture-gateway-inspector', 'Scope': 'namespace', 'Rules': [
-            rule('', 'secrets', ['get'], ['hypershell-gateway-console-files', 'openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
+            rule('', 'configmaps', ['get'], ['openshell-gateway-config']),
+            rule('', 'secrets', ['get'], ['hypershell-gateway-console-files', 'openshell-client-tls', 'openshell-gateway-db-credentials', 'openshell-gateway-keys', 'openshell-public-tls', 'openshell-server-tls']),
             quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']), rule('', 'pods/log', ['get']),
             rule('', 'serviceaccounts', ['get']),
             rule('apps', 'deployments', ['get', 'list', 'watch'], ['hypershell-gateway-console', 'openshell-gateway']),
@@ -166,6 +169,7 @@ def inspection_roles():
         {'Name': 'fixture-console-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['gateway-console-state']), quota, *network]},
         {'Name': 'fixture-sandbox-inspector', 'Scope': 'namespace', 'Rules': [
+            rule('', 'secrets', ['get'], ['openshell-client-tls']),
             quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']),
             rule('', 'pods/log', ['get']), rule('', 'serviceaccounts', ['get']),
             rule('rbac.authorization.k8s.io', 'rolebindings', ['get', 'list'])]},
