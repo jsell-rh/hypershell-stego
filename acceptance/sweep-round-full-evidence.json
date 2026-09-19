@@ -1,0 +1,48 @@
+{
+  "source": "6a8a882324ecea932e182a22cdcb309c63bc910b",
+  "run_id": 35471009094,
+  "conclusion": "success",
+  "jobs": {
+    "acceptance (browser)": "success",
+    "service-image": "success",
+    "web-console": "success",
+    "acceptance (core)": "success",
+    "sandbox-workload": "skipped"
+  },
+  "core_passed_cases": 844,
+  "core_passed_top_level": 329,
+  "core_failed_cases": [],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "prior_core_cases_retained": true,
+  "additional_passed_cases": 0,
+  "additional_top_level_tests": [],
+  "serial_and_parallel_restart_tests_passed": true,
+  "rendered_browser_test_passed": true,
+  "log_sha256": "0262a9b48238537dfc809d75f6fa3d069884059f7c008a6cb7352d4249f111a2",
+  "source_delta_verified": true,
+  "baseline_source": "674c6e5379c560840d7bb846911f1e0eb2476808",
+  "baseline_core_cases": 844,
+  "changed_mechanism_files": [
+    ".stego/compiler-revision",
+    ".stego/compiler-sha256",
+    ".stego/config.yaml",
+    ".stego/state.yaml",
+    ".stego/tooling-revision",
+    "console/.stego/config.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/compiler-revision",
+    "gateway-console/.stego/config.yaml",
+    "gateway-console/.stego/state.yaml",
+    "internal/serviceaccounts/recovery.go",
+    "out/cli/command/version.go",
+    "out/controller/sweep.go",
+    "scripts/prepare-browser-inspection.py",
+    "scripts/test_browser_inspection.py"
+  ]
+}
