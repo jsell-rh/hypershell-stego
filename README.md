@@ -55,7 +55,27 @@ separate qualification requirement.
 
 ## Verification state
 
-The current control-account policy is installed and verified on jshell. With
+Main `034b46b` passed the complete hosted workflow in
+[run 35460802241](https://github.com/jsell-rh/hypershell-stego/actions/runs/35460802241).
+The core suite passed 315 top-level tests and 754 cases. Four declared live
+checks were excluded from that suite. Hosted browser, console, and image jobs
+passed. The separate API run `35460802217`, attempt 2, passed all 52 required
+checks with no skip or failure. Four generation records matched, and cleanup
+passed. The journal run `35460802209` passed all 32 required tests.
+
+The main cluster browser run `35460802239`, attempt 2, stopped before it created
+a Job. The installed Sandbox candidate policy differs from main. That result
+is not a workflow pass. The policy was not changed for the test. The live Kata
+check remains deferred because no suitable cluster is available.
+
+The capacity candidate created 100 selected accounts through REST while the
+fixture held 100 Gateway rows and 10,000 account clients. The diagnostic run
+closed all selected account rows, but did not seal the provider scope within
+120 seconds. The 30-second cleanup target remains unmet. STEGO `58a3bcc` adds
+a common action time reserve; consumer adoption and capacity tests remain open.
+See [the capacity results and their limits](acceptance/provider-capacity.md).
+
+The following control-account results apply to earlier source revisions. With
 compiler `931f712`, the complete live browser workflow passed all 11 required
 tests, and the core suite passed 738 cases. Account recovery and denied worker
 writes passed. Independent browser cleanup found no test resources or held lease.
