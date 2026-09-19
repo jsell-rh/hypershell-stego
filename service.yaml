@@ -221,6 +221,7 @@ overrides:
         owner_label: hypershell.redhat.io/gateway-id
         manager: hypershell-gateway-controller
         pod_security: isolated-runtime
+        pod_network_provider: openshift-ovn-node-identity
         pod_runtime_class: kata
         pod_service_account: sandbox
         pod_annotations: [openshell.io/sandbox-id, agents.x-k8s.io/propagated-labels, agents.x-k8s.io/propagated-annotations]
