@@ -1,5 +1,10 @@
 # Configured Sandbox allocation
 
+The configured Gateway worker passed the complete live workflow at `7f81556`.
+Run `35470884946` passed all 11 required tests and the checks described below.
+The first failed run and the corrected test permissions remain recorded.
+Live Kata and OpenShell Sandbox execution are still deferred.
+
 The user selected the unchanged upstream Agent Sandbox controller as trusted
 cluster infrastructure. The operator owns its installation and permissions.
 The separate allocation and native packet checks passed earlier. The remaining
@@ -43,9 +48,8 @@ passed. Browser, UI, and image jobs passed. The same five conditional tests were
 excluded, and the Kata job was skipped. See the
 [full application result](sandbox-activation-full-evidence.json).
 
-The bounded native cluster workflow must still qualify this candidate before
-promotion. Live OpenShell Sandbox execution and Kata isolation remain
-unverified. The user deferred the Kata test because no suitable cluster exists.
+The bounded native cluster workflow has qualified this candidate, as recorded
+below. Live OpenShell Sandbox execution and Kata isolation remain unverified. The user deferred the Kata test because no suitable cluster exists.
 The upstream workspace helper and socket settings remain unchanged. No fork or
 new admission service is required.
 
@@ -76,14 +80,13 @@ roles. It does not grant Secret list or write access. The application workers'
 permissions remain unchanged. Eighteen inspection checks reject broader grants
 and changes to existing bindings. With the installation checks, all 35 local
 Python tests passed. Hosted adapter and rendered policy checks passed before
-the next live workflow, as recorded below.
+the corrected live workflow, as recorded below.
 
 The production source, generated output, compiler pin, and Go tests match
 `674c6e5` exactly. The prior full suite therefore covers those unchanged files.
 The complete suite was not run again at `7f81556`; only the two test Python files
 and documentation or result records differ. See the
-[source comparison](sandbox-inspection-source-evidence.json). The live workflow
-must still verify the corrected inspection path before promotion.
+[source comparison](sandbox-inspection-source-evidence.json). The live result below verifies the corrected inspection path.
 
 
 At `7f81556`, adapter run `35470497014` passed all 63 top-level tests, including
@@ -98,5 +101,28 @@ Sandbox runtime class comparison differ. The other Pod guards, network
 policies, and production permissions remain equal. See the
 [corrected policy result](sandbox-inspection-policy-evidence.json).
 
-The reviewed test fixture is installed under the shared lease for live run
-`35470884946`. Its completion and cleanup must be verified before promotion.
+The reviewed test fixture was installed under the shared lease for live run
+`35470884946`. Its completion and cleanup are verified below.
+
+
+The corrected workflow passed in 840.10 seconds. Independent review matched
+all 1,502 source files, the signed compiler package, and 417 generation hashes
+before and after the test. It verified REST and gRPC access, filtered lists,
+denied writes, event delivery, account cleanup, browser sessions, database and
+provisioner restart, namespace replacement, and correlated logs, metrics, and
+traces. Four captured UI images were reviewed. See the
+[complete live evidence](sandbox-activation-live-evidence.json).
+
+The actual Gateway worker's Sandbox setup passed before and after recovery.
+All 34 permission checks, four denied Sandbox writes, six denied admission
+requests, and 24 Gateway network connections passed. The native Sandbox probes
+passed 40 paths: eight allowed connections and 32 denied connections. Four
+listener Pod identities matched their allocated namespace and account records.
+The account review checked 24 readiness observations across three namespace
+incarnations and six account objects.
+
+The operator restored all three changed test resources and removed the temporary
+RuntimeClass. Independent cleanup verified all 32 installed resources, no test
+resources or allocations, and a free shared lease. The result does not prove
+VM isolation, actual OpenShell Sandbox execution, RDS failover, or production
+capacity. The selected upstream controller trust boundary remains unchanged.
