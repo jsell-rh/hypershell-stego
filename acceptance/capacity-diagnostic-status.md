@@ -37,5 +37,44 @@ They remain unchanged; their discarded status values cannot be recovered.
 The test sends all 17 statuses through the collector as both client and server
 spans. It checks missing status separation, unknown text, private data removal,
 duration totals, the time window, the 1,024-group limit, and continued counting
-for an existing group at that limit. Hosted qualification is pending. This
-change does not establish a new capacity result or change production code.
+for an existing group at that limit. Hosted diagnostic checks passed as recorded
+below. The correction changes the diagnostic collector and its tests.
+
+The seventh run `35472389423` retained the original collector. Account cleanup
+completed in 61.5320 seconds and still missed the 30-second target. All selected
+accounts and journals were closed and background state was preserved. The
+saved samples retain failed cycles before a later successful scan. The result
+still cannot identify every RPC failure class.
+
+Correction `c1b3580` changes only the diagnostic fixture and its documentation
+from scheduling source `6a8a882`. It is pushed after the seventh test and its
+cleanup finished. Its hosted workflow checks the canonical status cases before
+measurement. The diagnostic checks passed in run `35472990779`. The changed collector must
+be identified in later timing comparisons.
+
+
+The eighth run used source `c1b3580` and completed account cleanup in 44.9706
+seconds. It failed the 30-second target. All 100 selected account rows, protected
+journals, provider clients, provider users, and success audit records were
+checked. All 9,900 background rows and 10,007 other clients stayed unchanged.
+Source, binary hashes, limits, and test cleanup were verified. See the
+[eighth result](capacity-eighth-evidence.json).
+
+All 34 canonical client and server status cases passed. The first time bucket
+contains three client `Delete` deadlines, two client `Delete` internal errors,
+and two journal `Save` aborted calls. The aggregate cannot prove that the save
+and delete failures belong to the same requests. Later cancellation records
+occur after the measured cleanup interval and must not be counted as cleanup
+failures.
+
+The saved account count reaches 95 at 15.1323 seconds and remains there until
+the first failed scan finishes. A later scan closes the remaining rows. The
+first saved count of 100 occurs at 34.6770 seconds. The journal scope closes at
+44.6510 seconds. This supports further review of failed-work retries and repeated
+journal reads. It does not justify removal of checks for late provider effects.
+
+The test journal API uses real authenticated handlers and storage, but it does
+not attach the generated server trace hook. The production API does attach that
+hook. The database fixture has no configured one-connection limit. The current
+records do not establish a database pool wait or a production server tracing
+defect. The next diagnostic change must preserve these distinctions.
