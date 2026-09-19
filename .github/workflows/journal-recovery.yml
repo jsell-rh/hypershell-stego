@@ -80,7 +80,7 @@ jobs:
             -run '^Test(ServiceAccountLimits|ConsoleSQLStateRefusesOldServerWithoutGatewayCalls|SQLComponentRejectsUnknownValues|IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
-            -run '^(TestConfiguredServiceAccountQuotaRemainsAtomic|TestServiceAccountQuotaAndExpirationValidation|TestServiceAccountGatewayQuota|TestGatewayDeletionBeforeWorkloadStartup|TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
+            -run '^(TestConfiguredServiceAccountQuotaRemainsAtomic|TestServiceAccountQuotaAndExpirationValidation|TestServiceAccountGatewayQuota|TestGatewayDeletionBeforeWorkloadStartup|TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanupBudgetResumesAfterRestart|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
             | tee -a "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           python3 - "$RUNNER_TEMP/journal-recovery/tests.jsonl" <<'PYRESULT'
           import json, sys
@@ -116,6 +116,7 @@ jobs:
               "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
               "TestGatewayJournalClosureRollsBackWithFinalEvent",
               "TestGatewayCleanupRecoversJournalOmittedByProvider",
+              "TestGatewayAccountCleanupBudgetResumesAfterRestart",
               "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
               "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
           }
