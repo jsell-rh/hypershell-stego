@@ -4,7 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"strings"
+	"time"
 
+	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 	"github.com/segmentio/ksuid"
 )
@@ -157,37 +160,53 @@ func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider
 	return live, nil
 }
 
-// GatewayIDs supplies a bounded inventory for recovery after an offline deletion.
+// GatewayIDs discovers canonical native and console identities. Name searches
+// exclude unrelated account clients. Current reads still establish ownership.
+// This is a bounded repeat scan, not a snapshot or proof of absence. Retained
+// Gateway IDs remain the controller's first recovery source.
 func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 	ids := []string{}
-	seen := map[string]bool{}
 	resources := map[string]bool{}
-	for first := 0; first < provider.MaxInventory; first += provider.MaxPageSize {
-		clients, err := c.keycloak.ListClients(ctx, provider.Page{First: first, Size: provider.MaxPageSize})
+	for _, prefix := range []string{"hs-gateway-", "hs-console-"} {
+		source, err := c.keycloak.ClientNameCursorSource(prefix)
 		if err != nil {
 			return nil, err
 		}
-		for _, client := range clients {
-			if seen[client.ID] {
-				return nil, errors.New("Gateway client inventory repeats an ID")
+		seen := map[string]bool{}
+		err = runtime.Scan(ctx, source, func(listed provider.ClientRepresentation) error {
+			if seen[listed.ID] {
+				return errors.New("Gateway client inventory repeats an ID")
 			}
-			seen[client.ID] = true
-			id := client.Attributes[managedGatewayIDAttribute]
-			if id == "" {
-				id = client.Attributes[gatewayIDAttribute]
+			seen[listed.ID] = true
+			// Search uses substring matching. Only exact canonical names are candidates.
+			id := strings.TrimPrefix(listed.ClientID, prefix)
+			if _, err := GatewayClientID(id); err != nil || listed.ClientID != prefix+id {
+				return nil
 			}
-			_, nativeErr := gatewayBinding(&client, id)
-			_, consoleErr := consoleBinding(&client, id)
-			expected, err := GatewayClientID(id)
-			native := nativeErr == nil && err == nil && client.ClientID == expected
-			if (native || consoleErr == nil) && !resources[id] {
+			live, err := c.getClient(ctx, listed.ID)
+			if err != nil {
+				return err
+			}
+			if live.ClientID != listed.ClientID {
+				return provider.ErrOwnership
+			}
+			if prefix == "hs-gateway-" {
+				_, err = gatewayBinding(live, id)
+			} else {
+				_, err = consoleBinding(live, id)
+			}
+			if err != nil {
+				return nil
+			}
+			if !resources[id] {
 				resources[id] = true
 				ids = append(ids, id)
 			}
-		}
-		if len(clients) < provider.MaxPageSize {
-			return ids, nil
+			return nil
+		}, runtime.ScanOptions{PageSize: provider.MaxPageSize, MaxPages: provider.MaxInventory/provider.MaxPageSize + 1, PageTimeout: 5 * time.Second})
+		if err != nil {
+			return nil, err
 		}
 	}
-	return nil, errors.New("Keycloak client inventory exceeds its limit")
+	return ids, nil
 }
