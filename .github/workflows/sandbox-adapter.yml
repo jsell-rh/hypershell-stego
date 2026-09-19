@@ -9,6 +9,7 @@ on:
       - 'internal/namespaceallocation/**'
       - 'internal/sandboxcount/**'
       - 'internal/sandboxcountapp/**'
+      - 'acceptance/gateway_sandbox_workload_test.go'
   workflow_dispatch:
 
 permissions:
@@ -44,6 +45,9 @@ jobs:
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/sandboxcount ./internal/sandboxcountapp \
             | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"
+          # Compile the deferred live test without starting its fixtures.
+          go test -mod=readonly -run '^$' -timeout=30s ./acceptance \
+            | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
           git diff --exit-code
       - name: Retain the adapter results
         if: always()

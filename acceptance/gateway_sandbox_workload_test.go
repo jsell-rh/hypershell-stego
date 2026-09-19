@@ -196,6 +196,10 @@ func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gatewa
 
 func sandboxAdmissionChecks(t *testing.T, k *kubeFixture, ns string) {
 	t.Helper()
+	if k.options.ControlNamespace == "" {
+		t.Fatal("Sandbox admission check requires the allocation control namespace")
+	}
+	policy := k.options.ControlNamespace + ".hypershell-namespace-allocation.pods.sandbox"
 	var list struct{ Items []map[string]any }
 	if err := json.Unmarshal(k.must(t, "", "-n", ns, "get", "pods", "-o", "json"), &list); err != nil || len(list.Items) != 1 {
 		t.Fatal("expected one sandbox Pod", err)
@@ -228,7 +232,7 @@ func sandboxAdmissionChecks(t *testing.T, k *kubeFixture, ns string) {
 			}
 			return
 		}
-		if err == nil || !strings.Contains(string(output), "Sandbox isolation rule") {
+		if err == nil || !strings.Contains(string(output), policy) {
 			t.Fatalf("%s was not denied by sandbox admission: %v %s", label, err, output)
 		}
 	}
@@ -254,6 +258,29 @@ func sandboxAdmissionChecks(t *testing.T, k *kubeFixture, ns string) {
 		s := p["spec"].(map[string]any)
 		s["volumes"] = append(s["volumes"].([]any), map[string]any{"name": "database", "secret": map[string]any{"secretName": "openshell-gateway-db-credentials"}})
 	})
+	for _, field := range []string{"containers", "initContainers"} {
+		for _, source := range []string{"env", "envFrom"} {
+			check(field+" Secret "+source, func(p map[string]any) {
+				name := "agent"
+				if field == "initContainers" {
+					name = "workspace-init"
+				}
+				for _, raw := range p["spec"].(map[string]any)[field].([]any) {
+					container := raw.(map[string]any)
+					if container["name"] != name {
+						continue
+					}
+					if source == "env" {
+						container[source] = []any{map[string]any{"name": "KEY", "valueFrom": map[string]any{"secretKeyRef": map[string]any{"name": "openshell-client-tls", "key": "tls.key"}}}}
+					} else {
+						container[source] = []any{map[string]any{"secretRef": map[string]any{"name": "openshell-client-tls"}}}
+					}
+					return
+				}
+				t.Fatal("Sandbox has no credential denial target", name)
+			})
+		}
+	}
 	check("other sandbox storage", func(p map[string]any) {
 		s := p["spec"].(map[string]any)
 		for _, v := range s["volumes"].([]any) {
