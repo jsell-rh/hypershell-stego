@@ -995,6 +995,7 @@
               ],
               "resources": [
                 "pods",
+                "pods/status",
                 "pods/ephemeralcontainers"
               ],
               "scope": "Namespaced"
@@ -1051,7 +1052,15 @@
             "message": "Isolated Pods require approved volume types"
           },
           {
-            "expression": "!has(object.metadata.annotations) || object.metadata.annotations.all(k, k in [\"openshift.io/scc\",\"security.openshift.io/validated-scc-subject-type\",\"openshell.io/sandbox-id\",\"agents.x-k8s.io/propagated-labels\",\"agents.x-k8s.io/propagated-annotations\"] || (k == 'seccomp.security.alpha.kubernetes.io/pod' \u0026\u0026 object.metadata.annotations[k] == 'runtime/default' \u0026\u0026 has(object.spec.securityContext) \u0026\u0026 has(object.spec.securityContext.seccompProfile) \u0026\u0026 object.spec.securityContext.seccompProfile.type == 'RuntimeDefault'))",
+            "expression": "(((oldObject != null \u0026\u0026 has(oldObject.metadata.annotations) \u0026\u0026 \"k8s.ovn.org/pod-networks\" in oldObject.metadata.annotations) == (has(object.metadata.annotations) \u0026\u0026 \"k8s.ovn.org/pod-networks\" in object.metadata.annotations) \u0026\u0026 (!(oldObject != null \u0026\u0026 has(oldObject.metadata.annotations) \u0026\u0026 \"k8s.ovn.org/pod-networks\" in oldObject.metadata.annotations) || oldObject.metadata.annotations[\"k8s.ovn.org/pod-networks\"] == object.metadata.annotations[\"k8s.ovn.org/pod-networks\"])) || (request.operation == 'UPDATE' \u0026\u0026 request.subResource == 'status' \u0026\u0026 oldObject != null \u0026\u0026 has(oldObject.spec.nodeName) \u0026\u0026 oldObject.spec.nodeName != '' \u0026\u0026 has(object.spec.nodeName) \u0026\u0026 object.spec.nodeName == oldObject.spec.nodeName \u0026\u0026 request.userInfo.username == \"system:ovn-node:\" + oldObject.spec.nodeName \u0026\u0026 \"system:ovn-nodes\" in request.userInfo.groups))",
+            "message": "OVN Pod metadata requires the assigned network node identity"
+          },
+          {
+            "expression": "(((oldObject != null \u0026\u0026 has(oldObject.metadata.annotations) \u0026\u0026 \"k8s.v1.cni.cncf.io/network-status\" in oldObject.metadata.annotations) == (has(object.metadata.annotations) \u0026\u0026 \"k8s.v1.cni.cncf.io/network-status\" in object.metadata.annotations) \u0026\u0026 (!(oldObject != null \u0026\u0026 has(oldObject.metadata.annotations) \u0026\u0026 \"k8s.v1.cni.cncf.io/network-status\" in oldObject.metadata.annotations) || oldObject.metadata.annotations[\"k8s.v1.cni.cncf.io/network-status\"] == object.metadata.annotations[\"k8s.v1.cni.cncf.io/network-status\"])) || (request.operation == 'UPDATE' \u0026\u0026 request.subResource == 'status' \u0026\u0026 oldObject != null \u0026\u0026 has(oldObject.spec.nodeName) \u0026\u0026 oldObject.spec.nodeName != '' \u0026\u0026 has(object.spec.nodeName) \u0026\u0026 object.spec.nodeName == oldObject.spec.nodeName \u0026\u0026 request.userInfo.username == \"system:multus:\" + oldObject.spec.nodeName \u0026\u0026 \"system:multus\" in request.userInfo.groups))",
+            "message": "Multus Pod metadata requires the assigned network node identity"
+          },
+          {
+            "expression": "!has(object.metadata.annotations) || object.metadata.annotations.all(k, k in [\"openshift.io/scc\",\"security.openshift.io/validated-scc-subject-type\",\"openshell.io/sandbox-id\",\"agents.x-k8s.io/propagated-labels\",\"agents.x-k8s.io/propagated-annotations\",\"k8s.ovn.org/pod-networks\",\"k8s.v1.cni.cncf.io/network-status\"] || (k == 'seccomp.security.alpha.kubernetes.io/pod' \u0026\u0026 object.metadata.annotations[k] == 'runtime/default' \u0026\u0026 has(object.spec.securityContext) \u0026\u0026 has(object.spec.securityContext.seccompProfile) \u0026\u0026 object.spec.securityContext.seccompProfile.type == 'RuntimeDefault'))",
             "message": "Isolated Pods cannot set undeclared annotations"
           },
           {
