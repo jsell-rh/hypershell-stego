@@ -99,6 +99,21 @@ the generated policy and includes Secret environment cases for the workload and
 workspace helper. Live Kata execution remains deferred. The constructor guard
 remains active. See the [credential rule record](sandbox-secret-environment-evidence.json).
 
+The branch now selects [signed compiler `eed9066`](https://github.com/jsell-rh/stego/releases/tag/compiler-eed90662e4faa485032e3e2b0d056b6166f0d00b)
+and its matching common registry and tooling. The Sandbox declaration selects
+`pod_network_provider: openshift-ovn-node-identity`. STEGO generates Pod status
+coverage and rules for OVN and Multus metadata changes by the assigned node.
+Application configuration cannot grant these provider annotation domains.
+Hosted generation passed at `a0ddfae`; all 415 files matched the checked artifact.
+Commit `be5d674` contains the generated output. Application handlers and module
+dependencies are unchanged from the Secret environment application check.
+The [adapter check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35453493088)
+passed against the new output: 62 top-level tests, including 40 Secret environment
+cases. One conditional database test was skipped. The deferred live test also
+compiled without starting its fixtures. The complete application allocation and
+network gate still needs a separate check. The constructor guard
+remains active. See the [network metadata record](sandbox-network-metadata-evidence.json).
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks

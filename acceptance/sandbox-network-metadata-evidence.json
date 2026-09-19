@@ -1,0 +1,87 @@
+{
+  "source": "be5d67436df63b1052a642eb872fd9bdb9336368",
+  "generation": {
+    "source": "a0ddfae01289ab5de242a763fc762224c81b9e33",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35453384786",
+    "compiler": {
+      "format": 1,
+      "repository": "jsell-rh/stego",
+      "workflow": "jsell-rh/stego/.github/workflows/compiler-artifact.yml",
+      "reference": "refs/heads/main",
+      "source_revision": "eed90662e4faa485032e3e2b0d056b6166f0d00b",
+      "predicate_type": "https://slsa.dev/provenance/v1",
+      "self_hosted_runners_allowed": false,
+      "artifact": {
+        "name": "stego-linux-amd64",
+        "sha256": "79fce8d97b41ba12f07148c505fb9f43d5eb6d772eb4c295ee0cacab9343c026",
+        "size": 38362377
+      },
+      "build_record_sha256": "cfd9dade84a890ee77983b55bc9a8e511d4f9b884ec29d883c3c61f22d53d616",
+      "bundle_sha256": "ababd8f78eb4b6132008c1ed4c6001fc3c3cc31287fa4a0f1d1358d869d774c1"
+    },
+    "source_archive_verified": true,
+    "generated_files_matched": 415,
+    "patch_sha256": "087991303da2bf1c2e7b34358ea6f5f54891ffe0b06c2827e2132a5c83b95845",
+    "checked_at": "2026-09-19T15:58:50.984031+00:00"
+  },
+  "runtime_changes": [
+    "Generated compiler build record",
+    "Generated Sandbox Pod status and network metadata admission policy"
+  ],
+  "application_handlers_and_dependencies_unchanged_since": "7c4834e5b81c5a8bbd71314ee731c399a3d71ee0",
+  "reviewed_changed_paths": [
+    ".github/workflows/sandbox-adapter.yml",
+    ".stego/compiler-revision",
+    ".stego/compiler-sha256",
+    ".stego/config.yaml",
+    ".stego/state.yaml",
+    ".stego/tooling-revision",
+    "acceptance/gateway_sandbox_workload_test.go",
+    "acceptance/sandbox-secret-environment-evidence.json",
+    "acceptance/sandbox-workflow.md",
+    "console/.stego/config.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/compiler-revision",
+    "gateway-console/.stego/config.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/deploy/render/worker-namespace-allocation.json.tmpl",
+    "service.yaml"
+  ],
+  "prior_source_core_pending": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938",
+  "constructor_guard_retained": true,
+  "application_allocation_network_gate_passed": false,
+  "kata_execution_deferred": true,
+  "local_go_tests_run": false,
+  "adapter": {
+    "source": "be5d67436df63b1052a642eb872fd9bdb9336368",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35453493088",
+    "checked_at": "2026-09-19T16:01:00.612377+00:00",
+    "source_archive_verified": true,
+    "race_detector_enabled": true,
+    "passing_top_level_tests": 62,
+    "passing_packages": [
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+      "github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
+    ],
+    "required_passes": [
+      "TestSandboxSecretEnvironmentPolicy",
+      "TestSeparateSandboxCountPreservesGatewayIdentity",
+      "TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange",
+      "TestSandboxSetupUsesBoundedDryRuns",
+      "TestSandboxSetupRejectsChangedOrMissingGuards",
+      "TestSandboxProbeRetainsUpstreamSetup",
+      "TestSandboxWithoutAllocationCannotReachKubernetes",
+      "TestCountWatchesFollowVerifiedNamespaces"
+    ],
+    "skipped_tests": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+    ],
+    "generated_secret_environment_policy_verified": true,
+    "secret_environment_cases": 40,
+    "deferred_acceptance_test_compiled": true,
+    "live_kata_execution": false,
+    "log_sha256": "730239b0beae3cc0db8d2ca8547db016ac35e4ed95668cfc16285451554464db"
+  }
+}
