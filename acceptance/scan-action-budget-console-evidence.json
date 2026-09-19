@@ -1,0 +1,13 @@
+{
+  "run_id": 35463688677,
+  "source": "032d56b1756802afb88ec71953a3874256fc409c",
+  "compiler": "58a3bcc78e928c1453977d4a8f4c280fd38c2eac",
+  "generated_source_files_matched": 129,
+  "module_binary_matches_image": true,
+  "pulled_digest_matches_build": true,
+  "image_user": "65532:65532",
+  "image_digest": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:254b841d6bd58bc6d4d5601e3ea260fd6ee054af0dbe9cffecb7259672a74ab5",
+  "compiler_executed_locally": false,
+  "application_binary_executed_locally": false,
+  "scope": "Generated module, dashboard binding, private deployment, dependencies, and image. This is not a live cluster browser workflow."
+}

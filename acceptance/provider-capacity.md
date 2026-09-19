@@ -112,8 +112,8 @@ and all 415 generated files. Only the common controller runtime, CLI compiler
 identity, and three generation state files changed. This branch uses the new
 API for retained account cleanup and provider inventory, with a 750 ms action
 limit. The two-second work limit, one-second commit limit, page sizes, and
-sweep interval remain unchanged. Restart and capacity qualification are still
-required. No improved timing is claimed. See the
+sweep interval remain unchanged. The restart result is recorded below; capacity
+qualification is still required. No improved timing is claimed. See the
 [generation record](scan-action-budget-generation-evidence.json).
 
 Main quota/journal run `35460802209` passed all 32 required top-level checks.
@@ -136,3 +136,20 @@ the work deadline saved a failed cycle instead of a clean partial pass.
 It uses real PostgreSQL and a provider fixture with a 450 ms action delay.
 It does not measure real-provider capacity. The same test must pass after
 the common scan runtime is adopted.
+
+After adoption at `032d56b`, journal run `35463688587` passed all 33 required
+top-level tests, with no failure or skip. The original six-account fixture is
+unchanged. It now saves a clean partial pass, reconstructs the service and
+store, closes each account once, writes all six success audits, and seals the
+provider scope. This is PostgreSQL and provider-fixture evidence, not a
+real-provider capacity pass. See the [journal record](scan-action-budget-journal-evidence.json).
+
+Generated Gateway console run `35463688677` also passed at `032d56b`. Its saved
+archive matches all 129 module files. The image contains the checked binary,
+uses user `65532:65532`, and retains its digest after registry pull. This covers
+the module, dashboard binding, private deployment, dependencies, and image.
+It is not a live cluster browser result. See the
+[console record](scan-action-budget-console-evidence.json).
+
+The fifth capacity run, `35463991341`, uses the same `032d56b` source and the
+unchanged fixture from the fourth run. Its result is pending.
