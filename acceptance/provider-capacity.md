@@ -199,9 +199,8 @@ the capacity fixture are unchanged.
 A new 32-account PostgreSQL test checks saved partial progress, independent
 parallel actions, serial row/journal actions for each account, callback joins,
 store reconstruction, scope closure, and one success audit for each account.
-Application regression and real-provider capacity results are still pending.
-The last measured complete cleanup is 93.2722 seconds; no timing improvement
-is claimed for the new candidate.
+The later regression and capacity results are recorded below. The parallel
+candidate did not establish a material improvement in total cleanup time.
 
 
 The first parallel journal run, `35466619525` at `f38f334`, failed the new test's
@@ -225,8 +224,7 @@ the scope was sealed, and each account had one success audit. See the
 [parallel journal record](scan-parallel-journal-evidence.json).
 
 This result checks PostgreSQL recovery with a provider fixture. The full hosted
-application check and sixth real-provider capacity result remain pending. The
-previous complete cleanup measurement remains 93.2722 seconds. The separate
+application check and sixth real-provider capacity result follow below. The separate
 [Gateway identity discovery change](gateway-identity-inventory.md) is excluded
 from the frozen source for that sixth capacity comparison.
 
@@ -241,4 +239,27 @@ See the [full result](scan-parallel-full-evidence.json).
 
 After independent verification of that result, the sixth capacity run
 `35468703943` started on the exact same source. Its six fixture files are
-unchanged from the previous measurement. No capacity result is available yet.
+unchanged from the previous measurement.
+
+The sixth run completed account cleanup in 92.3174 seconds. It failed the
+30-second target. All 100 REST-created accounts, protected journals, provider
+clients, and provider users were closed or removed. The 9,900 background account
+rows and 10,007 other provider clients retained their saved state. Source,
+binary, resource-limit, and test cleanup checks passed. The API process used
+eight cleanup workers. This result does not qualify total Gateway cleanup.
+See the [six retained results](provider-capacity-evidence.json).
+
+The first three saved passes had 27, 61, and 95 closed account rows. They were
+about 12 seconds apart. Unlike the fifth run, the saved account cycle retained
+failure flags. It completed a failed cycle before another scan cleared those
+flags. All account rows were first observed closed at 66.2439 seconds. The
+scope sealed at 91.9999 seconds. The records have 134 trace groups with no
+dropped groups. They do not establish the cause of each failed provider call.
+
+Source review found a scheduling cost: the common sweep waits one interval
+after every group, including empty groups. This application has ten groups and
+a one-second interval. Thus each rotation adds ten seconds before callback and
+storage time. This is consistent with the observed spacing; it does not explain
+every failed call. The next scheduling change must remain common to STEGO,
+retain bounded work and fair access for each group, and keep the default timing
+contract for existing callers. A separate test must prove any improvement.

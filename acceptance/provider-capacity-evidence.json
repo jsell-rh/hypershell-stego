@@ -118,6 +118,241 @@
       "binary_hashes_match": true,
       "test_resource_cleanup_confirmed": true,
       "provider_absence_and_background_preservation_verified": true
+    },
+    {
+      "run_id": 35468703943,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35468703943",
+      "source_commit": "6c546746f4f1a223203e1534c72a1f6a2db742c9",
+      "compiler_revision": "d3ccd1178a1f9f77ae74b627f0ac1e2d71b5a133",
+      "conclusion": "failure",
+      "reason": "Account cleanup completed above the 30-second target. Parallel work did not establish a material timing improvement.",
+      "fixture_unchanged": true,
+      "accounts_per_gateway": 100,
+      "background_creation_tested": false,
+      "background_sql_sha256": "3355dbd5931915b1f4365289c9bfae63e05a01ef6788ec2b923320b0d5a0a480",
+      "closed_accounts": 100,
+      "closed_journals": 100,
+      "complete": true,
+      "configured_creator_quota": 100,
+      "configured_gateway_quota": 100,
+      "deleted_provider_clients": 100,
+      "deleted_provider_users": 100,
+      "diagnostic_log_records_received": 53056,
+      "diagnostic_metrics_received": 7095,
+      "diagnostic_trace_groups_dropped": 0,
+      "diagnostics_enabled": true,
+      "elapsed_seconds": 92.317378706,
+      "gateways": 100,
+      "keycloak_database": "postgresql",
+      "keycloak_mode": "start",
+      "preserved_background_accounts": 9900,
+      "preserved_other_clients": 10007,
+      "provider_account_clients_before": 10000,
+      "provider_snapshot_sha256": "495f51748032c0db0aaa49ae559472bf04c9124a26e6421ccda0889c1704a8b1",
+      "race_instrumented": false,
+      "rest_created_accounts": 100,
+      "schema": 1,
+      "scope": "account_cleanup",
+      "scope_sealed_seconds": 91.999900725,
+      "seeded_background_accounts": 9900,
+      "sql_accounts_before": 10000,
+      "stage": "complete",
+      "target_met": false,
+      "target_seconds": 30,
+      "test_passed": false,
+      "workload_cleanup_tested": false,
+      "result_sha256": "3c7823710e13a5b1ae9d45ece87b27d4f628cd6e1283e861a87d10a06013f0d6",
+      "log_sha256": "2685286a68e6d4ce0d486107934bf00fb1e7e2fedf03d62b6d40b1d44c9166c0",
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "test_resource_cleanup_confirmed": true,
+      "resource_limits_verified": true,
+      "progress_samples": 45,
+      "diagnostic_trace_groups": 134,
+      "saved_account_cycles_failed": true,
+      "first_observed_all_account_rows_closed_seconds": 66.243908102,
+      "progress_changes": [
+        {
+          "closed_accounts": 0,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 0.009283131
+        },
+        {
+          "closed_accounts": 27,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "3f616c76779805520625ebf29657e808b5fd7069c67f8cf92a9d9d3f7e8866a0",
+            "version": 1
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 4.170970583
+        },
+        {
+          "closed_accounts": 61,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "42af28fe1a42be8e42dffab41b2877d6e19618ea4fb81dc95fd2e38f96f1f6b3",
+            "version": 2
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 16.580595604
+        },
+        {
+          "closed_accounts": 95,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "5fae32755bac1cfc2e386a260a273f1efe130b391e6de13ec07ce8c1fe01a3d3",
+            "version": 3
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 28.886598515
+        },
+        {
+          "closed_accounts": 96,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "5fae32755bac1cfc2e386a260a273f1efe130b391e6de13ec07ce8c1fe01a3d3",
+            "version": 3
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 41.330267352999996
+        },
+        {
+          "closed_accounts": 96,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "bc49df3eb07f7675bb09fbaaff937a05472f60228fbc54c0bf81c3a09ac477e7",
+            "version": 4
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 43.429782866
+        },
+        {
+          "closed_accounts": 96,
+          "gateway-account-cleanup": {
+            "complete": true,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "814aa11c34d684b331c8b8fac6f3b0f8b865598166797c7e83ddfbd519c6af3c",
+            "version": 5
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 53.685038045
+        },
+        {
+          "closed_accounts": 100,
+          "gateway-account-cleanup": {
+            "complete": true,
+            "cursor_present": true,
+            "failed": true,
+            "position_sha256": "814aa11c34d684b331c8b8fac6f3b0f8b865598166797c7e83ddfbd519c6af3c",
+            "version": 5
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 66.243908102
+        },
+        {
+          "closed_accounts": 100,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": false,
+            "position_sha256": "e4d723daeff59a31c4954ccdd3646658cb88c3acbff7ac3a88452d79f8e41f25",
+            "version": 6
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 68.505162279
+        },
+        {
+          "closed_accounts": 100,
+          "gateway-account-cleanup": {
+            "complete": false,
+            "cursor_present": true,
+            "failed": false,
+            "position_sha256": "855a2b3b59ae7347fc7fad6dd21434fe98035611c84a41ff755c8715b6b9c55a",
+            "version": 7
+          },
+          "gateway-provider-inventory": {
+            "complete": false,
+            "cursor_present": false,
+            "failed": false,
+            "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+            "version": 0
+          },
+          "seconds": 80.981878953
+        }
+      ]
     }
   ],
   "regression": {
