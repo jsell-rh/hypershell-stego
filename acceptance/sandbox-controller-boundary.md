@@ -39,7 +39,9 @@ Keep Gateway role policy and OpenShell Pod policy in Hypershell. Keep common
 allocation, permission checks, and telemetry in STEGO.
 
 This decision resolves the external controller trust question. It does not
-change a controller deployment or remove the current constructor guard. The
+change a controller deployment. The decision commit retained the constructor
+guard; the later [activation candidate](sandbox-activation.md) has separate
+qualification requirements. The
 allocation and native network checks have separate evidence. Live OpenShell
 Sandbox execution and Kata isolation remain unverified; the user deferred the
 Kata test because no suitable cluster is available. See the

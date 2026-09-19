@@ -36,9 +36,12 @@ existing permission limits. This resolves the external controller trust
 question; no maintained entry point is required. See the
 [permission review](sandbox-controller-boundary.md).
 
-The current constructor guard remains in place. This decision does not qualify
-live OpenShell Sandbox execution or Kata isolation. The live Kata test remains
-deferred. The dated records below preserve the earlier checks and their limits.
+The decision commit retained the constructor guard. A later candidate removes
+the unconditional rejection and extends the native workflow through the actual
+Sandbox setup path. Its qualification is pending; see the
+[activation record](sandbox-activation.md). Live OpenShell Sandbox execution and
+Kata isolation remain unverified. The Kata test is deferred. The dated records
+below preserve the earlier checks and their limits.
 
 On 2026-09-17, the user selected the current Hypershell and OpenShell setup.
 The prototype no longer changes the workspace-copy helper's user or the shared

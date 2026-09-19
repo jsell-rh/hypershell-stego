@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/sandbox-adapter.yml'
       - 'internal/gatewayworkload/sandbox*'
+      - 'internal/gatewayworkload/kubernetes.go'
       - 'internal/gatewayworkload/resources.go'
       - 'internal/namespaceallocation/**'
       - 'internal/sandboxcount/**'

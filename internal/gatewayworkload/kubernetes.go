@@ -84,10 +84,6 @@ func NewKubernetes(o Options) (*Kubernetes, error) {
 	}
 	var allocator *allocation.Allocator
 	if o.ControlNamespace != "" {
-		if o.SandboxRuntimeClass != "" {
-			c.Close()
-			return nil, errors.New("separate Sandbox allocation is not yet configured")
-		}
 		allocator, err = allocation.New(c, o.ControlNamespace)
 		if err != nil {
 			c.Close()

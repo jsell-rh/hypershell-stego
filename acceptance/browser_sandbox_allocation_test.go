@@ -3,11 +3,13 @@ package acceptance
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
@@ -103,6 +105,9 @@ func (w *browserGatewayWorkload) checkSandboxAllocations(stage string) {
 		if err != nil || code != http.StatusOK || !ok || len(entries) != 0 || kube.String(pods, "metadata", "continue") != "" {
 			w.t.Fatal("allocation-only check found a Sandbox Pod", code)
 		}
+		if w.nativeSandboxNetworkEnabled() {
+			w.checkSandboxRuntimeConfiguration(ctx, id, namespace, account, gateway)
+		}
 		records[id] = sandboxAllocationRecord{id, namespace, uid, account, accountUID, gateway, gatewayAccount}
 	}
 	if stage == "initial" {
@@ -114,10 +119,49 @@ func (w *browserGatewayWorkload) checkSandboxAllocations(stage string) {
 		w.t.Fatal("worker or Gateway namespace recovery changed the Sandbox allocation")
 	}
 	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-		data, err := json.MarshalIndent(map[string]any{"stage": stage, "allocations": records, "sandbox_pods_observed": 0, "network_traffic_checked": false, "kata_execution_checked": false}, "", "  ")
+		data, err := json.MarshalIndent(map[string]any{"stage": stage, "allocations": records, "sandbox_pods_observed": 0, "network_traffic_checked": false, "kata_execution_checked": false, "worker_sandbox_setup_checked": w.nativeSandboxNetworkEnabled()}, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(directory, "sandbox-allocation-"+stage+".json"), append(data, '\n'), 0600) != nil {
 			w.t.Fatal("cannot save Sandbox allocation evidence")
 		}
 	}
 	w.t.Log("Generated Sandbox accounts and Gateway bindings passed; no Sandbox Pod remains")
+}
+
+// Check the configuration published by the actual Gateway worker. Compare the
+// copied client identity without writing certificate or key bytes to evidence.
+func (w *browserGatewayWorkload) checkSandboxRuntimeConfiguration(ctx context.Context, id, namespace, account, gateway string) {
+	w.t.Helper()
+	config, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+gateway+"/configmaps/openshell-gateway-config", nil)
+	if err != nil || code != http.StatusOK {
+		w.t.Fatal("Sandbox Gateway configuration is unavailable", code)
+	}
+	body := kube.String(config, "data", "gateway.toml")
+	for _, setting := range []string{
+		fmt.Sprintf("sandbox_namespace = %q\n", namespace),
+		fmt.Sprintf("service_account_name = %q\n", account),
+		fmt.Sprintf("default_runtime_class_name = %q\n", sandboxNetworkRuntimeClass),
+		"topology = \"sidecar\"\n",
+	} {
+		if !strings.Contains(body, setting) {
+			w.t.Fatal("Gateway did not publish the assigned Sandbox configuration")
+		}
+	}
+	original, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+gateway+"/secrets/openshell-client-tls", nil)
+	if err != nil || code != http.StatusOK {
+		w.t.Fatal("Gateway client identity is unavailable", code)
+	}
+	copied, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+namespace+"/secrets/openshell-client-tls", nil)
+	if err != nil || code != http.StatusOK || kube.String(copied, "metadata", "labels", "hypershell.redhat.io/gateway-id") != id || copied["type"] != "kubernetes.io/tls" {
+		w.t.Fatal("Sandbox client identity is missing or has a different owner", code)
+	}
+	data, ok := copied["data"].(map[string]any)
+	if !ok || len(data) != 3 {
+		w.t.Fatal("Sandbox identity contains unexpected fields")
+	}
+	for _, key := range []string{"tls.crt", "tls.key", "ca.crt"} {
+		value := kube.String(copied, "data", key)
+		if value == "" || value != kube.String(original, "data", key) {
+			w.t.Fatal("Sandbox client identity differs from its assigned Gateway")
+		}
+	}
 }

@@ -139,3 +139,38 @@ func TestSandboxWithoutAllocationCannotReachKubernetes(t *testing.T) {
 		t.Fatal("Sandbox accepted without allocation")
 	}
 }
+
+// Construction must accept the configured path without changing cluster policy.
+// Namespace, account, and admission checks remain in each Ensure operation.
+func TestSandboxConstructorUsesGeneratedAllocation(t *testing.T) {
+	base := fixture(t, func(http.ResponseWriter, *http.Request) { t.Error("constructor reached Kubernetes") })
+	for _, mode := range []string{"configured", "invalid runtime", "missing control namespace", "missing SQL state"} {
+		t.Run(mode, func(t *testing.T) {
+			options := base.options
+			options.SandboxRuntimeClass = "kata"
+			switch mode {
+			case "invalid runtime":
+				options.SandboxRuntimeClass = "kata/foreign"
+			case "missing control namespace":
+				options.ControlNamespace = ""
+			case "missing SQL state":
+				options.SQLBindings = nil
+			}
+			client, err := NewKubernetes(options)
+			if mode != "configured" {
+				if err == nil {
+					client.Close()
+					t.Fatal("invalid Sandbox configuration was accepted")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal("configured Sandbox allocation was rejected", err)
+			}
+			defer client.Close()
+			if client.allocation == nil || client.options.SandboxRuntimeClass != "kata" {
+				t.Fatal("Sandbox lost its allocator or runtime")
+			}
+		})
+	}
+}
