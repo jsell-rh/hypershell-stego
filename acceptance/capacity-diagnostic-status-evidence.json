@@ -1,0 +1,16 @@
+{
+  "run": 35468703943,
+  "source": "6c546746f4f1a223203e1534c72a1f6a2db742c9",
+  "next_measurement_source": "6a8a882324ecea932e182a22cdcb309c63bc910b",
+  "diagnostic_source_unchanged": true,
+  "affected_rpc_groups": 8,
+  "affected_rpc_spans": 23,
+  "finding": "The capacity summary allows Go-style RPC names such as DeadlineExceeded. The runtime emits canonical names such as DEADLINE_EXCEEDED. The summary replaces these error classes with other and does not retain rpc.response.status_code.",
+  "limit": "The discarded status cannot be reconstructed from the saved aggregate. These records cannot identify the cause of each failed RPC. This does not establish a defect in the emitted runtime signals.",
+  "comparison_policy": "Keep the seventh measurement fixture unchanged. Correct the diagnostic classification in a separate change and identify it in later comparisons.",
+  "source_sha256": {
+    "out/tracing/client.go": "37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67",
+    "out/tracing/runtime.go": "875dacd3846517ec7df09eac759ab9c5c1e7e6bd9f11e7a2d8384f6fb351c6ee",
+    "acceptance/provider_capacity_diagnostics_test.go": "3c90ebf881e5c688948942d617b6680657eb51dce53e4566281a55de2b74db9d"
+  }
+}
