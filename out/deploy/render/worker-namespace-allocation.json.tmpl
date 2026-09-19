@@ -1075,6 +1075,10 @@
             "message": "Sandbox workloads and workspace helpers cannot mount client credentials"
           },
           {
+            "expression": "variables.containers.all(c, (!has(c.env) || c.env.all(e, !has(e.valueFrom) || !has(e.valueFrom.secretKeyRef))) \u0026\u0026 (!has(c.envFrom) || c.envFrom.all(e, !has(e.secretRef))))",
+            "message": "Sandbox containers cannot read Secrets through environment variables"
+          },
+          {
             "expression": "!has(object.spec.volumes) || object.spec.volumes.all(v, has(v.emptyDir) || (has(v.image) \u0026\u0026 v.image.reference == 'quay.io/opendatahub/odh-openshell-supervisor:v0.0.109-rhaiv.0@sha256:96e21135c18bc9f6f4d1dfd0cccae3c91769ef4d87da2e470eca4b56a24b2152') || (has(v.secret) \u0026\u0026 v.name == 'openshell-client-tls' \u0026\u0026 v.secret.secretName == 'openshell-client-tls') || (has(v.projected) \u0026\u0026 v.name == 'openshell-sa-token' \u0026\u0026 v.projected.sources.all(s, has(s.serviceAccountToken) \u0026\u0026 has(s.serviceAccountToken.audience) \u0026\u0026 s.serviceAccountToken.audience == 'openshell-gateway' \u0026\u0026 has(s.serviceAccountToken.expirationSeconds) \u0026\u0026 s.serviceAccountToken.expirationSeconds \u003c= 3600)) || (has(v.persistentVolumeClaim) \u0026\u0026 v.name == 'workspace' \u0026\u0026 has(object.metadata.ownerReferences) \u0026\u0026 object.metadata.ownerReferences.exists(o, o.kind == 'Sandbox' \u0026\u0026 o.apiVersion.startsWith('agents.x-k8s.io/') \u0026\u0026 has(o.controller) \u0026\u0026 o.controller \u0026\u0026 v.persistentVolumeClaim.claimName == 'workspace-' + o.name)))",
             "message": "Sandbox storage must match OpenShell workspace and identity rules"
           }
