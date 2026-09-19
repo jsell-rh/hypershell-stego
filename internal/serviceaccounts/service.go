@@ -81,13 +81,21 @@ type Service struct {
 	repository storage.Repository
 	provider   Provisioner
 	now        func() time.Time
+	limits     Limits
 }
 
 func New(repository storage.Repository, provider Provisioner) (*Service, error) {
+	return NewWithLimits(repository, provider, DefaultLimits())
+}
+
+func NewWithLimits(repository storage.Repository, provider Provisioner, limits Limits) (*Service, error) {
+	if err := limits.validate(); err != nil {
+		return nil, err
+	}
 	if repository == nil {
 		return nil, errors.New("service accounts require storage")
 	}
-	return &Service{repository: repository, provider: provider, now: time.Now}, nil
+	return &Service{repository: repository, provider: provider, now: time.Now, limits: limits}, nil
 }
 func validID(id string) bool {
 	parsed, err := ksuid.Parse(id)
@@ -262,10 +270,10 @@ func (s *Service) Create(ctx context.Context, p gateways.Principal, gatewayID st
 		}
 		for _, creator := range []string{access.UserID, ""} {
 			filters := map[string]string{"active": "true"}
-			limit := int64(100)
+			limit := s.limits.PerGateway
 			if creator != "" {
 				filters["created_by_user_id"] = creator
-				limit = 10
+				limit = s.limits.PerCreator
 			}
 			result, err := tx.List(ctx, "ServiceAccount", "gateway_id", gatewayID, storage.ListOptions{Page: 1, Size: 0, CountOnly: true, ImplicitFilters: filters})
 			if err != nil {

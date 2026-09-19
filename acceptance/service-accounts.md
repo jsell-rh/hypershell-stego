@@ -10,7 +10,17 @@ accounts they created. Platform admin status supplies no implicit access.
 
 Creation commits a non-secret reservation and audit record before calling the
 provider. A Gateway row lock serializes reservations and enforces the quotas:
-ten active accounts per creator per Gateway and 100 per Gateway. A nullable,
+ten active accounts per creator per Gateway and 100 per Gateway by default.
+Operators can set `HYPERSHELL_SERVICE_ACCOUNT_CREATOR_QUOTA` and
+`HYPERSHELL_SERVICE_ACCOUNT_GATEWAY_QUOTA` on the API process. Both must be
+positive decimal integers; the creator quota must not exceed the Gateway quota.
+An absent value keeps its default. An empty or invalid value stops API startup.
+The production capacity target does not impose a maximum on either setting.
+Use the same policy on all API replicas. Changes apply after process restart;
+existing accounts stay intact when an operator lowers a quota. Active accounts
+and pending reservations both count. Quota values are application policy; the
+shared STEGO storage transaction and Gateway lock enforce each reservation.
+A nullable,
 normalized active name supplies case-insensitive uniqueness. Terminal accounts
 release their active names. The provider receives IDs derived from KSUIDs.
 

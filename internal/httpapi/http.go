@@ -84,6 +84,10 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err != nil {
 		return nil, err
 	}
+	accountLimits, err := serviceaccounts.LimitsFromEnvironment()
+	if err != nil {
+		return nil, err
+	}
 	provider, closeProvider, err := serviceaccounts.ProvisionerFromEnvironment()
 	if err != nil {
 		return nil, err
@@ -94,7 +98,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 			closeProvider()
 		}
 	}()
-	accounts, err := serviceaccounts.New(repository, provider)
+	accounts, err := serviceaccounts.NewWithLimits(repository, provider, accountLimits)
 	if err != nil {
 		return nil, err
 	}
