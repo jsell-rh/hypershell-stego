@@ -89,8 +89,12 @@ passed at `7c4834e`: 62 top-level tests, including 40 cases that evaluate the
 application expression and check its generated admission policy. One conditional
 SQL test was skipped. The
 [full application check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938)
-is running. Its rendered browser job passed, with three console starts and
-matching logs, metrics, and traces for all eight startup stages. The account
+passed at `7c4834e`. The core suite passed 320 top-level tests in 13 packages,
+including the required Gateway REST, gRPC, authorization, event, restart, and
+durable deletion workflows. Four conditional database or live Kubernetes tests
+were skipped, and the Kata job was skipped. Its rendered browser job passed,
+with three console starts and matching logs, metrics, and traces for all eight
+startup stages. The account
 deletion screenshot was reviewed. No container memory or PID limit event occurred.
 The [later adapter check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452318045)
 also passed at `9d0e7f8`. It repeated the 62 adapter tests and compiled the deferred

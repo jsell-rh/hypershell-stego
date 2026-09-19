@@ -48,7 +48,6 @@
     "out/deploy/render/worker-namespace-allocation.json.tmpl",
     "service.yaml"
   ],
-  "prior_source_core_pending": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938",
   "constructor_guard_retained": true,
   "application_allocation_network_gate_passed": false,
   "kata_execution_deferred": true,
@@ -83,5 +82,18 @@
     "deferred_acceptance_test_compiled": true,
     "live_kata_execution": false,
     "log_sha256": "730239b0beae3cc0db8d2ca8547db016ac35e4ed95668cfc16285451554464db"
+  },
+  "prior_source_core": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938",
+    "source": "7c4834e5b81c5a8bbd71314ee731c399a3d71ee0",
+    "passing_top_level_tests": 320,
+    "skipped_tests": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "scope": "Compiler adoption, generated source, application transports, events, authorization, browser workflow, and restart behavior. The separate live Kubernetes and Kata gates are not proved by this run.",
+    "record": "sandbox-secret-environment-evidence.json"
   }
 }
