@@ -1,0 +1,29 @@
+{
+  "source": "7f81556563fc9193855cf3536bbb7b52fc8b2c52",
+  "baseline_source": "674c6e5379c560840d7bb846911f1e0eb2476808",
+  "baseline_full_run": 35467762040,
+  "baseline_full_log_sha256": "c6e732d5f510bcc2d8b263a8486686ac7b29983e84a824e4e27688a2974673e3",
+  "baseline_core_top_level": 329,
+  "baseline_core_cases": 844,
+  "unchanged_files": 1487,
+  "changed_files": [
+    "acceptance/gateway-identity-inventory-journal-evidence.json",
+    "acceptance/gateway-identity-inventory-provider-evidence.json",
+    "acceptance/gateway-identity-inventory.md",
+    "acceptance/gateway-workflow.md",
+    "acceptance/integration-20260919-evidence.json",
+    "acceptance/provider-capacity-evidence.json",
+    "acceptance/provider-capacity.md",
+    "acceptance/sandbox-activation-adapter-evidence.json",
+    "acceptance/sandbox-activation-first-live-evidence.json",
+    "acceptance/sandbox-activation-full-evidence.json",
+    "acceptance/sandbox-activation-policy-evidence.json",
+    "acceptance/sandbox-activation.md",
+    "acceptance/scan-parallel-full-evidence.json",
+    "scripts/prepare-browser-inspection.py",
+    "scripts/test_browser_inspection.py"
+  ],
+  "production_source_generated_output_and_compiler_unchanged": true,
+  "full_suite_run_on_this_commit": false,
+  "scope": "The previous full suite covers identical production source and generated output. The two changed test files require current-source Python, rendered permission, adapter, and live workflow checks."
+}

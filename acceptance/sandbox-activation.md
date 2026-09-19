@@ -27,8 +27,8 @@ and identity-copy path. Before and after recovery, the fixture checks the
 published namespace, account, runtime, and sidecar settings, plus the exact
 three copied client identity fields. It does not save credential bytes. This
 extends the earlier allocation and packet checks; it starts no OpenShell
-Sandbox workload. The native test declaration still changes only the runtime
-class guard. It grants no extra permission.
+Sandbox workload. At `674c6e5`, the native test declaration changed only the runtime
+class guard. The corrected test inspection permissions are described below.
 
 Hosted adapter run `35467508365` passed at `674c6e5`. All 63 top-level tests
 passed, including the four new constructor cases. One declared SQL test was
@@ -57,3 +57,30 @@ class comparison differs from the saved production installation. Permissions,
 network policies, and the other 21 Pod validation rules remain unchanged.
 This permits review of the native test plan; it does not apply it or prove live
 behavior. See the [policy record](sandbox-activation-policy-evidence.json).
+
+
+The first activation workflow, run `35469445026` at `674c6e5`, failed after
+251.50 seconds. The new test reader received HTTP 403 when it read
+`openshell-gateway-config`. Its inspection role did not permit that named read.
+The later identity comparison also needs named reads of `openshell-client-tls`
+in the Gateway and Sandbox namespaces. The test did not reach the native packet
+checks or regeneration after the workflow. See the
+[failed result and cleanup record](sandbox-activation-first-live-evidence.json).
+
+The operator restored the production installation after this failure. An
+independent check verified all 32 installed resources, no test resources, no
+temporary RuntimeClass, and a free test lease.
+
+Candidate `7f81556` adds only these named `get` grants to the test inspection
+roles. It does not grant Secret list or write access. The application workers'
+permissions remain unchanged. Eighteen inspection checks reject broader grants
+and changes to existing bindings. With the installation checks, all 35 local
+Python tests passed. Hosted adapter and rendered policy checks must pass before
+the next live workflow.
+
+The production source, generated output, compiler pin, and Go tests match
+`674c6e5` exactly. The prior full suite therefore covers those unchanged files.
+The complete suite was not run again at `7f81556`; only the two test Python files
+and documentation or result records differ. See the
+[source comparison](sandbox-inspection-source-evidence.json). The live workflow
+must still verify the corrected inspection path before promotion.
