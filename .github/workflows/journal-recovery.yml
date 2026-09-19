@@ -77,7 +77,7 @@ jobs:
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/journal-recovery"
           go test -json -race -count=1 -mod=readonly -timeout=30s ./internal/serviceaccountkeycloak ./internal/serviceaccountprovisioner ./internal/serviceaccounts ./internal/gatewayidentity ./internal/gateways ./internal/gatewayworkload \
-            -run '^Test(ProviderErrorRetainsSafeRetryStatus|CleanupRPCSelectsRetryableErrors|GatewayIdentityInventory|ServiceAccount(Limits|Options)|ConsoleSQLStateRefusesOldServerWithoutGatewayCalls|SQLComponentRejectsUnknownValues|IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
+            -run '^Test(GatewayCleanupUsesBoundedRetryPolicy|ProviderErrorRetainsSafeRetryStatus|CleanupRPCSelectsRetryableErrors|GatewayIdentityInventory|ServiceAccount(Limits|Options)|ConsoleSQLStateRefusesOldServerWithoutGatewayCalls|SQLComponentRejectsUnknownValues|IdentityPublicationRequiresProviderSuccess|DeletionRequiresExplicitPrivilegedState|ConsoleFailureDoesNotBlockGrantRemoval|GatewayClosureContinuesAfterConsoleFailure|ConsoleProviderStateReadGrantIsReadOnly|ConsoleDomainPolicy|ConsoleProviderStateJournalSeparatesNativeScope|ProviderStateJournalScopeAndObservation|GatewayInventoryRegistersPastFailedClientRead|InventoryRPCsDenyUnverifiedCaller|InventoryRPCWindowCannotBecomeEmptyCompletion)$' \
             | tee "$RUNNER_TEMP/journal-recovery/tests.jsonl"
           go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
             -run '^(TestConfiguredServiceAccountQuotaRemainsAtomic|TestServiceAccountQuotaAndExpirationValidation|TestServiceAccountGatewayQuota|TestGatewayDeletionBeforeWorkloadStartup|TestIdentityConditionDuringProviderTimeoutAndDesiredChange|TestConsoleCredentialDeliveryChecksCurrentAssignment|TestGateway(UserLoginFollowsStoredGrants|IdentityControllerWorkflow|ProviderStateAcrossGRPCAndRestart|Journal(CleanupRecoveryKeepsPageCheckpoint|RegistrationDuringScanPreventsCompletion|AddedAfterLastPagePreventsCompletion|ClosureRollsBackWithFinalEvent)|Inventory(RecoveryAcrossReadFailureAndPageShift|LimitRequiresAnotherFullCycle)|CleanupRecoversJournalOmittedByProvider|AccountCleanup(Budget|Parallel)ResumesAfterRestart|AccountCleanupRecovery(ReachesTailAfterRestart|KeepsPageCheckpoint)))$' \
@@ -86,6 +86,7 @@ jobs:
           import json, sys
           from pathlib import Path
           required = {
+              "TestGatewayCleanupUsesBoundedRetryPolicy",
               "TestProviderErrorRetainsSafeRetryStatus",
               "TestCleanupRPCSelectsRetryableErrors",
               "TestServiceAccountLimits",
