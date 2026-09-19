@@ -20,17 +20,27 @@ list and watch requests. See the pinned
 [manager options](https://github.com/kubernetes-sigs/agent-sandbox/blob/945016a7b97f46cd2edf8633d6b6a22d5355ecc1/cmd/agent-sandbox-controller/manageroptions.go),
 and [entry point](https://github.com/kubernetes-sigs/agent-sandbox/blob/945016a7b97f46cd2edf8633d6b6a22d5355ecc1/cmd/agent-sandbox-controller/main.go).
 
-The trust decision remains open:
+## Selected trust boundary
 
-- Keep the unchanged upstream controller as trusted cluster infrastructure.
-  Its cluster-wide workload permissions would remain an explicit part of the
-  operator's trust boundary.
-- Build an entry point that retains upstream reconciliation code and restricts
-  namespace access. STEGO would own the common process, permission, and lifecycle
-  support. This needs a maintained controller image. It also needs a separate
-  design for namespace changes, watches, leases, and CRD conversion.
+On 2026-09-19, the user selected the unchanged upstream controller as trusted
+cluster infrastructure. Keep its upstream reconciliation code and entry point.
+Do not build a namespace-scoped controller image for this integration.
 
-No change that depends on this decision has been made. Do not count the generated
-Gateway worker's namespace permissions as proof of the external controller's
-permission boundary. Keep Gateway role policy and OpenShell Pod policy in
-Hypershell. Keep reusable process and permission mechanisms in STEGO.
+The cluster operator owns the controller installation and its cluster-wide
+permissions. These permissions are part of the trusted cluster infrastructure.
+They do not belong to a Gateway worker, Sandbox account, or application API
+identity. Keep the generated allocator and the application workers within their
+existing permission limits. A cache label filter is not an access control.
+
+Use the pinned upstream release and retain the installation source hashes.
+Review its permissions when the selected upstream release changes. Do not use
+an application worker identity to install the controller or its cluster roles.
+Keep Gateway role policy and OpenShell Pod policy in Hypershell. Keep common
+allocation, permission checks, and telemetry in STEGO.
+
+This decision resolves the external controller trust question. It does not
+change a controller deployment or remove the current constructor guard. The
+allocation and native network checks have separate evidence. Live OpenShell
+Sandbox execution and Kata isolation remain unverified; the user deferred the
+Kata test because no suitable cluster is available. See the
+[Sandbox workflow record](sandbox-workflow.md).

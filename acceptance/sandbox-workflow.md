@@ -29,9 +29,16 @@ See the [result](sandbox-native-network-evidence.json). The first CI attempt
 stopped before any cluster Job started because its unit fixture omitted a
 Python helper. The correction and the failed result are retained.
 
-Keep the constructor guard. Live Kata execution remains deferred. The external
-controller trust decision is still open; see the
+On 2026-09-19, the user selected the unchanged upstream Agent Sandbox controller
+as trusted cluster infrastructure. Its cluster-wide permissions remain with the
+operator-managed controller. Gateway workers and Sandbox accounts keep their
+existing permission limits. This resolves the external controller trust
+question; no maintained entry point is required. See the
 [permission review](sandbox-controller-boundary.md).
+
+The current constructor guard remains in place. This decision does not qualify
+live OpenShell Sandbox execution or Kata isolation. The live Kata test remains
+deferred. The dated records below preserve the earlier checks and their limits.
 
 On 2026-09-17, the user selected the current Hypershell and OpenShell setup.
 The prototype no longer changes the workspace-copy helper's user or the shared
