@@ -10,6 +10,7 @@ on:
       - 'internal/sandboxcount/**'
       - 'internal/sandboxcountapp/**'
       - 'acceptance/gateway_sandbox_workload_test.go'
+      - 'scripts/browser-allocation-cleanup*'
   workflow_dispatch:
 
 permissions:
@@ -48,6 +49,9 @@ jobs:
           # Compile the deferred live test without starting its fixtures.
           go test -mod=readonly -run '^$' -timeout=30s ./acceptance \
             | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
+          go test -v -race -p=1 -mod=readonly -count=1 -timeout=30s \
+            scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go \
+            | tee "$RUNNER_TEMP/sandbox-adapter/allocation-cleanup.log"
           git diff --exit-code
       - name: Retain the adapter results
         if: always()

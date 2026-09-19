@@ -41,6 +41,31 @@ func TestCleanupTargetsIncludeConsoleStateAfterWorkload(t *testing.T) {
 	}
 }
 
+func TestCleanupTargetsRemoveSandboxBeforeRetainedState(t *testing.T) {
+	gateway, sandbox := "openshell-0123456789abcdef", "openshell-sandbox-0123456789abcdef"
+	console, state := "openshell-console-0123456789abcdef0123456789abcdef01234567", "openshell-state-0123456789abcdef0123456789abcdef01234567"
+	owner := "0123456789abcdefghijklmnopq"
+	for _, orphan := range []bool{false, true} {
+		namespaces := []kube.Object{cleanupObject(state, "gateway-state", owner), cleanupObject(console, "gateway-console-state", owner), cleanupObject(gateway, "gateway", owner)}
+		var bindings []kube.Object
+		if orphan {
+			bindings = []kube.Object{cleanupObject("stego-service-ci.hypershell-namespace-allocation."+sandbox+".3", "sandbox", owner)}
+		} else {
+			namespaces = append(namespaces, cleanupObject(sandbox, "sandbox", owner))
+		}
+		targets, err := cleanupTargets("stego-service-ci", namespaces, bindings)
+		want := []cleanupTarget{{"gateway", gateway, owner}, {"sandbox", sandbox, owner}, {"gateway-console-state", console, owner}, {"gateway-state", state, owner}}
+		if err != nil || !reflect.DeepEqual(targets, want) {
+			t.Fatal("Sandbox cleanup did not precede retained state", orphan, targets, err)
+		}
+	}
+	for _, invalid := range []string{gateway, console, state, sandbox + "0", "openshell-sandbox-0123456789abcdeG"} {
+		if _, err := cleanupTargets("stego-service-ci", []kube.Object{cleanupObject(invalid, "sandbox", owner)}, nil); err == nil {
+			t.Fatal("Sandbox cleanup accepted another namespace shape", invalid)
+		}
+	}
+}
+
 func TestCleanupTargetsRejectForeignAndConflictingResources(t *testing.T) {
 	name, owner := "openshell-0123456789abcdef", "0123456789abcdefghijklmnopq"
 	cases := []struct{ namespaces, bindings []kube.Object }{

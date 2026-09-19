@@ -61,7 +61,9 @@ func cleanupTargets(namespace string, namespaces, bindings []kube.Object) ([]cle
 			return errors.New("test allocation has a different owner")
 		}
 		pattern := `^openshell-[0-9a-f]{16}$`
-		if target.Profile == "gateway-state" {
+		if target.Profile == "sandbox" {
+			pattern = `^openshell-sandbox-[0-9a-f]{16}$`
+		} else if target.Profile == "gateway-state" {
 			pattern = `^openshell-state-[0-9a-f]{40}$`
 		} else if target.Profile == "gateway-console-state" {
 			pattern = `^openshell-console-[0-9a-f]{40}$`
@@ -108,10 +110,12 @@ func cleanupTargets(namespace string, namespaces, bindings []kube.Object) ([]cle
 	for _, target := range result {
 		targets = append(targets, target)
 	}
-	// Remove workloads before retained state. No cleanup bypasses finalizers.
+	// Stop Gateway writers, then remove Sandboxes, then retained state.
+	// No cleanup bypasses finalizers.
+	order := map[string]int{"gateway": 0, "sandbox": 1, "gateway-console-state": 2, "gateway-state": 3}
 	sort.Slice(targets, func(i, j int) bool {
 		if targets[i].Profile != targets[j].Profile {
-			return targets[i].Profile < targets[j].Profile
+			return order[targets[i].Profile] < order[targets[j].Profile]
 		}
 		return targets[i].Namespace < targets[j].Namespace
 	})
