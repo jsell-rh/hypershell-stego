@@ -34,6 +34,29 @@ provider inventory, late-effect checks, and scope closure remain required.
 
 The application test covers both serial and parallel use. It checks selected
 statuses, exhausted attempts, denied and unknown errors, cancellation, local
-deadlines, and scan-contract failures. The new application gate, full workflow
-checks, and capacity measurement remain pending. The latest complete capacity
-result still fails the 30-second target.
+deadlines, and scan-contract failures. Source `b450f11` passed all 39 journal
+checks in run `35474686206`, including all 33 status cases and all 22 retry
+cases. Both restart fixtures passed without changes to the original serial
+fixture. There were no failures or skipped tests. See the
+[application evidence](cleanup-retry-application-evidence.json).
+
+The regenerated Gateway console passed its source and image gate. Independent
+checks matched all 130 selected source and module files, compiler verification,
+repeated generation, image binary, published digest, and non-root configuration.
+Its module is unchanged in candidate `51b2bb2`. The root application now selects
+that module through an exact source revision. See the
+[console evidence](cleanup-retry-console-evidence.json) and
+[module evidence](cleanup-retry-module-evidence.json).
+
+The browser job passed in full run `35474805484`. Three browser runtime instances
+each supplied all eight startup signal groups, with correlated logs and spans,
+metrics, and active-state records. Both screenshots were reviewed. They show a
+provisioning view with a command loading placeholder and an empty service-account
+list after deletion. These hosted fixtures do not prove live Gateway readiness.
+See the [browser evidence](cleanup-retry-browser-evidence.json).
+
+The full core check and a new capacity measurement remain pending. The latest
+complete account cleanup result still fails the 30-second target. The next
+measurement uses the same fixture and resource limits as the eighth run.
+Account cleanup is one part of Gateway deletion; its measurement does not prove
+complete workload and database cleanup within the target.

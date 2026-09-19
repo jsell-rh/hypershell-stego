@@ -1,0 +1,23 @@
+{
+  "source": "51b2bb2fbfb21f910b3fe1ccde24a445e2275998",
+  "run": 35474805484,
+  "browser_job": "success",
+  "browser_startup_instances": 3,
+  "complete_startup_stages_per_instance": 8,
+  "correlated_log_span_and_metric_checks": true,
+  "resource_limits_checked": true,
+  "screenshots": {
+    "verify.json.png": "Provisioning Gateway view with a connection-command loading placeholder. This is not a ready live Gateway.",
+    "accounts-delete.json.png": "Healthy account fixture; service-account list is empty after deletion."
+  },
+  "files": {
+    "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+    "browser-resources.txt": "a5d800ccf19fb670136bdd65242f10145f2b48e79829f3d7f28974ed636bb687",
+    "browser-startup-signals.json": "a1ac5ba6862c192eb5cebab3d77e5ce8292719d099a32516177285ea6910f75d",
+    "verify.json.png": "1f8a2d4ebfbba3972adba2a6fce45b2396b08a328043e9bf2a12beb0ca622c14"
+  },
+  "limits": [
+    "The full core check is still pending.",
+    "These hosted screenshots do not prove live Gateway readiness."
+  ]
+}
