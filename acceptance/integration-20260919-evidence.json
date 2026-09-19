@@ -1,0 +1,21 @@
+{
+  "merge_commit": "444299a5674ee920dfcf9020d12f1368880f58fc",
+  "main_parent": "034b46bb9280520f0309b8c78a3b0b7afb55994d",
+  "candidate_parent": "ecaee438d6fd83fa7376683dc41564acf8107ac9",
+  "qualified_source_candidate": "674c6e5379c560840d7bb846911f1e0eb2476808",
+  "tree_equals_candidate_parent": true,
+  "main_and_candidate_are_ancestors": true,
+  "changes_since_test_source": [
+    "acceptance/gateway-identity-inventory-journal-evidence.json",
+    "acceptance/gateway-identity-inventory-provider-evidence.json",
+    "acceptance/gateway-identity-inventory.md",
+    "acceptance/provider-capacity.md",
+    "acceptance/sandbox-activation-adapter-evidence.json",
+    "acceptance/sandbox-activation-policy-evidence.json",
+    "acceptance/sandbox-activation.md",
+    "acceptance/scan-parallel-full-evidence.json"
+  ],
+  "changes_since_test_source_are_evidence_only": true,
+  "conflict_resolution": "Keep the candidate workflow and constructors. Options still include the operator quotas. NewWithLimits retains serial cleanup.",
+  "qualification": "The combined application test and capacity test are active. The cluster workflow has not started. This merge does not establish a test pass."
+}
