@@ -214,3 +214,18 @@ further revision for sealing. Its later provider absence and per-account audit
 assertions were not reached in the failed run and still require a passing run.
 See the [failed journal result](scan-parallel-first-journal-evidence.json).
 No production code, work budget, or capacity fixture changed for this correction.
+
+
+The corrected journal run `35466947578` passed at `6c54674`. All 35 required
+top-level tests passed, with no failure or skip. The unchanged six-account
+serial fixture passed. The new parallel fixture saved 24 closed account rows
+before reconstruction and reached eight concurrent callbacks. After restart,
+all 32 account rows and journals were visited, all provider clients were absent,
+the scope was sealed, and each account had one success audit. See the
+[parallel journal record](scan-parallel-journal-evidence.json).
+
+This result checks PostgreSQL recovery with a provider fixture. The full hosted
+application check and sixth real-provider capacity result remain pending. The
+previous complete cleanup measurement remains 93.2722 seconds. The separate
+[Gateway identity discovery change](gateway-identity-inventory.md) is excluded
+from the frozen source for that sixth capacity comparison.
