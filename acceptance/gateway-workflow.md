@@ -1,14 +1,22 @@
-The Gateway workflow is the first application acceptance gate. Run it with
-`scripts/check-gateway.sh`. Set `STEGO_TEST_POSTGRES_DSN` to a PostgreSQL
-connection that can create test databases. The command fails if this setting
-is absent. Docker is also required for the separate service-account workflow
-against Keycloak. It runs the same checks as CI:
+The Gateway workflow is the first application acceptance gate. Run the full
+suite in [hosted CI](../.github/workflows/checks.yml), not on the developer
+workstation. CI runs `scripts/check-gateway.sh --suite=core` and
+`scripts/check-gateway.sh --suite=browser` in separate jobs.
+
+The command requires `STEGO_TEST_POSTGRES_DSN` with permission to create test
+databases and a readable `STEGO_TEST_POSTGRES_CA_FILE` for the TLS fixture.
+It fails if either setting is absent. Keycloak tests also require Docker.
+The browser job supplies a separate, bounded Chromium fixture. The checks are:
 
 1. Verify Go dependencies.
-2. Fetch and build the pinned STEGO compiler.
-3. Apply generation, resolve dependencies, apply again, and check output drift.
-4. Check that generated output matches the committed files.
-5. Run all tests with PostgreSQL required and the race detector enabled.
+2. Prepare the authenticated compiler package and check its pinned digest and
+   source identity. The consumer does not build the compiler.
+3. Apply generation, resolve dependencies, apply again, and check output drift
+   for the API and both browser modules.
+4. Check that generated output matches the committed files, including a check
+   for untracked output.
+5. Run the selected test suite with PostgreSQL and Keycloak required and the
+   race detector enabled. The browser job requires a passing rendered workflow.
 
 The generated application runs in separate processes. These processes also use
 the race detector when the tests use `-race`. A detected race stops the process
@@ -28,6 +36,12 @@ contracts, authentication, the process lifecycle, and event delivery. Hypershell
 supplies Gateway placement, owner grants, API field mapping, and access rules.
 STEGO has separate Record service tests for its common contracts.
 
+The current [database contract](external-gateway-databases.md) uses an
+operator-supplied PostgreSQL server. Each Gateway gets a separate logical
+database and restricted login. The API rejects `database_id`, including empty
+and null values. The application has no database catalog, database provider
+selection, CNPG installation, or deployment-backed database server.
+
 The test setup creates private databases and applies generated schemas. It uses
 signed test tokens and a Kafka protocol fixture with mutual TLS. The gate does
 not prove production schema upgrades, broker failover, cluster provisioning,
@@ -37,6 +51,13 @@ production capacity, or complete Hypershell compatibility. See
 Use application failures to select further infrastructure changes. A new common
 capability must address a demonstrated requirement and have a separate service
 test. Passing this gate does not complete the enterprise readiness goal.
+
+## Historical results
+
+The records below apply to their stated revisions. The deployment placement
+and CNPG model in these records are retired. Their local commands are not
+instructions for the current developer workstation. Use the CI workflows above
+and [current database evidence](external-gateway-databases.md).
 
 The complete gate passed locally on 2026-09-08 with Go 1.26.8, PostgreSQL 18.6,
 and compiler revision `77290f7697c75f73b200253700aea754437c3c34`. Regeneration
