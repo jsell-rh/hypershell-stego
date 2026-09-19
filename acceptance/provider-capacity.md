@@ -117,3 +117,11 @@ top-level tests and 754 cases. Four declared live tests were excluded from that
 suite. The separate API gate covers the supplied PostgreSQL workflow. Hosted
 browser, console, and image jobs passed. The separate cluster browser mismatch
 and deferred Kata test remain open.
+
+The six-account regression run `35462485679` used the old compiler at
+`eed9066`. Only `TestGatewayAccountCleanupBudgetResumesAfterRestart` failed.
+The other 32 journal tests passed, with no skip. The failed test found that
+the work deadline saved a failed cycle instead of a clean partial pass.
+It uses real PostgreSQL and a provider fixture with a 450 ms action delay.
+It does not measure real-provider capacity. The same test must pass after
+the common scan runtime is adopted.
