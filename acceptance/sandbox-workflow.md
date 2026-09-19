@@ -61,7 +61,9 @@ source checks passed. Commit `c6c185b` contains the generated Sandbox profile,
 account binding, and related network rules. See the
 [generation record](sandbox-generation-evidence.json).
 
-The core application suite at `c6c185b` is in progress. The separate rendered
+The full application run at `c6c185b` passed. The core suite passed 319 tests
+in 13 packages, including the required Gateway workflows. Four conditional
+database or live Kubernetes tests were skipped. The live Kata job was skipped. The separate rendered
 browser workflow passed in 97.91 seconds. Three console starts had matching
 logs, metrics, and traces for all eight startup stages. Six provider checks and
 28 journal recovery checks passed. The provider source and cleanup records

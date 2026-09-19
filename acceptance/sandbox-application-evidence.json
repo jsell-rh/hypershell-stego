@@ -87,7 +87,60 @@
       "journal/result/tests.jsonl": "146b941a00334d4bf2358c169d73fc5c86a0d2d7d0c1b7105ebbb551bb865f93"
     }
   },
-  "core_suite_pending": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351953666",
   "live_kata_checked": false,
-  "sandbox_enabled": false
+  "sandbox_enabled": false,
+  "core_suite": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35351953666",
+    "source": "c6c185b73af723ab5ae9fbaf0a33dfab8746dbe3",
+    "checked_at": "2026-09-19T15:22:59.177871+00:00",
+    "jobs": {
+      "web-console": "success",
+      "acceptance (browser)": "success",
+      "service-image": "success",
+      "acceptance (core)": "success",
+      "sandbox-workload": "skipped"
+    },
+    "passing_top_level_tests": 319,
+    "passing_packages": [
+      "github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics",
+      "github.com/jsell-rh/hypershell-stego/internal/cli",
+      "github.com/jsell-rh/hypershell-stego/internal/gateways",
+      "github.com/jsell-rh/hypershell-stego/contracts",
+      "github.com/jsell-rh/hypershell-stego/internal/httpapi",
+      "github.com/jsell-rh/hypershell-stego/internal/namespaceallocation",
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner",
+      "github.com/jsell-rh/hypershell-stego/internal/serviceaccounts",
+      "github.com/jsell-rh/hypershell-stego/internal/sandboxcount",
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayidentity",
+      "github.com/jsell-rh/hypershell-stego/acceptance"
+    ],
+    "required_tests": [
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGatewayGrantWorkflowAcrossTransportsAndRestart",
+      "TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart",
+      "TestGatewayLogsMetricsAndTracesAcrossRestart",
+      "TestGatewayDatabaseTLSAndListenerAcrossRestart",
+      "TestGatewayDurableDeletionThroughGeneratedTransports"
+    ],
+    "skipped_tests": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "generated_source_check_passed": true,
+    "browser_workflow_passed_separately": true,
+    "core_log_sha256": "56c9e5952fcbb3162e1dd805d954928e744731e8f48e39449c6280a31a786e45",
+    "sandbox_allocation_enabled": false,
+    "live_kata_checked": false,
+    "scope": "Compiler adoption, generated source, application transports, events, authorization, browser workflow, and restart behavior. The separate live Kubernetes and Kata gates are not proved by this run."
+  }
 }
