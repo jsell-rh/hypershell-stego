@@ -55,8 +55,27 @@ provisioning view with a command loading placeholder and an empty service-accoun
 list after deletion. These hosted fixtures do not prove live Gateway readiness.
 See the [browser evidence](cleanup-retry-browser-evidence.json).
 
-The full core check and a new capacity measurement remain pending. The latest
-complete account cleanup result still fails the 30-second target. The next
-measurement uses the same fixture and resource limits as the eighth run.
-Account cleanup is one part of Gateway deletion; its measurement does not prove
-complete workload and database cleanup within the target.
+The ninth capacity run, `35475425102`, completed account cleanup in 61.55 seconds.
+It failed the unchanged 30-second target. All 100 selected account rows and
+journals closed. All 100 provider clients and users were removed. The 9,900
+background rows and 10,007 other provider clients stayed unchanged. Source,
+compiler, binary, resource-limit, and test-cleanup checks passed. See the
+[ninth capacity evidence](capacity-ninth-evidence.json).
+
+The fixture matches the eighth run, which took 44.97 seconds. This comparison
+does not show a timing improvement. One run does not establish the cause of the
+difference. The first saved scan contains a failure; a later complete scan is
+required before scope closure. The first observation of all 100 closed rows was
+at 37.34 seconds. The scope closed at 61.25 seconds.
+
+Account recovery repeats deletion for retained deleted rows. Gateway recovery
+also checks retained rows and journals. A closed provider journal still checks
+the provider for late changes. The trace groups show many repeated deletion
+calls, but do not identify which recovery path made each call. These checks
+must not be removed without proof that the remaining path covers late changes,
+restart, and retained records. The next source review will examine ownership of
+these repeated checks before another capacity run.
+
+The full core check remains pending. Account cleanup is one part of Gateway
+deletion; its measurement does not prove complete workload and database cleanup
+within the target.

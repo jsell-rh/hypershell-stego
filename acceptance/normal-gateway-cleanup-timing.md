@@ -30,5 +30,8 @@ still required, in addition to the separate account-only capacity measurement.
 The 30-second target and the existing fault and late-effect checks are unchanged.
 
 The local collection test uses fake files and a fake `oc` command. It passed with
-the new missing-file and empty-file cases. Go compilation and the live observation
-remain pending. No live timing result is claimed by this change.
+the new missing-file and empty-file cases. Hosted adapter run `35475728036`
+passed all 63 required tests and all 28 collection cases. The live test compiled.
+The SQL integration test remains excluded from this adapter-only gate. See the
+[adapter evidence](normal-gateway-cleanup-timing-evidence.json).
+The live observation remains pending. No live timing result is claimed.

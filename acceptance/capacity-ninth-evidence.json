@@ -1,0 +1,793 @@
+{
+  "same_capacity_fixture": true,
+  "changed_capacity_files": [],
+  "canonical_rpc_tests_passed": 34,
+  "diagnostic_log_sha256": "1088744a683381cfa311c5d3178fa65b82271507847dab82377a083fbc983f62",
+  "source_commit": "b0952c4f51133405a3d4af1b404b978e63d742d7",
+  "run_id": 35475425102,
+  "conclusion": "failure",
+  "source_archive_match": true,
+  "binary_hashes_match": true,
+  "cleanup_confirmed": true,
+  "result_present": true,
+  "compiler_matches": true,
+  "limits_checked": true,
+  "integrity_missing_fields": [],
+  "integrity_checks_complete": true,
+  "elapsed_seconds": 61.548654829,
+  "scope_sealed_seconds": 61.253748468,
+  "target_met": false,
+  "gate_passed": false,
+  "process_exit_code": "1",
+  "result_sha256": "12231eec80c14fd5a6ea57ffc21406ca1cef2fa0d5c56249b64bfb91859beeca",
+  "scope": "account_cleanup",
+  "workload_cleanup_tested": false,
+  "gateways": 100,
+  "accounts_per_gateway": 100,
+  "target_seconds": 30,
+  "complete": true,
+  "closed_accounts": 100,
+  "closed_journals": 100,
+  "deleted_provider_clients": 100,
+  "deleted_provider_users": 100,
+  "preserved_background_accounts": 9900,
+  "preserved_other_clients": 10007,
+  "diagnostic_trace_summary_version": 2,
+  "diagnostic_trace_groups_dropped": 0,
+  "diagnostic_log_records_received": 92097,
+  "diagnostic_metrics_received": 6697,
+  "compiler": "ee348b819bb43a738a6aad2fc14cb76ce3b1ec21",
+  "limits_verified": {
+    "cpu.max": "100000 100000",
+    "memory.max": "1073741824",
+    "memory.swap.max": "0",
+    "pids.max": "256"
+  },
+  "first_all_rows_closed_seconds": 37.341875487,
+  "cleanup_progress": [
+    {
+      "closed_accounts": 0,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 0.013484382
+    },
+    {
+      "closed_accounts": 9,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 2.149706684
+    },
+    {
+      "closed_accounts": 22,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "1f0a6448eb18a78947728cbed27de488d57a8146210d64345752d92b0176a8fb",
+        "version": 1
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 4.412182763
+    },
+    {
+      "closed_accounts": 47,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5cfdd9d6fa906262cdc4c27bb03f293b1615bb6b8d00390097fe2896336c87a5",
+        "version": 2
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 6.733749452
+    },
+    {
+      "closed_accounts": 47,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5cfdd9d6fa906262cdc4c27bb03f293b1615bb6b8d00390097fe2896336c87a5",
+        "version": 2
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 8.923513006
+    },
+    {
+      "closed_accounts": 68,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5cfdd9d6fa906262cdc4c27bb03f293b1615bb6b8d00390097fe2896336c87a5",
+        "version": 2
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 11.068150418
+    },
+    {
+      "closed_accounts": 69,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5845775e2de02fc3043822d5604d67209488cd8f3b54c4da1880525f7d2675fb",
+        "version": 3
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 13.157866756
+    },
+    {
+      "closed_accounts": 83,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5845775e2de02fc3043822d5604d67209488cd8f3b54c4da1880525f7d2675fb",
+        "version": 3
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 15.492225189
+    },
+    {
+      "closed_accounts": 95,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5b3db386e3c2590fa9c1045cfb89523cc1ff36a6694024faf8928cba2df1e42e",
+        "version": 4
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 17.747395613
+    },
+    {
+      "closed_accounts": 95,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "5b3db386e3c2590fa9c1045cfb89523cc1ff36a6694024faf8928cba2df1e42e",
+        "version": 4
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 19.905452732
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "e9179282abdc1106f08f418716db00b942edf09e08ae537e4a2e5cc3e8c71450",
+        "version": 5
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 22.170187481
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "e9179282abdc1106f08f418716db00b942edf09e08ae537e4a2e5cc3e8c71450",
+        "version": 5
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 24.449840294
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "e9179282abdc1106f08f418716db00b942edf09e08ae537e4a2e5cc3e8c71450",
+        "version": 5
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 26.73411475
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "67eb15e869d97265826159a3b56541339e51ce420c07e5206dd11b3c47e8a0fe",
+        "version": 6
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 28.912690461
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "67eb15e869d97265826159a3b56541339e51ce420c07e5206dd11b3c47e8a0fe",
+        "version": 6
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 30.956362814
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": true,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "cd73a8690006b4172447d7f13f180ee64ba686f927b8ea853129422f454efda2",
+        "version": 7
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 33.094751788
+    },
+    {
+      "closed_accounts": 99,
+      "gateway-account-cleanup": {
+        "complete": true,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "cd73a8690006b4172447d7f13f180ee64ba686f927b8ea853129422f454efda2",
+        "version": 7
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 35.198264532
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": true,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "cd73a8690006b4172447d7f13f180ee64ba686f927b8ea853129422f454efda2",
+        "version": 7
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 37.341875487
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "df71aec61b1860cb9a936b495141de530df3f0399d8aa16ce5efeed0327dedc8",
+        "version": 8
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 39.490007397
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "df71aec61b1860cb9a936b495141de530df3f0399d8aa16ce5efeed0327dedc8",
+        "version": 8
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 41.951002876
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "df71aec61b1860cb9a936b495141de530df3f0399d8aa16ce5efeed0327dedc8",
+        "version": 8
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 44.165150843
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "5e0b26c6dbb570c1b4cb470054f8145d9b5f3a9481d685361c7dfcf186688da5",
+        "version": 9
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 46.551978123
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "5e0b26c6dbb570c1b4cb470054f8145d9b5f3a9481d685361c7dfcf186688da5",
+        "version": 9
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 48.793035972
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "dc2aae05073b7cf47060db4c9b2a4dcfeb9b4ee772ec254c9593b233eeb0641e",
+        "version": 10
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 51.133519471
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "dc2aae05073b7cf47060db4c9b2a4dcfeb9b4ee772ec254c9593b233eeb0641e",
+        "version": 10
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 53.192970701
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "dc2aae05073b7cf47060db4c9b2a4dcfeb9b4ee772ec254c9593b233eeb0641e",
+        "version": 10
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 55.478604373
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "a997212764f4b912e66c016d5690f19403f587d01892dfc8881556c6f25a258e",
+        "version": 11
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 57.701315417
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "a997212764f4b912e66c016d5690f19403f587d01892dfc8881556c6f25a258e",
+        "version": 11
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 59.981099286
+    }
+  ],
+  "diagnostic_trace_groups": 112,
+  "rpc_error_groups": [
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "CANCELLED",
+      "rpc_status": "CANCELLED",
+      "ten_second_bucket": 8,
+      "count": 8,
+      "total_seconds": 1.186936388,
+      "max_seconds": 0.347707561
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "Delete",
+      "error_type": "ABORTED",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 0,
+      "count": 2,
+      "total_seconds": 0.944517697,
+      "max_seconds": 0.505257794
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "Delete",
+      "error_type": "ABORTED",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 1,
+      "count": 2,
+      "total_seconds": 0.517748271,
+      "max_seconds": 0.301259842
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "Delete",
+      "error_type": "DEADLINE_EXCEEDED",
+      "rpc_status": "DEADLINE_EXCEEDED",
+      "ten_second_bucket": 0,
+      "count": 1,
+      "total_seconds": 0.750480274,
+      "max_seconds": 0.750480274
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "LoadServiceAccountProviderState",
+      "error_type": "CANCELLED",
+      "rpc_status": "CANCELLED",
+      "ten_second_bucket": 8,
+      "count": 8,
+      "total_seconds": 1.19223408,
+      "max_seconds": 0.348546862
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "SaveServiceAccountProviderState",
+      "error_type": "ABORTED",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 0,
+      "count": 2,
+      "total_seconds": 0.424015901,
+      "max_seconds": 0.290427895
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "SaveServiceAccountProviderState",
+      "error_type": "ABORTED",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 1,
+      "count": 2,
+      "total_seconds": 0.156576771,
+      "max_seconds": 0.101053458
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_SERVER",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "CANCELLED",
+      "ten_second_bucket": 8,
+      "count": 8,
+      "total_seconds": 1.1939705250000001,
+      "max_seconds": 0.34880136
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_SERVER",
+      "method": "Delete",
+      "error_type": "",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 0,
+      "count": 2,
+      "total_seconds": 0.9123477,
+      "max_seconds": 0.504295357
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_SERVER",
+      "method": "Delete",
+      "error_type": "",
+      "rpc_status": "ABORTED",
+      "ten_second_bucket": 1,
+      "count": 2,
+      "total_seconds": 0.513353129,
+      "max_seconds": 0.298042093
+    },
+    {
+      "service": "capacity-provider",
+      "kind": "SPAN_KIND_SERVER",
+      "method": "Delete",
+      "error_type": "",
+      "rpc_status": "CANCELLED",
+      "ten_second_bucket": 0,
+      "count": 1,
+      "total_seconds": 0.751844916,
+      "max_seconds": 0.751844916
+    }
+  ],
+  "successful_managed_deletion_groups": [
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 0,
+      "count": 69,
+      "total_seconds": 15.681868494999998,
+      "max_seconds": 0.39777378
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 1,
+      "count": 164,
+      "total_seconds": 38.804540669000005,
+      "max_seconds": 0.427457159
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 2,
+      "count": 225,
+      "total_seconds": 51.854762595000025,
+      "max_seconds": 0.426386077
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 3,
+      "count": 197,
+      "total_seconds": 45.169085678000016,
+      "max_seconds": 0.454608447
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 4,
+      "count": 210,
+      "total_seconds": 49.71707882800003,
+      "max_seconds": 0.431530499
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 5,
+      "count": 250,
+      "total_seconds": 58.42109337600003,
+      "max_seconds": 0.447887407
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 6,
+      "count": 177,
+      "total_seconds": 44.410286122000045,
+      "max_seconds": 0.460868567
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 7,
+      "count": 168,
+      "total_seconds": 41.682562285000024,
+      "max_seconds": 0.448902301
+    },
+    {
+      "service": "capacity-api",
+      "kind": "SPAN_KIND_CLIENT",
+      "method": "DeleteManaged",
+      "error_type": "",
+      "rpc_status": "OK",
+      "ten_second_bucket": 8,
+      "count": 168,
+      "total_seconds": 42.89138681500002,
+      "max_seconds": 0.48120463
+    }
+  ],
+  "comparison": {
+    "prior_run": 35472990779,
+    "prior_elapsed_seconds": 44.970574569,
+    "same_fixture": true,
+    "timing_improvement_shown": false,
+    "causal_effect_established": false
+  },
+  "limits": [
+    "This measures account cleanup for one selected Gateway. It does not measure complete Gateway workload and database cleanup.",
+    "Trace groups include later calls and shutdown. Each bucket spans ten seconds from HTTP 202. Concurrent span duration is not wall time.",
+    "Aggregated traces do not identify the caller path or pair provider failures with journal conflicts.",
+    "This single comparison does not establish the cause of the timing difference."
+  ],
+  "test_log_sha256": "0d5d7d21dcacb3f6bb8f7d930c0d69ddfb97b511cd193997309a246e4d74a84d",
+  "ci_log_sha256": "e17a98299c9a7e781f4b95869deff7652ef410c98672329895291bfb3468a283"
+}
