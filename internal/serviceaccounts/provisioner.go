@@ -17,6 +17,16 @@ type rpcProvisioner struct {
 	client    pb.OpenShellGatewayServiceAccountProvisionerServiceClient
 }
 
+// This marker permits a bounded repeat of an authorized cleanup action. It
+// carries no provider response. Public service behavior still uses ErrUnavailable.
+var errRetryableCleanup = errors.New("service-account cleanup can be retried")
+
+type retryableCleanupFailure struct{}
+
+func (retryableCleanupFailure) Error() string        { return ErrUnavailable.Error() }
+func (retryableCleanupFailure) Unwrap() error        { return ErrUnavailable }
+func (retryableCleanupFailure) Is(target error) bool { return target == errRetryableCleanup }
+
 func ProvisionerFromEnvironment() (Provisioner, func(), error) {
 	options := rpc.Options{Address: os.Getenv("HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_ADDR"), CAFile: os.Getenv("HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_SERVICE_ACCOUNT_PROVISIONER_TOKEN_FILE")}
 	if options.Address == "" {
@@ -55,6 +65,16 @@ func (p *rpcProvisioner) Delete(ctx context.Context, gatewayID, id, clientUUID s
 func terminalError(err error) error {
 	if err == nil || status.Code(err) == codes.NotFound {
 		return nil
+	}
+	if errors.Is(err, context.Canceled) {
+		return ErrUnavailable
+	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return retryableCleanupFailure{}
+	}
+	switch status.Code(err) {
+	case codes.Aborted, codes.Unavailable, codes.ResourceExhausted, codes.DeadlineExceeded:
+		return retryableCleanupFailure{}
 	}
 	return ErrUnavailable
 }
