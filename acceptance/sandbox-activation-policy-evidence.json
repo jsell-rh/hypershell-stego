@@ -1,0 +1,24 @@
+{
+  "source": "674c6e5379c560840d7bb846911f1e0eb2476808",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35467767433",
+  "source_files": 1494,
+  "source_and_fixture_hashes_verified": true,
+  "compiler_records_match_published_package": true,
+  "resources": 32,
+  "changed": [
+    [
+      "ValidatingAdmissionPolicy",
+      "stego-service-ci.hypershell-namespace-allocation.pods.sandbox"
+    ]
+  ],
+  "runtime_class": "stego-ci-sandbox-network",
+  "runtime_handler": "crun",
+  "remaining_pod_guards_unchanged": true,
+  "rbac_unchanged": true,
+  "network_policies_unchanged": true,
+  "plan_sha256": "7f065e8f88575f9f12845e5ee26e7ff65e97c4d8d890151e6a10d2bd4f5e37b0",
+  "prior_installation_uid": "a8b7abdf-74ae-4223-9cc1-8128d1538baf",
+  "cluster_writes": false,
+  "vm_isolation_tested": false,
+  "live_traffic_tested": false
+}

@@ -41,3 +41,12 @@ must still qualify this candidate before promotion. Their results are pending. L
 unverified. The user deferred the Kata test because no suitable cluster exists.
 The upstream workspace helper and socket settings remain unchanged. No fork or
 new admission service is required.
+
+
+Policy render run `35467767433` passed at `674c6e5`. Independent verification
+matched all 1,494 source hashes, the fixture changes, and the published compiler
+records. Of 32 installation resources, only the Sandbox Pod policy's runtime
+class comparison differs from the saved production installation. Permissions,
+network policies, and the other 21 Pod validation rules remain unchanged.
+This permits review of the native test plan; it does not apply it or prove live
+behavior. See the [policy record](sandbox-activation-policy-evidence.json).
