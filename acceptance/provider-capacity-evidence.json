@@ -20,7 +20,7 @@
       "test_seconds": 481.99,
       "source_archive_match": true,
       "binary_hashes_match": true,
-      "cleanup_confirmed": true
+      "test_resource_cleanup_confirmed": true
     },
     {
       "run_id": 35460101439,
@@ -35,7 +35,28 @@
       "test_seconds": 142.77,
       "source_archive_match": true,
       "binary_hashes_match": true,
-      "cleanup_confirmed": true
+      "test_resource_cleanup_confirmed": true
+    },
+    {
+      "run_id": 35460485398,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35460485398",
+      "source_commit": "081d1f94a311ac50368c28bbad758fdd5477faa7",
+      "conclusion": "failure",
+      "stage": "cleanup",
+      "reason": "The account provider scope remained unsealed through the two-minute observation limit.",
+      "rest_created_accounts": 100,
+      "sql_accounts_before": 10000,
+      "provider_account_clients_before": 10000,
+      "configured_gateway_quota": 100,
+      "configured_creator_quota": 100,
+      "cleanup_complete": false,
+      "cleanup_observation_seconds": 120.073536372,
+      "cleanup_seconds": null,
+      "target_met": false,
+      "test_seconds": 397.62,
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "test_resource_cleanup_confirmed": true
     }
   ],
   "regression": {
@@ -49,9 +70,23 @@
     "cleanup_confirmed": true
   },
   "limits": [
-    "The account cleanup timing target is not yet measured.",
+    "Account cleanup remained incomplete after 120.0735 seconds. The 30-second target failed.",
     "The background fixture does not qualify application creation or token policy.",
     "Total Gateway workload, database, and identity cleanup are not covered.",
-    "The whole-realm Gateway identity scan has a separate inventory window issue."
-  ]
+    "The whole-realm Gateway identity scan has a separate inventory window issue.",
+    "The failure occurred before the background preservation checks.",
+    "The failure record does not identify provider request time or scheduler delay."
+  ],
+  "quota_regression": {
+    "run_id": 35460485337,
+    "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35460485337",
+    "source_commit": "081d1f94a311ac50368c28bbad758fdd5477faa7",
+    "conclusion": "success",
+    "top_level_tests": 32,
+    "race_instrumented": true,
+    "failures_or_skips": 0,
+    "main_integration_commit": "034b46bb9280520f0309b8c78a3b0b7afb55994d",
+    "integration_changed_files_match": true,
+    "main_ci_complete": false
+  }
 }

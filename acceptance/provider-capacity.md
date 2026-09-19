@@ -64,3 +64,18 @@ application policy limit, not a request-rate limit. No cleanup was measured.
 The quota values are now operator settings; the original defaults remain.
 Tests check invalid settings, both default quotas, and concurrent reservations
 with smaller configured limits. The capacity gate sets each quota to 100.
+
+The third run, `35460485398`, created all 100 selected accounts through REST.
+The fixture confirmed 100 Gateway rows, 10,000 active account rows, and all
+10,000 expected provider clients. REST DELETE returned 202 and blocked a new
+account. The provider state scope remained unsealed through 120.0735 seconds.
+The 30-second target failed. The record has no completion time. The test stopped
+before its final provider absence, closed-journal, and background preservation
+checks, so it does not prove those results. Test resource cleanup passed, and
+the source archive and all binary hashes matched.
+
+Quota and journal regression run `35460485337` passed 32 top-level tests with
+race checks and no failure or skip. The quota policy was then copied to main at
+`034b46b`; all seven changed files match the tested candidate. Main's complete
+workflow checks remain separate. The next capacity change must measure progress
+and retry delay before it changes the recovery cadence or work budgets.
