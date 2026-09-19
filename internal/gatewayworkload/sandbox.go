@@ -86,12 +86,48 @@ func sandboxProbeUnchanged(admitted, expected object) bool {
 			if !ok {
 				return false
 			}
+			if !sandboxEnvironmentAllowed(container) {
+				return false
+			}
 			if container["name"] == "agent" || container["name"] == "workspace-init" {
 				if mounts, present := container["volumeMounts"]; present {
 					values, ok := mounts.([]any)
 					if !ok || len(values) != 0 {
 						return false
 					}
+				}
+			}
+		}
+	}
+	return true
+}
+
+func sandboxEnvironmentAllowed(container map[string]any) bool {
+	for _, field := range []string{"env", "envFrom"} {
+		raw, present := container[field]
+		if !present {
+			continue
+		}
+		entries, ok := raw.([]any)
+		if !ok {
+			return false
+		}
+		for _, raw := range entries {
+			entry, ok := raw.(map[string]any)
+			if !ok {
+				return false
+			}
+			if field == "envFrom" {
+				if _, secret := entry["secretRef"]; secret {
+					return false
+				}
+			} else if raw, present := entry["valueFrom"]; present {
+				source, ok := raw.(map[string]any)
+				if !ok {
+					return false
+				}
+				if _, secret := source["secretKeyRef"]; secret {
+					return false
 				}
 			}
 		}

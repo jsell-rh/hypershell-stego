@@ -3,6 +3,7 @@ module github.com/jsell-rh/hypershell-stego
 go 1.26.8
 
 require (
+	cel.dev/cel-go v0.32.0
 	github.com/antlr/antlr4 v0.0.0-20200712162734-eb1adaa8a7a6
 	github.com/bufbuild/protocompile v0.14.1
 	github.com/getkin/kin-openapi v0.149.0

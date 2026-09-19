@@ -45,7 +45,7 @@ func TestSandboxSetupUsesBoundedDryRuns(t *testing.T) {
 }
 
 func TestSandboxSetupRejectsChangedOrMissingGuards(t *testing.T) {
-	for _, mode := range []string{"runtime", "account", "workspace", "socket", "credential", "exposed credential", "allowed negative", "server error"} {
+	for _, mode := range []string{"runtime", "account", "workspace", "socket", "credential", "exposed credential", "secret environment", "secret environment source", "allowed negative", "server error"} {
 		t.Run(mode, func(t *testing.T) {
 			requests := 0
 			k := fixture(t, func(w http.ResponseWriter, r *http.Request) {
@@ -72,6 +72,10 @@ func TestSandboxSetupRejectsChangedOrMissingGuards(t *testing.T) {
 						spec["containers"].([]any)[0].(map[string]any)["volumeMounts"] = []any{map[string]any{"name": "openshell-client-tls", "mountPath": "/identity"}}
 					case "credential":
 						spec["containers"].([]any)[1].(map[string]any)["volumeMounts"] = []any{}
+					case "secret environment":
+						spec["containers"].([]any)[0].(map[string]any)["env"] = []any{map[string]any{"name": "KEY", "valueFrom": map[string]any{"secretKeyRef": map[string]any{"name": "openshell-client-tls", "key": "tls.key"}}}}
+					case "secret environment source":
+						spec["initContainers"].([]any)[0].(map[string]any)["envFrom"] = []any{map[string]any{"secretRef": map[string]any{"name": "openshell-client-tls"}}}
 					}
 					w.WriteHeader(http.StatusCreated)
 					_ = json.NewEncoder(w).Encode(pod)
