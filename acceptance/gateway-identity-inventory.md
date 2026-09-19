@@ -23,8 +23,14 @@ error and no partial result. A list projection cannot supply ownership proof.
 The unit test uses a TLS provider fixture. It checks page continuation, current
 reads, legacy and console ownership, false list attributes, unrelated substring
 matches, cross-page duplicates, denied searches, missing and failed reads,
-changed names, scan limits, and parent cancellation. Hosted execution is pending.
-The existing application workflow remains required for real-provider evidence.
+changed names, scan limits, and parent cancellation. Journal run `35467361175`
+passed at `739835e`: all 36 required top-level tests and all eight new inventory
+cases passed, with no failure or skip. Its real Keycloak identity-controller
+workflow also passed. Provider run `35467361159` passed all six required cleanup
+and signal checks. The exact source archive and provider cleanup were verified.
+See the [journal record](gateway-identity-inventory-journal-evidence.json) and
+[provider record](gateway-identity-inventory-provider-evidence.json).
+The combined full application and live cluster checks remain pending.
 
 This change removes unrelated service-account cardinality from the normal
 Gateway identity query. It does not remove the common per-query scan window or

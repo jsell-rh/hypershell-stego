@@ -1,0 +1,17 @@
+{
+  "run_id": 35467361159,
+  "source": "739835e708c387af84b8f1db2ad5b6059f814e08",
+  "conclusion": "success",
+  "log_sha256": "a12446f236e9efe25eb71874b2d3828cd56a290345d8440b696fec9be2110d52",
+  "qualified": true,
+  "source_archive_match": true,
+  "cleanup_confirmed": true,
+  "required_tests": [
+    "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+    "TestGatewayCleanupDeadlineReopensConfirmation",
+    "TestUnrelatedClientSnapshotComparison",
+    "TestPostgresSignalEvidenceRequiresControllerAndLog",
+    "TestPostgresSignalEvidenceAcceptsManagedSchema",
+    "TestPostgresSignalEvidenceAcceptsCredentialPreparation"
+  ]
+}

@@ -30,9 +30,14 @@ extends the earlier allocation and packet checks; it starts no OpenShell
 Sandbox workload. The native test declaration still changes only the runtime
 class guard. It grants no extra permission.
 
-Hosted adapter and full application checks, followed by the bounded native
-cluster workflow, must qualify this candidate before promotion. These results
-are pending. Live OpenShell Sandbox execution and Kata isolation remain
+Hosted adapter run `35467508365` passed at `674c6e5`. All 63 top-level tests
+passed, including the four new constructor cases. One declared SQL test was
+skipped because this job has no database fixture. The deferred acceptance test
+compiled, and all six allocation cleanup tests passed. The exact source archive
+matched. See the [adapter record](sandbox-activation-adapter-evidence.json).
+
+The combined full application check and the bounded native cluster workflow
+must still qualify this candidate before promotion. Their results are pending. Live OpenShell Sandbox execution and Kata isolation remain
 unverified. The user deferred the Kata test because no suitable cluster exists.
 The upstream workspace helper and socket settings remain unchanged. No fork or
 new admission service is required.
