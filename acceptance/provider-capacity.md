@@ -229,3 +229,16 @@ application check and sixth real-provider capacity result remain pending. The
 previous complete cleanup measurement remains 93.2722 seconds. The separate
 [Gateway identity discovery change](gateway-identity-inventory.md) is excluded
 from the frozen source for that sixth capacity comparison.
+
+
+Full application run `35467115168` passed at `6c54674`. The core suite passed
+327 top-level tests and 830 cases. All 816 cases from the prior full result
+remain present; the candidate adds 14 cases for worker options and parallel
+cleanup recovery. Both serial and parallel restart tests passed. The browser,
+UI, and image jobs passed. The same five conditional database, live cluster,
+and capacity tests were excluded from the core suite. The Kata job was skipped.
+See the [full result](scan-parallel-full-evidence.json).
+
+After independent verification of that result, the sixth capacity run
+`35468703943` started on the exact same source. Its six fixture files are
+unchanged from the previous measurement. No capacity result is available yet.

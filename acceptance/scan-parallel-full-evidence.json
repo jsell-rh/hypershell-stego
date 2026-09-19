@@ -1,0 +1,32 @@
+{
+  "source": "6c546746f4f1a223203e1534c72a1f6a2db742c9",
+  "run_id": 35467115168,
+  "conclusion": "success",
+  "jobs": {
+    "service-image": "success",
+    "acceptance (browser)": "success",
+    "acceptance (core)": "success",
+    "web-console": "success",
+    "sandbox-workload": "skipped"
+  },
+  "core_passed_cases": 830,
+  "core_passed_top_level": 327,
+  "core_failed_cases": [],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "prior_core_cases_retained": true,
+  "additional_passed_cases": 14,
+  "additional_top_level_tests": [
+    "TestGatewayAccountCleanupParallelResumesAfterRestart",
+    "TestServiceAccountOptions"
+  ],
+  "serial_and_parallel_restart_tests_passed": true,
+  "rendered_browser_test_passed": true,
+  "log_sha256": "daef59680671cf75bb147b5944f55553256748c9a39080c1b4507922538e9fb0",
+  "source_delta_verified": true
+}
