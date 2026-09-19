@@ -1,0 +1,237 @@
+{
+  "same_capacity_fixture": true,
+  "changed_capacity_files": [],
+  "canonical_rpc_tests_passed": 34,
+  "diagnostic_log_sha256": "1088744a683381cfa311c5d3178fa65b82271507847dab82377a083fbc983f62",
+  "source_commit": "4ea3e1edb791810108f783adf474dec577b08370",
+  "run_id": 35476517343,
+  "conclusion": "success",
+  "source_archive_match": true,
+  "binary_hashes_match": true,
+  "cleanup_confirmed": true,
+  "result_present": true,
+  "compiler_matches": true,
+  "limits_checked": true,
+  "integrity_missing_fields": [],
+  "integrity_checks_complete": true,
+  "elapsed_seconds": 21.275551931,
+  "scope_sealed_seconds": 21.006090636,
+  "target_met": true,
+  "gate_passed": true,
+  "process_exit_code": "0",
+  "result_sha256": "6b899c8e704da922b70076176a194941a74a65f69f45b5bde1322a2b0bc33deb",
+  "scope": "account_cleanup",
+  "workload_cleanup_tested": false,
+  "gateways": 100,
+  "accounts_per_gateway": 100,
+  "target_seconds": 30,
+  "complete": true,
+  "closed_accounts": 100,
+  "closed_journals": 100,
+  "deleted_provider_clients": 100,
+  "deleted_provider_users": 100,
+  "preserved_background_accounts": 9900,
+  "preserved_other_clients": 10007,
+  "diagnostic_trace_summary_version": 2,
+  "diagnostic_trace_groups_dropped": 0,
+  "diagnostic_log_records_received": 84483,
+  "diagnostic_metrics_received": 4406,
+  "cleanup_progress": [
+    {
+      "closed_accounts": 0,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 0.017787303
+    },
+    {
+      "closed_accounts": 14,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 2.075728616
+    },
+    {
+      "closed_accounts": 35,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "183f9198e7c8444935ee81b73ada9fe2f14a821bf0c0cb2a06ec3ae48fd5e6e5",
+        "version": 1
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 4.319200615
+    },
+    {
+      "closed_accounts": 62,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "f753b6a710f8a983ae91a586012a2e3c7ea9dab3e14f72a4d7549bc5a1dc95c7",
+        "version": 2
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 6.475968924
+    },
+    {
+      "closed_accounts": 97,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "a28b52757390e7d460bbdc13b1a47b07634716beea0b86e07f9a9783c078b916",
+        "version": 3
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 8.629426307
+    },
+    {
+      "closed_accounts": 97,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "a28b52757390e7d460bbdc13b1a47b07634716beea0b86e07f9a9783c078b916",
+        "version": 3
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 10.646810838
+    },
+    {
+      "closed_accounts": 97,
+      "gateway-account-cleanup": {
+        "complete": true,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "b131315d80742f8d5a20d3be554160c66139b4da4eb824c95b50467b82958974",
+        "version": 5
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 13.000865487
+    },
+    {
+      "closed_accounts": 98,
+      "gateway-account-cleanup": {
+        "complete": true,
+        "cursor_present": true,
+        "failed": true,
+        "position_sha256": "b131315d80742f8d5a20d3be554160c66139b4da4eb824c95b50467b82958974",
+        "version": 5
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 15.124244503
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "4743faa3e0c158937b926ffabc300e0c77c7dfca567b984837a558e9aa057134",
+        "version": 6
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 17.380152906
+    },
+    {
+      "closed_accounts": 100,
+      "gateway-account-cleanup": {
+        "complete": false,
+        "cursor_present": true,
+        "failed": false,
+        "position_sha256": "6e3126858e345813a0613147b81c773ab517ce5fa034ebaf96e913b1bddf0bff",
+        "version": 7
+      },
+      "gateway-provider-inventory": {
+        "complete": false,
+        "cursor_present": false,
+        "failed": false,
+        "position_sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+        "version": 0
+      },
+      "seconds": 19.526179252
+    }
+  ],
+  "rest_created_accounts": 100,
+  "seeded_background_accounts": 9900,
+  "keycloak_mode": "start",
+  "keycloak_database": "postgresql",
+  "background_creation_tested": false,
+  "compiler": "ee348b819bb43a738a6aad2fc14cb76ce3b1ec21",
+  "limits_verified": {
+    "cpu.max": "100000 100000",
+    "memory.max": "1073741824",
+    "memory.swap.max": "0",
+    "pids.max": "256"
+  },
+  "first_all_rows_closed_seconds": 17.380152906,
+  "repeatability_proved": false,
+  "whole_gateway_cleanup_proved": false,
+  "run_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35476517343"
+}
