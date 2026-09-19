@@ -14,6 +14,9 @@ on:
       - 'scripts/prepare-browser-inspection.py'
       - 'scripts/test_browser_inspection.py'
       - 'acceptance/browser_sandbox_allocation_test.go'
+      - 'acceptance/browser_sandbox_network_test.go'
+      - 'acceptance/browser_network_isolation_test.go'
+      - 'scripts/sandbox_network_fixture.py'
       - 'acceptance/browser_gateway_workload_test.go'
       - 'acceptance/browser_worker_deployment_test.go'
       - 'acceptance/browser_allocation_test.go'
@@ -55,7 +58,7 @@ jobs:
           go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/sandboxcount ./internal/sandboxcountapp \
             | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"
           # Compile the deferred live test without starting its fixtures.
-          go test -mod=readonly -run '^$' -timeout=30s ./acceptance \
+          go test -v -mod=readonly -run '^TestBoundedNetworkProbe$' -timeout=30s ./acceptance \
             | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
           go test -v -race -p=1 -mod=readonly -count=1 -timeout=30s \
             scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go \

@@ -33,6 +33,25 @@ class InspectionBoundary(unittest.TestCase):
             with self.subTest(source=invalid[-80:]), self.assertRaises(ValueError):
                 sandbox_network.declaration(invalid)
 
+    def test_native_network_requires_the_exact_bounded_record(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.assertFalse(sandbox_network.enabled(root))
+            (root / 'acceptance').mkdir()
+            target = root / 'acceptance/browser-inspection-source.json'
+            target.write_text('{}')
+            self.assertFalse(sandbox_network.enabled(root))
+            target.write_text(json.dumps({'sandbox_network_probe': sandbox_network.record()}))
+            self.assertTrue(sandbox_network.enabled(root))
+            for invalid in [None, {}, dict(sandbox_network.record(), vm_isolation_tested=True),
+                            dict(sandbox_network.record(), runtime_class='kata')]:
+                target.write_text(json.dumps({'sandbox_network_probe': invalid}))
+                with self.assertRaises(ValueError):
+                    sandbox_network.enabled(root)
+            target.write_text(' ' * ((1 << 20) + 1))
+            with self.assertRaises(ValueError):
+                sandbox_network.enabled(root)
+
     def test_endpoint_worker_change_is_limited_to_the_annotation(self):
         before = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes"]}', 'replicas': 1})
         after = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes","network-probe"]}', 'replicas': 1})

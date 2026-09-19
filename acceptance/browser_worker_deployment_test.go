@@ -60,6 +60,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				// Allocate the declared Sandbox boundary without starting a Sandbox
 				// workload. The Gateway workload keeps its constructor guard.
 				env["HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"] = "kata"
+				if w.nativeSandboxNetworkEnabled() {
+					env["HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"] = sandboxNetworkRuntimeClass
+				}
 			}
 			for _, endpoint := range endpoints {
 				target = append(target, "--egress", "kubernetes="+endpoint)

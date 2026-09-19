@@ -30,6 +30,13 @@ if [[ $endpoint_change == 1 ]]; then
   [[ $workload == 1 && $preinstalled == 0 ]]
 fi
 if [[ $preinstalled == 1 ]]; then [[ $workload == 1 ]]; fi
+sandbox_network=$(PYTHONDONTWRITEBYTECODE=1 python3 -c 'import sys; from pathlib import Path; sys.path.insert(0,"scripts"); from sandbox_network_fixture import enabled; print(int(enabled(Path.cwd())))')
+if [[ $sandbox_network == 1 ]]; then
+  [[ $preinstalled == 1 && $workload == 1 ]]
+  # The operator must restore the production policy before releasing this Lease.
+  : "${STEGO_TEST_HELD_LEASE_HOLDER:?Native packet probes require an operator-held Lease}"
+  : "${STEGO_TEST_HELD_LEASE_UID:?Native packet probes require the exact Lease UID}"
+fi
 if [[ $workload == 1 ]]; then
   [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"

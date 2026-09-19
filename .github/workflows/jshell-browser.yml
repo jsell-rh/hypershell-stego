@@ -7,6 +7,18 @@ on:
         description: Test the public Gateway with the operator configuration
         type: boolean
         default: true
+      sandbox_network:
+        description: Run fixed native Sandbox packet probes under an operator-held lease
+        type: boolean
+        default: false
+      held_lease_holder:
+        description: Operator-held lease identity for the native packet fixture
+        type: string
+        default: ''
+      held_lease_uid:
+        description: Operator-held lease UID for the native packet fixture
+        type: string
+        default: ''
   push:
     branches: [main]
     paths-ignore:
@@ -28,6 +40,17 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
+      - name: Require the operator lease for native packet probes
+        env:
+          NATIVE: ${{ inputs.sandbox_network }}
+          HOLDER: ${{ inputs.held_lease_holder }}
+          LEASE_UID: ${{ inputs.held_lease_uid }}
+        run: |
+          if [[ $NATIVE == true ]]; then
+            test -n "$HOLDER" && test -n "$LEASE_UID"
+          else
+            test -z "$HOLDER" && test -z "$LEASE_UID"
+          fi
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false
@@ -49,12 +72,15 @@ jobs:
         timeout-minutes: 15
         env:
           GH_TOKEN: ${{ github.token }}
+          SANDBOX_NETWORK: ${{ inputs.sandbox_network }}
         run: |
           bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
           echo "STEGO_COMPILER_PACKAGE=$RUNNER_TEMP/compiler-setup/verified" >> "$GITHUB_ENV"
           unset GH_TOKEN GITHUB_TOKEN
           # Use the operator's fixed network profile for supplied PostgreSQL.
-          python3 scripts/prepare-browser-inspection.py --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source"
+          fixture_args=()
+          if [[ $SANDBOX_NETWORK == true ]]; then fixture_args+=(--sandbox-network); fi
+          python3 scripts/prepare-browser-inspection.py "${fixture_args[@]}" --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source"
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
@@ -100,6 +126,8 @@ jobs:
           STEGO_TEST_BROWSER_WORKLOAD: '1'
           STEGO_TEST_GATEWAY_CLUSTER_ISSUER: acp-hypershell-test-ca
           STEGO_TEST_RESULTS: ${{ runner.temp }}/gateway-browser
+          STEGO_TEST_HELD_LEASE_HOLDER: ${{ inputs.held_lease_holder }}
+          STEGO_TEST_HELD_LEASE_UID: ${{ inputs.held_lease_uid }}
         run: bash "$RUNNER_TEMP/browser-source/scripts/check-service-deployment.sh"
       - name: Remove local credentials
         if: always()

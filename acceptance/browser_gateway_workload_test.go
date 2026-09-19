@@ -208,6 +208,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 	}
 	w.checkAllocationAccess()
 	w.checkGatewayNetworkIsolation("initial")
+	w.checkSandboxNetworkIsolation("initial")
 	w.checkEndpointReplacement()
 	w.checkSQLFaultRecovery(gatewayID)
 	w.checkDatabaseRestart(gatewayID)
@@ -227,6 +228,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		dashboard.run(w.t, "dashboard-verify")
 	}
 	w.checkGatewayNetworkIsolation("after-recovery")
+	w.checkSandboxNetworkIsolation("after-recovery")
 	w.checkSandboxAllocations("after-recovery")
 	w.checkCredentialEncryption(gatewayID)
 }

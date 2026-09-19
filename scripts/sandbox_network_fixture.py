@@ -5,11 +5,26 @@ The production declaration and all other Pod guards must remain unchanged.
 """
 import json
 import re
+from pathlib import Path
+
+from gateway_endpoint_fixture import read_json, INSPECTION_RECORD_LIMIT
 
 RUNTIME_CLASS = 'stego-ci-sandbox-network'
 RUNTIME_HANDLER = 'crun'
 PRODUCTION_CLASS = 'kata'
 EXPRESSION = 'has(object.spec.runtimeClassName) && object.spec.runtimeClassName == '
+
+
+def enabled(source):
+    path = Path(source) / 'acceptance/browser-inspection-source.json'
+    if not path.exists():
+        return False
+    value = read_json(path, limit=INSPECTION_RECORD_LIMIT)
+    if 'sandbox_network_probe' not in value:
+        return False
+    if value['sandbox_network_probe'] != record() or value.get('network_endpoint_change'):
+        raise ValueError('The native network fixture record differs')
+    return True
 
 
 def declaration(source):

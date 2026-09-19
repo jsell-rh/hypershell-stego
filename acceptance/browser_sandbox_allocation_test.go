@@ -114,10 +114,10 @@ func (w *browserGatewayWorkload) checkSandboxAllocations(stage string) {
 		w.t.Fatal("worker or Gateway namespace recovery changed the Sandbox allocation")
 	}
 	if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
-		data, err := json.MarshalIndent(map[string]any{"stage": stage, "allocations": records, "sandbox_pods_created": 0, "network_traffic_checked": false, "kata_execution_checked": false}, "", "  ")
+		data, err := json.MarshalIndent(map[string]any{"stage": stage, "allocations": records, "sandbox_pods_observed": 0, "network_traffic_checked": false, "kata_execution_checked": false}, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(directory, "sandbox-allocation-"+stage+".json"), append(data, '\n'), 0600) != nil {
 			w.t.Fatal("cannot save Sandbox allocation evidence")
 		}
 	}
-	w.t.Log("Generated Sandbox accounts and Gateway bindings passed; no Sandbox Pod was created")
+	w.t.Log("Generated Sandbox accounts and Gateway bindings passed; no Sandbox Pod remains")
 }

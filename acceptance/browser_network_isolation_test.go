@@ -142,6 +142,10 @@ func (w *browserGatewayWorkload) checkGatewayNetworkIsolation(stage string) {
 }
 
 func (w *browserGatewayWorkload) gatewayNetworkProbe(namespace, id string, targets []gatewayNetworkTarget) kube.Object {
+	return w.allocationNetworkProbe(namespace, id, "gateway", false, targets)
+}
+
+func (w *browserGatewayWorkload) allocationNetworkProbe(namespace, id, profile string, gatewayLabel bool, targets []gatewayNetworkTarget) kube.Object {
 	w.t.Helper()
 	encoded, err := json.Marshal(targets)
 	if err != nil {
@@ -152,21 +156,21 @@ func (w *browserGatewayWorkload) gatewayNetworkProbe(namespace, id string, targe
 		w.t.Fatal(err)
 	}
 	check, stop := context.WithTimeout(context.Background(), 10*time.Second)
-	account, err := allocator.RequireServiceAccount(check, "gateway", namespace, id, "gateway")
+	account, err := allocator.RequireServiceAccount(check, profile, namespace, id, profile)
 	stop()
 	if err != nil {
 		w.t.Fatal("network probe account is not ready", err)
 	}
 	name := "network-probe-" + uuid.NewString()[:8]
 	collection := "/api/v1/namespaces/" + namespace + "/pods"
-	pod := kube.Object{"apiVersion": "v1", "kind": "Pod", "metadata": kube.Object{"name": name, "namespace": namespace, "labels": kube.Object{"stego.test/network-probe": id}}, "spec": kube.Object{
-		"restartPolicy": "Never", "activeDeadlineSeconds": 90, "terminationGracePeriodSeconds": 1, "serviceAccountName": account, "automountServiceAccountToken": false,
-		"securityContext": kube.Object{"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "seccompProfile": kube.Object{"type": "RuntimeDefault"}},
-		"containers": []any{kube.Object{"name": "probe", "image": "docker.io/library/node@sha256:87362b5d965240a1bc79f85cec63179d4ee853741413b274a4721f2742eb8393", "imagePullPolicy": "IfNotPresent", "command": []string{"node", "-e", gatewayNetworkProbe, string(encoded)},
-			"securityContext": kube.Object{"readOnlyRootFilesystem": true, "allowPrivilegeEscalation": false, "capabilities": kube.Object{"drop": []string{"ALL"}}},
-			"resources":       kube.Object{"requests": kube.Object{"cpu": "20m", "memory": "32Mi", "ephemeral-storage": "1Mi"}, "limits": kube.Object{"cpu": "100m", "memory": "128Mi", "ephemeral-storage": "16Mi"}},
-		}},
-	}}
+	pod := boundedNetworkPod(namespace, name, id, account, profile, gatewayLabel, []string{"node", "-e", gatewayNetworkProbe, string(encoded)}, 90)
+	container := "probe"
+	if profile == "sandbox" {
+		if !w.nativeSandboxNetworkEnabled() {
+			w.t.Fatal("native Sandbox probe has no fixture declaration")
+		}
+		container = "agent"
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	created, code, err := w.kubernetes.Request(ctx, http.MethodPost, collection, pod)
@@ -201,12 +205,12 @@ func (w *browserGatewayWorkload) gatewayNetworkProbe(namespace, id string, targe
 		}
 		phase := kube.String(observed, "status", "phase")
 		if phase == "Succeeded" || phase == "Failed" {
-			result, status, err := w.kubernetes.Request(ctx, http.MethodGet, collection+"/"+name+"/log?container=probe&tailLines=1&limitBytes=8192", nil)
+			result, status, err := w.kubernetes.Request(ctx, http.MethodGet, collection+"/"+name+"/log?container="+container+"&tailLines=1&limitBytes=8192", nil)
 			if err != nil || status != 200 {
 				w.t.Fatal("network probe evidence unavailable", status, err)
 			}
 			if phase != "Succeeded" {
-				w.t.Fatal("Gateway network isolation failed", fmt.Sprint(result))
+				w.t.Fatal("Allocation network isolation failed", fmt.Sprint(result))
 			}
 			rows, ok := result["results"].([]any)
 			if !ok || len(rows) != len(targets) {
