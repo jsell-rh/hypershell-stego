@@ -118,6 +118,25 @@ compiled without starting its fixtures. The complete application allocation and
 network gate still needs a separate check. The constructor guard
 remains active. See the [network metadata record](sandbox-network-metadata-evidence.json).
 
+The [live Gateway allocation check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35455684030)
+passed at `14049df` with signed compiler `eed9066`. The application created two
+Gateways and their separate Sandbox namespaces and accounts. The Sandbox namespace
+and account identities survived worker restart and Gateway namespace replacement.
+The workflow checked 34 worker permissions, four actual forbidden Sandbox account
+or network-policy requests, and six generated admission denials. Normal Gateway
+deletion included the Sandbox namespace. REST, gRPC, access rules, event delivery,
+SQL recovery, browser sessions, and telemetry checks passed. Generated file hashes
+matched before and after the workflow. Independent cleanup checks found no test
+workloads or allocations; all 32 installed policy resources were unchanged.
+
+The first attempt failed because the test expected an older admission message.
+Its failure and complete cleanup remain in the record. The correction changed
+only three message expectations. A later commit corrects one probe label without
+changing its request or expected denial. This gate created no Sandbox Pod and
+does not prove Sandbox network traffic or Kata isolation. Keep the constructor
+guard until the remaining application network path is checked. See the
+[allocation result](sandbox-allocation-evidence.json).
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks

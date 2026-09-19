@@ -1,0 +1,205 @@
+{
+  "checked_at": "2026-09-19T17:03:22.148908+00:00",
+  "scope": "Real Gateway workflow with Sandbox namespace and account allocation. No Sandbox Pod or Sandbox network traffic was tested. Live Kata execution remains deferred.",
+  "source": "14049df1c50196e76616410a4ffdc5d5f1e7072e",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35455684030",
+  "compiler": "eed90662e4faa485032e3e2b0d056b6166f0d00b",
+  "workflow": {
+    "run_attempt": 1,
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35455684030",
+    "source": "14049df1c50196e76616410a4ffdc5d5f1e7072e",
+    "compiler": "eed90662e4faa485032e3e2b0d056b6166f0d00b",
+    "seconds": 698.41,
+    "source_files_match": 1461,
+    "generation_hashes_match": 416,
+    "dashboard_session_and_reload": true,
+    "editor_checks": 8,
+    "account_cleanup_counts": 3,
+    "postgres_signals_complete": true,
+    "cleanup": {
+      "run": 35455684030,
+      "source": "14049df1c50196e76616410a4ffdc5d5f1e7072e",
+      "checked_at": "2026-09-19T17:02:41.793432+00:00",
+      "test_job_uid": "934b14b3-6c87-4626-bcad-1c628bd68ebc",
+      "runtime": [],
+      "fixtures": [],
+      "allocations": [],
+      "ci_jobs": [],
+      "lease_holder": "",
+      "installation_uid": "d7b61bea-06d6-4f38-8610-0d46a7cc80c8",
+      "installed_resources_unchanged": 32,
+      "empty": true
+    },
+    "screenshots": {
+      "dashboard-create.json.png": "8fbc8020daed8dcd815f45e2bd1d9735e41094342b6d53f0935d94dbddb59000",
+      "dashboard-create.json.editor.png": "4f4906ed6aa226cf115ec86055edaa6164673caa347057bbb6e4a41d1fce181b",
+      "dashboard-create.json.editor-selection.png": "cb64dcaf80612d3bef320c3a71dd8532396648404344205983424e22c53227a2"
+    },
+    "screenshots_viewed": true,
+    "startup": {
+      "failed_pairs": {
+        "hypershell-console": {
+          "8d2815b6-ef04-48c3-bdfc-654a6f8e294d": [],
+          "9ebf329c-a652-40ad-af84-90932fbc12c3": [],
+          "cf479c9e-a15e-4a4b-815f-c3eabbb82f19": []
+        },
+        "hypershell-gateway-console": {
+          "416c7fae-e957-4bbe-9317-9159d122637a": [],
+          "ad62c9bf-17e3-4fff-bc81-d6f8db7794d7": [],
+          "ca2080a7-dd3d-4698-8026-ea79b900bbd3": []
+        }
+      },
+      "complete_instances": {
+        "hypershell-console": [
+          "8d2815b6-ef04-48c3-bdfc-654a6f8e294d",
+          "9ebf329c-a652-40ad-af84-90932fbc12c3",
+          "cf479c9e-a15e-4a4b-815f-c3eabbb82f19"
+        ],
+        "hypershell-gateway-console": [
+          "416c7fae-e957-4bbe-9317-9159d122637a",
+          "ad62c9bf-17e3-4fff-bc81-d6f8db7794d7",
+          "ca2080a7-dd3d-4698-8026-ea79b900bbd3"
+        ]
+      },
+      "sha256": "4c6f57ffc5dc807028541e12abc89f29647b4663f754c06b19ff7c3d77d3dc9a",
+      "same_relay_instance_required_by_test": true
+    },
+    "scope": "Live Gateway workflow with Sandbox namespace allocation. No Sandbox Pod, Sandbox network traffic, or Kata execution is covered.",
+    "required_tests_passed": 11,
+    "namespace_recovery_checks": {
+      "database_and_role_oids_unchanged": true,
+      "other_gateway_sql_unchanged": true,
+      "provider_data_unchanged": true,
+      "source_data_unchanged": true,
+      "sql_credentials_unchanged": true,
+      "ungranted_rpc_denied": true,
+      "viewer_lists_filtered": true,
+      "viewer_membership_recovered": true,
+      "viewer_writes_denied": true,
+      "workspace_and_gateway_revocation_verified": true
+    },
+    "sql_cleanup_denial_checks": {
+      "cleanup_pending": true,
+      "other_gateway_ready": true,
+      "source_data_unchanged": true,
+      "sql_object_ids_unchanged": true,
+      "sqlstate": "42501"
+    },
+    "database_restart": "PostgreSQL process restart in the same fixture Pod; no RDS failover claim",
+    "not_proved": [
+      "RDS failover",
+      "Live Kata isolation",
+      "Production capacity and remaining enterprise requirements"
+    ],
+    "provisioner_recovery": {
+      "account_write_retries": 0,
+      "current_unavailable_observations": true,
+      "denied_account_requests": 2,
+      "denied_requests_created_no_accounts": true,
+      "gateways": 2,
+      "running_healthy_gateways_after_restart": true,
+      "sql_and_credential_identities_preserved": true
+    },
+    "evidence_archive_sha256": "fbda9d4c4270d825641cc03dcb0bc8f94e8b3a5752d499593dbff9adfccdae6b",
+    "compiler_records_match_published_package": true,
+    "compiler_sha256": "79fce8d97b41ba12f07148c505fb9f43d5eb6d772eb4c295ee0cacab9343c026",
+    "compiler_transfer_matches_live_capture": true,
+    "bounded_test_job_verified": true,
+    "provisioner_rollout": "Recreate",
+    "live_provisioner_startup_observations": 2,
+    "failed_rpc_recovery_probe_used": false,
+    "observed_job_deadline_seconds": 1800,
+    "rollout_evidence": "Hash-verified generated template and two live API assertions; final object collection is empty after cleanup",
+    "visual_review_sha256": "cdc393faff9b93ec65dfc55376ae3333cdb6d9e5215d316516b1e82ffa2b00b2"
+  },
+  "sandbox_allocation": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35455684030",
+    "source": "14049df1c50196e76616410a4ffdc5d5f1e7072e",
+    "checked_at": "2026-09-19T17:03:05.310479+00:00",
+    "gateways": 2,
+    "sandbox_allocations": 2,
+    "stable_namespace_and_account_uids_across_recovery": true,
+    "gateway_namespace_replaced": true,
+    "permission_checks": 34,
+    "sandbox_permission_checks": 16,
+    "actual_sandbox_write_denials": 4,
+    "generated_admission_denials": 6,
+    "normal_deletion_checked_by_workflow": true,
+    "final_allocations_absent": true,
+    "sandbox_pods_created": 0,
+    "gateway_network_connection_checks": 24,
+    "unrelated_namespace_egress_checked": false,
+    "sandbox_network_traffic_checked": false,
+    "kata_execution_checked": false
+  },
+  "workload_accounts": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35455684030",
+    "source": "14049df1c50196e76616410a4ffdc5d5f1e7072e",
+    "record_sha256": "8decce7d647ad79512076f964a382fff6cd3e10ff5709ce323d8d5bffe3d3383",
+    "readiness_observations": 24,
+    "gateways": 2,
+    "namespace_incarnations": 3,
+    "account_objects": 6,
+    "distinct_owner_and_alias_names": 4,
+    "names_preserved_across_namespace_replacement": true,
+    "account_and_pod_uids_change_after_namespace_replacement": true,
+    "gateway_pod_replacement_observed": true,
+    "explicit_pod_token_settings": true,
+    "worker_account_writes_denied": true,
+    "scope": "Live account and ready Pod observations from the complete workflow. The shared cluster Sandbox guard remains active."
+  },
+  "policy_installation": {
+    "render_run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35454170182",
+    "resource_count": 32,
+    "server_dry_runs": 11,
+    "changed_resources": 11,
+    "policy_type_checks": "success",
+    "ci_policy_reads": 16,
+    "ci_access_denials": 12,
+    "privileged_containers_permitted": false
+  },
+  "earlier_failed_attempt": {
+    "source": "dc355a54d5bb58d6fdcad1f3a66728f637201a0c",
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35454749700",
+    "conclusion": "failure",
+    "failure": "allocation dry-run was not denied by the expected policy allocation identity change 422",
+    "workflow_seconds": 300.5,
+    "initial_sandbox_allocations": 2,
+    "initial_allocation_matches_live_capture": true,
+    "initial_two_generations_match": true,
+    "post_test_generation_available": false,
+    "full_workflow_pass": false,
+    "sandbox_recovery_checked": false,
+    "sandbox_network_traffic_checked": false,
+    "kata_execution_checked": false,
+    "hosted_cleanup": {
+      "namespace_retained": "stego-service-ci",
+      "test_resources_absent": true,
+      "allocations_absent": true
+    },
+    "log_sha256": "f91b9a9940fab4f583ad8f4bcaf48478ea80aa723a7b5174b438da16b3c76827",
+    "evidence_sha256": "746434133eabfa81e3b5ed2bdf7c8263771970144d62ec96d51932432b781732"
+  },
+  "earlier_failed_attempt_cleanup": {
+    "run": 35454749700,
+    "source": "dc355a54d5bb58d6fdcad1f3a66728f637201a0c",
+    "checked_at": "2026-09-19T16:39:33.507375+00:00",
+    "test_job_uid": "926a49e1-a2f7-4c24-8ad7-1e9bbbf79ba5",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installation_uid": "d7b61bea-06d6-4f38-8610-0d46a7cc80c8",
+    "installed_resources_unchanged": 32,
+    "empty": true
+  },
+  "later_label_only_commit": "478c41f1e40d31b32641c72c9ef4942541d01b8a",
+  "remaining": [
+    "Sandbox network traffic",
+    "External Sandbox controller namespace boundary",
+    "Live Kata execution and hostile workload isolation",
+    "Production capacity targets and other enterprise requirements"
+  ],
+  "evidence_directory": "~/.local/state/stego/runs/sandbox-application-allocation-20260919/"
+}
