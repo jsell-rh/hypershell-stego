@@ -79,3 +79,13 @@ race checks and no failure or skip. The quota policy was then copied to main at
 `034b46b`; all seven changed files match the tested candidate. Main's complete
 workflow checks remain separate. The next capacity change must measure progress
 and retry delay before it changes the recovery cadence or work budgets.
+
+The next sample enables authenticated OTEL delivery over verified TLS for the
+API and provisioner. The test receiver retains fixed operation and outcome
+classes, counts, and durations in ten-second buckets. It keeps at most 1,024
+trace groups. It counts log and metric records, then discards their contents.
+Raw spans, credentials, request bodies, and provider responses are not saved.
+Every two seconds, the test records closed account counts and durable checkpoint
+versions, flags, and cursor hashes. These checks share the existing test limits.
+Full trace sampling adds work, so this diagnostic sample is separate from the
+third sample. It does not change the 30-second target or recovery settings.

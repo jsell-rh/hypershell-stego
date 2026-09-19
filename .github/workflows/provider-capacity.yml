@@ -7,6 +7,7 @@ on:
       - '.github/workflows/provider-capacity.yml'
       - 'acceptance/provider_capacity_test.go'
       - 'acceptance/provider_capacity_seed_test.go'
+      - 'acceptance/provider_capacity_diagnostics_test.go'
       - 'scripts/run-provider-capacity.sh'
       - 'scripts/verify-provider-capacity.py'
 
@@ -62,6 +63,7 @@ jobs:
           go build -mod=readonly -trimpath -buildvcs=true -o "$result/bin/api" ./out
           go build -mod=readonly -trimpath -buildvcs=true -o "$result/bin/provisioner" ./out/grpcapi/processes/provisioner
           go test -c -mod=readonly -trimpath -buildvcs=true -o "$result/bin/acceptance.test" ./acceptance
+          "$result/bin/acceptance.test" -test.run='^TestCapacityDiagnosticsSummary$' -test.v -test.timeout=15s > "$result/diagnostics-check.log"
           git diff --exit-code
           git rev-parse HEAD > "$result/source-commit"
           git archive HEAD | sha256sum > "$result/source-archive.sha256"

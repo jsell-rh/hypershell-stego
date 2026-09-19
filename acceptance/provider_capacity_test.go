@@ -100,7 +100,10 @@ func TestRealProviderAccountCapacity(t *testing.T) {
 	key, settings := issuer(t)
 	settings = append(settings, "HYPERSHELL_SERVICE_ACCOUNT_GATEWAY_QUOTA=100", "HYPERSHELL_SERVICE_ACCOUNT_CREATOR_QUOTA=100")
 	record["configured_gateway_quota"], record["configured_creator_quota"] = 100, 100
-	providerSettings, _ := startRealProvisioner(t, f, k, key, settings)
+	diagnostics, telemetrySettings := startCapacityDiagnostics(t, record)
+	providerSettings, _ := startRealProvisioner(t, f, k, key, append(append(append([]string{}, settings...), telemetrySettings...), "OTEL_SERVICE_NAME=capacity-provider"))
+	settings = append(settings, telemetrySettings...)
+	settings = append(settings, "OTEL_SERVICE_NAME=capacity-api")
 	_, config := broker(t, identity(t, "localhost"))
 	_, address := startApplication(t, buildApplication(t), f.dsn, config, append(settings, providerSettings...)...)
 	owner := token(t, key, "alice")
@@ -204,11 +207,21 @@ func TestRealProviderAccountCapacity(t *testing.T) {
 		t.Fatal("Gateway deletion was not accepted", code)
 	}
 	accepted := time.Now()
+	diagnostics.mu.Lock()
+	diagnostics.accepted = uint64(accepted.UnixNano())
+	diagnostics.mu.Unlock()
 	if code, _ := requestJSON(t, http.MethodPost, path+"/service_accounts", owner, []byte(`{"name":"blocked"}`)); code != http.StatusNotFound {
 		t.Fatal("deleting Gateway accepted a new account", code)
 	}
 	scope := gateways.AccountProviderStateScope(selected)
+	var lastSample time.Time
+	progress := []map[string]any{}
 	for {
+		if time.Since(lastSample) >= 2*time.Second {
+			progress = append(progress, capacityCleanupSample(t, ctx, f, selected, accepted))
+			record["cleanup_progress"] = progress
+			lastSample = time.Now()
+		}
 		membership, err := f.storage.LoadResourceStateScope(ctx, "ServiceAccount", scope)
 		if err != nil {
 			t.Fatal(err)
