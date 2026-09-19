@@ -52,6 +52,16 @@ ROLES = '''      - name: fixture-gateway-inspector
           - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
           - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+      - name: fixture-sandbox-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+          - {api_group: "", resources: [pods], verbs: [get, list, watch, create, delete]}
+          - {api_group: "", resources: [pods/log], verbs: [get]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
+          - {api_group: rbac.authorization.k8s.io, resources: [rolebindings], verbs: [get, list]}
 '''
 BINDINGS = [
     ('          - {role: gateway-worker, service_account: hypershell-gateway-workload, namespace: control}\n',
@@ -60,10 +70,12 @@ BINDINGS = [
      '          - {role: fixture-state-inspector, service_account: service-check, namespace: control}\n'),
     ('          - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}\n',
      '          - {role: fixture-console-state-inspector, service_account: service-check, namespace: control}\n'),
+    ('          - {role: sandbox-worker, service_account: hypershell-gateway-workload, namespace: control}\n',
+     '          - {role: fixture-sandbox-inspector, service_account: service-check, namespace: control}\n'),
 ]
 
 def declaration(source):
-    if any(role in source for role in ('fixture-gateway-inspector', 'fixture-state-inspector', 'fixture-console-state-inspector')):
+    if any(role in source for role in ('fixture-gateway-inspector', 'fixture-state-inspector', 'fixture-console-state-inspector', 'fixture-sandbox-inspector')):
         raise ValueError('The source already contains fixture inspection roles')
     if source.count('    allocation_roles:\n') != 1 or source.count('    allocation_profiles:\n') != 1 or source.count('    workers:\n') != 1:
         raise ValueError('The production profile boundary changed')
@@ -71,7 +83,7 @@ def declaration(source):
     profiles, after = profiles.split('    workers:\n', 1)
     # Append each inspection binding inside its own profile. Other state
     # profiles keep their existing permissions and binding indices.
-    for name, (anchor, addition) in zip(('gateway', 'gateway-state', 'gateway-console-state'), BINDINGS, strict=True):
+    for name, (anchor, addition) in zip(('gateway', 'gateway-state', 'gateway-console-state', 'sandbox'), BINDINGS, strict=True):
         pattern = r'^      - name: ' + re.escape(name) + r'\n.*?(?=^      - name: |\Z)'
         matches = list(re.finditer(pattern, profiles, re.MULTILINE | re.DOTALL))
         if len(matches) != 1 or matches[0].group().count(anchor) != 1:
@@ -153,12 +165,16 @@ def inspection_roles():
             rule('', 'secrets', ['get'], ['openshell-gateway-state']), quota, *network]},
         {'Name': 'fixture-console-state-inspector', 'Scope': 'namespace', 'Rules': [
             rule('', 'secrets', ['get'], ['gateway-console-state']), quota, *network]},
+        {'Name': 'fixture-sandbox-inspector', 'Scope': 'namespace', 'Rules': [
+            quota, *network, rule('', 'pods', ['create', 'delete', 'get', 'list', 'watch']),
+            rule('', 'pods/log', ['get']), rule('', 'serviceaccounts', ['get']),
+            rule('rbac.authorization.k8s.io', 'rolebindings', ['get', 'list'])]},
     ]
 
 
 def verify_runtime(before, after):
     original, fixture = allocation_config(before), allocation_config(after)
-    additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state', 'fixture-console-state-inspector': 'gateway-console-state'}
+    additions = {'fixture-gateway-inspector': 'gateway', 'fixture-state-inspector': 'gateway-state', 'fixture-console-state-inspector': 'gateway-console-state', 'fixture-sandbox-inspector': 'sandbox'}
     roles = [r for r in fixture['Roles'] if r['Name'] in additions]
     if roles != inspection_roles():
         raise ValueError('The generated inspection permissions differ from the fixed contract')
@@ -250,7 +266,7 @@ def check_render(source, destination, env, network_baseline=None, endpoint_chang
         verify_manifests(*renders)
         record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
                   'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
-                  'scope': 'Three namespace roles, allocator bind names, declared namespace binding cases, and the reserved fixture control account only.'}
+                  'scope': 'Four namespace roles, allocator bind names, declared namespace binding cases, and the reserved fixture control account only.'}
         if endpoint_change:
             from gateway_endpoint_fixture import policy_change
             transitions = []
@@ -344,7 +360,7 @@ def main():
     record = {'compiler_revision': revision, 'source_base_commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=source, text=True).strip(),
               'source_sha256': hashes, 'fixture_sha256': {name: hashlib.sha256((destination / name).read_bytes()).hexdigest() for name in hashes},
               'changed_files': sorted(changed), 'inspection_roles': roles, 'render': render,
-              'scope': 'Production source with three namespace inspection roles and three appended bindings. Production binding indices and runtime code are unchanged.'}
+              'scope': 'Production source with four namespace inspection roles and four appended bindings. Production binding indices and runtime code are unchanged.'}
     if args.network_endpoint_change:
         record['network_endpoint_change'] = {'endpoint': 'network-probe', 'scope': 'One operator-bound endpoint name in the Gateway allocation profile; no added Kubernetes permission.'}
     write_inspection_record(destination / 'acceptance/browser-inspection-source.json', record)

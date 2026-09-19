@@ -82,7 +82,7 @@ class InspectionBoundary(unittest.TestCase):
         self.fixture = copy.deepcopy(self.original)
         self.fixture['Roles'] = inspection.inspection_roles() + self.fixture['Roles']
         for profile in self.fixture['Profiles']:
-            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector', 'gateway-console-state': 'fixture-console-state-inspector'}.get(profile['Name'])
+            role = {'gateway': 'fixture-gateway-inspector', 'gateway-state': 'fixture-state-inspector', 'gateway-console-state': 'fixture-console-state-inspector', 'sandbox': 'fixture-sandbox-inspector'}.get(profile['Name'])
             if role is None:
                 continue
             profile['Bindings'].append({'Role': role, 'ExternalRole': '', 'ServiceAccount': 'service-check', 'Namespace': 'control', 'ExternalNamespace': '', 'SubjectProfile': '', 'SubjectPrefix': ''})
@@ -105,6 +105,21 @@ class InspectionBoundary(unittest.TestCase):
 
     def test_fixed_additions_preserve_runtime_and_original_bindings(self):
         self.assertEqual(inspection.verify_runtime(go(self.original), go(self.fixture)), inspection.inspection_roles())
+
+    def test_sandbox_inspector_cannot_read_credentials_or_change_accounts(self):
+        role = next(r for r in self.fixture['Roles'] if r['Name'] == 'fixture-sandbox-inspector')
+        self.assertEqual(role['Scope'], 'namespace')
+        self.assertEqual({r for rule in role['Rules'] for r in rule['resources']},
+                         {'resourcequotas', 'networkpolicies', 'pods', 'pods/log', 'serviceaccounts', 'rolebindings'})
+        accounts = next(rule for rule in role['Rules'] if rule['resources'] == ['serviceaccounts'])
+        self.assertEqual(accounts['verbs'], ['get'])
+        for change in [lambda r: r['Rules'].append({'apiGroups': [''], 'resources': ['secrets'], 'verbs': ['get']}),
+                       lambda r: next(rule for rule in r['Rules'] if rule['resources'] == ['serviceaccounts'])['verbs'].append('create'),
+                       lambda r: r.update(Scope='cluster')]:
+            config = copy.deepcopy(self.fixture)
+            change(next(r for r in config['Roles'] if r['Name'] == role['Name']))
+            with self.assertRaises(ValueError):
+                inspection.verify_runtime(go(self.original), go(config))
 
     def test_undeclared_or_broader_permissions_are_rejected(self):
         changes = [

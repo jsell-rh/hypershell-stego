@@ -56,6 +56,11 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			env["HYPERSHELL_KUBERNETES_URL"] = "https://kubernetes.default.svc"
 			env["HYPERSHELL_KUBERNETES_CA_FILE"] = "/var/run/stego-kubernetes/ca.crt"
 			env["HYPERSHELL_KUBERNETES_TOKEN_FILE"] = "/var/run/stego-kubernetes/token"
+			if worker.name == "namespace-allocation" {
+				// Allocate the declared Sandbox boundary without starting a Sandbox
+				// workload. The Gateway workload keeps its constructor guard.
+				env["HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"] = "kata"
+			}
 			for _, endpoint := range endpoints {
 				target = append(target, "--egress", "kubernetes="+endpoint)
 			}

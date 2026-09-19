@@ -43,6 +43,7 @@ type browserGatewayWorkload struct {
 	options             gatewayworkload.Options
 	tokens              map[string]string
 	allocations         map[string]allocationTarget
+	sandboxAllocations  map[string]sandboxAllocationRecord
 	call                gatewayCall
 	stops               []func()
 	outputs             []func() string
@@ -180,12 +181,18 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 			w.trackAllocation(consoleState, p.id, "gateway-console-state")
 		}
 		w.trackAllocation(p.namespace, p.id, "gateway")
+		sandbox, err := gatewayworkload.SandboxNamespace(p.id)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		w.trackAllocation(sandbox, p.id, "sandbox")
 		w.gatewayIDs = append(w.gatewayIDs, p.id)
 	}
 	w.startWorkers(address, ca)
 	for _, id := range w.gatewayIDs {
 		w.check(id)
 	}
+	w.checkSandboxAllocations("initial")
 	identities := w.checkSQLIsolation()
 	// Open the session before the first Gateway Pod replacement. The final
 	// browser reload must preserve this same session and workspace.
@@ -220,6 +227,7 @@ func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, c
 		dashboard.run(w.t, "dashboard-verify")
 	}
 	w.checkGatewayNetworkIsolation("after-recovery")
+	w.checkSandboxAllocations("after-recovery")
 	w.checkCredentialEncryption(gatewayID)
 }
 

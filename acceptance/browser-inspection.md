@@ -9,7 +9,7 @@ The production declaration does not contain the inspection roles. Run
 --destination <new-directory>` before the workload check. The compiler binary
 must have clean Git build metadata at `.stego/compiler-revision`. Preparation
 copies regular source files to a new directory outside the repository. It adds
-three namespace roles and one binding at the end of each corresponding profile,
+four namespace roles and one binding at the end of each corresponding profile,
 then runs bounded STEGO generation and drift checks. The source repository stays
 unchanged. The generated inspection images are test artifacts, not release images.
 
@@ -21,11 +21,11 @@ The preparation check requires these four changed files:
 - `out/deploy/render/worker-namespace-allocation.json.tmpl`: matching roles and
   admission rules.
 
-The check removes the three inspection roles and bindings from the generated
+The check removes the four inspection roles and bindings from the generated
 configuration and compares it with production. Production roles, quotas,
 identities, binding indices, and executable allocator code must match exactly.
 The generated inspection permissions must also match a fixed allowlist. A
-bounded build of the standard-library renderer checks that only the three roles,
+bounded build of the standard-library renderer checks that only the four roles,
 allocator bind names, and namespace binding cases change in the manifest. A file
 outside this list that changes, appears, or disappears stops preparation. The
 compiler's local lock file is excluded. `acceptance/browser-inspection-source.json`
@@ -39,6 +39,14 @@ Gateway state namespace, it can read the named state Secret and allocation
 policy. In a console state namespace, it can only read `gateway-console-state`.
 These reads compare retained credentials and session keys with the running
 application. Private values remain in memory and do not enter result records.
+
+In a Sandbox namespace, the test identity can read accounts, quota, network
+policy, and namespace role bindings. It can inspect and remove test Pods. It has
+no Secret access and cannot change accounts or role bindings. The live Gateway
+workflow now requires the allocation controller to create this boundary, keep
+its identity through recovery, and remove it during Gateway deletion. This
+allocation check creates no Sandbox Pod and does not prove network traffic or
+Kata execution.
 
 The test identity cannot list or change Secrets. The generated allocator owns
 all inspection bindings. Its admission policy prevents the test identity from

@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -32,7 +33,9 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("namespace allocation verification failed", target.profile, err)
 		}
 		pods, storage := "3", "768Mi"
-		if target.profile == "gateway-state" || target.profile == "gateway-console-state" {
+		if target.profile == "sandbox" {
+			pods, storage = "32", "16Gi"
+		} else if target.profile == "gateway-state" || target.profile == "gateway-console-state" {
 			pods, storage = "0", "64Mi"
 		}
 		quota, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+ns+"/resourcequotas/stego-allocation", nil)
@@ -68,6 +71,22 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 		{"namespace-allocation", w.p.namespace, "", "secrets", "get", false},
 		{"gateway-identity", state, "", "secrets", "get", false},
 	}
+	for _, id := range w.gatewayIDs {
+		namespace, err := gatewayworkload.SandboxNamespace(id)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		checks = append(checks,
+			check{"gateway-workload", namespace, "", "pods", "create", true},
+			check{"gateway-workload", namespace, "", "secrets", "create", true},
+			check{"gateway-workload", namespace, "", "serviceaccounts", "get", true},
+			check{"gateway-workload", namespace, "", "serviceaccounts", "create", false},
+			check{"gateway-workload", namespace, "", "serviceaccounts", "patch", false},
+			check{"gateway-workload", namespace, "networking.k8s.io", "networkpolicies", "patch", false},
+			check{"gateway-identity", namespace, "", "secrets", "get", false},
+			check{"namespace-allocation", namespace, "", "secrets", "get", false},
+		)
+	}
 	clients := map[string]*kube.Client{}
 	allocatorToken := ""
 	for _, test := range checks {
@@ -101,12 +120,42 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 			w.t.Fatal("worker access differs from allocation", test, code)
 		}
 	}
+	// Submit real forbidden requests as the workload worker. Dry run ensures
+	// that an unexpected grant cannot leave an account or policy change behind.
+	type denial struct {
+		Namespace, Method, Path string
+		Code                    int
+	}
+	var denials []denial
+	for _, id := range w.gatewayIDs {
+		namespace, err := gatewayworkload.SandboxNamespace(id)
+		if err != nil {
+			w.t.Fatal(err)
+		}
+		for _, probe := range []struct {
+			method, path string
+			body         kube.Object
+		}{
+			{"POST", "/api/v1/namespaces/" + namespace + "/serviceaccounts?dryRun=All", kube.Object{"apiVersion": "v1", "kind": "ServiceAccount", "metadata": kube.Object{"namespace": namespace, "name": "stego-denied-account"}}},
+			{"PATCH", "/apis/networking.k8s.io/v1/namespaces/" + namespace + "/networkpolicies/stego-allocation?dryRun=All", kube.Object{"spec": kube.Object{"egress": []any{kube.Object{}}}}},
+		} {
+			_, code, err := clients["gateway-workload"].Request(ctx, probe.method, probe.path, probe.body)
+			if code != 403 || err == nil {
+				w.t.Fatal("Sandbox worker request was not forbidden", probe.method, code)
+			}
+			denials = append(denials, denial{namespace, probe.method, probe.path, code})
+		}
+	}
 	w.checkInstallationAccess(state, gateway)
 	w.checkAdmission(ctx, state, gateway, allocator.Marker(), allocatorToken)
 	if dir := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); dir != "" {
 		data, err := json.MarshalIndent(checks, "", "  ")
 		if err != nil || os.WriteFile(filepath.Join(dir, "allocation-permissions.json"), data, 0600) != nil {
 			w.t.Fatal("cannot write allocation evidence")
+		}
+		data, err = json.MarshalIndent(denials, "", "  ")
+		if err != nil || os.WriteFile(filepath.Join(dir, "allocation-sandbox-denials.json"), data, 0600) != nil {
+			w.t.Fatal("cannot write Sandbox denial evidence")
 		}
 	}
 	w.t.Log("Allocated namespaces have fixed limits; live worker access checks passed")
