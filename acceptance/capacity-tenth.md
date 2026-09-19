@@ -28,3 +28,10 @@ distribution, larger or concurrent cleanup, complete workload and database
 cleanup, or repeatable compliance with the target. The full application gate
 and live 100-account Gateway workflow remain required. The 30-second target
 and production quota choices are unchanged.
+
+The completed browser job in full run `35476514171` passed at the same source.
+Three runtime instances each supplied all eight startup stages with matching
+logs, traces, and metrics. No startup failure pair or out-of-memory event was
+observed. Both saved views were reviewed. They show a provisioning Gateway and
+an empty account list after deletion. They do not prove live Gateway readiness.
+See the [browser record](cleanup-owner-browser-evidence.json).

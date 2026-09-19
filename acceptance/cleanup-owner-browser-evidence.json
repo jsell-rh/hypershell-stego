@@ -1,0 +1,31 @@
+{
+  "source": "4ea3e1edb791810108f783adf474dec577b08370",
+  "run": 35476514171,
+  "browser_job": 105986579511,
+  "browser_job_conclusion": "success",
+  "browser_workflow_pass_verified": true,
+  "browser_startup_instances": 3,
+  "complete_startup_stages_per_instance": 8,
+  "correlated_log_span_and_metric_checks": true,
+  "startup_failure_pairs": 0,
+  "resource_limits_checked": true,
+  "oom_observed": false,
+  "screenshots_viewed": 2,
+  "layout_defects_seen": false,
+  "screenshots": {
+    "verify.json.png": "Provisioning Gateway view with a command loading placeholder. This hosted fixture does not prove live readiness.",
+    "accounts-delete.json.png": "The account fixture shows an empty service-account list after deletion."
+  },
+  "files": {
+    "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48",
+    "browser-resources.txt": "d794e2ce41d3706394705b3099df3e0b32950a404c7c680ca7c23fb5908db958",
+    "browser-startup-signals.json": "1e953aa14cac9a0b37d1c70473bfa28f9e9e05901a55f0f3f7de5d4c0efa6ada",
+    "verify.json.png": "ec49b8aa693ef50d1086832286a8c1cdc26e90cc5a86c81519be82a74902add5"
+  },
+  "job_log_sha256": "4961818b92f1d4f8a6a20cb919f6bf3dc5d2a13e671af03e7156bba6458a81c9",
+  "limits": [
+    "The full core gate remains pending.",
+    "The hosted browser fixture does not prove live Gateway readiness.",
+    "This result applies to source 4ea3e1e. The new 100-account live test remains separate."
+  ]
+}
