@@ -1,5 +1,38 @@
 # Sandbox execution gate
 
+
+On 2026-09-19, the [live workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35457688315)
+passed at `b0d10a4`. All 11 required tests passed. The browser workflow took
+843.29 seconds. All 1,464 source hashes and 416 generated file hashes matched.
+The compiler bytes inside the live Pod matched the signed release.
+
+The test ran 40 fixed packet checks before and after worker restart and Gateway
+namespace replacement. Eight permitted connections succeeded. All 32 denied
+connections timed out. The checks cover each Sandbox's assigned Gateway,
+another Gateway and Sandbox, the control API, PostgreSQL, Kubernetes, an
+unapproved port, and a parent Pod without the required label. The two Sandbox
+namespace and account identities stayed stable. REST, gRPC, event delivery,
+normal deletion, sessions, and correlated logs, traces, and metrics also passed.
+
+This test used a separate native RuntimeClass with the `crun` handler. It changed
+only the Sandbox RuntimeClass guard in a test copy. Permissions, network rules,
+and the other Pod guards stayed unchanged. Eight fixed probe Pods ran as user
+1000, with resource and time limits, no token mount, no host access, and no extra
+capabilities. This proves the tested packet rules. It does not prove OpenShell
+Sandbox execution or VM isolation.
+
+After the test, the operator restored the production Kata guard and removed
+the native class. An independent check found no test workloads or allocated
+namespaces. All 32 standing resources matched the production installation, and
+the shared lease was free. The standing CI installation remains in place.
+See the [result](sandbox-native-network-evidence.json). The first CI attempt
+stopped before any cluster Job started because its unit fixture omitted a
+Python helper. The correction and the failed result are retained.
+
+Keep the constructor guard. Live Kata execution remains deferred. The external
+controller trust decision is still open; see the
+[permission review](sandbox-controller-boundary.md).
+
 On 2026-09-17, the user selected the current Hypershell and OpenShell setup.
 The prototype no longer changes the workspace-copy helper's user or the shared
 socket volume. Its mutation policy and beta API feature setup are removed. The
