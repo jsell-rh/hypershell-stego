@@ -167,3 +167,17 @@ background preservation for this fixture. It does not establish the latency
 target, total Gateway cleanup, or an uninstrumented performance baseline.
 The next common runtime change will permit bounded parallel actions, with
 serial actions for each resource key and safe prefix checkpoints.
+
+The full hosted application run `35463688329` passed at `032d56b`. It passed
+325 top-level tests and 816 cases. Every core case from main's earlier run
+remained present. The branch adds ten top-level tests and 62 cases for Sandbox
+policy, bounded diagnostics, and cleanup restart. The four declared live tests
+and the separate capacity test were excluded from the core suite. Hosted
+browser, UI, and image jobs passed. The live Kata job was not selected.
+
+The first result collector expected only the new restart case. Source review
+confirmed the other branch additions and the capacity exclusion. The corrected
+collector verified the existing result; CI was not repeated. See the
+[full hosted record](scan-action-budget-full-evidence.json). These branch results
+do not promote the pending Sandbox changes or close the live browser policy
+mismatch on main.

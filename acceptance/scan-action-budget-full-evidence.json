@@ -1,0 +1,47 @@
+{
+  "source": "032d56b1756802afb88ec71953a3874256fc409c",
+  "run_id": 35463688329,
+  "conclusion": "success",
+  "jobs": {
+    "web-console": "success",
+    "service-image": "success",
+    "acceptance (core)": "success",
+    "acceptance (browser)": "success",
+    "sandbox-workload": "skipped"
+  },
+  "core_passed_cases": 816,
+  "core_passed_top_level": 325,
+  "core_failed_cases": [],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "prior_core_cases_retained": true,
+  "additional_passed_cases": 62,
+  "additional_top_level_tests": [
+    "TestBoundedNetworkProbe",
+    "TestCapacityDiagnosticsSummary",
+    "TestGatewayAccountCleanupBudgetResumesAfterRestart",
+    "TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange",
+    "TestSandboxProbeRetainsUpstreamSetup",
+    "TestSandboxSecretEnvironmentPolicy",
+    "TestSandboxSetupRejectsChangedOrMissingGuards",
+    "TestSandboxSetupUsesBoundedDryRuns",
+    "TestSandboxWithoutAllocationCannotReachKubernetes",
+    "TestSeparateSandboxCountPreservesGatewayIdentity"
+  ],
+  "helper_tests_excluded_by_build_constraint": [
+    {
+      "file": "scripts/browser-allocation-cleanup_test.go",
+      "test": "TestCleanupTargetsRemoveSandboxBeforeRetainedState"
+    }
+  ],
+  "restart_test_passed": true,
+  "rendered_browser_test_passed": true,
+  "log_sha256": "639fc5e4ee7838d89ef610d024945db6383eb1985b8c204529197f94d7dbc65b",
+  "source_delta_verified": true,
+  "collector_correction": "The initial collector omitted Sandbox and diagnostic tests already present on this branch, plus the separate capacity test exclusion. All prior core cases remain present. CI was not repeated."
+}
