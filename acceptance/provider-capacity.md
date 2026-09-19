@@ -100,7 +100,7 @@ It also shows repeated reads and deletion checks for retained closed accounts.
 It does not prove final provider absence or background preservation.
 Source and binary hashes matched, and test resource cleanup passed.
 
-STEGO candidate `5a96a06` adds an action time reserve to the common scan API.
+STEGO candidate `58a3bcc` adds an action time reserve to the common scan API.
 It stops a pass before a new action if a full action budget is not available.
 Real errors remain in the saved cycle. This candidate is in compiler CI;
 Hypershell has not adopted it, and no improved timing is claimed.
@@ -111,3 +111,9 @@ or failure. Four generated hash records match, and fixture cleanup passed.
 The main cluster browser attempt `35460802239`, attempt 2, stopped before Job
 creation because the installed Sandbox candidate policy differs from main.
 The exact policy comparison is saved. No cluster policy changed for this test.
+
+Main workflow `35460802241` passed at `034b46b`. The core suite passed 315
+top-level tests and 754 cases. Four declared live tests were excluded from that
+suite. The separate API gate covers the supplied PostgreSQL workflow. Hosted
+browser, console, and image jobs passed. The separate cluster browser mismatch
+and deferred Kata test remain open.

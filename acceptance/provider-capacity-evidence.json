@@ -118,7 +118,7 @@
     "failures_or_skips": 0,
     "main_integration_commit": "034b46bb9280520f0309b8c78a3b0b7afb55994d",
     "integration_changed_files_match": true,
-    "main_ci_complete": false,
+    "main_ci_complete": true,
     "main_journal_run_id": 35460802209,
     "main_api_run_id": 35460802217,
     "main_api_attempt": 2,
@@ -126,6 +126,16 @@
     "main_api_regeneration_and_cleanup_verified": true,
     "main_browser_run_id": 35460802239,
     "main_browser_attempt": 2,
-    "main_browser_result": "The generated main policy differs from the installed Sandbox candidate policy. No Job started."
+    "main_browser_result": "The generated main policy differs from the installed Sandbox candidate policy. No Job started.",
+    "main_ci_run_id": 35460802241,
+    "main_core_passed_top_level": 315,
+    "main_core_passed_cases": 754,
+    "main_core_skipped_live_tests": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    "main_ci_log_sha256": "4a8aa1ca0cb6e7f8a5428202e4049422316d47b1b73749950930f61003d5e1eb"
   }
 }
