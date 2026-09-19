@@ -126,3 +126,19 @@ RuntimeClass. Independent cleanup verified all 32 installed resources, no test
 resources or allocations, and a free shared lease. The result does not prove
 VM isolation, actual OpenShell Sandbox execution, RDS failover, or production
 capacity. The selected upstream controller trust boundary remains unchanged.
+
+
+## Main application check
+
+Run `35472230170` passed at main source `dbd8363`. It passed 329 top-level
+core tests and 844 cases, with no failed cases. It retained the five conditional
+exclusions in the [complete result](sandbox-activation-main-full-evidence.json).
+Serial and parallel restart tests, the rendered browser workflow, the UI, and
+the service image checks passed. The deferred Kata job was skipped.
+
+The production source matches the earlier qualified workflow. The two changed
+mechanism files add and test named read permissions for the live test inspector.
+Two saved browser views were inspected. The provisioning view has a loading
+placeholder for connection commands. The account view shows an empty list after
+deletion. These views do not establish live Gateway readiness or Sandbox
+execution. Existing live workflow evidence and its limits remain separate.

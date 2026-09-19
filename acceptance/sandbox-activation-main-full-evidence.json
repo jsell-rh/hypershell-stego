@@ -1,0 +1,46 @@
+{
+  "source": "dbd8363ed2aeb77483fe2cfb98a31f84e808ac18",
+  "run_id": 35472230170,
+  "conclusion": "success",
+  "jobs": {
+    "web-console": "success",
+    "acceptance (core)": "success",
+    "service-image": "success",
+    "acceptance (browser)": "success",
+    "sandbox-workload": "skipped"
+  },
+  "core_passed_cases": 844,
+  "core_passed_top_level": 329,
+  "core_failed_cases": [],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "prior_core_cases_retained": true,
+  "additional_passed_cases": 0,
+  "additional_top_level_tests": [],
+  "serial_and_parallel_restart_tests_passed": true,
+  "rendered_browser_test_passed": true,
+  "log_sha256": "527d23e7ef2c07f39b20f21f33c9015e18370b53b71e65c17db12ced4e7f0bfe",
+  "source_delta_verified": true,
+  "baseline_source": "674c6e5379c560840d7bb846911f1e0eb2476808",
+  "baseline_core_cases": 844,
+  "changed_mechanism_files": [
+    "scripts/prepare-browser-inspection.py",
+    "scripts/test_browser_inspection.py"
+  ],
+  "visual_review": {
+    "files": {
+      "verify.json.png": "1897be2dbed18e512fd0f7113bad549b71824486b0c2c023e4e5009b8c29cc29",
+      "accounts-delete.json.png": "39e8bad974457acc8f4c91451bdec45920037ef56b8bfc79d8e7ee65070d1a48"
+    },
+    "observations": [
+      "The provisioning page renders the Gateway header, connection tab, and setup prerequisite. Its command area is a loading placeholder.",
+      "The service-account fixture page renders a healthy status and an empty account list after deletion."
+    ],
+    "limit": "These saved browser views do not prove live Gateway readiness or Sandbox execution."
+  }
+}
