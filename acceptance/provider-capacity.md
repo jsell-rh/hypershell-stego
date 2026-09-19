@@ -263,3 +263,11 @@ storage time. This is consistent with the observed spacing; it does not explain
 every failed call. The next scheduling change must remain common to STEGO,
 retain bounded work and fair access for each group, and keep the default timing
 contract for existing callers. A separate test must prove any improvement.
+
+
+The seventh run, `35472389423` at `6a8a882`, uses the common after-round interval
+with the same six capacity fixture files. It completed account cleanup in
+61.5320 seconds, compared with 92.3174 seconds in the sixth run. The 30-second
+target still failed. All 100 selected identities, journals, rows, and success
+audits were checked. Background state was preserved and cleanup passed. See
+[the scheduling result and limits](sweep-round-validation.md).

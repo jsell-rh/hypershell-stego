@@ -21,7 +21,7 @@ and the full-check workflow are unchanged. See the
 
 The exact full and journal results permitted the gate to start the seventh
 capacity run, `35472389423`. Its source remains fixed at `6a8a882`. The six
-capacity fixture files are unchanged. This run has no timing result yet.
+capacity fixture files are unchanged. The run completed account cleanup in 61.5320 seconds and missed the 30-second target.
 The correctness checks do not establish a cleanup-time improvement or qualify
 total Gateway cleanup. The scheduling candidate is not yet on main.
 
@@ -29,3 +29,20 @@ The separate live workflow `35470884946` at `7f81556`, with compiler `d3ccd11`,
 passed all 11 required tests and its cleanup audit. Main `dbd8363` contains
 that qualified source and its evidence. That live run does not include the
 scheduling change. See the [live result](sandbox-activation-live-evidence.json).
+
+
+The seventh run preserved all 9,900 background account rows and 10,007 other
+provider clients. All 100 selected clients and users were absent; all 100
+account rows and protected journals were closed, with 100 success audits.
+Source, binary, compiler pin, resource limits, and test cleanup checks passed.
+The elapsed time decreased from 92.3174 to 61.5320 seconds with the same fixture.
+This remains a failed target result. See the
+[seventh measurement](sweep-round-capacity-evidence.json).
+
+Saved samples first show all account rows closed at 50.8161 seconds. The scope
+sealed at 61.1957 seconds. Earlier saved cycles retain failure flags and require
+another scan. The 112 trace groups have no dropped groups, but the known RPC
+status classification defect still limits the diagnosis. Some trace groups
+cover preservation checks after the measured cleanup interval; concurrent span
+durations cannot be added as wall time. A separate diagnostic correction will
+change only the collector before another measurement.
