@@ -72,7 +72,8 @@ The capacity candidate created 100 selected accounts through REST while the
 fixture held 100 Gateway rows and 10,000 account clients. The diagnostic run
 closed all selected account rows, but did not seal the provider scope within
 120 seconds. The 30-second cleanup target remains unmet. STEGO `58a3bcc` adds
-a common action time reserve; consumer adoption and capacity tests remain open.
+a common action time reserve. The capacity branch now uses this API; restart
+and capacity checks remain open.
 See [the capacity results and their limits](acceptance/provider-capacity.md).
 
 The following control-account results apply to earlier source revisions. With

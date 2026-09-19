@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 	"unicode/utf8"
 )
 
@@ -88,6 +89,24 @@ func ValidateCycleTransition(previous, next CycleState) error {
 	return nil
 }
 
+// CycleOptions gives each action a full time budget. The runtime stops the pass
+// before a new action if the remaining work time is shorter than ActionTimeout.
+// A stopped pass retains its successful prefix and does not add a failure.
+// An action error or late return still adds failure evidence.
+type CycleOptions struct{ ActionTimeout time.Duration }
+
+var errCycleBudget = errors.New("scan action budget is not available")
+
+// ScanCycleWithOptions requires a positive action timeout below WorkTimeout.
+// Callbacks must honor their contexts. A source read still uses PageTimeout.
+// The checkpoint format and all failure and conditional-save rules are unchanged.
+func ScanCycleWithOptions[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions, options CycleOptions) (CycleState, error) {
+	if options.ActionTimeout < time.Millisecond || options.ActionTimeout >= budget.WorkTimeout {
+		return CycleState{Source: sourceVersion}, ErrScanContract
+	}
+	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, options)
+}
+
 // ScanCycle retains earlier action failures when the next process resumes work.
 // A changed Source or a completed cycle starts again at the beginning. The caller
 // must invalidate the checkpoint atomically when a dependency changes, or supply
@@ -98,6 +117,9 @@ func ValidateCycleTransition(previous, next CycleState) error {
 // prefix. A completed failed cycle returns ErrCycleFailed, including when the
 // failed action ran in an earlier process. Effects must be safe to repeat.
 func ScanCycle[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions) (CycleState, error) {
+	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, CycleOptions{})
+}
+func scanCycle[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions, options CycleOptions) (CycleState, error) {
 	result := CycleState{Source: sourceVersion}
 	if _, err := EncodeCycle(result); err != nil || access.Load == nil || access.Save == nil || source == nil || emit == nil {
 		return result, ErrScanContract
@@ -123,6 +145,7 @@ func ScanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 		}
 		loaded = true
 		windowEnded := false
+		budgetEnded := false
 		progress, err := ScanFrom(work, result.After, func(pageContext context.Context, after string, limit int) (CursorPage[T], error) {
 			page, err := source(pageContext, after, limit)
 			if err != nil {
@@ -139,7 +162,21 @@ func ScanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 			}
 			return page, nil
 		}, func(value T) error {
-			err := errors.Join(emit(work, value), observationContextError(work))
+			action := work
+			cancel := func() {}
+			if options.ActionTimeout > 0 {
+				end, ok := work.Deadline()
+				if !ok {
+					return ErrScanContract
+				}
+				if time.Until(end) < options.ActionTimeout {
+					budgetEnded = true
+					return errCycleBudget
+				}
+				action, cancel = context.WithTimeout(work, options.ActionTimeout)
+			}
+			err := errors.Join(emit(action, value), observationContextError(action))
+			cancel()
 			if err == nil {
 				return nil
 			}
@@ -154,6 +191,9 @@ func ScanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 		}, scan)
 		result.After = progress.After
 		result.Complete = progress.Complete
+		if budgetEnded && errors.Is(err, errCycleBudget) {
+			err = nil
+		}
 		if windowEnded && observationContextError(work) == nil {
 			result.Complete = true
 			result.Failed = true

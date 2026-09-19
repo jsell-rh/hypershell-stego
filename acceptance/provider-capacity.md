@@ -100,10 +100,21 @@ It also shows repeated reads and deletion checks for retained closed accounts.
 It does not prove final provider absence or background preservation.
 Source and binary hashes matched, and test resource cleanup passed.
 
-STEGO candidate `58a3bcc` adds an action time reserve to the common scan API.
+STEGO `58a3bcc` adds an action time reserve to the common scan API.
 It stops a pass before a new action if a full action budget is not available.
-Real errors remain in the saved cycle. This candidate is in compiler CI;
-Hypershell has not adopted it, and no improved timing is claimed.
+Real errors remain in the saved cycle. All six branch and main compiler jobs
+passed, including 34 packages with race checks. The immutable compiler release
+passed signature and source checks before consumer selection.
+
+Hosted generation run `35463607439` passed with that compiler. Independent
+checks matched the source archive, compiler record, all three drift checks,
+and all 415 generated files. Only the common controller runtime, CLI compiler
+identity, and three generation state files changed. This branch uses the new
+API for retained account cleanup and provider inventory, with a 750 ms action
+limit. The two-second work limit, one-second commit limit, page sizes, and
+sweep interval remain unchanged. Restart and capacity qualification are still
+required. No improved timing is claimed. See the
+[generation record](scan-action-budget-generation-evidence.json).
 
 Main quota/journal run `35460802209` passed all 32 required top-level checks.
 Main API run `35460802217`, attempt 2, passed all 52 required checks, with no skip
