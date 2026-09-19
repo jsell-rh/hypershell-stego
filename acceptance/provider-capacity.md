@@ -151,5 +151,19 @@ the module, dashboard binding, private deployment, dependencies, and image.
 It is not a live cluster browser result. See the
 [console record](scan-action-budget-console-evidence.json).
 
-The fifth capacity run, `35463991341`, uses the same `032d56b` source and the
-unchanged fixture from the fourth run. Its result is pending.
+The fifth capacity run, `35463991341`, used `032d56b` and the unchanged fixture
+from the fourth run. Cleanup completed in 93.2722 seconds, so the 30-second
+target failed. The scope sealed at 92.9396 seconds. All 100 selected provider
+clients and users were absent. All 100 journals were closed, all 100 account
+rows were closed, and all 100 success audits were present. The 9,900 background
+account rows and 10,007 other provider clients matched their saved state.
+Source and binary hashes matched, and test resource cleanup passed.
+
+All recorded account scan checkpoints have clean failure flags. The first five
+passes closed 18, 38, 59, 80, and 99 account rows. Their saved progress was about
+12 seconds apart. There were 128 trace groups, with no dropped group. Full
+trace sampling remained active. This establishes complete account cleanup and
+background preservation for this fixture. It does not establish the latency
+target, total Gateway cleanup, or an uninstrumented performance baseline.
+The next common runtime change will permit bounded parallel actions, with
+serial actions for each resource key and safe prefix checkpoints.

@@ -88,6 +88,36 @@
       "binary_hashes_match": true,
       "test_resource_cleanup_confirmed": true,
       "provider_absence_and_background_preservation_verified": false
+    },
+    {
+      "run_id": 35463991341,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35463991341",
+      "source_commit": "032d56b1756802afb88ec71953a3874256fc409c",
+      "conclusion": "failure",
+      "stage": "complete",
+      "complete": true,
+      "target_met": false,
+      "target_seconds": 30,
+      "elapsed_seconds": 93.272169493,
+      "scope_sealed_seconds": 92.939606792,
+      "rest_created_accounts": 100,
+      "closed_accounts": 100,
+      "closed_journals": 100,
+      "deleted_provider_clients": 100,
+      "deleted_provider_users": 100,
+      "preserved_background_accounts": 9900,
+      "preserved_other_clients": 10007,
+      "saved_account_cycles_failed": false,
+      "progress_samples": 46,
+      "diagnostic_trace_groups": 128,
+      "diagnostic_trace_groups_dropped": 0,
+      "full_trace_sampling": true,
+      "result_sha256": "cabd8b5b1ffa3a644ee0c75c1fcec121932d1e9504344994e7a90b854cae7450",
+      "same_capacity_fixture": true,
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "test_resource_cleanup_confirmed": true,
+      "provider_absence_and_background_preservation_verified": true
     }
   ],
   "regression": {
@@ -101,11 +131,10 @@
     "cleanup_confirmed": true
   },
   "limits": [
-    "Account cleanup remained incomplete after 120.0735 seconds. The 30-second target failed.",
+    "The fifth run completed account cleanup in 93.2722 seconds. It failed the 30-second target.",
     "The background fixture does not qualify application creation or token policy.",
     "Total Gateway workload, database, and identity cleanup are not covered.",
     "The whole-realm Gateway identity scan has a separate inventory window issue.",
-    "The failure occurred before the background preservation checks.",
     "The diagnostic sample uses full trace sampling. Its timing is not an uninstrumented performance baseline."
   ],
   "quota_regression": {

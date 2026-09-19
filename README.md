@@ -69,12 +69,12 @@ is not a workflow pass. The policy was not changed for the test. The live Kata
 check remains deferred because no suitable cluster is available.
 
 The capacity candidate created 100 selected accounts through REST while the
-fixture held 100 Gateway rows and 10,000 account clients. The diagnostic run
-closed all selected account rows, but did not seal the provider scope within
-120 seconds. The 30-second cleanup target remains unmet. STEGO `58a3bcc` adds
-a common action time reserve. The capacity branch now uses this API. All 33
-journal tests passed, including the unchanged six-account restart test. The
-capacity repeat is active, so improved cleanup timing remains unproved.
+fixture held 100 Gateway rows and 10,000 account clients. After adoption of
+STEGO `58a3bcc`, complete account cleanup took 93.2722 seconds. It removed all
+100 selected provider clients and users, closed their journals and rows, and
+preserved the background state. The 30-second target remains unmet. All 33
+journal tests passed, including the unchanged six-account restart test. Total
+Gateway cleanup and larger production capacity remain unproved.
 See [the capacity results and their limits](acceptance/provider-capacity.md).
 
 The following control-account results apply to earlier source revisions. With
