@@ -84,6 +84,18 @@ func buildApplication(t testing.TB) string {
 }
 func buildProgram(t testing.TB, pkg string) string {
 	t.Helper()
+	if directory := os.Getenv("STEGO_CAPACITY_BIN_DIR"); directory != "" {
+		name := map[string]string{"./out": "api", "./out/grpcapi/processes/provisioner": "provisioner"}[pkg]
+		if os.Getenv("STEGO_CAPACITY_CI") != "1" || raceEnabled || name == "" || !filepath.IsAbs(directory) {
+			t.Fatal("invalid capacity binary selection")
+		}
+		binary := filepath.Join(directory, name)
+		info, err := os.Stat(binary)
+		if err != nil || !info.Mode().IsRegular() || info.Mode().Perm()&0111 == 0 {
+			t.Fatal("capacity binary is absent")
+		}
+		return binary
+	}
 	binary := filepath.Join(t.TempDir(), "hypershell")
 	arguments := []string{"build", "-mod=readonly", "-o", binary}
 	if raceEnabled {

@@ -1,0 +1,118 @@
+name: Real provider account capacity
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/provider-capacity.yml'
+      - 'acceptance/provider_capacity_test.go'
+      - 'scripts/run-provider-capacity.sh'
+      - 'scripts/verify-provider-capacity.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: provider-capacity-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  capacity:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 1GiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+      CGO_ENABLED: '0'
+    services:
+      postgres:
+        image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+        env:
+          POSTGRES_PASSWORD: stego_test
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --cpus=1 --memory=512m --memory-swap=512m --pids-limit=256
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check generated source
+        timeout-minutes: 4
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/generate.sh --check
+      - name: Build exact source before measurement
+        timeout-minutes: 10
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/provider-capacity"
+          mkdir -p "$result/bin"
+          go mod verify
+          go build -mod=readonly -trimpath -buildvcs=true -o "$result/bin/api" ./out
+          go build -mod=readonly -trimpath -buildvcs=true -o "$result/bin/provisioner" ./out/grpcapi/processes/provisioner
+          go test -c -mod=readonly -trimpath -buildvcs=true -o "$result/bin/acceptance.test" ./acceptance
+          git diff --exit-code
+          git rev-parse HEAD > "$result/source-commit"
+          git archive HEAD | sha256sum > "$result/source-archive.sha256"
+          cp .stego/compiler-revision "$result/compiler-revision"
+          cp .stego/compiler-sha256 "$result/compiler-sha256"
+          go version > "$result/toolchain.txt"
+          sha256sum "$result"/bin/* > "$result/binaries.sha256"
+      - name: Prepare pinned provider image
+        timeout-minutes: 3
+        run: docker pull quay.io/keycloak/keycloak@sha256:ff4257d0d64efbe99ed1ddfaf07765cc3c36dc7518bf8324d41961327f441c54
+      - name: Measure account cleanup with enforced limits
+        timeout-minutes: 17
+        env:
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/provider-capacity"
+          set +e
+          sudo systemd-run --unit="stego-capacity-$GITHUB_RUN_ID" --wait --pipe \
+            --property="User=$(id -un)" --property="WorkingDirectory=$GITHUB_WORKSPACE" \
+            --property=CPUQuota=100% --property=MemoryMax=1G --property=MemorySwapMax=0 \
+            --property=TasksMax=256 --property=RuntimeMaxSec=960 --property=NoNewPrivileges=yes \
+            --setenv="PATH=$PATH" --setenv="GITHUB_RUN_ID=$GITHUB_RUN_ID" \
+            --setenv="STEGO_TEST_POSTGRES_DSN=$STEGO_TEST_POSTGRES_DSN" \
+            --setenv="STEGO_CAPACITY_BIN_DIR=$result/bin" --setenv="STEGO_CAPACITY_RESULT=$result/result.json" \
+            --setenv=STEGO_CAPACITY_CI=1 --setenv=STEGO_REQUIRE_POSTGRES=1 --setenv=STEGO_REQUIRE_KEYCLOAK=1 \
+            --setenv=STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK=1 --setenv=GOMAXPROCS=1 --setenv=GOMEMLIMIT=384MiB \
+            /bin/bash scripts/run-provider-capacity.sh "$result" 2>&1 | tee "$result/tests.log"
+          result_code=${PIPESTATUS[0]}
+          set -e
+          printf '%s\n' "$result_code" > "$result/process-exit-code"
+          test "$result_code" -eq 0
+          python3 scripts/verify-provider-capacity.py "$result"
+          git diff --exit-code
+      - name: Remove any remaining test processes and provider
+        if: always()
+        timeout-minutes: 2
+        run: |
+          set -euo pipefail
+          result="$RUNNER_TEMP/provider-capacity"
+          mkdir -p "$result"
+          sudo systemctl stop "stego-capacity-$GITHUB_RUN_ID.service" || true
+          state=$(sudo systemctl is-active "stego-capacity-$GITHUB_RUN_ID.service" || true)
+          test "$state" = inactive || test "$state" = failed || test "$state" = unknown
+          docker ps -aq --filter 'label=stego.test=hypershell-keycloak' --filter "label=stego.test.run=$GITHUB_RUN_ID" | xargs -r docker rm --force
+          test -z "$(docker ps -aq --filter 'label=stego.test=hypershell-keycloak' --filter "label=stego.test.run=$GITHUB_RUN_ID")"
+          printf '{"test_unit_stopped":true,"test_provider_containers_absent":true}\n' > "$result/cleanup.json"
+      - name: Save source and result records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: provider-capacity-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/provider-capacity
+          retention-days: 14
+          if-no-files-found: error

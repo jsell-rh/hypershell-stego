@@ -47,6 +47,12 @@ func startKeycloakConfigured(t *testing.T, configure func(map[string]any)) *keyc
 }
 
 func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)) *keycloakFixture {
+	return startKeycloakWithDatabase(t, bindIP, configure, "")
+}
+
+// The capacity fixture uses production mode and a separate PostgreSQL database.
+// The ordinary correctness fixtures keep their existing storage and bounds.
+func startKeycloakWithDatabase(t *testing.T, bindIP string, configure func(map[string]any), postgresDSN string) *keycloakFixture {
 	t.Helper()
 	if os.Getenv("STEGO_REQUIRE_KEYCLOAK") != "1" {
 		t.Skip("set STEGO_REQUIRE_KEYCLOAK=1 for the real Keycloak workflow")
@@ -80,11 +86,36 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 	if err := os.Chmod(realmFile, 0444); err != nil {
 		t.Fatal(err)
 	}
-	args := []string{"run", "--detach", "--name", name, "--label", "stego.test=hypershell-keycloak", "--label", "stego.test.run=" + os.Getenv("GITHUB_RUN_ID"), "--memory=2g", "--cpus=2", "--pids-limit=512", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=1000:0", "--publish", bindIP + "::8443",
+	args := []string{"run", "--detach", "--name", name, "--label", "stego.test=hypershell-keycloak", "--label", "stego.test.run=" + os.Getenv("GITHUB_RUN_ID"), "--memory=2g", "--memory-swap=2g", "--cpus=2", "--pids-limit=512", "--cap-drop=ALL", "--security-opt=no-new-privileges", "--user=1000:0",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server.pem") + ",target=/certs/server.pem,readonly",
 		"--mount", "type=bind,source=" + filepath.Join(export, "server-key.pem") + ",target=/certs/server-key.pem,readonly",
-		"--mount", "type=bind,source=" + realmFile + ",target=/opt/keycloak/data/import/workflow-realm.json,readonly",
-		keycloakImage, "start-dev", "--http-enabled=false", "--hostname-strict=false", "--https-certificate-file=/certs/server.pem", "--https-certificate-key-file=/certs/server-key.pem", "--https-protocols=TLSv1.3", "--import-realm"}
+		"--mount", "type=bind,source=" + realmFile + ",target=/opt/keycloak/data/import/workflow-realm.json,readonly"}
+	mode := "start-dev"
+	base := ""
+	var databaseArgs []string
+	wait := 2 * time.Minute
+	if postgresDSN == "" {
+		args = append(args, "--publish", bindIP+"::8443")
+	} else {
+		// Plaintext is limited to an explicit CI test on literal loopback.
+		u, err := url.Parse(postgresDSN)
+		if err != nil || os.Getenv("STEGO_CAPACITY_CI") != "1" || bindIP != "127.0.0.1" || u.Hostname() != bindIP || u.Scheme != "postgres" || u.User == nil || u.Query().Get("sslmode") != "disable" {
+			t.Fatal("invalid capacity provider database")
+		}
+		listener, err := net.Listen("tcp", "127.0.0.1:0")
+		if err != nil {
+			t.Fatal(err)
+		}
+		port := listener.Addr().(*net.TCPAddr).Port
+		listener.Close()
+		base = fmt.Sprintf("https://127.0.0.1:%d", port)
+		password, _ := u.User.Password()
+		args = append(args, "--network=host")
+		databaseArgs = []string{"--db=postgres", "--db-url=jdbc:postgresql://" + u.Host + u.Path + "?sslmode=disable", "--db-username=" + u.User.Username(), "--db-password=" + password, fmt.Sprintf("--https-port=%d", port), "--http-host=127.0.0.1", "--db-pool-max-size=20"}
+		mode, wait = "start", 8*time.Minute
+	}
+	args = append(args, keycloakImage, mode, "--http-enabled=false", "--hostname-strict=false", "--https-certificate-file=/certs/server.pem", "--https-certificate-key-file=/certs/server-key.pem", "--https-protocols=TLSv1.3", "--import-realm")
+	args = append(args, databaseArgs...)
 
 	command := exec.Command("docker", args...)
 	if output, err := command.CombinedOutput(); err != nil {
@@ -95,17 +126,19 @@ func startKeycloakAt(t *testing.T, bindIP string, configure func(map[string]any)
 			t.Errorf("remove Keycloak: %v %s", err, output)
 		}
 	})
-	output, err := exec.Command("docker", "port", name, "8443/tcp").CombinedOutput()
-	if err != nil {
-		t.Fatal(err)
+	if base == "" {
+		output, err := exec.Command("docker", "port", name, "8443/tcp").CombinedOutput()
+		if err != nil {
+			t.Fatal(err)
+		}
+		base = "https://" + strings.TrimSpace(string(output))
 	}
-	base := "https://" + strings.TrimSpace(string(output))
 	client, err := web.New(web.Options{BaseURL: base, CAFile: identity.config.CAFile})
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(client.Close)
-	deadline := time.Now().Add(2 * time.Minute)
+	deadline := time.Now().Add(wait)
 	for {
 		response, err := client.Do(context.Background(), http.MethodGet, "/realms/workflow/.well-known/openid-configuration", nil, nil)
 		if err == nil && response.StatusCode == 200 {
