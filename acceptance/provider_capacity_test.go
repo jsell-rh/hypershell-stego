@@ -98,6 +98,8 @@ func TestRealProviderAccountCapacity(t *testing.T) {
 	}
 	observeGatewayFixture(t, f, selected)
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_SERVICE_ACCOUNT_GATEWAY_QUOTA=100", "HYPERSHELL_SERVICE_ACCOUNT_CREATOR_QUOTA=100")
+	record["configured_gateway_quota"], record["configured_creator_quota"] = 100, 100
 	providerSettings, _ := startRealProvisioner(t, f, k, key, settings)
 	_, config := broker(t, identity(t, "localhost"))
 	_, address := startApplication(t, buildApplication(t), f.dsn, config, append(settings, providerSettings...)...)

@@ -17,6 +17,7 @@ required = {
     'race_instrumented': False, 'test_passed': True,
     'sql_accounts_before': 10000, 'provider_account_clients_before': 10000,
     'closed_accounts': 100, 'closed_journals': 100,
+    'configured_gateway_quota': 100, 'configured_creator_quota': 100,
     'deleted_provider_clients': 100, 'deleted_provider_users': 100,
     'preserved_background_accounts': 9900,
 }

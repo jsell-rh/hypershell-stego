@@ -13,7 +13,7 @@ on the literal loopback address.
 The fixture creates 100 Gateway records. Four bounded setup workers create 9,900 provider clients,
 service users, and Gateway role grants for 99 background Gateways. The fixture
 then seeds their account rows. These accounts supply storage and provider load. The test does not qualify their
-creation through the application, token policy, or encrypted journal state. The selected Gateway's 100
+creation through the application, token policy, or encrypted journal state. The fixture sets both API quota values to 100. The selected Gateway's 100
 accounts must pass REST creation, the generated gRPC provisioner, the common
 Keycloak client, and encrypted state storage.
 
@@ -56,3 +56,11 @@ time was measured. Source and binary hashes matched, and CI confirmed cleanup.
 The fixture now uses separate provider API transactions with four workers and an
 eight-minute setup limit. This change does not raise the resource limits or
 reduce the account count. See [the result record](provider-capacity-evidence.json).
+
+The second run, `35460101439`, created all 9,900 background clients, users, and
+role grants. It then created ten accounts through REST. The eleventh request
+returned 429 because the former creator quota was fixed at ten. This is an
+application policy limit, not a request-rate limit. No cleanup was measured.
+The quota values are now operator settings; the original defaults remain.
+Tests check invalid settings, both default quotas, and concurrent reservations
+with smaller configured limits. The capacity gate sets each quota to 100.

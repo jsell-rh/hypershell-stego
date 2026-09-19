@@ -21,6 +21,21 @@
       "source_archive_match": true,
       "binary_hashes_match": true,
       "cleanup_confirmed": true
+    },
+    {
+      "run_id": 35460101439,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35460101439",
+      "source_commit": "137013137156b1d026a39f8107ea902578ee19fc",
+      "conclusion": "failure",
+      "stage": "account_creation",
+      "reason": "The eleventh REST creation reached the fixed per-creator quota and returned 429.",
+      "seeded_background_clients_and_users": 9900,
+      "rest_created_accounts": 10,
+      "cleanup_seconds": null,
+      "test_seconds": 142.77,
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "cleanup_confirmed": true
     }
   ],
   "regression": {
