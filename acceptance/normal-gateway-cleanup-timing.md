@@ -43,8 +43,12 @@ accounts, or use the separate production-mode provider capacity fixture. Its
 record therefore keeps `capacity_fixture` false. A passing timing observation
 at this population does not qualify the whole production capacity target.
 The 30-second target and the existing fault and late-effect checks are unchanged.
-The larger population is a new candidate; compilation and live execution remain
-required. Earlier adapter results below apply to the earlier source.
+Hosted adapter run `35476824851` compiled source `f924e96`, including the
+100-account population. All 63 required adapter tests, four constructor cases,
+six allocation cleanup tests, and 28 collection cases passed. The source archive
+matches the committed candidate. The adapter-only SQL exclusion is unchanged.
+See the [compile evidence](normal-cleanup-population-compile-evidence.json).
+Live execution remains required. Earlier results below apply to earlier source.
 
 The local collection test uses fake files and a fake `oc` command. It passed with
 the new missing-file and empty-file cases. Hosted adapter run `35475728036`

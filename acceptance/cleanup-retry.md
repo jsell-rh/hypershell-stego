@@ -86,3 +86,9 @@ The later cleanup-owner candidate has separate checks. The full retry result
 does not qualify that later source. Account cleanup is one part of Gateway
 deletion; its measurement does not prove complete workload and database cleanup
 within the target.
+
+The cleanup-owner change now has a passing account capacity result at `4ea3e1e`.
+Cleanup took 21.2756 seconds in run `35476517343`, with the same fixture and
+limits as the ninth run. All selected identities closed and all background
+identities were preserved. The [tenth result](capacity-tenth.md) states the
+scope and remaining limits. The full application gate remains active.
