@@ -2,10 +2,12 @@ package gatewayworkload
 
 import (
 	"encoding/json"
+	"net/netip"
 	"os"
 	"testing"
 
 	"cel.dev/cel-go/cel"
+	deployment "github.com/jsell-rh/hypershell-stego/out/deploy"
 	"gopkg.in/yaml.v3"
 )
 
@@ -54,7 +56,13 @@ func TestSandboxSecretEnvironmentPolicy(t *testing.T) {
 			}
 		}
 	}
-	data, err = os.ReadFile("../../out/deploy/render/worker-namespace-allocation.json.tmpl")
+	data, err = deployment.Render(deployment.Options{
+		Image:     "registry.example/test@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		Namespace: "sandbox-policy-test",
+		Worker:    "namespace-allocation",
+		FSGroup:   65532,
+		Egress:    []deployment.EndpointBinding{{Name: "kubernetes", Address: netip.MustParseAddrPort("192.0.2.1:443")}},
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
