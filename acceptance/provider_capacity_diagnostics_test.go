@@ -80,13 +80,14 @@ func (d *capacityDiagnostics) Export(_ context.Context, request *tracecollector.
 				switch errType {
 				case "", "deadline", "canceled", "transport", "capacity", "response", "aborted", "404", "403", "401", "429", "500", "503", "DeadlineExceeded", "Canceled", "Unavailable", "PermissionDenied", "Unauthenticated":
 				default:
-					errType = "other"
+					errType = capacityRPCStatus(errType)
 				}
+				rpcStatus := capacityRPCStatus(signalAttribute(span.Attributes, "rpc.response.status_code").GetStringValue())
 				bucket := int((span.StartTimeUnixNano - d.accepted) / uint64(10*time.Second))
 				if bucket > 15 {
 					continue
 				}
-				key := fmt.Sprintf("%s|%s|%s|%s|%s|%d", service, span.Kind.String(), name, outcome, errType, bucket)
+				key := fmt.Sprintf("%s|%s|%s|%s|%s|%s|%d", service, span.Kind.String(), name, outcome, errType, rpcStatus, bucket)
 				row, exists := d.traces[key]
 				if !exists && len(d.traces) >= 1024 {
 					d.dropped++
@@ -101,6 +102,20 @@ func (d *capacityDiagnostics) Export(_ context.Context, request *tracecollector.
 		}
 	}
 	return &tracecollector.ExportTraceServiceResponse{}, nil
+}
+
+// Keep the canonical RPC classes emitted by the generated client and server.
+// Unknown input must not enter a result key.
+func capacityRPCStatus(value string) string {
+	switch value {
+	case "", "OK", "CANCELLED", "UNKNOWN", "INVALID_ARGUMENT", "DEADLINE_EXCEEDED",
+		"NOT_FOUND", "ALREADY_EXISTS", "PERMISSION_DENIED", "RESOURCE_EXHAUSTED",
+		"FAILED_PRECONDITION", "ABORTED", "OUT_OF_RANGE", "UNIMPLEMENTED",
+		"INTERNAL", "UNAVAILABLE", "DATA_LOSS", "UNAUTHENTICATED":
+		return value
+	default:
+		return "other"
+	}
 }
 
 type capacityDiagnosticLogs struct {
@@ -173,6 +188,7 @@ func startCapacityDiagnostics(t *testing.T, result map[string]any) (*capacityDia
 		}
 		d.mu.Lock()
 		defer d.mu.Unlock()
+		result["diagnostic_trace_summary_version"] = 2
 		result["diagnostic_traces"] = d.traces
 		result["diagnostic_trace_groups_dropped"] = d.dropped
 		result["diagnostic_log_records_received"], result["diagnostic_metrics_received"] = d.logs, d.metrics
@@ -208,13 +224,14 @@ func capacityCleanupSample(t *testing.T, ctx context.Context, f *fixture, id str
 
 // The diagnostic record must reject private text and retain only bounded totals.
 func TestCapacityDiagnosticsSummary(t *testing.T) {
+	t.Run("rpc_status", testCapacityDiagnosticsRPCStatus)
 	const accepted = uint64(time.Minute)
 	d := &capacityDiagnostics{accepted: accepted, traces: map[string]capacityTraceSummary{}}
 	attr := func(key, value string) *commonpb.KeyValue {
 		return &commonpb.KeyValue{Key: key, Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: value}}}
 	}
 	spans := []*tracepb.Span{
-		{Name: "private-name", StartTimeUnixNano: accepted, EndTimeUnixNano: accepted + uint64(time.Second), Attributes: []*commonpb.KeyValue{attr("outcome", "private-outcome"), attr("error.type", "private-error"), attr("credential", "private-secret")}},
+		{Name: "private-name", StartTimeUnixNano: accepted, EndTimeUnixNano: accepted + uint64(time.Second), Attributes: []*commonpb.KeyValue{attr("outcome", "private-outcome"), attr("error.type", "private-error"), attr("credential", "private-secret"), attr("rpc.response.status_code", "private-status")}},
 		{Name: "controller.scan", StartTimeUnixNano: accepted, EndTimeUnixNano: accepted + uint64(2*time.Second), Attributes: []*commonpb.KeyValue{attr("outcome", "timeout")}},
 		{Name: "GET", StartTimeUnixNano: accepted - 1, EndTimeUnixNano: accepted},
 		{Name: "GET", StartTimeUnixNano: accepted + 1, EndTimeUnixNano: accepted},
@@ -227,7 +244,10 @@ func TestCapacityDiagnosticsSummary(t *testing.T) {
 	if len(d.traces) != 2 {
 		t.Fatal("invalid diagnostic time filter", len(d.traces))
 	}
-	row := d.traces["capacity-api|SPAN_KIND_UNSPECIFIED|controller.scan|timeout||0"]
+	if row := d.traces["capacity-api|SPAN_KIND_UNSPECIFIED|other|other|other|other|0"]; row.Count != 1 || row.TotalSeconds != 1 {
+		t.Fatal("unknown text must use the fixed other class", row)
+	}
+	row := d.traces["capacity-api|SPAN_KIND_UNSPECIFIED|controller.scan|timeout|||0"]
 	if row.Count != 1 || row.TotalSeconds != 2 || row.MaxSeconds != 2 {
 		t.Fatal("invalid diagnostic duration", row)
 	}
@@ -245,7 +265,44 @@ func TestCapacityDiagnosticsSummary(t *testing.T) {
 	if len(d.traces) != 1024 || d.dropped != 1 {
 		t.Fatal("diagnostic group limit failed")
 	}
-	if d.traces["capacity-api|SPAN_KIND_UNSPECIFIED|controller.scan|timeout||0"].Count != 2 {
+	if d.traces["capacity-api|SPAN_KIND_UNSPECIFIED|controller.scan|timeout|||0"].Count != 2 {
 		t.Fatal("existing groups must continue at the limit")
+	}
+}
+
+// Exercise the collector with the client and server wire values. A successful
+// RPC must remain distinct from a span with no RPC status.
+func testCapacityDiagnosticsRPCStatus(t *testing.T) {
+	attr := func(key, value string) *commonpb.KeyValue {
+		return &commonpb.KeyValue{Key: key, Value: &commonpb.AnyValue{Value: &commonpb.AnyValue_StringValue{StringValue: value}}}
+	}
+	for _, kind := range []tracepb.Span_SpanKind{tracepb.Span_SPAN_KIND_CLIENT, tracepb.Span_SPAN_KIND_SERVER} {
+		for _, name := range []string{"OK", "CANCELLED", "UNKNOWN", "INVALID_ARGUMENT", "DEADLINE_EXCEEDED", "NOT_FOUND", "ALREADY_EXISTS", "PERMISSION_DENIED", "RESOURCE_EXHAUSTED", "FAILED_PRECONDITION", "ABORTED", "OUT_OF_RANGE", "UNIMPLEMENTED", "INTERNAL", "UNAVAILABLE", "DATA_LOSS", "UNAUTHENTICATED"} {
+			t.Run(kind.String()+"/"+name, func(t *testing.T) {
+				const accepted = uint64(time.Minute)
+				d := &capacityDiagnostics{accepted: accepted, traces: map[string]capacityTraceSummary{}}
+				errorType := name
+				if name == "OK" {
+					errorType = ""
+				}
+				spans := []*tracepb.Span{
+					{Name: "/private.package/LoadServiceAccountProviderState", Kind: kind, StartTimeUnixNano: accepted, EndTimeUnixNano: accepted + uint64(time.Second), Attributes: []*commonpb.KeyValue{attr("rpc.response.status_code", name), attr("error.type", errorType), attr("private", "private-secret")}},
+					{Name: "/private.package/LoadServiceAccountProviderState", Kind: kind, StartTimeUnixNano: accepted, EndTimeUnixNano: accepted + uint64(2*time.Second)},
+				}
+				request := &tracecollector.ExportTraceServiceRequest{ResourceSpans: []*tracepb.ResourceSpans{{Resource: &resourcepb.Resource{Attributes: []*commonpb.KeyValue{attr("service.name", "capacity-api")}}, ScopeSpans: []*tracepb.ScopeSpans{{Spans: spans}}}}}
+				if _, err := d.Export(context.Background(), request); err != nil {
+					t.Fatal(err)
+				}
+				key := fmt.Sprintf("capacity-api|%s|LoadServiceAccountProviderState|other|%s|%s|0", kind, errorType, name)
+				row := d.traces[key]
+				if len(d.traces) != 2 || row.Count != 1 || row.TotalSeconds != 1 || row.MaxSeconds != 1 {
+					t.Fatal("RPC status was lost or combined with a missing status", d.traces)
+				}
+				data, err := json.Marshal(d.traces)
+				if err != nil || strings.Contains(string(data), "private") {
+					t.Fatal("private text entered the RPC diagnostic result")
+				}
+			})
+		}
 	}
 }

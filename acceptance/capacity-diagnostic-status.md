@@ -22,6 +22,24 @@ not retain raw spans, provider responses, or arbitrary status strings. Later
 capacity results must identify the changed diagnostic fixture.
 
 
+## Separate correction
+
+The candidate collector retains all 17 canonical RPC status names. It keeps
+`rpc.response.status_code` separate from `error.type`, so an RPC success and a
+span without an RPC status remain distinct. Unknown input still becomes
+`other`. Existing non-RPC error classes remain supported.
+
+New records use `diagnostic_trace_summary_version: 2`. Each trace key has these
+fields: service, span kind, operation, outcome, error class, RPC status, and
+10-second time bucket. Earlier records have six fields and no version marker.
+They remain unchanged; their discarded status values cannot be recovered.
+
+The test sends all 17 statuses through the collector as both client and server
+spans. It checks missing status separation, unknown text, private data removal,
+duration totals, the time window, the 1,024-group limit, and continued counting
+for an existing group at that limit. Hosted diagnostic checks passed as recorded
+below. The correction changes the diagnostic collector and its tests.
+
 The seventh run `35472389423` retained the original collector. Account cleanup
 completed in 61.5320 seconds and still missed the 30-second target. All selected
 accounts and journals were closed and background state was preserved. The

@@ -14,8 +14,13 @@ func scanGatewayCleanup[T any](ctx context.Context, sourceVersion string, access
 	scan := runtime.ScanOptions{PageSize: pageSize, MaxPages: 1, PageTimeout: time.Second}
 	budget := runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second}
 	continueOnError := func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) }
+	// Only selected provider failures permit a repeat of the complete action.
+	// A local deadline or an unknown response does not grant that permission.
+	retry := runtime.CycleRetryOptions{MaxAttempts: 2, Delay: 25 * time.Millisecond, Retryable: func(err error) bool {
+		return !errors.Is(err, context.Canceled) && errors.Is(err, errRetryableCleanup)
+	}}
 	if workers == 1 {
-		return runtime.ScanCycleWithOptions(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, runtime.CycleOptions{ActionTimeout: 750 * time.Millisecond})
+		return runtime.ScanCycleWithOptions(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, runtime.CycleOptions{ActionTimeout: 750 * time.Millisecond, Retry: retry})
 	}
-	return runtime.ScanCycleParallel(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, runtime.ParallelCycleOptions[T]{Workers: workers, ActionTimeout: 750 * time.Millisecond, Key: key})
+	return runtime.ScanCycleParallel(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, runtime.ParallelCycleOptions[T]{Workers: workers, ActionTimeout: 750 * time.Millisecond, Retry: retry, Key: key})
 }

@@ -174,6 +174,8 @@ func specFromProto(spec *pb.ServiceAccountSpec) serviceaccountkeycloak.ServiceAc
 
 func providerError(err error) error {
 	switch {
+	case err == nil:
+		return nil
 	case errors.Is(err, context.Canceled):
 		return status.Error(codes.Canceled, "service-account operation canceled")
 	case errors.Is(err, context.DeadlineExceeded):
@@ -182,6 +184,20 @@ func providerError(err error) error {
 		return status.Error(codes.NotFound, "managed service-account client was not found")
 	case errors.Is(err, serviceaccountkeycloak.ErrNotManaged):
 		return status.Error(codes.PermissionDenied, "target client is not a HyperShell-managed service account")
+	}
+	// Retain only fixed retry classes from the protected state API. Never
+	// forward its message, details, or wrapped provider response.
+	switch status.Code(err) {
+	case codes.Aborted:
+		return status.Error(codes.Aborted, "service-account state changed")
+	case codes.Unavailable:
+		return status.Error(codes.Unavailable, "service-account dependency is unavailable")
+	case codes.ResourceExhausted:
+		return status.Error(codes.ResourceExhausted, "service-account dependency is at capacity")
+	case codes.DeadlineExceeded:
+		return status.Error(codes.DeadlineExceeded, "service-account operation timed out")
+	case codes.Canceled:
+		return status.Error(codes.Canceled, "service-account operation canceled")
 	default:
 		return status.Error(codes.Internal, "Keycloak service-account operation failed")
 	}
