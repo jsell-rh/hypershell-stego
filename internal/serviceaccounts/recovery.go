@@ -111,6 +111,25 @@ func (s *Service) recoverTask(ctx context.Context, task recoveryTask) error {
 		return nil
 	}
 	if row.DeletedAt.Valid {
+		reader, ok := s.repository.(storage.RetainedReader)
+		if !ok || !validID(row.GatewayID) {
+			return runtime.ErrSweepContract
+		}
+		value, err := reader.GetRetained(ctx, "Gateway", row.GatewayID)
+		if err == nil {
+			gateway, ok := value.(model.Gateway)
+			if !ok || gateway.ID != row.GatewayID {
+				return runtime.ErrSweepContract
+			}
+			if gateway.DeletedAt.Valid {
+				// Gateway recovery owns every retained account and journal, including
+				// late provider changes after finalization. Do not repeat that work in
+				// this stream. A live or absent parent still needs account recovery.
+				return nil
+			}
+		} else if !errors.Is(err, storage.ErrNotFound) {
+			return err
+		}
 		// Deleted records cannot be restored. Stable IDs identify late provider
 		// resources even when the former provider UUID is no longer valid.
 		return s.provider.Delete(ctx, row.GatewayID, row.ID, "")
