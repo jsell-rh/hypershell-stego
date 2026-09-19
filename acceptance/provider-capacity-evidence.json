@@ -57,6 +57,37 @@
       "source_archive_match": true,
       "binary_hashes_match": true,
       "test_resource_cleanup_confirmed": true
+    },
+    {
+      "run_id": 35461469012,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35461469012",
+      "source_commit": "aedd5fb1a75b744919f663de71a26e6c8e132baf",
+      "conclusion": "failure",
+      "stage": "cleanup",
+      "reason": "The account scan retained failure flags after work deadlines. Two completed failed cycles restarted before provider inventory could begin.",
+      "rest_created_accounts": 100,
+      "sql_accounts_before": 10000,
+      "provider_account_clients_before": 10000,
+      "cleanup_seconds": null,
+      "observation_seconds": 120.021339976,
+      "first_observed_all_account_rows_closed_seconds": 43.116065161,
+      "completed_failed_checkpoint_versions": [
+        5,
+        8
+      ],
+      "provider_inventory_checkpoint_version": 0,
+      "progress_samples": 59,
+      "diagnostic_trace_groups": 142,
+      "diagnostic_trace_groups_dropped": 0,
+      "diagnostic_log_records_received": 48197,
+      "diagnostic_metrics_received": 7125,
+      "full_trace_sampling": true,
+      "result_sha256": "db1070fc8e06b838a8292a58ee58c5994a46b0775c4edecbab071d5f219ffcc0",
+      "test_seconds": 411.93,
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "test_resource_cleanup_confirmed": true,
+      "provider_absence_and_background_preservation_verified": false
     }
   ],
   "regression": {
@@ -75,7 +106,7 @@
     "Total Gateway workload, database, and identity cleanup are not covered.",
     "The whole-realm Gateway identity scan has a separate inventory window issue.",
     "The failure occurred before the background preservation checks.",
-    "The failure record does not identify provider request time or scheduler delay."
+    "The diagnostic sample uses full trace sampling. Its timing is not an uninstrumented performance baseline."
   ],
   "quota_regression": {
     "run_id": 35460485337,
@@ -87,6 +118,14 @@
     "failures_or_skips": 0,
     "main_integration_commit": "034b46bb9280520f0309b8c78a3b0b7afb55994d",
     "integration_changed_files_match": true,
-    "main_ci_complete": false
+    "main_ci_complete": false,
+    "main_journal_run_id": 35460802209,
+    "main_api_run_id": 35460802217,
+    "main_api_attempt": 2,
+    "main_api_required_tests_passed": 52,
+    "main_api_regeneration_and_cleanup_verified": true,
+    "main_browser_run_id": 35460802239,
+    "main_browser_attempt": 2,
+    "main_browser_result": "The generated main policy differs from the installed Sandbox candidate policy. No Job started."
   }
 }

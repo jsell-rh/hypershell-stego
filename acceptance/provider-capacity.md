@@ -89,3 +89,25 @@ Every two seconds, the test records closed account counts and durable checkpoint
 versions, flags, and cursor hashes. These checks share the existing test limits.
 Full trace sampling adds work, so this diagnostic sample is separate from the
 third sample. It does not change the 30-second target or recovery settings.
+
+The fourth run, `35461469012`, supplied 59 progress samples and 142 trace groups.
+No trace group was dropped. All 100 account rows were closed by the first sample
+at 43.1161 seconds. The provider scope remained unsealed at
+120.0213 seconds. Completed checkpoints 5 and 8 retained failure
+flags and restarted their scans. The provider inventory checkpoint stayed at
+version zero. The trace record includes seven two-second controller timeouts.
+It also shows repeated reads and deletion checks for retained closed accounts.
+It does not prove final provider absence or background preservation.
+Source and binary hashes matched, and test resource cleanup passed.
+
+STEGO candidate `5a96a06` adds an action time reserve to the common scan API.
+It stops a pass before a new action if a full action budget is not available.
+Real errors remain in the saved cycle. This candidate is in compiler CI;
+Hypershell has not adopted it, and no improved timing is claimed.
+
+Main quota/journal run `35460802209` passed all 32 required top-level checks.
+Main API run `35460802217`, attempt 2, passed all 52 required checks, with no skip
+or failure. Four generated hash records match, and fixture cleanup passed.
+The main cluster browser attempt `35460802239`, attempt 2, stopped before Job
+creation because the installed Sandbox candidate policy differs from main.
+The exact policy comparison is saved. No cluster policy changed for this test.
