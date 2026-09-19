@@ -12,11 +12,11 @@ on:
         type: boolean
         default: false
       held_lease_holder:
-        description: Operator-held lease identity for the native packet fixture
+        description: Operator-held lease identity for a temporary test installation
         type: string
         default: ''
       held_lease_uid:
-        description: Operator-held lease UID for the native packet fixture
+        description: Operator-held lease UID for a temporary test installation
         type: string
         default: ''
   push:
@@ -40,16 +40,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 40
     steps:
-      - name: Require the operator lease for native packet probes
+      - name: Check the operator lease inputs
         env:
           NATIVE: ${{ inputs.sandbox_network }}
           HOLDER: ${{ inputs.held_lease_holder }}
           LEASE_UID: ${{ inputs.held_lease_uid }}
         run: |
-          if [[ $NATIVE == true ]]; then
+          if [[ $NATIVE == true || -n $HOLDER || -n $LEASE_UID ]]; then
             test -n "$HOLDER" && test -n "$LEASE_UID"
-          else
-            test -z "$HOLDER" && test -z "$LEASE_UID"
           fi
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
