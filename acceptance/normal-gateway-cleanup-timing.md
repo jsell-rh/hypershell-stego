@@ -23,11 +23,28 @@ upper bounds, and preservation result. Partial records survive a test failure.
 A successful live workload run must supply the file; missing and empty files
 fail evidence collection. The record contains no credentials or response bodies.
 
-This is not the production capacity fixture. In particular, the current browser
-workflow does not create 100 accounts for every remaining Gateway. Its record
-sets `capacity_fixture` to false. A complete 100-account Gateway cleanup test is
-still required, in addition to the separate account-only capacity measurement.
+Schema 2 prepares 100 live accounts for each measured Gateway before any
+measured deletion starts. Each account goes through the real browser backend,
+REST API, and provider. The test checks token issuance and the stored ready
+identity. Creation is serial, with a five-minute total context and the existing
+15-second browser request limit. It makes no account write retries. The fixture
+sets both account quotas to 100; production defaults and operator choices stay
+unchanged.
+
+After cleanup, every selected provider client and user must be absent. Every
+protected journal must authenticate and close its exact provider identity. The
+account scope must be sealed. Every account row must be closed with one success
+audit. These checks run inside the existing cleanup deadline and before the
+elapsed upper bound is recorded. Partial counts survive failures.
+
+This remains a correctness workflow with two Gateways and the ordinary test
+identity provider. It does not run 100 Gateway workloads, seed 9,900 background
+accounts, or use the separate production-mode provider capacity fixture. Its
+record therefore keeps `capacity_fixture` false. A passing timing observation
+at this population does not qualify the whole production capacity target.
 The 30-second target and the existing fault and late-effect checks are unchanged.
+The larger population is a new candidate; compilation and live execution remain
+required. Earlier adapter results below apply to the earlier source.
 
 The local collection test uses fake files and a fake `oc` command. It passed with
 the new missing-file and empty-file cases. Hosted adapter run `35475728036`

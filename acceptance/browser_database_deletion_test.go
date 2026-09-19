@@ -22,6 +22,14 @@ type gatewayCleanupTimingSample struct {
 	Complete             bool    `json:"complete"`
 	Seconds              float64 `json:"observed_upper_bound_seconds"`
 	WithinTargetObserved bool    `json:"within_target_observed"`
+	AccountsCreated      int     `json:"accounts_created_through_rest"`
+	TokensIssued         int     `json:"accounts_with_verified_token_issuance"`
+	AccountsClosed       int     `json:"accounts_closed"`
+	JournalsClosed       int     `json:"journals_closed"`
+	ProviderClientsGone  int     `json:"provider_clients_absent"`
+	ProviderUsersGone    int     `json:"provider_users_absent"`
+	CleanupAudits        int     `json:"cleanup_success_audits"`
+	ScopeSealed          bool    `json:"account_scope_sealed"`
 }
 
 type gatewayCleanupTimingRecord struct {
@@ -31,6 +39,7 @@ type gatewayCleanupTimingRecord struct {
 	Observation               string                       `json:"observation"`
 	TargetSeconds             int                          `json:"target_seconds"`
 	CapacityFixture           bool                         `json:"capacity_fixture"`
+	AccountTarget             int                          `json:"live_accounts_per_measured_gateway"`
 	Complete                  bool                         `json:"complete"`
 	InstallationDataPreserved bool                         `json:"installation_data_preserved"`
 	Gateways                  []gatewayCleanupTimingSample `json:"gateways"`
@@ -41,9 +50,10 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 	w.t.Helper()
 	// This phase has no deliberate cleanup denial. The earlier fault case is
 	// separate. Counts are sampled before each request, outside its transaction.
-	record := gatewayCleanupTimingRecord{Schema: 1, Scope: "normal_gateway_cleanup", Stage: "requests", TargetSeconds: 30, Observation: "sequential_completion_checks"}
+	record := gatewayCleanupTimingRecord{Schema: 2, Scope: "normal_gateway_cleanup", Stage: "population", TargetSeconds: 30, AccountTarget: normalCleanupAccounts, Observation: "sequential_completion_checks"}
 	accepted := map[string]time.Time{}
 	indexes := map[string]int{}
+	populations := map[string][]normalCleanupAccount{}
 	w.t.Cleanup(func() {
 		if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
 			data, err := json.MarshalIndent(record, "", "  ")
@@ -66,17 +76,24 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 		if _, duplicate := indexes[id]; duplicate {
 			w.t.Fatal("Duplicate Gateway cleanup sample")
 		}
-		sample := gatewayCleanupTimingSample{GatewayID: id}
+		indexes[id] = len(record.Gateways)
+		record.Gateways = append(record.Gateways, gatewayCleanupTimingSample{GatewayID: id})
+		sample := &record.Gateways[indexes[id]]
+		populations[id] = w.populateNormalCleanup(id, sample)
 		var deleting bool
 		read, stop := context.WithTimeout(context.Background(), 5*time.Second)
 		err := w.f.db.QueryRowContext(read, "SELECT g.deleted_at IS NOT NULL,count(a.id),count(a.id) FILTER (WHERE a.deleted_at IS NULL) FROM gateways g LEFT JOIN service_accounts a ON a.gateway_id=g.id WHERE g.id=$1 GROUP BY g.deleted_at", id).Scan(&deleting, &sample.AccountRows, &sample.LiveAccountRows)
 		stop()
-		if err != nil || deleting || sample.AccountRows < 0 || sample.LiveAccountRows < 0 || sample.LiveAccountRows > sample.AccountRows {
+		if err != nil || deleting || sample.AccountRows != normalCleanupAccounts || sample.LiveAccountRows != normalCleanupAccounts {
 			w.t.Fatal("Cannot read the Gateway cleanup population", err)
 		}
-		indexes[id] = len(record.Gateways)
-		record.Gateways = append(record.Gateways, sample)
-		if response = w.owner.api(w.t, "DELETE", "/gateways/"+id, nil); response.StatusCode != 202 {
+	}
+	record.Stage = "requests"
+	// Prepare every population before any measured deletion starts.
+	for _, sample := range record.Gateways {
+		id := sample.GatewayID
+		response := w.owner.api(w.t, "DELETE", "/gateways/"+id, nil)
+		if response.StatusCode != 202 {
 			w.t.Fatal("remaining Gateway deletion failed", response.StatusCode)
 		}
 		accepted[id] = time.Now()
@@ -99,8 +116,9 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 			w.t.Fatal("Finalized Gateway remained readable", response.StatusCode)
 		}
 		if started, ok := accepted[id]; ok {
-			elapsed := time.Since(started)
 			sample := &record.Gateways[indexes[id]]
+			w.verifyNormalCleanupAccounts(ctx, id, populations[id], sample)
+			elapsed := time.Since(started)
 			// Sequential checks can observe completion after it occurred. This is
 			// an upper bound, not proof of a missed target when it exceeds 30 seconds.
 			sample.Complete, sample.Seconds, sample.WithinTargetObserved = true, elapsed.Seconds(), elapsed <= 30*time.Second

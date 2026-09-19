@@ -191,7 +191,12 @@ func newConsoleBrowser(t *testing.T, origin string, caFiles ...string) *consoleB
 }
 func (b *consoleBrowser) request(t *testing.T, method, address string, body []byte, headers http.Header) web.Response {
 	t.Helper()
-	request, err := http.NewRequest(method, address, bytes.NewReader(body))
+	return b.requestContext(t, context.Background(), method, address, body, headers)
+}
+
+func (b *consoleBrowser) requestContext(t *testing.T, ctx context.Context, method, address string, body []byte, headers http.Header) web.Response {
+	t.Helper()
+	request, err := http.NewRequestWithContext(ctx, method, address, bytes.NewReader(body))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,13 +304,18 @@ func (b *consoleBrowser) loginTo(t *testing.T, k *keycloakFixture, username, ret
 }
 func (b *consoleBrowser) api(t *testing.T, method, path string, body []byte) web.Response {
 	t.Helper()
+	return b.apiContext(t, context.Background(), method, path, body)
+}
+
+func (b *consoleBrowser) apiContext(t *testing.T, ctx context.Context, method, path string, body []byte) web.Response {
+	t.Helper()
 	headers := http.Header{}
 	if method != "GET" && method != "HEAD" {
 		headers.Set("Origin", b.origin)
 		headers.Set("X-CSRF-Token", b.csrf)
 		headers.Set("Content-Type", "application/json")
 	}
-	return b.request(t, method, b.origin+b.apiPrefix+path, body, headers)
+	return b.requestContext(t, ctx, method, b.origin+b.apiPrefix+path, body, headers)
 }
 
 func browserSDKWorkflow(t *testing.T, alice, bob *consoleBrowser, ca string, request any) string {
@@ -472,6 +482,8 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	sessions := browserDatabase(t)
 	if deployment != nil && os.Getenv("STEGO_TEST_BROWSER_WORKLOAD") == "1" {
 		workload, settings = prepareBrowserGatewayWorkload(t, deployment, f, sessions, k, settings)
+		// This fixed test population does not change production quota defaults.
+		settings = append(settings, "HYPERSHELL_SERVICE_ACCOUNT_GATEWAY_QUOTA=100", "HYPERSHELL_SERVICE_ACCOUNT_CREATOR_QUOTA=100")
 	}
 	providerLogs := func() string { return "" }
 	restartProvider := func() {}

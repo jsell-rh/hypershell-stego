@@ -24,6 +24,8 @@ on:
       - 'acceptance/browser_worker_deployment_test.go'
       - 'acceptance/browser_allocation_test.go'
       - 'acceptance/browser_database_deletion_test.go'
+      - 'acceptance/browser_cleanup_population_test.go'
+      - 'acceptance/browser_workflow_test.go'
   workflow_dispatch:
 
 permissions:
