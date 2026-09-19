@@ -20,3 +20,16 @@ A separate correction must retain the fixed canonical RPC status set and test
 unknown values, private input, and the existing group and time limits. It must
 not retain raw spans, provider responses, or arbitrary status strings. Later
 capacity results must identify the changed diagnostic fixture.
+
+
+The seventh run `35472389423` retained the original collector. Account cleanup
+completed in 61.5320 seconds and still missed the 30-second target. All selected
+accounts and journals were closed and background state was preserved. The
+saved samples retain failed cycles before a later successful scan. The result
+still cannot identify every RPC failure class.
+
+Correction `c1b3580` changes only the diagnostic fixture and its documentation
+from scheduling source `6a8a882`. It is pushed after the seventh test and its
+cleanup finished. Its hosted workflow checks the canonical status cases before
+measurement. Qualification and the next result remain pending. The changed
+collector must be identified in later timing comparisons.

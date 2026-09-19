@@ -39,7 +39,7 @@ The elapsed time decreased from 92.3174 to 61.5320 seconds with the same fixture
 This remains a failed target result. See the
 [seventh measurement](sweep-round-capacity-evidence.json).
 
-Saved samples first show all account rows closed at 50.8161 seconds. The scope
+Saved samples first show all account rows closed at 50.8163 seconds. The scope
 sealed at 61.1957 seconds. Earlier saved cycles retain failure flags and require
 another scan. The 112 trace groups have no dropped groups, but the known RPC
 status classification defect still limits the diagnosis. Some trace groups
