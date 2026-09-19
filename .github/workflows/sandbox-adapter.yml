@@ -12,6 +12,8 @@ on:
       - 'internal/sandboxcountapp/**'
       - 'acceptance/gateway_sandbox_workload_test.go'
       - 'scripts/browser-allocation-cleanup*'
+      - 'scripts/collect-service-evidence.sh'
+      - 'scripts/test-collect-service-evidence.sh'
       - 'scripts/prepare-browser-inspection.py'
       - 'scripts/test_browser_inspection.py'
       - 'acceptance/browser_sandbox_allocation_test.go'
@@ -55,6 +57,7 @@ jobs:
           git rev-parse HEAD > "$RUNNER_TEMP/sandbox-adapter/source-commit"
           git archive HEAD | sha256sum > "$RUNNER_TEMP/sandbox-adapter/source-archive.sha256"
           python3 -B scripts/test_browser_inspection.py
+          bash scripts/test-collect-service-evidence.sh | tee "$RUNNER_TEMP/sandbox-adapter/collection.log"
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/sandboxcount ./internal/sandboxcountapp \
             | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"

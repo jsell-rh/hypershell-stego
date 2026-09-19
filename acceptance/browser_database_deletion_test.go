@@ -2,7 +2,10 @@ package acceptance
 
 import (
 	"context"
+	"encoding/json"
 	"net/url"
+	"os"
+	"path/filepath"
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
@@ -11,9 +14,44 @@ import (
 	"github.com/twmb/franz-go/pkg/kgo"
 )
 
+type gatewayCleanupTimingSample struct {
+	GatewayID            string  `json:"gateway_id"`
+	AccountRows          int64   `json:"account_rows_before_request"`
+	LiveAccountRows      int64   `json:"undeleted_account_rows_before_request"`
+	AcceptedAt           string  `json:"accepted_response_observed_at"`
+	Complete             bool    `json:"complete"`
+	Seconds              float64 `json:"observed_upper_bound_seconds"`
+	WithinTargetObserved bool    `json:"within_target_observed"`
+}
+
+type gatewayCleanupTimingRecord struct {
+	Schema                    int                          `json:"schema"`
+	Scope                     string                       `json:"scope"`
+	Stage                     string                       `json:"stage"`
+	Observation               string                       `json:"observation"`
+	TargetSeconds             int                          `json:"target_seconds"`
+	CapacityFixture           bool                         `json:"capacity_fixture"`
+	Complete                  bool                         `json:"complete"`
+	InstallationDataPreserved bool                         `json:"installation_data_preserved"`
+	Gateways                  []gatewayCleanupTimingSample `json:"gateways"`
+}
+
 // Normal deletion must finish before test fixture cleanup runs.
 func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consoleBrowser, consumer *kgo.Client) {
 	w.t.Helper()
+	// This phase has no deliberate cleanup denial. The earlier fault case is
+	// separate. Counts are sampled before each request, outside its transaction.
+	record := gatewayCleanupTimingRecord{Schema: 1, Scope: "normal_gateway_cleanup", Stage: "requests", TargetSeconds: 30, Observation: "sequential_completion_checks"}
+	accepted := map[string]time.Time{}
+	indexes := map[string]int{}
+	w.t.Cleanup(func() {
+		if directory := os.Getenv("STEGO_BROWSER_ARTIFACT_DIR"); directory != "" {
+			data, err := json.MarshalIndent(record, "", "  ")
+			if err != nil || os.WriteFile(filepath.Join(directory, "gateway-cleanup-timing.json"), append(data, '\n'), 0600) != nil {
+				w.t.Error("Cannot save Gateway cleanup timing")
+			}
+		}
+	})
 	if response := operator.api(w.t, "DELETE", "/managed_clusters/"+w.f.cluster, nil); response.StatusCode != 409 {
 		w.t.Fatal("cluster deletion did not protect the remaining Gateway", response.StatusCode)
 	}
@@ -25,10 +63,29 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 		if response.StatusCode != 200 {
 			w.t.Fatal("remaining Gateway read failed", response.StatusCode)
 		}
+		if _, duplicate := indexes[id]; duplicate {
+			w.t.Fatal("Duplicate Gateway cleanup sample")
+		}
+		sample := gatewayCleanupTimingSample{GatewayID: id}
+		var deleting bool
+		read, stop := context.WithTimeout(context.Background(), 5*time.Second)
+		err := w.f.db.QueryRowContext(read, "SELECT g.deleted_at IS NOT NULL,count(a.id),count(a.id) FILTER (WHERE a.deleted_at IS NULL) FROM gateways g LEFT JOIN service_accounts a ON a.gateway_id=g.id WHERE g.id=$1 GROUP BY g.deleted_at", id).Scan(&deleting, &sample.AccountRows, &sample.LiveAccountRows)
+		stop()
+		if err != nil || deleting || sample.AccountRows < 0 || sample.LiveAccountRows < 0 || sample.LiveAccountRows > sample.AccountRows {
+			w.t.Fatal("Cannot read the Gateway cleanup population", err)
+		}
+		indexes[id] = len(record.Gateways)
+		record.Gateways = append(record.Gateways, sample)
 		if response = w.owner.api(w.t, "DELETE", "/gateways/"+id, nil); response.StatusCode != 202 {
 			w.t.Fatal("remaining Gateway deletion failed", response.StatusCode)
 		}
+		accepted[id] = time.Now()
+		record.Gateways[indexes[id]].AcceptedAt = accepted[id].UTC().Format(time.RFC3339Nano)
 	}
+	if len(accepted) == 0 {
+		w.t.Fatal("No normal Gateway deletion was accepted")
+	}
+	record.Stage = "cleanup"
 	ctx, cancel := context.WithTimeout(context.Background(), 180*time.Second)
 	defer cancel()
 	allocator, err := allocation.New(w.kubernetes, w.p.namespace)
@@ -38,12 +95,25 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 	for _, id := range w.gatewayIDs {
 		w.awaitGatewayCleanup(ctx, allocator, id)
 		w.requireSQLAbsent(ctx, w.databaseOptions, id)
+		if response := w.owner.api(w.t, "GET", "/gateways/"+id, nil); response.StatusCode != 404 {
+			w.t.Fatal("Finalized Gateway remained readable", response.StatusCode)
+		}
+		if started, ok := accepted[id]; ok {
+			elapsed := time.Since(started)
+			sample := &record.Gateways[indexes[id]]
+			// Sequential checks can observe completion after it occurred. This is
+			// an upper bound, not proof of a missed target when it exceeds 30 seconds.
+			sample.Complete, sample.Seconds, sample.WithinTargetObserved = true, elapsed.Seconds(), elapsed <= 30*time.Second
+		}
 	}
+	record.Stage = "preservation"
 	w.requireInstallationData(ctx)
+	record.InstallationDataPreserved = true
 	if response := operator.api(w.t, "DELETE", "/managed_clusters/"+w.f.cluster, nil); response.StatusCode != 204 {
 		w.t.Fatal("finished Gateway cleanup did not release its cluster", response.StatusCode)
 	}
 	readCatalogEvent(w.t, consumer, w.f.cluster, "ManagedClusters", "Delete", "managedcluster.deleted")
+	record.Stage, record.Complete = "complete", true
 	w.t.Log("Browser deletion removed all Gateway SQL and state; the supplied PostgreSQL server and installation data remain")
 }
 
