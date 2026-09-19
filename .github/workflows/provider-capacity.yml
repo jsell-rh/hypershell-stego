@@ -6,6 +6,7 @@ on:
     paths:
       - '.github/workflows/provider-capacity.yml'
       - 'acceptance/provider_capacity_test.go'
+      - 'acceptance/provider_capacity_seed_test.go'
       - 'scripts/run-provider-capacity.sh'
       - 'scripts/verify-provider-capacity.py'
 

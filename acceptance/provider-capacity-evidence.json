@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "qualification": "not_yet_qualified",
+  "target": {
+    "gateways": 100,
+    "service_accounts_per_gateway": 100,
+    "cleanup_seconds": 30,
+    "hard_application_limits": false
+  },
+  "runs": [
+    {
+      "run_id": 35459418645,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35459418645",
+      "source_commit": "aacf17155030c9156ef1822118eb80134ffa78de",
+      "conclusion": "failure",
+      "stage": "setup",
+      "reason": "The single realm import did not finish within eight minutes.",
+      "rest_created_accounts": 0,
+      "cleanup_seconds": null,
+      "test_seconds": 481.99,
+      "source_archive_match": true,
+      "binary_hashes_match": true,
+      "cleanup_confirmed": true
+    }
+  ],
+  "regression": {
+    "run_id": 35459418598,
+    "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35459418598",
+    "source_commit": "aacf17155030c9156ef1822118eb80134ffa78de",
+    "conclusion": "success",
+    "required_tests": 6,
+    "race_instrumented": true,
+    "source_archive_match": true,
+    "cleanup_confirmed": true
+  },
+  "limits": [
+    "The account cleanup timing target is not yet measured.",
+    "The background fixture does not qualify application creation or token policy.",
+    "Total Gateway workload, database, and identity cleanup are not covered.",
+    "The whole-realm Gateway identity scan has a separate inventory window issue."
+  ]
+}

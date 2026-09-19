@@ -10,10 +10,10 @@ database. The API uses another PostgreSQL database. Provider HTTPS verifies the
 test certificate. PostgreSQL plaintext is limited to an explicit test setting
 on the literal loopback address.
 
-The fixture creates 100 Gateway records. It imports 9,900 provider clients and
-users for 99 background Gateways, then seeds their account rows. These imported
-accounts supply storage and provider load. The test does not qualify their
-creation, token policy, or encrypted journal state. The selected Gateway's 100
+The fixture creates 100 Gateway records. Four bounded setup workers create 9,900 provider clients,
+service users, and Gateway role grants for 99 background Gateways. The fixture
+then seeds their account rows. These accounts supply storage and provider load. The test does not qualify their
+creation through the application, token policy, or encrypted journal state. The selected Gateway's 100
 accounts must pass REST creation, the generated gRPC provisioner, the common
 Keycloak client, and encrypted state storage.
 
@@ -49,3 +49,10 @@ Gateway Pods, remove their databases or identity clients, measure concurrent
 Gateway deletion, or prove a larger installation. A failed timing result must
 remain visible. The two-minute cleanup observation limit permits a slow run to
 save its completion result; it does not replace the 30-second target.
+
+The first run, `35459418645`, failed during setup. The single realm import did
+not finish within eight minutes. No REST account was created, and no cleanup
+time was measured. Source and binary hashes matched, and CI confirmed cleanup.
+The fixture now uses separate provider API transactions with four workers and an
+eight-minute setup limit. This change does not raise the resource limits or
+reduce the account count. See [the result record](provider-capacity-evidence.json).

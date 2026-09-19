@@ -14,8 +14,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -62,30 +62,28 @@ func TestRealProviderAccountCapacity(t *testing.T) {
 	if err := f.db.QueryRowContext(ctx, "SELECT id FROM users WHERE username='alice'").Scan(&creator); err != nil {
 		t.Fatal(err)
 	}
-	type backgroundAccount struct{ gateway, account, client, subject, name string }
-	background := make([]backgroundAccount, 0, (gatewaysCount-1)*perGateway)
+	background := make([]capacityBackgroundAccount, 0, (gatewaysCount-1)*perGateway)
 	for _, gateway := range gatewaysIDs[1:] {
 		for range perGateway {
 			id := ksuid.New().String()
-			background = append(background, backgroundAccount{gateway, id, uuid.NewString(), uuid.NewString(), "hs-sa-" + gateway + "-" + id})
+			background = append(background, capacityBackgroundAccount{gateway: gateway, account: id, name: "hs-sa-" + gateway + "-" + id})
 		}
 	}
 	k := startKeycloakWithDatabase(t, "127.0.0.1", func(realm map[string]any) {
 		clients := realm["clients"].([]any)
-		users := realm["users"].([]any)
 		roles := realm["roles"].(map[string]any)["client"].(map[string]any)
 		for _, gateway := range gatewaysIDs[1:] {
-			audience := "hs-gw-" + gateway
+			audience, err := keycloak.GatewayClientID(gateway)
+			if err != nil {
+				t.Fatal(err)
+			}
 			clients = append(clients, map[string]any{"clientId": audience, "enabled": true, "publicClient": false, "standardFlowEnabled": false, "attributes": map[string]string{"hypershell.gateway": "true", "hypershell.gateway-id": gateway}})
 			roles[audience] = []any{map[string]any{"name": "openshell-user"}, map[string]any{"name": "openshell-admin"}}
 		}
-		for _, row := range background {
-			clients = append(clients, map[string]any{"id": row.client, "clientId": row.name, "enabled": true, "protocol": "openid-connect", "secret": "capacity-fixture-only", "publicClient": false, "serviceAccountsEnabled": true, "standardFlowEnabled": false, "directAccessGrantsEnabled": false, "fullScopeAllowed": false, "defaultClientScopes": []string{}, "optionalClientScopes": []string{}, "attributes": map[string]string{"stego.owner.hypershell.service-account": "true", "stego.owner.hypershell.gateway-id": row.gateway, "stego.owner.hypershell.service-account-id": row.account}})
-			users = append(users, map[string]any{"id": row.subject, "username": "service-account-" + row.name, "enabled": true, "serviceAccountClientId": row.name, "clientRoles": map[string][]string{"hs-gw-" + row.gateway: {"openshell-user"}}})
-		}
-		realm["clients"], realm["users"] = clients, users
+		realm["clients"] = clients
 	}, providerDB.dsn)
-	t.Log("PostgreSQL-backed Keycloak has started with the background clients")
+	t.Log("PostgreSQL-backed Keycloak has started")
+	seedCapacityAccounts(t, ctx, k, background)
 	for _, row := range background {
 		name := row.account
 		account := model.ServiceAccount{Meta: model.Meta{ID: row.account}, GatewayID: row.gateway, Name: name, ActiveName: &name, Active: true, CredentialType: "client_secret", Role: serviceaccounts.RoleUser, Status: "ready", CreatedByUserID: creator, ClientID: row.name, ClientUuid: row.client, Subject: row.subject, ExpiresAt: time.Now().Add(time.Hour)}
