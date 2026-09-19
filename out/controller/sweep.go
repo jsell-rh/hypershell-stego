@@ -33,12 +33,24 @@ type SweepGroup[T any] struct {
 	Name    string
 	Streams []SweepStream[T]
 }
+type SweepIntervalMode uint8
+
+const (
+	// SweepIntervalAfterGroup preserves the default wait after each group pass.
+	SweepIntervalAfterGroup SweepIntervalMode = iota
+	// SweepIntervalAfterRound waits after all groups have had one pass.
+	SweepIntervalAfterRound
+)
+
 type SweepOptions struct {
 	Workers          int
 	PageSize         int
 	MaxPagesPerCycle int
 	PassTimeout      time.Duration
 	Interval         time.Duration
+	// IntervalMode selects where Interval applies. Empty groups still count as
+	// passes. Round mode retains a wait when every source is empty.
+	IntervalMode SweepIntervalMode
 	// Terminal can run on several workers. It must be safe for concurrent calls.
 	Terminal func(error) bool
 	// Observe runs after the workers stop. It must return promptly. Error details
@@ -82,6 +94,9 @@ func (o SweepOptions) validate() error {
 	}
 	if o.Interval < time.Millisecond || o.Interval > time.Hour {
 		return sweepError("pass interval is outside its limits")
+	}
+	if o.IntervalMode != SweepIntervalAfterGroup && o.IntervalMode != SweepIntervalAfterRound {
+		return sweepError("interval mode is invalid")
 	}
 	if o.Terminal == nil {
 		return sweepError("terminal error policy is required")
@@ -149,6 +164,9 @@ func RunSweep[T any](ctx context.Context, groups []SweepGroup[T], reconcile func
 			return err
 		}
 		position = (position + 1) % len(definitions)
+		if options.IntervalMode == SweepIntervalAfterRound && position != 0 {
+			continue
+		}
 		timer := time.NewTimer(options.Interval)
 		select {
 		case <-ctx.Done():

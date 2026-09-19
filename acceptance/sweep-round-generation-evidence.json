@@ -1,0 +1,33 @@
+{
+  "source": "5de74be43db8fc3b38817dd12b8c213663300c36",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35470914203",
+  "compiler": {
+    "format": 1,
+    "repository": "jsell-rh/stego",
+    "workflow": "jsell-rh/stego/.github/workflows/compiler-artifact.yml",
+    "reference": "refs/heads/main",
+    "source_revision": "3220812f56430b81826f9505a6f88d3074fd241d",
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "self_hosted_runners_allowed": false,
+    "artifact": {
+      "name": "stego-linux-amd64",
+      "sha256": "8975fef6550a6c058f8c2ccd06af73752c8e7856c36a6d8415b42d3a1caea18a",
+      "size": 38370549
+    },
+    "build_record_sha256": "7d2a5886022e2900f50411486512d3b117abf4293fdc87e6ea056ed0e55a0a1d",
+    "bundle_sha256": "7c9e2272d8d2ede137536a0bf13b12da5e6f7fd2de4dcbdac26859f694ab47c8"
+  },
+  "source_archive_verified": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/controller/sweep.go"
+  ],
+  "generated_files_matched": 416,
+  "patch_sha256": "58962c89963544f6b6ec70b12169a9b03e980c51c6a80db6abb3f1f1f7a91cab",
+  "checked_at": "2026-09-19T21:37:22.077475+00:00"
+}

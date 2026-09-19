@@ -38,6 +38,8 @@ func (s *Service) Run(ctx context.Context) error {
 	groups = append(groups, runtime.SweepGroup[recoveryTask]{Name: "gateway-cleanup", Streams: []runtime.SweepStream[recoveryTask]{s.gatewayCleanupStream()}})
 	return runtime.RunSweep(ctx, groups, s.recoverTask, runtime.SweepOptions{
 		Workers: 8, PageSize: 100, MaxPagesPerCycle: 10000, PassTimeout: 10 * time.Second, Interval: time.Second,
+		// Wait after all status groups. Each group keeps its existing work budget.
+		IntervalMode: runtime.SweepIntervalAfterRound,
 		// Provider and storage outages remain retryable. Invalid source data stops
 		// the worker. Recovery actions still enforce their current access rules.
 		Terminal: func(err error) bool { return errors.Is(err, runtime.ErrSweepContract) },

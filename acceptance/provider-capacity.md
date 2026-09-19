@@ -263,3 +263,23 @@ storage time. This is consistent with the observed spacing; it does not explain
 every failed call. The next scheduling change must remain common to STEGO,
 retain bounded work and fair access for each group, and keep the default timing
 contract for existing callers. A separate test must prove any improvement.
+
+
+The next candidate selects compiler `3220812` and controller component `1.24.0`.
+Service-account recovery now requests a one-second wait after all ten groups
+have had a pass. The generated runtime owns the scheduling mechanism. The
+application still owns its status groups and recovery rules. Group work budgets,
+worker counts, page sizes, action reserves, retry state, and cleanup checks are
+unchanged. This mode can increase request rates. It does not set a whole-round
+deadline or a cleanup-time guarantee.
+
+Hosted regeneration `35470914203` passed all three module drift checks. The
+source archive and signed compiler matched, and all 416 generated files matched
+the reviewed output. Only the three state files, generated sweep runtime, and
+CLI compiler identity changed. See the
+[generation record](sweep-round-generation-evidence.json). No compiler ran on
+the developer workstation.
+
+The six capacity fixture files remain equal to the sixth measurement. Journal
+recovery and full application checks must qualify this candidate before the
+seventh real-provider measurement. No timing improvement is claimed yet.
