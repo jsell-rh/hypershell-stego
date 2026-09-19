@@ -36,8 +36,15 @@ skipped because this job has no database fixture. The deferred acceptance test
 compiled, and all six allocation cleanup tests passed. The exact source archive
 matched. See the [adapter record](sandbox-activation-adapter-evidence.json).
 
-The combined full application check and the bounded native cluster workflow
-must still qualify this candidate before promotion. Their results are pending. Live OpenShell Sandbox execution and Kata isolation remain
+Full application run `35467762040` passed at `674c6e5`. It passed 329 top-level
+core tests and 844 cases, including all 816 prior cases and 28 added cases.
+Both cleanup restart tests, identity discovery, and configured Sandbox startup
+passed. Browser, UI, and image jobs passed. The same five conditional tests were
+excluded, and the Kata job was skipped. See the
+[full application result](sandbox-activation-full-evidence.json).
+
+The bounded native cluster workflow must still qualify this candidate before
+promotion. Live OpenShell Sandbox execution and Kata isolation remain
 unverified. The user deferred the Kata test because no suitable cluster exists.
 The upstream workspace helper and socket settings remain unchanged. No fork or
 new admission service is required.
