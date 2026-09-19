@@ -202,3 +202,15 @@ store reconstruction, scope closure, and one success audit for each account.
 Application regression and real-provider capacity results are still pending.
 The last measured complete cleanup is 93.2722 seconds; no timing improvement
 is claimed for the new candidate.
+
+
+The first parallel journal run, `35466619525` at `f38f334`, failed the new test's
+scope revision assertion. The other 34 required tests passed, with no skip.
+The original six-account fixture passed unchanged. The new test reached a
+sealed scope at revision 33 but expected revision 32. The generated storage
+contract increments the revision for each new key and once more for sealing.
+The corrected test requires revision 32 before completion and exactly one
+further revision for sealing. Its later provider absence and per-account audit
+assertions were not reached in the failed run and still require a passing run.
+See the [failed journal result](scan-parallel-first-journal-evidence.json).
+No production code, work budget, or capacity fixture changed for this correction.

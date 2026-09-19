@@ -123,9 +123,10 @@ func TestGatewayAccountCleanupParallelResumesAfterRestart(t *testing.T) {
 	}
 	scope := gateways.AccountProviderStateScope(gateway.ID)
 	membership, err := f.storage.LoadResourceStateScope(ctx, "ServiceAccount", scope)
-	if err != nil || membership.Sealed || provider.inventory != 0 {
+	if err != nil || membership.Sealed || membership.Revision != int64(len(ids)) || provider.inventory != 0 {
 		t.Fatal("partial work claimed cleanup", membership, provider.inventory, err)
 	}
+	registeredRevision := membership.Revision
 	for pass := 0; pass < 12 && !complete; pass++ {
 		orm, err := gorm.Open(postgres.New(postgres.Config{Conn: f.db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 		if err != nil {
@@ -155,7 +156,8 @@ func TestGatewayAccountCleanupParallelResumesAfterRestart(t *testing.T) {
 		}
 	}
 	membership, err = f.storage.LoadResourceStateScope(ctx, "ServiceAccount", scope)
-	if err != nil || !membership.Sealed || membership.Revision != int64(len(ids)) {
+	// Sealing is a separate scope update after the 32 key registrations.
+	if err != nil || !membership.Sealed || membership.Revision != registeredRevision+1 {
 		t.Fatal("complete cleanup did not seal all journal registrations", membership, err)
 	}
 	original.mu.Lock()
