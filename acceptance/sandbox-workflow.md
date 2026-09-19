@@ -89,7 +89,14 @@ passed at `7c4834e`: 62 top-level tests, including 40 cases that evaluate the
 application expression and check its generated admission policy. One conditional
 SQL test was skipped. The
 [full application check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938)
-is running. No live Sandbox or network result is claimed. The constructor guard
+is running. Its rendered browser job passed, with three console starts and
+matching logs, metrics, and traces for all eight startup stages. The account
+deletion screenshot was reviewed. No container memory or PID limit event occurred.
+The [later adapter check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452318045)
+also passed at `9d0e7f8`. It repeated the 62 adapter tests and compiled the deferred
+live test without starting its fixtures. That test now requires a denial from
+the generated policy and includes Secret environment cases for the workload and
+workspace helper. Live Kata execution remains deferred. The constructor guard
 remains active. See the [credential rule record](sandbox-secret-environment-evidence.json).
 
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
