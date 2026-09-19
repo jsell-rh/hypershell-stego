@@ -1,0 +1,44 @@
+{
+  "run_id": 35476176959,
+  "source": "69c5214fb4fd82da143e642162117b016a2759c5",
+  "conclusion": "failure",
+  "phase": "installation_preflight",
+  "test_workload_started": false,
+  "timing_result_present": false,
+  "failure": "The generated test inspection roles differ from the saved operator installation.",
+  "independent_cleanup": {
+    "checked_at": "2026-09-19T23:29:52.288749+00:00",
+    "test_resources_absent": true,
+    "lease_free": true,
+    "standing_resources_unchanged": 32,
+    "installation_uid": "ea49fb47-0760-4f2f-a652-dfe139ab5867"
+  },
+  "added_grants": [
+    {
+      "role": "fixture-gateway-inspector",
+      "api_group": "",
+      "resource": "configmaps",
+      "verb": "get",
+      "resource_name": "openshell-gateway-config"
+    },
+    {
+      "role": "fixture-gateway-inspector",
+      "api_group": "",
+      "resource": "secrets",
+      "verb": "get",
+      "resource_name": "openshell-client-tls"
+    },
+    {
+      "role": "fixture-sandbox-inspector",
+      "api_group": "",
+      "resource": "secrets",
+      "verb": "get",
+      "resource_name": "openshell-client-tls"
+    }
+  ],
+  "production_roles_unchanged": true,
+  "admission_rules_unchanged": true,
+  "network_policy_unchanged": true,
+  "run_log_sha256": "0b1fe1289b554eab6256dc1d78e836a9ea72a18653bc09786290e0d4822bc607",
+  "scope": "The cluster rejected the unmatched test installation before the workload started. This is not a live Gateway or timing pass."
+}

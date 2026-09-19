@@ -76,6 +76,13 @@ must not be removed without proof that the remaining path covers late changes,
 restart, and retained records. The next source review will examine ownership of
 these repeated checks before another capacity run.
 
-The full core check remains pending. Account cleanup is one part of Gateway
+The full check passed at source `51b2bb2` in run `35474805484`: 332 top-level
+tests and 937 cases passed. All 816 baseline cases remain covered. The five
+conditional exclusions are unchanged. All 22 retry cases and both restart
+fixtures passed. Browser, console, and image jobs passed. The live Kata job
+remains deferred. See the [full evidence](cleanup-retry-full-evidence.json).
+
+The later cleanup-owner candidate has separate checks. The full retry result
+does not qualify that later source. Account cleanup is one part of Gateway
 deletion; its measurement does not prove complete workload and database cleanup
 within the target.
