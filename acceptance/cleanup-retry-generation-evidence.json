@@ -1,0 +1,42 @@
+{
+  "source": "710e56d5e236ec713320b9fe11d0c33d9ed24aa3",
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35474624738",
+  "compiler": {
+    "format": 1,
+    "repository": "jsell-rh/stego",
+    "workflow": "jsell-rh/stego/.github/workflows/compiler-artifact.yml",
+    "reference": "refs/heads/main",
+    "source_revision": "ee348b819bb43a738a6aad2fc14cb76ce3b1ec21",
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "self_hosted_runners_allowed": false,
+    "artifact": {
+      "name": "stego-linux-amd64",
+      "sha256": "8b2282ce525dce17e2e5b7f6bbabd8072e8d34814ade430b3a80e29bcdb50af0",
+      "size": 38378292
+    },
+    "build_record_sha256": "2ffbd789531ba094ee7411a3859c4d3e28145bd75ad38331c1f337468d36c903",
+    "bundle_sha256": "5c6038d0c4eaa2c9f532818ea6c60a9371888eafbdf0d442a738189e9bde0899"
+  },
+  "source_archive_verified": true,
+  "all_three_drift_checks_passed": true,
+  "compiler_executed_locally": false,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "console/out/tracing/auth_keys.go",
+    "console/out/tracing/runtime.go",
+    "gateway-console/.stego/state.yaml",
+    "gateway-console/out/tracing/auth_keys.go",
+    "gateway-console/out/tracing/runtime.go",
+    "out/auth/key_source.go",
+    "out/auth/telemetry.go",
+    "out/cli/command/version.go",
+    "out/controller/cycle.go",
+    "out/controller/cycle_parallel.go",
+    "out/tracing/auth_keys.go",
+    "out/tracing/runtime.go"
+  ],
+  "generated_files_matched": 420,
+  "patch_sha256": "55b5f0a5989019ea8ee61c93c16266210357996d45eef2627ed046898ebbab09",
+  "checked_at": "2026-09-19T22:55:21.900142+00:00"
+}
