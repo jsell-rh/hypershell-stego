@@ -75,8 +75,8 @@ Candidate `7f81556` adds only these named `get` grants to the test inspection
 roles. It does not grant Secret list or write access. The application workers'
 permissions remain unchanged. Eighteen inspection checks reject broader grants
 and changes to existing bindings. With the installation checks, all 35 local
-Python tests passed. Hosted adapter and rendered policy checks must pass before
-the next live workflow.
+Python tests passed. Hosted adapter and rendered policy checks passed before
+the next live workflow, as recorded below.
 
 The production source, generated output, compiler pin, and Go tests match
 `674c6e5` exactly. The prior full suite therefore covers those unchanged files.
@@ -84,3 +84,19 @@ The complete suite was not run again at `7f81556`; only the two test Python file
 and documentation or result records differ. See the
 [source comparison](sandbox-inspection-source-evidence.json). The live workflow
 must still verify the corrected inspection path before promotion.
+
+
+At `7f81556`, adapter run `35470497014` passed all 63 top-level tests, including
+the four constructor cases. Its declared SQL test was skipped without its
+fixture. The deferred live test compiled and all six cleanup helpers passed.
+See the [corrected adapter result](sandbox-inspection-adapter-evidence.json).
+
+Policy run `35470507864` passed at the same source. Independent verification
+matched all 1,502 source hashes and the signed compiler records. Of the 32
+installation resources, only the two fixed test inspection roles and the
+Sandbox runtime class comparison differ. The other Pod guards, network
+policies, and production permissions remain equal. See the
+[corrected policy result](sandbox-inspection-policy-evidence.json).
+
+The reviewed test fixture is installed under the shared lease for live run
+`35470884946`. Its completion and cleanup must be verified before promotion.
