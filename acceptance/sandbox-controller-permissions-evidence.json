@@ -1,0 +1,18 @@
+{
+  "revision": "945016a7b97f46cd2edf8633d6b6a22d5355ecc1",
+  "files": {
+    "cmd/agent-sandbox-controller/main.go": "39c5293bec1d2234f7f8f5ff837b4209b103bced5aa106b9d2a602ef6d8da38b",
+    "k8s/controller.yaml": "ecee13858bcb38d384226db70fa7f751b4bca29ae650b3f21d28e5ce779b1e3f",
+    "docs/configuration.md": "1c0204dff6e176060bfe8f26ef437ec398cb3308a3f077d2c8f397032786bfe8",
+    "cmd/agent-sandbox-controller/cacheoptions.go": "9dbc59bb9aec1ea3b42f2c7821742021779daad3e8cda129a85d6a8af249e2d9",
+    "cmd/agent-sandbox-controller/manageroptions.go": "fad41a904c6a198323676d309e466c4cbdcb986cb042a8638201b7eface20d55",
+    "k8s/rbac.generated.yaml": "0d559e2b96c913aca5fc80252b7ab68160b1874f4fb35acf6decde0ac766d111"
+  },
+  "scope": "Read-only review of the pinned upstream controller entry point and installation.",
+  "upstream_release": "v0.5.4",
+  "namespace_only_entry_point": false,
+  "cache_label_filter_is_authorization": false,
+  "controller_deployment_changed": false,
+  "live_sandbox_execution_tested": false,
+  "trust_decision": "pending"
+}
