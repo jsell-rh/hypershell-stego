@@ -74,6 +74,24 @@ also need checks. Keep the constructor guard until
 the complete path is verified. OpenShell container, image, credential-mount,
 and placement rules remain application policy. Live Kata execution is deferred.
 
+A further review found that the credential-mount rule did not block Secret
+values supplied through `env.valueFrom.secretKeyRef` or `envFrom.secretRef`.
+The Sandbox application rule now rejects both forms for all containers. The
+setup probe also rejects these additions. Literal values, field references,
+and ConfigMap references remain permitted. The pinned OpenShell driver uses
+literal environment values and contains neither Secret reference form. Its
+source hash was checked. This change does not modify OpenShell.
+
+Hosted regeneration passed with signed compiler `0fcdf3b`; all 415 generated
+files matched the verified artifact. The
+[adapter check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452128458)
+passed at `7c4834e`: 62 top-level tests, including 40 cases that evaluate the
+application expression and check its generated admission policy. One conditional
+SQL test was skipped. The
+[full application check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35452145938)
+is running. No live Sandbox or network result is claimed. The constructor guard
+remains active. See the [credential rule record](sandbox-secret-environment-evidence.json).
+
 The user deferred the live Kata Sandbox test on 2026-09-15 because no suitable
 cluster is available. CI marks this job as skipped. It is not a passing isolation
 test. The ordinary code, protocol, authorization, and count-controller checks
