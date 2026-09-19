@@ -106,7 +106,7 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 	if err != nil {
 		return false, err
 	}
-	progress, err := runtime.ScanCycleWithOptions(ctx, sourceVersion, access, source, func(ctx context.Context, item accountCleanupItem) error {
+	progress, err := scanGatewayCleanup(ctx, sourceVersion, access, source, func(ctx context.Context, item accountCleanupItem) error {
 		if item.journalID == "" {
 			return s.cleanupGatewayAccount(ctx, item.row)
 		}
@@ -114,9 +114,12 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 		defer cancel()
 		// An empty UUID tells the provider to load the retained, sealed identity.
 		return errors.Join(s.provider.Delete(call, id, item.journalID, ""), call.Err())
-	}, func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) },
-		runtime.ScanOptions{PageSize: 100, MaxPages: 1, PageTimeout: time.Second},
-		runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second}, runtime.CycleOptions{ActionTimeout: 750 * time.Millisecond})
+	}, 100, s.cleanupWorkers, func(item accountCleanupItem) string {
+		if item.journalID != "" {
+			return item.journalID
+		}
+		return item.row.ID
+	})
 	complete := err == nil && progress.Complete
 	if complete {
 		// Discovery has its own saved cursor. It cannot replace retained cleanup.

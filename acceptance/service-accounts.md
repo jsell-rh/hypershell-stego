@@ -142,3 +142,36 @@ Compiler pin `025aa22555b84d4e14ff8055f62eb7db9ee6107d` passed CI run
 `34392328767`. Regeneration from that pin produced the same controller bytes used
 by the application tests, and application static checks passed. The new remote
 application gates run after publication of this migration.
+
+
+## Cleanup worker policy
+
+The API reads `HYPERSHELL_SERVICE_ACCOUNT_CLEANUP_WORKERS` at startup. The
+default is 8. The value must be a decimal integer from 1 through STEGO's exported
+`MaxParallelCycleWorkers` value (currently 64). Invalid values stop startup.
+This setting is separate from account quotas and is copied into the service.
+A setting change requires a process restart. Existing `New` and `NewWithLimits`
+callers keep serial cleanup. `NewWithOptions` selects an explicit worker policy.
+
+Hypershell gives STEGO the account ID for both a row and its retained journal.
+STEGO runs those actions one at a time in source order within each scan call.
+It can process other account IDs at the same time. Provider inventory uses the
+provider client ID as its key. The common runtime saves only a contiguous
+accepted prefix. Later successful effects can repeat after restart. Provider
+journal checks and the SQL account lock still prevent unsafe state changes and
+duplicate success audits. The worker key is not a distributed lock.
+
+The account and inventory pages remain 100 and 20 items. Their work and commit
+budgets remain 2 seconds and 1 second, with a 750-millisecond reserve per action.
+The outer sweep still uses eight workers and its existing interval. At the
+default setting, up to 64 cleanup callbacks can run across Gateway scans in one
+API process. Replicas add to this count. Provider connection and storage limits
+remain separate. This is a resource setting, not a Gateway or account limit.
+
+The six-account serial restart fixture is unchanged. A separate 32-account
+fixture supplies rows and journals with repeated keys and reconstructs the
+store between passes. It checks partial saved progress, callback joins, key
+ordering, bounded parallel calls, scope closure, and exactly one SQL success
+audit per account. Its provider is a recording fixture. The real provider
+capacity test must still prove encrypted journal closure and remote deletion.
+No result is claimed until the hosted checks have completed.

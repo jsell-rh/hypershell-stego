@@ -36,7 +36,7 @@ func (s *Service) recoverGatewayInventory(ctx context.Context, gateway model.Gat
 	if err != nil {
 		return false, err
 	}
-	progress, err := runtime.ScanCycleWithOptions(ctx, sourceVersion, access, func(ctx context.Context, after string, limit int) (runtime.CursorPage[string], error) {
+	progress, err := scanGatewayCleanup(ctx, sourceVersion, access, func(ctx context.Context, after string, limit int) (runtime.CursorPage[string], error) {
 		page, err := s.provider.InventoryPage(ctx, gateway.ID, version, after, limit)
 		if err != nil {
 			return page, err
@@ -61,6 +61,6 @@ func (s *Service) recoverGatewayInventory(ctx context.Context, gateway model.Gat
 			return errInventoryPending
 		}
 		return nil
-	}, func(err error) bool { return !errors.Is(err, runtime.ErrScanContract) }, runtime.ScanOptions{PageSize: 20, MaxPages: 1, PageTimeout: time.Second}, runtime.ObservationOptions{WorkTimeout: 2 * time.Second, CommitTimeout: time.Second}, runtime.CycleOptions{ActionTimeout: 750 * time.Millisecond})
+	}, 20, s.cleanupWorkers, func(providerID string) string { return providerID })
 	return err == nil && progress.Complete, err
 }

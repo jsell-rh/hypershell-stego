@@ -78,10 +78,11 @@ type Created struct {
 	Secret     string
 }
 type Service struct {
-	repository storage.Repository
-	provider   Provisioner
-	now        func() time.Time
-	limits     Limits
+	repository     storage.Repository
+	provider       Provisioner
+	now            func() time.Time
+	limits         Limits
+	cleanupWorkers int
 }
 
 func New(repository storage.Repository, provider Provisioner) (*Service, error) {
@@ -89,13 +90,17 @@ func New(repository storage.Repository, provider Provisioner) (*Service, error) 
 }
 
 func NewWithLimits(repository storage.Repository, provider Provisioner, limits Limits) (*Service, error) {
-	if err := limits.validate(); err != nil {
+	return NewWithOptions(repository, provider, Options{Limits: limits, CleanupWorkers: 1})
+}
+
+func NewWithOptions(repository storage.Repository, provider Provisioner, options Options) (*Service, error) {
+	if err := options.validate(); err != nil {
 		return nil, err
 	}
 	if repository == nil {
 		return nil, errors.New("service accounts require storage")
 	}
-	return &Service{repository: repository, provider: provider, now: time.Now, limits: limits}, nil
+	return &Service{repository: repository, provider: provider, now: time.Now, limits: options.Limits, cleanupWorkers: options.CleanupWorkers}, nil
 }
 func validID(id string) bool {
 	parsed, err := ksuid.Parse(id)

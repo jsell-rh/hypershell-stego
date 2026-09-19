@@ -104,7 +104,7 @@ func ScanCycleWithOptions[T any](ctx context.Context, sourceVersion string, acce
 	if options.ActionTimeout < time.Millisecond || options.ActionTimeout >= budget.WorkTimeout {
 		return CycleState{Source: sourceVersion}, ErrScanContract
 	}
-	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, options)
+	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, options, nil)
 }
 
 // ScanCycle retains earlier action failures when the next process resumes work.
@@ -117,9 +117,9 @@ func ScanCycleWithOptions[T any](ctx context.Context, sourceVersion string, acce
 // prefix. A completed failed cycle returns ErrCycleFailed, including when the
 // failed action ran in an earlier process. Effects must be safe to repeat.
 func ScanCycle[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions) (CycleState, error) {
-	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, CycleOptions{})
+	return scanCycle(ctx, sourceVersion, access, source, emit, continueOnError, scan, budget, CycleOptions{}, nil)
 }
-func scanCycle[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions, options CycleOptions) (CycleState, error) {
+func scanCycle[T any](ctx context.Context, sourceVersion string, access CheckpointAccess, source CursorSource[T], emit func(context.Context, T) error, continueOnError func(error) bool, scan ScanOptions, budget ObservationOptions, options CycleOptions, parallel *ParallelCycleOptions[T]) (CycleState, error) {
 	result := CycleState{Source: sourceVersion}
 	if _, err := EncodeCycle(result); err != nil || access.Load == nil || access.Save == nil || source == nil || emit == nil {
 		return result, ErrScanContract
@@ -146,7 +146,7 @@ func scanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 		loaded = true
 		windowEnded := false
 		budgetEnded := false
-		progress, err := ScanFrom(work, result.After, func(pageContext context.Context, after string, limit int) (CursorPage[T], error) {
+		read := func(pageContext context.Context, after string, limit int) (CursorPage[T], error) {
 			page, err := source(pageContext, after, limit)
 			if err != nil {
 				if errors.Is(err, ErrScanWindowLimit) && observationContextError(pageContext) == nil {
@@ -161,7 +161,8 @@ func scanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 				}
 			}
 			return page, nil
-		}, func(value T) error {
+		}
+		action := func(value T) error {
 			action := work
 			cancel := func() {}
 			if options.ActionTimeout > 0 {
@@ -188,10 +189,24 @@ func scanCycle[T any](ctx context.Context, sourceVersion string, access Checkpoi
 				return err
 			}
 			return nil
-		}, scan)
+		}
+		var progress ScanProgress
+		if parallel == nil {
+			progress, err = ScanFrom(work, result.After, read, action, scan)
+		} else {
+			progress, err = scanFromPages(work, result.After, read, func(ctx context.Context, items []CursorItem[T]) (int, error) {
+				page := runParallelCyclePage(ctx, items, emit, continueOnError, *parallel)
+				result.Failed = result.Failed || page.failed
+				if actionFailure == nil {
+					actionFailure = page.failure
+				}
+				budgetEnded = budgetEnded || page.budgetEnded
+				return page.prefix, page.err
+			}, scan)
+		}
 		result.After = progress.After
 		result.Complete = progress.Complete
-		if budgetEnded && errors.Is(err, errCycleBudget) {
+		if budgetEnded && err == errCycleBudget {
 			err = nil
 		}
 		if windowEnded && observationContextError(work) == nil {

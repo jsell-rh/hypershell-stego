@@ -181,3 +181,24 @@ collector verified the existing result; CI was not repeated. See the
 [full hosted record](scan-action-budget-full-evidence.json). These branch results
 do not promote the pending Sandbox changes or close the live browser policy
 mismatch on main.
+
+
+Compiler `d3ccd11` passed all six branch and main compiler jobs and was published
+as an authenticated immutable package. Hosted regeneration `35466521243` passed
+at pin source `aa1a306`. All 416 generated files and all three drift checks
+matched. See the [parallel generation record](scan-parallel-generation-evidence.json).
+
+The application now uses STEGO's keyed parallel scan API, with eight cleanup
+workers by default. Account rows and retained journals share the account ID key.
+Provider inventory uses its client ID key. Worker scheduling and checkpoints
+remain in generated code. The worker setting is separate from quotas and uses
+the exported common ceiling. Existing serial constructors and the six-account
+restart fixture remain unchanged. Work budgets, page sizes, sweep cadence, and
+the capacity fixture are unchanged.
+
+A new 32-account PostgreSQL test checks saved partial progress, independent
+parallel actions, serial row/journal actions for each account, callback joins,
+store reconstruction, scope closure, and one success audit for each account.
+Application regression and real-provider capacity results are still pending.
+The last measured complete cleanup is 93.2722 seconds; no timing improvement
+is claimed for the new candidate.
