@@ -250,7 +250,7 @@ def verify_manifests(before, after):
         raise ValueError('The fixture changed unrelated deployment or admission rules')
 
 
-def check_render(source, destination, env, network_baseline=None, endpoint_change=False):
+def check_render(source, destination, env, network_baseline=None, endpoint_change=False, sandbox_network=False):
     with tempfile.TemporaryDirectory(prefix='stego-inspection-render-') as directory:
         renders = []
         binaries = []
@@ -263,10 +263,16 @@ def check_render(source, destination, env, network_baseline=None, endpoint_chang
             renders.append(subprocess.check_output([binary, '--namespace', 'stego-service-inspection', '--fs-group', '10001',
                 '--image', 'registry.example.test/fixture@sha256:' + 'a' * 64, '--worker', 'namespace-allocation',
                 '--egress', 'kubernetes=192.0.2.1:443', *flags], env=env, timeout=5))
-        verify_manifests(*renders)
+        if sandbox_network:
+            from sandbox_network_fixture import restore_manifest
+            verify_manifests(renders[0], restore_manifest(renders[1]))
+        else:
+            verify_manifests(*renders)
         record = {'production_sha256': hashlib.sha256(renders[0]).hexdigest(),
                   'fixture_sha256': hashlib.sha256(renders[1]).hexdigest(),
                   'scope': 'Four namespace roles, allocator bind names, declared namespace binding cases, and the reserved fixture control account only.'}
+        if sandbox_network:
+            record['scope'] = record['scope'].removesuffix(' only.') + ', and the fixed test RuntimeClass guard only.'
         if endpoint_change:
             from gateway_endpoint_fixture import policy_change
             transitions = []
@@ -289,7 +295,10 @@ def main():
     parser.add_argument('--compiler', required=True, type=Path)
     parser.add_argument('--destination', required=True, type=Path)
     parser.add_argument('--network-endpoint-change', action='store_true', help='Add one Gateway endpoint for the direct address-change test')
+    parser.add_argument('--sandbox-network', action='store_true', help='Use the fixed native runtime only for Sandbox packet probes')
     args = parser.parse_args()
+    if args.sandbox_network and args.network_endpoint_change:
+        parser.error('Select only one network fixture mode')
     source = Path(__file__).resolve().parent.parent
     destination = args.destination.resolve()
     compiler = args.compiler.resolve()
@@ -315,6 +324,9 @@ def main():
     declared = declaration(config.read_text())
     if args.network_endpoint_change:
         declared = endpoint_change_declaration(declared)
+    if args.sandbox_network:
+        from sandbox_network_fixture import declaration as native_declaration
+        declared = native_declaration(declared)
     config.write_text(declared)
     env = dict(os.environ, GOMAXPROCS='1', GOMEMLIMIT='256MiB', GOWORK='off')
     for key in ('STEGO_REGISTRY', 'STEGO_MODULE', 'STEGO_GO_VERSION'):
@@ -351,7 +363,7 @@ def main():
                 if (baseline / name).read_bytes() != (destination / name).read_bytes():
                     raise ValueError('The inspection roles changed an unrelated worker template')
         roles = verify_runtime((baseline / runtime).read_text(), (destination / runtime).read_text())
-        render = check_render(source, destination, env, baseline, args.network_endpoint_change)
+        render = check_render(source, destination, env, baseline, args.network_endpoint_change, args.sandbox_network)
 
     # Files that appear during generation also need an explicit review.
     observed = {str(p.relative_to(destination)) for p in destination.rglob('*') if p.is_file()}
@@ -363,6 +375,10 @@ def main():
               'scope': 'Production source with four namespace inspection roles and four appended bindings. Production binding indices and runtime code are unchanged.'}
     if args.network_endpoint_change:
         record['network_endpoint_change'] = {'endpoint': 'network-probe', 'scope': 'One operator-bound endpoint name in the Gateway allocation profile; no added Kubernetes permission.'}
+    if args.sandbox_network:
+        from sandbox_network_fixture import record as native_record
+        record['sandbox_network_probe'] = native_record()
+        record['scope'] += ' The test copy also selects the fixed native runtime for packet probes; it does not test VM isolation.'
     write_inspection_record(destination / 'acceptance/browser-inspection-source.json', record)
     print('Prepared frozen inspection fixture: ' + str(destination))
 

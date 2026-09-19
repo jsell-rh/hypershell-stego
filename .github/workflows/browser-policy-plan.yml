@@ -8,6 +8,12 @@ on:
         required: true
         type: string
 
+      sandbox_network:
+        description: Render native packet probes with the fixed test RuntimeClass
+        required: false
+        default: false
+        type: boolean
+
 permissions:
   contents: read
 
@@ -51,9 +57,12 @@ jobs:
       - name: Prepare the frozen inspection source
         env:
           GH_TOKEN: ${{ github.token }}
+          SANDBOX_NETWORK: ${{ inputs.sandbox_network }}
         run: |
           bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
-          python3 -B scripts/prepare-browser-inspection.py \
+          fixture_args=()
+          if [[ $SANDBOX_NETWORK == true ]]; then fixture_args+=(--sandbox-network); fi
+          python3 -B scripts/prepare-browser-inspection.py "${fixture_args[@]}" \
             --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" \
             --destination "$RUNNER_TEMP/browser-source"
       - name: Render the public installation inputs without cluster access

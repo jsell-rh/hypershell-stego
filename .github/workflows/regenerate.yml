@@ -8,6 +8,11 @@ on:
         required: false
         default: ''
         type: string
+      sandbox_network:
+        description: Render the native Sandbox packet fixture; requires installation inputs
+        required: false
+        default: false
+        type: boolean
   push:
     paths:
       - .stego/compiler-revision
@@ -26,6 +31,7 @@ jobs:
     uses: ./.github/workflows/browser-policy-plan.yml
     with:
       installation_inputs: ${{ inputs.installation_inputs }}
+      sandbox_network: ${{ inputs.sandbox_network }}
 
   generate:
     if: github.event_name != 'workflow_dispatch' || inputs.installation_inputs == ''
@@ -37,6 +43,11 @@ jobs:
       GOFLAGS: -p=2
       GOWORK: 'off'
     steps:
+      - name: Require installation inputs for native packet probes
+        if: github.event_name == 'workflow_dispatch' && inputs.sandbox_network
+        run: |
+          echo 'Native packet probes require installation inputs.' >&2
+          exit 1
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
         with:
           persist-credentials: false

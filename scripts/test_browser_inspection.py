@@ -6,6 +6,8 @@ from pathlib import Path
 import tempfile
 import unittest
 
+import sandbox_network_fixture as sandbox_network
+
 spec = importlib.util.spec_from_file_location('inspection', Path(__file__).with_name('prepare-browser-inspection.py'))
 inspection = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(inspection)
@@ -17,6 +19,20 @@ def go(config):
 
 
 class InspectionBoundary(unittest.TestCase):
+    def test_native_network_declaration_changes_only_the_sandbox_class(self):
+        source = (ROOT / 'service.yaml').read_text()
+        fixture = sandbox_network.declaration(source)
+        self.assertEqual(fixture.replace(sandbox_network.RUNTIME_CLASS, 'kata', 1), source)
+        self.assertFalse(sandbox_network.record()['vm_isolation_tested'])
+        for invalid in [fixture,
+                        source.replace('      - name: sandbox\n', '      - name: other\n'),
+                        source.replace('        pod_runtime_class: kata\n', ''),
+                        source.replace('        pod_security: isolated-runtime\n', '        pod_security: restricted\n'),
+                        source.replace('        pod_runtime_class: kata\n', '        pod_runtime_class: kata\n' * 2),
+                        source + '      - name: sandbox\n']:
+            with self.subTest(source=invalid[-80:]), self.assertRaises(ValueError):
+                sandbox_network.declaration(invalid)
+
     def test_endpoint_worker_change_is_limited_to_the_annotation(self):
         before = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes"]}', 'replicas': 1})
         after = json.dumps({'stego.dev/allocation-network-endpoints': '{"gateway":["kubernetes","network-probe"]}', 'replicas': 1})
@@ -195,6 +211,11 @@ class InspectionBoundary(unittest.TestCase):
         rendered = json.loads(template.replace('{{.FSGroup}}', '1').replace('{{.Namespace}}', 'stego-service-inspection'))
         guard = next(item for item in rendered['items'] if item['kind'] == 'ValidatingAdmissionPolicy' and item['metadata']['name'] == base + '.control-accounts')
         original['items'].append(guard)
+        original['items'].append({'kind': 'ValidatingAdmissionPolicy',
+            'metadata': {'name': base + '.pods.sandbox'},
+            'spec': {'failurePolicy': 'Fail', 'validations': [
+                {'expression': sandbox_network.EXPRESSION + '"kata"'},
+                {'expression': 'KEEP_POD_GUARDS'}]}})
         fixture = copy.deepcopy(original)
         names = json.dumps(['hypershell-gateway-workload', 'hypershell-namespace-allocation', 'hypershell-sandbox-count'], separators=(',', ':'))
         extended = names[:-1] + ',"service-check"]'
@@ -205,10 +226,37 @@ class InspectionBoundary(unittest.TestCase):
                 'metadata': {'name': base + '.' + role['Name']}, 'rules': role['Rules']})
         fixture['items'][1]['spec']['validations'][0]['expression'] = "request.resource.resource != 'rolebindings' || FIXTURE"
         inspection.verify_manifests(json.dumps(original), json.dumps(fixture))
+        native = copy.deepcopy(fixture)
+        rules = native['items'][4]['spec']['validations']
+        rules[0]['expression'] = sandbox_network.EXPRESSION + json.dumps(sandbox_network.RUNTIME_CLASS)
+        restored = sandbox_network.restore_manifest(json.dumps(native))
+        inspection.verify_manifests(json.dumps(original), restored)
+        with self.assertRaises(ValueError):
+            inspection.verify_manifests(json.dumps(original), json.dumps(native))
+        for change in [
+            lambda c: c['items'][4]['spec'].update(failurePolicy='Ignore'),
+            lambda c: c['items'][4]['spec']['validations'][1].update(expression='true'),
+            lambda c: c['items'][2]['spec'].update(replicas=20),
+            lambda c: c['items'][5]['rules'][0]['verbs'].append('delete'),
+        ]:
+            modified = copy.deepcopy(native)
+            change(modified)
+            with self.assertRaises(ValueError):
+                inspection.verify_manifests(json.dumps(original), sandbox_network.restore_manifest(json.dumps(modified)))
+        for change in [
+            lambda c: c['items'].pop(4),
+            lambda c: c['items'].append(copy.deepcopy(c['items'][4])),
+            lambda c: c['items'][4]['spec']['validations'].append(copy.deepcopy(c['items'][4]['spec']['validations'][0])),
+            lambda c: c['items'][4]['spec']['validations'][0].update(expression='true'),
+        ]:
+            modified = copy.deepcopy(native)
+            change(modified)
+            with self.assertRaises(ValueError):
+                sandbox_network.restore_manifest(json.dumps(modified))
         changes = [
             lambda c: c['items'][1]['spec']['validations'][1].update(expression='true'),
             lambda c: c['items'][2]['spec'].update(replicas=20),
-            lambda c: c['items'][4]['rules'][0].pop('resourceNames'),
+            lambda c: c['items'][5]['rules'][0].pop('resourceNames'),
             lambda c: c['items'][3]['spec'].update(failurePolicy='Ignore'),
             lambda c: c['items'][3]['spec']['validations'][0].update(expression='true'),
             lambda c: c['items'][3]['spec']['validations'][0].update(expression=guard['spec']['validations'][0]['expression']),
