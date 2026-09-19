@@ -98,7 +98,7 @@ class Credentials(unittest.TestCase):
             root = Path(directory)
             for name in ['scripts', '.stego', 'acceptance', 'bin']:
                 (root / name).mkdir()
-            for name in ['check-service-deployment.sh', 'ci_credentials.py', 'gateway_endpoint_fixture.py', 'network_peer_fixture.py']:
+            for name in ['check-service-deployment.sh', 'ci_credentials.py', 'gateway_endpoint_fixture.py', 'network_peer_fixture.py', 'sandbox_network_fixture.py']:
                 shutil.copyfile(ROOT / 'scripts' / name, root / 'scripts' / name)
             (root / '.stego/compiler-revision').write_text('a' * 40 + '\n')
             (root / 'acceptance/browser-inspection-source.json').write_text('{}')
