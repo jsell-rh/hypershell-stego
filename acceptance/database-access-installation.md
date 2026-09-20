@@ -8,6 +8,13 @@ The current committed generated output does not yet contain the new database
 access package. Do not deploy or merge this candidate until regeneration and
 all required application checks pass.
 
+The application selects STEGO's external-migration mode. The operator must
+install the schema before API startup. The API cannot bootstrap an empty
+database and checks its runtime permissions before it creates handlers.
+Component schema-generation checks still run. The first regenerated candidate
+retained the old startup-migration selection; review rejected that candidate
+before adoption. New output must come from the corrected declaration.
+
 The API fixture gives application processes and storage clients a separate
 NOINHERIT login. The operator connection retains setup, fault-test, and cleanup
 rights. The operator establishes the private database baseline, then calls the

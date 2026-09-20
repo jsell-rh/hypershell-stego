@@ -374,7 +374,7 @@ overrides:
   health-check:
     database: true
   postgres-adapter:
-    migrations: startup
+    migrations: external
     schema_generation: controller-local-v2
   jwt-auth:
     roles_claim: realm_access.roles
