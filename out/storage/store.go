@@ -1195,6 +1195,7 @@ func (s *Store) listQuery(ctx context.Context, entity, scopeField, scopeValue st
 			selectCols = append(selectCols, "stego_cleanup_targets")
 			selectCols = append(selectCols, "cluster_id")
 			selectCols = append(selectCols, "cluster_id")
+			selectCols = append(selectCols, "cluster_id")
 			selectCols = append(selectCols, "stego_generation", "stego_observations")
 			for _, f := range opts.Fields {
 				if validCols[f] {
