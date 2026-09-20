@@ -1,0 +1,16 @@
+{
+  "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35478851396",
+  "source": "4c6744b4e0816a84f85279a19ef21fa69ae7ea86",
+  "record_sha256": "c1bbcf2c589345473ce97f07a5bf6fd84b0c1d1a54c2a11f84f3f152bb13ebde",
+  "readiness_observations": 24,
+  "gateways": 2,
+  "namespace_incarnations": 3,
+  "account_objects": 6,
+  "distinct_owner_and_alias_names": 4,
+  "names_preserved_across_namespace_replacement": true,
+  "account_and_pod_uids_change_after_namespace_replacement": true,
+  "gateway_pod_replacement_observed": true,
+  "explicit_pod_token_settings": true,
+  "worker_account_writes_denied": true,
+  "scope": "Live account and ready Pod observations from the complete workflow. Namespace and account checks remain active. VM isolation is not tested."
+}

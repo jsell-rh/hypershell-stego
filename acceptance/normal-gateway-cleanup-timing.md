@@ -93,3 +93,34 @@ status cases, eight completion cases, 63 required adapter tests, six allocation
 cleanup tests, and 28 collection cases. The live test compiled. See
 `terminal-pod-evidence.json`. Live run `35478851396` uses this exact source.
 Its result remains pending. The application and 100-account test are unchanged.
+
+## Complete live result
+
+Run [35478851396](https://github.com/jsell-rh/hypershell-stego/actions/runs/35478851396)
+passed at `4c6744b`. All 11 required live tests passed. The browser workflow took
+737.07 seconds. Independent checks matched 1,544 source files, 421 generated
+file hashes before and after the test, and the signed compiler package. Six
+browser runtime instances supplied all required startup logs, spans, metrics,
+and active records. All four saved views were inspected; no layout defect was
+seen at the tested viewport. See `normal-cleanup-live-evidence.json`.
+
+One remaining Gateway had 100 accounts created through REST, with verified
+token issuance. Deletion closed all 100 rows and authenticated journals,
+removed all 100 provider clients and users, sealed the account scope, and
+retained one successful cleanup audit per account. The complete observation
+includes namespace, SQL database, role, binding, key, and final Gateway checks.
+The supplied PostgreSQL server and installation data remained.
+
+The observed cleanup upper bound was **53.547650006 seconds**. This does not
+prove the 30-second target. The checks run in sequence; this record does not
+identify the time when each resource was removed or the cause of the delay.
+The result is a functional pass, not production capacity qualification.
+
+The independent permission review checked 24 ready-Pod observations across
+two Gateways and three namespace incarnations. Worker writes to service
+accounts remained denied. See `normal-cleanup-account-evidence.json`.
+Kata and native Sandbox packet probes were not run.
+
+Independent cleanup found no test workloads, fixtures, allocated namespaces,
+or held lease. All 32 standing resources were restored before CI policy
+adoption. The earlier preempted result remains recorded as a failure.
