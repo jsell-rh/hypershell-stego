@@ -105,6 +105,7 @@ exit "$code"
     test["env"] = [x for x in test["env"] if x["name"] not in ["STEGO_TEST_KUBERNETES_SERVICE", "STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK"]]
     test["env"] += [{"name": key, "value": value} for key, value in {
         "GOWORK": "off", "STEGO_TEST_NAMESPACE_COUNT_LIVE": "1",
+        "STEGO_GENERATION_ROOT": "/work/generation",
         "STEGO_TEST_KUBERNETES_URL": "https://kubernetes.default.svc",
         "STEGO_TEST_IDLE_IMAGE": test["image"],
     }.items()]
@@ -153,6 +154,28 @@ exit "$code"
         oc("wait", "--for=condition=Ready", "pod/" + pod, "--timeout=120s", timeout=135)
         oc("exec", "-i", pod, "--", "tar", "xf", "-", "-C", "/work/application", data=(result / "source.tar").read_bytes(), timeout=120)
         oc("exec", "-i", pod, "--", "sh", "-c", "mkdir -m 700 /work/compiler; tar xf - -C /work/compiler", data=(result / "compiler.tar").read_bytes(), timeout=120)
+        # Check the complete transfer before generation can execute these bytes.
+        # A file can exist while tar is still writing it.
+        expected = (root / ".stego/compiler-sha256").read_text().strip()
+        revision = (root / ".stego/compiler-revision").read_text().strip()
+        verified = json.loads((compiler_setup / "verified/verified.json").read_text())
+        if verified["source_revision"] != revision or verified["artifact"]["sha256"] != expected:
+            raise RuntimeError("The compiler record differs from the source pin")
+        actual = oc("exec", pod, "-c", "test", "--", "sha256sum", "/work/compiler/stego-linux-amd64")
+        (result / "compiler-pod.sha256").write_bytes(actual)
+        if actual != (expected + "  /work/compiler/stego-linux-amd64\n").encode():
+            raise RuntimeError("The Pod compiler differs from the authenticated compiler")
+        observed = json.loads(oc("get", "pod", pod, "-o", "json"))
+        observed_job = json.loads(oc("get", "job", "check", "-o", "json"))
+        owners = [owner for owner in observed["metadata"].get("ownerReferences", [])
+                  if owner.get("kind") == "Job" and owner.get("name") == "check" and owner.get("controller") is True]
+        if len(owners) != 1 or owners[0]["uid"] != observed_job["metadata"]["uid"]:
+            raise RuntimeError("The compiler transfer Pod has a different Job owner")
+        (result / "compiler-transfer.json").write_text(json.dumps({
+            "source_revision": revision, "compiler_sha256": expected,
+            "pod_uid": observed["metadata"]["uid"], "job_uid": owners[0]["uid"],
+            "pod_bytes_match_authenticated_compiler": True,
+        }, indent=2) + "\n")
         oc("exec", pod, "--", "touch", "/work/start")
 
         def exists(name):
@@ -210,6 +233,10 @@ exit "$code"
         for name in ["test.log", "generated.tar", "first.sha256", "second.sha256", "after.sha256"]:
             if exists(name):
                 (result / name).write_bytes(oc("exec", pod, "--", "cat", "/work/" + name, timeout=90))
+        # Retain generation records without duplicate compiler executables.
+        (result / "generation-records.tar").write_bytes(oc(
+            "exec", pod, "-c", "test", "--", "tar", "cf", "-", "--exclude=stego",
+            "-C", "/work", "generation", timeout=90))
         if code == 0 and "--- PASS: TestNamespaceCountWithLiveKubernetes (" not in (result / "test.log").read_text():
             raise RuntimeError("The required live test did not pass; a skipped or missing test is not a pass")
         oc("exec", pod, "--", "touch", "/work/collected")
@@ -220,6 +247,13 @@ exit "$code"
         if pod and not (result / "test.log").exists():
             try:
                 (result / "test.log").write_bytes(oc("exec", pod, "--", "cat", "/work/test.log"))
+            except (subprocess.SubprocessError, OSError):
+                pass
+        if pod and not (result / "generation-records.tar").exists():
+            try:
+                (result / "generation-records.tar").write_bytes(oc(
+                    "exec", pod, "-c", "test", "--", "tar", "cf", "-", "--exclude=stego",
+                    "-C", "/work", "generation", timeout=90))
             except (subprocess.SubprocessError, OSError):
                 pass
         # Keep admission and allocator roles until all owned namespaces are gone.
