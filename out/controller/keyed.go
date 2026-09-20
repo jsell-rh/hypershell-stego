@@ -466,15 +466,21 @@ func runKeyedWithResult[K ~string](parent context.Context, source KeyedSource[K]
 		workers.Go(func() {
 			for ctx.Err() == nil {
 				operation, stop := context.WithTimeout(ctx, options.Timeout)
-				sample, err := options.Cleanup(operation)
-				if err == nil {
-					err = operation.Err()
-				}
+				err, finish := controllerWork(operation, "cleanup", func(operation context.Context) error {
+					sample, err := options.Cleanup(operation)
+					if err == nil {
+						err = operation.Err()
+					}
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+					return options.Metrics.recordCleanup(sample, err)
+				})
 				stop()
+				finish(false)
 				if ctx.Err() != nil {
 					return
 				}
-				err = options.Metrics.recordCleanup(sample, err)
 				if err != nil && (errors.Is(err, ErrMetricsContract) || options.Terminal(err)) {
 					fail(err)
 					return

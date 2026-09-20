@@ -6,11 +6,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego
             go_version: 1.26.8
             output_dir: out
-            registry_ref: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            registry_ref: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: b0be3fee069225e940f6de6b8229a3ef25b833947b89e19ad9a2624cc4c308a6
+                sha256: 863d445aceb34ac99bfdb8aa81225d9e34ba4cae2bc3bef3e83231d2c863ff3c
                 mode: 420
             contracts/controlplane/gateway_identity.proto:
                 exists: true
@@ -132,70 +132,70 @@ last_applied:
                 exists: true
                 sha256: d84a8c53174d0143ab42ca201f0d96f85c3588ec7da260bf6feafa872a61ef09
                 mode: 420
-        sha256: 1243bbdce582328387be6a54c13473d8d5b95ed8f4a94ec6f744f0dac07fccee
+        sha256: 54103bb492a8e42f2ac5cacd0657ede4be73d1321349a2d152a3a08d7fc06e17
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260920035718-7a674e6c038b
+        module_version: v0.0.0-20260920044011-f6ebd0ba9398
         vcs: git
-        revision: 7a674e6c038b9fcf9735de78e66a30956c6feb0b
+        revision: f6ebd0ba93983bfdcaefa15d8c3344b299af245e
         source_state: clean
     service_hash: d84a8c53174d0143ab42ca201f0d96f85c3588ec7da260bf6feafa872a61ef09
-    registry_sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+    registry_sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
     registry_content_sha256: 0c108de857d2b7b7ef6e7adf06797803acefe59a519cd1112a1ad320790a6b2a
     components:
         cli-application:
             version: 1.8.1
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         controller:
             version: 1.25.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         go-sdk:
             version: 2.0.4
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         grpc-application:
             version: 1.12.3
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         health-check:
             version: 1.1.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         http-application:
             version: 1.8.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         jwt-auth:
             version: 2.4.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         kafka-producer:
             version: 1.0.4
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         keycloak-provider:
             version: 0.18.1
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         kubernetes-client:
             version: 1.16.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         kubernetes-service:
             version: 1.29.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         otel-tracing:
             version: 1.19.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         outbox:
             version: 1.1.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         postgres-adapter:
             version: 4.9.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         postgres-client:
             version: 1.5.0
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         tsl-search:
             version: 1.0.2
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
         typescript-sdk:
             version: 1.2.1
-            sha: cd31213c89a02eb8302cdfec7603f718abadbecdc77b22b2074a7974b6e60490
+            sha: 5b237d7e9cda3c8b673a96a102df06492583257fc56d5090cdabd1b6be64e7b4
     entities:
         Gateway:
             - name: name
@@ -445,13 +445,13 @@ last_applied:
         cli/command/output.go: 12eb9ac7fedad84bd92677fff1de17a708132483ba71998efa75140d51c40c09
         cli/command/runtime.go: 77778b989c6e4b962cba6c6c74372f4c21d57a98b7d37952a290fa8ba79969f4
         cli/command/session.go: a8acbc39a1177fe22fc4da1dd8aee90a183a6fab15933dd421c3985699c86d46
-        cli/command/version.go: b73d97ee94cc3acb09ec80df93b23f6d6318e7382d8ace83328ee1ee4f6ecbf8
+        cli/command/version.go: 619831eabf7c9087ecb772c92324f816b0480bbe71c1a87aa0d907bf1a048582
         contracts/events/events.go: db027ed6920450da2cfd51e0145f394eb82e248fa418f33efe9f6f41edce6d97
         contracts/storage/storage.go: d05ed1b436ae3af8e148bdf336a9f88c59cfa691ef41c07a46f1fdf8bb8f729f
         controller/checkpoint.go: 699bf1c8d955cf50ff7d255aea2193ad4bf40ada8baa556d64a9073ed66c24a1
         controller/cycle.go: 083e97f0a78d68906f725230fc3ce9aea8da9ac36464fd8dcde0bd9351652ce3
         controller/cycle_parallel.go: 1d4186e3d469fb3d03798a7b71ffa5de18f15c9f983812c8f9788c2aab22a44b
-        controller/keyed.go: 36f35ab8090d799d784e22c0b73ce4ca872b7ca427460768d769dc23fc50ecf7
+        controller/keyed.go: ae34432170770ab768b3775ecbbf789a4da07b2aa14a05054c48ceabcec2e3dd
         controller/metrics.go: 575b6daa30993e7e64f46476aeac614ce4fa7fa3f685807bdebb5f3d2055abb6
         controller/monitor.go: cd982adccb996fef9b563be54637b4779e7df46c1ee35eb554e4f92e3c459f84
         controller/observation.go: f6496e96e7b20dc48f1060bff1e026fa10a2045b2accc02b65ad3bf2fb9f30d2
@@ -605,7 +605,7 @@ last_applied:
         tracing/client.go: 37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67
         tracing/command.go: e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812
         tracing/config.go: 077cdf1d36379896617afa6d12612cb136380dc7f92a9f523f4a9f50a6477666
-        tracing/controller.go: bc5da51637c46826b57f5a055654e5822e1f03dad6c83a3a502c27e6c1a9679d
+        tracing/controller.go: 23b0aeee044961a42d38c1ab48810a40b48438fff7c1ab72acd34b74952bacfb
         tracing/database.go: b87fabc2ff867b68d312089aad53a7164f7c4a039702c29e5937e10be70ac9c9
         tracing/http_client.go: ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683
         tracing/http_observation.go: 56493be11d5e29efb771b5862d45ad2ef9e010e0b01b27766e61b0971862ea86
