@@ -59,18 +59,8 @@ func TestGatewayDatabaseSecretFileAndCredentialRotation(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	for _, statement := range []string{
-		"GRANT CONNECT ON DATABASE " + pgx.Identifier{cfg.Database}.Sanitize() + " TO " + identifier,
-		"GRANT USAGE ON SCHEMA public, stego_outbox TO " + identifier,
-		"GRANT USAGE ON SCHEMA stego_schema TO " + identifier,
-		"GRANT SELECT ON stego_schema.generation TO " + identifier,
-		"GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO " + identifier,
-		"GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO " + identifier,
-	} {
-		if _, err := f.db.Exec(statement); err != nil {
-			t.Fatal(err)
-		}
-	}
+	grantAPIFixtureRuntimeAccess(t, f, cfg.Database, role)
+
 	dsnFor := func(password string) string {
 		address := &url.URL{Scheme: "postgres", Host: net.JoinHostPort("localhost", strconv.Itoa(int(cfg.Port))), Path: "/" + cfg.Database, User: url.UserPassword(role, password)}
 		address.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {ca}, "application_name": {"stego-file-secret"}}.Encode()

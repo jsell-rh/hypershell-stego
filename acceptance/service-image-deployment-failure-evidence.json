@@ -1,0 +1,45 @@
+{
+  "recorded_at": "2026-09-20T14:11:45.615614+00:00",
+  "source": "2af3ec4e703254d2c79c9099db7a0df3afb5fc29",
+  "qualified": false,
+  "full_run": 35513812427,
+  "image_run": 35513806446,
+  "hosted_checks_qualified": true,
+  "live": {
+    "namespace": "stego-service-20260920-98ac54",
+    "job_uid": "daceb678-0a26-4497-bafa-6339dfec31e7",
+    "pod_uid": "16a0a1e6-f265-49d3-8735-a79607fa8ae4",
+    "exit_code": 1,
+    "test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 181.7,
+    "failure": "The API Deployment did not become ready within 180 seconds. A cluster read found repeated container backoff.",
+    "ready_application_images_observed": 0,
+    "images_published": 7,
+    "compiler_sha256": {
+      "generation": "e587de658b558a5634c950269fbcc776d15d55899afafe3665179b06839829bd",
+      "publication": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+    }
+  },
+  "source_finding": "The service fixture did not grant USAGE on stego_schema or SELECT on stego_schema.generation. The generated API reads that marker before serving requests. The process and browser fixtures already included these grants.",
+  "diagnostic_limit": "The API Pod was removed by test cleanup before its startup log was retained. The missing grants are a definite fixture defect; this run does not identify every possible startup failure.",
+  "correction": "All three API fixture paths now use one grant helper. It permits marker reads and checks that DDL and marker writes remain denied. Hosted and live verification of the correction are pending.",
+  "cleanup": {
+    "source": "2af3ec4e703254d2c79c9099db7a0df3afb5fc29",
+    "checked_at": "2026-09-20T14:10:24.709513+00:00",
+    "phase": "cleanup",
+    "existing_test_jobs_and_pods_absent": true,
+    "lease_free": true,
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "standing_resources_unchanged": 32,
+    "namespace": "stego-service-20260920-98ac54",
+    "owned_resources_absent": true
+  },
+  "evidence_sha256": {
+    "results/deployment.log": "32155a00dcb14225a67560b10b2f0a137378e22c9434724603ac1f29c4e2bfdd",
+    "results/evidence.tar": "b3c80ba074b4f88f01fe51ed2117ae8c7fe03560b5b983ba0d5c62b9231884fe",
+    "results/job-status.json": "7d0ebebc885570035e2ecc86288d96ef3f53ca523f44b24e3422ecf2769923ac",
+    "cleanup.json": "b463ce66f72d15ca65d43eda6e90e82a4ad888c60ba1ae5c6b8466654c294d26",
+    "capture.json": "b36805e4abe68d350befc17b758cc1f4544a066e112eafa90ed71b31fa52dfe0"
+  },
+  "scope": "Failed service Deployment test and verified cleanup. This does not qualify the candidate or complete the enterprise goal."
+}

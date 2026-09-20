@@ -121,11 +121,8 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	for _, sql := range []string{"GRANT CONNECT ON DATABASE " + pgx.Identifier{cfg.Database}.Sanitize() + " TO " + identifier, "GRANT USAGE ON SCHEMA public, stego_outbox TO " + identifier, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO " + identifier, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO " + identifier} {
-		if _, err := f.db.Exec(sql); err != nil {
-			t.Fatal(err)
-		}
-	}
+	grantAPIFixtureRuntimeAccess(t, f, cfg.Database, role)
+
 	dsn := &url.URL{Scheme: "postgres", Host: fixtureHost + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(role, hex.EncodeToString(password))}
 	dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}, "application_name": {"stego-kubernetes-service"}}.Encode()
 	files := map[string][]byte{"database-url": []byte(dsn.String())}

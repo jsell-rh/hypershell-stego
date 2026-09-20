@@ -223,23 +223,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 			p.t.Error(err)
 		}
 	})
-	grants := []string{"GRANT CONNECT ON DATABASE " + pgx.Identifier{cfg.Database}.Sanitize() + " TO " + id, "GRANT USAGE ON SCHEMA public TO " + id}
-	grants = append(grants, "GRANT USAGE ON SCHEMA stego_schema TO "+id, "GRANT SELECT ON stego_schema.generation TO "+id, "GRANT USAGE ON SCHEMA stego_outbox TO "+id, "GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public, stego_outbox TO "+id, "GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public, stego_outbox TO "+id)
-	for _, statement := range grants {
-		if _, err := f.db.ExecContext(ctx, statement); err != nil {
-			p.t.Fatal(err)
-		}
-	}
-	var canCreate bool
-	if err := f.db.QueryRowContext(ctx, "SELECT has_schema_privilege($1,'public','CREATE')", role).Scan(&canCreate); err != nil || canCreate {
-		p.t.Fatal("runtime role can change the schema", err)
-	}
-	if !console {
-		var canInspect, canChange bool
-		if err := f.db.QueryRowContext(ctx, "SELECT has_schema_privilege($1,'stego_schema','USAGE') AND has_table_privilege($1,'stego_schema.generation','SELECT'), has_schema_privilege($1,'stego_schema','CREATE') OR has_table_privilege($1,'stego_schema.generation','INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER')", role).Scan(&canInspect, &canChange); err != nil || !canInspect || canChange {
-			p.t.Fatal("runtime role must have read-only schema-generation access", err)
-		}
-	}
+	grantAPIFixtureRuntimeAccess(p.t, f, cfg.Database, role)
 
 	dsn := &url.URL{Scheme: "postgres", Host: p.host("fixture") + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(role, password)}
 	dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}}.Encode()
