@@ -39,8 +39,10 @@ See the [generation evidence](controller-run-compiler-evidence.json).
 
 ## Remaining proof
 
-The full application suite and live workflow remain required. No new cleanup
-time or capacity result is claimed. The previous complete workflow and its
+The full application suite passed at `69b9e29`, including 1,121 core cases
+and the rendered browser check. See the [full evidence](workload-pending-full-evidence.json).
+The live workflow remains required. No new cleanup time or capacity result
+is claimed. The previous complete workflow and its
 separate API result remain in [state cleanup evidence](state-cleanup-overlap.md).
 The measured 34.827-second cleanup still exceeds the 30-second target. Live
 Kata isolation and full production capacity remain unverified.
