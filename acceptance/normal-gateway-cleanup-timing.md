@@ -124,3 +124,10 @@ Kata and native Sandbox packet probes were not run.
 Independent cleanup found no test workloads, fixtures, allocated namespaces,
 or held lease. All 32 standing resources were restored before CI policy
 adoption. The earlier preempted result remains recorded as a failure.
+
+The operator then retained the exact tested CI inspection configuration. It
+adds three named reads in two fixture roles. No cluster-wide binding grants
+those roles. All 32 standing objects were checked after the change. Test
+resources were absent and the lease was released. Production permissions,
+admission policy, and RuntimeClasses are unchanged. See
+`ci-inspection-adoption-evidence.json`.

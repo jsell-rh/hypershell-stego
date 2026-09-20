@@ -1,0 +1,34 @@
+{
+  "source": "4c6744b4e0816a84f85279a19ef21fa69ae7ea86",
+  "live_run": 35478851396,
+  "qualified_policy_source": "4ea3e1edb791810108f783adf474dec577b08370",
+  "old_config_uid": "8796d618-06bb-4a85-9b06-69f2df3e16dd",
+  "holder": "normal-inspection-adoption-20260920",
+  "changed": [
+    [
+      "ClusterRole",
+      "stego-service-ci.hypershell-namespace-allocation.fixture-gateway-inspector"
+    ],
+    [
+      "ClusterRole",
+      "stego-service-ci.hypershell-namespace-allocation.fixture-sandbox-inspector"
+    ]
+  ],
+  "temporary": false,
+  "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+  "phase": "complete",
+  "updated_at": "2026-09-20T00:53:27.386302+00:00",
+  "patched": [
+    "stego-service-ci.hypershell-namespace-allocation.fixture-gateway-inspector",
+    "stego-service-ci.hypershell-namespace-allocation.fixture-sandbox-inspector"
+  ],
+  "installed_config_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+  "installed_resources_verified": 32,
+  "test_resources_absent": true,
+  "production_permissions_changed": false,
+  "admission_policies_changed": false,
+  "runtime_class_changed": false,
+  "schema": 1,
+  "installed_data_sha256": "6edb26547408630513597f93c9869633411e929ab5d94b40d3a7d40d76a7c7ab",
+  "scope": "The exact two fixture inspection roles proved in live run 35478851396. No cluster-wide binding grants these roles. Production permissions, admission policy, and RuntimeClasses are unchanged."
+}
