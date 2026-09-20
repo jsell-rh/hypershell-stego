@@ -1,0 +1,151 @@
+{
+  "schema": 1,
+  "source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+  "compiler": "f6ebd0ba93983bfdcaefa15d8c3344b299af245e",
+  "qualified_hosted_checks": {
+    "full": {
+      "run": 35497164053,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35497164053",
+      "record_sha256": "ccf0aec1f3440f418574d2ecf99c3822fc8c6586fcc9c3b780018ced7873c4d8",
+      "result": {
+        "source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+        "run_id": 35497164053,
+        "qualified": true,
+        "conclusion": "success",
+        "jobs": {
+          "web-console": "success",
+          "acceptance (browser)": "success",
+          "acceptance (core)": "success",
+          "service-image": "success",
+          "sandbox-workload": "skipped"
+        },
+        "baseline_source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+        "all_prior_core_cases_retained": 1093,
+        "core_passed_cases": 1103,
+        "core_passed_top_level": 350,
+        "additional_passed_cases": 10,
+        "additional_top_level_tests": [
+          "TestStateCleanupRequestsBothNamespacesBeforeWaiting",
+          "TestStateCleanupResumesAfterControllerRestart",
+          "TestStateCleanupStopsRequestsAfterCancellation"
+        ],
+        "core_skipped_cases": [
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGeneratedKubernetesBrowserGatewayWorkflow",
+          "TestGeneratedKubernetesServiceGatewayWorkflow",
+          "TestNamespaceCountWithLiveKubernetes",
+          "TestRealProviderAccountCapacity"
+        ],
+        "rendered_browser_test_passed": true,
+        "test_definitions_retained": true,
+        "state_overlap_tests_match_exact_source_focused_runs": true,
+        "log_sha256": "b903d1a8cde5f3779f804ef79f74b8820ca018bd9d3991df99408a981fea839d",
+        "scope": "Full hosted consumer checks. The live trace workflow, whole cleanup time, production capacity, and deferred Kata remain separate requirements."
+      }
+    },
+    "allocation": {
+      "run": 35497159803,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35497159803",
+      "record_sha256": "36012578e614c5e3eaea755f816e5893802e3ea54eb1ae7fe1184ce1a1be7c9f",
+      "result": {
+        "run_id": 35497159803,
+        "source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+        "qualified": true,
+        "passed_top_level": 23,
+        "required_tests_passed": [
+          "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+          "TestAllocationPendingCancellationDoesNotBecomeProgress",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestGatewayCleanupKeepsBothClusterTargetsAfterRestart",
+          "TestGatewayCleanupObservationDoesNotRepeatEvents",
+          "TestGatewayDeletionRemovesServiceAccounts",
+          "TestGatewayDurableDeletionThroughGeneratedTransports",
+          "TestGatewayFinalizationWaitsForAllocationCleanup",
+          "TestGatewayJournalClosureRollsBackWithFinalEvent",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestGeneratedCLIApplyWorkflow",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestPendingCleanupAndProviderErrorsArePreserved",
+          "TestPlacementWorkflowThroughGeneratedRuntime",
+          "TestStateCleanupRequestsBothNamespacesBeforeWaiting",
+          "TestStateCleanupResumesAfterControllerRestart",
+          "TestStateCleanupStopsRequestsAfterCancellation"
+        ],
+        "state_overlap_cases": 7,
+        "allocation_cases": 9,
+        "pending_failure_priority_cases": 9,
+        "pending_context_cases": 4,
+        "catalog_fixture_cases": 3,
+        "rest_and_grpc_deletion": true,
+        "watch_ninth_update_before_deletion": true,
+        "tests_sha256": "d91eb364258efcd586368ba15e24e75f7cc1fb7d1dfe982fc730953f74d1db01",
+        "scope": "Exact candidate namespace and PostgreSQL tests. Explicit pending results preserve placement, cleanup order, resource versions, and error priority. No live allocator pause ran here."
+      }
+    },
+    "adapter": {
+      "run": 35497159805,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35497159805",
+      "record_sha256": "7ec035aa06fe49d6c55e70e23d36a45ba0900caf9ae13685d821268b53b1bb00",
+      "result": {
+        "run_id": 35497159805,
+        "source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+        "qualified": true,
+        "adapter_top_level": 68,
+        "state_overlap_cases": 7,
+        "allocation_cases": 9,
+        "pending_failure_priority_cases": 9,
+        "pending_context_cases": 4,
+        "phase_observation_cases": 3,
+        "collection_cases": 30,
+        "live_pause_test_compiles": true,
+        "live_pause_test_run": false,
+        "skipped": [
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+        ],
+        "tests_sha256": "67283a9099a49c07936f5471b2bb6e8c88058841d6d489afd0f131ff58d724e9",
+        "compile_sha256": "19f021e625bf0883313f0b69905b4a8afad9a3e84308fbd85fb60aa410a3b690",
+        "source_archive_verified": true
+      }
+    },
+    "traces": {
+      "run": 35497159805,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35497159805",
+      "record_sha256": "67de8d5af674964a105a50d7c968a46a13c4bfaee4af615c615728ea36163bfd",
+      "result": {
+        "run": 35497159805,
+        "source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+        "qualified": true,
+        "source_archive_verified": true,
+        "required_top_tests": [
+          "TestControllerTraceEvidenceRejectsInvalidRoots",
+          "TestControllerTraceEvidenceRequiresDistinctPairedWork",
+          "TestControllerTraceEvidenceRequiresEachServiceAndInstance",
+          "TestControllerTraceEvidenceRequiresExactCleanupProfile",
+          "TestDatabaseRestartFixtureReadPreservesGuardAndPrivacy",
+          "TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance"
+        ],
+        "passed_cases": 99,
+        "invalid_root_cases": 23,
+        "pair_and_bound_cases": 3,
+        "service_and_instance_cases": 8,
+        "prior_profile_cases": 12,
+        "cleanup_profile_cases": 28,
+        "cleanup_profile_groups": 4,
+        "database_fixture_guard_cases": 15,
+        "race_check_selected": true,
+        "test_log_sha256": "bec151f82f978970b6284cd386e274daaa6f5b9c7a2e739084b19b7fbe3d1ad7",
+        "ci_log_sha256": "6bbe05400c7f0a8f78b90f6e36729cf687f8e497a8293cf0c0733e11792084fd",
+        "live_trace_workflow_qualified": false,
+        "scope": "The bounded evidence collector and its failure checks. Signed trace compiler selection, regeneration, full consumer checks, and the live Gateway workflow remain required."
+      }
+    }
+  },
+  "live_workflow": "Pending at the time of this record.",
+  "latency_improvement_proved": false,
+  "production_capacity_proved": false,
+  "limits": [
+    "The five core fixture tests require separate live checks.",
+    "Kata remains deferred because the cluster has no required RuntimeClass.",
+    "The prior whole cleanup observation was 40.586 seconds. This source has no new live timing result yet."
+  ]
+}

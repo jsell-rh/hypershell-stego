@@ -24,3 +24,20 @@ states, provider errors, cancellation, and recovery in a new controller.
 Existing prerequisite, conditional-commit, and finalization checks remain.
 Hosted and complete live workflow results are required before qualification.
 No latency improvement is claimed from source review alone.
+
+## Hosted checks
+
+Source `8a5e38d` passed its [full hosted check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35497164053).
+Independent review confirmed 1,103 core cases in 350 top-level tests. All
+1,093 prior cases remain. The ten added cases cover independent state
+deletion, cancellation, and controller restart. The browser, console, and
+service image checks also passed. Five core fixture tests remain for the
+separate live checks. The Kata job remains deferred.
+
+The allocation check passed 23 top-level tests. The adapter check passed
+68 top-level tests, and its trace checks passed all 99 required cases.
+The [hosted evidence record](state-cleanup-overlap-hosted-evidence.json)
+contains the run links, result hashes, counts, and scope of each check.
+
+The complete live workflow and its new cleanup time remain pending. These
+hosted results do not establish a latency improvement or production capacity.
