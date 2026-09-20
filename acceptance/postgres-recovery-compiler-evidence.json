@@ -1,0 +1,69 @@
+{
+  "consumer_source": "d24e9da78f6cb3c3ff7715b868ce91d29a1bd7df",
+  "pin_source": "48e707b159098fa2da7b5ab6a420f652cf8d468b",
+  "compiler": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+  "compiler_release_url": "https://github.com/jsell-rh/stego/releases/tag/compiler-3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+  "generation_run_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502518030",
+  "signature": {
+    "format": 1,
+    "repository": "jsell-rh/stego",
+    "workflow": "jsell-rh/stego/.github/workflows/compiler-artifact.yml",
+    "reference": "refs/heads/main",
+    "source_revision": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+    "predicate_type": "https://slsa.dev/provenance/v1",
+    "self_hosted_runners_allowed": false,
+    "artifact": {
+      "name": "stego-linux-amd64",
+      "sha256": "e587de658b558a5634c950269fbcc776d15d55899afafe3665179b06839829bd",
+      "size": 38386516
+    },
+    "build_record_sha256": "2f8af39235c9d9b27957cb479b8f659e68d714dea46dde7bbe8b40fe2b60b9b8",
+    "bundle_sha256": "e382b40096d2db1824fd8f07a486808ea22b61f36e92cce3b658990de0adc889"
+  },
+  "generation": {
+    "source": "48e707b159098fa2da7b5ab6a420f652cf8d468b",
+    "run": 35502518030,
+    "compiler": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+    "compiler_sha256": "e587de658b558a5634c950269fbcc776d15d55899afafe3665179b06839829bd",
+    "signature_and_version_match_release": true,
+    "source_archive_verified": true,
+    "source_templates_and_state_checked": true,
+    "generated_files": 420,
+    "changed_files": [
+      ".stego/state.yaml",
+      "console/.stego/state.yaml",
+      "gateway-console/.stego/state.yaml",
+      "out/cli/command/version.go",
+      "out/postgres/provision.go"
+    ],
+    "generated_sha256": "8f39cbeec8225b09993a09b2eb5f6ae64a034fcbb132347ae366865982394437",
+    "patch_sha256": "87d1852a4da57c2b99961176178ff907f98b2cb7b90652a751eb7ddc8454c225",
+    "changed_sha256": {
+      ".stego/state.yaml": "b2bd2cb6d4429e6fe82f8f0656f047cfe045fe2a7f3e82a621ec9f1f20f9e024",
+      "console/.stego/state.yaml": "800c70b70e2de6188e67a040f6f99d78728d46c79e98f4ec90d9f994722bb2bc",
+      "gateway-console/.stego/state.yaml": "9a0d9ad6325bc718590e28f47f18720b5a8b65886f19dc6179f94a146728ef53",
+      "out/cli/command/version.go": "7217cef3aa4e0918b2e7758cdc23207045d99a57bc2bf44badcf1d0a2a1b4202",
+      "out/postgres/provision.go": "77fd3a0af7fef290d30bddcc3b11a3f352b93a9a3561de76a8346ef6ad3498fe"
+    },
+    "qualified_for_import": true,
+    "scope": "Exact-source hosted generation. The consumer still needs module input verification, full application checks, and the complete live workflow."
+  },
+  "import": {
+    "changed_files": [
+      ".stego/state.yaml",
+      "console/.stego/state.yaml",
+      "gateway-console/.stego/state.yaml",
+      "out/cli/command/version.go",
+      "out/postgres/provision.go"
+    ],
+    "verified_archive_sha256": "8f39cbeec8225b09993a09b2eb5f6ae64a034fcbb132347ae366865982394437",
+    "exact_patch_matches": true
+  },
+  "gateway_console_module": {
+    "unchanged_source_and_module_files": 126,
+    "source_manifest_sha256": "133f6553f0f88d5b5215530964b80622d48d15ddf1db957bd7aeae7932f2d2e4",
+    "existing_reference_retained": true,
+    "selected_module_requires_fresh_application_check": true
+  },
+  "scope": "Verified signed compiler selection and exact generated output. Hosted application checks are running. No live workflow result is claimed for this consumer source."
+}
