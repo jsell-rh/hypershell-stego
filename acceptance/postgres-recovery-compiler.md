@@ -33,9 +33,11 @@ verification. The full run passed 1,122 core cases across 354 top-level tests,
 with all 1,103 baseline cases retained. Adapter, allocation, provider, journal,
 and Gateway console checks passed. The trace evidence checks passed 99 cases.
 The five conditional core exclusions and the deferred Kata job remain explicit
-in the record. No live result is claimed for this source yet.
+in the record. The [complete live workflow](postgres-recovery-live.md) now
+passes independent verification for this exact source.
 
-The next live workflow must verify REST, gRPC, access control, events, restart,
+The live workflow verified REST, gRPC, access control, events, restart,
 regeneration, all three telemetry signals, and complete Gateway cleanup.
-The 30-second cleanup target and production capacity remain open. The live
-Kata test remains deferred.
+Complete cleanup was observed at 31.373211219 seconds for 100 service accounts.
+The 30-second target and production capacity remain open. The separate API
+check is pending. The live Kata test remains deferred.
