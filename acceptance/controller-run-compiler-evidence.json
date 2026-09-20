@@ -1,0 +1,235 @@
+{
+  "schema": 1,
+  "pin_source": "326c857d968d966ae155abd8a540e97fcdf23593",
+  "generated_source": "69b9e299710ae2cfa472223a9f972617cfa06599",
+  "compiler": "c515f2208c27cfab51db0e9e7947089a1019bb01",
+  "generation_run": 35499961261,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35499961261",
+  "records": {
+    "verification.json": {
+      "sha256": "8eced38e1f21851b280acf1398a9444aa3a69e6c34cd45a7ba4b9c778d677419",
+      "result": {
+        "source": "326c857d968d966ae155abd8a540e97fcdf23593",
+        "run": 35499961261,
+        "compiler": "c515f2208c27cfab51db0e9e7947089a1019bb01",
+        "compiler_sha256": "5e79e1b601cf29488cb9e3e6cbaee49a605c60ca523e37bfc2bc083240622a1a",
+        "signature_and_version_match_release": true,
+        "source_archive_verified": true,
+        "source_templates_and_state_checked": true,
+        "generated_files": 420,
+        "changed_files": [
+          ".stego/state.yaml",
+          "console/.stego/state.yaml",
+          "gateway-console/.stego/state.yaml",
+          "out/cli/command/version.go",
+          "out/controller/runtime.go"
+        ],
+        "generated_sha256": "8cabf51ed98fe3d1bbcac2f140b28470a803bcf01412b7b7b0a41752e724ef6e",
+        "patch_sha256": "f4071a43716800abbaa41b41ca4a2cf0d997b066d2c396e3019e3ad9c70f93d7",
+        "changed_sha256": {
+          ".stego/state.yaml": "ab19fed9e7e4c943ce6d731a11c5f4216020d38e9ea54f7e508b105b6ff16404",
+          "console/.stego/state.yaml": "e6ae931ec93f078f5c7a7504787c6163d49e4a3b971415987aa21a4e7c6530a2",
+          "gateway-console/.stego/state.yaml": "e249a0428928a9cbb6595d32feaf5baacf605e27614d8da54477822fd399e647",
+          "out/cli/command/version.go": "efe136a7e2c22c2101119d3513242a9fd46c0f8e213b8191c6d0b38db5351c27",
+          "out/controller/runtime.go": "a2a20bf27e7aca8d919b9e2cd6294de22ca8557a3a9532c1acb401f60d82e7d3"
+        },
+        "qualified_for_import": true,
+        "scope": "Exact-source hosted generation. The consumer still needs the new Gateway console module selection and application checks."
+      }
+    },
+    "verification-correction.json": {
+      "sha256": "de5861d537e4db217a0ca378f092951faa68c7efaf883918a04f35b2164d5500",
+      "result": {
+        "first_verifier_sha256": "fc0633037777cf865bacd221ebf01596971612a5b0a3addd141d9d48ba10945c",
+        "second_verifier_sha256": "aff8c111e51531589a4c45f975987bedf0a60d77828005a1c9abcd16f2675849",
+        "reason": "The controller metadata version changes the registry content digest. Independently recompute both old and new content digests from pinned source bytes and local application declarations. Keep exact equality for the full state. No generated output changed."
+      }
+    },
+    "gateway-console-module-review.json": {
+      "sha256": "fe0f38a1ebe79dfd210e20d0fa3e394c67fef2ea148f9650e84e25c2fa9cc451",
+      "result": {
+        "source": "326c857d968d966ae155abd8a540e97fcdf23593",
+        "generation_run": 35499961261,
+        "unchanged_gateway_console_source_files": 126,
+        "sha256": {
+          "gateway-console/go.mod": "c493efcba5065dba5fd210f13cfab4f6bc3f6cdeaf9ee1ad987d5a66adf98c86",
+          "gateway-console/go.sum": "463646624ffd46426eff04c8195d45ed667556cac93685826986014886a64c49",
+          "gateway-console/out/browser/backend.go": "e22012f8b853c111a950254490ff209038e3e98b70aea86e342821685790cc80",
+          "gateway-console/out/browser/client/client.go": "1000bca2a6f2916db09a0ac64969cb8b5d5911794913008c5bb9daffe8c94aaa",
+          "gateway-console/out/browser/client/socket.go": "4d2e33e95559d76c345d8197c7e5b77d3a00c129c5c32035ed1a4fdfbcff190e",
+          "gateway-console/out/browser/dom/index.d.ts": "781eb07995e7fb8fafc70b63217d533de3db5bf9563236a674954fdc83f5cddc",
+          "gateway-console/out/browser/dom/index.js": "8a5a206f454218b98d48d62e095226bc2c84236e7ec52c98a448ec511ae9a633",
+          "gateway-console/out/browser/dom/monaco-loader.cjs": "fd530b097f11d9807bb0dae096f6286ba48c78da8550bbe28fd6a45960c14a60",
+          "gateway-console/out/browser/dom/monaco-patches.json": "3ea3e12be4af6593a602dd87e6b3cde81311a6ce9c76d715986f2a8aac411c43",
+          "gateway-console/out/browser/dom/package.json": "294d4ce230a8881172bde0d62559dd52a6b07431080e1fa36cebcc4b896e05f9",
+          "gateway-console/out/browser/handlers.go": "3f8d2f337ac922addd970f2556f13969bb0098540eed28c141c0af5c1fec1d5f",
+          "gateway-console/out/browser/keys.go": "91d0bd02cad8f7dd4561fe58cacb88f7fad24b9fcf4ec270b46c05b3d73310f1",
+          "gateway-console/out/browser/oauth.go": "bfef176bd01987df2b78011fa0e51c1641925d7436fef29f7fb5566ee8bd9242",
+          "gateway-console/out/browser/public/assets/02f7d6c6946e23f6f4d6.woff2": "ad58f7fcae1bb271807d629e3d7bf370be17b13436c1753720db1f389d8cc114",
+          "gateway-console/out/browser/public/assets/08353c574d1a892b1231.woff2": "1a5c9a8a88447c5b171ae99dab5daa4c1d49e3502db0fdc0da65d59fc5603feb",
+          "gateway-console/out/browser/public/assets/1024.b9d3678f7f9012a01291.js": "c8ab149035f42125fcaa63be1861f22439f6afa35c10ef10341d951709a6bbe5",
+          "gateway-console/out/browser/public/assets/14.09ad4306e50c33fa2d5d.js": "ee6a5dbf4ee02049504a2a5027446e16fa8654bfcc510043527965a7cea41c85",
+          "gateway-console/out/browser/public/assets/1408.9619b6309413f8fe8ad0.js": "88b90d5bffb10d0aaad11ec105741819ee55e41ec4306de3edc8c6babdebf51f",
+          "gateway-console/out/browser/public/assets/1820.a6dc842a9807bd83b851.css": "1c81f616d6b8b06179e3e84d203674329e85c246ef58f5bbf455f7f1ddcbe350",
+          "gateway-console/out/browser/public/assets/1839.9e968829de62434ccedf.js": "5b838ad8cf1b77fdf4848947f72df68071da2165fd39b8fda14730c79f1d7439",
+          "gateway-console/out/browser/public/assets/1848.44b2adab028de38bcd39.js": "40ab60323a241eeacafc5557e9e1e2002d16b531c40436f21e12e1638d8175a2",
+          "gateway-console/out/browser/public/assets/1966.1de36583331eae211f0f.js": "77ea327179605c7d759c8127a59f7cfd7c67df9aa67e6f0f52d25c6847b422cf",
+          "gateway-console/out/browser/public/assets/2220.e97f4f408f0114eceec1.css": "5e0a5968d08e6b0d09b3e94e8cee9895f619e2fd8e0e3646564ce50ff776a4b7",
+          "gateway-console/out/browser/public/assets/2514.878d6a301cdfe65dd84e.js": "45448fb74d6be352fae2690354ed24d63afb7ec820dda7bb26afc80230f6e8ff",
+          "gateway-console/out/browser/public/assets/28fff613aa4e86f1ef6a.svg": "1a5c7354a53fb23c81c7d074f2a900998c29726fef6ed837578da5bcd601f320",
+          "gateway-console/out/browser/public/assets/3435.5265fe3f49f5e5df5f68.js": "7f17a1c91c1d2b8a8f790e92e210183782ddd68648e082f68d4d77fca0ccef09",
+          "gateway-console/out/browser/public/assets/3510.71b13f6317ba241a0b10.js": "c0ae1fd809f105325a0fffb9dce2761c268d291cbd2c58d26b3e4c6af2e93fb8",
+          "gateway-console/out/browser/public/assets/3549.595fa0feebe321681cab.js": "a699c8710fddb738f1a5684fc6a3f0d128a5359684b064ff49dd5752490d4fa3",
+          "gateway-console/out/browser/public/assets/3803.b0d0ed1e0a432c89ef7e.js": "fca18c7f6c018666e3e22b891a6f8d6431afeb6f35781359d29a0a099c2ab40d",
+          "gateway-console/out/browser/public/assets/3861.4b6eef35f13d89c7f3d2.js": "24f64e61f1e68babaa372478c31abbfd34d623cecd188b58286a45a85e9a58ac",
+          "gateway-console/out/browser/public/assets/3911.b03e8d32535bcee11fbe.js": "227ab39f7c601b9b74a0e662bbaea02109b4ca66256d889744b786a6869186e6",
+          "gateway-console/out/browser/public/assets/4007.7635f92b1fe400d23ccc.js": "12164135ba4e7807bef24efe03d1340894d420bf0232c49505efb92fe99f39fd",
+          "gateway-console/out/browser/public/assets/411.bc77598fe04deb90ecb6.js": "a788823a8818152d9faf76abc0f3a50db7b1ad0ef3a15b671cb13c592550484f",
+          "gateway-console/out/browser/public/assets/4222.aea1c072ce51a277343e.js": "bcc37369357a34a6fffa1527bbd6c7eb1d6044dc265afdd514bcd8cae6352ba1",
+          "gateway-console/out/browser/public/assets/4256.8d3afe893680d55e78fe.js": "e52578a8e9bc3b41480a178658d007d623fd7da40209f8f0c8d5c14938d4675c",
+          "gateway-console/out/browser/public/assets/4604a01958f9a5189864.svg": "ea9e447d24f596a8c72e2afbd71aff3a3d81355100919b2715224ef5a627ca77",
+          "gateway-console/out/browser/public/assets/463d4ddeac4dae277fc4.woff2": "322295638da2105dffff0eb18ee10ccffcac38888778b7b1b4624772d513e65d",
+          "gateway-console/out/browser/public/assets/4825.0257e476808899173a1c.js": "eb965a4beb0a1090d68421764a5b0a2f94b2fb7f6f96ece9f54bce6fce33068d",
+          "gateway-console/out/browser/public/assets/4834.89d08fc7e0f68ca2a7b2.js": "988780c68dc5976804859547d8842fa42ee91701d17bcc019bf44300e5fbf913",
+          "gateway-console/out/browser/public/assets/5043.790483feea029452ff6a.js": "cc2efc6a24435213a769098f19c3f711e9b7509d1cf4f6cbe2c78e8fa2cdc5bf",
+          "gateway-console/out/browser/public/assets/5072.754d38e2b77bdd3d29da.js": "fc3d52c77b1928dea2cac6214d53876f80036967067bceaec53aae87e66f8e53",
+          "gateway-console/out/browser/public/assets/5136.8702e83fe2889882b89b.js": "300b7680981804a438cb535ff0e923629618531bf1a905f875faef71eefa2db3",
+          "gateway-console/out/browser/public/assets/515.7e2195ee7af3f9433723.js": "f42848465c0f870cdf2ef092ec67729f6da0a8a326de9bf26ecfde912eef9d4c",
+          "gateway-console/out/browser/public/assets/5293.20218cae3020c58471cd.css": "10d44ceb77ce0ba269ee179a2689ca101f631e750db6713c7316a05a696bbaa7",
+          "gateway-console/out/browser/public/assets/5340.ad5c37f97fde0ead16a9.js": "485b0b0cbd883a39b42e283e3986bead71ae0a1bf8fa8ee8c5699c0d9ff51198",
+          "gateway-console/out/browser/public/assets/5405.c23a16238121d9468e35.js": "9e3deffb953301b6fd44ac4ce968c2093179dc6018be1181a22cede9a7a3987b",
+          "gateway-console/out/browser/public/assets/5492.6e4609ef580c6f11a472.js": "ebe059ee466fa928edf4fdb81d75072360b116af8914a7c43e3e81b6ebe15447",
+          "gateway-console/out/browser/public/assets/5512.a0c9c79a44a5548cfb86.js": "83c1a3ed2ba5a205d1aa186fcaaf573b8fa70a5be99d4d9faa24545b47e6b6b7",
+          "gateway-console/out/browser/public/assets/5ac07188880038c2ef13.svg": "74faba5b186f4da7a48c97585ec71cd31488ba07602415d818f612aef4d072f9",
+          "gateway-console/out/browser/public/assets/5c15f365f5b8693ff4c4.svg": "07b9c2803dfaed92bceccef71fac48314e11ca7eb0cbfc8e61abf2566df05362",
+          "gateway-console/out/browser/public/assets/6184.f36760c2debc5f86a01d.js": "6a909161cb5997a5adf267804270cb3de22d4e4b27e09ecd1753f79bae46ca94",
+          "gateway-console/out/browser/public/assets/6199.c917ebdd15474c17ffb5.js": "71cc9783f8519865aca1a419aea833faf9c55086f2113c3ff98b88d5039cf1a7",
+          "gateway-console/out/browser/public/assets/626a0a2c291238b85c36.svg": "a738f3d9b2717f4e4eba8f61f250dc0fd633e02e199047175ce3496c1b7cc10d",
+          "gateway-console/out/browser/public/assets/6724.0599a77ac7bb6b9e8baa.js": "2f3dd908aa4e2a9485d742018c053470d4209c62a89416ddc1b1cbbd72f8b6cc",
+          "gateway-console/out/browser/public/assets/6781.7cf1e2cc357a72ff760d.js": "4d8d626b3ce009d0324ab76f8ac920281ae8ae34755a1bceaeb16a39b078f955",
+          "gateway-console/out/browser/public/assets/6906.b74c3412cb30a7ebcf6a.js": "f8b0fe093db5c9d5a251ddd0de9d33b77f8b765ec6483562775ccbb58be907ee",
+          "gateway-console/out/browser/public/assets/6955.ddd331dea55d63adbb01.js": "ed761b9b9bac83c6d81d84ad1caeb7b896b63503f82e21d180dd325d4bddf3cf",
+          "gateway-console/out/browser/public/assets/6b3168b8404d9678f452.woff2": "69dca56dda2a2b067dee3e910323c97e54b8544f90f3d1c2192b5a37c0eb1ec3",
+          "gateway-console/out/browser/public/assets/704.45ed478e4339ec7d77c5.css": "45e72cb4900a9027a5699665d2be66277f48aaad94cfed0c4543cdf37fd0688f",
+          "gateway-console/out/browser/public/assets/7310.aaea8dabad07c29872fc.js": "c2f9410e4efb3c704bd5b65621f81bfb3c61c6182a12d14e7c63d26b323361c7",
+          "gateway-console/out/browser/public/assets/7639.66701604b0661f9634fd.js": "f83373b25dae8c461f15fc94331aab6f8bfe2ea8d313b9556a67d8d016afa36d",
+          "gateway-console/out/browser/public/assets/7781.e6979525c4096b705ce8.js": "c1a8e0b966be2b6cb50e883b46737ccfcf951e043a10dacdbc61894008a6f101",
+          "gateway-console/out/browser/public/assets/7797.1aa5e4e9821f4d58da67.js": "3eed6dba1976399d85e932553d2cc4d0e07f08f722f67700123ae701ef002113",
+          "gateway-console/out/browser/public/assets/7970.52ebe77f173a2c0a2c29.js": "3ab97c7e2073e032b22f1814cbd7fd3092985f1d9e35eeb5e969827432dacd47",
+          "gateway-console/out/browser/public/assets/7985.05567354346cfb134305.js": "db43f5163d5f39fd8d8b4242b958d07ce01e8a9249db6157ca26af4d22410888",
+          "gateway-console/out/browser/public/assets/8156.59bef7674a64c9eb9d3c.css": "7b7a8a59b4037f0497dfc4b0e82d1f74f7ac0f78254cc84d0e0c3c097efe6457",
+          "gateway-console/out/browser/public/assets/816.83d44947e89d4275b900.js": "22c9f96b257ed308eeaed7c68c53965b8f53504b716a654c49b6cb83597c2259",
+          "gateway-console/out/browser/public/assets/8170.a843debc1d1cad1e7ce6.js": "ae9ef31a9afad20362dbf252fc80e55695f5d77a6862723494856ee417f896dc",
+          "gateway-console/out/browser/public/assets/8215.eb3a01a1ec7b5f62c2d5.js": "3ceb18af73187065f7e121c76838088c806dc421fb60751d100c98fd8a43640a",
+          "gateway-console/out/browser/public/assets/8569.b81e6630c9e806f8b20d.js": "a6328a7882a0191476c3042467e1e1e034b57f573a28629ec2164ebb72831bc7",
+          "gateway-console/out/browser/public/assets/8634.c2b7057619716ab8d2bf.js": "67c4f431ac8b2d829e691330fb5069dd712c34738fba699b5acf79067419b844",
+          "gateway-console/out/browser/public/assets/8711.620a48a71355e2804a85.js": "7154b7cfd368a8e51ff3885b04e3434ccc63caba9298c2d48b9368268c31bd0e",
+          "gateway-console/out/browser/public/assets/8818.da884f78ebe35fe3886e.js": "a4a234fb364744102bc5657d3c96b4fe8b5f857c99ff3de9a18ee233bf212597",
+          "gateway-console/out/browser/public/assets/9159.ff6dae75bc82c21450e9.js": "cb7a8c8145f864ca89f0bc72659ee8dbb11aaabadbbeb5fe2fcca6c0ce02df36",
+          "gateway-console/out/browser/public/assets/93705a3204b578afedce.woff2": "d5d585590a2439bbb5429863b2c11bc76512bfb37e60fc5696462e1866bfc2c1",
+          "gateway-console/out/browser/public/assets/9425.1f696636138affcbaddd.js": "fff3e17712a269effa81f560997a338b388e7700dc5b70198dbde4f1008644b6",
+          "gateway-console/out/browser/public/assets/9701.d4120b3ecb030c8fa081.js": "b4e1625dd73b14a7099352b01b199f5092f559b2c3cc15e2c6ae1763e26c7189",
+          "gateway-console/out/browser/public/assets/9871.d11998e26d74bb9a54d1.js": "0ec2fe8d018769f23d95fa0cbe43243571ea8ece4488dd29a94ca69de5dd122c",
+          "gateway-console/out/browser/public/assets/9871.e8966fb7ce66411b9cba.css": "4a3a3f1eb52c18e951909ba4c3de0e127c584f62bf1f04e658eb7c84f3b1b9c5",
+          "gateway-console/out/browser/public/assets/9890.e229d06d2d505b2d0327.css": "6fc2e3efa3ef9f2ec6c052ed5d7261ad4c77fb684026ab8151b631d1fb19e06f",
+          "gateway-console/out/browser/public/assets/ab5c7fb362782734b45a.woff2": "54145e1e268b1c5359966336a6b6b12a5dfa046e493d3b4f2dc620c5edd12b62",
+          "gateway-console/out/browser/public/assets/cb430aec0cc53db89949.woff2": "97b89f470394820fd11c803b65c7272fe193e179adea956e0ac3495e290c6dd4",
+          "gateway-console/out/browser/public/assets/da5bb69a568e9ad26290.svg": "e0ae2cdd852850958ae6b19e4f24f213a9ed66471bba75d8b2251bc8775da13c",
+          "gateway-console/out/browser/public/assets/editor.669bd6b36fd05cbfa4edb36ea7e8b1fb.worker.js": "f439557c6e700c961b4e5f53fe62165592f7d9794b8796eef626e5d58cca72a8",
+          "gateway-console/out/browser/public/assets/f6283f7ccaed1249d9eb.ttf": "0f1d5219934e96e83b8db162d60b4d8c09b5de1e7d38031cbafe4a3c0f2889c9",
+          "gateway-console/out/browser/public/assets/favicon.svg": "4764778877da1696b18f0b480c0a3c88b4967e943649e4f1f4343be1b2157be4",
+          "gateway-console/out/browser/public/assets/json.b4f4ced3cf7e993ce70804117817bcc5.worker.js": "0bb18cd27247bef162df288d4aaaec251946a53ca77eb51d4ebdf4e0324d3621",
+          "gateway-console/out/browser/public/assets/main.70b31dfac5cea0b897cc.js": "4d6a796d19422a06df8b662ff786f8ff2140ff933aab687c8be99196b2c3a7ff",
+          "gateway-console/out/browser/public/assets/runtime.6a948598035e01e1a586.js": "6f4e6b3a7a61cf6c8ffde415082baf6f84c7484bf4af9f47589fddd0780f0d7c",
+          "gateway-console/out/browser/public/index.html": "4b8e716af93abb6581f7c49443b47548b313e985e54bf6d85bf01d756741d7d2",
+          "gateway-console/out/browser/schema.sql": "866311ead992bc75143cda28febcef85ababd7c2326aa6ba6376ade2db97a9eb",
+          "gateway-console/out/browser/schema/schema.go": "d6a3a0b11bfa2528722cb221aca730614fdd155ee212bb3ae9bfb80aef6bb345",
+          "gateway-console/out/browser/sessionclient/index.d.ts": "b1fc960fd59cd1da7d1d549f6234076bdae8a85139010926d12d83ddd5b7eef1",
+          "gateway-console/out/browser/sessionclient/index.js": "6385d0d4020e51655dcc447097fde56cca6b9a7087296fbbb049fdde24a22fd0",
+          "gateway-console/out/browser/sessionclient/package.json": "476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080",
+          "gateway-console/out/browser/socket.go": "23966994726c211fc3307e75f89460a5f8ffd4f64e6f511e5ac2b7cfb87ec085",
+          "gateway-console/out/browser/store.go": "07302fafca0851c81fb9e10e2ce640f06ca993b40102600b6a8f571ca2da48aa",
+          "gateway-console/out/browser/telemetry.go": "0209700328e88a0a833491b30318656d07784398f7337599ebe3c1a53b1e3c8d",
+          "gateway-console/out/browsertelemetry/index.d.ts": "7c48061e22609ec794239547b8717333c796a010ff53edea25fff34afc54e9e8",
+          "gateway-console/out/browsertelemetry/index.js": "8c8b4bbcb161aee03071934aa5f62a6f616ddcb0b1cb2ce9f270bbbe3075e172",
+          "gateway-console/out/browsertelemetry/package.json": "6d221cb0be6d4e05bb1d5b966b871a15c47510627353bf32cd3c00f214c22c90",
+          "gateway-console/out/deploy/Containerfile": "5e6daad8047fdef67273b96be60fedf1be712ac31326e54936a67cb745d98cbe",
+          "gateway-console/out/deploy/Containerfile.dockerignore": "c0a3bf15d59dc23a1c2585caa754150727f45be48011f193adc631de27daa56e",
+          "gateway-console/out/deploy/render/main.go": "11e2657cd8832093df4bd49dbf6e545edd90c6e7aaa8fc938151d36c23e05068",
+          "gateway-console/out/deploy/render/manifest.json.tmpl": "d29540c92b933ee33b9b1c94e66fa8f326e40755ee4633c895fe69129a2f1234",
+          "gateway-console/out/deploy/resources.go": "0ad4ef95c73ecdc617ddfca1520025f48a94ab39ed7ca964613993a4ad15b559",
+          "gateway-console/out/health/application.go": "65f6bc7958fe139c548dc696ed86468d0064130712a8478c55592cff6e44fd4f",
+          "gateway-console/out/health/health.go": "303258996e35b5a3dd592d8d7a2ec7b8a63067edf2dd8bc946f22bb7f7d3dbeb",
+          "gateway-console/out/http_tls_open_other.go": "76811bb166da158cbbdf0d6fb4ce32491dcb95f2f3a4e0e0e9f0341224a9a00d",
+          "gateway-console/out/http_tls_open_unix.go": "52087320dbcef0e1455e7ec7bddfb1bf6b6ae05a17231041f167fb7e7ba338e2",
+          "gateway-console/out/internal/storage/database.go": "e758ac5ad7e077a81dc02de33dce5e83edfb3c9b8354d21742d97f8967bee0ce",
+          "gateway-console/out/main.go": "9878fbb700964e30a4cc5cef937d1036266df960d68f87b01f9d1c2d3217652d",
+          "gateway-console/out/tracing/auth_keys.go": "06b56ab095f6f7417390be61fad5cc8860445653b823ad41667327ebc7f0c852",
+          "gateway-console/out/tracing/browser.go": "24b3d639478fa6a18d48d1c7eddd9ee749ff07863deb6eb5aa13cbc4793f265b",
+          "gateway-console/out/tracing/client.go": "37ee470ae71faa5e5daecd59d73b7874a0c38ea08e5eaed9d1ed2617ac241c67",
+          "gateway-console/out/tracing/command.go": "e34d452e8ffa1e6aade0f1d8ad1b4cdf2cb3ae51e2ae69137ef9c0c5b779f812",
+          "gateway-console/out/tracing/config.go": "077cdf1d36379896617afa6d12612cb136380dc7f92a9f523f4a9f50a6477666",
+          "gateway-console/out/tracing/controller.go": "23b0aeee044961a42d38c1ab48810a40b48438fff7c1ab72acd34b74952bacfb",
+          "gateway-console/out/tracing/database.go": "b87fabc2ff867b68d312089aad53a7164f7c4a039702c29e5937e10be70ac9c9",
+          "gateway-console/out/tracing/http_client.go": "ca9ed1cf57d3a8b33bca141a03733431859a7ed0d58ae92c301460f9438bf683",
+          "gateway-console/out/tracing/http_observation.go": "56493be11d5e29efb771b5862d45ad2ef9e010e0b01b27766e61b0971862ea86",
+          "gateway-console/out/tracing/identity.go": "2c7be8be622a167b67941ea98459f7540b8ba16b64a7631dad109db70c2c0bb6",
+          "gateway-console/out/tracing/runtime.go": "fd2eb3a4cf318a668bc6c0c370fb41af68db8be8b5aa1ac0f13a01e6d1bfa1dc",
+          "gateway-console/out/tracing/service.go": "c385c803aa9c54e37436cfb4a004a1ad468317b6d435498407a706dae9bcdac5",
+          "gateway-console/out/tracing/signals.go": "3adee95980b02c32284916b7e46083f2cc0d0dc8394ca402c49177290ec163cb",
+          "gateway-console/out/tracing/startup.go": "ba2cc8272fddb2c9c18cf10199b7ffe3df430ea88f3d02a6902e00908d154160"
+        },
+        "decision": "Keep the existing Go module reference. All generated Gateway console source and module files are identical. The full application check must verify the selected immutable module again. No module refresh or new generation is required for this unchanged source."
+      }
+    },
+    "pin-check-failures.json": {
+      "sha256": "0ec2d1f21b265e1bdba5ec059223484dc1c48af7b6d79b5eb1ecd301c1352289",
+      "result": {
+        "source": "326c857d968d966ae155abd8a540e97fcdf23593",
+        "checked_at": "2026-09-20T08:41:19.355307+00:00",
+        "scope": "Compiler pin only. Generated output was not committed at this source. These failures are not qualified application results.",
+        "checks": [
+          {
+            "run": 35499961075,
+            "failed_steps": [
+              {
+                "job": "module",
+                "step": "Verify exact inputs and committed generation"
+              }
+            ],
+            "log_sha256": "c5e63a1e9307e0c1271cd54bfecb46f841a3a836c61527633319269da39f7098",
+            "committed_generation_diff_present": true
+          },
+          {
+            "run": 35499961078,
+            "failed_steps": [
+              {
+                "job": "discovery",
+                "step": "Check generated source"
+              }
+            ],
+            "log_sha256": "74be1aff471e2882e2c97fee47385962305a3bd6b60e3550e978740e2d9fc243",
+            "committed_generation_diff_present": true
+          },
+          {
+            "run": 35499961098,
+            "failed_steps": [
+              {
+                "job": "journal-recovery",
+                "step": "Check generated source"
+              },
+              {
+                "job": "journal-recovery",
+                "step": "Save test results"
+              }
+            ],
+            "log_sha256": "aa9ebb60fbf273d71d8a51fa95bfc6a4569d3cb6292d51d9dd4e14a3002295f6",
+            "committed_generation_diff_present": true
+          }
+        ]
+      }
+    }
+  },
+  "application_qualified": false,
+  "scope": "The exact signed compiler and hosted generation. Fresh application and live workflow qualification are still required."
+}
