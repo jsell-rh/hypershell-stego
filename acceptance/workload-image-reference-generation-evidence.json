@@ -1,0 +1,22 @@
+{
+  "source": "84c7d6bcfe3b3dfedc2252816cdb1559f9ee2294",
+  "run": 35533040709,
+  "compiler": "ad71bc71aa5081c3376fca9dc701b2eff5f4cc4e",
+  "source_archive_sha256": "eec88a923c7b0c89bd813d6ef086b0f150df69a34ab6d2fb13a1ce452d10a47b",
+  "generated_archive_sha256": "84d75ab501ef7d4da842928abd4cdfca0519e3181b8a6232873c62b22f7aef94",
+  "files": 427,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/workload/workload.go"
+  ],
+  "workload_matches_compiler_template_and_common_header": true,
+  "compiler_identity_matches_verified_binary": true,
+  "constructor_index_unchanged": true,
+  "other_generated_and_module_bytes_unchanged": true,
+  "gateway_console_module_refresh_required": false,
+  "compiler_executed_locally": false,
+  "scope": "Generated image reference correction. Application and live checks for the adopted source remain required."
+}
