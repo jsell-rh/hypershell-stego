@@ -135,7 +135,7 @@ func TestDeletionRequiresExplicitCurrentState(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = c.reconcile(context.Background(), "gateway")
+			_, err = c.reconcile(context.Background(), "gateway")
 			if tc.name == "deleted" {
 				if err != nil || provider.deletes != 1 {
 					t.Fatal("retained Gateway cleanup did not run", err)
@@ -159,14 +159,14 @@ func TestGatewayCleanupRetainsTheSharedDatabaseServer(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || provider.deletes != 1 {
+	if result, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || result.RecheckAfter != time.Second || provider.deletes != 1 {
 		t.Fatal("pending SQL cleanup was lost", err)
 	}
 	provider.err = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 2 || !state.state.CleanupTargets["workload"].Targets[testClusterID] {
 		t.Fatal("cleanup did not retain the shared server", err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 3 || provider.sqlDeletes != 0 {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.deletes != 3 || provider.sqlDeletes != 0 {
 		t.Fatal("late-effect check changed the shared server", err)
 	}
 }
@@ -180,7 +180,7 @@ func TestUnassignedClusterCannotChangeAWorkload(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 0 || api.updates != 0 {
+		if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 0 || api.updates != 0 {
 			t.Fatal("unassigned Gateway caused a write", err)
 		}
 	}
@@ -197,38 +197,38 @@ func TestReadyStatusRequiresProviderSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || (api.desired != "WorkloadNotReady" || api.phase != "Degraded") {
+	if result, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || result.RecheckAfter != time.Second || (api.desired != "WorkloadNotReady" || api.phase != "Degraded") {
 		t.Fatal("pending workload retained ready state", err)
 	}
 	gw.Phase = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || api.phase != "Provisioning" {
+	if result, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || result.RecheckAfter != time.Second || api.phase != "Provisioning" {
 		t.Fatal("new workload did not remain provisioning", err)
 	}
 	gw.Phase = &running
 	provider.err = errors.New("Kubernetes unavailable")
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || (api.desired != "WorkloadUnavailable" || api.phase != "Degraded") {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err == nil || (api.desired != "WorkloadUnavailable" || api.phase != "Degraded") {
 		t.Fatal("failed workload retained ready state", err)
 	}
 	failed := "error"
 	gw.Status = &failed
 	provider.err = nil
 	api.err = status.Error(codes.Aborted, "conflict")
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted {
 		t.Fatal("status write failure was lost", err)
 	}
 	api.err = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || (api.desired != "Healthy" || api.phase != "Running") {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || (api.desired != "Healthy" || api.phase != "Running") {
 		t.Fatal("status recovery failed", err)
 	}
 	gw.Status = &ready
 	before := api.updates
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != before {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != before {
 		t.Fatal("stable workload emitted an update", err)
 	}
 	legacy := "ready"
 	gw.Status = &legacy
 	gw.Phase = nil
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.desired != "Healthy" || api.phase != "Running" {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.desired != "Healthy" || api.phase != "Running" {
 		t.Fatal("legacy health state was not repaired", err)
 	}
 
@@ -241,7 +241,7 @@ func TestDeletedGatewayCanCleanUpItsFormerCluster(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 1 {
+	if _, err = c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.creates != 0 || provider.deletes != 1 {
 		t.Fatal("former cluster retained deleted Gateway", err)
 	}
 }
@@ -365,11 +365,11 @@ func TestUnchangedStatusMustConfirmTheCurrentGeneration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 1 || provider.ensuredVersion != state.ResourceVersion {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 1 || provider.ensuredVersion != state.ResourceVersion {
 		t.Fatal("unchanged status skipped a new generation", err)
 	}
 	state.ObservedGeneration = 2
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 2 {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || api.updates != 1 || provider.creates != 2 {
 		t.Fatal("current generation bypassed drift repair or repeated status", err)
 	}
 }
@@ -383,20 +383,20 @@ func TestTargetCleanupRetriesAndChecksLateEffects(t *testing.T) {
 	provider := &providerFixture{unassigned: true}
 	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: true}, conflict: true}
 	c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted {
 		t.Fatal("stale target observation accepted", err)
 	}
 	state.conflict = false
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil {
 		t.Fatal(err)
 	}
 	provider.err = ErrPending
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); !errors.Is(err, ErrPending) || state.state.CleanupTargets["workload"].Targets[testClusterID] || !state.state.CleanupTargets["sql"].Targets[testClusterID] {
+	if result, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || result.RecheckAfter != time.Second || state.state.CleanupTargets["workload"].Targets[testClusterID] || !state.state.CleanupTargets["sql"].Targets[testClusterID] {
 		t.Fatal("late workload effect lost its cleanup state", err)
 	}
 	provider.err = nil
 	c, _ = New(new(apiFixture), state, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || !state.state.CleanupTargets["workload"].Targets[testClusterID] || provider.sqlDeletes != 0 {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || !state.state.CleanupTargets["workload"].Targets[testClusterID] || provider.sqlDeletes != 0 {
 		t.Fatal("restart repeated SQL cleanup or lost workload cleanup", err)
 	}
 }
@@ -408,15 +408,15 @@ func TestSQLCleanupIsRecordedBeforeWorkloadCompletion(t *testing.T) {
 	history["sql"].Targets[testClusterID] = false
 	state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: history, ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: true}, conflict: true}
 	c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted || provider.sqlDeletes != 1 || history["sql"].Targets[testClusterID] {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); status.Code(err) != codes.Aborted || provider.sqlDeletes != 1 || history["sql"].Targets[testClusterID] {
 		t.Fatal("SQL cleanup lost its uncommitted state", err)
 	}
 	state.conflict = false
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || !history["sql"].Targets[testClusterID] || history["workload"].Targets[testClusterID] {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || !history["sql"].Targets[testClusterID] || history["workload"].Targets[testClusterID] {
 		t.Fatal("SQL cleanup was not recorded separately", err)
 	}
 	c, _ = New(new(apiFixture), state, &releaseFixture{row: release}, provider)
-	if err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || provider.deletes != 1 || !history["workload"].Targets[testClusterID] {
+	if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err != nil || provider.sqlDeletes != 2 || provider.deletes != 1 || !history["workload"].Targets[testClusterID] {
 		t.Fatal("workload cleanup repeated SQL after restart", err)
 	}
 }
@@ -427,7 +427,7 @@ func TestMissingTargetHistoryStopsProviderWork(t *testing.T) {
 		provider := new(providerFixture)
 		state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{ResourceVersion: 1, ResourceGeneration: 1, Gateway: gw, Deleted: deleted}}
 		c, _ := New(new(apiFixture), state, &releaseFixture{row: release}, provider)
-		if err := c.reconcile(context.Background(), gw.Metadata.Id); err == nil || provider.creates != 0 || provider.deletes != 0 {
+		if _, err := c.reconcile(context.Background(), gw.Metadata.Id); err == nil || provider.creates != 0 || provider.deletes != 0 {
 			t.Fatal("missing history reached the provider", err)
 		}
 	}

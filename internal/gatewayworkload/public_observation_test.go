@@ -42,7 +42,7 @@ func TestPublicEndpointObservation(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			err = c.reconcile(context.Background(), gw.Metadata.Id)
+			_, err = c.reconcile(context.Background(), gw.Metadata.Id)
 			if provider.creates != 1 {
 				t.Fatal("endpoint was not checked before observation")
 			}

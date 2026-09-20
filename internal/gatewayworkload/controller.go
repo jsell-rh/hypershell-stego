@@ -73,7 +73,7 @@ func (c *Controller) Run(ctx context.Context) error {
 
 // RunWithMetrics connects optional generated diagnostics to the controller.
 func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metrics) error {
-	return runtime.RunKeyedWatch(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
+	return runtime.RunKeyedWatchWithResult(ctx, runtime.Source[string]{Watch: c.watch, Scan: c.seed}, c.reconcile, runtime.KeyedWatchOptions{
 		ReconnectDelay: time.Second,
 		KeyedOptions: runtime.KeyedOptions{
 			Metrics:  metrics,
@@ -124,35 +124,35 @@ func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error
 	}
 	return nil
 }
-func (c *Controller) reconcile(ctx context.Context, id string) error {
+func (c *Controller) reconcile(ctx context.Context, id string) (runtime.ReconcileResult, error) {
 	state, err := c.state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
 	if err != nil {
-		return err
+		return runtime.ReconcileResult{}, err
 	}
 	gw := state.GetGateway()
 	if gw.GetMetadata().GetId() != id {
-		return errors.New("Gateway state does not match its request")
+		return runtime.ReconcileResult{}, errors.New("Gateway state does not match its request")
 	}
 	if state.GetResourceVersion() < 1 || state.GetResourceGeneration() < 1 {
-		return errors.New("Gateway state has no resource version")
+		return runtime.ReconcileResult{}, errors.New("Gateway state has no resource version")
 	}
 	target := c.provider.CleanupTarget()
 	observations := state.GetCleanupTargets()["workload"]
 	if observations == nil || target == "" {
-		return errors.New("Gateway state has no workload cleanup target history")
+		return runtime.ReconcileResult{}, errors.New("Gateway state has no workload cleanup target history")
 	}
 	complete, recorded := observations.GetTargets()[target]
 	sqlHistory := state.GetCleanupTargets()["sql"]
 	if sqlHistory == nil {
-		return errors.New("Gateway state has no SQL cleanup target history")
+		return runtime.ReconcileResult{}, errors.New("Gateway state has no SQL cleanup target history")
 	}
 	sqlComplete, sqlRecorded := sqlHistory.GetTargets()[target]
 	if recorded != sqlRecorded {
-		return errors.New("Gateway cleanup histories differ")
+		return runtime.ReconcileResult{}, errors.New("Gateway cleanup histories differ")
 	}
 	if state.GetDeleted() {
 		if !recorded {
-			return nil
+			return runtime.ReconcileResult{}, nil
 		}
 		owner := "workload"
 		remove := c.provider.Delete
@@ -161,7 +161,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			complete = false
 			remove = c.provider.DeleteDatabase
 		}
-		return runtime.RunObservation(ctx, func(operation context.Context) error {
+		return observeWorkload(ctx, func(operation context.Context) error {
 			return remove(operation, gw)
 		}, func(commit context.Context, failure error) error {
 			observed := failure == nil
@@ -174,13 +174,13 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			}
 			_, err = c.state.ObserveGatewayCleanup(writeContext, &control.ObserveGatewayCleanupRequest{Id: id, Owner: owner, Target: target, Complete: observed})
 			return err
-		}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
+		})
 	}
 	if !c.provider.Handles(gw) {
-		return nil
+		return runtime.ReconcileResult{}, nil
 	}
 	if !recorded {
-		return errors.New("current workload target was not recorded before provider work")
+		return runtime.ReconcileResult{}, errors.New("current workload target was not recorded before provider work")
 	}
 	var endpoint *string
 	if provider, ok := c.provider.(EndpointProvider); ok {
@@ -196,7 +196,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 			consoleEndpoint = &value
 		}
 	}
-	return runtime.RunObservation(ctx, func(operation context.Context) error {
+	return observeWorkload(ctx, func(operation context.Context) error {
 		release, err := c.releases.GetGatewayRelease(operation, &pb.GetGatewayReleaseRequest{Id: gw.GetReleaseId()})
 		if err != nil {
 			return err
@@ -208,7 +208,7 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		return c.provider.Ensure(writeContext, gw, release.GetGatewayRelease(), state.ResourceVersion)
 	}, func(commit context.Context, observation error) error {
 		phase, desired := "Running", "Healthy"
-		if errors.Is(observation, ErrPending) {
+		if observation == ErrPending {
 			phase, desired = "Provisioning", "WorkloadNotReady"
 			if gw.GetPhase() == "Running" || gw.GetPhase() == "Degraded" {
 				phase = "Degraded"
@@ -235,5 +235,31 @@ func (c *Controller) reconcile(ctx context.Context, id string) error {
 		}
 		_, err = c.gateways.UpdateGateway(writeContext, &pb.UpdateGatewayRequest{Id: id, Phase: &phase, Status: &desired, RouteAddress: published, ConsoleAddress: publishedConsole})
 		return err
+	})
+}
+
+// Only the provider's exact pending value is expected progress. Wrapped or
+// joined errors remain failures. STEGO owns deadlines, commits, and scheduling.
+func observeWorkload(ctx context.Context, work func(context.Context) error, commit func(context.Context, error) error) (runtime.ReconcileResult, error) {
+	pending := false
+	err := runtime.RunObservation(ctx, func(operation context.Context) error {
+		err := work(operation)
+		if err == ErrPending {
+			pending = true
+			return nil
+		}
+		return err
+	}, func(write context.Context, failure error) error {
+		if pending && failure == nil {
+			failure = ErrPending
+		}
+		return commit(write, failure)
 	}, runtime.ObservationOptions{WorkTimeout: ReconcileTimeout, CommitTimeout: observationCommitTimeout})
+	if err != nil {
+		return runtime.ReconcileResult{}, err
+	}
+	if pending {
+		return runtime.ReconcileResult{RecheckAfter: time.Second}, nil
+	}
+	return runtime.ReconcileResult{}, nil
 }

@@ -5,6 +5,9 @@ on:
     paths:
       - '.github/workflows/sandbox-adapter.yml'
       - 'internal/gatewayworkload/sandbox*'
+      - 'internal/gatewayworkload/controller*'
+      - 'internal/gatewayworkload/pending_result_test.go'
+      - 'internal/gatewayworkload/*observation_test.go'
       - 'internal/gatewayworkload/kubernetes.go'
       - 'internal/gatewayworkload/resources.go'
       - 'internal/namespaceallocation/**'
@@ -73,6 +76,18 @@ jobs:
           go mod verify
           go test -v -race -count=1 -mod=readonly -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/sandboxcount ./internal/sandboxcountapp \
             | tee "$RUNNER_TEMP/sandbox-adapter/tests.log"
+          python3 - "$RUNNER_TEMP/sandbox-adapter/tests.log" <<'PYPENDING'
+          import re, sys
+          from pathlib import Path
+          log = Path(sys.argv[1]).read_text()
+          for name in ['TestWorkloadPendingObservationPreservesFailures',
+                       'TestWorkloadPendingCancellationPreservesFailure',
+                       'TestWorkloadPendingRecheckKeepsCleanupIncomplete']:
+              if len(re.findall(r'^--- PASS: ' + name + r' ', log, re.M)) != 1:
+                  raise SystemExit('A required workload progress check is missing: ' + name)
+          if re.search(r'--- SKIP: TestWorkloadPending', log) or '--- FAIL:' in log:
+              raise SystemExit('A workload progress check did not pass')
+          PYPENDING
           # Compile the deferred live test without starting its fixtures.
           go test -v -mod=readonly -run '^(TestBoundedNetworkProbe|TestCleanupTimingObservationWindow)$' -timeout=30s ./acceptance \
             | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
