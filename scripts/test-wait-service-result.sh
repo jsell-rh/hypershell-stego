@@ -12,9 +12,19 @@ if p.name.startswith("stego-result-test."):shutil.rmtree(p)
 PYEND' EXIT
 namespace=fixture
 pod=fixture
+STEGO_TEST_CONTEXT=unused-mock
 oc_cmd=(bash "$fixture/oc-mock")
 sleep() { :; }
 python3() {
+  if [[ ${1:-} == "$project/scripts/collect-service-startup.py" ]]; then
+    test "$*" = "$project/scripts/collect-service-startup.py --context unused-mock --namespace fixture --output $results/terminal-pods.json"
+    if [[ $scenario == status-unavailable ]]; then
+      printf '{"complete":false,"error_type":"TimeoutExpired"}\n' > "$results/terminal-pods.json"
+      return 1
+    fi
+    printf '{"complete":true,"pods":[]}\n' > "$results/terminal-pods.json"
+    return 0
+  fi
   if [[ ${1:-} == "$project/scripts/change-gateway-endpoint.py" ]]; then
     local count
     count=$(cat "$results/transition-attempts")
@@ -33,7 +43,7 @@ set -euo pipefail
       n=$((n + 1))
       printf '%s\n' "$n" > "$results/attempts"
       case "$scenario" in
-        failed|missing) exit 1 ;;
+        failed|missing|succeeded|status-unavailable) exit 1 ;;
       esac
       if ((n == 1)); then
         case "$scenario" in
@@ -46,7 +56,8 @@ set -euo pipefail
       ;;
     *"get pod"*)
       case "$scenario" in
-        failed) printf 'Failed' ;;
+        failed|status-unavailable) printf 'Failed' ;;
+        succeeded) printf 'Succeeded' ;;
         missing) exit 0 ;;
         transient) exit 1 ;;
         *) printf 'Running' ;;
@@ -57,7 +68,7 @@ set -euo pipefail
   esac
 SHEND
 export results scenario
-for scenario in empty transient malformed failed missing endpoint-retry; do
+for scenario in empty transient malformed failed missing succeeded status-unavailable endpoint-retry; do
   results="$fixture/$scenario"
   mkdir "$results"
   printf '0\n' > "$results/attempts"
@@ -71,17 +82,22 @@ for scenario in empty transient malformed failed missing endpoint-retry; do
   status=0
   wait_service_result > "$results/observations" 2>&1 || status=$?
   case "$scenario" in
-    failed|missing)
+    failed|missing|succeeded|status-unavailable)
       test "$status" = 1
       test "$(cat "$results/deployment.log")" = 'retained test output'
+      test -s "$results/terminal-pods.json"
+      if [[ $scenario == status-unavailable ]]; then
+        test "$(cat "$results/terminal-pods.json")" = '{"complete":false,"error_type":"TimeoutExpired"}'
+      fi
       ;;
     *)
       test "$status" = 0
       test "$result" = 42
       test "$(cat "$results/attempts")" = 2
       test ! -s "$results/observations"
+      test ! -e "$results/terminal-pods.json"
       ;;
   esac
   if [[ $scenario == endpoint-retry ]]; then test "$(cat "$results/transition-attempts")" = 2; fi
 done
-printf 'Service completion protocol passed six cases.\n'
+printf 'Service completion protocol passed eight cases.\n'

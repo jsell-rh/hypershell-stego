@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Save bounded Pod startup evidence without container commands or credentials."""
+"""Save bounded Pod status evidence without container commands or credentials."""
 import argparse
 from datetime import datetime, timezone
 import json
@@ -12,7 +12,7 @@ import subprocess
 def summary(pod):
     metadata, spec, status = (pod.get(k, {}) for k in ('metadata', 'spec', 'status'))
     result = {k: metadata.get(k) for k in ('name', 'namespace', 'uid', 'creationTimestamp')}
-    result.update(phase=status.get('phase'), node=spec.get('nodeName'))
+    result.update(phase=status.get('phase'), reason=status.get('reason'), node=spec.get('nodeName'))
     result['conditions'] = [{k: c.get(k) for k in ('type', 'status', 'reason', 'message', 'lastTransitionTime')}
                             for c in status.get('conditions', [])]
     result['containers'] = [{'name': c.get('name'), 'restart_policy': c.get('restartPolicy'),
@@ -65,7 +65,7 @@ def main():
         json.dump(result, output, indent=2)
         output.write('\n')
     if not result['complete']:
-        raise SystemExit('Startup evidence is incomplete; inspect the saved error type')
+        raise SystemExit('Pod status evidence is incomplete; inspect the saved error type')
 
 
 if __name__ == '__main__':

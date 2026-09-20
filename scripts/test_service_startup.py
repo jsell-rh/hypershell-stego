@@ -1,4 +1,4 @@
-"""Check the startup record's scope and failure handling."""
+"""Check the Pod status record's scope and failure handling."""
 import importlib.util
 import json
 from pathlib import Path
@@ -13,6 +13,21 @@ spec.loader.exec_module(startup)
 
 
 class StartupEvidence(unittest.TestCase):
+    def test_preempted_pod_keeps_disruption_and_exit_status(self):
+        pod = {'metadata': {'uid': 'test-pod'}, 'status': {'phase': 'Failed',
+            'reason': 'Preempted', 'message': 'SECRET',
+            'conditions': [{'type': 'DisruptionTarget', 'status': 'True',
+                'reason': 'PreemptionByScheduler', 'message': 'A higher-priority Pod needs this node'}],
+            'containerStatuses': [{'name': 'test', 'state': {'terminated': {
+                'reason': 'Error', 'exitCode': 137, 'signal': 9, 'message': 'SECRET'}}}]}}
+        result = startup.summary(pod)
+        self.assertEqual(result['uid'], 'test-pod')
+        self.assertEqual(result['phase'], 'Failed')
+        self.assertEqual(result['reason'], 'Preempted')
+        self.assertEqual(result['conditions'][0]['reason'], 'PreemptionByScheduler')
+        self.assertEqual(result['container_states'][0]['state']['terminated']['exitCode'], 137)
+        self.assertNotIn('SECRET', json.dumps(result))
+
     def test_pending_pod_keeps_reason_and_limits_without_credentials(self):
         pod = {'metadata': {'name': 'service-check-one', 'uid': 'one', 'annotations': {'private': 'SECRET'}},
             'spec': {'containers': [{'name': 'test', 'env': [{'name': 'TOKEN', 'value': 'SECRET'}],

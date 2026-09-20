@@ -25,6 +25,14 @@ while :; do
   if phase=$(timeout --signal=TERM --kill-after=5s 45s "${oc_cmd[@]}" -n "$namespace" get pod "$pod" --ignore-not-found -o jsonpath='{.status.phase}' 2>/dev/null); then
     case "$phase" in
       Failed|Succeeded|'')
+        # Save status before cleanup. Container logs can disappear after
+        # preemption or eviction. This read retains only bounded Pod fields.
+        if python3 "$project/scripts/collect-service-startup.py" --context "$STEGO_TEST_CONTEXT" \
+          --namespace "$namespace" --output "$results/terminal-pods.json"; then
+          :
+        else
+          echo 'Terminal Pod evidence is incomplete. Keep the failed result.' >&2
+        fi
         timeout --signal=TERM --kill-after=5s 45s "${oc_cmd[@]}" -n "$namespace" logs "$pod" -c test > "$results/deployment.log" 2>/dev/null || true
         echo "Test Pod stopped without a completion record: ${phase:-missing}" >&2
         return 1
