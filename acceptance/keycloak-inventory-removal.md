@@ -53,6 +53,15 @@ complete at 5.163 seconds; this does not prove whole-Gateway cleanup.
 
 Both test fixtures and their allocations were absent after the run. The shared
 lease was free, and all 32 standing resources were unchanged. The record is in
-`keycloak-inventory-live-evidence.json`. The separate API test remains required.
-Production capacity is not proved. Live Kata execution remains deferred by the
-user.
+`keycloak-inventory-live-evidence.json`.
+
+The separate API run `35497011319` passed all 52 required tests on the same
+source. Independent review verified all 1,589 source files, 421 generated
+hashes, repeated generation, and the signed compiler bytes in the admitted
+Pod. The joint cleanup audit found both fixtures absent, a free shared lease,
+and all 32 standing resources unchanged. See
+`keycloak-inventory-api-evidence.json`.
+
+The complete hosted, live browser, and API checks qualify this source within
+their recorded scope. The whole-cleanup target and production capacity remain
+open. Live Kata execution remains deferred by the user.

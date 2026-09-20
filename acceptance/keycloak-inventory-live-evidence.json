@@ -640,7 +640,7 @@
       }
     }
   },
-  "api_test": "Required; not yet qualified.",
+  "api_test": "Qualified by run 35497011319 on the same source. See keycloak-inventory-api-evidence.json.",
   "limitations": [
     "The 30-second whole-cleanup target is not proved.",
     "Production capacity is not proved.",
