@@ -19,3 +19,10 @@ restart tests, and the complete cluster workflow must pass before promotion.
 The new declaration changes the schema generation. Existing installations must
 remain rejected until an explicit schema transition is registered and tested.
 Do not change generation records by hand to bypass that check.
+
+The live regression uses the existing SQL permission fault. It stops every
+allocator Pod before it restores SQL access. Other cleanup owners can then
+finish while the state namespaces remain. REST and gRPC must both return the
+Gateway in the deleting state. A new allocator process must finish removal and
+finalization. The collector requires `allocation-finalization.json`. This new
+check is prepared; no live pass is claimed.

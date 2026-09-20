@@ -176,7 +176,10 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 		w.t.Fatal("Gateway deletion failed", response.StatusCode)
 	}
 	checkAccounts()
-	checkDeniedCleanup()
+	resumeAllocation := checkDeniedCleanup()
+	defer resumeAllocation()
+	completeAllocationProof := w.checkPendingAllocationCleanup(id)
+	resumeAllocation()
 	ctx, cancel := context.WithTimeout(context.Background(), 120*time.Second)
 	defer cancel()
 	allocator, err := allocation.New(w.kubernetes, w.p.namespace)
@@ -188,6 +191,7 @@ func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 		w.t.Fatal("deleted Gateway remained readable", response.StatusCode)
 	}
 	w.checkSQLDeletion(id)
+	completeAllocationProof()
 	for _, other := range w.gatewayIDs {
 		if other != id {
 			w.check(other)

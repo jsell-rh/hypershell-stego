@@ -141,6 +141,21 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				})
 			}
 		}
+		if worker.name == "namespace-allocation" {
+			w.pauseAllocation = func() func() {
+				stop() // This waits for the allocator Pods to stop.
+				previous += logs()
+				logs = func() string { return "" }
+				resumed := false
+				return func() {
+					if resumed {
+						return
+					}
+					stop, logs = start()
+					resumed = true
+				}
+			}
+		}
 		w.stops = append(w.stops, func() { stop() })
 		w.outputs = append(w.outputs, func() string { return previous + logs() })
 		w.restarts = append(w.restarts, func() { stop(); previous += logs(); stop, logs = start() })

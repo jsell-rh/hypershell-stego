@@ -18,7 +18,7 @@ import (
 
 // Remove database-owner access for one Gateway. Keep administrator grants
 // and the other Gateway's permissions. Restore access before cleanup continues.
-func (w *browserGatewayWorkload) beginSQLCleanupDenial(id string) func() {
+func (w *browserGatewayWorkload) beginSQLCleanupDenial(id string) func() func() {
 	w.t.Helper()
 	admin := w.fixtureSQL()
 	names := databaseNames(w.t, w.f.cluster, id)
@@ -173,7 +173,7 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 	if !errors.As(err, &denied) || denied.Code != "42501" {
 		w.t.Fatal("SQL cleanup database operation was not denied by PostgreSQL")
 	}
-	return func() {
+	return func() func() {
 		w.t.Helper()
 		defer restore()
 		deadline := time.Now().Add(120 * time.Second)
@@ -222,5 +222,11 @@ JOIN pg_catalog.pg_roles r ON r.rolname=$2 WHERE d.datname=$1`, names.Database, 
 			}
 		}
 		w.t.Log("Denied SQL cleanup retained source keys and SQL objects, kept cleanup pending, and preserved the other Gateway")
+		if w.pauseAllocation == nil {
+			w.t.Fatal("allocator pause control is missing")
+		}
+		// SQL remains denied until after every allocator Pod has stopped. The
+		// retained state namespaces cannot disappear during the next observation.
+		return w.pauseAllocation()
 	}
 }

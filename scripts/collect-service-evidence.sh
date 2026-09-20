@@ -29,7 +29,7 @@ collect_service_evidence() {
         require_evidence worker-image.json
       fi
       if [ "$3" = 1 ]; then
-        for file in gateway-console-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
+        for file in gateway-console-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
           require_evidence "$file"
         done
       fi

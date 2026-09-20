@@ -25,6 +25,9 @@ import (
 type allocationTarget struct{ profile, id string }
 
 type browserGatewayWorkload struct {
+	pauseAllocation     func() func()
+	apiAddress          string
+	apiCA               string
 	endpointChange      *browserEndpointChange
 	endpointRestarts    []func(string)
 	endpointReplaced    bool
@@ -147,6 +150,7 @@ func (w *browserGatewayWorkload) trackAllocation(name, id, profile string) {
 
 func (w *browserGatewayWorkload) start(owner, viewer *consoleBrowser, address, ca, gatewayID string) {
 	w.t.Helper()
+	w.apiAddress, w.apiCA = address, ca
 	w.owner = owner
 	rows, err := w.f.db.Query("SELECT id,namespace FROM gateways WHERE cluster_id=$1 AND deleted_at IS NULL", w.f.cluster)
 	if err != nil {

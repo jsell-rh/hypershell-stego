@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-allocation-finalization empty-allocation-finalization missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$test_work/compiler" "$results"
-  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit image.json worker-image.json console-image.json gateway-console-image.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
     printf 'record\n' > "$test_work/$file"
   done
   result=0
@@ -69,6 +69,8 @@ for scenario in service browser workload public configured-public log-failure ar
     missing-startup) expected=1; rm "$test_work/browser-artifacts/browser-startup-signals.json" ;;
     missing-sql) expected=1; rm "$test_work/browser-artifacts/postgres-server.json" ;;
     missing-cleanup-timing) expected=1; rm "$test_work/browser-artifacts/gateway-cleanup-timing.json" ;;
+    missing-allocation-finalization) expected=1; rm "$test_work/browser-artifacts/allocation-finalization.json" ;;
+    empty-allocation-finalization) expected=1; : > "$test_work/browser-artifacts/allocation-finalization.json" ;;
     empty-cleanup-timing) expected=1; : > "$test_work/browser-artifacts/gateway-cleanup-timing.json" ;;
     missing-network) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-recovery.json" ;;
     missing-provisioner-restart) expected=1; rm "$test_work/browser-artifacts/provisioner-restart.json" ;;
@@ -87,11 +89,11 @@ for scenario in service browser workload public configured-public log-failure ar
     exit 1
   fi
   case "$scenario" in
-    missing-*|empty-provisioner-restart|empty-cleanup-timing)
+    missing-*|empty-provisioner-restart|empty-cleanup-timing|empty-allocation-finalization)
       # An incomplete record must fail and retain all available evidence.
       tar tf "$results/evidence.tar" >/dev/null
       cmp "$test_work/generated.tar" <(tar xOf "$results/evidence.tar" generated.tar)
-      for file in image.json gateway-console-image.json after-tests.sha256 browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+      for file in image.json gateway-console-image.json after-tests.sha256 browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
         if [[ ! -s $test_work/$file ]]; then
           grep -Fqx "Required service evidence is missing or empty: $file" "$results/collector.log"
         fi
