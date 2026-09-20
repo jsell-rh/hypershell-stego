@@ -1,0 +1,167 @@
+{
+  "format": 1,
+  "source": "7bc21b7258bf88da5734e2c55c35e594dcbb0903",
+  "compiler": "7a674e6c038b9fcf9735de78e66a30956c6feb0b",
+  "qualified_scope": "The separate Gateway API and SQL gate, repeated generation, and the joint cluster cleanup audit at this source.",
+  "run": 35491294055,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35491294055",
+  "attempt": 1,
+  "verification": {
+    "run": 35491294055,
+    "source": "7bc21b7258bf88da5734e2c55c35e594dcbb0903",
+    "required_tests": [
+      "TestGatewayDurableDeletionThroughGeneratedTransports",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayCleanupObservationDoesNotRepeatEvents",
+      "TestGatewayDeletingPhaseMatchesSearch",
+      "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",
+      "TestGatewayAccountCleanupSerializesCreation",
+      "TestServiceAccountCreationSerializesGatewayDeletion",
+      "TestGatewayDeletionRemovesServiceAccounts",
+      "TestServiceAccountProviderStateAcrossLockAndRestart",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayDatabasePoolWaitCancellationAndRestart",
+      "TestConcurrentGlobalRoleProjection",
+      "TestCleanupSummaryScopeAndTimestampChecks",
+      "TestGatewayDatabaseSecretFileAndCredentialRotation",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+      "TestGeneratedWorkloadWorkerStartupPrivacy",
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestGatewayRequestsRejectRetiredDatabaseField",
+      "TestGeneratedGoSDKGatewayWorkflow",
+      "TestGeneratedCLIWorkflow",
+      "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+      "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGeneratedRuntimeRecoversUnfinishedClaim",
+      "TestGatewayWatchThroughGeneratedRuntime",
+      "TestNamespaceCountWorkflowThroughGeneratedWorker",
+      "TestPlacementWorkflowThroughGeneratedRuntime",
+      "TestControllerLocalSchemaHasNoDatabaseCatalog",
+      "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+      "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+      "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+      "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+      "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+      "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+      "TestGeneratedCLICatalogWorkflow",
+      "TestGeneratedCLIApplyWorkflow"
+    ],
+    "passed_top_level": 52,
+    "test_log_sha256": "8e0f9071941becdc4e4140d05f49a99a3be8cde7336354ec3624e44eabeb7206",
+    "source_files_match": 1574,
+    "generated_hashes_match": 421,
+    "committed_and_repeated_generation_match": true,
+    "compiler_public_records_and_live_bytes_match": true,
+    "bounded_live_job_verified": true,
+    "job_uid": "153590db-f015-4c08-9d4e-d6d32f5c25c3",
+    "pod_uid": "e42cb49b-e15a-45bc-add9-3d0cf39fde00",
+    "independent_fixture_cleanup_verified": true,
+    "qualified": true,
+    "scope": "The exact API and SQL test fixture. Main browser and full results remain separate."
+  },
+  "verification_sha256": "e483835598f1d81861e62d191605992b785dff6e179a74c2a109eef6d15f0ed7",
+  "runtime": {
+    "run": 35491294055,
+    "source": "7bc21b7258bf88da5734e2c55c35e594dcbb0903",
+    "job": "gateway-api-d97849482b46",
+    "job_uid": "153590db-f015-4c08-9d4e-d6d32f5c25c3",
+    "pod": "gateway-api-d97849482b46-j9q7d",
+    "pod_uid": "e42cb49b-e15a-45bc-add9-3d0cf39fde00",
+    "deadline_seconds": 1200,
+    "retry_limit": 0,
+    "no_host_access": true,
+    "containers": [
+      {
+        "name": "postgres",
+        "limits": {
+          "cpu": "500m",
+          "ephemeral-storage": "2Gi",
+          "memory": "512Mi"
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "runAsUser": 1001470000
+        }
+      },
+      {
+        "name": "test",
+        "limits": {
+          "cpu": "1",
+          "ephemeral-storage": "6Gi",
+          "memory": "3Gi"
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "runAsUser": 1001470000
+        }
+      }
+    ],
+    "compiler_verified": true,
+    "compiler_hashes": {
+      "stego-linux-amd64": "51d5f4fed10bcd9d0c525834f097824f9722efba64c8ef6e9812928f0f5822f8",
+      "build.json": "1cffa781bf34388b0064855c1daeaf14844fa14a7e97c0596f527b28e08a93d8",
+      "provenance.jsonl": "ee5d13cdd3fcc1d1c35e7ffe35fe7078a67b1f4868342fae07b1ffd8b103deda",
+      "SHA256SUMS": "33f83823445013912f150c89d577b5fa6b3ba983ac3713a625f5c03ff6c892f0"
+    },
+    "checked_at": "2026-09-20T05:18:06.976146+00:00"
+  },
+  "runtime_record_sha256": "d8d599bda7f587f9b4d8ef8fa84ab4bd8c4bf198d1f55f49431289bc13835a54",
+  "joint_cleanup": {
+    "run": 35490262586,
+    "source": "7bc21b7258bf88da5734e2c55c35e594dcbb0903",
+    "checked_at": "2026-09-20T05:26:08.226913+00:00",
+    "browser_empty": true,
+    "api_run": 35491294055,
+    "api_status": "completed",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing browser installation resources are unchanged."
+  },
+  "joint_cleanup_record_sha256": "49a401884615bf6bfb1a77c603b6fe8d9838e977d9c277b0166264184f08b49b",
+  "source_archive_sha256": "d415d826b7a06410699d156dc387295783b418af2a4fdf39c9aac512644635aa",
+  "ci_log_sha256": "128912c3f73d712904dd03f650c7f0adb16395feab35f72ffacc3aaf2d01faeb",
+  "browser_evidence": "allocation-pending-live-evidence.json",
+  "limits": [
+    "This record applies only to the stated source and compiler.",
+    "The API fixture uses PostgreSQL in a restricted test Pod. It does not prove RDS failover.",
+    "The separate browser workflow exceeded the 30-second whole Gateway cleanup target.",
+    "Production capacity and live Kata isolation remain unproved.",
+    "The later controller trace compiler requires a separate complete application workflow."
+  ]
+}
