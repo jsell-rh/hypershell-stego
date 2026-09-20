@@ -1,0 +1,28 @@
+{
+  "source": "f02dfc6653b003fcdcfe0325f46c3802b89c7255",
+  "compiler": "5c4afa11c289e086893a8fbc5da1aca5f1e64b64",
+  "run": 35544838083,
+  "source_archive_sha256": "e6212eadc0d658694efdf5fcdab246063d5d38496a0bcf953c888cefbdd4ecfb",
+  "generated_archive_sha256": "ac13237796cdd904e20ddc6d55d6792147c078200c5a49315adf896621e927ba",
+  "files": 428,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "console/out/deploy/resources.go",
+    "gateway-console/.stego/state.yaml",
+    "gateway-console/out/deploy/resources.go",
+    "out/cli/command/version.go",
+    "out/deploy/resources.go"
+  ],
+  "unchanged_generated_and_module_files": 421,
+  "common_helpers_match_pinned_compiler_template": true,
+  "cli_change_is_compiler_identity_only": true,
+  "recorded_generated_hashes_checked": 419,
+  "recorded_source_input_hashes_checked": 41,
+  "source_review_required": false,
+  "applied": true,
+  "compiler_executed_locally": false,
+  "reviewed_at": "2026-09-20T23:32:12.215237+00:00",
+  "complete_inventory_sha256": "795b74be77a03087192762fbd286a8e8edb2dac5a91d460df44422fcf5ffd184",
+  "acceptance_scope": "Regeneration only. Select the committed Gateway console module and run application checks before acceptance."
+}

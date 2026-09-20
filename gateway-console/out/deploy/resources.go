@@ -31,6 +31,7 @@ func RenderCommand(args []string, output io.Writer) error {
 	rpc := flags.String("rpc-process", "", "Declared RPC process deployment")
 	scope := flags.String("scope", "all", "Resource scope: all, cluster, or namespace")
 	account := flags.String("existing-service-account", "", "Externally managed account in the target namespace; requires namespace scope and no generated RBAC")
+	digest := flags.String("configuration-digest", "", "SHA-256 digest of verified workload configuration")
 	group := flags.Uint64("fs-group", 65532, "Group for mounted files")
 	var external endpointFlags
 	var pullSecrets pullSecretFlags
@@ -51,7 +52,7 @@ func RenderCommand(args []string, output io.Writer) error {
 		}
 		bindings = append(bindings, EndpointBinding{Name: name, Address: endpoint})
 	}
-	data, err := Render(Options{Image: *image, Namespace: *namespace, FSGroup: *group, Scope: *scope, Worker: *worker, RPCProcess: *rpc, Egress: bindings, ImagePullSecrets: pullSecrets, ExistingServiceAccount: *account})
+	data, err := Render(Options{Image: *image, Namespace: *namespace, FSGroup: *group, Scope: *scope, Worker: *worker, RPCProcess: *rpc, Egress: bindings, ImagePullSecrets: pullSecrets, ExistingServiceAccount: *account, ConfigurationDigest: *digest})
 	if err != nil {
 		return err
 	}
@@ -69,6 +70,9 @@ type EndpointBinding struct {
 	Address netip.AddrPort
 }
 
+// ConfigurationAnnotation holds the digest that triggers configuration rollouts.
+const ConfigurationAnnotation = "stego.dev/config-sha256"
+
 // Options selects one generated workload and its deployment context. FSGroup
 // must be explicit and nonzero. An empty Scope selects all generated resources.
 type Options struct {
@@ -85,6 +89,11 @@ type Options struct {
 	// account is omitted from output. The caller must verify its ownership and
 	// readiness before workload creation; rendering performs no API request.
 	ExistingServiceAccount string
+	// ConfigurationDigest is an optional lowercase SHA-256 digest of verified
+	// configuration contents. It changes only the Pod template annotation. The
+	// caller must verify dependencies before rendering. No Secret is read here.
+	// It requires a scope that includes the selected Deployment.
+	ConfigurationDigest string
 }
 
 // Render returns the complete checked resource list. It has no network or
@@ -120,6 +129,9 @@ func renderOptions(o Options, output io.Writer) error {
 	}
 	if o.Scope != "all" && o.Scope != "cluster" && o.Scope != "namespace" {
 		return fmt.Errorf("invalid deployment scope")
+	}
+	if o.ConfigurationDigest != "" && o.Scope == "cluster" {
+		return fmt.Errorf("configuration digest requires a workload scope")
 	}
 	if o.ExistingServiceAccount != "" && (o.Scope != "namespace" || !regexp.MustCompile(`^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?$`).MatchString(o.ExistingServiceAccount)) {
 		return fmt.Errorf("an existing ServiceAccount requires a DNS label and namespace scope")
@@ -188,6 +200,10 @@ func renderOptions(o Options, output io.Writer) error {
 	}
 	// Check the full list before scope filtering can remove cluster permissions.
 	completed, err = withExistingServiceAccount(completed, o.ExistingServiceAccount, o.Namespace)
+	if err != nil {
+		return err
+	}
+	completed, err = withConfigurationDigest(completed, o.ConfigurationDigest)
 	if err != nil {
 		return err
 	}
@@ -280,6 +296,75 @@ func (f *pullSecretFlags) Set(value string) error {
 	}
 	*f = append(*f, value)
 	return nil
+}
+
+func withConfigurationDigest(input []byte, digest string) ([]byte, error) {
+	if digest == "" {
+		return input, nil
+	}
+	if len(digest) != 64 {
+		return nil, fmt.Errorf("invalid configuration digest")
+	}
+	decoded, err := hex.DecodeString(digest)
+	if err != nil || hex.EncodeToString(decoded) != digest {
+		return nil, fmt.Errorf("invalid configuration digest")
+	}
+	decoder := json.NewDecoder(bytes.NewReader(input))
+	decoder.UseNumber()
+	var document map[string]any
+	if decoder.Decode(&document) != nil || document["apiVersion"] != "v1" || document["kind"] != "List" {
+		return nil, fmt.Errorf("invalid generated deployment")
+	}
+	var trailing any
+	if decoder.Decode(&trailing) != io.EOF {
+		return nil, fmt.Errorf("invalid generated deployment")
+	}
+	items, ok := document["items"].([]any)
+	if !ok {
+		return nil, fmt.Errorf("invalid generated resource list")
+	}
+	found := false
+	for _, raw := range items {
+		item, ok := raw.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("invalid generated resource")
+		}
+		if item["kind"] != "Deployment" {
+			continue
+		}
+		if item["apiVersion"] != "apps/v1" || found {
+			return nil, fmt.Errorf("configuration digest requires one generated Deployment")
+		}
+		spec, _ := item["spec"].(map[string]any)
+		template, _ := spec["template"].(map[string]any)
+		meta, _ := template["metadata"].(map[string]any)
+		if meta == nil {
+			return nil, fmt.Errorf("invalid generated Pod metadata")
+		}
+		annotations := map[string]any{}
+		if value, present := meta["annotations"]; present {
+			var valid bool
+			annotations, valid = value.(map[string]any)
+			if !valid {
+				return nil, fmt.Errorf("invalid generated Pod annotations")
+			}
+			for _, value := range annotations {
+				if _, ok := value.(string); !ok {
+					return nil, fmt.Errorf("invalid generated Pod annotation")
+				}
+			}
+		}
+		if _, present := annotations[ConfigurationAnnotation]; present {
+			return nil, fmt.Errorf("generated Pod already declares a configuration digest")
+		}
+		annotations[ConfigurationAnnotation] = digest
+		meta["annotations"] = annotations
+		found = true
+	}
+	if !found {
+		return nil, fmt.Errorf("configuration digest requires one generated Deployment")
+	}
+	return json.MarshalIndent(document, "", "  ")
 }
 
 func withExistingServiceAccount(input []byte, name, namespace string) ([]byte, error) {
