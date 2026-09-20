@@ -25,5 +25,12 @@ PostgreSQL and checks the fixed output when its connection pool is closed.
 
 This change affects test fixtures only. It does not change application timeouts,
 the production database provider, Gateway cleanup, or the 30-second target.
-New focused and full checks must qualify this source. The failed run remains
-a failure; the live test was not dispatched from that result.
+All six hosted checks passed at exact source `5f70035`. The full suite passed
+1,122 core cases across 354 top-level tests and retained all 1,103 baseline
+cases. All eight provider checks and all 44 journal checks passed. The adapter,
+allocation, generated console, and rendered browser checks also passed.
+See the [qualification record](database-fixture-cleanup-evidence.json).
+
+The prior failed run remains a failure. No live workflow ran at `5f70035`.
+The next consumer combines this fixture correction with STEGO's common
+PostgreSQL recovery fix. Its complete application workflow requires new proof.

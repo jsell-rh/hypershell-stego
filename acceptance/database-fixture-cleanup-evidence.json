@@ -1,0 +1,196 @@
+{
+  "source": "5f70035868848328bde229d4995a87997c655183",
+  "qualified_at": "2026-09-20T09:30:41.954228+00:00",
+  "scope": "The fixture correction and prior controller changes passed these exact-source hosted checks. The newer PostgreSQL recovery compiler needs its own consumer checks and live workflow.",
+  "runs": {
+    "full_run": {
+      "run": 35501176798,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501176798"
+    },
+    "adapter_run": {
+      "run": 35501198475,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501198475"
+    },
+    "focused_run": {
+      "run": 35501199435,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501199435"
+    },
+    "provider_run": {
+      "run": 35501176681,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501176681"
+    },
+    "journal_run": {
+      "run": 35501201013,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501201013"
+    },
+    "console_run": {
+      "run": 35501202178,
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35501202178"
+    }
+  },
+  "full": {
+    "source": "5f70035868848328bde229d4995a87997c655183",
+    "run_id": 35501176798,
+    "qualified": true,
+    "conclusion": "success",
+    "jobs": {
+      "service-image": "success",
+      "web-console": "success",
+      "acceptance (core)": "success",
+      "acceptance (browser)": "success",
+      "sandbox-workload": "skipped"
+    },
+    "baseline_source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+    "all_prior_core_cases_retained": 1103,
+    "core_passed_cases": 1122,
+    "core_passed_top_level": 354,
+    "additional_passed_cases": 19,
+    "additional_top_level_tests": [
+      "TestDatabaseFixtureCleanupDiagnostics",
+      "TestWorkloadPendingCancellationPreservesFailure",
+      "TestWorkloadPendingObservationPreservesFailures",
+      "TestWorkloadPendingRecheckKeepsCleanupIncomplete"
+    ],
+    "core_skipped_cases": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestRealProviderAccountCapacity"
+    ],
+    "rendered_browser_test_passed": true,
+    "test_definitions_retained": true,
+    "workload_pending_tests_match_exact_source_focused_runs": true,
+    "log_sha256": "a70a931d56901941cc13bb4a7a5ededce90a69260afad73d5e5d6a538f00e527",
+    "scope": "Full hosted consumer checks. The live trace workflow, whole cleanup time, production capacity, and deferred Kata remain separate requirements."
+  },
+  "provider": {
+    "source": "5f70035868848328bde229d4995a87997c655183",
+    "run": 35501176681,
+    "qualified": true,
+    "source_archive_verified": true,
+    "compiler": "c515f2208c27cfab51db0e9e7947089a1019bb01",
+    "inventory_passed_cases": 33,
+    "removal_cases": [
+      "TestManagedInventoryHandlesConcurrentRemoval",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/all_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/current_client_is_foreign",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/first_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/full_page_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/last_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/list_not_found",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/malformed_current_client",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/middle_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/read_forbidden",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/read_unauthorized",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/read_unavailable",
+      "TestManagedInventoryHandlesConcurrentRemoval/global",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/all_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/current_client_is_foreign",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/first_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/full_page_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/last_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/list_not_found",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/malformed_current_client",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/middle_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/read_forbidden",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/read_unauthorized",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/read_unavailable"
+    ],
+    "provider_tests": [
+      "TestDatabaseFixtureCleanupDiagnostics",
+      "TestGatewayCleanupDeadlineReopensConfirmation",
+      "TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart",
+      "TestPostgresSignalEvidenceAcceptsCredentialPreparation",
+      "TestPostgresSignalEvidenceAcceptsManagedSchema",
+      "TestPostgresSignalEvidenceRequiresControllerAndLog",
+      "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+      "TestUnrelatedClientSnapshotComparison"
+    ],
+    "provider_cleanup_proved": true,
+    "inventory_log_sha256": "57cf6ee81f7ecd0a4f54b6f7003bc2a3a01d945f5bc1c4ff4b52b2d5a7b92533",
+    "provider_log_sha256": "ee993b4cd8a222fb12dabbc7acb71cb5c5b33334c59331238c15d841fd2d4a28"
+  },
+  "journal": {
+    "source": "5f70035868848328bde229d4995a87997c655183",
+    "run": 35501201013,
+    "qualified": true,
+    "required_tests": [
+      "TestCleanupRPCSelectsRetryableErrors",
+      "TestConfiguredServiceAccountQuotaRemainsAtomic",
+      "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+      "TestConsoleDomainPolicy",
+      "TestConsoleFailureDoesNotBlockGrantRemoval",
+      "TestConsoleProviderStateJournalSeparatesNativeScope",
+      "TestConsoleProviderStateReadGrantIsReadOnly",
+      "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+      "TestDeletedAccountRecoveryRequiresParentReader",
+      "TestDeletedAccountRecoverySelectsCleanupOwner",
+      "TestDeletionRequiresExplicitPrivilegedState",
+      "TestGatewayAccountCleanupBudgetResumesAfterRestart",
+      "TestGatewayAccountCleanupParallelResumesAfterRestart",
+      "TestGatewayAccountCleanupRecoveryInvalidatesProofWhenInputsChange",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayAccountCleanupRecoveryReopensProofOnProviderFailure",
+      "TestGatewayAccountCleanupRecoveryRetainsProofDuringCleanRescan",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayCleanupUsesBoundedRetryPolicy",
+      "TestGatewayClosureContinuesAfterConsoleFailure",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestGatewayIdentityControllerWorkflow",
+      "TestGatewayIdentityInventory",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryRegistersPastFailedClientRead",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayUserLoginFollowsStoredGrants",
+      "TestIdentityConditionDuringProviderTimeoutAndDesiredChange",
+      "TestIdentityPublicationRequiresProviderSuccess",
+      "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+      "TestInventoryRPCsDenyUnverifiedCaller",
+      "TestProviderErrorRetainsSafeRetryStatus",
+      "TestProviderStateJournalScopeAndObservation",
+      "TestSQLComponentRejectsUnknownValues",
+      "TestServiceAccountGatewayQuota",
+      "TestServiceAccountLimits",
+      "TestServiceAccountOptions",
+      "TestServiceAccountQuotaAndExpirationValidation"
+    ],
+    "passed_top_level": 44,
+    "log_sha256": "ff1aaa1dffa3235c8dfdd8e2b941245d3d6efbc03f33e163280fd1b49220fa56"
+  },
+  "adapter": {
+    "passed_top_level": 71,
+    "workload_pending_cases": 15,
+    "source_archive_verified": true
+  },
+  "allocation": {
+    "passed_top_level": 23,
+    "state_overlap_cases": 7
+  },
+  "console": {
+    "source": "5f70035868848328bde229d4995a87997c655183",
+    "run": 35501202178,
+    "qualified": true,
+    "compiler": "c515f2208c27cfab51db0e9e7947089a1019bb01",
+    "generated_files_match": 130,
+    "published_image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:35aed3862557c260965da262aa9152f2c4753586160f67c78066a6ffa0423211",
+    "binary_sha256": "bb4a994510625e68dcfc800ab0d314c91af47657f34d0cfbf354ca925513cd2a",
+    "signed_compiler_matches_release": true,
+    "image_binary_matches_module": true,
+    "pulled_digest_matches_build": true,
+    "ci_log_sha256": "4424b65fe33e5a64441ccd922d94315490cea011a8dd9d883c699277cd4c8e67",
+    "scope": "The exact generated dashboard module and its bounded CI image build. This is not a live Gateway deployment result."
+  },
+  "limits": [
+    "No live workflow was dispatched for source 5f70035. Its pending launcher was stopped before dispatch so the next live test can include the common PostgreSQL recovery fix.",
+    "The prior failed run remains a failure. These checks do not prove the 30-second cleanup target or production capacity.",
+    "The live Kata test remains deferred."
+  ]
+}
