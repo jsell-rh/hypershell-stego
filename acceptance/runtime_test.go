@@ -41,7 +41,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	stop()
 	// Close the application connection, then open a new store and service.
-	if err := f.db.Close(); err != nil {
+	if err := f.runtime.Close(); err != nil {
 		t.Fatal(err)
 	}
 	orm, err := gorm.Open(postgres.Open(f.dsn), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
@@ -53,7 +53,7 @@ func TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() { db.Close() })
-	f.db = db
+	f.runtime = db
 	repository, err := storage.NewStore(orm)
 	if err != nil {
 		t.Fatal(err)

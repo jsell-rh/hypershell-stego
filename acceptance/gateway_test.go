@@ -2,11 +2,11 @@ package acceptance
 
 import (
 	"context"
+	"crypto/rand"
 	"database/sql"
 	"encoding/hex"
 	"errors"
 	"fmt"
-	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -17,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/stdlib"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/schema"
+	databaseaccess "github.com/jsell-rh/hypershell-stego/out/contracts/databaseaccess"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"github.com/segmentio/ksuid"
@@ -26,7 +27,8 @@ import (
 )
 
 type fixture struct {
-	db               *sql.DB
+	db               *sql.DB // Operator connection for setup, faults, and cleanup.
+	runtime          *sql.DB
 	dsn              string
 	storage          *model.Store
 	service          *gateways.Service
@@ -54,9 +56,27 @@ func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 	}
 	admin := stdlib.OpenDB(*cfg)
 	t.Cleanup(func() { admin.Close() })
-	name := "hypershell_test_" + strings.ReplaceAll(uuid.NewString(), "-", "")
+	suffix := strings.ReplaceAll(uuid.NewString(), "-", "")
+	name, role := "hypershell_test_"+suffix, "api_runtime_"+suffix
+	passwordBytes := make([]byte, 32)
+	if _, err := rand.Read(passwordBytes); err != nil {
+		t.Fatal("cannot create the API fixture password")
+	}
+	password := hex.EncodeToString(passwordBytes)
+	roleID := pgx.Identifier{role}.Sanitize()
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	if _, err := admin.ExecContext(ctx, "CREATE ROLE "+roleID+" LOGIN NOINHERIT PASSWORD '"+password+"'"); err != nil {
+		t.Fatal("cannot create the API fixture runtime role")
+	}
+	// Register the role first. Database cleanup must finish before DROP ROLE.
+	t.Cleanup(func() {
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if _, err := admin.ExecContext(ctx, "DROP ROLE "+roleID); err != nil {
+			t.Error("cannot remove the API fixture runtime role")
+		}
+	})
 	if _, err := admin.ExecContext(ctx, `CREATE DATABASE "`+name+`"`); err != nil {
 		t.Fatal(err)
 	}
@@ -80,23 +100,6 @@ func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 		}
 	})
 	cfg.Database = name
-	privateDSN := dsn + " dbname=" + name
-	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
-		address, err := url.Parse(dsn)
-		if err != nil {
-			t.Fatal(err)
-		}
-		address.Path = "/" + name
-		query := address.Query()
-		query.Del("dbname")
-		query.Del("database")
-		address.RawQuery = query.Encode()
-		privateDSN = address.String()
-	}
-	check, err := pgx.ParseConfig(privateDSN)
-	if err != nil || check.Database != name {
-		t.Fatal("private database DSN is invalid")
-	}
 	db := stdlib.OpenDB(*cfg)
 	t.Cleanup(func() { db.Close() })
 	orm, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
@@ -106,7 +109,33 @@ func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 	if err := schema.Initialize(orm); err != nil {
 		t.Fatal(err)
 	}
-	s, err := model.NewStore(orm)
+	// The operator establishes the private database baseline. The common
+	// installer supplies only the selected component object permissions.
+	for _, statement := range []string{
+		"REVOKE ALL ON DATABASE " + pgx.Identifier{name}.Sanitize() + " FROM PUBLIC",
+		"REVOKE CREATE ON SCHEMA public FROM PUBLIC",
+	} {
+		if _, err := db.ExecContext(ctx, statement); err != nil {
+			t.Fatal("cannot establish the API fixture database baseline")
+		}
+	}
+	f := &fixture{db: db, cluster: ksuid.New().String(), release: ksuid.New().String()}
+	grantAPIFixtureRuntimeAccess(t, f, role)
+	privateDSN := fixtureRuntimeDSN(t, dsn, name, role, password)
+	limited, err := pgx.ParseConfig(privateDSN)
+	if err != nil {
+		t.Fatal("invalid API fixture runtime configuration")
+	}
+	runtime := stdlib.OpenDB(*limited)
+	t.Cleanup(func() { runtime.Close() })
+	if err := databaseaccess.VerifyRuntime(ctx, runtime); err != nil {
+		t.Fatal("API fixture runtime access differs from the generated contract")
+	}
+	runtimeORM, err := gorm.Open(postgres.New(postgres.Config{Conn: runtime}), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
+	if err != nil {
+		t.Fatal("cannot open the API fixture runtime store")
+	}
+	s, err := model.NewStore(runtimeORM)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -114,7 +143,7 @@ func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 	if err != nil {
 		t.Fatal(err)
 	}
-	f := &fixture{db: db, dsn: privateDSN, storage: s, service: svc, cluster: ksuid.New().String(), release: ksuid.New().String()}
+	f.dsn, f.runtime, f.storage, f.service = privateDSN, runtime, s, svc
 	if seedPlacement {
 		if err := s.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: f.cluster}, Name: "cluster", Provider: "kubernetes", KubeconfigSecret: "test-cluster"}); err != nil {
 			t.Fatal(err)

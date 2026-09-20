@@ -212,7 +212,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 	password := hex.EncodeToString(makeRandom(p.t, 24))
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
-	if _, err := f.db.ExecContext(ctx, "CREATE ROLE "+id+" LOGIN PASSWORD '"+password+"'"); err != nil {
+	if _, err := f.db.ExecContext(ctx, "CREATE ROLE "+id+" LOGIN NOINHERIT PASSWORD '"+password+"'"); err != nil {
 		p.t.Fatal(err)
 	}
 	p.t.Cleanup(func() {
@@ -223,7 +223,7 @@ func (p *kubernetesBrowser) database(f *fixture, console bool) string {
 			p.t.Error(err)
 		}
 	})
-	grantAPIFixtureRuntimeAccess(p.t, f, cfg.Database, role)
+	grantAPIFixtureRuntimeAccess(p.t, f, role)
 
 	dsn := &url.URL{Scheme: "postgres", Host: p.host("fixture") + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(role, password)}
 	dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}}.Encode()

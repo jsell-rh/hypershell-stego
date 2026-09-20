@@ -107,7 +107,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	if _, err := rand.Read(password); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := f.db.Exec("CREATE ROLE " + identifier + " LOGIN PASSWORD '" + hex.EncodeToString(password) + "'"); err != nil {
+	if _, err := f.db.Exec("CREATE ROLE " + identifier + " LOGIN NOINHERIT PASSWORD '" + hex.EncodeToString(password) + "'"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -118,7 +118,7 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	grantAPIFixtureRuntimeAccess(t, f, cfg.Database, role)
+	grantAPIFixtureRuntimeAccess(t, f, role)
 
 	dsn := &url.URL{Scheme: "postgres", Host: fixtureHost + ":5432", Path: "/" + cfg.Database, User: url.UserPassword(role, hex.EncodeToString(password))}
 	dsn.RawQuery = url.Values{"sslmode": {"verify-full"}, "sslrootcert": {"/var/run/stego/database-ca.pem"}, "application_name": {"stego-kubernetes-service"}}.Encode()

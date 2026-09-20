@@ -48,7 +48,7 @@ func TestGatewayDatabaseSecretFileAndCredentialRotation(t *testing.T) {
 		return hex.EncodeToString(data)
 	}
 	first, second := password(), password()
-	if _, err := f.db.Exec("CREATE ROLE " + identifier + " LOGIN PASSWORD '" + first + "'"); err != nil {
+	if _, err := f.db.Exec("CREATE ROLE " + identifier + " LOGIN NOINHERIT PASSWORD '" + first + "'"); err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
@@ -59,7 +59,7 @@ func TestGatewayDatabaseSecretFileAndCredentialRotation(t *testing.T) {
 			t.Error(err)
 		}
 	})
-	grantAPIFixtureRuntimeAccess(t, f, cfg.Database, role)
+	grantAPIFixtureRuntimeAccess(t, f, role)
 
 	dsnFor := func(password string) string {
 		address := &url.URL{Scheme: "postgres", Host: net.JoinHostPort("localhost", strconv.Itoa(int(cfg.Port))), Path: "/" + cfg.Database, User: url.UserPassword(role, password)}
