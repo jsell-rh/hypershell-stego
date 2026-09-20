@@ -85,6 +85,7 @@ jobs:
           required = ['TestControllerTraceEvidenceRejectsInvalidRoots',
                       'TestControllerTraceEvidenceRequiresDistinctPairedWork',
                       'TestControllerTraceEvidenceRequiresEachServiceAndInstance',
+                      'TestControllerTraceEvidenceRequiresExactCleanupProfile',
                       'TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance']
           for name in required:
               if len(re.findall(r'^--- PASS: ' + name + r' ', log, re.M)) != 1:

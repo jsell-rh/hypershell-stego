@@ -163,6 +163,16 @@ func (s *controllerTraceState) span(span *tracepb.Span) {
 	s.record(controllerTraceID(span.TraceId, span.SpanId), operation, outcome, retry, false)
 }
 
+// Cleanup stops and resumes the allocator after the early worker signal check.
+// Each new process must supply its own trace evidence.
+func expectedWorkerInstancesAfterCleanup(name string, public bool, endpointChange ...bool) int {
+	count := expectedWorkerInstances(name, public, endpointChange...)
+	if name == "hypershell-namespace-allocation" {
+		count++
+	}
+	return count
+}
+
 // Every instance must have a validated pair. Repeated work must be proved for
 // each service, without requiring a short-lived old instance to run another scan.
 func (w *workerSignalEvidence) controllerTraceStatus(public bool, endpointChange ...bool) (ready, invalid bool, evidence map[string]map[string]map[string]int) {
@@ -172,7 +182,7 @@ func (w *workerSignalEvidence) controllerTraceStatus(public bool, endpointChange
 	invalid = w.invalid
 	evidence = map[string]map[string]map[string]int{}
 	for name, states := range w.instances {
-		ready = ready && len(states) == expectedWorkerInstances(name, public, endpointChange...)
+		ready = ready && len(states) == expectedWorkerInstancesAfterCleanup(name, public, endpointChange...)
 		evidence[name] = map[string]map[string]int{}
 		repeated := false
 		for id, state := range states {

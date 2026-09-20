@@ -1,0 +1,38 @@
+{
+  "schema": 1,
+  "run": 35492055190,
+  "source": "e026fb00159953615110fd7c7022ee6d53526db0",
+  "conclusion": "failure",
+  "qualified": false,
+  "failure": "The final trace check used the process count from before cleanup.",
+  "observed_instances": {
+    "hypershell-namespace-allocation": 3,
+    "hypershell-gateway-identity": 2,
+    "hypershell-gateway-workload": 4
+  },
+  "independent_cleanup": {
+    "run": 35492055190,
+    "source": "e026fb00159953615110fd7c7022ee6d53526db0",
+    "checked_at": "2026-09-20T05:59:36.905896+00:00",
+    "browser_empty": true,
+    "api_run": null,
+    "api_status": "not dispatched",
+    "workflow_conclusion": "failure",
+    "workflow_qualified": false,
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+  },
+  "operator_record_sha256": {
+    "run.log": "6ca60a3214a79c008eb58cb3107d965abcba0da060458712799c014b3f666a74",
+    "result/gateway-browser/deployment.log": "b20b8ca0d3cf1e49818233049fe9a80c0896bfab0b46e2468ff3fa020c16cd20",
+    "result/gateway-browser/evidence.tar": "1287c135d8c30b6d1ba8c80ac83efa14f00c94c4c368db9ce0d1f4a71751491d",
+    "result/gateway-browser/cleanup.json": "179eec722abf20ace66a7c69315ad9a7758b5305c67c476dddc3956f074b7232",
+    "failure-independent-cleanup.json": "2f6691078f6a674b5524cd6c2cbdd20701c479233f4f47a37265f0bbb8bd94d9"
+  }
+}

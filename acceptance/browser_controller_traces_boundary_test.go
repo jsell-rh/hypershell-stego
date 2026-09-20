@@ -146,27 +146,39 @@ func TestControllerTraceEvidenceRequiresDistinctPairedWork(t *testing.T) {
 	})
 }
 
+func controllerTraceServicesFixture(allocation, identity, workload int) *workerSignalEvidence {
+	w := &workerSignalEvidence{instances: map[string]map[string]*workerSignalState{}}
+	for _, worker := range []struct {
+		name  string
+		count int
+	}{
+		{"hypershell-namespace-allocation", allocation},
+		{"hypershell-gateway-identity", identity},
+		{"hypershell-gateway-workload", workload},
+	} {
+		w.instances[worker.name] = map[string]*workerSignalState{}
+		for i := 1; i <= worker.count; i++ {
+			id := fmt.Sprintf("%08x-0000-4000-8000-000000000001", i)
+			state := &workerSignalState{}
+			w.instances[worker.name][id] = state
+			sequence := uint64(0)
+			for _, operation := range []string{"reconcile", "scan", "cleanup"} {
+				for range 2 {
+					sequence++
+					log, span := controllerTraceFixture(sequence, operation)
+					state.controller.log(log)
+					state.controller.span(span)
+				}
+			}
+		}
+	}
+	return w
+}
+
 func TestControllerTraceEvidenceRequiresEachServiceAndInstance(t *testing.T) {
 	for _, mode := range []string{"complete", "short old instance", "split operation proof", "missing cleanup", "missing instance", "uncorrelated instance", "invalid root", "wrong identity"} {
 		t.Run(mode, func(t *testing.T) {
-			w := &workerSignalEvidence{instances: map[string]map[string]*workerSignalState{}}
-			for _, name := range []string{"hypershell-namespace-allocation", "hypershell-gateway-identity", "hypershell-gateway-workload"} {
-				w.instances[name] = map[string]*workerSignalState{}
-				for i := 1; i <= 2; i++ {
-					id := fmt.Sprintf("%08x-0000-4000-8000-000000000001", i)
-					state := &workerSignalState{}
-					w.instances[name][id] = state
-					sequence := uint64(0)
-					for _, operation := range []string{"reconcile", "scan", "cleanup"} {
-						for range 2 {
-							sequence++
-							log, span := controllerTraceFixture(sequence, operation)
-							state.controller.log(log)
-							state.controller.span(span)
-						}
-					}
-				}
-			}
+			w := controllerTraceServicesFixture(3, 2, 2)
 			service := w.instances["hypershell-namespace-allocation"]
 			id := "00000001-0000-4000-8000-000000000001"
 			switch mode {
@@ -176,7 +188,11 @@ func TestControllerTraceEvidenceRequiresEachServiceAndInstance(t *testing.T) {
 				}
 			case "split operation proof":
 				delete(service[id].controller.counts, "cleanup")
-				delete(service["00000002-0000-4000-8000-000000000001"].controller.counts, "scan")
+				for otherID, state := range service {
+					if otherID != id {
+						delete(state.controller.counts, "scan")
+					}
+				}
 			case "missing cleanup":
 				for _, s := range service {
 					delete(s.controller.counts, "cleanup")
@@ -196,6 +212,42 @@ func TestControllerTraceEvidenceRequiresEachServiceAndInstance(t *testing.T) {
 			wantInvalid := mode == "invalid root" || mode == "wrong identity"
 			if ready != wantReady || invalid != wantInvalid {
 				t.Fatal("service evidence did not enforce the required scope", ready, invalid)
+			}
+		})
+	}
+}
+
+func TestControllerTraceEvidenceRequiresExactCleanupProfile(t *testing.T) {
+	for _, profile := range []struct {
+		name                           string
+		public, endpointChange         bool
+		allocation, identity, workload int
+	}{
+		{"internal", false, false, 3, 2, 2},
+		{"public", true, false, 3, 2, 4},
+		{"internal endpoint change", false, true, 4, 2, 3},
+		{"public endpoint change", true, true, 4, 2, 5},
+	} {
+		t.Run(profile.name, func(t *testing.T) {
+			for _, change := range []struct {
+				name                           string
+				allocation, identity, workload int
+			}{
+				{"complete", 0, 0, 0},
+				{"missing resumed allocator", -1, 0, 0},
+				{"extra allocator", 1, 0, 0},
+				{"missing identity", 0, -1, 0},
+				{"extra identity", 0, 1, 0},
+				{"missing workload", 0, 0, -1},
+				{"extra workload", 0, 0, 1},
+			} {
+				t.Run(change.name, func(t *testing.T) {
+					w := controllerTraceServicesFixture(profile.allocation+change.allocation, profile.identity+change.identity, profile.workload+change.workload)
+					ready, invalid, evidence := w.controllerTraceStatus(profile.public, profile.endpointChange)
+					if ready != (change.name == "complete") || invalid {
+						t.Fatal("cleanup evidence did not enforce the exact process counts", ready, invalid, evidence)
+					}
+				})
 			}
 		})
 	}

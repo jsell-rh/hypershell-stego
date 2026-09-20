@@ -2,7 +2,9 @@
 
 Status: hosted consumer checks passed at source `e026fb0`. The generated output
 uses signed STEGO compiler `f6ebd0b` and the selected Gateway console module.
-The live trace workflow and separate API gate remain required at this source.
+The live trace workflow failed at this source because its final check used the
+process counts from before cleanup. A corrected live run and separate API gate
+remain required.
 Do not promote the candidate until those checks and cluster cleanup pass.
 The completed pending-result workflow uses a separate frozen source.
 
@@ -17,8 +19,11 @@ service, an instance must prove at least two different traces for each required
 operation: reconciliation, scan, and cleanup. A short-lived old instance does
 not need to perform a second scan. The three repeated operations must come from
 one instance of each service; separate incomplete instances cannot combine their
-counts to satisfy this check. Existing worker instance counts, metrics,
-provider child-span checks, and restart checks remain required.
+counts to satisfy this check. The early worker instance counts, metrics, provider child-span checks, and
+restart checks remain required. Cleanup then stops and resumes the allocator
+once to prove that pending allocation cleanup prevents Gateway finalization.
+The final trace check requires that additional allocator instance. Missing or
+extra instances fail both checks.
 
 Collection retains at most 256 pairs and trace owners per worker instance.
 Operation counts stop at two. Duplicate delivery does not increase a count.
@@ -53,3 +58,21 @@ passed 65 adapter tests and all 50 trace collector cases. The collector checks
 invalid roots, distinct paired work, bounds, exact service instances, and the
 existing worker profile. Its success does not prove live trace delivery.
 See the [exact hosted evidence and exclusions](controller-trace-hosted-evidence.json).
+
+## Cleanup phase correction
+
+[Live run 35492055190](https://github.com/jsell-rh/hypershell-stego/actions/runs/35492055190)
+failed at the final trace check. It observed three allocator instances, two
+identity instances, and four workload instances. Each had valid paired evidence.
+The check still expected only two allocator instances. The cleanup test had
+correctly stopped and resumed that worker after the earlier signal check.
+
+The final check now includes that restart. Tests require exact counts for all
+three services in internal and public profiles, with and without an endpoint
+change. The earlier check still rejects an extra allocator instance. Repeated
+operation evidence must still come from one instance of each service.
+
+The failed run does not qualify the application workflow. Independent cleanup
+checks found no test fixtures or allocations, a free lease, and all 32 standing
+resources unchanged. See the [failure record](controller-trace-failure-evidence.json).
+The compiler and generated runtime are unchanged by this test correction.
