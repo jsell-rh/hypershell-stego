@@ -1,0 +1,28 @@
+{
+  "source": "b44b73aef99302299c847a0276dd94eb008db5d5",
+  "compiler": "8eeb11695416799cbc53fa42bba992a1ceeab810",
+  "run": 35539887087,
+  "qualified": true,
+  "source_archive_sha256": "1ecbb685963877aeb2058be76d425b834efdf7887af973c546f830927c518981",
+  "generated_archive_sha256": "6b1680e41a00d4f913ff9efd63e69a849b8dc37837d85e3df4c2672a68bdadd1",
+  "files": 428,
+  "changed_files": [
+    ".stego/state.yaml"
+  ],
+  "changed_input_records": [
+    "internal/gatewayidentityapp/worker.go",
+    "internal/gatewayworkloadapp/worker.go",
+    "internal/serviceaccountprovisioner/rpc.go"
+  ],
+  "unchanged_generated_and_module_files": 427,
+  "recorded_output_hashes_checked": 419,
+  "recorded_input_hashes_and_modes_checked": 41,
+  "all_three_input_manifest_digests_recalculated": true,
+  "only_three_input_hashes_and_root_manifest_digest_changed": true,
+  "compiler_executed_locally": false,
+  "applied": true,
+  "state_sha256": "18429a725ee7131e8ca8b5717ab3a89d18c35a2b17b7722122c25dc02a8dfe99",
+  "scope": "Regeneration evidence only. Complete application and live workflow checks remain required.",
+  "compiler_installation_matches_authenticated_release": true,
+  "installation_record_sha256": "f9e32a69118bed4187e13aa7b77dda9d40eba1ec422a5b7a9f8d60d9a234086c"
+}

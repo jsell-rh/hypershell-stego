@@ -110,11 +110,11 @@ last_applied:
                 mode: 420
             internal/gatewayidentityapp/worker.go:
                 exists: true
-                sha256: 2849e8d3555b5c7a2262f47968beac0119ac5d3b3cc543e6ffd304433ee36b4f
+                sha256: 114c87f5bbaeb8d37a524fce0ffee1cad3d550234c206154564f325af3a40f98
                 mode: 420
             internal/gatewayworkloadapp/worker.go:
                 exists: true
-                sha256: 5ca461eab365e4af21f925381baa4abcc0993535a1a778c712d4cf723521e415
+                sha256: cc12c87a16671a77191aac4be0bc932cb3b2c83ae2190a5abebc6a00abd6a444
                 mode: 420
             internal/namespaceallocationapp/worker.go:
                 exists: true
@@ -126,13 +126,13 @@ last_applied:
                 mode: 420
             internal/serviceaccountprovisioner/rpc.go:
                 exists: true
-                sha256: eadec11fbfdf56893d3d4d8dbc4ca7f65c94e445476aee0bbc9bdee38b0d38ce
+                sha256: fc4dd1a0bd63e5b6d837e35cadeafd8000bea77e45e52e7906308d6a99694d2a
                 mode: 420
             service.yaml:
                 exists: true
                 sha256: 62fe4442f5172fa32d3df458dbd1092eee58ee86fcf63b670d0d8531722a2f16
                 mode: 420
-        sha256: 39cfc9cccf3f7d1b29af34c13b84dcc2a6ab0153ce2ea1383a765ee8709ac303
+        sha256: 19929125a198a708782e5dc3d34f63ae62c59d8a909d69eaae1a2ccdfc79b3de
     compiler_build:
         go_version: go1.26.8
         goos: linux

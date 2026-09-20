@@ -22,3 +22,14 @@ to fail before the workload worker opens its control connection.
 
 This branch requires hosted application checks and complete workflow evidence
 before main promotion. No compiler or application binary was run locally.
+
+The first application check stopped before tests because the recorded worker
+input hashes were stale. Hosted [regeneration run 35539887087](https://github.com/jsell-rh/hypershell-stego/actions/runs/35539887087)
+refreshed those records. Review checked all 428 output and module files: 427
+are unchanged. Only three worker input hashes and their combined digest changed
+in the root state file. All 419 output hashes, 41 input hashes and modes, and
+three input manifest digests match. The compiler installation record matches
+the authenticated release. See the
+[generation evidence](control-worker-configuration-generation-evidence.json).
+The initial failed checks remain failure records; the refreshed source requires
+new application checks.
