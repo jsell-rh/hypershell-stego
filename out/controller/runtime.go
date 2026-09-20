@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"time"
 )
 
@@ -27,6 +28,8 @@ type Source[T any] struct {
 // Repeated runs of a domain action must be safe. This runtime does not provide
 // leases, distributed exclusion, durable acknowledgments, or exactly-once writes.
 type Options struct {
+	// QueueCapacity bounds the waiting buffer. Telemetry capacity includes the
+	// one active action. A scan can retain one additional item while it waits.
 	QueueCapacity    int
 	ResyncInterval   time.Duration
 	ReconcileTimeout time.Duration
@@ -80,14 +83,26 @@ func Run[T any](ctx context.Context, source Source[T], reconcile func(context.Co
 	if err := options.validate(); err != nil {
 		return err
 	}
+	if ctx.Err() != nil {
+		return nil
+	}
+	ctx, closeTelemetry, err := startControllerTelemetry(ctx)
+	if err != nil {
+		return err
+	}
+	defer closeTelemetry()
 	for ctx.Err() == nil {
-		err := session(ctx, source, reconcile, options)
+		err, finish := controllerWork(ctx, "watch", func(operation context.Context) error { return session(operation, source, reconcile, options) })
 		if ctx.Err() != nil {
+			finish(false)
 			return nil
 		}
-		if err != nil && (errors.Is(err, ErrWatch) || options.Terminal(err)) {
+		terminal := err != nil && (errors.Is(err, ErrWatch) || errors.Is(err, ErrTelemetryInUse) || options.Terminal(err))
+		finish(!terminal)
+		if terminal {
 			return err
 		}
+		controllerNotice(ctx, "reconnect")
 		options.observe("reconnect", err)
 		timer := time.NewTimer(options.ReconnectDelay)
 		select {
@@ -103,7 +118,18 @@ func Run[T any](ctx context.Context, source Source[T], reconcile func(context.Co
 func session[T any](parent context.Context, source Source[T], reconcile func(context.Context, T) error, options Options) error {
 	ctx, cancel := context.WithCancel(parent)
 	var workers sync.WaitGroup
-	defer func() { cancel(); workers.Wait() }()
+	queue := make(chan T, options.QueueCapacity)
+	var active atomic.Int32
+	var waiting atomic.Int64
+	var ready atomic.Bool
+	detach, err := attachControllerQueue(ctx, func() QueueMetrics {
+		return QueueMetrics{Capacity: cap(queue) + 1, Queued: len(queue), Active: int(active.Load()), Waiting: waiting.Load(), Ready: ready.Load() && ctx.Err() == nil}
+	})
+	if err != nil {
+		cancel()
+		return err
+	}
+	defer func() { cancel(); workers.Wait(); detach() }()
 	// The same operation limit bounds subscription setup. Stop its timer after
 	// setup, so a healthy live stream can remain open across many scans.
 	setup := time.AfterFunc(options.ReconcileTimeout, cancel)
@@ -118,8 +144,9 @@ func session[T any](parent context.Context, source Source[T], reconcile func(con
 	if receive == nil {
 		return ErrWatch
 	}
+	ready.Store(true)
+	controllerNotice(ctx, "watch_started")
 	options.observe("watch_started", nil)
-	queue := make(chan T, options.QueueCapacity)
 	failures := make(chan error, 2)
 	scanned := make(chan struct{}, 1)
 	// Record failures before canceling. Cancellation interrupts an active action
@@ -150,6 +177,8 @@ func session[T any](parent context.Context, source Source[T], reconcile func(con
 			if ctx.Err() != nil {
 				return ctx.Err()
 			}
+			waiting.Add(1)
+			defer waiting.Add(-1)
 			select {
 			case queue <- item:
 				return nil
@@ -158,7 +187,11 @@ func session[T any](parent context.Context, source Source[T], reconcile func(con
 			}
 		}
 		for ctx.Err() == nil {
-			if err := source.Scan(ctx, emit); err != nil {
+			err, finish := controllerWork(ctx, "scan", func(operation context.Context) error { return source.Scan(operation, emit) })
+			// A scan failure ends the session. Only the joined watch session owns the
+			// reconnect decision; the terminal policy stays on the main worker.
+			finish(false)
+			if err != nil {
 				fail(err)
 				return
 			}
@@ -193,12 +226,15 @@ func session[T any](parent context.Context, source Source[T], reconcile func(con
 				break
 			}
 			operation, stop := context.WithTimeout(ctx, options.ReconcileTimeout)
-			err := reconcile(operation, item)
-			if err == nil {
-				err = operation.Err()
-			}
+			err, finish := controllerWork(operation, "reconcile", func(work context.Context) error {
+				active.Store(1)
+				defer active.Store(0)
+				return reconcile(work, item)
+			})
 			stop()
-			if err != nil && options.Terminal(err) {
+			terminal := err != nil && options.Terminal(err)
+			finish(err != nil && ctx.Err() == nil && !terminal)
+			if terminal {
 				return err
 			}
 			if err != nil {
