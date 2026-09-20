@@ -30,3 +30,20 @@ work after account cleanup. They do not establish the cause of each delay.
 Hosted checks and a new live workflow must verify this source. No new
 cleanup time or capacity result is claimed here. No local performance test
 was run. Kubernetes finalizers, permissions, and grace periods are unchanged.
+
+## Focused checks
+
+At candidate `69b9e29`, independent review verified 71 adapter top-level tests,
+including all 15 new workload progress fault cases. The allocation check
+passed 23 top-level tests. The trace evidence checks passed all 99 cases.
+Provider discovery passed 33 inventory cases and seven provider tests. Journal
+recovery passed all 44 required top-level tests.
+
+The generated Gateway console check matched 130 source and configuration files,
+the signed compiler, and the built and pulled image records. The image runs as
+user 65532 and uses the expected service entry point. See the
+[focused evidence](workload-pending-focused-evidence.json).
+
+The full core suite remains active. These results do not qualify the complete
+application or a new cleanup measurement. The live test remains held until
+all exact-source checks pass independent review.
