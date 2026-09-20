@@ -67,3 +67,22 @@ That read occurred before the separate API gate. This browser record does not
 qualify that gate or claim current cleanup after a later run. See the
 [complete browser evidence and limits](allocation-pending-live-evidence.json).
 The newer controller trace compiler requires its own complete application proof.
+
+
+## Separate API check
+
+The [API and SQL gate](https://github.com/jsell-rh/hypershell-stego/actions/runs/35491294055)
+passed all 52 required tests at source `7bc21b7` with the same signed compiler.
+The tests cover atomic Gateway, owner, and event writes; filtered access;
+REST and gRPC; event delivery; restart recovery; and durable deletion.
+Independent review matched all 1,574 source files and 421 generated hashes.
+The committed output matched both generation runs and the final output.
+The compiler bytes and public records matched the signed release in the actual
+bounded test Pod. The Job had a 1,200-second deadline and no retry.
+
+A separate cluster audit after the API run found both test fixtures absent,
+no allocated namespaces or grants, and a free shared lease. All 32 standing
+installation resources remained unchanged. The API fixture used PostgreSQL in
+a restricted Pod; it does not prove RDS failover. The newer trace compiler,
+production capacity, the 30-second cleanup target, and live Kata isolation
+remain separate requirements. See the [API evidence](allocation-pending-api-evidence.json).
