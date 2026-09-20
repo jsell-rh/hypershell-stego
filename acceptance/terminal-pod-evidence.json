@@ -1,0 +1,22 @@
+{
+  "schema": 1,
+  "source": "4c6744b4e0816a84f85279a19ef21fa69ae7ea86",
+  "run": 35478679579,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35478679579",
+  "source_archive_sha256": "5a40ae4789019bf5432c83f7253eab9b0812dc71140a8aa0c479cb5e99b0fd90",
+  "source_archive_match": true,
+  "pod_status_cases": 5,
+  "completion_cases": 8,
+  "required_adapter_tests_passed": 63,
+  "adapter_exclusions": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+  ],
+  "constructor_cases": 4,
+  "allocation_cleanup_cases": 6,
+  "collection_cases": 28,
+  "live_test_compiled": true,
+  "live_workflow_proved": false,
+  "live_sandbox_execution_tested": false,
+  "verification_sha256": "0e0ffcc20064e6d2f5c1418f7c49a6bff43a7380318182658f6ae5ab00ac2ea4",
+  "scope": "Hosted checks for terminal Pod evidence and the compiled live test. No complete live result is claimed."
+}

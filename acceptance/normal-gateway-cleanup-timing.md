@@ -86,3 +86,10 @@ found no test resources, all 32 standing resources intact, and a free lease.
 See the [failed-run evidence](normal-cleanup-preemption-evidence.json).
 The next attempt requires a capacity check and better terminal Pod evidence.
 The default branch remains unchanged.
+
+Candidate `4c6744b` saves bounded terminal Pod status before it collects logs.
+A missing completion record still fails. Hosted run `35478679579` passed five
+status cases, eight completion cases, 63 required adapter tests, six allocation
+cleanup tests, and 28 collection cases. The live test compiled. See
+`terminal-pod-evidence.json`. Live run `35478851396` uses this exact source.
+Its result remains pending. The application and 100-account test are unchanged.
