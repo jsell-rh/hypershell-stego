@@ -1,0 +1,54 @@
+{
+  "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+  "compiler": "8eeb11695416799cbc53fa42bba992a1ceeab810",
+  "qualified": true,
+  "workflow": {
+    "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+    "checked_at": "2026-09-20T22:06:20.932081+00:00",
+    "qualified": true,
+    "required_test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 119.43,
+    "image_run": 35538721910,
+    "full_run": 35538751914,
+    "images_verified": 7,
+    "generated_hashes_matched": 429,
+    "evidence_sha256": "0539fd7a3d503790214c6112eb5f006faa342ffaef8effd16bb49ea527b01687",
+    "source_archive_sha256": "4363b7998c81e2996e9a976c4bc6f0580eff0b4c06cd9765cfa4478bb4c284f2",
+    "admitted_limits_checked": true,
+    "same_pod_and_job": true,
+    "actual_compiler_sha256": {
+      "generation": "dc650131dc0bab7aab7caf4e33a0ba00dbb436c502ce6882cf2634d9b9b69a62",
+      "publication": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+    },
+    "cleanup": {
+      "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+      "checked_at": "2026-09-20T22:06:07.700342+00:00",
+      "phase": "cleanup",
+      "existing_test_jobs_and_pods_absent": true,
+      "lease_free": true,
+      "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+      "standing_resources_unchanged": 32,
+      "namespace": "stego-service-20260920-5af941",
+      "owned_resources_absent": true
+    },
+    "scope": "One service Deployment workflow with exact signed images. Browser adoption, production CA selection, capacity, and full enterprise readiness require their separate evidence."
+  },
+  "generation_inventory": {
+    "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+    "checked_at": "2026-09-20T22:07:38.997914+00:00",
+    "manifest_records": 429,
+    "paths_unique": true,
+    "all_expected_generated_and_module_files_present": true,
+    "all_hashes_match_committed_source": true,
+    "only_extra_manifest_path": "gateway-console/.stego/compiler-revision",
+    "before_after_and_archive_match": true,
+    "source_archive_sha256": "4363b7998c81e2996e9a976c4bc6f0580eff0b4c06cd9765cfa4478bb4c284f2",
+    "evidence_archive_sha256": "0539fd7a3d503790214c6112eb5f006faa342ffaef8effd16bb49ea527b01687",
+    "qualified": true,
+    "scope": "Supplemental inventory check. The live manifest covers the 428 generated/module files and the pinned Gateway console compiler revision."
+  },
+  "ready_restart_review_sha256": "52efef553724262d2043d931b55868e784bef41e31e7e5cff034a9aad3bf2ffe",
+  "all_observed_ready_restart_counts_zero": true,
+  "complete_review_sha256": "4e971dad65ff9411f1e685a2d69fe7a48049f6be7ce46abf2bf5f09d5acc08d2",
+  "scope": "Service Deployment workflow for the recorded base source. This does not claim a service test of the later worker settings source, complete browser or count validation, production capacity, or enterprise completion."
+}

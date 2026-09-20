@@ -1,0 +1,131 @@
+{
+  "source": "e0f3d7bb9ae93666e9a1381137a57df57a0416f8",
+  "compiler": "8eeb11695416799cbc53fa42bba992a1ceeab810",
+  "checked_at": "2026-09-20T22:22:37.568855+00:00",
+  "hosted_checks_qualified": true,
+  "full": {
+    "source": "e0f3d7bb9ae93666e9a1381137a57df57a0416f8",
+    "run": 35540006064,
+    "qualified": true,
+    "checked_at": "2026-09-20T22:21:51.731586+00:00",
+    "jobs": {
+      "acceptance (browser)": "success",
+      "web-console": "success",
+      "acceptance (core)": "success",
+      "service-image": "success",
+      "sandbox-workload": "skipped"
+    },
+    "baseline_source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+    "core_cases_retained": 1165,
+    "core_cases_passed": 1176,
+    "core_top_level_tests": 366,
+    "prior_test_definitions_retained": true,
+    "added_core_cases": [
+      "TestControlConfigurationFailsBeforeProviderSetup",
+      "TestControlConfigurationFailsBeforeProviderSetup/identity/Address",
+      "TestControlConfigurationFailsBeforeProviderSetup/identity/CAFile",
+      "TestControlConfigurationFailsBeforeProviderSetup/identity/TokenFile",
+      "TestControlConfigurationFailsBeforeProviderSetup/provisioner/Address",
+      "TestControlConfigurationFailsBeforeProviderSetup/provisioner/CAFile",
+      "TestControlConfigurationFailsBeforeProviderSetup/provisioner/TokenFile",
+      "TestControlConfigurationFailsBeforeProviderSetup/workload/Address",
+      "TestControlConfigurationFailsBeforeProviderSetup/workload/CAFile",
+      "TestControlConfigurationFailsBeforeProviderSetup/workload/TokenFile",
+      "TestWorkloadClusterConfigurationPrecedesConnectionSetup"
+    ],
+    "core_skips": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestRealProviderAccountCapacity"
+    ],
+    "rendered_browser_test_passed": true,
+    "log_sha256": "2ae06f40a42e5864f4920e76ac3cbf98b233c58f4f84b431bde6c28c2c1eaa00",
+    "sandbox_deferral_preserved": true,
+    "scope": "Hosted application checks. Live workflow and capacity remain separate requirements."
+  },
+  "journal": {
+    "source": "e0f3d7bb9ae93666e9a1381137a57df57a0416f8",
+    "run": 35540007357,
+    "qualified": true,
+    "checked_at": "2026-09-20T22:01:33.069325+00:00",
+    "required_roots": [
+      "TestCleanupRPCSelectsRetryableErrors",
+      "TestConfiguredServiceAccountQuotaRemainsAtomic",
+      "TestConsoleCredentialDeliveryChecksCurrentAssignment",
+      "TestConsoleDomainPolicy",
+      "TestConsoleFailureDoesNotBlockGrantRemoval",
+      "TestConsoleProviderStateJournalSeparatesNativeScope",
+      "TestConsoleProviderStateReadGrantIsReadOnly",
+      "TestConsoleSQLStateRefusesOldServerWithoutGatewayCalls",
+      "TestDeletedAccountRecoveryRequiresParentReader",
+      "TestDeletedAccountRecoverySelectsCleanupOwner",
+      "TestDeletionRequiresExplicitPrivilegedState",
+      "TestGatewayAccountCleanupBudgetResumesAfterRestart",
+      "TestGatewayAccountCleanupParallelResumesAfterRestart",
+      "TestGatewayAccountCleanupRecoveryInvalidatesProofWhenInputsChange",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayAccountCleanupRecoveryReopensProofOnProviderFailure",
+      "TestGatewayAccountCleanupRecoveryRetainsProofDuringCleanRescan",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayCleanupUsesBoundedRetryPolicy",
+      "TestGatewayClosureContinuesAfterConsoleFailure",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestGatewayIdentityControllerWorkflow",
+      "TestGatewayIdentityInventory",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryRegistersPastFailedClientRead",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayUserLoginFollowsStoredGrants",
+      "TestIdentityConditionDuringProviderTimeoutAndDesiredChange",
+      "TestIdentityPublicationRequiresProviderSuccess",
+      "TestInventoryRPCWindowCannotBecomeEmptyCompletion",
+      "TestInventoryRPCsDenyUnverifiedCaller",
+      "TestProviderErrorRetainsSafeRetryStatus",
+      "TestProviderStateJournalScopeAndObservation",
+      "TestSQLComponentRejectsUnknownValues",
+      "TestServiceAccountGatewayQuota",
+      "TestServiceAccountLimits",
+      "TestServiceAccountOptions",
+      "TestServiceAccountQuotaAndExpirationValidation"
+    ],
+    "roots_passed": 44,
+    "cases_passed": 172,
+    "packages_passed": 7,
+    "failed_or_skipped_cases": 0,
+    "artifact_matches_job_log": true,
+    "workflow_sha256": "375e306db712d2a2955e576d42439aa1f3b8044f14403b53e76664852b5e9089",
+    "tests_sha256": "03cf7ad7ecc1d7135c7af258d577fe46428e4c2fed941acf00711838479070ea",
+    "log_sha256": "fe9e2338f9893689b7e46278993663e04b0f9cb55b8545df038c48f8424b5bc2",
+    "scope": "Hosted journal recovery tests. This does not qualify the complete application or live workflow."
+  },
+  "image_run": 35540009344,
+  "image_reviews": {
+    "application-qualification.json": {
+      "sha256": "2d060e98cf24d795a998f7e8811e2733c298224fd3f980d9b6d7dcec5128acc9",
+      "applications": 7
+    },
+    "image-qualification.json": {
+      "sha256": "dfa3daff2cc213a8484db1b400b4de86f848be9c36e5800a98c768352943c2da",
+      "applications": 7
+    },
+    "registry-qualification.json": {
+      "sha256": "43165ecc54a8a4a4b62b2932fa8c3c9a90bdbc5c2377c495ff30a0497aa9a6bd",
+      "applications": 7
+    },
+    "signature-qualification.json": {
+      "sha256": "80631f8fd8f28a44e9784adf6a9572ce61b4898edd6e49c9e33bc2c8f1daa5b8",
+      "applications": 7
+    }
+  },
+  "live_workflow_qualified": false,
+  "main_promoted": false,
+  "scope": "Hosted application, recovery, and signed-image checks for the recorded source. Complete live count and browser checks remain required. The deferred Sandbox check and five core exclusions are not passing tests."
+}

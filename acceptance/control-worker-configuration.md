@@ -33,3 +33,16 @@ the authenticated release. See the
 [generation evidence](control-worker-configuration-generation-evidence.json).
 The initial failed checks remain failure records; the refreshed source requires
 new application checks.
+
+Corrected source `e0f3d7b` passed
+[full run 35540006064](https://github.com/jsell-rh/hypershell-stego/actions/runs/35540006064).
+Independent review confirmed 1,176 core cases across 366 top-level tests. All
+1,165 prior cases and five recorded exclusions remain. The browser, UI, and
+service-image jobs passed; the deferred Sandbox job did not run. The focused
+recovery check passed 172 cases across 44 top-level tests and seven packages.
+Seven application images passed source, content, registry, and signature review.
+See the [hosted evidence](control-worker-configuration-ci-evidence.json).
+
+These results do not include the pending live count and browser checks for this
+source. Main promotion remains pending. The earlier service Deployment result
+belongs to source `7ed1a7b7` and is recorded separately.

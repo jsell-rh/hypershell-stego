@@ -38,6 +38,16 @@ estimate of one changed constructor diagnostic index. The complete diff showed
 three. The same artifacts passed after that estimate was corrected.
 See the [generation evidence](runtime-configuration-generation-evidence.json).
 
-Hosted application checks and complete live workflow checks are required before
-main promotion. This change does not complete worker connection assembly or the
-remaining enterprise requirements.
+Source `7ed1a7b7` passed the full hosted check with 1,165 core cases and 364
+top-level tests. Its service Deployment workflow passed in 119.43 seconds.
+Review checked seven signed images, 429 generation hashes, and ready API and
+identity worker Pods before and after replacement. All observed ready Pod restart
+counts were zero. Cleanup removed the test namespace and owned resources,
+released the shared Lease, and left all 32 standing resources unchanged.
+See the [service evidence](runtime-configuration-service-evidence.json).
+
+The base browser workflow remains under review. The later shared worker settings
+change has separate [hosted evidence](control-worker-configuration-ci-evidence.json).
+Complete live count and browser checks remain required before main promotion.
+This change does not complete worker connection assembly or the remaining
+enterprise requirements.
