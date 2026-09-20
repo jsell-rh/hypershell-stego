@@ -36,6 +36,23 @@ Journal recovery passed all 44 required tests. Allocation and adapter checks
 passed, including 99 trace and Pod-guard cases. Source, archive, compiler, and
 test-log identities are recorded in `keycloak-inventory-hosted-evidence.json`.
 
-The complete live Gateway workflow and separate API test remain required.
-These hosted results do not prove the 30-second whole-cleanup target or
-production capacity. Live Kata execution remains deferred by the user.
+The complete live Gateway workflow passed on the same source. All 11 required
+tests passed. Independent checks verified 1,589 source files and 421 generated
+file hashes, the signed compiler package, the admitted Pod limits, all four
+viewed screenshots, and controller log and trace pairs from all nine expected
+worker instances. The workflow includes database restart, namespace replacement,
+access denial, and durable deletion while the allocator is stopped.
+
+The test created 100 accounts through REST and verified their token issuance.
+Final cleanup closed all 100 account records and journals, removed the provider
+clients and users, and retained the other Gateway and supplied database.
+The observed whole-cleanup upper bound was 40.586 seconds. Sequential reads
+still observed allocation cleanup pending at 38.727 seconds. The 30-second
+target is not met by this observation. Account cleanup was first recorded
+complete at 5.163 seconds; this does not prove whole-Gateway cleanup.
+
+Both test fixtures and their allocations were absent after the run. The shared
+lease was free, and all 32 standing resources were unchanged. The record is in
+`keycloak-inventory-live-evidence.json`. The separate API test remains required.
+Production capacity is not proved. Live Kata execution remains deferred by the
+user.
