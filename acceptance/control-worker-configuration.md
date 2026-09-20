@@ -82,3 +82,17 @@ unchanged. See the [live count evidence](control-worker-count-evidence.json).
 Test source `d98b673` differs from runtime source `e0f3d7b` only in the five
 recorded test and CI files. The current-source browser workflow remains required
 before consumer acceptance. The count result does not prove production capacity.
+
+## Current browser failure
+
+[Run 35543304070](https://github.com/jsell-rh/hypershell-stego/actions/runs/35543304070)
+used runtime source `e0f3d7b` and failed during Kubernetes API discovery. A TLS
+handshake timed out when the test applied the generated management console
+manifest after API restart. The other ten required tests passed. The cause is
+not established. Independent cleanup found no test resources, a free Lease,
+and all 32 standing resources unchanged. See the
+[failure evidence](control-worker-browser-failure-evidence.json).
+
+This run does not qualify the candidate. One controlled repeat uses the same
+source, images, security controls, and resource limits. Main remains unchanged
+until the complete workflow passes review.
