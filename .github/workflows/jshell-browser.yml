@@ -3,6 +3,26 @@ name: Gateway browser workflow on jshell
 on:
   workflow_dispatch:
     inputs:
+      fixture_revision:
+        description: Full commit ID of the checked browser inspection fixture
+        type: string
+        required: true
+      image_run:
+        description: Successful common image workflow run for this exact fixture
+        type: string
+        required: true
+      image_attempt:
+        description: Selected image workflow attempt
+        type: string
+        default: '1'
+      image_policy:
+        description: Independent common signature policy for the selected fixture
+        type: string
+        required: true
+      registry_policy:
+        description: Operator-approved registry token and blob origins
+        type: string
+        default: '{"format":1,"token_origins":[],"blob_origins":[]}'
       public_gateway:
         description: Test the public Gateway with the operator configuration
         type: boolean
@@ -19,15 +39,13 @@ on:
         description: Operator-held lease UID for a temporary test installation
         type: string
         default: ''
-  push:
-    branches: [main]
-    paths-ignore:
-      - '**/*.md'
-      # These records describe completed checks and are not runtime inputs.
-      - 'acceptance/*-evidence.json'
+  # A live run needs a checked fixture commit and its signed image run.
+  # Source and image workflows run first. The operator then selects both.
 
 permissions:
   contents: read
+  actions: read
+  attestations: read
 
 concurrency:
   group: jshell-live-tests
@@ -59,6 +77,7 @@ jobs:
       - name: Check the CI boundary
         run: |
           python3 scripts/test_browser_ci.py
+          python3 -B scripts/test_browser_image_run.py
           python3 scripts/test_ci_credentials.py
           python3 scripts/test_service_startup.py
           python3 scripts/test_browser_cluster_installation.py
@@ -66,19 +85,46 @@ jobs:
           python3 scripts/test_browser_inspection.py
           python3 scripts/test_public_gateway_fixture.py
           go test -p=1 -mod=readonly -count=1 -timeout=30s scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go
-      - name: Prepare the frozen inspection source
-        timeout-minutes: 15
+      - name: Check the selected image run
+        timeout-minutes: 3
         env:
           GH_TOKEN: ${{ github.token }}
+          FIXTURE_REVISION: ${{ inputs.fixture_revision }}
+          IMAGE_RUN: ${{ inputs.image_run }}
+          IMAGE_ATTEMPT: ${{ inputs.image_attempt }}
+          IMAGE_POLICY: ${{ inputs.image_policy }}
+          REGISTRY_POLICY: ${{ inputs.registry_policy }}
+        run: python3 -B scripts/select-browser-image-run.py
+      - name: Fetch the exact frozen inspection source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          ref: ${{ inputs.fixture_revision }}
+          path: browser-source
+          persist-credentials: false
+      - name: Check the frozen source and fetch its images
+        timeout-minutes: 8
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FIXTURE_REVISION: ${{ inputs.fixture_revision }}
+          IMAGE_RUN: ${{ inputs.image_run }}
+          IMAGE_ATTEMPT: ${{ inputs.image_attempt }}
           SANDBOX_NETWORK: ${{ inputs.sandbox_network }}
         run: |
-          bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
-          echo "STEGO_COMPILER_PACKAGE=$RUNNER_TEMP/compiler-setup/verified" >> "$GITHUB_ENV"
-          unset GH_TOKEN GITHUB_TOKEN
-          # Use the operator's fixed network profile for supplied PostgreSQL.
-          fixture_args=()
-          if [[ $SANDBOX_NETWORK == true ]]; then fixture_args+=(--sandbox-network); fi
-          python3 scripts/prepare-browser-inspection.py "${fixture_args[@]}" --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" --destination "$RUNNER_TEMP/browser-source"
+          test "$(git -C browser-source rev-parse HEAD)" = "$FIXTURE_REVISION"
+          test -z "$(git -C browser-source status --porcelain --untracked-files=all)"
+          test -s browser-source/acceptance/browser-inspection-source.json
+          (cd browser-source && python3 -I -B - "$SANDBOX_NETWORK" <<'PY'
+          import sys
+          from pathlib import Path
+          sys.path.insert(0, str(Path('scripts').resolve()))
+          from sandbox_network_fixture import enabled
+          if enabled(Path.cwd()) != (sys.argv[1] == 'true'):
+              raise SystemExit('The selected fixture has a different network profile')
+          PY
+          )
+          gh run download "$IMAGE_RUN" --repo "$GITHUB_REPOSITORY" --dir "$RUNNER_TEMP/image-artifacts"
+          # Run selection and signature policy both bind the exact attempt.
+          python3 -B scripts/select-browser-image-run.py --recheck
       - name: Install the pinned OpenShift client
         timeout-minutes: 3
         run: |
@@ -106,7 +152,7 @@ jobs:
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
       - name: Write the public test configuration
-        if: github.event_name == 'push' || inputs.public_gateway
+        if: inputs.public_gateway
         env:
           PUBLIC_CONFIG: ${{ vars.JSHELL_GATEWAY_PUBLIC_CONFIG }}
         run: |
@@ -117,6 +163,7 @@ jobs:
           echo 'STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=1' >> "$GITHUB_ENV"
       - name: Run the generated Gateway workflow
         env:
+          GH_TOKEN: ${{ github.token }}
           KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig
           STEGO_TEST_CONTEXT: jshell-ci
           STEGO_TEST_PREINSTALLED: '1'
@@ -126,7 +173,7 @@ jobs:
           STEGO_TEST_RESULTS: ${{ runner.temp }}/gateway-browser
           STEGO_TEST_HELD_LEASE_HOLDER: ${{ inputs.held_lease_holder }}
           STEGO_TEST_HELD_LEASE_UID: ${{ inputs.held_lease_uid }}
-        run: bash "$RUNNER_TEMP/browser-source/scripts/check-service-deployment.sh"
+        run: bash "$GITHUB_WORKSPACE/browser-source/scripts/check-service-deployment.sh"
       - name: Remove local credentials
         if: always()
         run: rm -f -- "$RUNNER_TEMP/jshell.kubeconfig" "$RUNNER_TEMP/gateway-browser/ci-token" "$RUNNER_TEMP/gateway-browser/private-job.json" "$RUNNER_TEMP/gateway-browser/server.key" "$RUNNER_TEMP/gateway-browser/ca.key"
@@ -156,4 +203,11 @@ jobs:
             ${{ runner.temp }}/gateway-browser/*.log
             ${{ runner.temp }}/gateway-browser/application.sha256
             ${{ runner.temp }}/gateway-browser/evidence.tar
-            ${{ runner.temp }}/browser-source/acceptance/browser-inspection-source.json
+            ${{ github.workspace }}/browser-source/acceptance/browser-inspection-source.json
+            ${{ runner.temp }}/image-run-selection.json
+            ${{ runner.temp }}/image-policy.json
+            ${{ runner.temp }}/registry-policy.json
+            ${{ runner.temp }}/gateway-browser/image-selection.json
+            ${{ runner.temp }}/gateway-browser/image-compiler-installation.json
+            ${{ runner.temp }}/gateway-browser/image-delivery-transfer.json
+            ${{ runner.temp }}/gateway-browser/image-delivery.sha256

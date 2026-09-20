@@ -38,6 +38,18 @@ and build its images with the common image workflow. Production allocator
 images do not contain the inspection roles and cannot replace fixture images.
 Do not merge the fixture roles into production.
 
+Dispatch `jshell-browser.yml` after the fixture image run passes. Set
+`fixture_revision` to its full commit ID, `image_run` and `image_attempt` to
+the selected run, and `image_policy` to the independent format 2 policy JSON.
+Set `registry_policy` to the operator destination policy JSON when needed.
+The workflow fetches the exact fixture commit and supplies the runner inputs.
+It checks the run before and after artifact download. The common STEGO tools
+then authenticate the records before the test takes the cluster Lease.
+
+This live workflow requires explicit dispatch. A push to main does not select
+a fixture or start a second cluster test. The source and image checks remain
+separate prerequisites. Keep their records with the live test evidence.
+
 The host authenticates all records, captures the image files, and records their
 digests. It transfers the full tracked source and a package with the images,
 tools, and publishing compiler. It compares the complete package digest in the
