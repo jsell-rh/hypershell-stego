@@ -39,7 +39,7 @@ type Options struct {
 	SandboxEnabled bool
 }
 
-var ErrPending = errors.New("namespace cleanup is pending")
+const cleanupRecheck = time.Second
 
 // New connects Gateway state to the generated queue and telemetry scope.
 func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, options Options) (*Controller, error) {
@@ -82,86 +82,92 @@ func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
 // Run checks recorded Gateway placement before allocation. A watch event
 // is not authority to create or remove a namespace.
 func (c *Controller) Run(ctx context.Context, metrics *runtime.Metrics) error {
-	return runtime.RunKeyedWatches(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Cleanup: cleanupmetrics.Gateway(c.state, "allocation", c.cluster), Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
+	return runtime.RunKeyedWatchesWithResult(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Cleanup: cleanupmetrics.Gateway(c.state, "allocation", c.cluster), Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
 		return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 	}}})
 }
 
-func (c *Controller) reconcile(ctx context.Context, key string) error {
+func (c *Controller) reconcile(ctx context.Context, key string) (runtime.ReconcileResult, error) {
 	kind, id, ok := strings.Cut(key, ":")
 	if !ok {
-		return errors.New("namespace work key has no resource kind")
+		return runtime.ReconcileResult{}, errors.New("namespace work key has no resource kind")
 	}
 	switch kind {
 	case "gateway":
 		response, err := c.state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
 		if err != nil {
-			return err
+			return runtime.ReconcileResult{}, err
 		}
 		gw := response.GetGateway()
 		name, err := gatewayworkload.Namespace(id)
 		if err != nil || gw.GetMetadata().GetId() != id || gw.GetNamespace() != name || response.GetResourceVersion() < 1 || response.GetResourceGeneration() < 1 {
-			return errors.New("Gateway allocation state is invalid")
+			return runtime.ReconcileResult{}, errors.New("Gateway allocation state is invalid")
 		}
 		history := response.GetCleanupTargets()["workload"]
 		if history == nil {
-			return errors.New("Gateway allocation has no cleanup history")
+			return runtime.ReconcileResult{}, errors.New("Gateway allocation has no cleanup history")
 		}
 		complete, recorded := history.GetTargets()[c.cluster]
 		stateName, err := gatewayworkload.StateNamespace(id)
 		if err != nil {
-			return err
+			return runtime.ReconcileResult{}, err
 		}
 		if response.GetDeleted() || gw.GetClusterId() != c.cluster {
 			if !recorded {
-				return nil
+				return runtime.ReconcileResult{}, nil
 			}
-			remove := func(operation context.Context) error {
-				if err := c.remove(operation, "gateway", name, id); err != nil {
-					return err
+			remove := func(operation context.Context) (bool, error) {
+				if done, err := c.allocator.Delete(operation, "gateway", name, id); err != nil || !done {
+					return false, err
 				}
-				// Remove retained Sandbox allocations even when new Sandbox
-				// creation is disabled. The Gateway must stop creating work first.
+				// Remove retained Sandbox allocations when creation is disabled.
+				// The Gateway must stop creating work first.
 				sandboxName, err := gatewayworkload.SandboxNamespace(id)
 				if err != nil {
-					return err
+					return false, err
 				}
-				if err := c.remove(operation, "sandbox", sandboxName, id); err != nil {
-					return err
+				if done, err := c.allocator.Delete(operation, "sandbox", sandboxName, id); err != nil || !done {
+					return false, err
 				}
 				sqlHistory := response.GetCleanupTargets()["sql"]
 				if sqlHistory == nil {
-					return errors.New("Gateway allocation has no SQL cleanup history")
+					return false, errors.New("Gateway allocation has no SQL cleanup history")
 				}
 				sqlComplete, sqlRecorded := sqlHistory.GetTargets()[c.cluster]
 				if !sqlRecorded {
-					return errors.New("Gateway SQL cleanup placement is not recorded")
+					return false, errors.New("Gateway SQL cleanup placement is not recorded")
 				}
 				if !complete || !sqlComplete {
-					return ErrPending
+					return false, nil
 				}
 				consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
 				if err != nil {
-					return err
+					return false, err
 				}
-				if err = c.remove(operation, "gateway-console-state", consoleStateName, id); err != nil {
-					return err
+				if done, err := c.allocator.Delete(operation, "gateway-console-state", consoleStateName, id); err != nil || !done {
+					return false, err
 				}
-				return c.remove(operation, "gateway-state", stateName, id)
+				return c.allocator.Delete(operation, "gateway-state", stateName, id)
 			}
 			if !response.GetDeleted() {
-				return remove(ctx)
+				done, err := remove(ctx)
+				return cleanupResult(done, err)
 			}
 			history := response.GetCleanupTargets()["allocation"]
 			if history == nil {
-				return errors.New("Gateway allocation cleanup history is missing")
+				return runtime.ReconcileResult{}, errors.New("Gateway allocation cleanup history is missing")
 			}
 			prior, present := history.GetTargets()[c.cluster]
 			if !present {
-				return errors.New("Gateway allocation cleanup placement is not recorded")
+				return runtime.ReconcileResult{}, errors.New("Gateway allocation cleanup placement is not recorded")
 			}
-			return runtime.RunObservation(ctx, remove, func(commit context.Context, failure error) error {
-				complete := failure == nil
+			done := false
+			err = runtime.RunObservation(ctx, func(operation context.Context) error {
+				var failure error
+				done, failure = remove(operation)
+				return failure
+			}, func(commit context.Context, failure error) error {
+				complete := failure == nil && done
 				if complete == prior {
 					return nil
 				}
@@ -172,45 +178,47 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 				_, err = c.state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "allocation", Target: c.cluster, Complete: complete})
 				return err
 			}, runtime.ObservationOptions{WorkTimeout: 20 * time.Second, CommitTimeout: 2 * time.Second})
+			return cleanupResult(done, err)
 		}
 		if !recorded {
-			return errors.New("Gateway placement is not recorded")
+			return runtime.ReconcileResult{}, errors.New("Gateway placement is not recorded")
 		}
 		if err := c.allocator.Ensure(ctx, "gateway-state", stateName, id); err != nil {
-			return err
+			return runtime.ReconcileResult{}, err
 		}
 		// Storage must exist before the workload can publish a ready address.
 		if c.console {
 			consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
 			if err != nil {
-				return err
+				return runtime.ReconcileResult{}, err
 			}
 			if err = c.allocator.Ensure(ctx, "gateway-console-state", consoleStateName, id); err != nil {
-				return err
+				return runtime.ReconcileResult{}, err
 			}
 		}
 		if err := c.allocator.Ensure(ctx, "gateway", name, id); err != nil {
-			return err
+			return runtime.ReconcileResult{}, err
 		}
 		if c.sandbox {
 			sandboxName, err := gatewayworkload.SandboxNamespace(id)
 			if err != nil {
-				return err
+				return runtime.ReconcileResult{}, err
 			}
-			return c.allocator.Ensure(ctx, "sandbox", sandboxName, id)
+			return runtime.ReconcileResult{}, c.allocator.Ensure(ctx, "sandbox", sandboxName, id)
 		}
-		return nil
+		return runtime.ReconcileResult{}, nil
 	default:
-		return errors.New("namespace work key has an unknown resource kind")
+		return runtime.ReconcileResult{}, errors.New("namespace work key has an unknown resource kind")
 	}
 }
-func (c *Controller) remove(ctx context.Context, profile, name, id string) error {
-	done, err := c.allocator.Delete(ctx, profile, name, id)
+
+// Provider and state-write errors take precedence over expected cleanup progress.
+func cleanupResult(done bool, err error) (runtime.ReconcileResult, error) {
 	if err != nil {
-		return err
+		return runtime.ReconcileResult{}, err
 	}
 	if !done {
-		return ErrPending
+		return runtime.ReconcileResult{RecheckAfter: cleanupRecheck}, nil
 	}
-	return nil
+	return runtime.ReconcileResult{}, nil
 }

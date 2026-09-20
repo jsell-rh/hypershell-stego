@@ -77,6 +77,8 @@ jobs:
           events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
           required = {
               "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+              "TestPendingCleanupAndProviderErrorsArePreserved",
+              "TestAllocationPendingCancellationDoesNotBecomeProgress",
               "TestGatewayFinalizationWaitsForAllocationCleanup",
               "TestGatewayDurableDeletionThroughGeneratedTransports",
               "TestGatewayCleanupObservationDoesNotRepeatEvents",
