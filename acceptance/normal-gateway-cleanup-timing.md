@@ -131,3 +131,24 @@ those roles. All 32 standing objects were checked after the change. Test
 resources were absent and the lease was released. Production permissions,
 admission policy, and RuntimeClasses are unchanged. See
 `ci-inspection-adoption-evidence.json`.
+
+## Phase observations
+
+The next diagnostic source adds `completion_observations` to each sample. It
+records namespace absence, durable account and identity cleanup, SQL and
+workload cleanup, Gateway finalization, absent allocation bindings, SQL object
+checks, the owner HTTP 404, and the complete account proof. The existing reads
+and the same SQL snapshot supply these observations. The cleanup conditions,
+one-second polling interval, 100-account population, and deadlines are retained.
+
+Each stage records its latest observed pending time and the first complete
+observation after that time. If a stage becomes pending again, its earlier
+complete observation is cleared and the regression count increases. A stage
+that is checked only after completion has no invented pending time. The record
+uses a fixed set of stage names and one summary per stage.
+
+These times are measured when each read returns, relative to the accepted
+deletion response. Reads occur in sequence and can be delayed. The values do
+not establish exact provider transition times or prove a cause for the earlier
+53.55-second upper bound. The phase evidence requires a new live result before
+it can guide a production change.
