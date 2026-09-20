@@ -1,0 +1,179 @@
+{
+  "schema": 1,
+  "source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+  "run": 35497011319,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35497011319",
+  "records": {
+    "checks/35497011319/verification-independent.json": {
+      "sha256": "5d970e2f913486023aabb4e68ff83e2d159d279c2eb52f697589b45c0349ae6e",
+      "result": {
+        "run": 35497011319,
+        "source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+        "required_tests": [
+          "TestGatewayDurableDeletionThroughGeneratedTransports",
+          "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+          "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+          "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+          "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+          "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+          "TestGatewayJournalClosureRollsBackWithFinalEvent",
+          "TestGatewayCleanupRecoversJournalOmittedByProvider",
+          "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+          "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+          "TestGatewayCleanupObservationDoesNotRepeatEvents",
+          "TestGatewayDeletingPhaseMatchesSearch",
+          "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",
+          "TestGatewayAccountCleanupSerializesCreation",
+          "TestServiceAccountCreationSerializesGatewayDeletion",
+          "TestGatewayDeletionRemovesServiceAccounts",
+          "TestServiceAccountProviderStateAcrossLockAndRestart",
+          "TestGatewayProviderStateAcrossGRPCAndRestart",
+          "TestGatewayDatabasePoolWaitCancellationAndRestart",
+          "TestConcurrentGlobalRoleProjection",
+          "TestCleanupSummaryScopeAndTimestampChecks",
+          "TestGatewayDatabaseSecretFileAndCredentialRotation",
+          "TestGatewayDeletionBeforeWorkloadStartup",
+          "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+          "TestGeneratedWorkloadWorkerStartupPrivacy",
+          "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+          "TestGatewayCreationCommitsOwnerAndEvent",
+          "TestGatewayRequestsRejectRetiredDatabaseField",
+          "TestGeneratedGoSDKGatewayWorkflow",
+          "TestGeneratedCLIWorkflow",
+          "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+          "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+          "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+          "TestEventFailureRollsBackGatewayAndOwner",
+          "TestAccessFiltersRunBeforeCountAndPagination",
+          "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+          "TestGatewayWorkflowThroughGeneratedRESTProcess",
+          "TestGatewayWorkflowAcrossRESTAndGRPC",
+          "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+          "TestGeneratedRuntimeRecoversUnfinishedClaim",
+          "TestGatewayWatchThroughGeneratedRuntime",
+          "TestNamespaceCountWorkflowThroughGeneratedWorker",
+          "TestPlacementWorkflowThroughGeneratedRuntime",
+          "TestControllerLocalSchemaHasNoDatabaseCatalog",
+          "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+          "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+          "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+          "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+          "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+          "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+          "TestGeneratedCLICatalogWorkflow",
+          "TestGeneratedCLIApplyWorkflow"
+        ],
+        "passed_top_level": 52,
+        "test_log_sha256": "52fda19d75424ab4dc1b10632b6794ee0c2bc878d435a5db5b19382796d676be",
+        "source_files_match": 1589,
+        "generated_hashes_match": 421,
+        "committed_and_repeated_generation_match": true,
+        "compiler_public_records_and_live_bytes_match": true,
+        "bounded_live_job_verified": true,
+        "job_uid": "a0e8d8ab-5f1b-40ef-b35c-c191b42c0e12",
+        "pod_uid": "33f46121-8f36-4121-911a-920b357d33d8",
+        "independent_fixture_cleanup_verified": true,
+        "qualified": true,
+        "scope": "The exact API and SQL test fixture. Main browser and full results remain separate."
+      }
+    },
+    "api-independent-cleanup.json": {
+      "sha256": "973a8cc28f35019f0b12d263769e62a00e6118f2ca72ef08461e8a540a2e4829",
+      "result": {
+        "checked_at": "2026-09-20T07:37:59.328395+00:00",
+        "run": 35497011319,
+        "source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+        "namespace": "stego-ci",
+        "job": "gateway-api-94ec58cc31f4",
+        "job_uid": "a0e8d8ab-5f1b-40ef-b35c-c191b42c0e12",
+        "job_absent": true,
+        "pods_absent": true,
+        "labeled_private_fixtures_absent": true,
+        "cluster_changes": false,
+        "scope": "The exact API fixture. The separate joint audit covers both cluster runs and the standing installation."
+      }
+    },
+    "independent-cleanup.json": {
+      "sha256": "19e6397ea4c42af2cf15585ba258d0f3e403c7416aa4809cbaf3b6285c554ba3",
+      "result": {
+        "run": 35495952596,
+        "source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+        "checked_at": "2026-09-20T07:38:00.015730+00:00",
+        "browser_empty": true,
+        "api_run": 35497011319,
+        "api_status": "completed",
+        "runtime": [],
+        "fixtures": [],
+        "allocations": [],
+        "ci_jobs": [],
+        "lease_holder": "",
+        "installed_resources_unchanged": 32,
+        "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+        "scope": "Both test fixtures are absent, the shared lease is free, and all standing browser installation resources are unchanged."
+      }
+    },
+    "api-live-runtime.json": {
+      "sha256": "5013502b59268c20f00c86bddff1ff7ba6b3d4bb5422ebfc048cf9013c0ac1dd",
+      "result": {
+        "run": 35497011319,
+        "source": "a5bf5717448086b093f5cac4cab0b516b706353a",
+        "job": "gateway-api-94ec58cc31f4",
+        "job_uid": "a0e8d8ab-5f1b-40ef-b35c-c191b42c0e12",
+        "pod": "gateway-api-94ec58cc31f4-pnpcg",
+        "pod_uid": "33f46121-8f36-4121-911a-920b357d33d8",
+        "deadline_seconds": 1200,
+        "retry_limit": 0,
+        "no_host_access": true,
+        "containers": [
+          {
+            "name": "postgres",
+            "limits": {
+              "cpu": "500m",
+              "ephemeral-storage": "2Gi",
+              "memory": "512Mi"
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true,
+              "runAsNonRoot": true,
+              "runAsUser": 1001470000
+            }
+          },
+          {
+            "name": "test",
+            "limits": {
+              "cpu": "1",
+              "ephemeral-storage": "6Gi",
+              "memory": "3Gi"
+            },
+            "securityContext": {
+              "allowPrivilegeEscalation": false,
+              "capabilities": {
+                "drop": [
+                  "ALL"
+                ]
+              },
+              "readOnlyRootFilesystem": true,
+              "runAsNonRoot": true,
+              "runAsUser": 1001470000
+            }
+          }
+        ],
+        "compiler_verified": true,
+        "compiler_hashes": {
+          "stego-linux-amd64": "5a6a497e058232d86cdfcfbbe8b3562234e8f68c0a5ccfe0e703756d559edcd7",
+          "build.json": "3da99515b2ca5a0566d292b2460bfca0976a0aee2790eb1c6beaecd4fc755b7f",
+          "provenance.jsonl": "b2c7d853822ca5712b9baa82d58e579c77838352ccb0972ed17626d442ac250d",
+          "SHA256SUMS": "1382f8a6ad18fff2a2516be10ad0abfe1ec620e6afe48db95814fc44899334e0"
+        },
+        "checked_at": "2026-09-20T07:30:10.834166+00:00"
+      }
+    }
+  },
+  "scope": "The separate API workflow and joint cleanup audit. The complete browser workflow and hosted checks have their own records."
+}
