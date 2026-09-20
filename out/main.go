@@ -108,7 +108,7 @@ func run() (stegoErr error) {
 		return err
 	}
 	defer tracingRuntime.Close()
-	stegoStage = "component[16].constructor[0]"
+	stegoStage = "component[17].constructor[0]"
 	verifierFromEnvironment, err := auth.NewVerifierFromEnvironment()
 	if err != nil {
 		return err

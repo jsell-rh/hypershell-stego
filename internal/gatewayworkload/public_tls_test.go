@@ -12,6 +12,8 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"errors"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	workload "github.com/jsell-rh/hypershell-stego/out/workload"
 	"math/big"
 	"net/http"
 	"os"
@@ -84,7 +86,11 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 			t.Fatal("public SNI differs from the assigned hostname")
 		}
 		gw, release := records(t)
-		rendered := resources(gw, "allocated-gateway", release, oidcConfig{}, object{}, object{}, object{}, "hash", enabled)
+		configData, dbData, keys, server, publicServer := workloadTestInputs(enabled)
+		rendered, err := resources(gw, "allocated-gateway", release, oidcConfig{}, configData, dbData, keys, server, publicServer)
+		if err != nil {
+			t.Fatal(err)
+		}
 		var found bool
 		for _, entry := range rendered {
 			if entry.object["apiVersion"] == "rbac.authorization.k8s.io/v1" || entry.object["kind"] == "ServiceAccount" {
@@ -93,14 +99,14 @@ func TestPublicTLSConfigurationKeepsInternalNames(t *testing.T) {
 			if entry.object["kind"] != "Deployment" {
 				continue
 			}
-			spec := entry.object["spec"].(object)["template"].(object)["spec"].(object)
+			spec := kube.Nested(entry.object, "spec", "template", "spec").(map[string]any)
 			if spec["serviceAccountName"] != "allocated-gateway" || spec["automountServiceAccountToken"] != true {
 				t.Fatal("Gateway does not use its allocated account and explicit token mount")
 			}
-			for _, volume := range spec["volumes"].([]object) {
+			for _, volume := range spec["volumes"].([]workload.Object) {
 				if volume["name"] == "public-tls" {
 					found = true
-					if volume["secret"].(object)["secretName"] != "openshell-public-tls" {
+					if volume["secret"].(map[string]any)["secretName"] != "openshell-public-tls" {
 						t.Fatal("public TLS Secret differs")
 					}
 				}
@@ -178,16 +184,16 @@ func TestPublicTLSSecretCannotSupplyItsOwnTrust(t *testing.T) {
 			k.options.PublicDomain = "example.test"
 			k.options.PublicIssuer = "public-issuer"
 			k.publicRoots = roots
-			got, err := k.ensurePublicTLS(context.Background(), gw)
+			got, retained, err := k.ensurePublicTLS(context.Background(), gw)
 			if !created {
 				t.Fatal("public certificate was not requested")
 			}
 			if scenario == "valid" {
-				if err != nil || !bytes.Equal(got, cert) {
+				if err != nil || !bytes.Equal(got, cert) || kube.String(retained, "data", "tls.key") != base64.StdEncoding.EncodeToString(key) {
 					t.Fatal("valid public certificate rejected", err)
 				}
 			} else {
-				if err == nil || len(got) != 0 {
+				if err == nil || len(got) != 0 || retained != nil {
 					t.Fatal("unsafe or incomplete public certificate accepted")
 				}
 				if (scenario == "missing" || scenario == "deleting") && !errors.Is(err, ErrPending) {

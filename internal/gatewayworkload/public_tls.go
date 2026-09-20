@@ -69,31 +69,35 @@ func gatewayTrustMaterial(name string) ([]byte, *x509.CertPool, error) {
 
 // The pinned Gateway image selects this certificate only for the public SNI.
 // Internal clients retain their separate certificate and private CA trust.
-func (k *Kubernetes) ensurePublicTLS(ctx context.Context, gw *pb.Gateway) ([]byte, error) {
+func (k *Kubernetes) ensurePublicTLS(ctx context.Context, gw *pb.Gateway) ([]byte, object, error) {
 	if k.options.PublicDomain == "" {
-		return nil, nil
+		return nil, nil, nil
 	}
 	if k.publicRoots == nil {
-		return nil, errors.New("public Gateway trust is unavailable")
+		return nil, nil, errors.New("public Gateway trust is unavailable")
 	}
 	id, ns := gw.GetMetadata().GetId(), gw.GetNamespace()
 	host := publicHostname(ns, k.options.PublicDomain)
 	cert := definition("cert-manager.io/v1", "Certificate", "openshell-public-tls", id)
 	cert["spec"] = object{"secretName": "openshell-public-tls", "issuerRef": object{"name": k.options.PublicIssuer, "kind": "ClusterIssuer"}, "dnsNames": []string{host}, "privateKey": object{"algorithm": "ECDSA", "size": 256, "rotationPolicy": "Always"}, "usages": []string{"server auth"}, "duration": "2160h", "renewBefore": "360h", "secretTemplate": object{"labels": object{ownerLabel: id, managerLabel: manager}}}
 	if _, err := k.ensure(ctx, "/apis/cert-manager.io/v1/namespaces/"+ns+"/certificates", cert, id); err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	secret, code, err := k.client.Request(ctx, http.MethodGet, "/api/v1/namespaces/"+ns+"/secrets/openshell-public-tls", nil)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	if code == http.StatusNotFound {
-		return nil, ErrPending
+		return nil, nil, ErrPending
 	}
 	if kube.String(secret, "metadata", "deletionTimestamp") != "" {
-		return nil, ErrPending
+		return nil, nil, ErrPending
 	}
-	return kube.VerifyServerTLSSecret(secret, owner(id), kube.ServerTLSSecretTarget{
+	certificate, err := kube.VerifyServerTLSSecret(secret, owner(id), kube.ServerTLSSecretTarget{
 		Namespace: ns, Name: "openshell-public-tls", DNSName: host, Roots: k.publicRoots,
 	})
+	if err != nil {
+		return nil, nil, err
+	}
+	return certificate, secret, nil
 }

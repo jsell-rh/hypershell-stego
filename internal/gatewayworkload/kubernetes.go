@@ -6,7 +6,6 @@ import (
 	"crypto/sha256"
 	"crypto/x509"
 	"encoding/base64"
-	"encoding/hex"
 	"encoding/pem"
 	"errors"
 	"io"
@@ -207,11 +206,11 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if code == 404 {
 		return ErrPending
 	}
-	crt, err := k.verifyInternalTLS(server, id, ns, host)
+	_, err = k.verifyInternalTLS(server, id, ns, host)
 	if err != nil {
 		return err
 	}
-	publicCertificate, err := k.ensurePublicTLS(ctx, gw)
+	publicCertificate, publicServer, err := k.ensurePublicTLS(ctx, gw)
 	if err != nil {
 		return err
 	}
@@ -228,7 +227,11 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	if _, err = k.ensure(ctx, core+"/configmaps", config, id); err != nil {
 		return err
 	}
-	for _, entry := range resources(gw, serviceAccount, release, oidc, config, dbData, keys, hex.EncodeToString(sha256sum(append(append([]byte(nil), crt...), publicCertificate...))), k.options.PublicDomain != "") {
+	rendered, err := resources(gw, serviceAccount, release, oidc, config, dbData, keys, server, publicServer)
+	if err != nil {
+		return err
+	}
+	for _, entry := range rendered {
 		if _, err = k.ensure(ctx, entry.path, entry.object, id); err != nil {
 			return err
 		}

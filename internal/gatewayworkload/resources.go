@@ -1,11 +1,13 @@
 package gatewayworkload
 
 import (
-	"encoding/hex"
-	"encoding/json"
+	"encoding/base64"
+	"errors"
 	"fmt"
 
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
+	workload "github.com/jsell-rh/hypershell-stego/out/workload"
 )
 
 func configuration(ns, sandboxNS, sandboxAccount string, o Options) string {
@@ -66,35 +68,107 @@ type resource struct {
 	object object
 }
 
-func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys object, certificateHash string, publicTLS bool) []resource {
+func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease, oidc oidcConfig, config, dbData, keys, server, publicServer object) ([]resource, error) {
 	id, ns := gw.Metadata.Id, gw.Namespace
-	core := "/api/v1/namespaces/" + ns
-	result := []resource{}
-	add := func(path string, o object) { result = append(result, resource{path, o}) }
-	service := definition("v1", "Service", Name, id)
-	service["spec"] = object{"type": "ClusterIP", "selector": object{ownerLabel: id}, "ports": []object{{"name": "grpc", "port": 8080, "targetPort": "grpc"}}}
-	add(core+"/services", service)
-	secretEnv := func(name, secret, key string) object {
-		return object{"name": name, "valueFrom": object{"secretKeyRef": object{"name": secret, "key": key}}}
+	env := []workload.Env{
+		{Name: "OPENSHELL_DB_URL", Secret: "openshell-gateway-db-credentials", Key: "uri"},
+		{Name: "OPENSHELL_GATEWAY_CREDENTIAL_KEY_ENCRYPTION_KEY", Secret: keysName, Key: "key-encryption-key"},
 	}
-	env := []object{secretEnv("OPENSHELL_DB_URL", "openshell-gateway-db-credentials", "uri"), secretEnv("OPENSHELL_GATEWAY_CREDENTIAL_KEY_ENCRYPTION_KEY", keysName, "key-encryption-key")}
 	for _, pair := range [][2]string{{"SSL_CERT_FILE", "/etc/openshell-config/trust.pem"}, {"OPENSHELL_OIDC_ISSUER", oidc.Issuer}, {"OPENSHELL_OIDC_AUDIENCE", oidc.Audience}, {"OPENSHELL_OIDC_ROLES_CLAIM", oidc.RolesClaim}, {"OPENSHELL_OIDC_ADMIN_ROLE", oidc.AdminRole}, {"OPENSHELL_OIDC_USER_ROLE", oidc.UserRole}} {
-		env = append(env, object{"name": pair[0], "value": pair[1]})
+		env = append(env, workload.Env{Name: pair[0], Value: pair[1]})
 	}
-	volumes := []object{{"name": "tmp", "emptyDir": object{"sizeLimit": "64Mi"}}, {"name": "config", "configMap": object{"name": Name + "-config"}}}
-	mounts := []object{{"name": "tmp", "mountPath": "/tmp"}, {"name": "config", "mountPath": "/etc/openshell-config", "readOnly": true}}
-	mountsFromSecrets := [][3]string{{"tls", "openshell-server-tls", "/etc/openshell-tls"}, {"keys", keysName, "/etc/openshell-jwt"}, {"database", "openshell-gateway-db-credentials", "/etc/openshell-db"}}
-	if publicTLS {
-		mountsFromSecrets = append(mountsFromSecrets, [3]string{"public-tls", "openshell-public-tls", "/etc/openshell-public-tls"})
+	volumes := []workload.Volume{{Name: "tmp", EmptyMi: 64}, {Name: "config", ConfigMap: Name + "-config"}}
+	mounts := []workload.Mount{{Name: "tmp", Path: "/tmp"}, {Name: "config", Path: "/etc/openshell-config"}}
+	secrets := []struct {
+		name, volume, path string
+		data               any
+	}{
+		{"openshell-server-tls", "tls", "/etc/openshell-tls", kube.Nested(server, "data")},
+		{keysName, "keys", "/etc/openshell-jwt", keys},
+		{"openshell-gateway-db-credentials", "database", "/etc/openshell-db", dbData},
 	}
-	for _, item := range mountsFromSecrets {
-		volumes = append(volumes, object{"name": item[0], "secret": object{"secretName": item[1], "defaultMode": int32(0440)}})
-		mounts = append(mounts, object{"name": item[0], "mountPath": item[2], "readOnly": true})
+	if publicServer != nil {
+		secrets = append(secrets, struct {
+			name, volume, path string
+			data               any
+		}{"openshell-public-tls", "public-tls", "/etc/openshell-public-tls", kube.Nested(publicServer, "data")})
 	}
-	container := object{"name": Name, "image": release.GetImage(), "imagePullPolicy": "IfNotPresent", "args": []string{"--config", "/etc/openshell-config/gateway.toml", "--drivers", "kubernetes"}, "env": env, "ports": []object{{"name": "grpc", "containerPort": 8080}, {"name": "health", "containerPort": 8081}}, "volumeMounts": mounts, "securityContext": object{"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true, "capabilities": object{"drop": []string{"ALL"}}}, "resources": object{"requests": object{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "32Mi"}, "limits": object{"cpu": "500m", "memory": "512Mi", "ephemeral-storage": "256Mi"}}, "readinessProbe": object{"httpGet": object{"path": "/readyz", "port": "health"}, "periodSeconds": 2}, "livenessProbe": object{"httpGet": object{"path": "/healthz", "port": "health"}, "periodSeconds": 10}, "startupProbe": object{"httpGet": object{"path": "/healthz", "port": "health"}, "periodSeconds": 2, "failureThreshold": 60}}
-	encoded, _ := json.Marshal([]any{config, dbData, keys, oidc, certificateHash})
-	deployment := definition("apps/v1", "Deployment", Name, id)
-	deployment["spec"] = object{"replicas": 1, "strategy": object{"type": "Recreate"}, "selector": object{"matchLabels": object{ownerLabel: id}}, "template": object{"metadata": object{"labels": object{ownerLabel: id, "app.kubernetes.io/name": Name}, "annotations": object{"hypershell.redhat.io/config-sha256": hex.EncodeToString(sha256sum(encoded))}}, "spec": object{"serviceAccountName": serviceAccount, "automountServiceAccountToken": true, "securityContext": object{"runAsNonRoot": true, "runAsUser": 1000, "runAsGroup": 1000, "fsGroup": 1000, "seccompProfile": object{"type": "RuntimeDefault"}}, "containers": []object{container}, "volumes": volumes}}}
-	add("/apis/apps/v1/namespaces/"+ns+"/deployments", deployment)
-	return result
+	configuration, err := workloadDependency("ConfigMap", Name+"-config", kube.Nested(config, "data"))
+	if err != nil {
+		return nil, err
+	}
+	dependencies := []workload.Dependency{configuration}
+	for _, secret := range secrets {
+		dependency, err := workloadDependency("Secret", secret.name, secret.data)
+		if err != nil {
+			return nil, err
+		}
+		dependencies = append(dependencies, dependency)
+		volumes = append(volumes, workload.Volume{Name: secret.volume, Secret: secret.name})
+		mounts = append(mounts, workload.Mount{Name: secret.volume, Path: secret.path})
+	}
+	built, err := workload.Build(workload.Deployment{
+		Name: Name, Namespace: ns, ServiceAccount: serviceAccount,
+		OwnerLabels: map[string]string{ownerLabel: id, managerLabel: manager},
+		PodLabels:   map[string]string{ownerLabel: id, "app.kubernetes.io/name": Name},
+		Selector:    map[string]string{ownerLabel: id},
+		Replicas:    1, Strategy: "Recreate", RunAsUser: 1000, RunAsGroup: 1000, FSGroup: 1000,
+		KubernetesAPI: true, TerminationGraceSeconds: 30,
+		Volumes: volumes, Dependencies: dependencies,
+		ServicePorts: []workload.ServicePort{{Name: "grpc", Port: 8080, Target: "grpc"}},
+		Containers: []workload.Container{{
+			Name: Name, Image: release.GetImage(),
+			Args: []string{"--config", "/etc/openshell-config/gateway.toml", "--drivers", "kubernetes"},
+			Env:  env, Mounts: mounts,
+			Ports:     []workload.Port{{Name: "grpc", Number: 8080}, {Name: "health", Number: 8081}},
+			Requests:  workload.Resources{CPUMilli: 100, MemoryMi: 256, EphemeralMi: 32},
+			Limits:    workload.Resources{CPUMilli: 500, MemoryMi: 512, EphemeralMi: 256},
+			Startup:   workload.HTTPProbe{Path: "/healthz", Port: "health", PeriodSeconds: 2, TimeoutSeconds: 1, FailureThreshold: 60},
+			Readiness: workload.HTTPProbe{Path: "/readyz", Port: "health", PeriodSeconds: 2, TimeoutSeconds: 1, FailureThreshold: 3},
+			Liveness:  workload.HTTPProbe{Path: "/healthz", Port: "health", PeriodSeconds: 10, TimeoutSeconds: 1, FailureThreshold: 3},
+		}},
+	})
+	if err != nil {
+		return nil, err
+	}
+	result := make([]resource, 0, len(built))
+	for _, entry := range built {
+		result = append(result, resource{entry.Collection, object(entry.Object)})
+	}
+	return result, nil
+}
+
+// Only contents enter the common digest. Kubernetes metadata does not cause a restart.
+func workloadDependency(kind, name string, value any) (workload.Dependency, error) {
+	var data map[string]any
+	switch v := value.(type) {
+	case object:
+		data = v
+	case map[string]any:
+		data = v
+	default:
+		return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
+	}
+	result := workload.Dependency{Kind: kind, Name: name, Data: map[string][]byte{}}
+	if len(data) == 0 || len(data) > 256 {
+		return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
+	}
+	total := 0
+	for key, value := range data {
+		text, ok := value.(string)
+		if !ok || len(text) > (2<<20)-total {
+			return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
+		}
+		total += len(text)
+		raw := []byte(text)
+		if kind == "Secret" {
+			var err error
+			raw, err = base64.StdEncoding.Strict().DecodeString(text)
+			if err != nil {
+				return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
+			}
+		}
+		result.Data[key] = raw
+	}
+	return result, nil
 }

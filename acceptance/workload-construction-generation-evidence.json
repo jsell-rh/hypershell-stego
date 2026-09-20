@@ -1,0 +1,23 @@
+{
+  "source": "b74a500bc77ac7324ad040ef011f1d3cd90a6b8f",
+  "run": 35528699463,
+  "compiler": "2cb6bdac38c5bddc8d5e47379536429c13bc8604",
+  "source_archive_sha256": "ea9a175358455dc687c34b545e74519b29185eac146e30dd407dfbdcac4cc6d2",
+  "generated_archive_sha256": "325f783ff5b934dc8e5cafa901e2bb2e7ff7c459133b011ba90dd5ea41bddf04",
+  "files": 427,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/main.go",
+    "out/workload/workload.go"
+  ],
+  "workload_matches_compiler_template_and_common_header": true,
+  "compiler_identity_matches_verified_binary": true,
+  "constructor_index_accounts_for_added_component": true,
+  "other_generated_and_module_bytes_unchanged": true,
+  "gateway_console_module_refresh_required": false,
+  "compiler_executed_locally": false,
+  "application_checks_pending": true
+}
