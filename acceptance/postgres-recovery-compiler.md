@@ -39,5 +39,8 @@ passes independent verification for this exact source.
 The live workflow verified REST, gRPC, access control, events, restart,
 regeneration, all three telemetry signals, and complete Gateway cleanup.
 Complete cleanup was observed at 31.373211219 seconds for 100 service accounts.
-The 30-second target and production capacity remain open. The separate API
-check is pending. The live Kata test remains deferred.
+The separate API check passed all 52 required tests and repeated generation.
+Joint cleanup passed. The [API evidence](postgres-recovery-api-evidence.json)
+records the exact source, compiler, runtime limits, and cleanup proof.
+The 30-second target and production capacity remain open. The live Kata test
+remains deferred.

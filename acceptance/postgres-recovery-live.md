@@ -34,7 +34,12 @@ allocator logs do not establish the cause of the delay.
 Independent cleanup checks found both test fixtures absent, the shared lease
 free, and all 32 standing resources unchanged. This result does not prove
 100-Gateway capacity, live Kata isolation, or the remaining enterprise scope.
-The separate API check is pending.
+The [separate API check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35505027548)
+passed all 52 required tests without skips. Independent review checked all
+1,608 source files, 421 generated hashes, repeated generation, and the signed
+compiler in the limited test Pod. Joint cleanup again found both fixtures
+absent, the lease free, and all 32 standing resources unchanged. See the
+[API evidence](postgres-recovery-api-evidence.json).
 
 The first artifact verifier stopped because its copied expected digest still
 selected the previous compiler. Its source revision and package paths already

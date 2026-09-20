@@ -66,7 +66,7 @@
     "selected_module_requires_fresh_application_check": false,
     "selected_module_verified_by_run": 35502565241
   },
-  "scope": "Verified signed compiler, exact generated output, selected Gateway console module, all six hosted application checks, and the complete live browser workflow. The separate API check is pending.",
+  "scope": "Verified signed compiler, exact generated output, selected Gateway console module, all six hosted application checks, complete live browser workflow, separate API workflow, and joint cleanup. The broader enterprise requirements remain open.",
   "hosted_qualification": {
     "qualified_at": "2026-09-20T10:01:35.845331+00:00",
     "source": "d24e9da78f6cb3c3ff7715b868ce91d29a1bd7df",
@@ -224,5 +224,13 @@
     "record_sha256": "9bc19996fa04c66950d2a248ae8e122e81c09cb860021dbe03a9310c36008537",
     "cleanup_target_proved": false,
     "production_capacity_proved": false
+  },
+  "api_workflow": {
+    "run": 35505027548,
+    "qualified": true,
+    "record": "postgres-recovery-api-evidence.json",
+    "record_sha256": "2e96c63204bfe1c298924195b53ef439b5044439877d6b07d47ad1df977ee607",
+    "required_tests": 52,
+    "joint_cleanup_verified": true
   }
 }
