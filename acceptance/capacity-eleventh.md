@@ -12,8 +12,8 @@ status cases, resource limits, and test cleanup. All six capacity fixture files
 match the tenth run. The check used one CPU, 1 GiB memory, no swap, and a fixed
 time limit. See `capacity-eleventh-evidence.json`.
 
-The tenth account-only run took 21.2756 seconds. Both results are below the
-30-second account-cleanup target in this fixture. They do not prove complete
+The tenth account-only run took 21.2756 seconds. Both account-only measurements
+are below 30 seconds in this fixture. They do not prove complete
 Gateway workload and SQL cleanup at production capacity, concurrent cleanup,
 or larger installations. The separate complete Gateway workflow recorded a
 53.5477-second upper bound; its 30-second target remains unproved. Phase
