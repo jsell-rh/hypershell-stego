@@ -1,0 +1,121 @@
+{
+  "source": "d24e9da78f6cb3c3ff7715b868ce91d29a1bd7df",
+  "reviewed_at": "2026-09-20T09:40:24.827202+00:00",
+  "scope": "Source and test-selection review. This is not a completed test result for this consumer source.",
+  "requirements": [
+    {
+      "requirement": "Create and retrieve the required IDs and API shapes",
+      "tests": [
+        "TestGatewayCreationCommitsOwnerAndEvent",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+        "TestGatewayRequestsRejectRetiredDatabaseField"
+      ]
+    },
+    {
+      "requirement": "Commit the Gateway and owner grant together",
+      "tests": [
+        "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+        "TestEventFailureRollsBackGatewayAndOwner",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGatewayWorkflowAcrossRESTAndGRPC"
+      ]
+    },
+    {
+      "requirement": "Enforce access, filtered lists, and denied requests",
+      "tests": [
+        "TestAccessFiltersRunBeforeCountAndPagination",
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGatewayWatchThroughGeneratedRuntime"
+      ]
+    },
+    {
+      "requirement": "Deliver the resulting event through the generated runtime",
+      "tests": [
+        "TestGatewayWorkflowThroughGeneratedRESTProcess",
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestGeneratedRuntimeRecoversUnfinishedClaim"
+      ]
+    },
+    {
+      "requirement": "Prove REST, gRPC, restart, and regeneration behavior",
+      "tests": [
+        "TestGatewayWorkflowAcrossRESTAndGRPC",
+        "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+        "TestGatewayWatchThroughGeneratedRuntime"
+      ],
+      "generation_commands": [
+        "apply",
+        "deps",
+        "apply",
+        "drift"
+      ],
+      "generation_modules": [
+        ".",
+        "console",
+        "gateway-console"
+      ]
+    }
+  ],
+  "test_definitions": {
+    "TestAccessFiltersRunBeforeCountAndPagination": "acceptance/gateway_test.go",
+    "TestEventFailureRollsBackGatewayAndOwner": "acceptance/gateway_test.go",
+    "TestGatewayCreationCommitsOwnerAndEvent": "acceptance/gateway_test.go",
+    "TestGatewayRequestsRejectRetiredDatabaseField": "acceptance/gateway_request_contract_test.go",
+    "TestGatewayWatchThroughGeneratedRuntime": "acceptance/watch_test.go",
+    "TestGatewayWorkflowAcrossRESTAndGRPC": "acceptance/grpc_test.go",
+    "TestGatewayWorkflowThroughGeneratedRESTProcess": "acceptance/http_test.go",
+    "TestGeneratedGatewayDescriptorsMatchReleaseContract": "acceptance/grpc_test.go",
+    "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart": "acceptance/runtime_test.go",
+    "TestGeneratedRuntimeRecoversUnfinishedClaim": "acceptance/runtime_test.go",
+    "TestOwnerGrantFailureRollsBackGatewayAndEvent": "acceptance/gateway_test.go"
+  },
+  "all_named_tests_selected_by_bounded_api_gate": true,
+  "bounded_api_gate_required_count": 52,
+  "prior_full_result": {
+    "source": "5f70035868848328bde229d4995a87997c655183",
+    "run": 35501176798,
+    "log_sha256": "a70a931d56901941cc13bb4a7a5ededce90a69260afad73d5e5d6a538f00e527",
+    "named_cases_passed": [
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestGatewayRequestsRejectRetiredDatabaseField",
+      "TestGatewayWatchThroughGeneratedRuntime",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGeneratedRuntimeRecoversUnfinishedClaim",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent"
+    ],
+    "reviewed_source_bytes_unchanged": true
+  },
+  "source_sha256": {
+    "acceptance/browser_database_restart_test.go": "3dfab6ec83c95ccf48ded506534b318e37ef368f0ee0e6975b02d71068ea6449",
+    "acceptance/browser_provisioner_restart_test.go": "3e6011b62767083378e42e0e56b0715b28fab00be50101e6e2de93a6a5083cbb",
+    "acceptance/browser_workflow_test.go": "2cae8740ab308514c88afc22b0f7dbe4f37576707051b7e917782cfa7ab93178",
+    "acceptance/gateway_request_contract_test.go": "a20c5b8f4677dc1c6f3072d8c347032630fceec6a19b4758afae9c6820c8ffb2",
+    "acceptance/gateway_test.go": "5af0d38aa01d6448b2dddd367c1e119186db5200ad2152246226f7fdacfdaf73",
+    "acceptance/grpc_test.go": "d15fce80834b6c1aacd91828d4a902fdc6d82c14ee309ccd3e187b28c8751b19",
+    "acceptance/http_test.go": "b11d3bc981e258e897b8031f7ff66dd0540a574dea7a70c4c2b7f733bee176fc",
+    "acceptance/runtime_test.go": "58d7d25f47805f52bc1a1851ec147e07cdc33f984ff50538e09f118743e8f25e",
+    "acceptance/watch_test.go": "917178a623527d472764e99f8c6aac71b67ce56bee5b8566da4c4730b84b0c7c",
+    "internal/gateways/service.go": "3149167992bcf69fe3dcc5a593ca25d6f5d4663d104344db3afe7998f3a64523",
+    "out/outbox/queue.go": "a13abce2450efb919f8177e7cc6f7b870f58c6293ed10f37218b73fa4f126b5f",
+    "out/outbox/worker.go": "aca348a67c30021026fc646b3ad97ff0b461e949b7b65f435d5f29fb982df122",
+    "out/storage/transaction.go": "a6c2fb996401883ce991300fdc2b7cdc01d8bf3d1d27e4396d81092f4fce8721",
+    "scripts/check-gateway.sh": "1f38f93102dc0103b48cc2f8bf510c0e3c4af7f502bc03d2f93813a49e5a598c",
+    "scripts/check-jshell-gateway.py": "03a33c1b898e5cf6acceaaf7dce3a1979c3ba99fc1f6dd42a46549a32ffc92aa",
+    "scripts/generate.sh": "01afad018063ad9c4704a30b74841b598f1544b1b42ab8375b06f45bd0dac556"
+  },
+  "current_consumer_qualification": "pending",
+  "limits": [
+    "The watch test uses explicit completion records for deletion. It does not prove physical SQL, namespace, or provider resource removal.",
+    "The public browser workflow must supply real resource cleanup and controller restart evidence. Its four current images require direct review.",
+    "The Kafka protocol fixture does not prove production broker failover or capacity.",
+    "Current source still needs its full hosted result, public workflow, separate API result, and cleanup audit."
+  ]
+}

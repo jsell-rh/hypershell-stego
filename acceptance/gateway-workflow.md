@@ -25,11 +25,25 @@ the application without this instrumentation.
 
 | Required behavior | Executable evidence in `acceptance/` |
 | --- | --- |
-| Create and retrieve with required IDs and API shapes | `TestGatewayCreationCommitsOwnerAndEvent` checks the KSUID, derived namespace, placement, and timestamps. `TestGatewayWorkflowThroughGeneratedRESTProcess` checks the pinned response schema. `TestGeneratedGatewayDescriptorsMatchReference` checks wire descriptors. |
+| Create and retrieve with required IDs and API shapes | `TestGatewayCreationCommitsOwnerAndEvent` checks the KSUID, derived namespace, placement, and timestamps. `TestGatewayWorkflowThroughGeneratedRESTProcess` checks the pinned response schema. `TestGeneratedGatewayDescriptorsMatchReleaseContract` checks wire descriptors. |
 | Commit the Gateway and owner grant together | `TestOwnerGrantFailureRollsBackGatewayAndEvent` and `TestEventFailureRollsBackGatewayAndOwner` inject database failures. Both transport workflow tests also inject grant and event failures. |
 | Enforce access and filter lists | `TestAccessFiltersRunBeforeCountAndPagination` checks database filtering. Both transport workflow tests check owners, viewers, removed grants, denied requests, hidden resources, and list totals. |
 | Deliver the resulting event through the generated runtime | Both transport workflow tests consume the created event from a Kafka protocol fixture. They check its resource key, payload, kind, and message ID, then wait for the acknowledged queue entry to be removed. |
 | Preserve behavior through REST, gRPC, restart, and regeneration | `TestGatewayWorkflowAcrossRESTAndGRPC` creates through each transport and reads through the other. Both transport tests restart the generated process and check access. `TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart` commits while the process is stopped and checks delivery after restart. The gate command checks regeneration before tests. |
+
+A source review at `d24e9da` checked the five rows against their test bodies.
+All named tests exist and are selected by the bounded 52-test API gate. Their
+reviewed source bytes match the qualified `5f70035` result, where all named
+cases passed. The [source review record](gateway-acceptance-source-evidence.json)
+contains the selected tests and source hashes. Current consumer qualification
+still requires its own complete results.
+
+`TestGatewayWatchThroughGeneratedRuntime` uses explicit completion records for
+its deletion steps. It checks event order, access, and stored state. Physical
+SQL, namespace, and provider cleanup require the public browser workflow.
+That workflow also checks controller recovery and requires direct review of
+four current browser images. The separate API gate does not replace those
+resource and browser checks.
 
 STEGO supplies storage transactions, relation filters, generated transport
 contracts, authentication, the process lifecycle, and event delivery. Hypershell
