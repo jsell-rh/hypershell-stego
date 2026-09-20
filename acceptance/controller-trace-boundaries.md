@@ -76,3 +76,25 @@ The failed run does not qualify the application workflow. Independent cleanup
 checks found no test fixtures or allocations, a free lease, and all 32 standing
 resources unchanged. See the [failure record](controller-trace-failure-evidence.json).
 The compiler and generated runtime are unchanged by this test correction.
+
+## Focused correction checks
+
+The correction at `fdb06e20a192f2d5e16d98735528a09565e77b47` passed
+[allocation checks](https://github.com/jsell-rh/hypershell-stego/actions/runs/35493189428)
+and [adapter checks](https://github.com/jsell-rh/hypershell-stego/actions/runs/35493189507).
+Independent review matched the source archive and all required test results.
+Allocation checks passed 20 top-level tests, including all 14 required tests.
+The adapter suite passed 65 tests. Its fixture-dependent SQL test remains
+excluded from that suite; separate SQL and application gates are required.
+
+All 83 trace and worker evidence cases passed with the race detector. They
+include 28 new cases across four cleanup profiles. Each profile checks the
+complete count and rejects a missing or extra allocator, identity, or workload
+instance. All earlier root, pair, collection bound, operation, and early worker
+profile cases remain required and passed. See the
+[exact focused evidence](controller-trace-cleanup-evidence.json).
+
+These results qualify the test correction only. Full hosted run `35493201216`
+and live browser run `35493398031` remain under review. The separate API gate
+is also required before promotion. The compiler and generated output are
+unchanged from the prior trace candidate.

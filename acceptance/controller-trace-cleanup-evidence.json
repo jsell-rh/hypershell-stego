@@ -1,0 +1,95 @@
+{
+  "schema": 1,
+  "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+  "compiler": "f6ebd0ba93983bfdcaefa15d8c3344b299af245e",
+  "scope": "Focused checks for the cleanup trace count correction. These results do not qualify the complete application workflow.",
+  "source_archive_sha256": "4a548c1f0a49f782be486405b06943d9ec753e929a0b6d530626ed8ca3a5d706",
+  "proofs": {
+    "allocation": {
+      "run_id": 35493189428,
+      "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+      "qualified": true,
+      "passed_top_level": 20,
+      "required_tests_passed": [
+        "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+        "TestAllocationPendingCancellationDoesNotBecomeProgress",
+        "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+        "TestGatewayCleanupKeepsBothClusterTargetsAfterRestart",
+        "TestGatewayCleanupObservationDoesNotRepeatEvents",
+        "TestGatewayDeletionRemovesServiceAccounts",
+        "TestGatewayDurableDeletionThroughGeneratedTransports",
+        "TestGatewayFinalizationWaitsForAllocationCleanup",
+        "TestGatewayJournalClosureRollsBackWithFinalEvent",
+        "TestGatewayWatchThroughGeneratedRuntime",
+        "TestGeneratedCLIApplyWorkflow",
+        "TestGeneratedCLICatalogWorkflow",
+        "TestPendingCleanupAndProviderErrorsArePreserved",
+        "TestPlacementWorkflowThroughGeneratedRuntime"
+      ],
+      "allocation_cases": 9,
+      "pending_failure_priority_cases": 9,
+      "pending_context_cases": 4,
+      "catalog_fixture_cases": 3,
+      "rest_and_grpc_deletion": true,
+      "watch_ninth_update_before_deletion": true,
+      "tests_sha256": "bf7a4d539a66b00fa7ab42c95002b0e9ff85e8eb5667fb8f251c70ad0372a46c",
+      "scope": "Exact candidate namespace and PostgreSQL tests. Explicit pending results preserve placement, cleanup order, resource versions, and error priority. No live allocator pause ran here."
+    },
+    "adapter": {
+      "run_id": 35493189507,
+      "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+      "qualified": true,
+      "adapter_top_level": 65,
+      "allocation_cases": 9,
+      "pending_failure_priority_cases": 9,
+      "pending_context_cases": 4,
+      "phase_observation_cases": 3,
+      "collection_cases": 30,
+      "live_pause_test_compiles": true,
+      "live_pause_test_run": false,
+      "skipped": [
+        "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+      ],
+      "tests_sha256": "6057830893a91cc097fb73c3cb8129a2ab9eed792216dc3f402a2504a13b1b30",
+      "compile_sha256": "a0e741453b087856cd701da75e074e70c1323ee55ba4dc548d5a943b875b771e",
+      "source_archive_verified": true
+    },
+    "trace_collector": {
+      "run": 35493189507,
+      "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+      "qualified": true,
+      "source_archive_verified": true,
+      "required_top_tests": [
+        "TestControllerTraceEvidenceRejectsInvalidRoots",
+        "TestControllerTraceEvidenceRequiresDistinctPairedWork",
+        "TestControllerTraceEvidenceRequiresEachServiceAndInstance",
+        "TestControllerTraceEvidenceRequiresExactCleanupProfile",
+        "TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance"
+      ],
+      "passed_cases": 83,
+      "invalid_root_cases": 23,
+      "pair_and_bound_cases": 3,
+      "service_and_instance_cases": 8,
+      "prior_profile_cases": 12,
+      "cleanup_profile_cases": 28,
+      "cleanup_profile_groups": 4,
+      "race_check_selected": true,
+      "test_log_sha256": "2885593c8d6c2fd168da80b907e25be8021c6cea9f36785ed8967b03aa1875aa",
+      "ci_log_sha256": "ffd980351190da7ddeacdb7800570633ff566782b04a176ab2f1585c1de2a6a1",
+      "live_trace_workflow_qualified": false,
+      "scope": "The bounded evidence collector and its failure checks. Signed trace compiler selection, regeneration, full consumer checks, and the live Gateway workflow remain required."
+    }
+  },
+  "proof_record_sha256": {
+    "allocation": "b323e21c1fa59a0e84d384f5f2af12c0d9ee9d0c78422f5de6033488eefbba19",
+    "adapter": "d3094cc6367d644c707231a5734a55ef9d6cbbf3aaa9b3ace3de01e7dd9eb7e7",
+    "trace_collector": "ecf22a03740f01ee7618f8699bbd3eaef276107f6814e606272504b2b6a1e5b0"
+  },
+  "full_hosted_run": 35493201216,
+  "live_browser_run": 35493398031,
+  "full_hosted_verification_pending": true,
+  "live_browser_verification_pending": true,
+  "separate_api_verification_pending": true,
+  "runtime_changes": false,
+  "kata_deferred": true
+}
