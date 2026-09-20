@@ -51,7 +51,7 @@ func TestGatewayFinalizationWaitsForAllocationCleanup(t *testing.T) {
 	}
 	var finalized bool
 	var events int
-	if err := f.db.QueryRowContext(ctx, "SELECT deletion_finalized_at IS NOT NULL FROM gateways WHERE id=$1", gateway.ID).Scan(&finalized); err != nil {
+	if err := f.db.QueryRowContext(ctx, "SELECT stego_finalized_at IS NOT NULL FROM gateways WHERE id=$1", gateway.ID).Scan(&finalized); err != nil {
 		t.Fatal(err)
 	}
 	if err := f.db.QueryRowContext(ctx, "SELECT count(*) FROM stego_outbox.messages WHERE resource_key=$1 AND kind='gateway.deleted'", gateway.ID).Scan(&events); err != nil {
