@@ -16,7 +16,7 @@ import (
 func cliCleanupSettings(t *testing.T, settings []string, cluster string) []string {
 	t.Helper()
 	settings = append(settings, `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["cli-cleanup"]`)
-	return withCleanupGrants(t, settings, cleanupGrant("cli-cleanup", "Gateway", "workload", cluster), cleanupGrant("cli-cleanup", "Gateway", "sql", cluster))
+	return withCleanupGrants(t, settings, cleanupGrant("cli-cleanup", "Gateway", "workload", cluster), cleanupGrant("cli-cleanup", "Gateway", "sql", cluster), cleanupGrant("cli-cleanup", "Gateway", "allocation", cluster))
 }
 
 func observeCLIGatewayCleanup(t *testing.T, connection *grpc.ClientConn, bearer, cluster string, ids ...string) {
@@ -26,7 +26,7 @@ func observeCLIGatewayCleanup(t *testing.T, connection *grpc.ClientConn, bearer,
 	ctx = metadata.NewOutgoingContext(ctx, metadata.Pairs("authorization", "Bearer "+bearer))
 	state := control.NewGatewayIdentityServiceClient(connection)
 	for _, id := range ids {
-		for _, owner := range []string{"sql", "workload"} {
+		for _, owner := range []string{"sql", "workload", "allocation"} {
 			current, err := state.GetGatewayIdentityState(ctx, &control.GetGatewayIdentityStateRequest{Id: id})
 			if err != nil || !current.GetDeleted() {
 				t.Fatal("CLI cleanup requires a deleted Gateway", err)

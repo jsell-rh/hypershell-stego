@@ -268,7 +268,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err := f.db.QueryRow(`SELECT id::text FROM stego_outbox.messages`).Scan(&offlineMessageID); err != nil {
 		t.Fatal(err)
 	}
-	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", cluster.ID), cleanupGrant("controller", "Gateway", "sql", cluster.ID))
+	settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "workload", cluster.ID), cleanupGrant("controller", "Gateway", "sql", cluster.ID), cleanupGrant("controller", "Gateway", "allocation", cluster.ID))
 	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	base = address + "/api/hypershell/v1"
 	gatewayClient, connection = grpcClient(t, grpcAddress, tlsIdentity)
@@ -293,7 +293,13 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	// This API fixture has no Kubernetes workload. Record the cleanup observation
 	// through the same versioned, scoped RPC that the real worker uses.
 	state := control.NewGatewayIdentityServiceClient(connection)
-	for _, owner := range []string{"sql", "workload"} {
+	for _, owner := range []string{"sql", "workload", "allocation"} {
+		if owner == "allocation" {
+			// SQL and workload cleanup cannot release retained allocations.
+			if code, _ := requestJSON(t, "DELETE", base+"/managed_clusters/"+cluster.ID, admin, nil); code != 409 {
+				t.Fatal("catalog deletion ignored pending allocation cleanup", code)
+			}
+		}
 		retained, err := state.GetGatewayIdentityState(call(controller), &control.GetGatewayIdentityStateRequest{Id: gateway.ID})
 		if err != nil || !retained.GetDeleted() || retained.GetGateway().GetClusterId() != cluster.ID {
 			t.Fatal("retained Gateway cleanup state", err)

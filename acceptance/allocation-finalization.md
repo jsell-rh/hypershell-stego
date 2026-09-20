@@ -26,3 +26,12 @@ finish while the state namespaces remain. REST and gRPC must both return the
 Gateway in the deleting state. A new allocator process must finish removal and
 finalization. The collector requires `allocation-finalization.json`. This new
 check is prepared; no live pass is claimed.
+
+Full run `35482437428` at `ecb3160` failed three catalog and CLI tests. Their
+controlled provider fixtures recorded SQL and workload cleanup but omitted the
+new allocation owner. The API correctly refused to delete the managed cluster
+with HTTP 409. The corrected fixtures supply an exact allocation grant and
+record completion through the versioned cleanup RPC. The placement test also
+requires HTTP 409 after SQL and workload cleanup, before allocation completion.
+The focused CI check includes all three failed tests. The full suite and live
+workflow remain required; this fixture correction is not a passing result.
