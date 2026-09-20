@@ -80,8 +80,9 @@ while its allocator is stopped and its state namespaces still exist.
 One Gateway with 100 accounts had a cleanup upper bound of 32.48 seconds.
 The 30-second target remains open. Sequential checks include verification time;
 they do not establish exact provider transition times or production capacity.
-Live Kata and Sandbox execution remain deferred. Production CA selection,
-complete offline inputs, and the API-only legacy publisher remain open.
+Live Kata and Sandbox execution remain deferred. Production CA selection and
+complete offline inputs remain open. The service Deployment adoption has its
+own result below.
 
 ## Service deployment adoption
 
@@ -91,5 +92,14 @@ snapshot, then selects the API and identity worker references from the declared
 seven-image result. The handwritten image assembly, registry credential file,
 and image metadata parser have been removed. Evidence collection requires
 source checks, compiler records, transfer proof, and all seven registry receipts
-for both deployment profiles. The new service deployment result is pending;
-the completed browser result above applies to its recorded source.
+for both deployment profiles.
+
+The service Deployment workflow passed at source `c85c608` on 2026-09-20.
+The hosted gate and all seven image targets passed. The live test passed HTTPS
+and gRPC, atomic owner grants, access filtering, event rollback and delivery,
+Keycloak reconciliation, worker and API Pod replacement, and telemetry from
+all four instances. Independent checks matched the signed running images,
+1,628 source files, and 421 generated file hashes. Complete cleanup passed.
+See the [service result](service-image-deployment-live-evidence.json). The
+browser result above continues to apply to its recorded source. Neither result
+closes the production capacity or complete enterprise requirements.

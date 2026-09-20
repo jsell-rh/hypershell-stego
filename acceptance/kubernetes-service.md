@@ -65,10 +65,19 @@ the complete publication result. Registry credentials come from the mounted
 service-account token. Private publisher files are excluded from evidence.
 The generated API and worker ServiceAccounts have no token mount or RBAC grant.
 
-This service deployment path now uses the common publisher. Its new live result
-is pending. The separate `Gateway API on jshell` workflow uses a bounded test
-process and does not publish application images. Its existing result does not
-qualify this changed Deployment path.
+The common publisher passed this service Deployment workflow on jshell at
+source `c85c608` on 2026-09-20. The application test took 120.06 seconds under
+race detection. The complete source check covered 1,628 files. Two generation
+passes and the post-test check matched all 421 generated, state, and dependency
+hashes. Both API Pods and both identity-worker Pods became ready with the
+expected signed images and no observed restarts. All four instances supplied
+correlated logs and traces, plus metrics; 407 batches passed the selected
+private-value checks. Cleanup removed the test namespace, released the shared
+Lease, and left all 32 standing installation resources unchanged. See the
+[source-specific result](service-image-deployment-live-evidence.json).
+
+The separate `Gateway API on jshell` workflow uses a bounded test process and
+does not publish application images. Its result has a separate scope.
 
 The application uses a separate database login with table and sequence access.
 PostgreSQL uses native verified TLS and SCRAM authentication. The Kafka protocol
@@ -98,11 +107,11 @@ a fence for an unreachable node. Multiple active workers remain outside this
 check. The acceptance test uses race detection; the deployed images do not.
 
 The fixture is not a production Kafka broker. The separate `service-image` CI
-job builds both generated Containerfiles. The cluster check constructs
-the same runtime file set with `oc image append`; it does not run Docker or a
-privileged image builder. Public ingress, certificate renewal, production
-broker operation, capacity, deployment migrations, and other domain
-controller deployments remain outside this check.
+job builds both generated Containerfiles. The cluster check uses STEGO to
+verify and publish the seven signed images from the selected hosted run.
+It does not run Docker or a privileged image builder. Public ingress, certificate
+renewal, production broker operation, capacity, deployment migrations, and
+other domain controller deployments remain outside this check.
 
 The first pinned run passed on jshell on 2026-09-11. The application test took
 10.71 seconds; its race-enabled package took 11.757 seconds. Its image digest

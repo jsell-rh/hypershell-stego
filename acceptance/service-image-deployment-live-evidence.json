@@ -1,0 +1,141 @@
+{
+  "recorded_at": "2026-09-20T15:42:04.975574+00:00",
+  "source": "c85c608f079325c07911cf8a44fea5513511c5de",
+  "qualified": true,
+  "scope": "One bounded service Deployment workflow on jshell. The API and identity worker use signed images published by STEGO. This result does not complete the enterprise goal.",
+  "hosted_checks": {
+    "full_run": 35518217555,
+    "full_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35518217555",
+    "image_run": 35518211837,
+    "image_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35518211837",
+    "image_jobs_passed": 15,
+    "image_targets_qualified": 7,
+    "core_cases_passed": 1142,
+    "prior_core_cases_retained": 1122,
+    "added_core_cases": 20,
+    "core_top_level_tests": 358,
+    "core_conditional_skips": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestRealProviderAccountCapacity"
+    ],
+    "rendered_browser_test_passed": true,
+    "live_kata_deferred": true
+  },
+  "live": {
+    "namespace": "stego-service-20260920-66cfbb",
+    "job_uid": "ab20b3f3-de4a-4bc5-a9c0-c05134cd6907",
+    "pod_uid": "45e24e29-af14-4cf4-9836-ecc71f50cd28",
+    "test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 120.06,
+    "race_detection": true,
+    "job_deadline_seconds": 1800,
+    "job_retries": 0,
+    "admitted_limits_checked": true,
+    "no_privileged_containers": true,
+    "same_job_and_pod_transfers_checked": true,
+    "source_inventory": {
+      "files": 1628,
+      "bytes": 27191146,
+      "sha256": "46eba7ac4c69a6e05425dd50f5d929aa83445d52f7050c7d8574539944df3e72"
+    },
+    "generated_hashes_matched": 421,
+    "generation_passes": 2,
+    "post_test_hashes_equal": true,
+    "images_verified_and_published": 7,
+    "ready_pods": {
+      "hypershell": 2,
+      "hypershell-gateway-identity": 2
+    },
+    "observed_restart_counts_zero": true,
+    "startup_failure_stages_observed": 0,
+    "telemetry_batches_checked": 407,
+    "telemetry_complete_instances": {
+      "api": 2,
+      "identity_worker": 2
+    }
+  },
+  "behavior_checked": [
+    "Gateway creation through HTTPS with KSUID, namespace, and timestamps",
+    "Gateway and owner grant commit together; event failure rolls both back",
+    "HTTPS and gRPC retrieval, denied requests, and filtered lists",
+    "Committed creation and post-restart update events through the generated runtime",
+    "Keycloak client creation and identity repair after worker and API Pod replacement",
+    "Correlated logs and traces, positive metrics, and selected private-value checks for all four instances"
+  ],
+  "compilers": {
+    "generation_revision": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+    "publication_revision": "c92f591b10797845bd240eb0ddd1eddd08ee53c3",
+    "actual_sha256": {
+      "generation": "e587de658b558a5634c950269fbcc776d15d55899afafe3665179b06839829bd",
+      "publication": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+    }
+  },
+  "deployed_images": {
+    "hypershell": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-66cfbb/hypershell@sha256:14df5a0559b6099cb2c3722dc812628becf2cb2bc4ec49c59324d1deb87baa25"
+    },
+    "hypershell-gateway-identity": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-66cfbb/hypershell-gateway-identity@sha256:0fa67a190d5d2668387d4f00e4a2fd6fe7735e341eda3cbb9c63092faf6476cb"
+    }
+  },
+  "cleanup": {
+    "source": "c85c608f079325c07911cf8a44fea5513511c5de",
+    "checked_at": "2026-09-20T15:40:53.788900+00:00",
+    "phase": "cleanup",
+    "existing_test_jobs_and_pods_absent": true,
+    "lease_free": true,
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "standing_resources_unchanged": 32,
+    "namespace": "stego-service-20260920-66cfbb",
+    "owned_resources_absent": true
+  },
+  "previous_failures": {
+    "startup": "service-image-deployment-failure-evidence.json",
+    "telemetry": "service-image-telemetry-failure-evidence.json",
+    "preserved": true,
+    "application_executables_unchanged_from": "c275c4f1f8a5a479bc657a42c07f1c7691e1e70d",
+    "unchanged_executables": 7,
+    "limit": "The prior run did not record queue saturation. This result proves the corrected workflow; it does not prove that collector backpressure was the sole cause of the prior failure."
+  },
+  "evidence_sha256": {
+    "live/qualification-complete.json": "1c9db4eb8033a6b9e34242383d07bae9320da163247d3b729e0a0ae0dd5fe808",
+    "live/ready-restart-review.json": "db8073bbde23a97898b0f2bd02db2bbcd94da2e5abe4bebc5e6a3d3f945b7af8",
+    "live/verification.json": "7063780a0e454f9abc848fc3d9d8a3b3eeda21bad39ddad0159a7d5cf5b1a4dd",
+    "live/cleanup.json": "fa96d8e95e91c02af66be46502d2f9e4e26ef3fedce77ae925d5dc929b11cfeb",
+    "live/admitted-pod.json": "bd429823d4a3c5e3387166677c1ece25bedb987036f9e80a5951464c37096135",
+    "live/capture.json": "09a06901e3c5451c737f7174b635e175fa4f8aed9911e1c9a8700e75b338148b",
+    "live/results/deployment.log": "4f11cf127fbb5bcce86e243568df2bb8ee464e93d1295577855a0e12b63d3ae1",
+    "live/results/evidence.tar": "af23c515152832094f21c33e3a3f0e474cb84d1a91f8626c8282d0f2a6098875",
+    "live/results/job-status.json": "61772d49b6c6c6008600cc08f43305426bd12cd3b89a77351e207668b523ec5d",
+    "live/deployed-images/records.jsonl": "f1d8a00dac90486997df553cdf35556109b142a89fe37c47345df1d20be06880",
+    "live/startup/pod-states.jsonl": "d96b98aa5455970af6db7c7e264ac67c762d7a74398093c0c52503647dbf6336",
+    "current/checks/35518217555/verification-independent.json": "f0c6a0250bb8850a803960b58bcb1bc13fb5f0e3a165b6d98ac25678d7d1727d",
+    "current/application-qualification.json": "908fb5778f93161d200c780e233476c6b390b9e9fd9b5d66adacb9e4486eb5a2",
+    "current/image-qualification.json": "16da54fa672424bd4de3ccaf0af0575c56f8106d5f7ed876e6a501359faa0d2f",
+    "current/signature-qualification.json": "db0628d7e248cc67e17a24320cd3624c81f09db3aa9c8d578bcf84af6aa8904c",
+    "current/registry-qualification.json": "bf5b8eb1480fe190b78cc05e40ed36250c296cda5b063429ac8330268739380f",
+    "current/runtime-bytes-comparison.json": "5cbe24bb75ea4531cd3f578f3be2a3be74293c92590bf6e843fd60cd8af6045d"
+  },
+  "not_proved": [
+    "Production CA selection and complete notices",
+    "Complete offline builds and other installation platforms",
+    "Automatic release qualification",
+    "Common installation API for service database permissions",
+    "Distributed worker fencing and high availability",
+    "Backup and restore",
+    "100 Gateways with 100 accounts each and the 30-second cleanup target",
+    "Live Kata isolation and OpenShell Sandbox execution",
+    "Full production parity and enterprise readiness"
+  ]
+}
