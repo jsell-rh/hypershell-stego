@@ -1,0 +1,141 @@
+{
+  "source": "0aa8f0dda3ac34f38ef31569f6d6abb77f3d0487",
+  "checked_at": "2026-09-20T01:24:50.554607+00:00",
+  "gates": [
+    {
+      "run": 35479995485,
+      "workflow": "Journal recovery checks",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995485",
+      "attempt": 1,
+      "record": "checks/35479995485/verification.json",
+      "record_sha256": "0388d4601e535088e7b96176e626476bf4cacbfaa7281a7d37ea1cf571da9d50",
+      "jobs": {
+        "journal-recovery": "success"
+      }
+    },
+    {
+      "run": 35479995489,
+      "workflow": "Generated Gateway console",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995489",
+      "attempt": 1,
+      "record": "checks/35479995489/verification.json",
+      "record_sha256": "f6172f97983ab1645700158fd028217b503db53765441daa095c9e17fc6daaea",
+      "jobs": {
+        "module": "success"
+      }
+    },
+    {
+      "run": 35479995474,
+      "workflow": "Sandbox adapter checks",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995474",
+      "attempt": 1,
+      "record": "early-verification.json",
+      "record_sha256": "f95e0b1560a643861d41fb144fb3a25c2d68bc52f19a79b5b0663b9b2d93c278",
+      "jobs": {
+        "adapter": "success"
+      }
+    },
+    {
+      "run": 35479995493,
+      "workflow": "Gateway API on jshell",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995493",
+      "attempt": 1,
+      "record": "checks/35479995493/verification-independent.json",
+      "record_sha256": "ebd730f25b0a75d2bf755ec4430d98d6f8086d589ecefa49a52f41a982bf9592",
+      "jobs": {
+        "gateway-api": "success"
+      }
+    },
+    {
+      "run": 35479995475,
+      "workflow": "Gateway browser workflow on jshell",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995475",
+      "attempt": 1,
+      "record": "browser/verification.json",
+      "record_sha256": "120dc11f41c81605228ee1d207a566266db8f78bb01770769a0c2a64869e651c",
+      "jobs": {
+        "gateway-workload": "success"
+      }
+    },
+    {
+      "run": 35479995487,
+      "workflow": "Upstream dashboard source checks",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995487",
+      "attempt": 1,
+      "record": "checks/35479995487/verification.json",
+      "record_sha256": "e819a631ca2a3a06d83bbd1c3fdc7f78dce24e2b0810966f3877db921102897e",
+      "jobs": {
+        "source": "success",
+        "private-application": "success"
+      }
+    },
+    {
+      "run": 35479995583,
+      "workflow": "Regenerate with the pinned compiler",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995583",
+      "attempt": 1,
+      "record": "early-verification.json",
+      "record_sha256": "f95e0b1560a643861d41fb144fb3a25c2d68bc52f19a79b5b0663b9b2d93c278",
+      "jobs": {
+        "generate": "success",
+        "policy-plan": "skipped"
+      }
+    },
+    {
+      "run": 35479995465,
+      "workflow": "Real provider discovery and cleanup",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995465",
+      "attempt": 1,
+      "record": "checks/35479995465/verification.json",
+      "record_sha256": "9c5d16047beaac1fcd97479d23e0a1d40f1d67b6775f886b8295007922c1b80d",
+      "jobs": {
+        "discovery": "success"
+      }
+    },
+    {
+      "run": 35479995453,
+      "workflow": "Build console asset candidate",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995453",
+      "attempt": 1,
+      "record": "checks/35479995453/verification.json",
+      "record_sha256": "ae70f8285cf7cbc27c99220c2d8c2ffaff8615b2b26d369c1fdb95d7de6d6cd4",
+      "jobs": {
+        "build": "success"
+      }
+    },
+    {
+      "run": 35479995472,
+      "workflow": "Real provider account capacity",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995472",
+      "attempt": 1,
+      "record": "checks/35479995472/verification.json",
+      "record_sha256": "c4bba71a94f1edb509171ddfb2c065fac93b5bb14aed3de7adc0950b8738a0da",
+      "jobs": {
+        "capacity": "success"
+      }
+    },
+    {
+      "run": 35479995448,
+      "workflow": "Gateway and contract checks",
+      "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995448",
+      "attempt": 1,
+      "record": "consumer-full/verification.json",
+      "record_sha256": "d3b1d80859ff340c0201eb603039eae1ad99520a88f4cae961ef1baeb37e6e61",
+      "jobs": {
+        "acceptance (core)": "success",
+        "web-console": "success",
+        "acceptance (browser)": "success",
+        "service-image": "success",
+        "sandbox-workload": "skipped"
+      }
+    }
+  ],
+  "all_eleven_gates_verified": true,
+  "joint_cleanup_verified": true,
+  "api_private_fixtures_absent": true,
+  "standing_installation_resources_unchanged": 32,
+  "complete_gateway_target_proved": false,
+  "full_enterprise_goal_complete": false,
+  "scope": "Main qualification at this exact source. Five core fixture exclusions and the deferred Kata job remain explicit in their records. No RDS failover, full production capacity, or enterprise completion claim is made.",
+  "record_paths": "Paths relative to the retained main qualification directory. The linked workflow runs and companion acceptance records describe each result."
+}
