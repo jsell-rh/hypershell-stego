@@ -63,7 +63,158 @@
     "unchanged_source_and_module_files": 126,
     "source_manifest_sha256": "133f6553f0f88d5b5215530964b80622d48d15ddf1db957bd7aeae7932f2d2e4",
     "existing_reference_retained": true,
-    "selected_module_requires_fresh_application_check": true
+    "selected_module_requires_fresh_application_check": false,
+    "selected_module_verified_by_run": 35502565241
   },
-  "scope": "Verified signed compiler selection and exact generated output. Hosted application checks are running. No live workflow result is claimed for this consumer source."
+  "scope": "Verified signed compiler, exact generated output, selected Gateway console module, and all six hosted application checks. No current live workflow result is claimed.",
+  "hosted_qualification": {
+    "qualified_at": "2026-09-20T10:01:35.845331+00:00",
+    "source": "d24e9da78f6cb3c3ff7715b868ce91d29a1bd7df",
+    "compiler": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+    "runs": {
+      "full": {
+        "run": 35502578288,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502578288",
+        "verification_sha256": "06d2113d1f26911f01f6e1ecad8b50861cd950804a83d8e451cc92cad8740d6f",
+        "ci_log_sha256": "54823253f90a895b1b1b245b8435d2e3e6b8a6c02219bdb30d1add9aa3a380c0",
+        "details": {
+          "source": "d24e9da78f6cb3c3ff7715b868ce91d29a1bd7df",
+          "run_id": 35502578288,
+          "qualified": true,
+          "conclusion": "success",
+          "jobs": {
+            "service-image": "success",
+            "acceptance (browser)": "success",
+            "web-console": "success",
+            "acceptance (core)": "success",
+            "sandbox-workload": "skipped"
+          },
+          "baseline_source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+          "all_prior_core_cases_retained": 1103,
+          "core_passed_cases": 1122,
+          "core_passed_top_level": 354,
+          "additional_passed_cases": 19,
+          "additional_top_level_tests": [
+            "TestDatabaseFixtureCleanupDiagnostics",
+            "TestWorkloadPendingCancellationPreservesFailure",
+            "TestWorkloadPendingObservationPreservesFailures",
+            "TestWorkloadPendingRecheckKeepsCleanupIncomplete"
+          ],
+          "core_skipped_cases": [
+            "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+            "TestGeneratedKubernetesBrowserGatewayWorkflow",
+            "TestGeneratedKubernetesServiceGatewayWorkflow",
+            "TestNamespaceCountWithLiveKubernetes",
+            "TestRealProviderAccountCapacity"
+          ],
+          "rendered_browser_test_passed": true,
+          "test_definitions_retained": true,
+          "workload_pending_tests_match_exact_source_focused_runs": true,
+          "log_sha256": "54823253f90a895b1b1b245b8435d2e3e6b8a6c02219bdb30d1add9aa3a380c0",
+          "scope": "Full hosted consumer checks. The live trace workflow, whole cleanup time, production capacity, and deferred Kata remain separate requirements."
+        }
+      },
+      "adapter": {
+        "run": 35502580219,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502580219",
+        "verification_sha256": "d4f1982d536dacb2e6128c4ce643cd22db6a66969f6b0386ee8f6e440f86135f",
+        "ci_log_sha256": "c0d27a54d664df5168f6ca3d72e4124c3e49ebe20f0998e029073e20d438f05f",
+        "details": {
+          "adapter_top_level": 71,
+          "workload_pending_cases": 15,
+          "state_overlap_cases": 7,
+          "source_archive_verified": true,
+          "live_pause_test_run": false
+        }
+      },
+      "allocation": {
+        "run": 35502584653,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502584653",
+        "verification_sha256": "dc0768d3d6723cb6645b191c2ecfe2ef9e3c51a73fa31320f351932a60f53732",
+        "ci_log_sha256": "3a9102196879576e15b4b24803050944b54bf83ca2812369164fe3c49377bfab",
+        "details": {
+          "passed_top_level": 23,
+          "required_tests_passed": [
+            "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+            "TestAllocationPendingCancellationDoesNotBecomeProgress",
+            "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+            "TestGatewayCleanupKeepsBothClusterTargetsAfterRestart",
+            "TestGatewayCleanupObservationDoesNotRepeatEvents",
+            "TestGatewayDeletionRemovesServiceAccounts",
+            "TestGatewayDurableDeletionThroughGeneratedTransports",
+            "TestGatewayFinalizationWaitsForAllocationCleanup",
+            "TestGatewayJournalClosureRollsBackWithFinalEvent",
+            "TestGatewayWatchThroughGeneratedRuntime",
+            "TestGeneratedCLIApplyWorkflow",
+            "TestGeneratedCLICatalogWorkflow",
+            "TestPendingCleanupAndProviderErrorsArePreserved",
+            "TestPlacementWorkflowThroughGeneratedRuntime",
+            "TestStateCleanupRequestsBothNamespacesBeforeWaiting",
+            "TestStateCleanupResumesAfterControllerRestart",
+            "TestStateCleanupStopsRequestsAfterCancellation"
+          ],
+          "state_overlap_cases": 7,
+          "rest_and_grpc_deletion": true,
+          "scope": "Exact candidate namespace and PostgreSQL tests. Explicit pending results preserve placement, cleanup order, resource versions, and error priority. No live allocator pause ran here."
+        }
+      },
+      "provider": {
+        "run": 35502588924,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502588924",
+        "verification_sha256": "83e89a65ff25ff34f1a4bbab63ea07e45f2b8cce980274813aadeba12dccb000",
+        "ci_log_sha256": "6d43dd3df63f4b63b80370542fb4a4618204f4c05c12a8500aa4bc7c58a02bc2",
+        "details": {
+          "compiler": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+          "inventory_passed_cases": 33,
+          "provider_tests": [
+            "TestDatabaseFixtureCleanupDiagnostics",
+            "TestGatewayCleanupDeadlineReopensConfirmation",
+            "TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart",
+            "TestPostgresSignalEvidenceAcceptsCredentialPreparation",
+            "TestPostgresSignalEvidenceAcceptsManagedSchema",
+            "TestPostgresSignalEvidenceRequiresControllerAndLog",
+            "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+            "TestUnrelatedClientSnapshotComparison"
+          ],
+          "provider_cleanup_proved": true,
+          "inventory_log_sha256": "69d77e5e4b6d4f0e46952c6953078a434de876775e2d8550df573ac68c2c0d47",
+          "provider_log_sha256": "252defcc22bd2180e616c22aee4d40b0232454786fb0c30f6c354796f504d7de"
+        }
+      },
+      "journal": {
+        "run": 35502592931,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502592931",
+        "verification_sha256": "0be645e35a741cba4eb072b6a85c6cc61b3e42697efa50fd65e6759c4cd2c49e",
+        "ci_log_sha256": "93a7446a78e61d8c578d9dc31b3005fd78d151443b4e26a7d79c0a8d07a87f68",
+        "details": {
+          "passed_top_level": 44,
+          "log_sha256": "9e5153be592e18f38b521049ee4d5c9f56a02375ca57b962e2f47fcb10ef99c4"
+        }
+      },
+      "console": {
+        "run": 35502565241,
+        "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35502565241",
+        "verification_sha256": "d5a56327bff2e2fae9706f33332418ed989e874cb091dc73f576dc9a2e92a11c",
+        "ci_log_sha256": "b46c42f9b30ad932391a4a7882e3d8bbad33a2f29e9f04978f9ea38abc77583c",
+        "details": {
+          "compiler": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+          "generated_files_match": 130,
+          "published_image": "ghcr.io/jsell-rh/hypershell-stego-gateway-console-ci@sha256:c389c7307115c1a5b16deff429dde77286f6ac1904bbfa10f0b57f07b7d8ab56",
+          "binary_sha256": "bb4a994510625e68dcfc800ab0d314c91af47657f34d0cfbf354ca925513cd2a",
+          "signed_compiler_matches_release": true,
+          "image_binary_matches_module": true,
+          "pulled_digest_matches_build": true,
+          "scope": "The exact generated dashboard module and its bounded CI image build. This is not a live Gateway deployment result."
+        }
+      },
+      "trace_evidence_checks": {
+        "run": 35502580219,
+        "passed_cases": 99,
+        "verification_sha256": "a54b27ee534829c8382ea78e05d2c792e93af894539bb1d81e73bc6aaa94068b",
+        "test_log_sha256": "dba2379e732b50f9fef1338162c8b9cb09af17ae3ace18cb2fd7503034624896",
+        "live_trace_workflow_qualified": false
+      }
+    },
+    "scope": "All six exact-source hosted checks passed independent verification. The current live browser and separate API checks remain pending."
+  }
 }

@@ -21,14 +21,21 @@ The new provider file matches SHA-256
 `77fd3a0af7fef290d30bddcc3b11a3f352b93a9a3561de76a8346ef6ad3498fe`.
 
 All 126 Gateway console source and module files match the prior qualified
-module. The current module reference remains valid for those bytes. Fresh
-application checks must verify the actual selected module again. See the
+module. The current module reference remains valid for those bytes. The new
+application check verified the actual selected module, signed compiler, image
+executable, and pulled image identity. See the
 [compiler adoption record](postgres-recovery-compiler-evidence.json).
 
 The consumer includes the qualified
 [fixture cleanup correction](database-fixture-cleanup.md) and the existing
-pending-result controller change. Its six hosted checks are running. The next
-live workflow must verify REST, gRPC, access control, events, restart,
+pending-result controller change. All six hosted checks passed independent
+verification. The full run passed 1,122 core cases across 354 top-level tests,
+with all 1,103 baseline cases retained. Adapter, allocation, provider, journal,
+and Gateway console checks passed. The trace evidence checks passed 99 cases.
+The five conditional core exclusions and the deferred Kata job remain explicit
+in the record. No live result is claimed for this source yet.
+
+The next live workflow must verify REST, gRPC, access control, events, restart,
 regeneration, all three telemetry signals, and complete Gateway cleanup.
 The 30-second cleanup target and production capacity remain open. The live
 Kata test remains deferred.
