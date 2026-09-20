@@ -22,6 +22,7 @@ import (
 	"time"
 
 	browser "github.com/jsell-rh/hypershell-stego/gateway-console/out/browser"
+	stegodatabaseaccess "github.com/jsell-rh/hypershell-stego/gateway-console/out/contracts/databaseaccess"
 	health "github.com/jsell-rh/hypershell-stego/gateway-console/out/health"
 	storage "github.com/jsell-rh/hypershell-stego/gateway-console/out/internal/storage"
 	tracing "github.com/jsell-rh/hypershell-stego/gateway-console/out/tracing"
@@ -63,6 +64,10 @@ func run() (stegoErr error) {
 		if err != nil {
 			return err
 		}
+	}
+	stegoStage = "database.access"
+	if err := stegodatabaseaccess.VerifyRuntime(ctx, db); err != nil {
+		return err
 	}
 	stegoStage = "component[1].constructor[0]"
 	tracingRuntime, err := tracing.NewTracingRuntime(db)

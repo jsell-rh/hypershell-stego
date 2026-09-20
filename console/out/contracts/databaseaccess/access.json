@@ -1,0 +1,17 @@
+{
+  "format": 1,
+  "objects": [
+    {
+      "component": "browser-backend",
+      "schema": "public",
+      "name": "stego_browser_sessions",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    }
+  ]
+}

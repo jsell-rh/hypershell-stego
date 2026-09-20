@@ -1,0 +1,185 @@
+{
+  "format": 1,
+  "objects": [
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "gateway_networks",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "gateway_releases",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "gateways",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "managed_clusters",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "role_bindings",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "roles",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "service_account_audits",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "service_accounts",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "stego_effect_bindings",
+      "kind": "table",
+      "privileges": [
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "stego_resource_state",
+      "kind": "table",
+      "privileges": [
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "stego_resource_state_scopes",
+      "kind": "table",
+      "privileges": [
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "stego_scan_checkpoints",
+      "kind": "table",
+      "privileges": [
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "public",
+      "name": "users",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "outbox",
+      "schema": "stego_outbox",
+      "name": "messages",
+      "kind": "table",
+      "privileges": [
+        "DELETE",
+        "INSERT",
+        "SELECT",
+        "UPDATE"
+      ]
+    },
+    {
+      "component": "outbox",
+      "schema": "stego_outbox",
+      "name": "messages_sequence_seq",
+      "kind": "sequence",
+      "privileges": []
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
+      "name": "generation",
+      "kind": "table",
+      "privileges": [
+        "SELECT"
+      ]
+    }
+  ]
+}

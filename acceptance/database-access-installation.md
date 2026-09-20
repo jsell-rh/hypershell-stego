@@ -4,8 +4,9 @@ This branch contains an unqualified application adoption candidate. It selects
 [compiler 3603e391](https://github.com/jsell-rh/stego/releases/tag/compiler-3603e391e6942b0b36ceaeea9ae10c723651dbe0),
 whose complete compiler and signed artifact checks passed. The four immutable
 release files passed installation verification and match the verified package.
-The current committed generated output does not yet contain the new database
-access package. Do not deploy or merge this candidate until regeneration and
+The generated output now contains the access package and startup check for
+the API and both browser backends. The root Gateway console module pin still
+needs an update. Do not deploy or merge this candidate until that update and
 all required application checks pass.
 
 The application selects STEGO's external-migration mode. The operator must
@@ -13,7 +14,11 @@ install the schema before API startup. The API cannot bootstrap an empty
 database and checks its runtime permissions before it creates handlers.
 Component schema-generation checks still run. The first regenerated candidate
 retained the old startup-migration selection; review rejected that candidate
-before adoption. New output must come from the corrected declaration.
+before adoption. [Run 35522887499](https://github.com/jsell-rh/hypershell-stego/actions/runs/35522887499)
+regenerated the corrected declaration. All 426 generated and module files
+match the reviewed archive. The API calls `VerifyRuntime` before constructors
+and no longer calls `storage.Migrate` during startup. Common installer function
+bodies match the qualified compiler example.
 
 The API fixture gives application processes and storage clients a separate
 NOINHERIT login. The operator connection retains setup, fault-test, and cleanup
@@ -35,13 +40,14 @@ marker access and excess table access stop the generated API at
 Gateway, owner access, denied requests, filtered lists, and delivered event.
 The test must reject private values in the failure output. The DSN test must
 preserve connection options while replacing all database and login values.
-These tests have not run for this candidate.
+These application tests have not run for this candidate.
 
 STEGO source `3603e391` passed 44 common database access checks in
 [run 35522402353](https://github.com/jsell-rh/stego/actions/runs/35522402353).
 Its [complete compiler checks](https://github.com/jsell-rh/stego/actions/runs/35521489217)
 and [signed artifact checks](https://github.com/jsell-rh/stego/actions/runs/35522402232)
-also passed. These results do not qualify this application candidate. All three
-regenerated modules, complete hosted acceptance, seven image targets, and
-rendered service and browser workflows remain required. The existing qualified
+also passed. These results do not qualify this application candidate. The generated modules
+have passed regeneration review. The root module pin, complete hosted
+acceptance, seven image targets, and rendered service and browser workflows
+remain required. The existing qualified
 Hypershell main remains unchanged.

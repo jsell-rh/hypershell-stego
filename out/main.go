@@ -23,6 +23,7 @@ import (
 
 	application "github.com/jsell-rh/hypershell-stego/out/application"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
+	stegodatabaseaccess "github.com/jsell-rh/hypershell-stego/out/contracts/databaseaccess"
 	events "github.com/jsell-rh/hypershell-stego/out/events"
 	grpcapi "github.com/jsell-rh/hypershell-stego/out/grpcapi"
 	health "github.com/jsell-rh/hypershell-stego/out/health"
@@ -75,8 +76,8 @@ func run() (stegoErr error) {
 			return err
 		}
 	}
-	stegoStage = "component[0].database[0]"
-	if err := storage.Migrate(db); err != nil {
+	stegoStage = "database.access"
+	if err := stegodatabaseaccess.VerifyRuntime(ctx, sqlDB); err != nil {
 		return err
 	}
 	stegoStage = "component[0].constructor[0]"
