@@ -1,0 +1,35 @@
+{
+  "source": "69b9e299710ae2cfa472223a9f972617cfa06599",
+  "run_id": 35500072508,
+  "qualified": true,
+  "conclusion": "success",
+  "jobs": {
+    "service-image": "success",
+    "acceptance (browser)": "success",
+    "acceptance (core)": "success",
+    "web-console": "success",
+    "sandbox-workload": "skipped"
+  },
+  "baseline_source": "8a5e38d1f7c55b9bb45750f3dfff62dd31a0d4be",
+  "all_prior_core_cases_retained": 1103,
+  "core_passed_cases": 1121,
+  "core_passed_top_level": 353,
+  "additional_passed_cases": 18,
+  "additional_top_level_tests": [
+    "TestWorkloadPendingCancellationPreservesFailure",
+    "TestWorkloadPendingObservationPreservesFailures",
+    "TestWorkloadPendingRecheckKeepsCleanupIncomplete"
+  ],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "rendered_browser_test_passed": true,
+  "test_definitions_retained": true,
+  "workload_pending_tests_match_exact_source_focused_runs": true,
+  "log_sha256": "2a6beacb6b9ef0b9600a04af3fa8505143d37757a97417e0e161fea6cad87be5",
+  "scope": "Full hosted consumer checks. The live trace workflow, whole cleanup time, production capacity, and deferred Kata remain separate requirements."
+}

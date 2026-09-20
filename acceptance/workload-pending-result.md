@@ -44,6 +44,15 @@ the signed compiler, and the built and pulled image records. The image runs as
 user 65532 and uses the expected service entry point. See the
 [focused evidence](workload-pending-focused-evidence.json).
 
-The full core suite remains active. These results do not qualify the complete
-application or a new cleanup measurement. The live test remains held until
-all exact-source checks pass independent review.
+Full run [35500072508](https://github.com/jsell-rh/hypershell-stego/actions/runs/35500072508)
+then passed at the same source. Independent review verified 1,121 core cases
+across 353 top-level tests. All 1,103 baseline cases remain, with the 18 new
+workload progress cases. The rendered browser, UI, and image checks passed.
+The deferred Sandbox job remains skipped. See the [full evidence](workload-pending-full-evidence.json).
+
+No live run was dispatched for this source. The earlier pending-result
+candidate failed during its test database cleanup, and the live gate stopped.
+Candidate `5f70035` gives fixture cleanup a separate bounded deadline and checks
+database absence. It has fresh hosted gates. The original failed result remains
+a failure. See the [fixture change and evidence](https://github.com/jsell-rh/hypershell-stego/blob/5f70035868848328bde229d4995a87997c655183/acceptance/database-fixture-cleanup.md).
+No new live cleanup measurement or capacity result is claimed.
