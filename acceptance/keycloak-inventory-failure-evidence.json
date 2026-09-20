@@ -1,0 +1,69 @@
+{
+  "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+  "run_id": 35493201216,
+  "qualified": false,
+  "conclusion": "failure",
+  "failed_cases": [
+    [
+      "github.com/jsell-rh/hypershell-stego/acceptance",
+      "TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart"
+    ]
+  ],
+  "passed_cases": 1051,
+  "passed_top_level": 344,
+  "skipped_cases": [
+    [
+      "github.com/jsell-rh/hypershell-stego/acceptance",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow"
+    ],
+    [
+      "github.com/jsell-rh/hypershell-stego/acceptance",
+      "TestGeneratedKubernetesServiceGatewayWorkflow"
+    ],
+    [
+      "github.com/jsell-rh/hypershell-stego/acceptance",
+      "TestNamespaceCountWithLiveKubernetes"
+    ],
+    [
+      "github.com/jsell-rh/hypershell-stego/acceptance",
+      "TestRealProviderAccountCapacity"
+    ],
+    [
+      "github.com/jsell-rh/hypershell-stego/internal/gatewayworkload",
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer"
+    ]
+  ],
+  "log_sha256": "9468f8bdbc56a315b2948f1eabc0d9bad8517ad29032a837864e89d1593cf68a",
+  "schema": 1,
+  "failure": "A listed Keycloak client was absent when the inventory read its current state.",
+  "failure_location": "acceptance/keycloak_late_create_test.go:91",
+  "cause_status": "The deterministic regression proves that the original inventory fails when cleanup removes a listed candidate. The original full run did not record the individual provider requests.",
+  "recovery_workflow_qualified": false,
+  "live_workflow_run": 35493398031,
+  "live_workflow_qualified": false,
+  "regression": {
+    "source": "3de50ba32497d21213c3b08f5f84c6ffe7f0347a",
+    "run": 35494601331,
+    "expected_failure_proved": true,
+    "failed_cases": [
+      "TestManagedInventoryHandlesConcurrentRemoval",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/all_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/first_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/full_page_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/last_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/gateway/middle_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/all_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/first_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/full_page_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/last_removed",
+      "TestManagedInventoryHandlesConcurrentRemoval/global/middle_removed"
+    ],
+    "passed_cases": 20,
+    "missing_candidate_failures": 10,
+    "provider_cleanup_proved": true,
+    "inventory_log_sha256": "dc056d5e1c2c5ff600a4ec78ead29892c11973bddad0c9f61f97c25494da3627",
+    "workflow_qualified": false
+  }
+}

@@ -367,6 +367,11 @@ func (c *Client) ListManagedClients(ctx context.Context, gatewayID string) ([]Ma
 			}
 			seen[listed.ID] = true
 			client, err := c.getClient(ctx, listed.ID)
+			if errors.Is(err, ErrNotFound) {
+				// Cleanup can remove a candidate after the list. Continue the page;
+				// this inventory does not prove that retained accounts are absent.
+				continue
+			}
 			if err != nil {
 				return nil, err
 			}
