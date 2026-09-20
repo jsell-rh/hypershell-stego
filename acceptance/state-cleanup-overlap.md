@@ -93,4 +93,9 @@ records were retained, and all remaining verifiers passed on the same result.
 The application source, test run, and verification requirements did not change.
 
 The separate [API run 35499601572](https://github.com/jsell-rh/hypershell-stego/actions/runs/35499601572)
-is active at the same source. Its final qualification is still required.
+passed all 52 required tests at the same source. Independent review matched
+all 1,593 source files, 421 generated hashes, repeated generation, and the
+signed compiler bytes in the actual bounded test Pod. The final joint audit
+found both fixtures absent, no remaining test allocations or jobs, a free
+lease, and all 32 standing resources unchanged. See the
+[API evidence](state-cleanup-overlap-api-evidence.json).
