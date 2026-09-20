@@ -1,0 +1,27 @@
+{
+  "source": "cd240e7a3f11d95bda4f22e95c127abc60993106",
+  "compiler": "5c4afa11c289e086893a8fbc5da1aca5f1e64b64",
+  "run": 35544945328,
+  "source_archive_sha256": "8135488bbb3c51bb931cfbe0cefb8dac7a7a0ba86dfd93b912d3ef0645583521",
+  "generated_archive_sha256": "c52fd3b37dba34d9218bba36d9e5c3a4ebaa87a344dfae20d87a3157c8618257",
+  "files": 428,
+  "changed_files": [
+    ".stego/state.yaml",
+    "go.mod",
+    "go.sum"
+  ],
+  "unchanged_generated_and_module_files": 425,
+  "common_helpers_match_pinned_compiler_template": true,
+  "cli_change_is_compiler_identity_only": true,
+  "recorded_generated_hashes_checked": 419,
+  "recorded_source_input_hashes_checked": 41,
+  "selected_gateway_console_module": "v0.0.0-20260920233219-cd240e7a3f11",
+  "selected_module_commit": "cd240e7a3f11d95bda4f22e95c127abc60993106",
+  "source_review_required": false,
+  "applied": true,
+  "compiler_executed_locally": false,
+  "reviewed_at": "2026-09-20T23:34:53.637678+00:00",
+  "complete_inventory_sha256": "a97c8b54ffdb72301bb1b5dca4bd1e04341ad918edddba10a4a7f81135f9f2bc",
+  "combined_input_digests_verified": true,
+  "acceptance_scope": "Module selection and regeneration only. Application and live workflow checks remain required."
+}
