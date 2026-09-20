@@ -117,6 +117,28 @@ collections: {}
 slots: []
 
 overrides:
+  runtime-configuration:
+    groups:
+      - name: ControlAPI
+        fields:
+          - {"name": "Address", "env": "HYPERSHELL_API_GRPC_ADDR", "type": "string", "min_length": 1, "max_length": 512}
+          - {"name": "CAFile", "env": "HYPERSHELL_API_CA_FILE", "type": "string", "min_length": 1, "max_length": 4096}
+          - {"name": "TokenFile", "env": "HYPERSHELL_API_TOKEN_FILE", "type": "string", "min_length": 1, "max_length": 4096}
+      - name: ClusterWorker
+        fields:
+          - {"name": "ServerURL", "env": "HYPERSHELL_KUBERNETES_URL", "type": "string", "min_length": 1, "max_length": 4096}
+          - {"name": "CAFile", "env": "HYPERSHELL_KUBERNETES_CA_FILE", "type": "string", "min_length": 0, "max_length": 4096, "default": ""}
+          - {"name": "TokenFile", "env": "HYPERSHELL_KUBERNETES_TOKEN_FILE", "type": "string", "min_length": 1, "max_length": 4096}
+          - {"name": "ControlNamespace", "env": "HYPERSHELL_CONTROL_NAMESPACE", "type": "string", "min_length": 1, "max_length": 63}
+          - {"name": "ClusterID", "env": "HYPERSHELL_MANAGED_CLUSTER_ID", "type": "string", "min_length": 1, "max_length": 128}
+          - {"name": "SandboxRuntimeClass", "env": "HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS", "type": "string", "min_length": 0, "max_length": 63, "default": ""}
+      - name: NamespaceWorker
+        fields:
+          - {"name": "ConsoleDomain", "env": "HYPERSHELL_GATEWAY_CONSOLE_DOMAIN", "type": "string", "min_length": 0, "max_length": 253, "default": ""}
+      - name: SandboxCounter
+        fields:
+          - {"name": "WatchLimit", "env": "HYPERSHELL_SANDBOX_COUNT_WATCH_LIMIT", "type": "integer", "min": "0", "max": "128", "default": "0"}
+          - {"name": "Resync", "env": "HYPERSHELL_SANDBOX_COUNT_RESYNC", "type": "duration", "min": "0s", "max": "5m", "default": "0s"}
   kubernetes-service:
     source_directories: [internal, contracts]
     dns_namespace: openshift-dns

@@ -12,6 +12,7 @@ components:
   - go-sdk
   - typescript-sdk
   - controller
+  - runtime-configuration
   - health-check
   - kubernetes-service
   - otel-tracing
