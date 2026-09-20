@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strings"
@@ -250,12 +251,18 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	readCount(three, 1)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	// Remove the declared count binding, with live ownership and UID checks.
-	bindingPath := fmt.Sprintf("/apis/rbac.authorization.k8s.io/v1/namespaces/%s/rolebindings/stego-%s-4", one.Namespace, a.Marker())
-	binding, _, err := allocatorClient.Request(ctx, http.MethodGet, bindingPath, nil)
 	ownerLabels := kube.Owner{allocation.MarkerLabel: a.Marker(), allocation.ProfileLabel: "gateway", "hypershell.redhat.io/gateway-id": one.Metadata.Id, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}
-	if err != nil || !ownerLabels.Matches(binding) || kube.String(binding, "roleRef", "name") != control+".hypershell-namespace-allocation.sandbox-count" || kube.String(binding, "metadata", "uid") == "" || kube.String(binding, "metadata", "resourceVersion") == "" {
+	bindingCollection := "/apis/rbac.authorization.k8s.io/v1/namespaces/" + one.Namespace + "/rolebindings"
+	query := url.Values{"limit": {"64"}, "labelSelector": {allocation.MarkerLabel + "=" + a.Marker()}}
+	page, code, err := allocatorClient.Request(ctx, http.MethodGet, bindingCollection+"?"+query.Encode(), nil)
+	if err != nil || code != http.StatusOK {
+		t.Fatal("count binding snapshot", code, err)
+	}
+	binding, err := selectCountBinding(page, ownerLabels, control, one.Namespace)
+	if err != nil {
 		t.Fatal("count binding identity", err)
 	}
+	bindingPath := bindingCollection + "/" + url.PathEscape(kube.String(binding, "metadata", "name"))
 	// Protected bindings use background deletion. A garbage collector cannot
 	// update their finalizers through the allocator-only admission policy.
 	if _, _, err := allocatorClient.Request(ctx, http.MethodDelete, bindingPath, kube.Object{"apiVersion": "v1", "kind": "DeleteOptions", "preconditions": kube.Object{"uid": kube.String(binding, "metadata", "uid"), "resourceVersion": kube.String(binding, "metadata", "resourceVersion")}, "propagationPolicy": "Background"}); err != nil {

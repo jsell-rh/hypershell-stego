@@ -8,6 +8,8 @@ on:
       - 'scripts/check-count-namespaces.py'
       - 'scripts/check-count-renderer.py'
       - 'out/deploy/**'
+      - 'acceptance/count_binding_fixture_test.go'
+      - 'acceptance/count_namespace_live_test.go'
 
 permissions:
   contents: read
@@ -44,6 +46,9 @@ jobs:
           python3 -B scripts/check-count-renderer.py \
             --render "$RUNNER_TEMP/count-setup/render" \
             --results "$RUNNER_TEMP/count-setup/records"
+          timeout --signal=TERM --kill-after=10s 180s go test -race -v -count=1 -timeout=150s \
+            ./acceptance -run '^TestCountBindingFixtureUsesIdentity$' \
+            | tee "$RUNNER_TEMP/count-setup/binding.log"
           git diff --exit-code
           rm "$RUNNER_TEMP/count-setup/render"
       - name: Retain render results
