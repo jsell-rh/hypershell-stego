@@ -1,10 +1,10 @@
 # Controller trace evidence
 
-Status: acceptance candidate. The signed STEGO trace compiler is selected.
-Generated output, the Gateway console module reference, and consumer checks
-must pass review before the live workflow runs. Do not promote this candidate
-until the live workflow and cleanup checks pass. The existing pending-result
-workflow uses a separate frozen source.
+Status: hosted consumer checks passed at source `e026fb0`. The generated output
+uses signed STEGO compiler `f6ebd0b` and the selected Gateway console module.
+The live trace workflow and separate API gate remain required at this source.
+Do not promote the candidate until those checks and cluster cleanup pass.
+The completed pending-result workflow uses a separate frozen source.
 
 The live browser workflow now checks each controller span from its worker
 telemetry collector. Reconciliation, scans, cleanup samples, and watch sessions
@@ -35,3 +35,21 @@ Focused CI checks invalid ancestry and fields, duplicate and reordered delivery,
 collection limits, exact instance counts, and missing operation evidence. These
 checks qualify the evidence collector only. A live run with the released compiler
 must still prove the application behavior.
+
+
+## Hosted consumer proof
+
+The [full consumer run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35490842878)
+passed at source `e026fb00159953615110fd7c7022ee6d53526db0`. Independent review
+found 1,019 passed core cases across 344 top-level tests. All 982 prior cases
+remain covered, with 37 added cases. The rendered browser, web console, and
+service image jobs passed. The five fixture-dependent exclusions are unchanged;
+the Kata job remains deferred.
+
+The [focused allocation run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35490844735)
+passed 20 top-level tests at the same source. The
+[adapter run](https://github.com/jsell-rh/hypershell-stego/actions/runs/35490849036)
+passed 65 adapter tests and all 50 trace collector cases. The collector checks
+invalid roots, distinct paired work, bounds, exact service instances, and the
+existing worker profile. Its success does not prove live trace delivery.
+See the [exact hosted evidence and exclusions](controller-trace-hosted-evidence.json).
