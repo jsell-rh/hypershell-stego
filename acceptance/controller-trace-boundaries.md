@@ -1,9 +1,10 @@
 # Controller trace evidence
 
-Status: acceptance candidate. The selected compiler still uses the old trace
-boundary. Do not run this source as a live qualification or promote it until the
-new signed STEGO compiler is selected and its generated output is committed.
-The existing pending-result workflow uses a separate frozen source.
+Status: acceptance candidate. The signed STEGO trace compiler is selected.
+Generated output, the Gateway console module reference, and consumer checks
+must pass review before the live workflow runs. Do not promote this candidate
+until the live workflow and cleanup checks pass. The existing pending-result
+workflow uses a separate frozen source.
 
 The live browser workflow now checks each controller span from its worker
 telemetry collector. Reconciliation, scans, cleanup samples, and watch sessions
