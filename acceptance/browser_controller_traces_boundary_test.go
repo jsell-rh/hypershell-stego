@@ -147,7 +147,7 @@ func TestControllerTraceEvidenceRequiresDistinctPairedWork(t *testing.T) {
 }
 
 func TestControllerTraceEvidenceRequiresEachServiceAndInstance(t *testing.T) {
-	for _, mode := range []string{"complete", "short old instance", "missing cleanup", "missing instance", "uncorrelated instance", "invalid root", "wrong identity"} {
+	for _, mode := range []string{"complete", "short old instance", "split operation proof", "missing cleanup", "missing instance", "uncorrelated instance", "invalid root", "wrong identity"} {
 		t.Run(mode, func(t *testing.T) {
 			w := &workerSignalEvidence{instances: map[string]map[string]*workerSignalState{}}
 			for _, name := range []string{"hypershell-namespace-allocation", "hypershell-gateway-identity", "hypershell-gateway-workload"} {
@@ -174,6 +174,9 @@ func TestControllerTraceEvidenceRequiresEachServiceAndInstance(t *testing.T) {
 				for op := range service[id].controller.counts {
 					service[id].controller.counts[op] = 1
 				}
+			case "split operation proof":
+				delete(service[id].controller.counts, "cleanup")
+				delete(service["00000002-0000-4000-8000-000000000001"].controller.counts, "scan")
 			case "missing cleanup":
 				for _, s := range service {
 					delete(s.controller.counts, "cleanup")

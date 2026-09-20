@@ -14,7 +14,9 @@ Paired logs and spans must agree on operation, outcome, and retry status.
 Each expected worker instance must supply a validated pair. For each worker
 service, an instance must prove at least two different traces for each required
 operation: reconciliation, scan, and cleanup. A short-lived old instance does
-not need to perform a second scan. Existing worker instance counts, metrics,
+not need to perform a second scan. The three repeated operations must come from
+one instance of each service; separate incomplete instances cannot combine their
+counts to satisfy this check. Existing worker instance counts, metrics,
 provider child-span checks, and restart checks remain required.
 
 Collection retains at most 256 pairs and trace owners per worker instance.

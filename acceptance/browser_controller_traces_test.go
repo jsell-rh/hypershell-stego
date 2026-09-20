@@ -174,7 +174,7 @@ func (w *workerSignalEvidence) controllerTraceStatus(public bool, endpointChange
 	for name, states := range w.instances {
 		ready = ready && len(states) == expectedWorkerInstances(name, public, endpointChange...)
 		evidence[name] = map[string]map[string]int{}
-		repeated := map[string]bool{}
+		repeated := false
 		for id, state := range states {
 			s := &state.controller
 			invalid = invalid || s.invalid || !telemetryInstancePattern.MatchString(id)
@@ -183,14 +183,12 @@ func (w *workerSignalEvidence) controllerTraceStatus(public bool, endpointChange
 			for operation, count := range s.counts {
 				counts[operation] = count
 				matched = matched || count > 0
-				repeated[operation] = repeated[operation] || count >= 2
 			}
+			repeated = repeated || (counts["reconcile"] >= 2 && counts["scan"] >= 2 && counts["cleanup"] >= 2)
 			ready = ready && matched
 			evidence[name][id] = counts
 		}
-		for _, operation := range []string{"reconcile", "scan", "cleanup"} {
-			ready = ready && repeated[operation]
-		}
+		ready = ready && repeated
 	}
 	return ready && !invalid, invalid, evidence
 }
