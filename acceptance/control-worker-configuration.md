@@ -59,6 +59,26 @@ selects the count binding by role and subject identity.
 passed on test source `d98b673`. It checked repeated rendering of all three
 workers and 15 binding-identity cases. Only five test and CI files differ from
 application source `e0f3d7b`; production code and generated output are unchanged.
-See the [fixture evidence](count-fixture-input-evidence.json). The corrected
-live count result and the complete browser workflow remain required before
-consumer acceptance.
+See the [fixture evidence](count-fixture-input-evidence.json). This hosted check
+does not supply the live count or complete browser result.
+
+
+The corrected live count workflow passed on jshell in 93.08 seconds. It ran the
+generated Sandbox count worker and checked real Pod reads, denied cross-namespace
+and Secret access, permission removal and recovery, namespace UID replacement,
+events, REST and gRPC, and API and worker restarts. The test used ordinary Pods;
+it does not prove Kata isolation or OpenShell Sandbox execution.
+
+Independent review checked all 1,659 committed source files and all 299 generated
+hashes in the count test scope. The two generation passes and the final hashes
+matched. The authenticated compiler package and actual Pod compiler bytes matched.
+The initial reviewer stopped because the compiler's final drift message and the
+Go test start marker shared one line. A separate corrected reviewer recognized
+that exact boundary. The raw log and all pass markers remain unchanged.
+
+The Job completed successfully. Independent cleanup found its namespace and all
+owned resources absent, the shared Lease free, and all 32 standing resources
+unchanged. See the [live count evidence](control-worker-count-evidence.json).
+Test source `d98b673` differs from runtime source `e0f3d7b` only in the five
+recorded test and CI files. The current-source browser workflow remains required
+before consumer acceptance. The count result does not prove production capacity.
