@@ -20,6 +20,20 @@ image_compiler_sha256=$(cat .stego/image-compiler-sha256)
 image_tooling="$results/compiler-setup/tooling/scripts"
 image_delivery="$results/image-delivery"
 mkdir -m 700 -- "$image_delivery"
+if [[ -n ${STEGO_TEST_REGISTRY_POLICY:-} ]]; then
+  # Capture only the common closed destination policy. It becomes part of the
+  # package whose complete bytes are checked in the test Pod.
+  python3 -I -B - "$image_tooling/application-images.py" "$STEGO_TEST_REGISTRY_POLICY" "$image_delivery/registry-policy.json" <<'REGISTRY_POLICY'
+import importlib.util,json,sys
+from pathlib import Path
+spec=importlib.util.spec_from_file_location('delivery',sys.argv[1])
+delivery=importlib.util.module_from_spec(spec);spec.loader.exec_module(delivery)
+value=delivery.registry_policy(Path(sys.argv[2]))
+Path(sys.argv[3]).write_text(json.dumps(dict(format=1,**value),indent=2)+'\n')
+REGISTRY_POLICY
+else
+  printf '%s\n' '{"format":1,"token_origins":[],"blob_origins":[]}' > "$image_delivery/registry-policy.json"
+fi
 timeout --signal=TERM --kill-after=5s 12m python3 -I -B "$image_tooling/install-compiler.py" --release --revision "$image_revision" \
   --gh "$(command -v gh)" --output "$image_delivery/compiler" > "$results/image-compiler-installation.json"
 [[ $(sha256sum "$image_delivery/compiler/stego-linux-amd64") == "$image_compiler_sha256  $image_delivery/compiler/stego-linux-amd64" ]]
@@ -33,5 +47,5 @@ for file in application-images.py application-build-matrix.py verify-application
 done
 sha256sum "$image_delivery/images/images.json" | cut -d ' ' -f 1 > "$image_delivery/set-sha256"
 printf '%s\n' "$image_compiler_sha256" > "$image_delivery/compiler-sha256"
-tar -cf "$results/image-delivery.tar" -C "$image_delivery" compiler images tools set-sha256 compiler-sha256
+tar -cf "$results/image-delivery.tar" -C "$image_delivery" compiler images tools set-sha256 compiler-sha256 registry-policy.json
 sha256sum "$results/image-delivery.tar" > "$results/image-delivery.sha256"

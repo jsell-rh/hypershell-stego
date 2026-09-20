@@ -17,6 +17,14 @@ Before the gate takes the cluster Lease, the operator must supply these inputs:
 - `STEGO_TEST_IMAGE_RUN`: the workflow run ID.
 - `STEGO_TEST_IMAGE_ATTEMPT`: the workflow attempt number.
 
+If registry storage redirects blob reads to another origin, also supply
+`STEGO_TEST_REGISTRY_POLICY`. This is the common STEGO format 1 destination
+policy with explicit `token_origins` and `blob_origins` arrays. The default
+arrays are empty. Obtain these origins from trusted operator configuration.
+Do not approve an arbitrary destination from a redirect. The publisher combines
+the supplied registry CA with public roots from the pinned SDK image. Registry
+credentials cannot be sent to blob destinations.
+
 The policy has STEGO format 2 and omits `module`, `target`, and `entrypoint`.
 The declaration supplies those fields. The policy must select the caller
 repository, branch, and commit; the reusable signer repository, workflow, and
