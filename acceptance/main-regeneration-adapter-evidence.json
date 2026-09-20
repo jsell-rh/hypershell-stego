@@ -1,0 +1,20 @@
+{
+  "source": "0aa8f0dda3ac34f38ef31569f6d6abb77f3d0487",
+  "regeneration_run": 35479995583,
+  "adapter_run": 35479995474,
+  "source_archive_verified": true,
+  "generated_files_match_committed_source": 420,
+  "compiler_installation_identity_matches_verified_release": true,
+  "compiler_record_bytes_available_in_regeneration_artifact": false,
+  "generation_patch_empty": true,
+  "policy_plan": "Not selected by this push; the prior policy proof remains separate",
+  "adapter_tests_passed": 63,
+  "constructor_cases": 4,
+  "allocation_cleanup_cases": 6,
+  "collection_cases": 28,
+  "pod_status_cases": 5,
+  "completion_cases": 8,
+  "live_test_compiled": true,
+  "main_live_workflow_verified": false,
+  "scope": "Only the completed main regeneration and adapter gates. Other main checks remain separate."
+}
