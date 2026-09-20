@@ -19,6 +19,19 @@ import time
 import uuid
 
 
+# Only RBAC and admission objects from these manifests are applied. The reserved
+# documentation address supplies the unused workload database render input.
+RENDER_COUNT_WORKERS = r'''
+for count_worker in namespace-allocation gateway-workload sandbox-count; do
+  set -- --namespace "$STEGO_TEST_NAMESPACE" --image "$STEGO_TEST_IDLE_IMAGE" --worker "$count_worker" --egress "kubernetes=$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT"
+  if [ "$count_worker" = gateway-workload ]; then
+    set -- "$@" --egress "gateway-postgres=192.0.2.2:5432"
+  fi
+  "$STEGO_COUNT_RENDER" "$@" > "$STEGO_COUNT_RENDER_RESULTS/$count_worker.json"
+done
+'''
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--context", required=True)
@@ -86,9 +99,8 @@ xargs sha256sum < /work/generated-files > /work/second.sha256
 cmp /work/first.sha256 /work/second.sha256
 tar cf /work/generated.tar out console/out .stego/state.yaml console/.stego/state.yaml go.mod go.sum console/go.mod console/go.sum
 go build -o /work/render ./out/deploy/render
-for worker in namespace-allocation gateway-workload sandbox-count; do
-  /work/render --namespace "$STEGO_TEST_NAMESPACE" --image "$STEGO_TEST_IDLE_IMAGE" --worker "$worker" --egress "kubernetes=$KUBERNETES_SERVICE_HOST:$KUBERNETES_SERVICE_PORT" > "/work/$worker.json"
-done
+export STEGO_COUNT_RENDER=/work/render STEGO_COUNT_RENDER_RESULTS=/work
+''' + RENDER_COUNT_WORKERS + r'''
 touch /work/rbac-ready
 while [ ! -f /work/live-ready ]; do sleep 1; done
 while [ ! -s /count-credentials/count ] || [ ! -s /count-credentials/allocator ] || [ ! -s /count-credentials/workload ]; do sleep 1; done
