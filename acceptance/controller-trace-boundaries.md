@@ -95,6 +95,8 @@ profile cases remain required and passed. See the
 [exact focused evidence](controller-trace-cleanup-evidence.json).
 
 These results qualify the test correction only. Full hosted run `35493201216`
-and live browser run `35493398031` remain under review. The separate API gate
-is also required before promotion. The compiler and generated output are
+remains under review. Live browser run `35493398031` failed at its database
+restart fixture guard, before the final trace check. See the
+[guard review](database-restart-guard.md). A fresh live run and the separate API
+gate are required before promotion. The compiler and generated output are
 unchanged from the prior trace candidate.

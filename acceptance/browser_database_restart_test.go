@@ -2,7 +2,6 @@ package acceptance
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"os/exec"
 	"reflect"
@@ -46,35 +45,14 @@ func (w *browserGatewayWorkload) checkDatabaseRestart(id string) {
 func (w *browserGatewayWorkload) restartSidecarDatabase() {
 	w.t.Helper()
 	pod := os.Getenv("HOSTNAME")
-	type podState struct {
-		Metadata struct {
-			UID    string
-			Labels map[string]string
-		}
-		Status struct {
-			InitContainerStatuses []struct {
-				Name         string
-				RestartCount int
-				Ready        bool
-			}
-		}
-	}
 	read := func() (string, int, bool) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
-		object, code, err := w.kubernetes.Request(ctx, "GET", "/api/v1/namespaces/"+w.p.namespace+"/pods/"+pod, nil)
-		data, _ := json.Marshal(object)
-		var state podState
-		if err != nil || code != 200 || json.Unmarshal(data, &state) != nil || state.Metadata.UID == "" || state.Metadata.Labels["app"] != "stego-fixture" || state.Metadata.Labels["job-name"] != "service-check" {
-			w.t.Fatal("database restart requires this bounded fixture Pod")
+		uid, count, ready, err := readDatabaseRestartPod(ctx, w.kubernetes, w.p.namespace, pod)
+		if err != nil {
+			w.t.Fatal(err)
 		}
-		for _, container := range state.Status.InitContainerStatuses {
-			if container.Name == "postgres" {
-				return state.Metadata.UID, container.RestartCount, container.Ready
-			}
-		}
-		w.t.Fatal("PostgreSQL sidecar status is absent")
-		return "", 0, false
+		return uid, count, ready
 	}
 	uid, restarts, ready := read()
 	if !ready {

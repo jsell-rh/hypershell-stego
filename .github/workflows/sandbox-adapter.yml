@@ -33,6 +33,7 @@ on:
       - 'acceptance/browser_workflow_test.go'
       - 'acceptance/browser_worker_signals*test.go'
       - 'acceptance/browser_controller_traces*test.go'
+      - 'acceptance/browser_database_restart*test.go'
   workflow_dispatch:
 
 permissions:
@@ -76,7 +77,7 @@ jobs:
           go test -v -mod=readonly -run '^(TestBoundedNetworkProbe|TestCleanupTimingObservationWindow)$' -timeout=30s ./acceptance \
             | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
           go test -v -race -p=1 -mod=readonly -count=1 -timeout=30s ./acceptance \
-            -run '^(TestControllerTraceEvidence.*|TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance)$' \
+            -run '^(TestControllerTraceEvidence.*|TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance|TestDatabaseRestartFixtureReadPreservesGuardAndPrivacy)$' \
             | tee "$RUNNER_TEMP/sandbox-adapter/controller-traces.log"
           python3 - "$RUNNER_TEMP/sandbox-adapter/controller-traces.log" <<'PYCHECK'
           import re, sys
@@ -86,7 +87,8 @@ jobs:
                       'TestControllerTraceEvidenceRequiresDistinctPairedWork',
                       'TestControllerTraceEvidenceRequiresEachServiceAndInstance',
                       'TestControllerTraceEvidenceRequiresExactCleanupProfile',
-                      'TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance']
+                      'TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance',
+                      'TestDatabaseRestartFixtureReadPreservesGuardAndPrivacy']
           for name in required:
               if len(re.findall(r'^--- PASS: ' + name + r' ', log, re.M)) != 1:
                   raise SystemExit('A required controller trace check is missing: ' + name)

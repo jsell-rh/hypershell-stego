@@ -88,8 +88,12 @@
   "full_hosted_run": 35493201216,
   "live_browser_run": 35493398031,
   "full_hosted_verification_pending": true,
-  "live_browser_verification_pending": true,
+  "live_browser_verification_pending": false,
   "separate_api_verification_pending": true,
   "runtime_changes": false,
-  "kata_deferred": true
+  "kata_deferred": true,
+  "live_browser_conclusion": "failure",
+  "live_browser_qualified": false,
+  "live_browser_failure_record": "database-restart-failure-evidence.json",
+  "fresh_live_browser_required": true
 }

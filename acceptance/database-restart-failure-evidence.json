@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+  "run": 35493398031,
+  "conclusion": "failure",
+  "qualified": false,
+  "failure": "The database restart guard could not verify the fixture Pod before it sent the restart command.",
+  "failure_location": "acceptance/browser_database_restart_test.go:69",
+  "cause": "Unknown. The guard combined request errors, HTTP status, object decoding, identity, and labels in one failure message.",
+  "preliminary_tests_passed": 10,
+  "browser_test_seconds": 355.37,
+  "database_restart_proved": false,
+  "final_trace_check_reached": false,
+  "normal_cleanup_target_measured": false,
+  "independent_cleanup": {
+    "run": 35493398031,
+    "source": "fdb06e20a192f2d5e16d98735528a09565e77b47",
+    "checked_at": "2026-09-20T06:25:57.756619+00:00",
+    "browser_empty": true,
+    "api_run": null,
+    "api_status": "not dispatched",
+    "workflow_conclusion": "failure",
+    "workflow_qualified": false,
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+  },
+  "operator_record_sha256": {
+    "run.log": "4a17accc8cef3e40ffce4f5920ff81294614cd2c1ebe91f1c2a2cae4045c3651",
+    "result/gateway-browser/deployment.log": "7a4cc26c8f00b649f3196c053766a522bd1e62727b747e03ba8f0e690857fa59",
+    "result/gateway-browser/evidence.tar": "4b62857a687f69e293e439b25c4eaafec958597680baf4ece03990a7294b5cd9",
+    "result/gateway-browser/job-status.json": "b2160edad264c306e301cb835b30ea40dae7d6c14f47a09743a6e09c3f467ede",
+    "result/gateway-browser/cleanup.json": "179eec722abf20ace66a7c69315ad9a7758b5305c67c476dddc3956f074b7232",
+    "failure-independent-cleanup.json": "1734b41d0cc98f849e86c4fc3dc14ab00d39ac82f62a19fbb77e83a2ab3c1374"
+  },
+  "diagnostic_change": "Report fixed categories and HTTP status. Preserve the same read deadline, checks, and single request. No runtime or compiler change."
+}
