@@ -5,6 +5,7 @@ on:
     paths:
       - '.github/workflows/allocation-finalization.yml'
       - 'acceptance/gateway_allocation_finalization_test.go'
+      - 'acceptance/watch_test.go'
   workflow_dispatch:
 
 permissions:

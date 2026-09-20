@@ -230,7 +230,8 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	expect([]*gatewayWatch{viewer, admin, controller}, pb.EventType_EVENT_TYPE_UPDATED, anchor.ID, "after-delete")
 	// Kafka remains the durable event path while watch streams receive live state.
 	readEvent(t, consumer, id)
-	for range 8 {
+	// Five earlier updates and four pending cleanup records precede deletion.
+	for range 9 {
 		readGatewayEvent(t, consumer, id, "Update", "gateway.updated")
 	}
 	readGatewayEvent(t, consumer, id, "Delete", "gateway.deleted")
