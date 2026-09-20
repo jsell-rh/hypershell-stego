@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-image-source missing-image-transfer missing-image-compiler missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-allocation-finalization empty-allocation-finalization missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service service-missing-image service-missing-source service-missing-transfer service-missing-compiler service-missing-receipt browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-image-source missing-image-transfer missing-image-compiler missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-allocation-finalization empty-allocation-finalization missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$test_work/compiler" "$results"
-  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit image.json worker-image.json console-image.json image-publication/hypershell-gateway-console/registry.json provisioner-image.json namespace-allocation-image.json gateway-identity-image.json gateway-workload-image.json first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
     mkdir -p "$(dirname "$test_work/$file")"
     printf 'record\n' > "$test_work/$file"
   done
@@ -66,7 +66,7 @@ for scenario in service browser workload public configured-public log-failure ar
       ;;
   esac
   case "$scenario" in
-    service) workload=0; STEGO_TEST_BROWSER_DEPLOYMENT=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm -rf -- "$test_work/browser-artifacts" ;;
+    service|service-missing-*) workload=0; STEGO_TEST_BROWSER_DEPLOYMENT=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm -rf -- "$test_work/browser-artifacts" ;;
     browser) workload=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/postgres-server.json" "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
     workload) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
     configured-public) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; STEGO_TEST_GATEWAY_PUBLIC_CONFIG=configured.json ;;
@@ -94,7 +94,14 @@ for scenario in service browser workload public configured-public log-failure ar
     missing-endpoint) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-endpoint-replacement.json" ;;
     missing-endpoint-ack) expected=1; rm "$test_work/network-endpoint-change.ack" ;;
     unfinished-endpoint) expected=1; printf '%s\n' '{"phase":"checking","type_checks":"pending"}' > "$results/endpoint-change/journal.json" ;;
-    failed-test) result=42; rm "$test_work/image.json" "$test_work/after-tests.sha256"; rm -rf -- "$test_work/browser-artifacts" ;;
+    failed-test) result=42; rm "$test_work/image-publication/publication.json" "$test_work/after-tests.sha256"; rm -rf -- "$test_work/browser-artifacts" ;;
+  esac
+  case "$scenario" in
+    service-missing-image) expected=1; rm "$test_work/image-publication/publication.json" ;;
+    service-missing-source) expected=1; rm "$test_work/image-publication/source-check.json" ;;
+    service-missing-transfer) expected=1; rm "$test_work/image-delivery-transfer.json" ;;
+    service-missing-compiler) expected=1; rm "$test_work/image-delivery/compiler/provenance.jsonl" ;;
+    service-missing-receipt) expected=1; rm "$test_work/image-publication/hypershell-gateway-identity/registry.json" ;;
   esac
   observed=0
   collect_service_evidence > "$results/collector.log" 2>&1 || observed=$?
@@ -126,6 +133,10 @@ for scenario in service browser workload public configured-public log-failure ar
       echo 'Private credential contents entered the evidence archive.' >&2
       exit 1
     fi
+  fi
+  if [[ $scenario == service-missing-* ]]; then
+    grep -Fq 'Required service evidence is missing or empty:' "$results/collector.log"
+    cmp "$test_work/generated.tar" <(tar xOf "$results/evidence.tar" generated.tar)
   fi
   if [[ $observed == 0 ]]; then
     tar tf "$results/evidence.tar" >/dev/null

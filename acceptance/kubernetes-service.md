@@ -10,12 +10,11 @@ source directories and test environment references.
 The test checks these behaviors:
 
 - Create a Gateway through the generated HTTPS SDK. Check its KSUID, namespace,
-  database ID, timestamps, and owner grant.
+  timestamps and owner grant. The retired database ID is not accepted.
 - Retrieve the same Gateway through HTTPS and gRPC. Deny another user and
   filter that user's list.
 - Receive the committed event through the generated runtime.
-- Reject the final event write and verify rollback of the Gateway, database,
-  and owner grant.
+- Reject the final event write and verify rollback of the Gateway and owner grant.
 - Reconcile the Gateway identity through a generated worker Deployment and a
   real Keycloak Pod. Check the browser client and current identity condition.
 - Stop the controller, change identity state through HTTPS, and start a new
@@ -29,10 +28,19 @@ The test checks these behaviors:
   both worker instances. Check that private request and credential data is absent.
 
 Run the bounded OpenShift check from a Linux amd64 workstation with `oc`,
-Python 3, OpenSSL, and tar. This command does not build or test Go locally:
+Python 3, OpenSSL, tar, and authenticated `gh`. First select a successful common
+image run for the clean source checkout. Supply its downloaded artifacts and
+independent signer policy as described in
+[common image publication](common-image-publication.md). The command does not
+build or test Go locally:
 
 ```sh
-STEGO_TEST_CONTEXT=YOUR_SAVED_CONTEXT scripts/check-service-deployment.sh
+STEGO_TEST_CONTEXT=YOUR_SAVED_CONTEXT \
+STEGO_TEST_IMAGE_ARTIFACTS=/absolute/path/to/artifacts \
+STEGO_TEST_IMAGE_POLICY=/absolute/path/to/policy.json \
+STEGO_TEST_IMAGE_RUN=RUN_ID \
+STEGO_TEST_IMAGE_ATTEMPT=1 \
+scripts/check-service-deployment.sh
 ```
 
 The command creates a separate namespace with a quota. The test Job has a
@@ -46,12 +54,21 @@ No container uses privilege. The command deletes the namespace after the run
 and keeps logs, source hashes, image metadata, and job status in a private
 results directory.
 
-The Job fetches the exact compiler commit, repeats generation, checks drift,
-verifies dependencies, and runs static checks. It builds static Go binaries,
-adds each binary and CA roots to a scratch image, and pushes both images to the
-namespace's internal registry repositories. Its registry credentials come from
-its own mounted service-account token and are never printed. The generated API
-and worker ServiceAccounts have no token mount or RBAC grant.
+The host authenticates the exact generation and image compiler releases and
+all seven declared images before it acquires the test Lease. It transfers the
+complete tracked source and authenticated image package to the same Job-owned
+Pod, then verifies the transferred bytes. The Job repeats complete generation,
+checks drift, verifies dependencies, and runs static checks. STEGO checks every
+source snapshot and image before it publishes them to the namespace registry.
+The service test selects the API and identity worker digest references from
+the complete publication result. Registry credentials come from the mounted
+service-account token. Private publisher files are excluded from evidence.
+The generated API and worker ServiceAccounts have no token mount or RBAC grant.
+
+This service deployment path now uses the common publisher. Its new live result
+is pending. The separate `Gateway API on jshell` workflow uses a bounded test
+process and does not publish application images. Its existing result does not
+qualify this changed Deployment path.
 
 The application uses a separate database login with table and sequence access.
 PostgreSQL uses native verified TLS and SCRAM authentication. The Kafka protocol

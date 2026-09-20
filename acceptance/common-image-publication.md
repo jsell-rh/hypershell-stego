@@ -82,3 +82,14 @@ The 30-second target remains open. Sequential checks include verification time;
 they do not establish exact provider transition times or production capacity.
 Live Kata and Sandbox execution remain deferred. Production CA selection,
 complete offline inputs, and the API-only legacy publisher remain open.
+
+## Service deployment adoption
+
+The separate service deployment runner now calls the same STEGO publication
+path. It regenerates all three applications to check the complete signed source
+snapshot, then selects the API and identity worker references from the declared
+seven-image result. The handwritten image assembly, registry credential file,
+and image metadata parser have been removed. Evidence collection requires
+source checks, compiler records, transfer proof, and all seven registry receipts
+for both deployment profiles. The new service deployment result is pending;
+the completed browser result above applies to its recorded source.
