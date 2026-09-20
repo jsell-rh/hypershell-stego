@@ -1,8 +1,8 @@
 # Generated database access installation
 
 Application source `80a9581` passed its hosted checks, signed image checks, and
-complete service Deployment workflow. Its complete live browser workflow
-remains under qualification. It selects
+complete service Deployment workflow, and complete live browser workflow.
+It selects
 [compiler 3603e391](https://github.com/jsell-rh/stego/releases/tag/compiler-3603e391e6942b0b36ceaeea9ae10c723651dbe0),
 whose complete compiler and signed artifact checks passed. The four immutable
 release files passed installation verification and match the verified package.
@@ -10,8 +10,8 @@ The generated output now contains the access package and startup check for
 the API and both browser backends. The root application selects the committed
 Gateway console module at `b36ca551`. Hosted dependency refresh and regeneration
 passed in [run 35523036601](https://github.com/jsell-rh/hypershell-stego/actions/runs/35523036601).
-Only the root dependency files and their state hashes changed. Do not promote this candidate to main until all required application checks
-pass.
+Only the root dependency files and their state hashes changed. All required
+application checks described below passed for this source.
 
 The application selects STEGO's external-migration mode. The operator must
 install the schema before API startup. The API cannot bootstrap an empty
@@ -50,11 +50,10 @@ STEGO source `3603e391` passed 44 common database access checks in
 [run 35522402353](https://github.com/jsell-rh/stego/actions/runs/35522402353).
 Its [complete compiler checks](https://github.com/jsell-rh/stego/actions/runs/35521489217)
 and [signed artifact checks](https://github.com/jsell-rh/stego/actions/runs/35522402232)
-also passed. These results do not qualify this application candidate. The generated modules
-have passed regeneration review. The root module pin also passed its source check. The hosted gate, all seven
-signed image targets, and the service Deployment workflow passed at `80a9581`.
-The complete live browser workflow remains required. Hypershell main remains
-unchanged until that result and its cleanup pass.
+also passed. The generated modules passed regeneration review. The root module
+pin passed its source check. The hosted checks, all seven signed image targets,
+and both complete live workflows passed at `80a9581`. The browser test used
+a separately reviewed fixture variant; that variant is not application code.
 
 The first full application check found six fixture failures. Five owner-created
 hooks tried to write audit tables or advance a sequence with the runtime login.
@@ -73,7 +72,7 @@ fixtures. See the PostgreSQL guidance for
 The focused database access workflow checks the six failed workflows, the
 retired database-field contract, and the new access tests with the race detector.
 It requires every selected test to pass without skips. The full core, browser,
-image, and live workflows remain required before application qualification.
+image, and live workflows also passed.
 
 The corrected application passed the focused gate in
 [run 35524845576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35524845576)
@@ -91,4 +90,20 @@ zero. The test checked 412 telemetry batches and required complete signals
 from all four instances. All 427 generated hashes matched across two passes
 and after the test. Cleanup removed the namespace and left all 32 standing
 resources unchanged. See the [service evidence](database-access-service-evidence.json).
-This result does not qualify the pending browser workflow or production capacity.
+The complete browser workflow then passed all 11 required tests in
+[run 35526774473](https://github.com/jsell-rh/hypershell-stego/actions/runs/35526774473).
+It checked 1,638 source files and all 427 generated hashes. It proved browser
+sessions, dashboard reload, editor checks, namespace and worker replacement,
+PostgreSQL restart, and cleanup of 100 accounts on each measured Gateway.
+All seven delivered images matched the verified source and publication records.
+Log and trace pairs covered all nine expected controller instances. All four
+retained screenshots were reviewed without a visible layout defect. Cleanup
+removed both fixtures, released the test lease, and preserved all 32 standing
+resources. See the [browser evidence](database-access-browser-evidence.json).
+
+The observed normal cleanup upper bound was 31.130714945 seconds. The 30-second
+target remains open. These sequential observations do not establish a cause
+or an exact provider transition time. The 100-Gateway capacity target remains
+unproved. Kata, native Sandbox packet checks, and OpenShell Sandbox execution
+remain outside this result. Database restart used one fixture Pod; it does not
+prove RDS failover.
