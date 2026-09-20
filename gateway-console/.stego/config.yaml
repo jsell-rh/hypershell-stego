@@ -1,4 +1,4 @@
 registry:
   - url: https://github.com/jsell-rh/stego.git
-    ref: 3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0
+    ref: 3603e391e6942b0b36ceaeea9ae10c723651dbe0
     path: registry

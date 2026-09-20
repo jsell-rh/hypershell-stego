@@ -1,9 +1,12 @@
 # Generated database access installation
 
-This branch contains an unqualified adoption candidate. It requires the new
-STEGO database access package and a qualified compiler release. The current
-committed generated output does not yet contain that package. Do not deploy or
-merge this candidate until regeneration and all required checks pass.
+This branch contains an unqualified application adoption candidate. It selects
+[compiler 3603e391](https://github.com/jsell-rh/stego/releases/tag/compiler-3603e391e6942b0b36ceaeea9ae10c723651dbe0),
+whose complete compiler and signed artifact checks passed. The four immutable
+release files passed installation verification and match the verified package.
+The current committed generated output does not yet contain the new database
+access package. Do not deploy or merge this candidate until regeneration and
+all required application checks pass.
 
 The API fixture gives application processes and storage clients a separate
 NOINHERIT login. The operator connection retains setup, fault-test, and cleanup
@@ -27,9 +30,11 @@ The test must reject private values in the failure output. The DSN test must
 preserve connection options while replacing all database and login values.
 These tests have not run for this candidate.
 
-STEGO source `468ea86a` passed 44 common database access checks in
-[run 35521273847](https://github.com/jsell-rh/stego/actions/runs/35521273847).
-That result does not qualify this application candidate. The complete compiler
-checks, authenticated compiler release, all three regenerated modules, complete
-hosted acceptance, seven image targets, and rendered service and browser
-workflows remain required. The existing qualified main remains unchanged.
+STEGO source `3603e391` passed 44 common database access checks in
+[run 35522402353](https://github.com/jsell-rh/stego/actions/runs/35522402353).
+Its [complete compiler checks](https://github.com/jsell-rh/stego/actions/runs/35521489217)
+and [signed artifact checks](https://github.com/jsell-rh/stego/actions/runs/35522402232)
+also passed. These results do not qualify this application candidate. All three
+regenerated modules, complete hosted acceptance, seven image targets, and
+rendered service and browser workflows remain required. The existing qualified
+Hypershell main remains unchanged.
