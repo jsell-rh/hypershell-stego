@@ -6,6 +6,8 @@ on:
       - '.github/workflows/allocation-finalization.yml'
       - 'acceptance/gateway_allocation_finalization_test.go'
       - 'acceptance/watch_test.go'
+      - 'acceptance/browser_allocation_finalization_test.go'
+      - '.github/workflows/sandbox-adapter.yml'
   workflow_dispatch:
 
 permissions:
