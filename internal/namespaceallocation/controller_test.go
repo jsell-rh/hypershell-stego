@@ -350,7 +350,7 @@ func TestAllocationCleanupCommitRequiresAllNamespacesAbsent(t *testing.T) {
 		wantObservations int
 	}{
 		{name: "complete", wantCalls: 4, wantObservations: 1},
-		{name: "retained console", blocked: "gateway-console-state", wantCalls: 3},
+		{name: "retained console", blocked: "gateway-console-state", wantCalls: 4},
 		{name: "retained state", blocked: "gateway-state", wantCalls: 4},
 		{name: "repeat complete", prior: true, wantCalls: 4},
 		{name: "absence lost", prior: true, blocked: "gateway-state", wantCalls: 4, wantObservations: 1},

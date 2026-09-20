@@ -144,10 +144,17 @@ func (c *Controller) reconcile(ctx context.Context, key string) (runtime.Reconci
 				if err != nil {
 					return false, err
 				}
-				if done, err := c.allocator.Delete(operation, "gateway-console-state", consoleStateName, id); err != nil || !done {
+				// Both state namespaces have the same completed dependencies.
+				// Request both removals before waiting for namespace finalizers.
+				consoleDone, err := c.allocator.Delete(operation, "gateway-console-state", consoleStateName, id)
+				if err != nil {
 					return false, err
 				}
-				return c.allocator.Delete(operation, "gateway-state", stateName, id)
+				if err := operation.Err(); err != nil {
+					return false, err
+				}
+				stateDone, err := c.allocator.Delete(operation, "gateway-state", stateName, id)
+				return consoleDone && stateDone, err
 			}
 			if !response.GetDeleted() {
 				done, err := remove(ctx)

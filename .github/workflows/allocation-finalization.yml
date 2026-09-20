@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '.github/workflows/allocation-finalization.yml'
+      - 'internal/namespaceallocation/**'
       - 'acceptance/gateway_allocation_finalization_test.go'
       - 'acceptance/watch_test.go'
       - 'acceptance/browser_allocation_finalization_test.go'
@@ -77,6 +78,9 @@ jobs:
           events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
           required = {
               "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+              "TestStateCleanupRequestsBothNamespacesBeforeWaiting",
+              "TestStateCleanupStopsRequestsAfterCancellation",
+              "TestStateCleanupResumesAfterControllerRestart",
               "TestPendingCleanupAndProviderErrorsArePreserved",
               "TestAllocationPendingCancellationDoesNotBecomeProgress",
               "TestGatewayFinalizationWaitsForAllocationCleanup",
