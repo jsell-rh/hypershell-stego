@@ -1,0 +1,104 @@
+name: Frozen browser image source
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/browser-source.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: browser-image-source-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 1536MiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+      GOTOOLCHAIN: local
+      PYTHONDONTWRITEBYTECODE: '1'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check the existing inspection permission rules
+        run: python3 -B scripts/test_browser_inspection.py
+      - name: Authenticate the pinned generation compiler
+        timeout-minutes: 12
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/prepare-compiler.sh "$RUNNER_TEMP/compiler-setup"
+      - name: Prepare and verify the browser inspection source
+        timeout-minutes: 6
+        run: |
+          python3 -B scripts/prepare-browser-inspection.py \
+            --compiler "$RUNNER_TEMP/compiler-setup/verified/stego-linux-amd64" \
+            --destination "$RUNNER_TEMP/browser-source"
+          test -z "$(git status --porcelain)"
+      - name: Save only the checked fixture files
+        run: |
+          python3 -B - <<'PY'
+          import hashlib, json, os, tarfile
+          from pathlib import Path
+          root = Path(os.environ['RUNNER_TEMP'])
+          fixture = root / 'browser-source'
+          evidence = root / 'browser-source-evidence'
+          evidence.mkdir(mode=0o700)
+          name = 'acceptance/browser-inspection-source.json'
+          record = json.loads((fixture / name).read_text())
+          if record['source_base_commit'] != os.environ['GITHUB_SHA']:
+              raise SystemExit('The fixture source commit differs')
+          paths = sorted(record['fixture_sha256'])
+          total = 0
+          if not 1 <= len(paths) <= 20000:
+              raise SystemExit('The fixture file count exceeds its limit')
+          with tarfile.open(evidence / 'source.tar', 'w') as archive:
+              for selected in paths + [name]:
+                  relative = Path(selected)
+                  if relative.is_absolute() or any(part in {'', '.', '..'} for part in selected.split('/')):
+                      raise SystemExit('The fixture path is not valid')
+                  path = fixture / relative
+                  if path.is_symlink() or not path.is_file():
+                      raise SystemExit('The fixture file is not regular')
+                  data = path.read_bytes()
+                  total += len(data)
+                  if len(data) > 128 << 20 or total > 512 << 20:
+                      raise SystemExit('The fixture bytes exceed their limits')
+                  if selected != name and hashlib.sha256(data).hexdigest() != record['fixture_sha256'][selected]:
+                      raise SystemExit('The fixture file differs from the checked source')
+                  archive.add(path, arcname=selected, recursive=False)
+          (evidence / 'browser-inspection-source.json').write_bytes((fixture / name).read_bytes())
+          with (evidence / 'source.tar').open('rb') as archive:
+              digest = hashlib.file_digest(archive, 'sha256').hexdigest()
+          (evidence / 'capture.json').write_text(json.dumps({
+              'source_revision': os.environ['GITHUB_SHA'], 'source_archive_sha256': digest,
+              'compiler_revision': record['compiler_revision'], 'fixture_files': len(paths) + 1,
+              'fixture_bytes': total, 'cluster_test_started': False,
+              'image_build_checked': False, 'fixture_commit_created': False,
+          }, indent=2) + '\n')
+          PY
+      - name: Retain the source and compiler verification records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: browser-image-source-${{ github.sha }}
+          retention-days: 14
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/browser-source-evidence/
+            ${{ runner.temp }}/compiler-setup/installation.json
+            ${{ runner.temp }}/compiler-setup/verified/build.json
+            ${{ runner.temp }}/compiler-setup/verified/verified.json
+            ${{ runner.temp }}/compiler-setup/verified/provenance.jsonl
+            ${{ runner.temp }}/compiler-setup/verified/SHA256SUMS
