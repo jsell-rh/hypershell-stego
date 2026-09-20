@@ -1,6 +1,8 @@
 # Generated database access installation
 
-This branch contains an unqualified application adoption candidate. It selects
+Application source `80a9581` passed its hosted checks, signed image checks, and
+complete service Deployment workflow. Its complete live browser workflow
+remains under qualification. It selects
 [compiler 3603e391](https://github.com/jsell-rh/stego/releases/tag/compiler-3603e391e6942b0b36ceaeea9ae10c723651dbe0),
 whose complete compiler and signed artifact checks passed. The four immutable
 release files passed installation verification and match the verified package.
@@ -8,8 +10,8 @@ The generated output now contains the access package and startup check for
 the API and both browser backends. The root application selects the committed
 Gateway console module at `b36ca551`. Hosted dependency refresh and regeneration
 passed in [run 35523036601](https://github.com/jsell-rh/hypershell-stego/actions/runs/35523036601).
-Only the root dependency files and their state hashes changed. Do not deploy
-or merge this candidate until all required application checks pass.
+Only the root dependency files and their state hashes changed. Do not promote this candidate to main until all required application checks
+pass.
 
 The application selects STEGO's external-migration mode. The operator must
 install the schema before API startup. The API cannot bootstrap an empty
@@ -42,17 +44,17 @@ marker access and excess table access stop the generated API at
 Gateway, owner access, denied requests, filtered lists, and delivered event.
 The test must reject private values in the failure output. The DSN test must
 preserve connection options while replacing all database and login values.
-These application tests have not run for this candidate.
+These cases passed in the focused and full checks at `80a9581`.
 
 STEGO source `3603e391` passed 44 common database access checks in
 [run 35522402353](https://github.com/jsell-rh/stego/actions/runs/35522402353).
 Its [complete compiler checks](https://github.com/jsell-rh/stego/actions/runs/35521489217)
 and [signed artifact checks](https://github.com/jsell-rh/stego/actions/runs/35522402232)
 also passed. These results do not qualify this application candidate. The generated modules
-have passed regeneration review. The root module pin also passed its source check. Complete hosted acceptance,
-seven image targets, and rendered service and browser workflows remain
-required. The existing qualified
-Hypershell main remains unchanged.
+have passed regeneration review. The root module pin also passed its source check. The hosted gate, all seven
+signed image targets, and the service Deployment workflow passed at `80a9581`.
+The complete live browser workflow remains required. Hypershell main remains
+unchanged until that result and its cleanup pass.
 
 The first full application check found six fixture failures. Five owner-created
 hooks tried to write audit tables or advance a sequence with the runtime login.
@@ -64,7 +66,7 @@ The corrected hooks run with owner permissions. They use a fixed search path,
 qualified object names, and no PUBLIC execute grant. Runtime statements must
 still fail with PostgreSQL permission error `42501` on these fixture objects.
 The network upgrade test uses the generated owner installer after migration.
-No application runtime grant changes. These hooks exist only in acceptance
+The correction does not change application runtime grants. These hooks exist only in acceptance
 fixtures. See the PostgreSQL guidance for
 [owner-executed functions](https://www.postgresql.org/docs/18/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY).
 
@@ -72,3 +74,21 @@ The focused database access workflow checks the six failed workflows, the
 retired database-field contract, and the new access tests with the race detector.
 It requires every selected test to pass without skips. The full core, browser,
 image, and live workflows remain required before application qualification.
+
+The corrected application passed the focused gate in
+[run 35524845576](https://github.com/jsell-rh/hypershell-stego/actions/runs/35524845576)
+and the full gate in
+[run 35524860077](https://github.com/jsell-rh/hypershell-stego/actions/runs/35524860077).
+The full gate retained all 1,142 prior core cases and added four cases. All
+seven signed image targets passed in
+[run 35524846104](https://github.com/jsell-rh/hypershell-stego/actions/runs/35524846104).
+
+The bounded service workflow passed on jshell in 121.58 seconds. It proved
+Gateway creation, atomic owner grants, denied and filtered access, HTTPS and
+gRPC, event delivery, and API and worker replacement. Both API Pods and both
+worker Pods used the expected signed images. All observed restart counts were
+zero. The test checked 412 telemetry batches and required complete signals
+from all four instances. All 427 generated hashes matched across two passes
+and after the test. Cleanup removed the namespace and left all 32 standing
+resources unchanged. See the [service evidence](database-access-service-evidence.json).
+This result does not qualify the pending browser workflow or production capacity.

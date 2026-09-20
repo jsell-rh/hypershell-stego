@@ -1,0 +1,166 @@
+{
+  "recorded_at": "2026-09-20T17:44:26.645801+00:00",
+  "source": "80a9581b50f5b427f7c108984f519d83644152ab",
+  "qualified": true,
+  "scope": "Common database access adoption: hosted checks, signed images, and one service Deployment workflow. The complete live browser workflow remains required before main promotion.",
+  "compiler": {
+    "revision": "3603e391e6942b0b36ceaeea9ae10c723651dbe0",
+    "sha256": "5b8651a4dcce94f47ef3d1a192bdb06c4cd3df99affdc124214b7b9f6646fbee"
+  },
+  "hosted": {
+    "focused": {
+      "run": 35524845576,
+      "cases": 11,
+      "no_skips": true
+    },
+    "full": {
+      "source": "80a9581b50f5b427f7c108984f519d83644152ab",
+      "run": 35524860077,
+      "qualified": true,
+      "checked_at": "2026-09-20T17:30:30.773244+00:00",
+      "jobs": {
+        "acceptance (browser)": "success",
+        "web-console": "success",
+        "acceptance (core)": "success",
+        "service-image": "success",
+        "sandbox-workload": "skipped"
+      },
+      "baseline_source": "c85c608f079325c07911cf8a44fea5513511c5de",
+      "core_cases_retained": 1142,
+      "core_top_level_tests": 360,
+      "prior_test_definitions_retained": true,
+      "added_core_cases": [
+        "TestFixtureRuntimeDSN",
+        "TestGatewayDatabaseAccessStartupAndRepair",
+        "TestGatewayDatabaseAccessStartupAndRepair/excess-table-access",
+        "TestGatewayDatabaseAccessStartupAndRepair/missing-marker-read"
+      ],
+      "test_definitions_unchanged": false,
+      "core_skips": [
+        "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+        "TestGeneratedKubernetesBrowserGatewayWorkflow",
+        "TestGeneratedKubernetesServiceGatewayWorkflow",
+        "TestNamespaceCountWithLiveKubernetes",
+        "TestRealProviderAccountCapacity"
+      ],
+      "rendered_browser_test_passed": true,
+      "log_sha256": "c454ec704634f2b64aac88b2ba18cbfdadfb3504c1043fab490b6d7641f0916b",
+      "sandbox_deferral_preserved": true,
+      "scope": "Full hosted application result. The new image-based live workflow and enterprise readiness remain separate requirements."
+    },
+    "image_run": 35524846104,
+    "image_jobs_passed": 15,
+    "signed_targets": 7
+  },
+  "service": {
+    "source": "80a9581b50f5b427f7c108984f519d83644152ab",
+    "checked_at": "2026-09-20T17:43:01.806562+00:00",
+    "qualified": true,
+    "required_test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 121.58,
+    "image_run": 35524846104,
+    "full_run": 35524860077,
+    "images_verified": 7,
+    "generated_hashes_matched": 427,
+    "evidence_sha256": "25ff124fc84dc538f09bc486582203bb9c83f7ea5d94857a44cedc0aaf665ada",
+    "source_archive_sha256": "f1f3da8bba555680785e958a68ca5c8d70c2d3663d8bd278a1dc33efa011edf0",
+    "admitted_limits_checked": true,
+    "same_pod_and_job": true,
+    "actual_compiler_sha256": {
+      "generation": "5b8651a4dcce94f47ef3d1a192bdb06c4cd3df99affdc124214b7b9f6646fbee",
+      "publication": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+    },
+    "cleanup": {
+      "source": "80a9581b50f5b427f7c108984f519d83644152ab",
+      "checked_at": "2026-09-20T17:42:48.874198+00:00",
+      "phase": "cleanup",
+      "existing_test_jobs_and_pods_absent": true,
+      "lease_free": true,
+      "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+      "standing_resources_unchanged": 32,
+      "namespace": "stego-service-20260920-cdb924",
+      "owned_resources_absent": true
+    },
+    "scope": "One service Deployment workflow with exact signed images. Browser adoption, production CA selection, capacity, and full enterprise readiness require their separate evidence."
+  },
+  "admitted_limits": {
+    "test": {
+      "cpu": "1",
+      "memory": "3Gi",
+      "ephemeral-storage": "8Gi"
+    },
+    "postgres": {
+      "cpu": "500m",
+      "memory": "512Mi",
+      "ephemeral-storage": "2Gi"
+    }
+  },
+  "deployment_images": {
+    "hypershell": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-cdb924/hypershell@sha256:2417dac5348e9083b664b55d2634155a02465241e783cf805e4b0aaebc6e252f"
+    },
+    "hypershell-gateway-identity": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-cdb924/hypershell-gateway-identity@sha256:c4a817da03e255f1a7be4c44a20c5413d115c6a80dc74e31de1be7aa110116d1"
+    }
+  },
+  "observed_restart_counts_zero": true,
+  "startup_failure_stages_observed": 0,
+  "telemetry": {
+    "batches_checked": 412,
+    "required_complete_instances": {
+      "api": 2,
+      "identity_worker": 2
+    }
+  },
+  "behavior_checked": [
+    "Gateway creation with required IDs and API fields.",
+    "Gateway and owner grant commit together; event failure rolls both back.",
+    "HTTPS and gRPC retrieval, denied requests, and filtered lists.",
+    "Creation and post-restart update events through the generated runtime.",
+    "Keycloak client creation, worker replacement, and API replacement.",
+    "Metrics and correlated logs and traces from all four instances; selected private-value checks.",
+    "Repeated generation and unchanged post-test output."
+  ],
+  "previous_failure": {
+    "source": "647122e4056a19518ee922d2e77054159e8942bf",
+    "run": 35523194536,
+    "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35523194536",
+    "description": "Six fixture failures. Owner hooks lacked runtime privileges; one migration replaced a table after grant installation. The corrected hooks retain owner access, and the migration repeats the generated installer. Runtime grants were not widened."
+  },
+  "evidence_sha256": {
+    "live/qualification-complete.json": "c37ca1735f977b2542e75bf4bff4ecc3f75448b07fd5e88b2ff02a12a67a06ee",
+    "live/ready-restart-review.json": "ea93af3fc470d9d0882d4a2a147e438a59876796eda86686d196f9255911042d",
+    "live/verification.json": "a7e64e6382245557a3953de17b53cb49354a61d1cfa820671a806067ef965397",
+    "live/cleanup.json": "c63f68df33c62ff1539561a8427486d7cf4f6dac6a34a23e58c0e689bd5f865b",
+    "live/admitted-pod.json": "cbd71f3f3e8cdf552e11f0ab52448f67d12f34847f1feb1d533948efbc328950",
+    "live/capture.json": "a0c9039ae0b6ae900fb1cf4b51b261dcd05cc7448777c9ca3ecd71ceacc991cb",
+    "live/results/deployment.log": "7888e4dd27d1ba768daa89d1f97795519b8b2d431c27e4f1261829dfe1a5199d",
+    "live/results/evidence.tar": "25ff124fc84dc538f09bc486582203bb9c83f7ea5d94857a44cedc0aaf665ada",
+    "live/results/job-status.json": "a44a2c96195d2a2addcb76b06dcebde824712aef849d85418b18d7fbf9cd5158",
+    "live/deployed-images/records.jsonl": "4e6053a91453f6022869e280b026fbe04ee9698b9352ca72804b58507d93da24",
+    "live/startup/pod-states.jsonl": "119bf8bcdb0c6b18e4c679857188d67dce0cafae2ebd95c9fb75848bf3f42186",
+    "current/checks/35524845576/verification-independent.json": "2e518a05b447c051ec3fa8ab0ff31baff6b4cb3c203aaf1b14fb91f337f6d9a6",
+    "current/checks/35524860077/verification-independent.json": "35f49f106c0ec1dc6ac68b257cf42dcad73cbd4d9fb7fa4c40b5ca5ebc0302bb",
+    "current/application-qualification.json": "58ca843aca1f0f6d773fd4cb56a1a68b60fe2d4cbb6e7a5b71be424f0e10e432",
+    "current/image-qualification.json": "e7d8a402c0fb39d0806ceed9925a1c7f9798bde64e4eba821ec12a46b44f3316",
+    "current/signature-qualification.json": "1e964e89c403d38473dfa83e6bffd2d7bdea63d93eb973a5d0eb6726531116c3",
+    "current/registry-qualification.json": "61e15f537cc6c0e3dfb7add517b3f4a831bc90fbb9eefb9f4d4d0b9fdf857e9a"
+  },
+  "not_proved": [
+    "Complete live browser workflow for this source.",
+    "Production CA selection and notices.",
+    "Complete offline builds, automatic release qualification, and other platforms.",
+    "Production capacity, 100 Gateways with 100 accounts each, and the 30-second cleanup target.",
+    "Live Kata and OpenShell Sandbox execution.",
+    "Backup and restore, distributed fencing, high availability, and full production parity.",
+    "Hypershell adoption of the separate workload construction candidate."
+  ]
+}
