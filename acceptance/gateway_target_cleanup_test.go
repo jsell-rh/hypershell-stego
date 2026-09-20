@@ -21,13 +21,16 @@ import (
 func TestGatewayCleanupKeepsBothClusterTargetsAfterRestart(t *testing.T) {
 	f := database(t)
 	if _, err := f.db.Exec(`CREATE TABLE target_cleanup_events(kind text NOT NULL);
-CREATE FUNCTION audit_target_cleanup() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN INSERT INTO target_cleanup_events VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE FUNCTION public.audit_target_cleanup() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN INSERT INTO public.target_cleanup_events VALUES (NEW.kind); RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.audit_target_cleanup() FROM PUBLIC;
 CREATE TRIGGER audit_target_cleanup AFTER INSERT ON stego_outbox.messages
 FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%' OR NEW.kind='managedcluster.deleted')
 EXECUTE FUNCTION audit_target_cleanup()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "INSERT INTO public.target_cleanup_events(kind) VALUES ('direct-runtime-write')")
 	second := ksuid.New().String()
 	unrecorded := ksuid.New().String()
 	_, config := broker(t, identity(t, "localhost"))

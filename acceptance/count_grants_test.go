@@ -21,12 +21,15 @@ func TestSandboxCountGrantsAcrossClustersAndRestart(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 90*time.Second)
 	defer cancel()
 	if _, err := f.db.Exec(`CREATE TABLE count_scope_events(kind text NOT NULL);
-CREATE FUNCTION audit_count_scope() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN INSERT INTO count_scope_events VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE FUNCTION public.audit_count_scope() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN INSERT INTO public.count_scope_events VALUES (NEW.kind); RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.audit_count_scope() FROM PUBLIC;
 CREATE TRIGGER audit_count_scope AFTER INSERT ON stego_outbox.messages
 FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_count_scope()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "INSERT INTO public.count_scope_events(kind) VALUES ('direct-runtime-write')")
 	second := ksuid.New().String()
 	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: second}, Name: "second", Provider: "kubernetes", KubeconfigSecret: "unused"}); err != nil {
 		t.Fatal(err)

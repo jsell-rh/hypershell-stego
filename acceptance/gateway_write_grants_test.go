@@ -28,12 +28,15 @@ func TestGatewayControllerWriteGrantsAcrossPlacementAndRestart(t *testing.T) {
 	}
 	// Record committed Gateway events even after the runtime deletes outbox rows.
 	if _, err := f.db.Exec(`CREATE TABLE gateway_event_audit(kind text NOT NULL);
-CREATE FUNCTION audit_gateway_event() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN INSERT INTO gateway_event_audit VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE FUNCTION public.audit_gateway_event() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN INSERT INTO public.gateway_event_audit VALUES (NEW.kind); RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.audit_gateway_event() FROM PUBLIC;
 CREATE TRIGGER audit_gateway_event AFTER INSERT ON stego_outbox.messages
 FOR EACH ROW WHEN (NEW.kind LIKE 'gateway.%') EXECUTE FUNCTION audit_gateway_event()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "INSERT INTO public.gateway_event_audit(kind) VALUES ('direct-runtime-write')")
 	second := ksuid.New().String()
 	if err := f.storage.Create(ctx, "ManagedCluster", model.ManagedCluster{Meta: model.Meta{ID: second}, Name: "second", Provider: "kubernetes", KubeconfigSecret: "unused"}); err != nil {
 		t.Fatal(err)

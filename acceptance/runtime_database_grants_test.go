@@ -2,12 +2,14 @@ package acceptance
 
 import (
 	"context"
+	"errors"
 	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	databaseaccess "github.com/jsell-rh/hypershell-stego/out/contracts/databaseaccess"
 )
 
@@ -52,4 +54,17 @@ func fixtureRuntimeDSN(t testing.TB, source, database, role, password string) st
 		t.Fatal("fixture runtime database settings differ from the selected login")
 	}
 	return dsn
+}
+
+// Owner-only fault and audit objects must not broaden the application login.
+// The fixed test statement must fail with a privilege error, not another error.
+func requireFixtureRuntimePermissionDenied(t testing.TB, f *fixture, statement string) {
+	t.Helper()
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	_, err := f.runtime.ExecContext(ctx, statement)
+	var databaseError *pgconn.PgError
+	if !errors.As(err, &databaseError) || databaseError.Code != "42501" {
+		t.Fatal("runtime access to an owner-only fixture object was not denied")
+	}
 }

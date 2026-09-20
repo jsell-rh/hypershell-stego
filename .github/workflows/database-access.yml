@@ -1,0 +1,114 @@
+name: Database access workflow checks
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/database-access.yml'
+      - 'acceptance/database_access_test.go'
+      - 'acceptance/runtime_database_grants_test.go'
+      - 'acceptance/controller_observability_test.go'
+      - 'acceptance/count_grants_test.go'
+      - 'acceptance/gateway_parent_cleanup_test.go'
+      - 'acceptance/gateway_request_contract_test.go'
+      - 'acceptance/gateway_target_cleanup_test.go'
+      - 'acceptance/gateway_write_grants_test.go'
+      - 'acceptance/network_test.go'
+      - 'out/contracts/databaseaccess/**'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: database-access-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  GOMAXPROCS: '2'
+  GOMEMLIMIT: 1536MiB
+  GOFLAGS: -p=2
+  GOWORK: 'off'
+  STEGO_DATABASE_ALLOW_INSECURE_LOOPBACK: '1'
+  STEGO_REQUIRE_POSTGRES: '1'
+  STEGO_REQUIRE_KEYCLOAK: '1'
+
+jobs:
+  database-access:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    services:
+      postgres:
+        image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+        env:
+          POSTGRES_PASSWORD: stego_test
+          POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+        ports:
+          - 5432/tcp
+        options: >-
+          --cpus=1 --memory=512m --pids-limit=256
+          --health-cmd pg_isready --health-interval 5s
+          --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Enable database TLS
+        timeout-minutes: 2
+        run: scripts/enable-test-postgres-tls.sh "$POSTGRES_CONTAINER" "$RUNNER_TEMP/postgres-tls"
+        env:
+          POSTGRES_CONTAINER: ${{ job.services.postgres.id }}
+      - name: Check generated source
+        timeout-minutes: 5
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/generate.sh --check
+      - name: Check restricted runtime workflows
+        timeout-minutes: 8
+        env:
+          STEGO_TEST_POSTGRES_DSN: postgres://postgres:stego_test@127.0.0.1:${{ job.services.postgres.ports['5432'] }}/postgres?sslmode=disable
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/database-access"
+          git rev-parse HEAD > "$RUNNER_TEMP/database-access/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/database-access/source-archive.sha256"
+          cp .stego/compiler-revision "$RUNNER_TEMP/database-access/compiler-revision"
+          go test -json -race -count=1 -mod=readonly -timeout=7m ./acceptance \
+            -run '^(TestFixtureRuntimeDSN|TestGatewayDatabaseAccessStartupAndRepair|TestGatewayControllerTelemetryAcrossFailureAndRestart|TestSandboxCountGrantsAcrossClustersAndRestart|TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart|TestGatewayCleanupKeepsBothClusterTargetsAfterRestart|TestGatewayControllerWriteGrantsAcrossPlacementAndRestart|TestGatewayNetworkWorkflowThroughGeneratedRuntime|TestGatewayRequestsRejectRetiredDatabaseField)$' \
+            | tee "$RUNNER_TEMP/database-access/tests.jsonl"
+          python3 - "$RUNNER_TEMP/database-access/tests.jsonl" <<'PY'
+          import json
+          import sys
+          from pathlib import Path
+          required = {
+              'TestFixtureRuntimeDSN',
+              'TestGatewayDatabaseAccessStartupAndRepair',
+              'TestGatewayControllerTelemetryAcrossFailureAndRestart',
+              'TestSandboxCountGrantsAcrossClustersAndRestart',
+              'TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart',
+              'TestGatewayCleanupKeepsBothClusterTargetsAfterRestart',
+              'TestGatewayControllerWriteGrantsAcrossPlacementAndRestart',
+              'TestGatewayNetworkWorkflowThroughGeneratedRuntime',
+              'TestGatewayRequestsRejectRetiredDatabaseField',
+          }
+          events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
+          assert not any(event['Action'] in {'fail', 'skip'} for event in events)
+          started = [event['Test'] for event in events if event['Action'] == 'run' and event.get('Test')]
+          passed = [event['Test'] for event in events if event['Action'] == 'pass' and event.get('Test')]
+          assert len(started) == len(set(started)) and sorted(started) == sorted(passed)
+          assert {name for name in passed if '/' not in name} == required
+          assert {'TestGatewayDatabaseAccessStartupAndRepair/missing-marker-read',
+                  'TestGatewayDatabaseAccessStartupAndRepair/excess-table-access'} <= set(passed)
+          PY
+          git diff --exit-code
+      - name: Save test records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: database-access-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/database-access/
+          retention-days: 14
+          if-no-files-found: error

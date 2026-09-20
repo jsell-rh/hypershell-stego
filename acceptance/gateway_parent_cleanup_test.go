@@ -19,12 +19,15 @@ import (
 func TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart(t *testing.T) {
 	f := database(t)
 	if _, err := f.db.Exec(`CREATE TABLE parent_delete_events(kind text NOT NULL);
-CREATE FUNCTION audit_parent_delete() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN INSERT INTO parent_delete_events VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE FUNCTION public.audit_parent_delete() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN INSERT INTO public.parent_delete_events VALUES (NEW.kind); RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.audit_parent_delete() FROM PUBLIC;
 CREATE TRIGGER audit_parent_delete AFTER INSERT ON stego_outbox.messages
 FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_parent_delete()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "INSERT INTO public.parent_delete_events(kind) VALUES ('direct-runtime-write')")
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)

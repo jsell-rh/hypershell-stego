@@ -167,16 +167,19 @@ func TestGatewayControllerTelemetryAcrossFailureAndRestart(t *testing.T) {
 	// A sequence retains its increment after transaction rollback. Abort the
 	// first insert so the documented serialization retry path is always tested.
 	if _, err := f.db.Exec(`CREATE SEQUENCE telemetry_create_attempt;
-CREATE FUNCTION abort_first_telemetry_create() RETURNS trigger LANGUAGE plpgsql AS $$
+CREATE FUNCTION public.abort_first_telemetry_create() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
 BEGIN
- IF nextval('telemetry_create_attempt') = 1 THEN
+ IF pg_catalog.nextval('public.telemetry_create_attempt'::pg_catalog.regclass) = 1 THEN
   RAISE EXCEPTION 'test serialization abort' USING ERRCODE='40001';
  END IF;
  RETURN NEW;
 END $$;
+REVOKE ALL ON FUNCTION public.abort_first_telemetry_create() FROM PUBLIC;
 CREATE TRIGGER abort_first_telemetry_create BEFORE INSERT ON gateways FOR EACH ROW EXECUTE FUNCTION abort_first_telemetry_create()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "SELECT pg_catalog.nextval('public.telemetry_create_attempt'::pg_catalog.regclass)")
 	requestBody, _ := json.Marshal(f.request("private-provider-gateway"))
 	var code int
 	var body []byte

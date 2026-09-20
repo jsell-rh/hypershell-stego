@@ -72,12 +72,15 @@ func TestGatewayRequestsRejectRetiredDatabaseField(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	// Keep an insert record after delivery removes each outbox row.
 	if _, err := f.db.Exec(`CREATE TABLE request_contract_events(kind text NOT NULL);
-CREATE FUNCTION audit_request_contract() RETURNS trigger LANGUAGE plpgsql AS $$
-BEGIN INSERT INTO request_contract_events VALUES (NEW.kind); RETURN NEW; END $$;
+CREATE FUNCTION public.audit_request_contract() RETURNS trigger LANGUAGE plpgsql
+SECURITY DEFINER SET search_path = pg_catalog, pg_temp AS $$
+BEGIN INSERT INTO public.request_contract_events VALUES (NEW.kind); RETURN NEW; END $$;
+REVOKE ALL ON FUNCTION public.audit_request_contract() FROM PUBLIC;
 CREATE TRIGGER audit_request_contract AFTER INSERT ON stego_outbox.messages
 FOR EACH ROW EXECUTE FUNCTION audit_request_contract()`); err != nil {
 		t.Fatal(err)
 	}
+	requireFixtureRuntimePermissionDenied(t, f, "INSERT INTO public.request_contract_events(kind) VALUES ('direct-runtime-write')")
 	before := map[string]int{}
 	for _, table := range []string{"gateways", "users", "role_bindings", "request_contract_events"} {
 		before[table] = count(t, f.db, table)

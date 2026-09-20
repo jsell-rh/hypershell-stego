@@ -53,3 +53,22 @@ have passed regeneration review. The root module pin also passed its source chec
 seven image targets, and rendered service and browser workflows remain
 required. The existing qualified
 Hypershell main remains unchanged.
+
+The first full application check found six fixture failures. Five owner-created
+hooks tried to write audit tables or advance a sequence with the runtime login.
+The network migration test also replaced a table after access installation.
+The new table had no runtime grants. The generated access check rejected it.
+Both access fault and repair cases passed in that run, but the full run failed.
+
+The corrected hooks run with owner permissions. They use a fixed search path,
+qualified object names, and no PUBLIC execute grant. Runtime statements must
+still fail with PostgreSQL permission error `42501` on these fixture objects.
+The network upgrade test uses the generated owner installer after migration.
+No application runtime grant changes. These hooks exist only in acceptance
+fixtures. See the PostgreSQL guidance for
+[owner-executed functions](https://www.postgresql.org/docs/18/sql-createfunction.html#SQL-CREATEFUNCTION-SECURITY).
+
+The focused database access workflow checks the six failed workflows, the
+retired database-field contract, and the new access tests with the race detector.
+It requires every selected test to pass without skips. The full core, browser,
+image, and live workflows remain required before application qualification.

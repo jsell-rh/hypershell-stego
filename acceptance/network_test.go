@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
@@ -72,6 +73,14 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 	if err := f.db.QueryRow("SELECT updated_time FROM roles WHERE id=$1", roleID).Scan(&repeatTime); err != nil || !firstTime.Equal(repeatTime) {
 		t.Fatal("network migration changed an existing role on repeat", err)
 	}
+	// Replacing the table removes its grants. The owner must install the
+	// compiled access contract again before the runtime can use the new table.
+	requireFixtureRuntimePermissionDenied(t, f, "SELECT 1 FROM public.gateway_networks LIMIT 0")
+	runtimeConfig, err := pgx.ParseConfig(f.dsn)
+	if err != nil {
+		t.Fatal("invalid runtime fixture configuration")
+	}
+	grantAPIFixtureRuntimeAccess(t, f, runtimeConfig.User)
 	if _, err := f.db.Exec("INSERT INTO gateway_networks(id,name) VALUES($1,'')", ksuid.New().String()); err == nil {
 		t.Fatal("network migration omitted the name constraint")
 	}
