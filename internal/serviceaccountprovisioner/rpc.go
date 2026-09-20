@@ -11,6 +11,7 @@ import (
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	transport "github.com/jsell-rh/hypershell-stego/out/application/client"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
+	settings "github.com/jsell-rh/hypershell-stego/out/configuration"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -29,7 +30,11 @@ func Open(ctx context.Context) (process.Application, error) {
 	if len(raw) > 16384 || json.Unmarshal([]byte(raw), &subjects) != nil {
 		return nil, errors.New("provisioner subjects must be a JSON array")
 	}
-	connection, err := rpc.New(rpc.Options{Address: os.Getenv("HYPERSHELL_API_GRPC_ADDR"), CAFile: os.Getenv("HYPERSHELL_API_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_API_TOKEN_FILE")})
+	api, err := settings.LoadControlAPI()
+	if err != nil {
+		return nil, err
+	}
+	connection, err := rpc.New(rpc.Options{Address: api.Address, CAFile: api.CAFile, TokenFile: api.TokenFile})
 	if err != nil {
 		return nil, err
 	}

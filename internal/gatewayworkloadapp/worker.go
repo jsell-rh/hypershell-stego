@@ -7,6 +7,7 @@ import (
 	"os"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
+	settings "github.com/jsell-rh/hypershell-stego/out/configuration"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -16,7 +17,15 @@ import (
 
 // Run supplies provider setup and the domain controller to STEGO.
 func Run(ctx context.Context, metrics *runtime.Metrics) error {
-	connection, err := rpc.New(rpc.Options{Address: os.Getenv("HYPERSHELL_API_GRPC_ADDR"), CAFile: os.Getenv("HYPERSHELL_API_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_API_TOKEN_FILE")})
+	api, err := settings.LoadControlAPI()
+	if err != nil {
+		return err
+	}
+	cluster, err := settings.LoadClusterWorker()
+	if err != nil {
+		return err
+	}
+	connection, err := rpc.New(rpc.Options{Address: api.Address, CAFile: api.CAFile, TokenFile: api.TokenFile})
 	if err != nil {
 		return err
 	}
@@ -44,7 +53,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 		defer credentials.Close()
 		console = &gatewayworkload.ConsoleOptions{Domain: domain, Image: image, ImagePullConfigFile: pullFile, Credentials: provisioner.NewGatewayConsoleCredentialServiceClient(credentials)}
 	}
-	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{Console: console, InternalCAFile: os.Getenv("HYPERSHELL_GATEWAY_INTERNAL_CA_FILE"), PublicRouter: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ROUTER"), PublicDomain: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_DOMAIN"), PublicIssuer: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ISSUER"), PublicCAFile: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_CA_FILE"), SQLBindings: bindings, ConsoleSQLBindings: consoleBindings, ControlNamespace: os.Getenv("HYPERSHELL_CONTROL_NAMESPACE"), DatabaseConfigFile: os.Getenv("HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"), SandboxRuntimeClass: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"), ClusterID: os.Getenv("HYPERSHELL_MANAGED_CLUSTER_ID"), ServerURL: os.Getenv("HYPERSHELL_KUBERNETES_URL"), CAFile: os.Getenv("HYPERSHELL_KUBERNETES_CA_FILE"), TokenFile: os.Getenv("HYPERSHELL_KUBERNETES_TOKEN_FILE"), ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
+	provider, err := gatewayworkload.NewKubernetes(gatewayworkload.Options{Console: console, InternalCAFile: os.Getenv("HYPERSHELL_GATEWAY_INTERNAL_CA_FILE"), PublicRouter: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ROUTER"), PublicDomain: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_DOMAIN"), PublicIssuer: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_ISSUER"), PublicCAFile: os.Getenv("HYPERSHELL_GATEWAY_PUBLIC_CA_FILE"), SQLBindings: bindings, ConsoleSQLBindings: consoleBindings, ControlNamespace: cluster.ControlNamespace, DatabaseConfigFile: os.Getenv("HYPERSHELL_GATEWAY_DATABASE_CONFIG_FILE"), SandboxRuntimeClass: cluster.SandboxRuntimeClass, ClusterID: cluster.ClusterID, ServerURL: cluster.ServerURL, CAFile: cluster.CAFile, TokenFile: cluster.TokenFile, ClusterIssuer: os.Getenv("HYPERSHELL_GATEWAY_CLUSTER_ISSUER"), Issuer: os.Getenv("HYPERSHELL_GATEWAY_OIDC_ISSUER"), TrustBundleFile: os.Getenv("HYPERSHELL_GATEWAY_TRUST_BUNDLE"), SandboxImage: os.Getenv("HYPERSHELL_GATEWAY_SANDBOX_IMAGE"), SupervisorImage: os.Getenv("HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE")})
 	if err != nil {
 		return err
 	}
