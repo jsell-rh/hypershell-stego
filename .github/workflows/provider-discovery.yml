@@ -10,6 +10,8 @@ on:
       - 'acceptance/browser_postgres_signals_test.go'
       - 'acceptance/keycloak_test.go'
       - 'acceptance/keycloak_late_create_test.go'
+      - 'acceptance/gateway_test.go'
+      - 'acceptance/database_cleanup_diagnostics_test.go'
       - 'out/keycloak/**'
       - 'internal/serviceaccountkeycloak/**'
       - '.stego/compiler-revision'
@@ -88,13 +90,13 @@ jobs:
                   raise SystemExit('A required inventory result is missing: ' + name)
           PY
           go test -v -race -count=1 -mod=readonly -timeout=6m ./acceptance \
-            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart|TestGatewayCleanupDeadlineReopensConfirmation|TestUnrelatedClientSnapshotComparison|TestPostgresSignalEvidence.*)$' \
+            -run '^(TestUnknownGatewayClientsCloseAcrossProcessRestart|TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart|TestGatewayCleanupDeadlineReopensConfirmation|TestUnrelatedClientSnapshotComparison|TestPostgresSignalEvidence.*|TestDatabaseFixtureCleanupDiagnostics)$' \
             | tee "$RUNNER_TEMP/provider-discovery/tests.log"
           python3 - "$RUNNER_TEMP/provider-discovery/tests.log" <<'PY'
           import re, sys
           from pathlib import Path
           log = Path(sys.argv[1]).read_text()
-          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart', 'TestGatewayCleanupDeadlineReopensConfirmation', 'TestUnrelatedClientSnapshotComparison', 'TestPostgresSignalEvidenceRequiresControllerAndLog', 'TestPostgresSignalEvidenceAcceptsManagedSchema', 'TestPostgresSignalEvidenceAcceptsCredentialPreparation']:
+          for name in ['TestUnknownGatewayClientsCloseAcrossProcessRestart', 'TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart', 'TestGatewayCleanupDeadlineReopensConfirmation', 'TestUnrelatedClientSnapshotComparison', 'TestPostgresSignalEvidenceRequiresControllerAndLog', 'TestPostgresSignalEvidenceAcceptsManagedSchema', 'TestPostgresSignalEvidenceAcceptsCredentialPreparation', 'TestDatabaseFixtureCleanupDiagnostics']:
               if not re.search(r'^--- PASS: ' + name + ' ', log, re.M):
                   raise SystemExit('A required cleanup result is missing: ' + name)
           PY

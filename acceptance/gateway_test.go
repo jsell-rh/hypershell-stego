@@ -61,10 +61,22 @@ func databaseSetupFresh(t testing.TB, seedPlacement bool) *fixture {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		// DROP DATABASE waits for a server checkpoint. This fixture cleanup
+		// budget is separate from application and Gateway cleanup deadlines.
+		ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 		defer cancel()
+		started := time.Now()
 		if _, err := admin.ExecContext(ctx, `DROP DATABASE "`+name+`" WITH (FORCE)`); err != nil {
-			t.Error(err)
+			logDatabaseCleanupFailure(t, admin, name, ctx)
+			t.Errorf("test database removal failed after %s", time.Since(started).Round(time.Millisecond))
+			return
+		}
+		var present bool
+		if err := admin.QueryRowContext(ctx, `SELECT EXISTS (SELECT 1 FROM pg_catalog.pg_database WHERE datname=$1)`, name).Scan(&present); err != nil || present {
+			logDatabaseCleanupFailure(t, admin, name, ctx)
+			t.Error("test database absence was not verified")
+		} else if elapsed := time.Since(started); elapsed >= time.Second {
+			t.Logf("test database removal and absence verified after %s", elapsed.Round(time.Millisecond))
 		}
 	})
 	cfg.Database = name
