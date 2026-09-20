@@ -20,8 +20,8 @@ three entry points. They require the typed field error and check that it does
 not expose supplied values. A separate check requires invalid cluster settings
 to fail before the workload worker opens its control connection.
 
-This branch requires hosted application checks and complete workflow evidence
-before main promotion. No compiler or application binary was run locally.
+Runtime source `e0f3d7b` passed hosted application checks and the complete
+count and browser workflows below. No compiler or application binary ran locally.
 
 The first application check stopped before tests because the recorded worker
 input hashes were stale. Hosted [regeneration run 35539887087](https://github.com/jsell-rh/hypershell-stego/actions/runs/35539887087)
@@ -31,8 +31,8 @@ in the root state file. All 419 output hashes, 41 input hashes and modes, and
 three input manifest digests match. The compiler installation record matches
 the authenticated release. See the
 [generation evidence](control-worker-configuration-generation-evidence.json).
-The initial failed checks remain failure records; the refreshed source requires
-new application checks.
+The initial failed checks remain failure records. The passing checks below
+use the refreshed source.
 
 Corrected source `e0f3d7b` passed
 [full run 35540006064](https://github.com/jsell-rh/hypershell-stego/actions/runs/35540006064).
@@ -43,9 +43,9 @@ recovery check passed 172 cases across 44 top-level tests and seven packages.
 Seven application images passed source, content, registry, and signature review.
 See the [hosted evidence](control-worker-configuration-ci-evidence.json).
 
-These results do not include the pending live count and browser checks for this
-source. Main promotion remains pending. The earlier service Deployment result
-belongs to source `7ed1a7b7` and is recorded separately.
+The live count and browser evidence below qualifies this corrected source.
+The earlier service Deployment result belongs to source `7ed1a7b7` and is
+recorded separately.
 
 
 The first three bounded live count attempts did not prove count behavior.
@@ -80,10 +80,9 @@ The Job completed successfully. Independent cleanup found its namespace and all
 owned resources absent, the shared Lease free, and all 32 standing resources
 unchanged. See the [live count evidence](control-worker-count-evidence.json).
 Test source `d98b673` differs from runtime source `e0f3d7b` only in the five
-recorded test and CI files. The current-source browser workflow remains required
-before consumer acceptance. The count result does not prove production capacity.
+recorded test and CI files. The count result does not prove production capacity.
 
-## Current browser failure
+## First browser failure
 
 [Run 35543304070](https://github.com/jsell-rh/hypershell-stego/actions/runs/35543304070)
 used runtime source `e0f3d7b` and failed during Kubernetes API discovery. A TLS
@@ -93,6 +92,25 @@ not established. Independent cleanup found no test resources, a free Lease,
 and all 32 standing resources unchanged. See the
 [failure evidence](control-worker-browser-failure-evidence.json).
 
-This run does not qualify the candidate. One controlled repeat uses the same
-source, images, security controls, and resource limits. Main remains unchanged
-until the complete workflow passes review.
+This failed run does not qualify the candidate. The controlled repeat below
+used the same source, images, security controls, and limits. Its success does
+not explain the first failure.
+
+## Current browser acceptance
+
+[Run 35544262375](https://github.com/jsell-rh/hypershell-stego/actions/runs/35544262375)
+passed all 11 required tests. The main scenario took 547.23 seconds. Independent
+review checked 1,657 source files, all 429 generation hashes, all 430 generated
+archive files, seven signed images, and four screenshots. The records prove
+REST and gRPC access rules, event delivery, process and namespace recovery,
+retained SQL and credentials, cleanup barriers, and correlated telemetry.
+
+Cleanup removed all test resources, released the shared Lease, and preserved
+all 32 standing resources. Normal cleanup of a Gateway with 100 live accounts
+was observed complete after 32.96 seconds. The 30-second target remains unmet.
+These checks do not prove RDS failover, live Kata isolation, or production
+capacity. See the [browser evidence](control-worker-browser-evidence.json).
+
+The hosted checks, corrected count fixture, and complete browser result accept
+this worker configuration change. They do not accept the later common console
+rollout change or complete the remaining enterprise requirements.

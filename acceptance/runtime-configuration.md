@@ -58,8 +58,9 @@ after 34.19 seconds. Allocation and Gateway finalization were still pending at
 32.70 seconds. This result misses the 30-second target. The sample does not prove
 production capacity or the cause of the delay.
 
-The later shared worker settings change has separate
-[hosted evidence](control-worker-configuration-ci-evidence.json). The live count
-check is now running on that corrected source. Its complete browser check also
-remains required before main promotion. This change does not complete worker
-connection assembly or the remaining enterprise requirements.
+The later shared worker settings change passed its separate
+[hosted checks](control-worker-configuration-ci-evidence.json),
+[live count workflow](control-worker-count-evidence.json), and
+[complete browser workflow](control-worker-browser-evidence.json). The current
+runtime source is `e0f3d7b`. These results accept the configuration change. They
+do not complete worker connection assembly or the remaining enterprise requirements.
