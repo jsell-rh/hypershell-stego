@@ -71,3 +71,18 @@ operator-held lease until the operator restores the temporary installation.
 All eight input combinations passed a local shell check. No cluster policy was
 changed by that check. The next live run requires a verified policy render and
 an operator journal for the two inspection-role changes.
+
+Live run `35477799297` at `f924e96` failed when the scheduler preempted the
+test Pod for an OpenShift image registry Pod. The registry's events report
+insufficient CPU and memory. The test produced no completion record, complete
+evidence archive, or 100-account cleanup result. Its final container log was
+unavailable after termination. The saved partial log contains ten setup test
+passes and the start of the browser workflow. These observations do not qualify
+the complete workflow or establish an application assertion failure.
+
+The compiler transfer and Job limits were independently verified before the
+interruption. The temporary installation was restored. Independent cleanup
+found no test resources, all 32 standing resources intact, and a free lease.
+See the [failed-run evidence](normal-cleanup-preemption-evidence.json).
+The next attempt requires a capacity check and better terminal Pod evidence.
+The default branch remains unchanged.
