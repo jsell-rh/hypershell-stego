@@ -16,6 +16,20 @@ import (
 var ErrNotReady = errors.New("controller observation is incomplete")
 var ErrSourceStopped = errors.New("controller observation stopped")
 var ErrKey = errors.New("controller key must contain 1 to 1024 UTF-8 bytes")
+var ErrReconcileResult = errors.New("controller recheck delay is outside its limits")
+
+// ReconcileResult requests another read of authoritative state. Zero means this
+// pass needs no scheduled recheck. RecheckAfter must be zero or 1ms..1h.
+// A nonzero result is not a readiness or completion claim. An action error or
+// context failure takes precedence and discards the result.
+type ReconcileResult struct{ RecheckAfter time.Duration }
+
+func (r ReconcileResult) validate() error {
+	if r.RecheckAfter != 0 && (r.RecheckAfter < time.Millisecond || r.RecheckAfter > time.Hour) {
+		return ErrReconcileResult
+	}
+	return nil
+}
 
 // KeyedSource supplies invalidation keys, not authoritative resource payloads.
 // Observe must establish a complete baseline before SetReady(true). It must call
@@ -268,6 +282,9 @@ func nextDelay(current, minimum, maximum time.Duration) time.Duration {
 	return current * 2
 }
 func (q *keyQueue[K]) finish(key K, failed bool, minimum, maximum time.Duration) {
+	q.finishResult(key, failed, 0, minimum, maximum)
+}
+func (q *keyQueue[K]) finishResult(key K, failed bool, recheck, minimum, maximum time.Duration) {
 	q.mu.Lock()
 	defer q.mu.Unlock()
 	entry := q.entries[key]
@@ -279,6 +296,9 @@ func (q *keyQueue[K]) finish(key K, failed bool, minimum, maximum time.Duration)
 		q.retrying++
 		entry.delay = nextDelay(entry.delay, minimum, maximum)
 		entry.due = time.Now().Add(entry.delay)
+	} else if recheck > 0 {
+		entry.delay = 0
+		entry.due = time.Now().Add(recheck)
 	} else {
 		entry.delay = 0
 		entry.due = time.Now()
@@ -371,6 +391,21 @@ func (q *keyQueue[K]) restart(minimum, maximum time.Duration) {
 // cannot retract an external write already in progress. Such writes require a
 // domain version or later repair. No distributed exclusion is supplied here.
 func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcile func(context.Context, K) error, options KeyedOptions) error {
+	if reconcile == nil {
+		return errors.New("keyed controller requires an action")
+	}
+	return RunKeyedWithResult(parent, source, func(ctx context.Context, key K) (ReconcileResult, error) {
+		return ReconcileResult{}, reconcile(ctx, key)
+	}, options)
+}
+
+// RunKeyedWithResult also schedules expected incomplete work without a failure.
+// Rechecks stay inside queue capacity and release the worker while waiting.
+// Events and reconnects do not shorten a scheduled delay. A successful pending
+// action resets prior error backoff; any action error keeps the error schedule.
+// Invalid results stop the controller. Existing ownership and version checks
+// remain the action's responsibility. A process restart requires a fresh scan.
+func RunKeyedWithResult[K ~string](parent context.Context, source KeyedSource[K], reconcile func(context.Context, K) (ReconcileResult, error), options KeyedOptions) error {
 	if parent == nil || source.Observe == nil || source.Scan == nil || reconcile == nil {
 		return errors.New("keyed controller requires context, source, and action")
 	}
@@ -391,11 +426,16 @@ func RunKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 		return err
 	}
 	defer detach()
-	return runKeyed(parent, source, reconcile, options, q)
+	return runKeyedWithResult(parent, source, reconcile, options, q)
 }
 
 // runKeyed can reuse a stopped queue for a new watch session.
 func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcile func(context.Context, K) error, options KeyedOptions, q *keyQueue[K]) error {
+	return runKeyedWithResult(parent, source, func(ctx context.Context, key K) (ReconcileResult, error) {
+		return ReconcileResult{}, reconcile(ctx, key)
+	}, options, q)
+}
+func runKeyedWithResult[K ~string](parent context.Context, source KeyedSource[K], reconcile func(context.Context, K) (ReconcileResult, error), options KeyedOptions, q *keyQueue[K]) error {
 	if parent.Err() != nil {
 		return nil
 	}
@@ -503,10 +543,13 @@ func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 				}
 				operation, stop := context.WithTimeout(ctx, options.Timeout)
 				started := time.Now()
-				err, finish := controllerWork(operation, "reconcile", func(operation context.Context) error { return reconcile(operation, key) })
+				result, err, finish := controllerResultWork(operation, func(operation context.Context) (ReconcileResult, error) { return reconcile(operation, key) })
 				stop()
-				terminal := err != nil && options.Terminal(err)
+				terminal := err != nil && (errors.Is(err, ErrReconcileResult) || options.Terminal(err))
 				outcome := 0
+				if result.RecheckAfter > 0 {
+					outcome = 4
+				}
 				if err != nil {
 					outcome = 1
 					if errors.Is(err, context.DeadlineExceeded) {
@@ -519,7 +562,7 @@ func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 				retry := false
 				duration := time.Since(started)
 				if !terminal && ctx.Err() == nil {
-					q.finish(key, err != nil, options.RetryMin, options.RetryMax)
+					q.finishResult(key, err != nil, result.RecheckAfter, options.RetryMin, options.RetryMax)
 					retry = err != nil
 				}
 				options.Metrics.action(outcome, duration, retry)
@@ -533,6 +576,8 @@ func runKeyed[K ~string](parent context.Context, source KeyedSource[K], reconcil
 				}
 				if err != nil {
 					notice("reconcile_failed", err)
+				} else if result.RecheckAfter > 0 {
+					notice("reconcile_pending", nil)
 				}
 			}
 		})

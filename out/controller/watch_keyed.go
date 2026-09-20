@@ -40,6 +40,23 @@ func RunKeyedWatch[K ~string](ctx context.Context, source Source[K], reconcile f
 // source order and share the scan deadline. Keys must identify their resource
 // kind when different sources can emit the same resource ID.
 func RunKeyedWatches[K ~string](ctx context.Context, sources []Source[K], reconcile func(context.Context, K) error, options KeyedWatchOptions) error {
+	if reconcile == nil {
+		return errors.New("keyed watches require an action")
+	}
+	return RunKeyedWatchesWithResult(ctx, sources, func(ctx context.Context, key K) (ReconcileResult, error) {
+		return ReconcileResult{}, reconcile(ctx, key)
+	}, options)
+}
+
+// RunKeyedWatchWithResult adds explicit pending results to one watch source.
+func RunKeyedWatchWithResult[K ~string](ctx context.Context, source Source[K], reconcile func(context.Context, K) (ReconcileResult, error), options KeyedWatchOptions) error {
+	return RunKeyedWatchesWithResult(ctx, []Source[K]{source}, reconcile, options)
+}
+
+// RunKeyedWatchesWithResult retains the source and lifecycle rules above and
+// the pending result rules of RunKeyedWithResult. Watch events cannot bypass
+// either a pending recheck delay or a failed action's retry delay.
+func RunKeyedWatchesWithResult[K ~string](ctx context.Context, sources []Source[K], reconcile func(context.Context, K) (ReconcileResult, error), options KeyedWatchOptions) error {
 	if ctx == nil || reconcile == nil || len(sources) < 1 || len(sources) > 16 {
 		return errors.New("keyed watches require context, action, and 1..16 sources")
 	}
@@ -71,13 +88,13 @@ func RunKeyedWatches[K ~string](ctx context.Context, sources []Source[K], reconc
 	defer detach()
 	for ctx.Err() == nil {
 		err, finish := controllerWork(ctx, "watch", func(operation context.Context) error {
-			return keyedWatchSession(operation, sources, reconcile, options, q)
+			return keyedWatchSessionWithResult(operation, sources, reconcile, options, q)
 		})
 		if ctx.Err() != nil {
 			finish(false)
 			return nil
 		}
-		terminal := err != nil && (errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || errors.Is(err, ErrTelemetryInUse) || errors.Is(err, ErrMetricsInUse) || errors.Is(err, ErrMetricsContract) || options.Terminal(err))
+		terminal := err != nil && (errors.Is(err, ErrWatch) || errors.Is(err, ErrKey) || errors.Is(err, ErrTelemetryInUse) || errors.Is(err, ErrMetricsInUse) || errors.Is(err, ErrMetricsContract) || errors.Is(err, ErrReconcileResult) || options.Terminal(err))
 		finish(ctx.Err() == nil && !terminal)
 		if terminal {
 			return err
@@ -100,6 +117,11 @@ func RunKeyedWatches[K ~string](ctx context.Context, sources []Source[K], reconc
 }
 
 func keyedWatchSession[K ~string](parent context.Context, sources []Source[K], reconcile func(context.Context, K) error, options KeyedWatchOptions, q *keyQueue[K]) error {
+	return keyedWatchSessionWithResult(parent, sources, func(ctx context.Context, key K) (ReconcileResult, error) {
+		return ReconcileResult{}, reconcile(ctx, key)
+	}, options, q)
+}
+func keyedWatchSessionWithResult[K ~string](parent context.Context, sources []Source[K], reconcile func(context.Context, K) (ReconcileResult, error), options KeyedWatchOptions, q *keyQueue[K]) error {
 	ctx, cancel := context.WithCancel(parent)
 	defer cancel()
 	setup := time.AfterFunc(options.Timeout, cancel)
@@ -125,7 +147,7 @@ func keyedWatchSession[K ~string](parent context.Context, sources []Source[K], r
 	if options.Observe != nil {
 		options.Observe(Event{Phase: "watch_started"})
 	}
-	return runKeyed(parent, KeyedSource[K]{
+	return runKeyedWithResult(parent, KeyedSource[K]{
 		Observe: func(operation context.Context, sink *KeySink[K]) error {
 			stop := context.AfterFunc(operation, cancel)
 			defer stop()
