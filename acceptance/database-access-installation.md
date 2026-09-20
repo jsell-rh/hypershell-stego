@@ -5,9 +5,11 @@ This branch contains an unqualified application adoption candidate. It selects
 whose complete compiler and signed artifact checks passed. The four immutable
 release files passed installation verification and match the verified package.
 The generated output now contains the access package and startup check for
-the API and both browser backends. The root Gateway console module pin still
-needs an update. Do not deploy or merge this candidate until that update and
-all required application checks pass.
+the API and both browser backends. The root application selects the committed
+Gateway console module at `b36ca551`. Hosted dependency refresh and regeneration
+passed in [run 35523036601](https://github.com/jsell-rh/hypershell-stego/actions/runs/35523036601).
+Only the root dependency files and their state hashes changed. Do not deploy
+or merge this candidate until all required application checks pass.
 
 The application selects STEGO's external-migration mode. The operator must
 install the schema before API startup. The API cannot bootstrap an empty
@@ -47,7 +49,7 @@ STEGO source `3603e391` passed 44 common database access checks in
 Its [complete compiler checks](https://github.com/jsell-rh/stego/actions/runs/35521489217)
 and [signed artifact checks](https://github.com/jsell-rh/stego/actions/runs/35522402232)
 also passed. These results do not qualify this application candidate. The generated modules
-have passed regeneration review. The root module pin, complete hosted
-acceptance, seven image targets, and rendered service and browser workflows
-remain required. The existing qualified
+have passed regeneration review. The root module pin also passed its source check. Complete hosted acceptance,
+seven image targets, and rendered service and browser workflows remain
+required. The existing qualified
 Hypershell main remains unchanged.
