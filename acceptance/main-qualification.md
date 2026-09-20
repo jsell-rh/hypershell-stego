@@ -1,5 +1,8 @@
 # Main qualification
 
+The current runtime qualification is the [allocation finalization result](allocation-finalization.md)
+at source `6061469`. The following record describes the prior `0aa8f0d` baseline.
+
 All 11 automatic checks passed at exact source `0aa8f0d`. Their saved results
 passed independent checks. See the [gate record](main-qualification-evidence.json).
 Documentation commits after that source do not change the tested runtime.

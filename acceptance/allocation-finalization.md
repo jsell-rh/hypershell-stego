@@ -14,8 +14,8 @@ The allocator requires an exact `Gateway` / `cleanup.allocation` grant for its
 ManagedCluster. Workload and identity grants do not authorize this observation.
 The generated cleanup summary also supplies the allocator's cleanup metrics.
 
-The complete browser workflow and ten hosted checks passed at source
-`6061469`. The separate API gate remains required before promotion.
+The complete browser workflow, API gate, and ten hosted checks passed at
+source `6061469`. Independent result checks qualify this runtime revision.
 The new declaration changes the schema generation. Existing installations must
 remain rejected until an explicit schema transition is registered and tested.
 Do not change generation records by hand to bypass that check.
@@ -88,3 +88,21 @@ Existing schema upgrades, distributed fencing, backup and restore, production
 capacity, full application parity, and the remaining enterprise requirements
 remain open. Live Kata and native Sandbox traffic remain outside this result.
 The upstream Agent Sandbox controller remains trusted cluster infrastructure.
+
+## API result and promotion scope
+
+Run [35486021140](https://github.com/jsell-rh/hypershell-stego/actions/runs/35486021140)
+passed all 52 required tests. These checks cover atomic Gateway, owner, and
+event creation; rollback; filtered and denied access; REST and gRPC; SDK and
+CLI behavior; watches; event recovery; SQL ownership; credential rotation; and
+durable cleanup across restart. All 1,568 source files and 421 committed,
+repeated, and post-test generation hashes matched. The actual compiler bytes
+in the bounded test Pod matched the signed package. See the
+[API and cleanup record](allocation-api-evidence.json).
+
+Fresh reads after the API run confirmed that both test fixtures were absent,
+the shared lease was free, and all 32 standing installation objects were
+unchanged. Source `6061469` is qualified for the allocation finalization fix.
+Later documentation commits do not change that tested runtime. The separate
+account rescan regression and its proposed fix are not part of this result.
+The full enterprise goal remains active.

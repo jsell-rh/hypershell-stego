@@ -1,0 +1,160 @@
+{
+  "api": {
+    "run": 35486021140,
+    "source": "6061469e231664bad76410bbb2f79c4bb32664cf",
+    "required_tests": [
+      "TestGatewayDurableDeletionThroughGeneratedTransports",
+      "TestGatewayAccountCleanupRecoveryReachesTailAfterRestart",
+      "TestGatewayAccountCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalCleanupRecoveryKeepsPageCheckpoint",
+      "TestGatewayJournalRegistrationDuringScanPreventsCompletion",
+      "TestGatewayJournalAddedAfterLastPagePreventsCompletion",
+      "TestGatewayJournalClosureRollsBackWithFinalEvent",
+      "TestGatewayCleanupRecoversJournalOmittedByProvider",
+      "TestGatewayInventoryRecoveryAcrossReadFailureAndPageShift",
+      "TestGatewayInventoryLimitRequiresAnotherFullCycle",
+      "TestGatewayCleanupObservationDoesNotRepeatEvents",
+      "TestGatewayDeletingPhaseMatchesSearch",
+      "TestGatewayAccountCleanupProgressSurvivesInterruptedRequests",
+      "TestGatewayAccountCleanupSerializesCreation",
+      "TestServiceAccountCreationSerializesGatewayDeletion",
+      "TestGatewayDeletionRemovesServiceAccounts",
+      "TestServiceAccountProviderStateAcrossLockAndRestart",
+      "TestGatewayProviderStateAcrossGRPCAndRestart",
+      "TestGatewayDatabasePoolWaitCancellationAndRestart",
+      "TestConcurrentGlobalRoleProjection",
+      "TestCleanupSummaryScopeAndTimestampChecks",
+      "TestGatewayDatabaseSecretFileAndCredentialRotation",
+      "TestGatewayDeletionBeforeWorkloadStartup",
+      "TestControllerLocalBootstrapRejectsUnregisteredSQLGeneration",
+      "TestGeneratedWorkloadWorkerStartupPrivacy",
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGatewayCreationCommitsOwnerAndEvent",
+      "TestGatewayRequestsRejectRetiredDatabaseField",
+      "TestGeneratedGoSDKGatewayWorkflow",
+      "TestGeneratedCLIWorkflow",
+      "TestGatewayMutationWorkflowAcrossTransportsAndRestart",
+      "TestGatewayControllerWriteGrantsAcrossPlacementAndRestart",
+      "TestOwnerGrantFailureRollsBackGatewayAndEvent",
+      "TestEventFailureRollsBackGatewayAndOwner",
+      "TestAccessFiltersRunBeforeCountAndPagination",
+      "TestGeneratedGatewayDescriptorsMatchReleaseContract",
+      "TestGatewayWorkflowThroughGeneratedRESTProcess",
+      "TestGatewayWorkflowAcrossRESTAndGRPC",
+      "TestGeneratedRuntimeDeliversGatewayEventsAcrossRestart",
+      "TestGeneratedRuntimeRecoversUnfinishedClaim",
+      "TestGatewayWatchThroughGeneratedRuntime",
+      "TestNamespaceCountWorkflowThroughGeneratedWorker",
+      "TestPlacementWorkflowThroughGeneratedRuntime",
+      "TestControllerLocalSchemaHasNoDatabaseCatalog",
+      "TestControllerLocalSQLCleanupRequiresExactGrantAndVersion",
+      "TestControllerLocalBootstrapRejectsLegacySchemaWithoutWrites",
+      "TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart",
+      "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+      "TestGatewaySQLCleanupMakesIndependentProgressAfterRestart",
+      "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+      "TestGeneratedCLICatalogWorkflow",
+      "TestGeneratedCLIApplyWorkflow"
+    ],
+    "passed_top_level": 52,
+    "test_log_sha256": "1ec3c1ebdf3e389e79825ac63870e08cb17e786fc9085ee98c6f6a0a5f71a7b8",
+    "source_files_match": 1568,
+    "generated_hashes_match": 421,
+    "committed_and_repeated_generation_match": true,
+    "compiler_public_records_and_live_bytes_match": true,
+    "bounded_live_job_verified": true,
+    "job_uid": "793450f2-1b9d-4bbe-aa80-c35b12eb2c2b",
+    "pod_uid": "cb10d06e-985e-40bb-842a-1fe5e1197a10",
+    "independent_fixture_cleanup_verified": true,
+    "qualified": true,
+    "scope": "The exact API and SQL test fixture. Main browser and full results remain separate."
+  },
+  "runtime": {
+    "run": 35486021140,
+    "source": "6061469e231664bad76410bbb2f79c4bb32664cf",
+    "job": "gateway-api-58aaa91ef4a2",
+    "job_uid": "793450f2-1b9d-4bbe-aa80-c35b12eb2c2b",
+    "pod": "gateway-api-58aaa91ef4a2-6wj2b",
+    "pod_uid": "cb10d06e-985e-40bb-842a-1fe5e1197a10",
+    "deadline_seconds": 1200,
+    "retry_limit": 0,
+    "no_host_access": true,
+    "containers": [
+      {
+        "name": "postgres",
+        "limits": {
+          "cpu": "500m",
+          "ephemeral-storage": "2Gi",
+          "memory": "512Mi"
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "runAsUser": 1001470000
+        }
+      },
+      {
+        "name": "test",
+        "limits": {
+          "cpu": "1",
+          "ephemeral-storage": "6Gi",
+          "memory": "3Gi"
+        },
+        "securityContext": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true,
+          "runAsUser": 1001470000
+        }
+      }
+    ],
+    "compiler_verified": true,
+    "compiler_hashes": {
+      "stego-linux-amd64": "8b2282ce525dce17e2e5b7f6bbabd8072e8d34814ade430b3a80e29bcdb50af0",
+      "build.json": "2ffbd789531ba094ee7411a3859c4d3e28145bd75ad38331c1f337468d36c903",
+      "provenance.jsonl": "5c6038d0c4eaa2c9f532818ea6c60a9371888eafbdf0d442a738189e9bde0899",
+      "SHA256SUMS": "6c9ac5847c9360df4150aa69d84f30da170e20e6a10563cbc1210fc00758c0b7"
+    },
+    "checked_at": "2026-09-20T03:14:33.010246+00:00"
+  },
+  "fixture_cleanup": {
+    "checked_at": "2026-09-20T03:23:09.437367+00:00",
+    "run": 35486021140,
+    "source": "6061469e231664bad76410bbb2f79c4bb32664cf",
+    "namespace": "stego-ci",
+    "job": "gateway-api-58aaa91ef4a2",
+    "job_uid": "793450f2-1b9d-4bbe-aa80-c35b12eb2c2b",
+    "job_absent": true,
+    "pods_absent": true,
+    "labeled_private_fixtures_absent": true,
+    "cluster_changes": false,
+    "scope": "The exact API fixture. The separate joint audit covers both cluster runs and the standing installation."
+  },
+  "joint_cleanup": {
+    "run": 35485013231,
+    "source": "6061469e231664bad76410bbb2f79c4bb32664cf",
+    "checked_at": "2026-09-20T03:23:08.907745+00:00",
+    "browser_empty": true,
+    "api_run": 35486021140,
+    "api_status": "completed",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing browser installation resources are unchanged."
+  }
+}
