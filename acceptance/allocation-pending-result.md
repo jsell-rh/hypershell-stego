@@ -29,3 +29,41 @@ consumer update.
 The 30-second cleanup target remains open. A controller test does not prove
 cleanup time, production capacity, or live Kata isolation. Use the complete
 Gateway workflow to measure the result.
+
+
+## Verified workflow
+
+Source `7bc21b7258bf88da5734e2c55c35e594dcbb0903` passed the
+[full consumer check](https://github.com/jsell-rh/hypershell-stego/actions/runs/35489043382):
+982 core cases across 341 top-level tests, with all 966 prior cases retained.
+The rendered browser, web console, and service image jobs passed. The focused
+allocation and adapter checks passed at the same source. Kata remains deferred.
+
+The [live Gateway workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35490262586)
+passed all 11 required tests with the signed compiler above. Independent review
+matched 1,574 source files, 421 generated hashes, and the compiler bytes in the
+actual test Pod. Four fresh browser images passed visual review. The workflow
+proved account and namespace replacement, denied access, restart recovery,
+SQL identity retention, and deletion visibility through REST and gRPC while the
+allocator was stopped. Both retained state namespaces remained until recovery.
+
+One Gateway had 100 accounts created through REST with verified token issuance.
+Complete cleanup took at most 40.7967 seconds after the accepted deletion response.
+All 100 accounts and journals closed; all selected provider clients and users
+were absent; all 100 cleanup success audits were present. The previous rescan
+workflow observed 57.0464 seconds. Both runs exceeded the 30-second target.
+No cleanup stage was observed to return to pending in this run.
+
+The 15 stage observations show account cleanup recorded by 5.4424 seconds and
+allocation cleanup recorded by 40.2473 seconds. They are sequential read-return
+observations, not exact provider transition times. Bounded allocator logs in the
+cleanup window contained 36 pending and 14 successful work completions. No failed
+work completion was retained in that window. Sampling and clocks limit these
+observations; they do not establish a cause or production capacity.
+
+Independent cluster reads after this workflow found both test fixtures absent,
+the shared lease free, and all 32 standing installation resources unchanged.
+That read occurred before the separate API gate. This browser record does not
+qualify that gate or claim current cleanup after a later run. See the
+[complete browser evidence and limits](allocation-pending-live-evidence.json).
+The newer controller trace compiler requires its own complete application proof.
