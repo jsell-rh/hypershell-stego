@@ -71,3 +71,25 @@ The failed browser run is not an acceptance result. Independent cleanup found
 no test workloads, fixtures, allocated namespaces, or CI Jobs. The shared test
 Lease was free, and all 32 standing test resources were unchanged. The corrected
 source must pass the complete application workflow before main promotion.
+
+The corrected application source `caffd04` passed its full hosted check in
+[run 35533192186](https://github.com/jsell-rh/hypershell-stego/actions/runs/35533192186).
+It retained all 1,162 core cases across 363 top-level tests. The rendered browser,
+UI, and service-image jobs passed. The five existing core skips remain recorded;
+the live tests supply separate evidence. The focused construction and adapter
+checks passed. All seven application images passed independent source, binary,
+image, registry, and signature checks.
+
+The service Deployment workflow then passed on jshell in 120.13 seconds. It
+checked HTTPS and gRPC, atomic owner grants, rollback, filtered access, event
+delivery, Keycloak reconciliation, and API and worker Pod replacement. The
+independent checks matched all seven signed images, both compiler binaries,
+and 428 generated file hashes. Two ready API Pods and two ready identity-worker
+Pods had the expected image identities and no observed restarts. The runtime
+supplied logs, metrics, and traces. Cleanup removed the dedicated test namespace,
+released the shared Lease, and left all 32 standing resources unchanged. See the
+[service evidence](workload-construction-service-evidence.json).
+
+The browser workflow for this source is still under test. This service result
+does not establish the public Gateway workflow, the 30-second cleanup target,
+production capacity, or complete enterprise readiness.

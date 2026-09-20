@@ -1,0 +1,102 @@
+{
+  "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+  "compiler": "ad71bc71aa5081c3376fca9dc701b2eff5f4cc4e",
+  "recorded_at": "2026-09-20T20:26:49.839380+00:00",
+  "workflow": {
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "checked_at": "2026-09-20T20:25:33.687286+00:00",
+    "qualified": true,
+    "required_test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 120.13,
+    "image_run": 35533186827,
+    "full_run": 35533192186,
+    "images_verified": 7,
+    "generated_hashes_matched": 428,
+    "evidence_sha256": "6c19d4cc60855dabe30e254afe064a54bccbd364850b7a5f35e51d6a4b21a51f",
+    "source_archive_sha256": "4df850fe8a2a74809ce3ab80e532b5face5ff9d7b6cfcba58df59d8dd8211ee7",
+    "admitted_limits_checked": true,
+    "same_pod_and_job": true,
+    "actual_compiler_sha256": {
+      "generation": "a3151cb94a1a300f417056432103839683208af5baef27db8933e6f0194de741",
+      "publication": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+    },
+    "cleanup": {
+      "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+      "checked_at": "2026-09-20T20:25:14.389345+00:00",
+      "phase": "cleanup",
+      "existing_test_jobs_and_pods_absent": true,
+      "lease_free": true,
+      "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+      "standing_resources_unchanged": 32,
+      "namespace": "stego-service-20260920-624730",
+      "owned_resources_absent": true
+    },
+    "scope": "One service Deployment workflow with exact signed images. Browser adoption, production CA selection, capacity, and full enterprise readiness require their separate evidence."
+  },
+  "deployed_images": {
+    "hypershell": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-624730/hypershell@sha256:eff1907b322c4162da330feb66c3bf3d01d78db2cfe9ae9b790164479929c510"
+    },
+    "hypershell-gateway-identity": {
+      "ready_pods": 2,
+      "runtime_digest_kinds": [
+        "manifest"
+      ],
+      "image": "image-registry.openshift-image-registry.svc:5000/stego-service-20260920-624730/hypershell-gateway-identity@sha256:aff29eeb2025e7829a4c6fcb25ef75f052d5e03f1831310d9b753542702330a6"
+    }
+  },
+  "startup": {
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "namespace": "stego-service-20260920-624730",
+    "pod_states": 7,
+    "pods": 4,
+    "requests": 48,
+    "log_reads": 0,
+    "failure_stages": 0,
+    "raw_logs_retained": false,
+    "secret_api_requests": 0,
+    "application_qualified": false,
+    "evidence_sha256": {
+      "pod-states.jsonl": "66127cf57bea55d50551e0c2e1d044f1d623171bf365a4b9bd65c4433616d474",
+      "failure-stages.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stage-policy.json": "b3a5047ce952ced914c76ca2d046aa305468fc66bbe8a1747579f998fcea869c"
+    }
+  },
+  "ready_restart_review": {
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "checked_at": "2026-09-20T20:25:48.390848+00:00",
+    "ready_pod_restart_counts_checked": true,
+    "all_observed_restart_counts_zero": true,
+    "ready_pods": {
+      "hypershell": 2,
+      "hypershell-gateway-identity": 2
+    },
+    "records_sha256": "44b62fd1cb2006b8c45879cd89c4a5a1773a2e68ee95836cc09a113f6363259e",
+    "workflow_review_sha256": "3de481e96216d1d4640f2e7a69418094d8966abe3d2de2a43f993b5e8d79185f",
+    "verifier_sha256": "ac50f6bbe7e512c3285e74a440dc59b58cfadce847bbff3b87fd57129cc78fa9",
+    "scope": "Supplement to the complete workflow review. Check restart counts from the ready-image observer as well as the startup observer. No main promotion is performed."
+  },
+  "evidence_sha256": {
+    "verification.json": "a43b136c0e5715fe460c57a1d230c506999d25638b76ca4bfb62a124ceb02e59",
+    "deployed-images/status.json": "8290205c6c502dea732edade4d7861377479fec6edd98d91f80e8aecba581cfe",
+    "deployed-images/summary.json": "6cb4268c84d396f1536963b13cb50dfe94b0175fa87d027eee1b84f7cb4a69a1",
+    "deployed-images/records.jsonl": "44b62fd1cb2006b8c45879cd89c4a5a1773a2e68ee95836cc09a113f6363259e",
+    "admitted-pod.json": "e756f3617b62538f3241c31a0c550afe18a760194e52a00eef7bf86937d3be6d",
+    "capture.json": "081479c86b51f310eea8f92ab1ec31bbec2acf860aaa863ebfce14f7285c8c23",
+    "cleanup.json": "a099710fdfaecb70a214ee223523c83034143f6a2af7fa91fbf870e3e9301511",
+    "gate-state.json": "34d557b2202a1f98061acd47bbcec9dd17ed04c2be1b406f5bd26004302fdc99",
+    "startup/status.json": "0fad2119bfc29d63194e44d6a965afc44faab5a55c3946d3b5ab7fd26a87979d",
+    "startup/summary.json": "da4c252dfc2d7548be6001dff78b62a395dbb178537a4548e0a315f79539ad9c",
+    "startup/pod-states.jsonl": "66127cf57bea55d50551e0c2e1d044f1d623171bf365a4b9bd65c4433616d474",
+    "startup/failure-stages.jsonl": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "startup/stage-policy.json": "b3a5047ce952ced914c76ca2d046aa305468fc66bbe8a1747579f998fcea869c"
+  },
+  "browser_workflow_qualified": false,
+  "capacity_target_proved": false,
+  "cleanup_target_proved": false,
+  "scope": "One service Deployment workflow on jshell. The complete browser Gateway workflow and remaining enterprise requirements remain open."
+}
