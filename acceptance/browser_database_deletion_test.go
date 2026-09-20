@@ -15,21 +15,22 @@ import (
 )
 
 type gatewayCleanupTimingSample struct {
-	GatewayID            string  `json:"gateway_id"`
-	AccountRows          int64   `json:"account_rows_before_request"`
-	LiveAccountRows      int64   `json:"undeleted_account_rows_before_request"`
-	AcceptedAt           string  `json:"accepted_response_observed_at"`
-	Complete             bool    `json:"complete"`
-	Seconds              float64 `json:"observed_upper_bound_seconds"`
-	WithinTargetObserved bool    `json:"within_target_observed"`
-	AccountsCreated      int     `json:"accounts_created_through_rest"`
-	TokensIssued         int     `json:"accounts_with_verified_token_issuance"`
-	AccountsClosed       int     `json:"accounts_closed"`
-	JournalsClosed       int     `json:"journals_closed"`
-	ProviderClientsGone  int     `json:"provider_clients_absent"`
-	ProviderUsersGone    int     `json:"provider_users_absent"`
-	CleanupAudits        int     `json:"cleanup_success_audits"`
-	ScopeSealed          bool    `json:"account_scope_sealed"`
+	GatewayID            string                             `json:"gateway_id"`
+	AccountRows          int64                              `json:"account_rows_before_request"`
+	LiveAccountRows      int64                              `json:"undeleted_account_rows_before_request"`
+	AcceptedAt           string                             `json:"accepted_response_observed_at"`
+	Complete             bool                               `json:"complete"`
+	Seconds              float64                            `json:"observed_upper_bound_seconds"`
+	WithinTargetObserved bool                               `json:"within_target_observed"`
+	AccountsCreated      int                                `json:"accounts_created_through_rest"`
+	TokensIssued         int                                `json:"accounts_with_verified_token_issuance"`
+	AccountsClosed       int                                `json:"accounts_closed"`
+	JournalsClosed       int                                `json:"journals_closed"`
+	ProviderClientsGone  int                                `json:"provider_clients_absent"`
+	ProviderUsersGone    int                                `json:"provider_users_absent"`
+	CleanupAudits        int                                `json:"cleanup_success_audits"`
+	ScopeSealed          bool                               `json:"account_scope_sealed"`
+	Observations         map[string]cleanupStageObservation `json:"completion_observations,omitempty"`
 }
 
 type gatewayCleanupTimingRecord struct {
@@ -110,14 +111,24 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 		w.t.Fatal(err)
 	}
 	for _, id := range w.gatewayIDs {
-		w.awaitGatewayCleanup(ctx, allocator, id)
+		observe := func(string, bool) {}
+		if started, measured := accepted[id]; measured {
+			sample := &record.Gateways[indexes[id]]
+			observe = func(stage string, complete bool) {
+				sample.observeCleanup(stage, complete, time.Since(started))
+			}
+		}
+		w.awaitGatewayCleanupObserved(ctx, allocator, id, observe)
 		w.requireSQLAbsent(ctx, w.databaseOptions, id)
+		observe("sql_objects_absent", true)
 		if response := w.owner.api(w.t, "GET", "/gateways/"+id, nil); response.StatusCode != 404 {
 			w.t.Fatal("Finalized Gateway remained readable", response.StatusCode)
 		}
+		observe("owner_http_404", true)
 		if started, ok := accepted[id]; ok {
 			sample := &record.Gateways[indexes[id]]
 			w.verifyNormalCleanupAccounts(ctx, id, populations[id], sample)
+			observe("account_proof_complete", true)
 			elapsed := time.Since(started)
 			// Sequential checks can observe completion after it occurred. This is
 			// an upper bound, not proof of a missed target when it exceeds 30 seconds.
@@ -136,6 +147,11 @@ func (w *browserGatewayWorkload) checkSuppliedDatabaseRetention(operator *consol
 }
 
 func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, allocator *allocation.Allocator, id string) {
+	w.t.Helper()
+	w.awaitGatewayCleanupObserved(ctx, allocator, id, func(string, bool) {})
+}
+
+func (w *browserGatewayWorkload) awaitGatewayCleanupObserved(ctx context.Context, allocator *allocation.Allocator, id string, observe func(string, bool)) {
 	w.t.Helper()
 	ns, err := gatewayworkload.Namespace(id)
 	if err != nil {
@@ -158,23 +174,40 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 		if err != nil {
 			w.t.Fatal("Gateway namespace read failed", err)
 		}
+		observe("gateway_namespace_absent", gone)
 		stateGone, err := allocator.NamespaceGone(ctx, "gateway-state", state, id)
 		if err != nil {
 			w.t.Fatal("Gateway state namespace read failed", err)
 		}
+		observe("gateway_state_namespace_absent", stateGone)
 		consoleGone, err := allocator.NamespaceGone(ctx, "gateway-console-state", consoleState, id)
 		if err != nil {
 			w.t.Fatal("Gateway console state namespace read failed", err)
 		}
+		observe("console_state_namespace_absent", consoleGone)
 		sandboxGone, err := allocator.NamespaceGone(ctx, "sandbox", sandbox, id)
 		if err != nil {
 			w.t.Fatal("Sandbox namespace read failed", err)
 		}
-		var complete bool
-		err = w.f.db.QueryRowContext(ctx, `SELECT COALESCE(deleted_at IS NOT NULL AND stego_finalized_at IS NOT NULL AND stego_cleanup->>'accounts'='true' AND stego_cleanup->>'identity'='true' AND stego_cleanup_targets->'workload'->>$2='true' AND stego_cleanup_targets->'sql'->>$2='true',false) FROM gateways WHERE id=$1`, id, w.f.cluster).Scan(&complete)
+		observe("sandbox_namespace_absent", sandboxGone)
+		var complete, accounts, identity, workload, sql, finalized bool
+		err = w.f.db.QueryRowContext(ctx, `SELECT
+COALESCE(deleted_at IS NOT NULL AND stego_finalized_at IS NOT NULL AND stego_cleanup->>'accounts'='true' AND stego_cleanup->>'identity'='true' AND stego_cleanup_targets->'workload'->>$2='true' AND stego_cleanup_targets->'sql'->>$2='true',false),
+COALESCE(stego_cleanup->>'accounts'='true',false),
+COALESCE(stego_cleanup->>'identity'='true',false),
+COALESCE(stego_cleanup_targets->'workload'->>$2='true',false),
+COALESCE(stego_cleanup_targets->'sql'->>$2='true',false),
+stego_finalized_at IS NOT NULL
+FROM gateways WHERE id=$1`, id, w.f.cluster).Scan(&complete, &accounts, &identity, &workload, &sql, &finalized)
 		if err != nil {
 			w.t.Fatal("Gateway cleanup read failed", err)
 		}
+		observe("account_cleanup_recorded", accounts)
+		observe("identity_cleanup_recorded", identity)
+		observe("workload_cleanup_recorded", workload)
+		observe("sql_cleanup_recorded", sql)
+		observe("gateway_finalized", finalized)
+		observe("all_cleanup_recorded", complete)
 		if gone && sandboxGone && stateGone && consoleGone && complete {
 			break
 		}
@@ -187,6 +220,7 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 	for _, profile := range []string{"gateway", "sandbox", "gateway-state", "gateway-console-state"} {
 		w.checkNoAllocationBindings(ctx, allocator, profile, id)
 	}
+	observe("allocation_bindings_absent", true)
 }
 
 func (w *browserGatewayWorkload) checkNoAllocationBindings(ctx context.Context, allocator *allocation.Allocator, profile, id string) {
