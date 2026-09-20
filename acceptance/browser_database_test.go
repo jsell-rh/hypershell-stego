@@ -3,14 +3,13 @@ package acceptance
 import (
 	"context"
 	"encoding/hex"
-	"net/url"
 	"os"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/stdlib"
+	browserschema "github.com/jsell-rh/hypershell-stego/gateway-console/out/browser/schema"
 )
 
 // The fixture operator installs the generated schema. The browser gets only
@@ -72,9 +71,15 @@ func browserDatabase(t *testing.T) *fixture {
 		t.Fatal(err)
 	}
 	defer tx.Rollback()
-	schema, err := os.ReadFile("../console/out/browser/schema.sql")
+	schemaSQL, err := os.ReadFile("../console/out/browser/schema.sql")
 	if err != nil {
 		t.Fatal(err)
+	}
+	// Both browser modules use the same STEGO session schema. The root
+	// already imports the pinned Gateway console module. Require the selected
+	// management console SQL to match before using its generated installer.
+	if string(schemaSQL) != browserschema.SQL {
+		t.Fatal("browser modules selected different session schema contracts")
 	}
 	for _, statement := range []string{
 		"SET LOCAL ROLE " + ownerID,
@@ -82,8 +87,6 @@ func browserDatabase(t *testing.T) *fixture {
 		"GRANT CONNECT ON DATABASE " + databaseID + " TO " + runtimeID,
 		"REVOKE ALL ON SCHEMA public FROM PUBLIC",
 		"GRANT USAGE ON SCHEMA public TO " + runtimeID,
-		string(schema),
-		"GRANT SELECT,INSERT,UPDATE,DELETE ON public.stego_browser_sessions TO " + runtimeID,
 	} {
 		if _, err := tx.ExecContext(ctx, statement); err != nil {
 			t.Fatal("cannot install console database schema", err)
@@ -92,20 +95,18 @@ func browserDatabase(t *testing.T) *fixture {
 	if err := tx.Commit(); err != nil {
 		t.Fatal(err)
 	}
-	privateDSN := dsn + " dbname=" + name + " user=" + runtime + " password=" + password
-	if strings.HasPrefix(dsn, "postgres://") || strings.HasPrefix(dsn, "postgresql://") {
-		address, err := url.Parse(dsn)
-		if err != nil {
-			t.Fatal("invalid fixture database address")
-		}
-		address.Path, address.User = "/"+name, url.UserPassword(runtime, password)
-		query := address.Query()
-		for _, key := range []string{"dbname", "database", "user", "password"} {
-			query.Del(key)
-		}
-		address.RawQuery = query.Encode()
-		privateDSN = address.String()
+	ownerConnection, err := setup.Conn(ctx)
+	if err != nil {
+		t.Fatal("cannot open the browser schema owner connection")
 	}
+	defer ownerConnection.Close()
+	if _, err := ownerConnection.ExecContext(ctx, "SET ROLE "+ownerID); err != nil {
+		t.Fatal("cannot select the browser schema owner")
+	}
+	if err := browserschema.Bootstrap(ctx, ownerConnection, runtime); err != nil {
+		t.Fatal("cannot install the generated browser session schema")
+	}
+	privateDSN := fixtureRuntimeDSN(t, dsn, name, runtime, password)
 	limited, err := pgx.ParseConfig(privateDSN)
 	if err != nil || limited.Database != name || limited.User != runtime || limited.Password != password {
 		t.Fatal("invalid console runtime database settings")
@@ -113,8 +114,8 @@ func browserDatabase(t *testing.T) *fixture {
 	db := stdlib.OpenDB(*limited)
 	db.SetMaxOpenConns(2)
 	t.Cleanup(func() { db.Close() })
-	if err := db.PingContext(ctx); err != nil {
-		t.Fatal("cannot connect to console database with runtime login", err)
+	if err := browserschema.Verify(ctx, db); err != nil {
+		t.Fatal("console runtime access differs from the generated schema contract")
 	}
-	return &fixture{db: db, dsn: privateDSN}
+	return &fixture{db: db, runtime: db, dsn: privateDSN}
 }
