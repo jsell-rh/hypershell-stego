@@ -1,0 +1,117 @@
+{
+  "recorded_at": "2026-09-20T13:25:05.803029+00:00",
+  "qualified": true,
+  "workflow": {
+    "source": "04dccb73f17e02886bc55587f2204ee4506d7d4f",
+    "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35512430605",
+    "run": 35512430605,
+    "attempt": 1,
+    "fixture_source": "bb1a4945d1255650de43bb458fede9e6cd691070",
+    "fixture_base": "110b920368072391e672ddf73e6a4fbbb6058bcc",
+    "fixture_is_test_only": true,
+    "required_tests_passed": 11,
+    "source_files_matched": 1622,
+    "generated_file_hashes_matched": 421,
+    "browser_workflow_seconds": 539.49
+  },
+  "compilers": {
+    "generation": "3be6bce4167c54258bb4c154ad2cfb5e7e0d00d0",
+    "publication": "c92f591b10797845bd240eb0ddd1eddd08ee53c3",
+    "publication_binary_sha256": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21"
+  },
+  "images": {
+    "run": 35511212112,
+    "attempt": 1,
+    "complete_source_checks": 7,
+    "complete_registry_receipts": 7,
+    "same_job_and_pod": true,
+    "image_set_sha256": "9a793339075cf8db37ad32e4649534626c7942b741f7fbdbc8614f87d724610b",
+    "digest_references": {
+      "hypershell": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell@sha256:7e25686dbcf7e44a2f45b05c3cc7723f8d4b4aecbd4bef5eb7ac028b2cc78346",
+      "hypershell-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-console@sha256:82a0263862351dcad0ab97f4dababa4a51c2a359a37cf8626c3138a92cbcdb60",
+      "hypershell-provisioner": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-provisioner@sha256:e749cf3ba44ad2ff5889eb040f6053566fb53adbe14c215f6218d9bcecc7f960",
+      "hypershell-gateway-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-console@sha256:63ff3add615422361dadfe4fb120278dd68df09133469d2df5886f49b2f63375",
+      "hypershell-namespace-allocation": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-namespace-allocation@sha256:9cad3bb865acc1dbc5095c4ed8980c8d55ff041ae516146399c59f86bb72f853",
+      "hypershell-gateway-identity": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-identity@sha256:9dd71eeaf2dc52f1a74a5071042fdf59b403c8e355279394f0770b76fb43fa6d",
+      "hypershell-gateway-workload": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-workload@sha256:1c26bb6000d2ed125c0a49674ece65a68eb58c0ffc3bc1a93f3440ad5c86d07c"
+    },
+    "private_publisher_files_archived": false
+  },
+  "controller_telemetry": {
+    "expected_instances": {
+      "hypershell-gateway-identity": 2,
+      "hypershell-gateway-workload": 4,
+      "hypershell-namespace-allocation": 3
+    },
+    "collector_failure_checks": 99,
+    "collector_check_run": 35511008494,
+    "complete_historical_trace_coverage_claimed": false
+  },
+  "browser_review": {
+    "screenshots_viewed": 4,
+    "layout_defects_seen": false,
+    "viewport": [
+      1280,
+      817
+    ],
+    "final_archive_matches_viewed_preview": true,
+    "files": {
+      "external-verify.json.png": "0486e1c535eb2bda05bf4264c9e07405d1dfcf450792139c3191d11ac519655c",
+      "external-dashboard-create.json.png": "56a65d0ee302b727625e0905b0f6c22d842821eee007435613364f96e28607ee",
+      "external-dashboard-create.json.editor.png": "519a5813544c10f467742d1f1b9c4b44b6cf742f207ba37a6ce3c972d5fc8650",
+      "external-dashboard-create.json.editor-selection.png": "4e88f35e9463ccb35ded328283dd41de5edcf3db7d0246883a9e98be86df83b0"
+    }
+  },
+  "cleanup": {
+    "test_resources_absent": true,
+    "shared_lease_free": true,
+    "standing_installation_resources_unchanged": 32,
+    "normal_accounts": 100,
+    "accounts_created_through_rest": 100,
+    "verified_token_issuance": 100,
+    "observed_upper_bound_seconds": 32.484876805,
+    "target_seconds": 30,
+    "within_target_observed": false,
+    "completion_stages_checked": 15,
+    "allocator_pause_prevented_finalization": true,
+    "scope": "One normal Gateway cleanup. Sequential read observations include verification time. This is not a production capacity result."
+  },
+  "independent_record_sha256": {
+    "image-delivery-verification.json": "d1c1a71d5810f77538195f23b690f90e3d6c8df3cd8b8580fafe946e3f7baaf8",
+    "verification.json": "bdfad122a691b82208082c6acce7f35487f78f99ca9ba8d2d157456b1aaaf30c",
+    "controller-trace-verification.json": "e3d9f718ce4205893b59c2a95f09b0e38ecb61760dd7479e900196a4ab86c48d",
+    "account-verification.json": "9167c4389f35d6b641e542c7d5794ac1804a2ccd3a2abf68e2fed007049d1cf1",
+    "phase-verification.json": "f278adcd96d70b3d8d4c237282ba4e8df8f7c1fe8293d932111fbfb66864a4f0",
+    "independent-cleanup.json": "599d0d7d1ff4335b3da7488b3ad4f1c9463dd46cb9381ae65c7de10a74602da9",
+    "admitted-pod-verification.json": "b5ab08947b67d9b67ccaa2c7851597349a59eefe9916d42d6d73f6f3cfa59bff",
+    "visual-review.json": "24a45e1d2649184554bff2eb12500e3d52f802ebf62057c39b3257152e0f2d5b",
+    "allocator-log-observation/cleanup-window-review.json": "3709b56596c241e3d035e062732e4025fae16c108d8a5a8ae140b91efd4a224f",
+    "namespace-deletion-observation-current-gate/cleanup-window-review.json": "5d9f87c5f3be8f98bcd2431f61753e6e79fcd355c4497b65861bb5ae4a148e2c"
+  },
+  "verification_corrections": [
+    {
+      "component": "Namespace observer",
+      "reason": "The copied observer expected an older state filename. It stopped before any API request. A new observer used the current state file."
+    },
+    {
+      "component": "Controller trace verifier",
+      "reason": "The copied verifier expected an older plan. A new verifier used the actual dispatch inputs and checked the same 99 collector cases in the qualified current full source run."
+    }
+  ],
+  "original_failure_records_preserved": true,
+  "application_test_restarted": false,
+  "scope": "Complete live browser Gateway workflow with common signed image delivery. The unchanged upstream Agent Sandbox controller remains trusted operator infrastructure.",
+  "not_proved": [
+    "Production application CA profile and notices",
+    "Complete offline inputs",
+    "Other installation platforms",
+    "Automatic release qualification",
+    "The 30-second cleanup target",
+    "100 Gateways with 100 accounts each",
+    "Live Kata isolation and OpenShell Sandbox execution",
+    "Native DNS failover",
+    "RDS failover, backup and restore, and full deployment recovery",
+    "Complete enterprise readiness",
+    "Removal of the API-only legacy image publisher"
+  ]
+}

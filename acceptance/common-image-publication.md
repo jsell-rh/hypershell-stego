@@ -1,4 +1,4 @@
-# Common image publication candidate
+# Common image publication
 
 The Kubernetes browser gate uses the shared STEGO image delivery commands.
 Hypershell declares seven targets in `.ci/application-images.json` and maps
@@ -64,6 +64,21 @@ each registry receipt, compiler signatures, and the package transfer record.
 Evidence collection excludes private publisher files, including files left by
 an interrupted process. A partial publication is not a complete workflow pass.
 
-This candidate still needs the complete live Gateway gate with the new image
-path. Image and registry checks alone do not prove application behavior or a
-production CA profile.
+The complete live Gateway gate passed in run `35512430605` at workflow source
+`04dccb7`, with test fixture `bb1a494` based on application source `110b920`.
+Independent checks confirmed all 11 required tests, 1,622 source files, 421
+generated file hashes, and all seven source and registry receipt records.
+The four reviewed browser images match the final archive. Test resources are
+absent, the shared Lease is free, and all 32 standing installation resources
+are unchanged. See the [source-specific result](common-image-publication-live-evidence.json).
+
+The workflow covers REST and gRPC, access rules, event delivery, process and
+database restart, namespace recovery, browser sessions, account operations,
+and durable deletion. It also checks that Gateway deletion cannot finish
+while its allocator is stopped and its state namespaces still exist.
+
+One Gateway with 100 accounts had a cleanup upper bound of 32.48 seconds.
+The 30-second target remains open. Sequential checks include verification time;
+they do not establish exact provider transition times or production capacity.
+Live Kata and Sandbox execution remain deferred. Production CA selection,
+complete offline inputs, and the API-only legacy publisher remain open.
