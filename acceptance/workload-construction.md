@@ -4,7 +4,7 @@ The Gateway worker uses the generated STEGO `workload` component to build its
 Deployment and Service. Hypershell selects the OpenShell image, command,
 configuration, ports, health endpoints, resource budget, allocated account, and
 verified dependencies. It selects
-[compiler 2cb6bdac](https://github.com/jsell-rh/stego/releases/tag/compiler-2cb6bdac38c5bddc8d5e47379536429c13bc8604).
+[compiler 19a115d1](https://github.com/jsell-rh/stego/releases/tag/compiler-19a115d106777748fc84b76dafd8d7e63a85f817).
 STEGO supplies the Kubernetes objects, fixed security
 settings, Secret file modes, mount rules, validation, and configuration digest.
 
@@ -36,14 +36,25 @@ Gateway workflow are required before this adoption is accepted.
 This change does not establish the production capacity target. It does not
 change the deferred Kata test or the use of the upstream Sandbox controller.
 
-The compiler passed 83 focused cases and all six full-check jobs for the selected
-source. The focused cases include serialization through Kubernetes Deployment
-and Service types. The signed release files match the tested compiler.
-[Regeneration run 35528699463](https://github.com/jsell-rh/hypershell-stego/actions/runs/35528699463)
-produced 427 files. The workload library matches the compiler template and
-common generated header. The CLI compiler identity changed to the selected
-revision, and the startup constructor index accounts for the added component.
-Other generated code and module files did not change. The Gateway console
-module therefore keeps its existing source pin. See the
-[generation evidence](workload-construction-generation-evidence.json).
-Application checks and the live adoption workflow remain pending.
+The selected compiler passed 94 focused cases and all six full-check jobs.
+The focused cases include Kubernetes API serialization and updates through the
+generated Kubernetes client. The update checks cover removed arguments,
+environment values, mounts, volumes, and image pull Secrets. They also cover
+strategy changes and repair of changed security settings. Fields owned by the
+workload profile use explicit removal values. Other Kubernetes defaults remain.
+The signed release files match the tested compiler.
+
+[Regeneration run 35531656020](https://github.com/jsell-rh/hypershell-stego/actions/runs/35531656020)
+produced 427 files from seed `925e4bae`. The workload library matches the selected
+compiler template and common generated header. Only the workload library, CLI
+compiler identity, and three generation state files changed. The startup
+constructor index, other generated code, and module files did not change. The
+Gateway console module keeps its existing source pin. See the
+[generation evidence](workload-update-generation-evidence.json).
+
+The earlier adoption at `2b58aa97` passed its complete service Deployment
+workflow on jshell. The check matched signed API and worker images before and
+after Pod replacement, matched 428 generated file hashes, and verified cleanup.
+That result used compiler `2cb6bdac`. It does not establish acceptance of the
+corrected generated source. Application checks and the complete live workflow
+remain required for this source before main promotion.

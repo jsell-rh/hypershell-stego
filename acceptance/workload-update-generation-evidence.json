@@ -1,0 +1,22 @@
+{
+  "source": "925e4bae0639e4b9e9932276b699e4930dc81de6",
+  "run": 35531656020,
+  "compiler": "19a115d106777748fc84b76dafd8d7e63a85f817",
+  "source_archive_sha256": "2b991f25d1b1a26bba70406cdd8a74204d082b9ac104ae2b9d2fb4d1ef4ee21d",
+  "generated_archive_sha256": "9827453bb8d95db56dfc15425d38bdb007df061890f006438924d05311a6e558",
+  "files": 427,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/workload/workload.go"
+  ],
+  "workload_matches_compiler_template_and_common_header": true,
+  "compiler_identity_matches_verified_binary": true,
+  "constructor_index_unchanged": true,
+  "other_generated_and_module_bytes_unchanged": true,
+  "gateway_console_module_refresh_required": false,
+  "compiler_executed_locally": false,
+  "scope": "Generated workload update correction. Application and live checks for the adopted source remain required."
+}
