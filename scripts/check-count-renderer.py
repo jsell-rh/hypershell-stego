@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Check the actual count runner render commands without cluster access."""
 import argparse
+import copy
 import hashlib
 import importlib.util
 import json
@@ -45,6 +46,35 @@ def main():
         for worker in workers:
             data = (directory / (worker + '.json')).read_bytes()
             manifest = json.loads(data)
+            if worker == 'namespace-allocation':
+                bindings = runner.allocation_endpoints(manifest, namespace)
+                if json.loads(bindings) != {'kubernetes': ['192.0.2.1:443']}:
+                    raise SystemExit('The test allocator did not receive the rendered endpoint')
+                (args.results / 'allocation-network-endpoints.json').write_bytes(bindings)
+                for mode in ['absent', 'duplicate', 'indirect', 'wrong-namespace', 'unknown-endpoint', 'empty-addresses']:
+                    invalid = copy.deepcopy(manifest)
+                    deployment = next(item for item in invalid['items'] if item['kind'] == 'Deployment')
+                    container = next(item for item in deployment['spec']['template']['spec']['containers']
+                                     if any(env['name'] == 'STEGO_ALLOCATION_NETWORK_ENDPOINTS' for env in item.get('env', [])))
+                    entry = next(env for env in container['env'] if env['name'] == 'STEGO_ALLOCATION_NETWORK_ENDPOINTS')
+                    if mode == 'absent':
+                        container['env'].remove(entry)
+                    elif mode == 'duplicate':
+                        container['env'].append(copy.deepcopy(entry))
+                    elif mode == 'indirect':
+                        entry['valueFrom'] = {'secretKeyRef': {'name': 'unused', 'key': 'unused'}}
+                    elif mode == 'wrong-namespace':
+                        deployment['metadata']['namespace'] = 'another-test'
+                    elif mode == 'unknown-endpoint':
+                        entry['value'] = '{"unexpected":["192.0.2.1:443"]}'
+                    else:
+                        entry['value'] = '{"kubernetes":[]}'
+                    try:
+                        runner.allocation_endpoints(invalid, namespace)
+                    except RuntimeError:
+                        pass
+                    else:
+                        raise SystemExit('The test allocator accepted invalid settings: ' + mode)
             if manifest.get('kind') != 'List' or not manifest.get('items'):
                 raise SystemExit('The worker manifest is empty')
             names = {(item['kind'], item['metadata']['name']) for item in manifest['items']}
@@ -60,6 +90,7 @@ def main():
     record = {'runner_sha256': hashlib.sha256(path.read_bytes()).hexdigest(),
               'worker_manifest_sha256': records, 'workers_rendered_twice': len(workers),
               'missing_required_endpoint_rejected_before_output': True,
+              'test_allocator_uses_rendered_endpoints': True,
               'cluster_access_used': False, 'scope': 'Count fixture render inputs only. No live count behavior is proved.'}
     (args.results / 'verification.json').write_text(json.dumps(record, indent=2) + '\n')
     print(json.dumps(record, indent=2))

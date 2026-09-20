@@ -8,6 +8,7 @@ directory holds frozen source, generated files, and logs, but no credentials.
 import argparse
 import hashlib
 import importlib.util
+import ipaddress
 import json
 import os
 from pathlib import Path
@@ -30,6 +31,39 @@ for count_worker in namespace-allocation gateway-workload sandbox-count; do
   "$STEGO_COUNT_RENDER" "$@" > "$STEGO_COUNT_RENDER_RESULTS/$count_worker.json"
 done
 '''
+
+
+def allocation_endpoints(manifest, namespace):
+    """Use the allocator's rendered settings for the in-process test allocator."""
+    deployments = [item for item in manifest["items"]
+                   if item["kind"] == "Deployment" and
+                   item["metadata"]["name"] == "hypershell-namespace-allocation"]
+    if len(deployments) != 1 or deployments[0]["metadata"].get("namespace") != namespace:
+        raise RuntimeError("The count fixture requires its rendered allocator Deployment")
+    values = [entry for container in deployments[0]["spec"]["template"]["spec"]["containers"]
+              for entry in container.get("env", [])
+              if entry["name"] == "STEGO_ALLOCATION_NETWORK_ENDPOINTS"]
+    if len(values) != 1 or set(values[0]) != {"name", "value"}:
+        raise RuntimeError("The count fixture requires one explicit allocation endpoint value")
+    raw = values[0]["value"]
+    if not isinstance(raw, str) or not 1 <= len(raw) <= 8192:
+        raise RuntimeError("The allocation endpoint value exceeds its bounds")
+    bindings = json.loads(raw)
+    if not isinstance(bindings, dict) or set(bindings) != {"kubernetes"}:
+        raise RuntimeError("The count fixture requires only the declared Kubernetes endpoint")
+    addresses = bindings["kubernetes"]
+    if not isinstance(addresses, list) or not 1 <= len(addresses) <= 64:
+        raise RuntimeError("The count fixture requires bounded Kubernetes addresses")
+    for address in addresses:
+        if not isinstance(address, str):
+            raise RuntimeError("The Kubernetes endpoint must be an address and port")
+        host, separator, port = address.rpartition(":")
+        ip = ipaddress.ip_address(host.removeprefix("[").removesuffix("]"))
+        if not separator or not port.isascii() or not port.isdecimal() or not 1 <= int(port) <= 65535 or ip.is_unspecified or ip.is_multicast:
+            raise RuntimeError("The Kubernetes endpoint must be a unicast address and port")
+    if len(set(addresses)) != len(addresses):
+        raise RuntimeError("The Kubernetes endpoints must be distinct")
+    return raw.encode()
 
 
 def main():
@@ -103,6 +137,7 @@ export STEGO_COUNT_RENDER=/work/render STEGO_COUNT_RENDER_RESULTS=/work
 ''' + RENDER_COUNT_WORKERS + r'''
 touch /work/rbac-ready
 while [ ! -f /work/live-ready ]; do sleep 1; done
+export STEGO_ALLOCATION_NETWORK_ENDPOINTS="$(cat /work/allocation-network-endpoints.json)"
 while [ ! -s /count-credentials/count ] || [ ! -s /count-credentials/allocator ] || [ ! -s /count-credentials/workload ]; do sleep 1; done
 go test -v -race -count=1 -timeout=10m ./acceptance -run '^TestNamespaceCountWithLiveKubernetes$'
 xargs sha256sum < /work/generated-files > /work/after.sha256
@@ -219,6 +254,10 @@ exit "$code"
         for worker in ["namespace-allocation", "gateway-workload", "sandbox-count"]:
             data = oc("exec", pod, "--", "cat", "/work/" + worker + ".json")
             (result / (worker + ".json")).write_bytes(data)
+            if worker == "namespace-allocation":
+                endpoints = allocation_endpoints(json.loads(data), namespace)
+                (result / "allocation-network-endpoints.json").write_bytes(endpoints)
+                oc("exec", "-i", pod, "--", "sh", "-c", "umask 077; cat > /work/allocation-network-endpoints.json", data=endpoints)
             for item in json.loads(data)["items"]:
                 kind, meta = item["kind"], item["metadata"]
                 if kind not in namespaced | cluster:
