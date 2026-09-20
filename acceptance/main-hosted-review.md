@@ -29,3 +29,18 @@ The separate test-only candidate `80b0e00` passed its
 new cases passed. They cover repeated completion reads, a later pending read,
 and a complete read without an earlier pending read. The existing adapter and
 collection checks passed. This result contains no live phase measurements.
+
+## Full hosted suite
+
+The [full main suite](https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995448)
+passed at the same source `0aa8f0d`. Independent comparison retained all 816
+baseline cases and verified the added coverage. There are 950 passing core
+cases across 334 top-level tests. Both cleanup restart cases, 22 application
+retry cases, and 11 cleanup owner cases passed. The browser, web console, and
+service image jobs passed. See the [full result](main-full-evidence.json).
+
+The five core exclusions are unchanged. They require separate live Kubernetes,
+SQL, or provider fixtures. The live main browser and provider capacity results
+have separate records. The API gate is still active. The Kata Sandbox job was
+not selected because the live VM test remains deferred. This full hosted result
+does not prove the 30-second Gateway target or production capacity.

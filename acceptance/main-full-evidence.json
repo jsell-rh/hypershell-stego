@@ -1,0 +1,44 @@
+{
+  "source": "0aa8f0dda3ac34f38ef31569f6d6abb77f3d0487",
+  "run_id": 35479995448,
+  "conclusion": "success",
+  "jobs": {
+    "acceptance (core)": "success",
+    "web-console": "success",
+    "acceptance (browser)": "success",
+    "service-image": "success",
+    "sandbox-workload": "skipped"
+  },
+  "core_passed_cases": 950,
+  "core_passed_top_level": 334,
+  "core_failed_cases": [],
+  "core_skipped_cases": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "prior_core_cases_retained": true,
+  "additional_passed_cases": 134,
+  "additional_top_level_tests": [
+    "TestCleanupRPCSelectsRetryableErrors",
+    "TestDeletedAccountRecoveryRequiresParentReader",
+    "TestDeletedAccountRecoverySelectsCleanupOwner",
+    "TestGatewayAccountCleanupParallelResumesAfterRestart",
+    "TestGatewayCleanupUsesBoundedRetryPolicy",
+    "TestGatewayIdentityInventory",
+    "TestProviderErrorRetainsSafeRetryStatus",
+    "TestSandboxConstructorUsesGeneratedAllocation",
+    "TestServiceAccountOptions"
+  ],
+  "serial_and_parallel_restart_tests_passed": true,
+  "rendered_browser_test_passed": true,
+  "log_sha256": "cef61e37a746163a217100c8bea41f8324c21a96b07708c43361eb762eafd434",
+  "source_delta_verified": true,
+  "application_retry_cases_passed": 22,
+  "cleanup_owner_cases_passed": 11,
+  "qualified": true,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35479995448",
+  "scope": "Hosted core, browser, web console, and service image checks. Five core exclusions require separate fixtures. The Kata Sandbox job remains deferred. This result does not prove production capacity or close the full enterprise goal."
+}
