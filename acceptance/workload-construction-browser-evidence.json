@@ -1,0 +1,400 @@
+{
+  "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+  "compiler": "ad71bc71aa5081c3376fca9dc701b2eff5f4cc4e",
+  "recorded_at": "2026-09-20T20:45:36.603633+00:00",
+  "run": 35535544885,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35535544885",
+  "fixture_source": "dc93f7c1bcd64e1b42ad561c89dcc4aee7846b76",
+  "qualified": true,
+  "workflow": {
+    "seconds": 541.55,
+    "required_tests_passed": 11,
+    "source_files_match": 1647,
+    "generation_hashes_match": 428,
+    "dashboard_session_and_reload": true,
+    "editor_checks": 8,
+    "namespace_recovery_checks": {
+      "database_and_role_oids_unchanged": true,
+      "other_gateway_sql_unchanged": true,
+      "provider_data_unchanged": true,
+      "source_data_unchanged": true,
+      "sql_credentials_unchanged": true,
+      "ungranted_rpc_denied": true,
+      "viewer_lists_filtered": true,
+      "viewer_membership_recovered": true,
+      "viewer_writes_denied": true,
+      "workspace_and_gateway_revocation_verified": true
+    },
+    "sql_cleanup_denial_checks": {
+      "cleanup_pending": true,
+      "other_gateway_ready": true,
+      "source_data_unchanged": true,
+      "sql_object_ids_unchanged": true,
+      "sqlstate": "42501"
+    },
+    "database_restart": "PostgreSQL process restart in the same fixture Pod; no RDS failover claim",
+    "provisioner_recovery": {
+      "account_write_retries": 0,
+      "current_unavailable_observations": true,
+      "denied_account_requests": 2,
+      "denied_requests_created_no_accounts": true,
+      "gateways": 2,
+      "running_healthy_gateways_after_restart": true,
+      "sql_and_credential_identities_preserved": true
+    },
+    "allocation_finalization_pause_proved": true,
+    "compiler_sha256": "a3151cb94a1a300f417056432103839683208af5baef27db8933e6f0194de741",
+    "compiler_transfer_matches_live_capture": true,
+    "evidence_archive_sha256": "6ad81628c4d84b892a39719f842d514f2ea0412fdc7de9455bbb1a5dc2ed20ab",
+    "screenshots_viewed": true,
+    "bounded_test_job_verified": true
+  },
+  "admitted_gateways": {
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "run": 35535544885,
+    "checked_at": "2026-09-20T20:39:01.739061+00:00",
+    "fixture_sha256": "fde9b5259c0aff2f1cf6cbd99ff0b31722aec8622515472abba4f3469a0e7744",
+    "gateways": [
+      {
+        "namespace": "openshell-102c176fc53ec6dc",
+        "pod_uid": "6cfe332a-01ca-4bb7-8a05-605ad10ef26e",
+        "replicaset_uid": "22d3e085-434f-4015-9ef0-ad53ca91122c",
+        "deployment_uid": "cd297aa2-88bb-4ab8-a518-7ab90ba50e3a",
+        "image": "quay.io/opendatahub/odh-openshell-gateway:v0.0.109-rhaiv.0@sha256:a80b79e514826e8d57ea137749cf18a6e7f3d92e26bfefe005f3a9c4a55b8bdd",
+        "image_id": "quay.io/opendatahub/odh-openshell-gateway@sha256:4c6f5c1e012b8f9ab44f32bed71ba04795eaf58a636d6009378867fb95ac1af8",
+        "ready": true,
+        "restart_count": 0,
+        "container_security": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true
+        },
+        "pod_security": {
+          "fsGroup": 1000,
+          "runAsGroup": 1000,
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "seLinuxOptions": {
+            "level": "s0:c35,c0"
+          },
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "resources": {
+          "limits": {
+            "cpu": "500m",
+            "ephemeral-storage": "256Mi",
+            "memory": "512Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": "32Mi",
+            "memory": "256Mi"
+          }
+        },
+        "probes": {
+          "startupProbe": {
+            "failureThreshold": 60,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 2,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 2,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          }
+        },
+        "no_host_access": true,
+        "secret_and_config_mounts_read_only": true,
+        "service_account": "sa-5305aa89c5f40a73316e60bd033ec8ab-6cq2bhhsvg46lvu4y66hymwcjy",
+        "configuration_sha256": "2fab2337b60d4ea3e5d687aa2a4919ee238670f9f75de5b4ea67984620d40261",
+        "strategy": "Recreate"
+      },
+      {
+        "namespace": "openshell-9d1eab6a358b31ec",
+        "pod_uid": "adac5b00-b8c6-47d6-8938-6470be4e0188",
+        "replicaset_uid": "7136b271-0e01-4629-a0df-f467d7627210",
+        "deployment_uid": "369edc10-0927-498d-af8b-872e3445da11",
+        "image": "quay.io/opendatahub/odh-openshell-gateway:v0.0.109-rhaiv.0@sha256:a80b79e514826e8d57ea137749cf18a6e7f3d92e26bfefe005f3a9c4a55b8bdd",
+        "image_id": "quay.io/opendatahub/odh-openshell-gateway@sha256:4c6f5c1e012b8f9ab44f32bed71ba04795eaf58a636d6009378867fb95ac1af8",
+        "ready": true,
+        "restart_count": 0,
+        "container_security": {
+          "allowPrivilegeEscalation": false,
+          "capabilities": {
+            "drop": [
+              "ALL"
+            ]
+          },
+          "readOnlyRootFilesystem": true,
+          "runAsNonRoot": true
+        },
+        "pod_security": {
+          "fsGroup": 1000,
+          "runAsGroup": 1000,
+          "runAsNonRoot": true,
+          "runAsUser": 1000,
+          "seLinuxOptions": {
+            "level": "s0:c34,c29"
+          },
+          "seccompProfile": {
+            "type": "RuntimeDefault"
+          }
+        },
+        "resources": {
+          "limits": {
+            "cpu": "500m",
+            "ephemeral-storage": "256Mi",
+            "memory": "512Mi"
+          },
+          "requests": {
+            "cpu": "100m",
+            "ephemeral-storage": "32Mi",
+            "memory": "256Mi"
+          }
+        },
+        "probes": {
+          "startupProbe": {
+            "failureThreshold": 60,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 2,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "readinessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/readyz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 2,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          },
+          "livenessProbe": {
+            "failureThreshold": 3,
+            "httpGet": {
+              "path": "/healthz",
+              "port": "health",
+              "scheme": "HTTP"
+            },
+            "periodSeconds": 10,
+            "successThreshold": 1,
+            "timeoutSeconds": 1
+          }
+        },
+        "no_host_access": true,
+        "secret_and_config_mounts_read_only": true,
+        "service_account": "sa-5305aa89c5f40a73316e60bd033ec8ab-uer2ostxg2pj3w7s3dhew63xq4",
+        "configuration_sha256": "a0832062c81815c5a4058dd8114e92642772e068159d880e79ef3a692f49f4f8",
+        "strategy": "Recreate"
+      }
+    ],
+    "qualified": true,
+    "scope": "Two admitted ready Gateway Pods at one point in the workflow. This does not establish the remaining browser, recovery, or cleanup checks."
+  },
+  "cleanup": {
+    "run": 35535544885,
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "checked_at": "2026-09-20T20:44:32.491063+00:00",
+    "browser_empty": true,
+    "api_run": null,
+    "api_status": "not dispatched",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+  },
+  "normal_cleanup": {
+    "schema": 2,
+    "scope": "normal_gateway_cleanup",
+    "stage": "complete",
+    "observation": "sequential_completion_checks",
+    "target_seconds": 30,
+    "capacity_fixture": false,
+    "live_accounts_per_measured_gateway": 100,
+    "complete": true,
+    "installation_data_preserved": true,
+    "gateways": [
+      {
+        "gateway_id": "3JbjG7n7wSLVx4LBnbMTlRJ07e5",
+        "account_rows_before_request": 100,
+        "undeleted_account_rows_before_request": 100,
+        "accepted_response_observed_at": "2026-09-20T20:42:30.341747253Z",
+        "complete": true,
+        "observed_upper_bound_seconds": 32.565030382,
+        "within_target_observed": false,
+        "accounts_created_through_rest": 100,
+        "accounts_with_verified_token_issuance": 100,
+        "accounts_closed": 100,
+        "journals_closed": 100,
+        "provider_clients_absent": 100,
+        "provider_users_absent": 100,
+        "cleanup_success_audits": 100,
+        "account_scope_sealed": true,
+        "completion_observations": {
+          "account_cleanup_recorded": {
+            "last_pending_observed_seconds": 5.19774161,
+            "first_complete_after_last_pending_seconds": 6.251280115,
+            "observed_regressions": 0
+          },
+          "account_proof_complete": {
+            "first_complete_after_last_pending_seconds": 32.565025344,
+            "observed_regressions": 0
+          },
+          "all_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.359978949,
+            "first_complete_after_last_pending_seconds": 31.383792354,
+            "observed_regressions": 0
+          },
+          "allocation_bindings_absent": {
+            "first_complete_after_last_pending_seconds": 31.418084849,
+            "observed_regressions": 0
+          },
+          "allocation_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.359977462,
+            "first_complete_after_last_pending_seconds": 31.383791044,
+            "observed_regressions": 0
+          },
+          "console_state_namespace_absent": {
+            "last_pending_observed_seconds": 30.340337226,
+            "first_complete_after_last_pending_seconds": 31.377322349,
+            "observed_regressions": 0
+          },
+          "gateway_finalized": {
+            "last_pending_observed_seconds": 30.359978048,
+            "first_complete_after_last_pending_seconds": 31.383791473,
+            "observed_regressions": 0
+          },
+          "gateway_namespace_absent": {
+            "last_pending_observed_seconds": 13.560388674,
+            "first_complete_after_last_pending_seconds": 14.620423751,
+            "observed_regressions": 0
+          },
+          "gateway_state_namespace_absent": {
+            "last_pending_observed_seconds": 30.326476254,
+            "first_complete_after_last_pending_seconds": 31.372886393,
+            "observed_regressions": 0
+          },
+          "identity_cleanup_recorded": {
+            "last_pending_observed_seconds": 0.065871174,
+            "first_complete_after_last_pending_seconds": 1.090295004,
+            "observed_regressions": 0
+          },
+          "owner_http_404": {
+            "first_complete_after_last_pending_seconds": 31.730975666,
+            "observed_regressions": 0
+          },
+          "sandbox_namespace_absent": {
+            "last_pending_observed_seconds": 20.932394425,
+            "first_complete_after_last_pending_seconds": 21.994157882,
+            "observed_regressions": 0
+          },
+          "sql_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.997888516,
+            "first_complete_after_last_pending_seconds": 23.026860609,
+            "observed_regressions": 0
+          },
+          "sql_objects_absent": {
+            "first_complete_after_last_pending_seconds": 31.684275717,
+            "observed_regressions": 0
+          },
+          "workload_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.997888147,
+            "first_complete_after_last_pending_seconds": 23.026860213,
+            "observed_regressions": 0
+          }
+        }
+      }
+    ]
+  },
+  "account_identity": {
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35535544885",
+    "source": "caffd04d3ecb44552ec12fdb53f96853cb4c165a",
+    "record_sha256": "49ccfcac0ee9bb50093faf9c959096110d58e6e9b11c40a7cc23053d79024d0c",
+    "readiness_observations": 24,
+    "gateways": 2,
+    "namespace_incarnations": 3,
+    "account_objects": 6,
+    "distinct_owner_and_alias_names": 4,
+    "names_preserved_across_namespace_replacement": true,
+    "account_and_pod_uids_change_after_namespace_replacement": true,
+    "gateway_pod_replacement_observed": true,
+    "explicit_pod_token_settings": true,
+    "worker_account_writes_denied": true,
+    "scope": "Live account and ready Pod observations from the complete workflow. Namespace and account checks remain active. VM isolation is not tested."
+  },
+  "telemetry": {
+    "correlated_logs_metrics_and_traces": true,
+    "worker_instance_counts": {
+      "hypershell-gateway-identity": 2,
+      "hypershell-gateway-workload": 4,
+      "hypershell-namespace-allocation": 3
+    },
+    "complete_historical_trace_coverage_claimed": false
+  },
+  "record_sha256": {
+    "image-delivery-verification.json": "84daed580eaf703aea7248e322fb329d5554aaecef07502e85d6724eab2ef008",
+    "verification.json": "b2534f94c5be8808a36092aee214c958e53f60b97f2571e5449fbfca05ba7791",
+    "controller-trace-verification.json": "fa291d779482f85423a94a3bbb20d37af9475b75a88e8507a5c04a3ee9532820",
+    "account-verification.json": "26866d3545d998de1af9e0de77f229ec6ea62d1d92adf16aeac7bc41f1051f2c",
+    "phase-verification.json": "16481f11335ebc399cba8f296b8222419d1316960f3c837b4b5f1a272fa3b781",
+    "independent-cleanup.json": "96d8802a3eedae40df44076a58a0cbb42c59f6c33d4debdeab8fe02b88b831ee",
+    "admitted-pod-verification.json": "356c230b6b61bfbf10a0ac2c9f1d8c505c02cc17e20ac44ac39f6342c2a4aa20",
+    "visual-review.json": "76bf55d66b9bf2c84ad058be64bc9f5f565943a857c966e7db9e759af4b5240e",
+    "allocator-log-observation/cleanup-window-review.json": "1da7e885aac9182b97fb46016d63d99cef4f04be9459db6b3fc198dab7c36e2c",
+    "namespace-deletion-observation-current-gate/cleanup-window-review.json": "291b3663c43b558008195ce6eea5de7bd61313de026805c0e86b6a3862480061",
+    "qualification-current-gate-state.json": "ae817840e62abceeb445e275b3a8193971da80bf6264f0b73e5064d90c1abf23",
+    "admitted-gateway-workloads.json": "e63bdad9650662049ad9a1a238233d9ee3fcdf9b84942e1cc9779b128237f760",
+    "gateway-cleanup-timing.json": "4f0ea67063411e3f6d1fc130e6870452a9e5c6d90ee6695d046bbd387b7b621d",
+    "allocation-finalization.json": "0fb6a9d2d4417477da1a1aeaa76b3a34b05e02a275a10f1547ceb5d3d3386577",
+    "live-compiler-verification.json": "735048169d1d1e80fc433f78f4e5bfb00031419d1e8e7265e649f5f51915421c"
+  },
+  "capacity_target_proved": false,
+  "cleanup_target_proved": false,
+  "not_proved": [
+    "Production capacity of 100 Gateways per instance.",
+    "The 30-second complete cleanup target.",
+    "Live Kata isolation and OpenShell Sandbox execution.",
+    "RDS failover, production HA, and remaining enterprise requirements."
+  ],
+  "scope": "One complete browser Gateway workflow on jshell. All 11 required tests passed. One measured normal deletion had 100 live service accounts. Its complete proof was observed after 32.565 seconds. These results accept workload construction; they do not establish production capacity or complete enterprise readiness."
+}

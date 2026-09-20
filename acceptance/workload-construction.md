@@ -90,6 +90,34 @@ supplied logs, metrics, and traces. Cleanup removed the dedicated test namespace
 released the shared Lease, and left all 32 standing resources unchanged. See the
 [service evidence](workload-construction-service-evidence.json).
 
-The browser workflow for this source is still under test. This service result
-does not establish the public Gateway workflow, the 30-second cleanup target,
-production capacity, or complete enterprise readiness.
+The complete browser workflow then passed in
+[run 35535544885](https://github.com/jsell-rh/hypershell-stego/actions/runs/35535544885).
+All 11 required tests passed; the main workflow took 541.55 seconds. Independent
+review matched 1,647 source files and 428 generated file hashes. The workflow
+covered real Keycloak login, Gateway creation, grants, REST and gRPC access,
+event delivery, browser sessions, and the upstream dashboard. It recovered from
+namespace replacement, worker and provisioner restarts, and a PostgreSQL process
+restart. It also checked denied cleanup and recovery. The paused allocator test
+kept a deleting Gateway visible through REST and gRPC until its state namespaces
+were removed. Correlated logs, metrics, and traces passed their checks.
+
+Two admitted Gateway Pods were ready with the exact declared image tag and
+digest. Both had non-root execution, a read-only root filesystem, no privilege
+escalation, all capabilities dropped, default seccomp, read-only configuration
+mounts, and the declared probes and resource limits. The object ownership chain
+and configuration digest were checked. Four retained screenshots had no observed
+layout defects. This is not a full accessibility review.
+
+One normal deletion started with 100 live service accounts. All accounts and
+provider identities were removed, and all cleanup journals and audits were
+complete. The complete result was observed after 32.565 seconds. Allocation and
+Gateway finalization were still pending at the 30.36-second observation. The
+30-second target remains open. This small workflow does not prove the capacity
+target of 100 Gateways per instance.
+
+Independent cleanup found no test workloads, fixtures, allocated namespaces, or
+CI Jobs. The shared Lease was free, and all 32 standing resources were unchanged.
+See the [browser evidence](workload-construction-browser-evidence.json). Together
+with the service and hosted checks, this result accepts the common workload
+construction adoption. Live Kata isolation, OpenShell Sandbox execution,
+production capacity, and the remaining enterprise requirements remain open.
