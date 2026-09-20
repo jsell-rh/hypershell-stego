@@ -171,7 +171,7 @@ func (w *browserGatewayWorkload) awaitGatewayCleanup(ctx context.Context, alloca
 			w.t.Fatal("Sandbox namespace read failed", err)
 		}
 		var complete bool
-		err = w.f.db.QueryRowContext(ctx, `SELECT COALESCE(deleted_at IS NOT NULL AND stego_finalized_at IS NOT NULL AND stego_cleanup->>'accounts'='true' AND stego_cleanup->>'identity'='true' AND stego_cleanup_targets->'workload'->>$2='true' AND stego_cleanup_targets->'sql'->>$2='true',false) FROM gateways WHERE id=$1`, id, w.f.cluster).Scan(&complete)
+		err = w.f.db.QueryRowContext(ctx, `SELECT COALESCE(deleted_at IS NOT NULL AND stego_finalized_at IS NOT NULL AND stego_cleanup->>'accounts'='true' AND stego_cleanup->>'identity'='true' AND stego_cleanup_targets->'workload'->>$2='true' AND stego_cleanup_targets->'sql'->>$2='true' AND stego_cleanup_targets->'allocation'->>$2='true',false) FROM gateways WHERE id=$1`, id, w.f.cluster).Scan(&complete)
 		if err != nil {
 			w.t.Fatal("Gateway cleanup read failed", err)
 		}

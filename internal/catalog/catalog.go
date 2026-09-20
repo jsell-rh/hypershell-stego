@@ -200,7 +200,7 @@ func (r *Resource[T, C, P]) Delete(ctx context.Context, p gateways.Principal, id
 			return gateways.ErrForbidden
 		}
 		if r.entity == "ManagedCluster" {
-			references := []store.CleanupReference{{Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "workload"}, {Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "sql"}}
+			references := []store.CleanupReference{{Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "allocation"}, {Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "workload"}, {Entity: "Gateway", Field: r.foreignField, ID: id, Owner: "sql"}}
 			reader, ok := tx.(store.CleanupReferenceReader)
 			if !ok {
 				return errors.New("catalog storage has no cleanup reference reader")

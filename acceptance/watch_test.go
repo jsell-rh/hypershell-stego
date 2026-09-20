@@ -215,11 +215,11 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	}
 	// This watch fixture has no external resources. Supply each completion
 	// separately so subscribers must see updates before the final delete.
-	for _, owner := range []string{"accounts", "identity", "workload"} {
+	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
 		completeFakeGatewayOwners(t, f, id, owner)
 		expect(owners, pb.EventType_EVENT_TYPE_UPDATED, id, "external-writer")
 	}
-	completeFakeGatewayOwners(t, f, id, "sql")
+	completeFakeGatewayOwners(t, f, id, "allocation")
 	expect(owners, pb.EventType_EVENT_TYPE_DELETED, id, "external-writer")
 	if _, err := client.GetGateway(ownerCtx, &pb.GetGatewayRequest{Id: id}); status.Code(err) != codes.NotFound {
 		t.Fatalf("finalized Gateway remained visible: %v", err)
@@ -265,12 +265,12 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	}
 	recovered.expect(t, pb.EventType_EVENT_TYPE_UPDATED, offline.ID, "after-restart")
 	readGatewayEvent(t, consumer, offline.ID, "Update", "gateway.updated")
-	for _, owner := range []string{"accounts", "identity", "workload"} {
+	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
 		completeFakeGatewayOwners(t, f, offline.ID, owner)
 		recovered.expect(t, pb.EventType_EVENT_TYPE_UPDATED, offline.ID, "after-restart")
 		readGatewayEvent(t, consumer, offline.ID, "Update", "gateway.updated")
 	}
-	completeFakeGatewayOwners(t, f, offline.ID, "sql")
+	completeFakeGatewayOwners(t, f, offline.ID, "allocation")
 	recovered.expect(t, pb.EventType_EVENT_TYPE_DELETED, offline.ID, "after-restart")
 	readGatewayEvent(t, consumer, offline.ID, "Delete", "gateway.deleted")
 	awaitQueueEmpty(t, f)

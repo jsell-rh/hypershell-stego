@@ -94,7 +94,7 @@ func TestGatewayDeletionRemovesServiceAccounts(t *testing.T) {
 			}
 			// This fixture has no external Gateway resources. The account provider
 			// is the only active controller; other owners are explicit test inputs.
-			completeFakeGatewayOwners(t, f, gateway.ID, "identity", "workload", "sql")
+			completeFakeGatewayOwners(t, f, gateway.ID, "identity", "workload", "sql", "allocation")
 			provider.mu.Lock()
 			provider.failChange = false
 			provider.mu.Unlock()
@@ -222,7 +222,7 @@ func completeFakeGatewayOwners(t *testing.T, f *fixture, id string, owners ...st
 			}
 			row := value.(model.Gateway)
 			target := ""
-			if owner == "workload" || owner == "sql" {
+			if owner == "workload" || owner == "sql" || owner == "allocation" {
 				target = row.ClusterID
 			}
 			return gateways.RecordCleanup(ctx, tx, id, row.ResourceVersion, owner, target, true)

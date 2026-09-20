@@ -25,7 +25,7 @@ env:
 jobs:
   allocation-finalization:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     services:
       postgres:
         image: postgres@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
@@ -59,15 +59,28 @@ jobs:
         run: |
           set -o pipefail
           mkdir -p "$RUNNER_TEMP/allocation-finalization"
-          go test -json -race -count=1 -mod=readonly -timeout=60s ./acceptance \
-            -run '^TestGatewayFinalizationWaitsForAllocationCleanup$' \
+          go test -json -race -count=1 -mod=readonly -timeout=60s ./internal/namespaceallocation \
             | tee "$RUNNER_TEMP/allocation-finalization/tests.jsonl"
+          go test -json -race -count=1 -mod=readonly -timeout=8m ./acceptance \
+            -run '^Test(GatewayFinalizationWaitsForAllocationCleanup|GatewayDurableDeletionThroughGeneratedTransports|GatewayCleanupObservationDoesNotRepeatEvents|GatewayCleanupKeepsBothClusterTargetsAfterRestart|ClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart|GatewayWatchThroughGeneratedRuntime|GatewayDeletionRemovesServiceAccounts|GatewayJournalClosureRollsBackWithFinalEvent)$' \
+            | tee -a "$RUNNER_TEMP/allocation-finalization/tests.jsonl"
           python3 - "$RUNNER_TEMP/allocation-finalization/tests.jsonl" <<'PYRESULT'
           import json, sys
           from pathlib import Path
           events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
-          name = "TestGatewayFinalizationWaitsForAllocationCleanup"
-          assert any(e.get("Test") == name and e.get("Action") == "pass" for e in events)
+          required = {
+              "TestAllocationCleanupCommitRequiresAllNamespacesAbsent",
+              "TestGatewayFinalizationWaitsForAllocationCleanup",
+              "TestGatewayDurableDeletionThroughGeneratedTransports",
+              "TestGatewayCleanupObservationDoesNotRepeatEvents",
+              "TestGatewayCleanupKeepsBothClusterTargetsAfterRestart",
+              "TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart",
+              "TestGatewayWatchThroughGeneratedRuntime",
+              "TestGatewayDeletionRemovesServiceAccounts",
+              "TestGatewayJournalClosureRollsBackWithFinalEvent",
+          }
+          passed = {e.get("Test") for e in events if e.get("Action") == "pass"}
+          assert not required - passed, sorted(required - passed)
           assert not any(e.get("Action") in ("skip", "fail") for e in events)
           PYRESULT
       - name: Save test results

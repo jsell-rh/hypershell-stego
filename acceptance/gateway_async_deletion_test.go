@@ -133,7 +133,7 @@ func TestGatewayDurableDeletionThroughGeneratedTransports(t *testing.T) {
 			}
 			// Other controller owners confirm their application work. Account cleanup is
 			// still blocked. These observations cannot remove the pending Gateway.
-			for _, name := range []string{"identity", "workload", "sql"} {
+			for _, name := range []string{"identity", "workload", "sql", "allocation"} {
 				err := f.storage.WithTransaction(context.Background(), func(ctx context.Context, tx storage.Transaction) error {
 					value, err := tx.(storage.RetainedReader).GetRetained(ctx, "Gateway", gateway.ID)
 					if err != nil {
@@ -258,7 +258,7 @@ func TestGatewayCleanupObservationDoesNotRepeatEvents(t *testing.T) {
 			}
 			row := value.(model.Gateway)
 			target := ""
-			if owner == "workload" || owner == "sql" {
+			if owner == "workload" || owner == "sql" || owner == "allocation" {
 				target = gateway.ClusterID
 			}
 			return gateways.RecordCleanup(ctx, tx, row.ID, row.ResourceVersion, owner, target, complete)
@@ -272,11 +272,11 @@ func TestGatewayCleanupObservationDoesNotRepeatEvents(t *testing.T) {
 	if count(t, f.db, "stego_outbox.messages") != before {
 		t.Fatal("unchanged pending cleanup published an event")
 	}
-	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
+	for _, owner := range []string{"accounts", "identity", "workload", "sql", "allocation"} {
 		observe(owner, true)
 	}
 	after := count(t, f.db, "stego_outbox.messages")
-	for _, owner := range []string{"accounts", "identity", "workload", "sql"} {
+	for _, owner := range []string{"accounts", "identity", "workload", "sql", "allocation"} {
 		observe(owner, true)
 	}
 	if count(t, f.db, "stego_outbox.messages") != after {

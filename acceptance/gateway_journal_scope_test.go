@@ -82,7 +82,7 @@ func TestGatewayJournalClosureRollsBackWithFinalEvent(t *testing.T) {
 	if err := f.service.Delete(ctx, principal("alice"), gateway.ID); err != nil {
 		t.Fatal(err)
 	}
-	completeFakeGatewayOwners(t, f, gateway.ID, "identity", "workload", "sql")
+	completeFakeGatewayOwners(t, f, gateway.ID, "identity", "workload", "sql", "allocation")
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_journal_final CHECK(kind <> 'gateway.deleted') NOT VALID"); err != nil {
 		t.Fatal(err)
 	}

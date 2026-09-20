@@ -31,12 +31,12 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 	apiTLS := identity(t, "localhost")
 	dir := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(dir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(dir, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["worker"]`)
-	settings = withCleanupGrants(t, settings, cleanupGrant("worker", "Gateway", "workload", f.cluster), cleanupGrant("worker", "Gateway", "sql", f.cluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant("worker", "Gateway", "allocation", f.cluster), cleanupGrant("worker", "Gateway", "workload", f.cluster), cleanupGrant("worker", "Gateway", "sql", f.cluster))
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
-	// Permit three bounded lease recovery windows and the API checks.
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+	// Permit four bounded lease recovery windows and the API checks.
+	ctx, cancel := context.WithTimeout(context.Background(), 4*time.Minute)
 	defer cancel()
 	admin := token(t, key, "operator", "platform:admin")
 	owner := token(t, key, "owner", "gateway:creator")
@@ -130,6 +130,12 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 			t.Fatal("workload retry lost SQL completion", err)
 		}
 	}
+	// Retained state allocations keep the cluster available for cleanup.
+	blocked("managed_clusters", f.cluster, "managed_clusters")
+	observe(ids[0], "allocation", true)
+	restart()
+	blocked("managed_clusters", f.cluster, "managed_clusters")
+	observe(ids[1], "allocation", true)
 	if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/managed_clusters/"+f.cluster, admin, nil); code != 204 {
 		t.Fatal("complete Gateway cleanup did not release cluster", code)
 	}
