@@ -230,3 +230,7 @@ The worker image digest was
 Both images had the required non-root user and entry point. The evidence is in
 `/tmp/stego-service-results.b23OdptE`. The [abort check record](worker-run-abort.md)
 also records the earlier failed and incomplete runs and the exact test scope.
+
+The test actor does not delete ServiceAccounts. The host keeps those objects
+until it stops the test Pods and removes the dedicated namespace. This keeps
+the existing role boundary and still requires complete namespace cleanup.

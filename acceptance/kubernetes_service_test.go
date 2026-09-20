@@ -176,7 +176,8 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	command(manifest, "apply", "-f", "-")
 	t.Cleanup(func() {
 		command(nil, "delete", "deployment/hypershell", "--wait=true", "--timeout=60s", "--ignore-not-found")
-		command(nil, "delete", "secret/hypershell-files", "secret/hypershell-runtime", "service/hypershell", "networkpolicy/hypershell", "serviceaccount/hypershell", "--ignore-not-found")
+		// The host removes ServiceAccounts with the namespace after all Pods stop.
+		command(nil, "delete", "secret/hypershell-files", "secret/hypershell-runtime", "service/hypershell", "networkpolicy/hypershell", "--ignore-not-found")
 	})
 	ready := func() { t.Helper(); command(nil, "rollout", "status", "deployment/hypershell", "--timeout=180s") }
 	ready()

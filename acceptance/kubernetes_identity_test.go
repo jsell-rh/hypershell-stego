@@ -57,7 +57,8 @@ func checkKubernetesGatewayIdentity(t *testing.T, namespace string, apply func(a
 	}
 	t.Cleanup(func() {
 		command(nil, "delete", "deployment/"+name, "--wait=true", "--timeout=60s", "--ignore-not-found")
-		command(nil, "delete", "secret/"+name+"-files", "secret/"+name+"-runtime", "networkpolicy/"+name, "serviceaccount/"+name, "--ignore-not-found")
+		// The host removes ServiceAccounts with the namespace after all Pods stop.
+		command(nil, "delete", "secret/"+name+"-files", "secret/"+name+"-runtime", "networkpolicy/"+name, "--ignore-not-found")
 	})
 	apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]any{"name": name + "-files", "namespace": namespace}, "data": files})
 	apply(map[string]any{"apiVersion": "v1", "kind": "Secret", "metadata": map[string]any{"name": name + "-runtime", "namespace": namespace}, "stringData": environment})
