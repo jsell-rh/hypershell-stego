@@ -31,6 +31,8 @@ on:
       - 'acceptance/browser_cleanup_population_test.go'
       - 'acceptance/browser_cleanup_timing_test.go'
       - 'acceptance/browser_workflow_test.go'
+      - 'acceptance/browser_worker_signals*test.go'
+      - 'acceptance/browser_controller_traces*test.go'
   workflow_dispatch:
 
 permissions:
@@ -73,6 +75,23 @@ jobs:
           # Compile the deferred live test without starting its fixtures.
           go test -v -mod=readonly -run '^(TestBoundedNetworkProbe|TestCleanupTimingObservationWindow)$' -timeout=30s ./acceptance \
             | tee "$RUNNER_TEMP/sandbox-adapter/acceptance-compile.log"
+          go test -v -race -p=1 -mod=readonly -count=1 -timeout=30s ./acceptance \
+            -run '^(TestControllerTraceEvidence.*|TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance)$' \
+            | tee "$RUNNER_TEMP/sandbox-adapter/controller-traces.log"
+          python3 - "$RUNNER_TEMP/sandbox-adapter/controller-traces.log" <<'PYCHECK'
+          import re, sys
+          from pathlib import Path
+          log = Path(sys.argv[1]).read_text()
+          required = ['TestControllerTraceEvidenceRejectsInvalidRoots',
+                      'TestControllerTraceEvidenceRequiresDistinctPairedWork',
+                      'TestControllerTraceEvidenceRequiresEachServiceAndInstance',
+                      'TestWorkerSignalEvidenceRequiresExactProfileAndEachInstance']
+          for name in required:
+              if len(re.findall(r'^--- PASS: ' + name + r' ', log, re.M)) != 1:
+                  raise SystemExit('A required controller trace check is missing: ' + name)
+          if '--- SKIP:' in log or '--- FAIL:' in log:
+              raise SystemExit('A controller trace check did not pass')
+          PYCHECK
           go test -v -race -p=1 -mod=readonly -count=1 -timeout=30s \
             scripts/browser-allocation-cleanup.go scripts/browser-allocation-cleanup_test.go \
             | tee "$RUNNER_TEMP/sandbox-adapter/allocation-cleanup.log"

@@ -14,6 +14,7 @@ import (
 
 type workerSignalState struct {
 	postgres           postgresSignalState
+	controller         controllerTraceState
 	logs, traces       []string
 	metric, correlated bool
 }
@@ -121,6 +122,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 					if scope.Scope.Name == "stego/postgres-client" {
 						s.postgres.log(record)
 					}
+					if scope.Scope.GetName() == "stego/controller" {
+						s.controller.log(record)
+					}
 					if record.EventName == "controller.work.completed" {
 						s.pair(pair(record.TraceId, record.SpanId), true)
 					}
@@ -133,6 +137,9 @@ func (w *workerSignalEvidence) collect(request any) (any, bool) {
 			for _, scope := range r.ScopeSpans {
 				for _, span := range scope.Spans {
 					s.postgres.span(scope.Scope.Name, span)
+					if scope.Scope.GetName() == "stego/controller" {
+						s.controller.span(span)
+					}
 					s.pair(pair(span.TraceId, span.SpanId), false)
 				}
 			}

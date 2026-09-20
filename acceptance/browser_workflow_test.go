@@ -932,6 +932,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		operator.login(t, k, "console-operator")
 		workload.checkSuppliedDatabaseRetention(operator, consumer)
 		signals.workers.checkPostgres(t, workload.public != nil, workload.endpointChange != nil)
+		signals.workers.checkControllerTraces(t, workload.public != nil, workload.endpointChange != nil)
 	}
 	for _, log := range []string{before, logs()} {
 		for _, private := range []string{"acceptance-only-console-secret", "acceptance-only-user-password", "code_verifier", "access_token", "refresh_token", "private-collector-fault", oldSessionKey, nextSessionKey} {
