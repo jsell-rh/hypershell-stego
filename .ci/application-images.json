@@ -1,0 +1,12 @@
+{
+  "format": 1,
+  "images": [
+    {"name": "hypershell", "module": ".", "target": "out", "entrypoint": "service"},
+    {"name": "hypershell-console", "module": "console", "target": "out", "entrypoint": "service"},
+    {"name": "hypershell-provisioner", "module": ".", "target": "out/grpcapi/processes/provisioner", "entrypoint": "rpc"},
+    {"name": "hypershell-gateway-console", "module": "gateway-console", "target": "out", "entrypoint": "service"},
+    {"name": "hypershell-namespace-allocation", "module": ".", "target": "out/deploy/workers/namespace-allocation", "entrypoint": "worker"},
+    {"name": "hypershell-gateway-identity", "module": ".", "target": "out/deploy/workers/gateway-identity", "entrypoint": "worker"},
+    {"name": "hypershell-gateway-workload", "module": ".", "target": "out/deploy/workers/gateway-workload", "entrypoint": "worker"}
+  ]
+}
