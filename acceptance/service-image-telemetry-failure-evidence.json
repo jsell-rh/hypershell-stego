@@ -1,0 +1,57 @@
+{
+  "recorded_at": "2026-09-20T15:00:14.677973+00:00",
+  "source": "c275c4f1f8a5a479bc657a42c07f1c7691e1e70d",
+  "qualified": false,
+  "full_run": 35515740617,
+  "image_run": 35515738197,
+  "hosted_checks_qualified": true,
+  "live": {
+    "namespace": "stego-service-20260920-86dd97",
+    "job_uid": "54df389a-7861-45da-b22e-ec7380029308",
+    "pod_uid": "c49c11a5-c2e9-489b-afde-5e6a62f276a2",
+    "exit_code": 1,
+    "test": "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "seconds": 125.75,
+    "failure": "The final telemetry check saw one API instance with spans and correlated logs, and two API instances with metrics. It requires two complete API instances.",
+    "observed_api_telemetry_instances": {
+      "spans": 1,
+      "logs": 1,
+      "metrics": 2,
+      "correlated": 1
+    },
+    "ready_application_pods": {
+      "hypershell": 2,
+      "hypershell-gateway-identity": 2
+    },
+    "startup_failures_observed": 0,
+    "container_restarts_observed": 0,
+    "images_published": 7,
+    "reached_final_telemetry_check": true
+  },
+  "source_finding": "The test collector retains 64 batches per signal. The service test reads them only after all writers stop. A full channel blocks later exports. This can prevent replacement instances from delivering their evidence.",
+  "diagnostic_limit": "The old test did not retain per-instance telemetry counts or collector queue saturation. The run does not prove that collector backpressure was the sole cause.",
+  "correction": "Read all signal channels during provider work and Pod replacement. Check the same private values and require the same four complete instances. Bound retained correlation IDs and reject invalid or incomplete evidence. Hosted and live checks are pending.",
+  "cleanup": {
+    "source": "c275c4f1f8a5a479bc657a42c07f1c7691e1e70d",
+    "checked_at": "2026-09-20T14:55:44.165579+00:00",
+    "phase": "cleanup",
+    "existing_test_jobs_and_pods_absent": true,
+    "lease_free": true,
+    "lease_uid": "473d5b75-ff67-413c-8ae7-b22f70770c59",
+    "standing_resources_unchanged": 32,
+    "namespace": "stego-service-20260920-86dd97",
+    "owned_resources_absent": true
+  },
+  "evidence_sha256": {
+    "results/deployment.log": "d78ec1480ce7e16aac4afa1257d0682644b975af421753b72a6596215b4d6b5f",
+    "results/evidence.tar": "5319133e239affd0cf1036a1ea5ebf275ef99c184463de63f83fb049bc94a1b7",
+    "results/job-status.json": "3ec5b8cd93a21cd90bd6e0fccb317173a6a8bf9c1900f0c7c990e208dc1a1549",
+    "capture.json": "0f6a4d766b20b4f3bc280fc6c5150d23a6f15d65a5c7c9ccfeac62b1b8d5bddf",
+    "cleanup.json": "2e0d185404bf2af19409a75d3b1bca6834d13268cfe91304d3f93436debbb3ae",
+    "deployed-images/summary.json": "89fcc785a554dcfa20b1538ca018892ccea79a761b6f19149b119ecc9a91da34",
+    "deployed-images/records.jsonl": "fe9e67dce8b128069e6710de06542769c4e2ac2eef6162ac4214edf4d743663b",
+    "startup/summary.json": "b4200f00752368ac97a1187554570e68bce026717c2af8f09edb7e430cb023b9",
+    "startup/pod-states.jsonl": "701addc744b1e29b71b3bb8264320d97c2773cd6ed3a62ee35731395c78e622b"
+  },
+  "scope": "Failed service Deployment test with successful startup and verified cleanup. This does not qualify the candidate or complete the enterprise goal."
+}

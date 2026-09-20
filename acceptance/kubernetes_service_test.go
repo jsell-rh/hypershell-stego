@@ -22,12 +22,9 @@ import (
 	"github.com/segmentio/ksuid"
 	"github.com/twmb/franz-go/pkg/kfake"
 	"github.com/twmb/franz-go/pkg/kmsg"
-	commonpb "go.opentelemetry.io/proto/otlp/common/v1"
-	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
 )
 
 type advertisedListener struct {
@@ -224,6 +221,11 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	if err != nil || gateway.Namespace == nil || *gateway.Namespace != "openshell-"+hex.EncodeToString(parsed.Payload()[:8]) || gateway.CreatedAt == nil || gateway.UpdatedAt == nil {
 		t.Fatal("deployed Gateway lost its assigned fields")
 	}
+	controllerToken := token(t, key, "gateway-controller")
+	failed := input
+	failed.Name = "deployed-rollback"
+	signalReader := startDeployedSignalReader(signals, []string{ownerToken, otherToken, controllerToken, "acceptance-only-admin-secret", id, input.Name, failed.Name, dsn.String(), hex.EncodeToString(password)})
+	t.Cleanup(signalReader.stop)
 	var grants int
 	if err := f.db.QueryRow(`SELECT count(*) FROM role_bindings b JOIN roles r ON r.id=b.role_id JOIN users u ON u.id=b.user_id WHERE b.gateway_id=$1 AND b.scope='gateway' AND r.name='gateway:owner' AND u.username='alice'`, id).Scan(&grants); err != nil || grants != 1 {
 		t.Fatal("deployed Gateway has no owner grant", err)
@@ -270,15 +272,12 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 		}
 	}
 	checkRead()
-	controllerToken := token(t, key, "gateway-controller")
 	reconcile := checkKubernetesGatewayIdentity(t, namespace, apply, command, owner, apiHost, apiIdentity, controllerToken, id, exports)
 	awaitQueueEmpty(t, f)
 	beforeGrants := count(t, f.db, "role_bindings")
 	if _, err := f.db.Exec("ALTER TABLE stego_outbox.messages ADD CONSTRAINT reject_deployment_event CHECK (kind <> 'gateway.created') NOT VALID"); err != nil {
 		t.Fatal(err)
 	}
-	failed := input
-	failed.Name = "deployed-rollback"
 	response, err := owner.CreateGatewayWithResponse(requestContext, failed)
 	if err != nil || response.StatusCode() != 500 {
 		t.Fatal("deployed event failure did not reject creation", err)
@@ -322,105 +321,6 @@ func TestGeneratedKubernetesServiceGatewayWorkflow(t *testing.T) {
 	command(nil, "logs", "deployment/hypershell", "--tail=200")
 	command(nil, "delete", "deployment/hypershell", "--wait=true", "--timeout=60s")
 	command(nil, "wait", "--for=delete", "pods", "-l", "app.kubernetes.io/name=hypershell", "--timeout=60s")
-	checkDeployedSignals(t, signals, []string{ownerToken, otherToken, controllerToken, "acceptance-only-admin-secret", id, input.Name, failed.Name, dsn.String(), hex.EncodeToString(password)})
+	signalReader.check(t)
 	t.Log("Generated Deployment passed HTTPS, gRPC, owner grant, rollback, filtered access, event delivery, and Pod replacement")
-}
-
-func checkDeployedSignals(t *testing.T, signals *httpDiagnosticCollector, private []string) {
-	t.Helper()
-	check := func(message proto.Message) {
-		data, err := proto.Marshal(message)
-		if err != nil {
-			t.Fatal(err)
-		}
-		for _, value := range private {
-			if bytes.Contains(data, []byte(value)) {
-				t.Fatal("deployed telemetry exposed private data")
-			}
-		}
-	}
-	services := map[string]string{}
-	identity := func(attrs []*commonpb.KeyValue) (string, bool) {
-		t.Helper()
-		service := signalAttribute(attrs, "service.name").GetStringValue()
-		if service != "hypershell-deployment" && service != "hypershell-gateway-identity" {
-			t.Fatal("unexpected telemetry service")
-		}
-		instance := telemetryInstance(t, attrs, service)
-		if prior, ok := services[instance]; ok && prior != service {
-			t.Fatal("telemetry instance crossed services")
-		}
-		services[instance] = service
-		return instance, service == "hypershell-gateway-identity"
-	}
-	spans, logs, metrics := map[string]bool{}, map[string]bool{}, map[string]bool{}
-	spanIDs, logIDs := map[string]string{}, map[string]string{}
-	for len(signals.traces.received) > 0 {
-		batch := <-signals.traces.received
-		check(batch)
-		for _, resource := range batch.ResourceSpans {
-			instance, worker := identity(resource.Resource.Attributes)
-			for _, scope := range resource.ScopeSpans {
-				for _, span := range scope.Spans {
-					if (!worker && span.Name != "" && span.Kind == tracepb.Span_SPAN_KIND_SERVER) || (worker && span.Name == "controller.reconcile" && span.Kind == tracepb.Span_SPAN_KIND_INTERNAL) {
-						spans[instance] = true
-						spanIDs[hex.EncodeToString(span.TraceId)+hex.EncodeToString(span.SpanId)] = instance
-					}
-				}
-			}
-		}
-	}
-	for len(signals.logs.received) > 0 {
-		batch := <-signals.logs.received
-		check(batch)
-		for _, resource := range batch.ResourceLogs {
-			instance, worker := identity(resource.Resource.Attributes)
-			for _, scope := range resource.ScopeLogs {
-				for _, record := range scope.LogRecords {
-					if (!worker && record.EventName == "http.server.request.completed") || (worker && record.EventName == "controller.work.completed" && signalAttribute(record.Attributes, "operation").GetStringValue() == "reconcile") {
-						logs[instance] = true
-						logIDs[hex.EncodeToString(record.TraceId)+hex.EncodeToString(record.SpanId)] = instance
-					}
-				}
-			}
-		}
-	}
-	for len(signals.metrics.received) > 0 {
-		batch := <-signals.metrics.received
-		check(batch)
-		for _, resource := range batch.ResourceMetrics {
-			instance, worker := identity(resource.Resource.Attributes)
-			for _, scope := range resource.ScopeMetrics {
-				for _, metric := range scope.Metrics {
-					if (!worker && metric.Name == "http.server.request.duration") || (worker && metric.Name == "stego.controller.work.duration") {
-						for _, point := range metric.GetHistogram().GetDataPoints() {
-							if point.Count > 0 {
-								metrics[instance] = true
-							}
-						}
-					}
-				}
-			}
-		}
-	}
-	matched := map[string]bool{}
-	for key, instance := range spanIDs {
-		if logIDs[key] == instance {
-			matched[instance] = true
-		}
-	}
-	for _, service := range []string{"hypershell-deployment", "hypershell-gateway-identity"} {
-		count := func(set map[string]bool) int {
-			n := 0
-			for instance := range set {
-				if services[instance] == service {
-					n++
-				}
-			}
-			return n
-		}
-		if count(spans) != 2 || count(logs) != 2 || count(metrics) != 2 || count(matched) != 2 {
-			t.Fatal("both deployed instances require correlated spans, logs, and metrics", service, count(spans), count(logs), count(metrics), count(matched))
-		}
-	}
 }
