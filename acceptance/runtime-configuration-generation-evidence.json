@@ -1,0 +1,57 @@
+{
+  "source": "72cc1786278b4a6d308cdf5ae3d895a3a6087122",
+  "compiler": "8eeb11695416799cbc53fa42bba992a1ceeab810",
+  "run": 35538564130,
+  "source_archive_sha256": "4eb284cec410588254091b6a8ebb4bf84bcbb06ea1435ffbe53524b20308a0d8",
+  "generated_archive_sha256": "59de45010b56d7cef225fbf3231c0b3df5d6e69fba839806ee0d79f37623c324",
+  "files": 428,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/configuration/configuration.go",
+    "out/main.go"
+  ],
+  "unchanged_generated_and_module_files": 422,
+  "common_helpers_match_pinned_compiler_template": true,
+  "cli_change_is_compiler_identity_only": true,
+  "main_change_is_constructor_index_only": true,
+  "source_review_required": false,
+  "applied": true,
+  "compiler_executed_locally": false,
+  "source_review_complete": true,
+  "state_record_checks": {
+    "root": {
+      "output_hashes": 198,
+      "input_hashes": 31,
+      "compiler_identity_matches": true,
+      "service_hash_matches": true
+    },
+    "console/": {
+      "output_hashes": 95,
+      "input_hashes": 5,
+      "compiler_identity_matches": true,
+      "service_hash_matches": true
+    },
+    "gateway-console/": {
+      "output_hashes": 126,
+      "input_hashes": 5,
+      "compiler_identity_matches": true,
+      "service_hash_matches": true
+    }
+  },
+  "declaration_groups_reviewed": [
+    "ControlAPI",
+    "ClusterWorker",
+    "NamespaceWorker",
+    "SandboxCounter"
+  ],
+  "declaration_fields_reviewed": 12,
+  "existing_provider_checks_retained": true,
+  "constructors_unchanged": true,
+  "gateway_console_module_refresh_required": false,
+  "first_inspection_correction": "Three constructor diagnostic indexes shift by one; only one was expected initially. The same artifacts were reviewed again. No replacement generation ran.",
+  "scope": "Reviewed hosted generation and source integration. Application acceptance and live workflow checks remain pending.",
+  "application_qualified": false
+}

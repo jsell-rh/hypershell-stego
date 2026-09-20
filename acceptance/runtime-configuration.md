@@ -21,7 +21,23 @@ selected the default. Omit the setting or use its declared zero value to select
 the default. Integer values must use decimal form without a plus sign or leading
 zeros. These rules prevent ambiguous operator configuration.
 
-This source is a draft. Compiler release qualification, regeneration, hosted
-application checks, and complete live workflow checks are required before main
-promotion. It does not complete worker connection assembly or the remaining
-enterprise requirements.
+Compiler `8eeb1169` passed its branch and main checks and is published as an
+authenticated immutable release. Hosted
+[regeneration run 35538564130](https://github.com/jsell-rh/hypershell-stego/actions/runs/35538564130)
+passed for seed `72cc1786`. Independent review checked all 428 output and module
+files. Of those files, 422 are unchanged. The new configuration package matches
+the declared four groups and 12 fields. Shared helpers match the compiler
+template. The CLI change contains only compiler identity; three constructor
+diagnostic indexes increase by one without changing the calls or their order.
+
+All 419 generated output hashes and 41 captured input hashes match the state
+records. Module files and all Gateway console runtime files are unchanged, so
+the selected Gateway console module remains valid. No compiler or application
+binary was run on the workstation. The first review stopped at an incorrect
+estimate of one changed constructor diagnostic index. The complete diff showed
+three. The same artifacts passed after that estimate was corrected.
+See the [generation evidence](runtime-configuration-generation-evidence.json).
+
+Hosted application checks and complete live workflow checks are required before
+main promotion. This change does not complete worker connection assembly or the
+remaining enterprise requirements.
