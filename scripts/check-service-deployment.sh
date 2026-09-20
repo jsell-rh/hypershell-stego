@@ -54,6 +54,9 @@ fi
 prepare_args=("$results/compiler-setup")
 if [[ -n ${STEGO_COMPILER_PACKAGE:-} ]]; then prepare_args+=("$STEGO_COMPILER_PACKAGE"); fi
 bash scripts/prepare-compiler.sh "${prepare_args[@]}"
+if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
+  source "$project/scripts/prepare-application-images.sh"
+fi
 unset GH_TOKEN GITHUB_TOKEN
 # Keep the lock helper fixed for this run.
 cp scripts/jshell_live_lock.py "$results/"
@@ -269,7 +272,11 @@ if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
 fi
 "${oc_cmd[@]}" -n "$namespace" get configmap openshift-service-ca.crt -o jsonpath='{.data.service-ca\.crt}' > "$results/registry-ca.crt"
 test -s "$results/registry-ca.crt"
-tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd console gateway-console
+if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
+  test -s "$results/application.tar"
+else
+  tar -cf "$results/application.tar" go.mod go.sum service.yaml registry internal contracts acceptance out .stego scripts migrations cmd console gateway-console
+fi
 sha256sum "$results/application.tar" > "$results/application.sha256"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'mkdir -p /work/application; tar xf - -C /work/application' < "$results/application.tar"
 # The compiler was authenticated on the host. Transfer it through the verified
@@ -302,6 +309,28 @@ result = {'source_revision': revision, 'compiler_sha256': digest, 'pod_uid': pod
           'job_uid': owner[0]['uid'], 'pod_bytes_match_authenticated_compiler': True}
 (root / 'compiler-transfer.json').write_text(json.dumps(result, indent=2) + '\n')
 COMPILER_TRANSFER
+if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
+  # Compare the complete authenticated image and tooling package in the same
+  # Job-owned Pod before extraction or execution.
+  "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/image-delivery.tar' < "$results/image-delivery.tar"
+  "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sha256sum /work/image-delivery.tar > "$results/image-delivery-pod.sha256"
+  "${oc_cmd[@]}" -n "$namespace" get pod "$pod" -o jsonpath='{.metadata.uid}' > "$results/image-delivery-pod-uid"
+  image_package_sha256=$(cut -d ' ' -f 1 "$results/image-delivery.sha256")
+  [[ $(cat "$results/image-delivery-pod.sha256") == "$image_package_sha256  /work/image-delivery.tar" ]]
+  python3 - "$results" "$image_package_sha256" <<'IMAGE_TRANSFER'
+import json,sys
+from pathlib import Path
+root=Path(sys.argv[1])
+owner=json.loads((root/'compiler-transfer.json').read_text())
+if (root/'image-delivery-pod-uid').read_text() != owner['pod_uid']:
+    raise SystemExit('The image transfer Pod changed after compiler verification')
+record={'format':1,'package_sha256':sys.argv[2], 'pod_uid':owner['pod_uid'], 'job_uid':owner['job_uid'],
+        'pod_bytes_match_authenticated_package':True}
+(root/'image-delivery-transfer.json').write_text(json.dumps(record,indent=2)+'\n')
+IMAGE_TRANSFER
+  "${oc_cmd[@]}" -n "$namespace" exec "$pod" -c test -- sh -c 'mkdir -m 700 /work/image-delivery; tar xf /work/image-delivery.tar -C /work/image-delivery; rm /work/image-delivery.tar'
+  "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/image-delivery-transfer.json' < "$results/image-delivery-transfer.json"
+fi
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c \
   'cat > /work/compiler-transfer.json' < "$results/compiler-transfer.json"
 "${oc_cmd[@]}" -n "$namespace" exec -i "$pod" -c test -- sh -c 'cat > /work/oc; chmod 755 /work/oc' < "$(command -v oc)"

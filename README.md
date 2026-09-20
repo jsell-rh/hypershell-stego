@@ -18,6 +18,9 @@ and the [common browser composition record](acceptance/common-browser-compositio
 The generated runtime stays in Git for review and repeatable builds.
 Generation uses the [signed compiler package](acceptance/verified-generation.md)
 through the common STEGO installer. All three modules use the same checked bytes.
+The browser deployment candidate also uses the
+[common image publisher](acceptance/common-image-publication.md), with signed
+image records and a separate pinned compiler for source and image checks.
 
 ## Current application behavior
 

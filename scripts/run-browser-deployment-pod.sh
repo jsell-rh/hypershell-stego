@@ -1,7 +1,6 @@
 #!/bin/sh
 # Run only inside the bounded browser deployment Job.
 set -eu
-trap '[ ! -e /work/registry-auth.json ] || unlink /work/registry-auth.json' EXIT
 cd /work/application
 # Keep the compiler registry cache on the writable test volume.
 export XDG_CACHE_HOME=/work/cache
@@ -18,41 +17,37 @@ for pass in first second; do
 done
 cmp /work/first.sha256 /work/second.sha256
 tar cf /work/generated.tar out .stego/state.yaml .stego/compiler-revision go.mod go.sum console/out console/.stego/state.yaml console/go.mod console/go.sum gateway-console/out gateway-console/.stego/state.yaml gateway-console/.stego/compiler-revision gateway-console/go.mod gateway-console/go.sum
+# Generation is complete. Remove only its three known lock files before the
+# common compiler compares the complete source with each signed build record.
+rm -f .stego/apply.lock console/.stego/apply.lock gateway-console/.stego/apply.lock
+registry=image-registry.openshift-image-registry.svc:5000
+registry_ca_sha256=$(sha256sum /work/registry-ca.crt | cut -d ' ' -f 1)
+python3 -I -B /work/image-delivery/tools/application-images.py publish \
+  --images /work/image-delivery/images --set-sha256 "$(cat /work/image-delivery/set-sha256)" \
+  --source /work/application --compiler /work/image-delivery/compiler/stego-linux-amd64 \
+  --compiler-sha256 "$(cat /work/image-delivery/compiler-sha256)" \
+  --repository "$registry/$STEGO_TEST_NAMESPACE" --registry-ca /work/registry-ca.crt \
+  --registry-ca-sha256 "$registry_ca_sha256" --username serviceaccount \
+  --token-file /var/run/secrets/kubernetes.io/serviceaccount/token --output /work/image-publication
+image_reference() {
+  python3 -I - /work/image-publication/publication.json "$1" <<'IMAGE_REFERENCE'
+import json,sys
+from pathlib import Path
+print(json.loads(Path(sys.argv[1]).read_text())['images'][sys.argv[2]])
+IMAGE_REFERENCE
+}
+STEGO_TEST_SERVICE_IMAGE="$(image_reference hypershell)"
+STEGO_TEST_CONSOLE_IMAGE="$(image_reference hypershell-console)"
+STEGO_TEST_PROVISIONER_IMAGE="$(image_reference hypershell-provisioner)"
+STEGO_TEST_GATEWAY_CONSOLE_IMAGE="$(image_reference hypershell-gateway-console)"
+STEGO_TEST_ALLOCATION_WORKER_IMAGE="$(image_reference hypershell-namespace-allocation)"
+STEGO_TEST_IDENTITY_WORKER_IMAGE="$(image_reference hypershell-gateway-identity)"
+STEGO_TEST_GATEWAY_WORKER_IMAGE="$(image_reference hypershell-gateway-workload)"
+export STEGO_TEST_SERVICE_IMAGE STEGO_TEST_CONSOLE_IMAGE STEGO_TEST_PROVISIONER_IMAGE STEGO_TEST_GATEWAY_CONSOLE_IMAGE STEGO_TEST_ALLOCATION_WORKER_IMAGE STEGO_TEST_IDENTITY_WORKER_IMAGE STEGO_TEST_GATEWAY_WORKER_IMAGE
 node /work/node/npm/bin/npm-cli.js --cache /work/npm-cache ci --prefix acceptance/typescript --install-links --ignore-scripts --no-audit --no-fund
 go test -race -mod=readonly -count=1 -timeout=3m ./contracts -run '^(TestGeneratedProjectInputManifest|TestConsoleDeploymentIsolation)$'
 go test -race -mod=readonly -count=1 -timeout=3m ./internal/gatewayworkload ./internal/namespaceallocation ./internal/namespaceallocationapp
 go test -v -race -mod=readonly -count=1 -timeout=5m -run '^(TestGatewayConsoleObservationCommitsWithWorkload|TestGatewayDeletionBeforeWorkloadStartup|TestGeneratedWorkloadWorkerStartupPrivacy|TestControllerLocal.*|TestGatewaySQLCleanupObservationIsAtomicAndSurvivesRestart|TestClusterDeletionWaitsForGatewaySQLAndWorkloadCleanupAcrossRestart|TestKubernetesWriteFailurePrivacy)$' ./acceptance
-cat /var/run/secrets/kubernetes.io/serviceaccount/ca.crt /etc/ssl/certs/ca-certificates.crt >> /work/registry-ca.crt
-export SSL_CERT_FILE=/work/registry-ca.crt
-go run -mod=readonly scripts/service-image-auth.go
-registry=image-registry.openshift-image-registry.svc:5000
-. /work/application/scripts/publish-service-image.sh
-publish_image service ./out hypershell /work/image.json
-(cd console; publish_image service ./out hypershell-console /work/console-image.json)
-publish_image rpc ./out/grpcapi/processes/provisioner hypershell-provisioner /work/provisioner-image.json
-if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
- (cd gateway-console; publish_image service ./out hypershell-gateway-console /work/gateway-console-image.json)
- for worker in namespace-allocation gateway-identity gateway-workload; do
-  publish_image worker "./out/deploy/workers/$worker" "hypershell-$worker" "/work/$worker-image.json"
- done
-fi
-unlink /work/registry-auth.json
-digest=$(go run -mod=readonly scripts/service-image-digest.go /work/image.json service)
-console_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/console-image.json service)
-export STEGO_TEST_SERVICE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell@$digest"
-export STEGO_TEST_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-console@$console_digest"
-provisioner_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/provisioner-image.json rpc)
-export STEGO_TEST_PROVISIONER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-provisioner@$provisioner_digest"
-if [ "${STEGO_TEST_BROWSER_WORKLOAD:-0}" = 1 ]; then
- gateway_console_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-console-image.json service)
- export STEGO_TEST_GATEWAY_CONSOLE_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-console@$gateway_console_digest"
- allocation_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/namespace-allocation-image.json worker)
- export STEGO_TEST_ALLOCATION_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-namespace-allocation@$allocation_digest"
- identity_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-identity-image.json worker)
- gateway_digest=$(go run -mod=readonly scripts/service-image-digest.go /work/gateway-workload-image.json worker)
- export STEGO_TEST_IDENTITY_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-identity@$identity_digest"
- export STEGO_TEST_GATEWAY_WORKER_IMAGE="$registry/$STEGO_TEST_NAMESPACE/hypershell-gateway-workload@$gateway_digest"
-fi
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 go test -v -race -mod=readonly -count=1 -timeout=15m -run '^TestGeneratedKubernetesBrowserGatewayWorkflow$' ./acceptance
