@@ -46,8 +46,20 @@ counts were zero. Cleanup removed the test namespace and owned resources,
 released the shared Lease, and left all 32 standing resources unchanged.
 See the [service evidence](runtime-configuration-service-evidence.json).
 
-The base browser workflow remains under review. The later shared worker settings
-change has separate [hosted evidence](control-worker-configuration-ci-evidence.json).
-Complete live count and browser checks remain required before main promotion.
-This change does not complete worker connection assembly or the remaining
-enterprise requirements.
+The [base browser workflow](https://github.com/jsell-rh/hypershell-stego/actions/runs/35540651284)
+passed all 11 required tests. The main scenario took 551.47 seconds. Review
+checked 1,653 source files, 429 generation hashes, seven signed images, telemetry,
+restart behavior, allocation finalization, and four screenshots. Cleanup removed
+test resources, released the shared Lease, and left all 32 standing resources
+unchanged. See the [browser evidence](runtime-configuration-browser-evidence.json).
+
+Normal deletion started with 100 live accounts. Complete cleanup was observed
+after 34.19 seconds. Allocation and Gateway finalization were still pending at
+32.70 seconds. This result misses the 30-second target. The sample does not prove
+production capacity or the cause of the delay.
+
+The later shared worker settings change has separate
+[hosted evidence](control-worker-configuration-ci-evidence.json). The live count
+check is now running on that corrected source. Its complete browser check also
+remains required before main promotion. This change does not complete worker
+connection assembly or the remaining enterprise requirements.

@@ -1,0 +1,286 @@
+{
+  "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+  "run": 35540651284,
+  "qualified": true,
+  "checked_at": "2026-09-20T22:27:44.340809+00:00",
+  "verification": {
+    "run_attempt": 1,
+    "run": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35540651284",
+    "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+    "compiler": "8eeb11695416799cbc53fa42bba992a1ceeab810",
+    "seconds": 551.47,
+    "source_files_match": 1653,
+    "generation_hashes_match": 429,
+    "dashboard_session_and_reload": true,
+    "editor_checks": 8,
+    "account_cleanup_counts": 3,
+    "postgres_signals_complete": true,
+    "cleanup": {
+      "run": 35540651284,
+      "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+      "checked_at": "2026-09-20T22:27:10.653668+00:00",
+      "browser_empty": true,
+      "api_run": null,
+      "api_status": "not dispatched",
+      "runtime": [],
+      "fixtures": [],
+      "allocations": [],
+      "ci_jobs": [],
+      "lease_holder": "",
+      "installed_resources_unchanged": 32,
+      "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+      "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+    },
+    "screenshots": {
+      "dashboard-create.json.png": "30214bdb491e34ecd862163a2bcbb9268b6e555f7884cc2375077bfb74485dc6",
+      "dashboard-create.json.editor.png": "9b553cb7848c74dc9f26f149ea6d4cdedb276df89646d90704a29023cb76dbbf",
+      "dashboard-create.json.editor-selection.png": "18ed5ad684c5ff9136fe76bbcdc58c57714f749464508d1ff7191de97da8a55f"
+    },
+    "screenshots_viewed": true,
+    "startup": {
+      "failed_pairs": {
+        "hypershell-console": {
+          "11fdfdd2-3f8a-4d1d-a512-61c8f5fe37db": [],
+          "1dc38710-d5c9-43a8-8cf3-3a1a71cc0433": [],
+          "88273704-174f-4236-ab36-4959b7480b1a": []
+        },
+        "hypershell-gateway-console": {
+          "1c9920af-f607-4c51-8f00-bfd09d2ec1cd": [],
+          "771d6b93-1378-4604-850a-c2abbdd054c2": [],
+          "7e9ab4d9-4cec-4c7b-967c-61eb4c87c17f": []
+        }
+      },
+      "complete_instances": {
+        "hypershell-console": [
+          "11fdfdd2-3f8a-4d1d-a512-61c8f5fe37db",
+          "1dc38710-d5c9-43a8-8cf3-3a1a71cc0433",
+          "88273704-174f-4236-ab36-4959b7480b1a"
+        ],
+        "hypershell-gateway-console": [
+          "1c9920af-f607-4c51-8f00-bfd09d2ec1cd",
+          "771d6b93-1378-4604-850a-c2abbdd054c2",
+          "7e9ab4d9-4cec-4c7b-967c-61eb4c87c17f"
+        ]
+      },
+      "sha256": "80c719e30bf6d0365d238f92672fab0db2086c2396bd35ea848f30ccdabde2d9",
+      "same_relay_instance_required_by_test": true
+    },
+    "scope": "Live Gateway workflow with Sandbox allocation and complete cleanup of 100 accounts on each measured Gateway. Native packet probes, Kata, and OpenShell Sandbox execution are not covered.",
+    "required_tests_passed": 11,
+    "namespace_recovery_checks": {
+      "database_and_role_oids_unchanged": true,
+      "other_gateway_sql_unchanged": true,
+      "provider_data_unchanged": true,
+      "source_data_unchanged": true,
+      "sql_credentials_unchanged": true,
+      "ungranted_rpc_denied": true,
+      "viewer_lists_filtered": true,
+      "viewer_membership_recovered": true,
+      "viewer_writes_denied": true,
+      "workspace_and_gateway_revocation_verified": true
+    },
+    "sql_cleanup_denial_checks": {
+      "cleanup_pending": true,
+      "other_gateway_ready": true,
+      "source_data_unchanged": true,
+      "sql_object_ids_unchanged": true,
+      "sqlstate": "42501"
+    },
+    "database_restart": "PostgreSQL process restart in the same fixture Pod; no RDS failover claim",
+    "not_proved": [
+      "RDS failover",
+      "Live Kata isolation",
+      "Production capacity and remaining enterprise requirements"
+    ],
+    "provisioner_recovery": {
+      "account_write_retries": 0,
+      "current_unavailable_observations": true,
+      "denied_account_requests": 2,
+      "denied_requests_created_no_accounts": true,
+      "gateways": 2,
+      "running_healthy_gateways_after_restart": true,
+      "sql_and_credential_identities_preserved": true
+    },
+    "evidence_archive_sha256": "d0bcf0236d7177129f0a10728c3d33b158a24e3b6f3c3a3aaa965d5a07935afe",
+    "compiler_records_match_published_package": true,
+    "compiler_sha256": "dc650131dc0bab7aab7caf4e33a0ba00dbb436c502ce6882cf2634d9b9b69a62",
+    "compiler_transfer_matches_live_capture": true,
+    "bounded_test_job_verified": true,
+    "provisioner_rollout": "Recreate",
+    "live_provisioner_startup_observations": 2,
+    "failed_rpc_recovery_probe_used": false,
+    "observed_job_deadline_seconds": 1800,
+    "rollout_evidence": "Hash-verified generated template and two live API assertions; final object collection is empty after cleanup",
+    "visual_review_sha256": "02f76e2289f860dd43112e98d3f4d7571c948318b5be3039f71a92b17efc4315",
+    "normal_cleanup_observation": {
+      "schema": 2,
+      "scope": "normal_gateway_cleanup",
+      "stage": "complete",
+      "observation": "sequential_completion_checks",
+      "target_seconds": 30,
+      "capacity_fixture": false,
+      "live_accounts_per_measured_gateway": 100,
+      "complete": true,
+      "installation_data_preserved": true,
+      "gateways": [
+        {
+          "gateway_id": "3JbvdhK49xAOzofMW5DywxMGOeL",
+          "account_rows_before_request": 100,
+          "undeleted_account_rows_before_request": 100,
+          "accepted_response_observed_at": "2026-09-20T22:24:25.807160625Z",
+          "complete": true,
+          "observed_upper_bound_seconds": 34.188578029,
+          "within_target_observed": false,
+          "accounts_created_through_rest": 100,
+          "accounts_with_verified_token_issuance": 100,
+          "accounts_closed": 100,
+          "journals_closed": 100,
+          "provider_clients_absent": 100,
+          "provider_users_absent": 100,
+          "cleanup_success_audits": 100,
+          "account_scope_sealed": true,
+          "completion_observations": {
+            "account_cleanup_recorded": {
+              "last_pending_observed_seconds": 4.301187858,
+              "first_complete_after_last_pending_seconds": 5.3254800190000005,
+              "observed_regressions": 0
+            },
+            "account_proof_complete": {
+              "first_complete_after_last_pending_seconds": 34.188573228,
+              "observed_regressions": 0
+            },
+            "all_cleanup_recorded": {
+              "last_pending_observed_seconds": 32.703939391,
+              "first_complete_after_last_pending_seconds": 33.73956159,
+              "observed_regressions": 0
+            },
+            "allocation_bindings_absent": {
+              "first_complete_after_last_pending_seconds": 33.779314221,
+              "observed_regressions": 0
+            },
+            "allocation_cleanup_recorded": {
+              "last_pending_observed_seconds": 32.703938279,
+              "first_complete_after_last_pending_seconds": 33.739560309,
+              "observed_regressions": 0
+            },
+            "console_state_namespace_absent": {
+              "last_pending_observed_seconds": 31.656135921,
+              "first_complete_after_last_pending_seconds": 32.697398679,
+              "observed_regressions": 0
+            },
+            "gateway_finalized": {
+              "last_pending_observed_seconds": 32.70393894,
+              "first_complete_after_last_pending_seconds": 33.739561047,
+              "observed_regressions": 0
+            },
+            "gateway_namespace_absent": {
+              "last_pending_observed_seconds": 13.743699273,
+              "first_complete_after_last_pending_seconds": 14.79560534,
+              "observed_regressions": 0
+            },
+            "gateway_state_namespace_absent": {
+              "last_pending_observed_seconds": 31.644411207,
+              "first_complete_after_last_pending_seconds": 32.693127967,
+              "observed_regressions": 0
+            },
+            "identity_cleanup_recorded": {
+              "last_pending_observed_seconds": 0.132479317,
+              "first_complete_after_last_pending_seconds": 1.195978523,
+              "observed_regressions": 0
+            },
+            "owner_http_404": {
+              "first_complete_after_last_pending_seconds": 33.856951138,
+              "observed_regressions": 0
+            },
+            "sandbox_namespace_absent": {
+              "last_pending_observed_seconds": 21.13112917,
+              "first_complete_after_last_pending_seconds": 22.236187034,
+              "observed_regressions": 0
+            },
+            "sql_cleanup_recorded": {
+              "last_pending_observed_seconds": 22.236592168,
+              "first_complete_after_last_pending_seconds": 23.292904144,
+              "observed_regressions": 0
+            },
+            "sql_objects_absent": {
+              "first_complete_after_last_pending_seconds": 33.82064765,
+              "observed_regressions": 0
+            },
+            "workload_cleanup_recorded": {
+              "last_pending_observed_seconds": 22.236591646,
+              "first_complete_after_last_pending_seconds": 23.292903838,
+              "observed_regressions": 0
+            }
+          }
+        }
+      ]
+    },
+    "normal_cleanup_timing_sha256": "c8b2b30b9ca662d0c15bf40ac8eb17a3bfef04c2a5c2e9f50d7a20e5cdf76e7f",
+    "capacity_target_proved": false,
+    "native_sandbox_network_tested": false,
+    "allocation_finalization_pause_proved": true,
+    "allocation_finalization_pause": {
+      "schema": 1,
+      "gateway_id": "3JbveIWgQ2BlGxX7owf0mzY3qbK",
+      "other_cleanup_owners_complete": true,
+      "allocation_pending": true,
+      "not_finalized_while_paused": true,
+      "rest_deleting_visible": true,
+      "grpc_deleting_visible": true,
+      "retained_namespace_uids": {
+        "openshell-console-173e0d93d0ebfe5066253c6334c46ba659d1ae42": "a6cf56cb-4911-4236-b947-d4f4350b4262",
+        "openshell-state-173e0d93d0ebfe5066253c6334c46ba659d1ae42": "7d867c97-0efd-496a-9e19-148e181982bb"
+      },
+      "recovered_after_allocator_resume": true,
+      "complete": true
+    },
+    "allocation_finalization_pause_sha256": "322e67536ffb9a498c178aed67efb2873a2ba16730f1aeb9dad268d253c8b029",
+    "common_image_delivery": {
+      "source": "7ed1a7b76c81fc8f667a247a9042da8ecda08fc3",
+      "fixture_source": "d6240de2bfe8711b9182ddf75289dfe1f2b03b60",
+      "run": 35540651284,
+      "image_run": 35538947052,
+      "image_attempt": 1,
+      "qualified": true,
+      "checked_at": "2026-09-20T22:27:22.244038+00:00",
+      "images": {
+        "hypershell": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell@sha256:9558f3d08edcf311b78507ae8664bb228f4664b450ff496caa89766ee6b62865",
+        "hypershell-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-console@sha256:895d351c0d00a9c98fcf97f4a10d72fff337b38f0769d966b61e524e1479fcfa",
+        "hypershell-provisioner": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-provisioner@sha256:ba9173ecae1aa76e21231c89821650b4184ff24bdb2ced7e82341f8b77a33019",
+        "hypershell-gateway-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-console@sha256:cff0dc3d4cc40784dfaeec4b8b919bade938c8cc22caad1a156afc09d430bbb1",
+        "hypershell-namespace-allocation": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-namespace-allocation@sha256:a2dc281c0b11e85cc4c4a39024845653da8acf0238082b51e96b05aaf4a54896",
+        "hypershell-gateway-identity": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-identity@sha256:56494a51b36762f6d4aa78f660cbff156306f601681078a7a446b7e2ea47350d",
+        "hypershell-gateway-workload": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-workload@sha256:34e840124b16281e0a17eb7d4815d67b67a55ffeb34abf5b560da963f8e28979"
+      },
+      "compiler_sha256": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21",
+      "image_set_sha256": "bb91b909b048eae4022c92a72f6f48bd0f36bddf23ed257bf422ecf84e7937be",
+      "registry_ca_sha256": "a0d47fad024f724c9ada5363f83dfacd6f1ce8d2e4dd5cffd1a86ae1f93ecbdb",
+      "registry_policy": {
+        "format": 1,
+        "token_origins": [],
+        "blob_origins": [
+          "https://2sf62fcjk3cr6ob60log2b05mtfb7im5-image-registry-us-east-1.s3.dualstack.us-east-1.amazonaws.com"
+        ]
+      },
+      "same_job_and_pod": true,
+      "complete_source_checks": 7,
+      "complete_registry_receipts": 7,
+      "compiler_matches_published_package": true,
+      "private_publisher_files_archived": false,
+      "scope": "Exact image, source, publication, compiler, and transfer records. The application workflow requires its separate checks."
+    }
+  },
+  "record_sha256": {
+    "image-delivery-verification.json": "32b54c3e08975b10120864ec72d8fb86c686640838a0cc695127e2e2096da7e0",
+    "verification.json": "4131518a702893bdf74f5da0dc8a73ab613fd32e4e634ad5aa2220c4f0a85d47",
+    "controller-trace-verification.json": "fbb566904340cfa2b58db735df639422f47ac29450c42a89bfa2804c9e172244",
+    "account-verification.json": "7add9748f8255a34c490145c6eee8208b0c7b0afd6305d9b7faea9737ab372ca",
+    "phase-verification.json": "5b6f7c6e5e3a76bdc72a7acefa1c04a4cfbe8a43a11d467b68aeb245298483b9",
+    "independent-cleanup.json": "df22cb9141240412ad2bf29d89a188f15c99b80949c6a4311517753ab2b857da",
+    "admitted-pod-verification.json": "b1166b3df54d850ad987374935f2298f8128108738f1d90a1ba2cd642d44e1bb",
+    "visual-review.json": "02f76e2289f860dd43112e98d3f4d7571c948318b5be3039f71a92b17efc4315",
+    "allocator-log-observation/cleanup-window-review.json": "886991f94cdc63c6e28e8a541dbf00e3ee6ec2d22c91ba95574ab73c95479a39",
+    "namespace-deletion-observation-current-gate/cleanup-window-review.json": "72e1c09057e4ed2bf0e7bd3b316721809f09bedee28c5634024ca91107ec52b5"
+  },
+  "scope": "Complete browser workflow for base source 7ed1a7b. This does not claim a live test of corrected source e0f3d7b. Count and corrected-source browser checks remain required. The 30-second normal cleanup target was missed."
+}
