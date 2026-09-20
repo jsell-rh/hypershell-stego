@@ -125,6 +125,18 @@ func (s *Service) RecoverGatewayCleanup(ctx context.Context, id string) (bool, e
 		// Discovery has its own saved cursor. It cannot replace retained cleanup.
 		complete, err = s.recoverGatewayInventory(ctx, gateway)
 	}
+	if !complete && err == nil && membership.Sealed {
+		// A clean partial verification does not disprove an earlier cleanup.
+		// Resource input changes reset the stored observation. New scope members
+		// cannot enter a sealed scope. Failed work still records pending below.
+		states, stateErr := gateway.CleanupObservations()
+		if stateErr != nil {
+			return false, stateErr
+		}
+		if states["accounts"] {
+			return false, nil
+		}
+	}
 	observed := s.repository.WithTransaction(ctx, func(ctx context.Context, tx storage.Transaction) error {
 		if complete {
 			scopes, ok := tx.(storage.ResourceStateScopeStore)
