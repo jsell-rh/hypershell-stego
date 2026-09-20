@@ -91,4 +91,5 @@ The cleanup-owner change now has a passing account capacity result at `4ea3e1e`.
 Cleanup took 21.2756 seconds in run `35476517343`, with the same fixture and
 limits as the ninth run. All selected identities closed and all background
 identities were preserved. The [tenth result](capacity-tenth.md) states the
-scope and remaining limits. The full application gate remains active.
+scope and remaining limits. The full application gate passed with 334 top-level tests and 950 cases. See
+the [full owner result](cleanup-owner-full-evidence.json).

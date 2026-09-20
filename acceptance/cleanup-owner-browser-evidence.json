@@ -24,7 +24,7 @@
   },
   "job_log_sha256": "4961818b92f1d4f8a6a20cb919f6bf3dc5d2a13e671af03e7156bba6458a81c9",
   "limits": [
-    "The full core gate remains pending.",
+    "This browser record does not qualify the core suite; see cleanup-owner-full-evidence.json for the completed full gate.",
     "The hosted browser fixture does not prove live Gateway readiness.",
     "This result applies to source 4ea3e1e. The new 100-account live test remains separate."
   ]

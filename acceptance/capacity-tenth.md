@@ -25,8 +25,7 @@ passed. See the [journal record](cleanup-owner-journal-evidence.json).
 
 This is one passing account cleanup measurement. It does not prove a latency
 distribution, larger or concurrent cleanup, complete workload and database
-cleanup, or repeatable compliance with the target. The full application gate
-and live 100-account Gateway workflow remain required. The 30-second target
+cleanup, or repeatable compliance with the target. The live 100-account Gateway workflow remains required. The 30-second target
 and production quota choices are unchanged.
 
 The completed browser job in full run `35476514171` passed at the same source.
@@ -35,3 +34,11 @@ logs, traces, and metrics. No startup failure pair or out-of-memory event was
 observed. Both saved views were reviewed. They show a provisioning Gateway and
 an empty account list after deletion. They do not prove live Gateway readiness.
 See the [browser record](cleanup-owner-browser-evidence.json).
+
+The full application gate passed at `4ea3e1e` in run `35476514171`.
+All 334 top-level tests and 950 cases passed, including all 816 baseline cases,
+22 retry cases, 11 cleanup-owner cases, and both restart fixtures. The five
+conditional exclusions are unchanged. Browser, console, and image jobs passed.
+The Kata job remains deferred. See the [full result](cleanup-owner-full-evidence.json).
+This qualifies the application runtime for the next live workflow. It does not
+replace the separate live test of the new 100-account population.
