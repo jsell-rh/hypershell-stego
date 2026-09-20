@@ -1,0 +1,33 @@
+name: Common application images
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - .github/workflows/application-images.yml
+      - .ci/application-images.json
+      - '**/*.go'
+      - '**/go.mod'
+      - '**/go.sum'
+      - out/**
+      - console/out/**
+      - gateway-console/out/**
+
+permissions:
+  contents: read
+
+concurrency:
+  group: application-images-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  images:
+    permissions:
+      contents: read
+      id-token: write
+      attestations: write
+    uses: jsell-rh/stego/.github/workflows/application-images.yml@d863fcb5e28887d39cd255e36a2bf56b0bc3825d
+    with:
+      application-repository: ${{ github.repository }}
+      application-revision: ${{ github.sha }}
+      signer-revision: d863fcb5e28887d39cd255e36a2bf56b0bc3825d
