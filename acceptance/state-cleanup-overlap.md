@@ -41,3 +41,7 @@ contains the run links, result hashes, counts, and scope of each check.
 
 The complete live workflow and its new cleanup time remain pending. These
 hosted results do not establish a latency improvement or production capacity.
+
+The [jshell CPU budget](jshell-capacity-budget.md) is below the current
+request total for 100 Gateway servers. The full capacity target needs a
+separate suitable test environment or a measured resource profile.
