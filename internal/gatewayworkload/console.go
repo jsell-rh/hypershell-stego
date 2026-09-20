@@ -2,7 +2,6 @@ package gatewayworkload
 
 import (
 	"context"
-	"encoding/hex"
 	"errors"
 	"net/http"
 	"strings"
@@ -32,11 +31,10 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest, servic
 	if err != nil || ns != gw.GetNamespace() {
 		return nil, errors.New("console placement does not match its Gateway")
 	}
-	raw, err := hex.DecodeString(digest)
-	if err != nil || len(raw) != 32 || hex.EncodeToString(raw) != digest {
+	if digest == "" {
 		return nil, errors.New("console configuration digest is invalid")
 	}
-	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id), ImagePullSecrets: pullSecrets, ExistingServiceAccount: serviceAccount})
+	rendered, err := deployment.Resources(deployment.Options{Image: image, Namespace: ns, FSGroup: group, Scope: "namespace", OwnerLabels: consoleOwner(gw.Metadata.Id), ImagePullSecrets: pullSecrets, ExistingServiceAccount: serviceAccount, ConfigurationDigest: digest})
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +60,6 @@ func consoleResources(gw *pb.Gateway, image string, group uint64, digest, servic
 			if _, present := labels[ownerLabel]; present {
 				return nil, errors.New("console Pods must not match the Gateway Service")
 			}
-			annotations, _ := meta["annotations"].(map[string]any)
-			if annotations == nil {
-				annotations = map[string]any{}
-				meta["annotations"] = annotations
-			}
-			annotations["hypershell.redhat.io/console-configuration"] = digest
 		default:
 			return nil, errors.New("console deployment has an unsupported resource")
 		}

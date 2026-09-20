@@ -7,9 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 
+	deployment "github.com/jsell-rh/hypershell-stego/gateway-console/out/deploy"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	postgres "github.com/jsell-rh/hypershell-stego/out/postgres"
 )
@@ -41,7 +43,7 @@ func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 			if kube.String(entry.object, "spec", "template", "metadata", "labels", ownerLabel) != "" {
 				t.Fatal("console Pod matches Gateway Service")
 			}
-			if kube.String(entry.object, "spec", "template", "metadata", "annotations", "hypershell.redhat.io/console-configuration") != digest {
+			if kube.String(entry.object, "spec", "template", "metadata", "annotations", deployment.ConfigurationAnnotation) != digest {
 				t.Fatal("configuration does not trigger rollout")
 			}
 		}
@@ -50,7 +52,7 @@ func TestConsoleResourcesKeepGatewayServiceSeparate(t *testing.T) {
 		t.Fatal("worker resource set is incorrect", kinds)
 	}
 	for _, invalid := range []string{"", strings.Repeat("A", 64), strings.Repeat("a", 63)} {
-		if _, err := consoleResources(gw, release.Image, 65532, invalid, "allocated-console"); err == nil {
+		if result, err := consoleResources(gw, release.Image, 65532, invalid, "allocated-console"); err == nil || result != nil {
 			t.Fatal("invalid digest accepted")
 		}
 	}
@@ -248,5 +250,60 @@ func TestConsoleStateValidatesNewAndStoredData(t *testing.T) {
 				}
 			})
 		}
+	}
+}
+
+// Credential contents must reach the generated Pod template. Secret metadata
+// must not cause a rollout or change another resource field.
+func TestConsoleVerifiedContentsControlGeneratedRollout(t *testing.T) {
+	gw, release := records(t)
+	secrets := consoleDependencies(gw.Metadata.Id)
+	build := func() ([]object, string) {
+		t.Helper()
+		digest, err := consoleConfigurationDigest(gw.Metadata.Id, secrets)
+		if err != nil {
+			t.Fatal(err)
+		}
+		entries, err := consoleResources(gw, release.Image, 65532, digest, "allocated-console")
+		if err != nil {
+			t.Fatal(err)
+		}
+		return resultObjects(entries), digest
+	}
+	first, firstDigest := build()
+	secrets[0]["metadata"].(object)["resourceVersion"] = "2"
+	unchanged, unchangedDigest := build()
+	if unchangedDigest != firstDigest || !reflect.DeepEqual(first, unchanged) {
+		t.Fatal("Secret metadata changed the generated workload")
+	}
+	secrets[0]["data"].(object)["value"] = base64.StdEncoding.EncodeToString([]byte("changed private console credential"))
+	changed, changedDigest := build()
+	if changedDigest == firstDigest || reflect.DeepEqual(first, changed) {
+		t.Fatal("credential change did not change the generated workload")
+	}
+	raw, err := json.Marshal(changed)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(string(raw), "changed private console credential") || strings.Contains(string(raw), secrets[0]["data"].(object)["value"].(string)) {
+		t.Fatal("the generated workload contains credential contents")
+	}
+	found := 0
+	for _, entry := range changed {
+		if kube.String(entry, "kind") != "Deployment" {
+			continue
+		}
+		annotations := kube.Nested(entry, "spec", "template", "metadata", "annotations").(map[string]any)
+		if annotations[deployment.ConfigurationAnnotation] != changedDigest {
+			t.Fatal("the generated Pod annotation does not use the verified digest")
+		}
+		if _, present := annotations["hypershell.redhat.io/console-configuration"]; present {
+			t.Fatal("new construction still uses the application rollout annotation")
+		}
+		annotations[deployment.ConfigurationAnnotation] = firstDigest
+		found++
+	}
+	if found != 1 || !reflect.DeepEqual(first, changed) {
+		t.Fatal("credential contents changed another generated resource field")
 	}
 }
