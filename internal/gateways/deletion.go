@@ -20,7 +20,7 @@ func RecordCleanup(ctx context.Context, tx store.Transaction, id string, version
 		if target != "" {
 			return ErrInvalid
 		}
-	case "workload", "sql":
+	case "workload", "sql", "allocation":
 		if !validID(target) {
 			return ErrInvalid
 		}

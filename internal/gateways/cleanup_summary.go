@@ -11,7 +11,7 @@ func (s *Service) CleanupSummary(ctx context.Context, p Principal, owner, target
 	if err := validatePrincipal(p); err != nil {
 		return result, err
 	}
-	if !s.isControlPlane(p) || (owner != "identity" && owner != "workload" && owner != "sql") || (owner == "identity" && target != "") || ((owner == "workload" || owner == "sql") && !validID(target)) {
+	if !s.isControlPlane(p) || (owner != "identity" && owner != "workload" && owner != "sql" && owner != "allocation") || (owner == "identity" && target != "") || ((owner == "workload" || owner == "sql" || owner == "allocation") && !validID(target)) {
 		return result, ErrForbidden
 	}
 	if err := s.AuthorizeCleanup(p, "Gateway", owner, target); err != nil {

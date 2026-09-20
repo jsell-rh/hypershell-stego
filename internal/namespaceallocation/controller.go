@@ -7,9 +7,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jsell-rh/hypershell-stego/internal/cleanupmetrics"
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
+	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
@@ -80,7 +82,7 @@ func tag(prefix string, source runtime.Source[string]) runtime.Source[string] {
 // Run checks recorded Gateway placement before allocation. A watch event
 // is not authority to create or remove a namespace.
 func (c *Controller) Run(ctx context.Context, metrics *runtime.Metrics) error {
-	return runtime.RunKeyedWatches(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
+	return runtime.RunKeyedWatches(ctx, c.sources, c.reconcile, runtime.KeyedWatchOptions{ReconnectDelay: time.Second, KeyedOptions: runtime.KeyedOptions{Metrics: metrics, Cleanup: cleanupmetrics.Gateway(c.state, "allocation", c.cluster), Capacity: 1024, Workers: 4, ResyncInterval: 10 * time.Second, Timeout: 20 * time.Second, RetryMin: time.Second, RetryMax: 10 * time.Second, Terminal: func(err error) bool {
 		return errors.Is(err, runtime.ErrObservationContract) || errors.Is(err, runtime.ErrScanContract) || errors.Is(err, runtime.ErrWatch) || status.Code(err) == codes.PermissionDenied || status.Code(err) == codes.Unauthenticated
 	}}})
 }
@@ -114,37 +116,62 @@ func (c *Controller) reconcile(ctx context.Context, key string) error {
 			if !recorded {
 				return nil
 			}
-			if err := c.remove(ctx, "gateway", name, id); err != nil {
+			remove := func(operation context.Context) error {
+				if err := c.remove(operation, "gateway", name, id); err != nil {
+					return err
+				}
+				// Remove retained Sandbox allocations even when new Sandbox
+				// creation is disabled. The Gateway must stop creating work first.
+				sandboxName, err := gatewayworkload.SandboxNamespace(id)
+				if err != nil {
+					return err
+				}
+				if err := c.remove(operation, "sandbox", sandboxName, id); err != nil {
+					return err
+				}
+				sqlHistory := response.GetCleanupTargets()["sql"]
+				if sqlHistory == nil {
+					return errors.New("Gateway allocation has no SQL cleanup history")
+				}
+				sqlComplete, sqlRecorded := sqlHistory.GetTargets()[c.cluster]
+				if !sqlRecorded {
+					return errors.New("Gateway SQL cleanup placement is not recorded")
+				}
+				if !complete || !sqlComplete {
+					return ErrPending
+				}
+				consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
+				if err != nil {
+					return err
+				}
+				if err = c.remove(operation, "gateway-console-state", consoleStateName, id); err != nil {
+					return err
+				}
+				return c.remove(operation, "gateway-state", stateName, id)
+			}
+			if !response.GetDeleted() {
+				return remove(ctx)
+			}
+			history := response.GetCleanupTargets()["allocation"]
+			if history == nil {
+				return errors.New("Gateway allocation cleanup history is missing")
+			}
+			prior, present := history.GetTargets()[c.cluster]
+			if !present {
+				return errors.New("Gateway allocation cleanup placement is not recorded")
+			}
+			return runtime.RunObservation(ctx, remove, func(commit context.Context, failure error) error {
+				complete := failure == nil
+				if complete == prior {
+					return nil
+				}
+				write, err := rpc.WithResourceVersion(commit, response.GetResourceVersion())
+				if err != nil {
+					return err
+				}
+				_, err = c.state.ObserveGatewayCleanup(write, &control.ObserveGatewayCleanupRequest{Id: id, Owner: "allocation", Target: c.cluster, Complete: complete})
 				return err
-			}
-			// Remove retained Sandbox allocations even when new Sandbox
-			// creation is disabled. The Gateway must stop creating work first.
-			sandboxName, err := gatewayworkload.SandboxNamespace(id)
-			if err != nil {
-				return err
-			}
-			if err := c.remove(ctx, "sandbox", sandboxName, id); err != nil {
-				return err
-			}
-			sqlHistory := response.GetCleanupTargets()["sql"]
-			if sqlHistory == nil {
-				return errors.New("Gateway allocation has no SQL cleanup history")
-			}
-			sqlComplete, sqlRecorded := sqlHistory.GetTargets()[c.cluster]
-			if !sqlRecorded {
-				return errors.New("Gateway SQL cleanup placement is not recorded")
-			}
-			if !complete || !sqlComplete {
-				return ErrPending
-			}
-			consoleStateName, err := gatewayworkload.ConsoleStateNamespace(id)
-			if err != nil {
-				return err
-			}
-			if err = c.remove(ctx, "gateway-console-state", consoleStateName, id); err != nil {
-				return err
-			}
-			return c.remove(ctx, "gateway-state", stateName, id)
+			}, runtime.ObservationOptions{WorkTimeout: 20 * time.Second, CommitTimeout: 2 * time.Second})
 		}
 		if !recorded {
 			return errors.New("Gateway placement is not recorded")

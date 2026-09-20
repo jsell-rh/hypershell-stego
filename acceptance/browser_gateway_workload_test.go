@@ -134,7 +134,7 @@ func prepareBrowserGatewayWorkload(t *testing.T, p *kubernetesBrowser, f, sessio
 		grants = append(grants, writeGrant(ids["workload"], "configure.console", f.cluster))
 	}
 	settings = withControllerWriteGrants(t, settings, grants...)
-	settings = withCleanupGrants(t, settings, cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
+	settings = withCleanupGrants(t, settings, cleanupGrant(ids["allocation"], "Gateway", "allocation", f.cluster), cleanupGrant(ids["workload"], "Gateway", "sql", f.cluster), cleanupGrant(ids["identity"], "Gateway", "identity", ""), cleanupGrant(ids["workload"], "Gateway", "workload", f.cluster))
 	encoded, _ := json.Marshal(subjects)
 	settings = append(settings, "HYPERSHELL_CONTROL_PLANE_SUBJECTS="+string(encoded))
 	return w, settings

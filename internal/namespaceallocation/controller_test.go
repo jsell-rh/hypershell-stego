@@ -14,14 +14,16 @@ import (
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
 
 type allocations struct {
-	calls []string
-	done  bool
-	err   error
+	calls          []string
+	done           bool
+	err            error
+	blockedProfile string
 }
 
 func (a *allocations) Ensure(_ context.Context, p, n, id string) error {
@@ -30,23 +32,33 @@ func (a *allocations) Ensure(_ context.Context, p, n, id string) error {
 }
 func (a *allocations) Delete(_ context.Context, p, n, id string) (bool, error) {
 	a.calls = append(a.calls, "delete:"+p+":"+n+":"+id)
-	return a.done, a.err
+	return a.done && p != a.blockedProfile, a.err
 }
 
 type stateAPI struct {
 	control.GatewayIdentityServiceClient
-	row *control.GetGatewayIdentityStateResponse
-	err error
+	row          *control.GetGatewayIdentityStateResponse
+	err          error
+	observations []*control.ObserveGatewayCleanupRequest
+	versions     []string
+	commitErr    error
 }
 
 func (a *stateAPI) GetGatewayIdentityState(context.Context, *control.GetGatewayIdentityStateRequest, ...grpc.CallOption) (*control.GetGatewayIdentityStateResponse, error) {
 	return a.row, a.err
 }
 
+func (a *stateAPI) ObserveGatewayCleanup(ctx context.Context, request *control.ObserveGatewayCleanupRequest, _ ...grpc.CallOption) (*control.ObserveGatewayCleanupResponse, error) {
+	a.observations = append(a.observations, proto.Clone(request).(*control.ObserveGatewayCleanupRequest))
+	md, _ := metadata.FromOutgoingContext(ctx)
+	a.versions = append(a.versions, md.Get("if-resource-version")...)
+	return &control.ObserveGatewayCleanupResponse{}, a.commitErr
+}
+
 func TestGatewayAllocationRequiresCurrentPlacement(t *testing.T) {
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
-	original := &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: true}}}}
+	original := &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"allocation": {Targets: map[string]bool{cluster: false}}, "workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: true}}}}
 	for _, tc := range []struct {
 		name, action string
 		bad          bool
@@ -134,7 +146,7 @@ func TestStateAllocationRemainsUntilSQLCleanupCompletes(t *testing.T) {
 	stateName, _ := gatewayworkload.StateNamespace(id)
 	for _, sqlComplete := range []bool{false, true} {
 		for _, workloadComplete := range []bool{false, true} {
-			a := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, Deleted: true, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: workloadComplete}}, "sql": {Targets: map[string]bool{cluster: sqlComplete}}}}}
+			a := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, Deleted: true, CleanupTargets: map[string]*control.CleanupTargetObservations{"allocation": {Targets: map[string]bool{cluster: false}}, "workload": {Targets: map[string]bool{cluster: workloadComplete}}, "sql": {Targets: map[string]bool{cluster: sqlComplete}}}}}
 			writes := &allocations{done: true}
 			c := &Controller{allocator: writes, state: a, cluster: cluster}
 			err := c.reconcile(context.Background(), "gateway:"+id)
@@ -157,7 +169,7 @@ func TestConsoleStateAllocationPrecedesWorkload(t *testing.T) {
 	for _, enabled := range []bool{false, true} {
 		// Check initial provisioning, a ready endpoint, and a withdrawn endpoint.
 		for _, address := range []string{"", "https://console.example.test", ""} {
-			api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster, ConsoleAddress: &address}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: false}}}}}
+			api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster, ConsoleAddress: &address}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"allocation": {Targets: map[string]bool{cluster: false}}, "workload": {Targets: map[string]bool{cluster: false}}, "sql": {Targets: map[string]bool{cluster: false}}}}}
 			writes := &allocations{done: true}
 			controller := &Controller{allocator: writes, state: api, cluster: cluster, console: enabled}
 			if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
@@ -194,7 +206,7 @@ func TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange(t *testi
 	id, cluster := ksuid.New().String(), ksuid.New().String()
 	ns, _ := gatewayworkload.Namespace(id)
 	sandbox, _ := gatewayworkload.SandboxNamespace(id)
-	api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"workload": {Targets: map[string]bool{cluster: true}}, "sql": {Targets: map[string]bool{cluster: true}}}}}
+	api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{Gateway: &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster}, ResourceVersion: 1, ResourceGeneration: 1, CleanupTargets: map[string]*control.CleanupTargetObservations{"allocation": {Targets: map[string]bool{cluster: false}}, "workload": {Targets: map[string]bool{cluster: true}}, "sql": {Targets: map[string]bool{cluster: true}}}}}
 	writes := &allocations{done: true}
 	controller := &Controller{allocator: writes, state: api, cluster: cluster, sandbox: true}
 	if err := controller.reconcile(context.Background(), "gateway:"+id); err != nil {
@@ -212,5 +224,56 @@ func TestSandboxAllocationFollowsGatewayIdentityAndSurvivesOptionChange(t *testi
 	}
 	if len(writes.calls) != 4 || writes.calls[0] != "delete:gateway:"+ns+":"+id || writes.calls[1] != "delete:sandbox:"+sandbox+":"+id {
 		t.Fatal("disabled option orphaned Sandbox allocation", writes.calls)
+	}
+}
+
+func TestAllocationCleanupCommitRequiresAllNamespacesAbsent(t *testing.T) {
+	id, cluster := ksuid.New().String(), ksuid.New().String()
+	ns, _ := gatewayworkload.Namespace(id)
+	for _, tc := range []struct {
+		name, blocked    string
+		prior            bool
+		commitCode       codes.Code
+		wantCalls        int
+		wantObservations int
+	}{
+		{name: "complete", wantCalls: 4, wantObservations: 1},
+		{name: "retained console", blocked: "gateway-console-state", wantCalls: 3},
+		{name: "retained state", blocked: "gateway-state", wantCalls: 4},
+		{name: "repeat complete", prior: true, wantCalls: 4},
+		{name: "absence lost", prior: true, blocked: "gateway-state", wantCalls: 4, wantObservations: 1},
+		{name: "denied", commitCode: codes.PermissionDenied, wantCalls: 4, wantObservations: 1},
+		{name: "stale version", commitCode: codes.Aborted, wantCalls: 4, wantObservations: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			api := &stateAPI{row: &control.GetGatewayIdentityStateResponse{
+				Gateway:         &pb.Gateway{Metadata: &pb.ObjectReference{Id: id}, Namespace: ns, ClusterId: cluster},
+				ResourceVersion: 37, ResourceGeneration: 9, Deleted: true,
+				CleanupTargets: map[string]*control.CleanupTargetObservations{
+					"workload":   {Targets: map[string]bool{cluster: true}},
+					"sql":        {Targets: map[string]bool{cluster: true}},
+					"allocation": {Targets: map[string]bool{cluster: tc.prior}},
+				},
+			}, commitErr: status.Error(tc.commitCode, "commit failure")}
+			writes := &allocations{done: true, blockedProfile: tc.blocked}
+			controller := &Controller{allocator: writes, state: api, cluster: cluster}
+			err := controller.reconcile(context.Background(), "gateway:"+id)
+			if tc.blocked != "" {
+				if !errors.Is(err, ErrPending) {
+					t.Fatal("pending result was lost", err)
+				}
+			} else if status.Code(err) != tc.commitCode {
+				t.Fatal("commit result was lost", err)
+			}
+			if len(writes.calls) != tc.wantCalls || len(api.observations) != tc.wantObservations {
+				t.Fatal("wrong cleanup or commit count", writes.calls, len(api.observations))
+			}
+			if tc.wantObservations == 1 {
+				observation := api.observations[0]
+				if observation.GetId() != id || observation.GetOwner() != "allocation" || observation.GetTarget() != cluster || observation.GetComplete() != (tc.blocked == "") || !slices.Equal(api.versions, []string{"37"}) {
+					t.Fatal("allocation observation changed its read scope", observation, api.versions)
+				}
+			}
+		})
 	}
 }
