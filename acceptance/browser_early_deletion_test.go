@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 )
 
@@ -16,7 +15,7 @@ func (w *browserGatewayWorkload) prepareEarlyDeletion(owner *consoleBrowser) str
 	}
 	input, _ := json.Marshal(w.f.request("deleted-before-worker-start"))
 	response := owner.api(w.t, "POST", "/gateways", input)
-	var row httpapi.Gateway
+	var row gatewayResponse
 	if response.StatusCode != 201 || json.Unmarshal(response.Body, &row) != nil || row.ID == "" {
 		w.t.Fatal("early Gateway creation failed", response.StatusCode)
 	}

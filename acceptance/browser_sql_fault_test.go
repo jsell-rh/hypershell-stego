@@ -9,7 +9,6 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -105,7 +104,7 @@ func (w *browserGatewayWorkload) checkSQLFaultRecovery(id string) {
 				err := admin.QueryRow(ctx, "SELECT NOT rolcanlogin FROM pg_catalog.pg_roles WHERE rolname=$1", names.User).Scan(&disabled)
 				cancel()
 				response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-				var row httpapi.Gateway
+				var row gatewayResponse
 				if err == nil && disabled && response.StatusCode == 200 && json.Unmarshal(response.Body, &row) == nil && row.Status != nil && *row.Status == "WorkloadUnavailable" {
 					break
 				}

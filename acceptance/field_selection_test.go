@@ -11,7 +11,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/metadata"
 )
@@ -32,7 +31,7 @@ func TestRESTFieldSelectionPreservesAccessAcrossRestart(t *testing.T) {
 	for _, item := range []struct{ name, user string }{{"a-visible", "alice"}, {"z-visible", "alice"}, {"b-hidden", "bob"}} {
 		body := []byte(fmt.Sprintf(`{"name":%q,"cluster_id":%q,"release_id":%q,"server_dns_names":["one.example","two.example"]}`, item.name, f.cluster, f.release))
 		code, data := requestJSON(t, "POST", address+root, token(t, key, item.user, "gateway:creator"), body)
-		var row httpapi.Gateway
+		var row gatewayResponse
 		if code != 201 || json.Unmarshal(data, &row) != nil {
 			t.Fatal("create Gateway", code)
 		}

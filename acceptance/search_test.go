@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"strings"
 	"testing"
-
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 )
 
 func TestRESTSearchAndOrderingPreserveGatewayAccess(t *testing.T) {
@@ -39,7 +37,7 @@ func TestRESTSearchAndOrderingPreserveGatewayAccess(t *testing.T) {
 	} {
 		query := url.Values{"search": {test.search}, "orderBy": {test.order}, "size": {fmt.Sprint(test.size)}}
 		code, data := requestJSON(t, "GET", path+"?"+query.Encode(), owner, nil)
-		var result httpapi.GatewayList
+		var result gatewayListResponse
 		if code != 200 || json.Unmarshal(data, &result) != nil || result.Total != int64(test.total) {
 			t.Fatalf("search %s: %d %s", test.search, code, data)
 		}

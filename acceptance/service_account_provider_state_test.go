@@ -11,7 +11,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccountprovisioner"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
@@ -50,7 +49,7 @@ func TestServiceAccountProviderStateAcrossLockAndRestart(t *testing.T) {
 		t.Helper()
 		body, _ := json.Marshal(map[string]string{"name": name, "cluster_id": f.cluster, "release_id": f.release})
 		code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, body)
-		var value httpapi.Gateway
+		var value gatewayResponse
 		if code != 201 || json.Unmarshal(data, &value) != nil {
 			t.Fatal("Gateway creation failed", code)
 		}

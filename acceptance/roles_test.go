@@ -244,7 +244,7 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 	owner := token(t, key, "alice", "gateway:creator")
 	request, _ = json.Marshal(f.request("catalog-grants"))
 	code, body := requestJSON(t, "POST", root+"/gateways", owner, request)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatal("create from catalog workflow", code, string(body))
 	}

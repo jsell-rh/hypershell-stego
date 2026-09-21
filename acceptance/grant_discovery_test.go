@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
@@ -99,7 +98,7 @@ func TestGrantDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, body := requestJSON(t, "POST", base+"/gateways", token(t, key, "alice", "gateway:creator"), encoded)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatal("create", code, string(body))
 	}

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -21,7 +20,7 @@ import (
 func requireDeletingGateway(t *testing.T, address, bearer string) {
 	t.Helper()
 	code, data := requestJSON(t, "GET", address, bearer, nil)
-	var row httpapi.Gateway
+	var row gatewayResponse
 	if code != 200 || json.Unmarshal(data, &row) != nil || row.Phase == nil || *row.Phase != "Deleting" {
 		t.Fatal("pending Gateway is not visible as Deleting", code)
 	}
@@ -92,7 +91,7 @@ func TestGatewayDurableDeletionThroughGeneratedTransports(t *testing.T) {
 			checkPending := func() {
 				t.Helper()
 				code, body := requestJSON(t, "GET", address+root, owner, nil)
-				var row httpapi.Gateway
+				var row gatewayResponse
 				if code != 200 || json.Unmarshal(body, &row) != nil || row.Phase == nil || *row.Phase != "Deleting" {
 					t.Fatal("pending Gateway", code, string(body))
 				}
@@ -110,7 +109,7 @@ func TestGatewayDurableDeletionThroughGeneratedTransports(t *testing.T) {
 					code, body := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways", token(t, key, user), nil)
 					var page struct {
 						Total int               `json:"total"`
-						Items []httpapi.Gateway `json:"items"`
+						Items []gatewayResponse `json:"items"`
 					}
 					if code != 200 || json.Unmarshal(body, &page) != nil {
 						t.Fatal("pending list", code, string(body))

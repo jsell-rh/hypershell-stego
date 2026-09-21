@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	command "github.com/jsell-rh/hypershell-stego/out/cli/command"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
@@ -181,7 +180,7 @@ spec: {topology: mesh, status: planned}
 	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE gateway_id=$1 AND deleted_at IS NULL", gatewayID).Scan(&grants); err != nil || grants != 1 {
 		t.Fatal("apply did not commit the owner grant", err)
 	}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if json.Unmarshal(success("owner", "get", "gateway", gatewayID), &gateway) != nil || gateway.Name != gatewayName || gateway.ClusterID != ids["ManagedCluster"] || gateway.ReleaseID != ids["GatewayRelease"] {
 		t.Fatal("apply Gateway placement differs")
 	}
@@ -240,7 +239,7 @@ spec: {topology: mesh, status: planned}
 	firstID := partial[0].ID
 	readEvent(t, kafkaConsumer(t, brokerConfig), firstID)
 	// The API permits duplicate names. Apply must refuse to choose one by accident.
-	var duplicate httpapi.Gateway
+	var duplicate gatewayResponse
 	data = success("alice", "create", "gateway", "--name", gatewayName, "--cluster-id", ids["ManagedCluster"], "--release-id", ids["GatewayRelease"])
 	if json.Unmarshal(data, &duplicate) != nil || duplicate.ID == "" {
 		t.Fatal("duplicate-name fixture")

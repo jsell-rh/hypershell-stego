@@ -500,6 +500,51 @@ overrides:
         source: hub_gateway_id
       - target: status
         source: status
+    - name: Gateway
+      provider: postgres-adapter
+      model: Gateway
+      schema: Gateway
+      inputs:
+      - {name: Creator, type: string}
+      fields:
+      - {target: id, source: id, omit_empty: true}
+      - {target: created_at, source: created_time}
+      - {target: updated_at, source: updated_time}
+      - {target: kind, constant: Gateway}
+      - {target: href, source: id, prefix: /api/hypershell/v1/gateways/}
+      - {target: name, source: name}
+      - {target: cluster_id, source: cluster_id}
+      - {target: release_id, source: release_id}
+      - {target: namespace, source: namespace}
+      - {target: external_dns, source: external_dns}
+      - {target: tls_mode, source: tls_mode}
+      - {target: service_type, source: service_type}
+      - {target: status, source: status}
+      - {target: phase, source: phase}
+      - {target: image, source: image}
+      - {target: supervisor_image, source: supervisor_image}
+      - {target: route_address, source: route_address}
+      - {target: console_address, source: console_address}
+      - {target: oidc, source: oidc}
+      - {target: route, source: route}
+      - {target: credential_driver, source: credential_driver}
+      - {target: active_sandbox_count, source: active_sandbox_count}
+      - {target: created_by, input: Creator, omit_empty: true}
+      - {target: server_dns_names, source: server_dns_names, conversion: json_strings, max_bytes: 262144, max_items: 128, max_item_bytes: 253, omit_empty: true}
+    - name: RoleBinding
+      provider: postgres-adapter
+      model: RoleBinding
+      schema: RoleBinding
+      fields:
+      - {target: id, source: id, omit_empty: true}
+      - {target: created_at, source: created_time}
+      - {target: updated_at, source: updated_time}
+      - {target: kind, constant: RoleBinding}
+      - {target: href, source: id, prefix: /api/hypershell/v1/role_bindings/}
+      - {target: role_id, source: role_id}
+      - {target: user_id, source: user_id}
+      - {target: gateway_id, source: gateway_id}
+      - {target: scope, source: scope}
   grpc-application:
     response_mappings:
       - name: Gateway

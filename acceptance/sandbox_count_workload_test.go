@@ -8,12 +8,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/metadata"
 )
 
-func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAddress string, tlsIdentity testIdentity, controller, owner, cluster string, gateway httpapi.Gateway) (func(int32), func()) {
+func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAddress string, tlsIdentity testIdentity, controller, owner, cluster string, gateway gatewayResponse) (func(int32), func()) {
 	t.Helper()
 	name := "hypershell-sandbox-count"
 	ns := k.options.ControlNamespace
@@ -41,7 +40,7 @@ func startSandboxCountWorkflow(t *testing.T, k *kubeFixture, httpAddress, rpcAdd
 		deadline := time.Now().Add(20 * time.Second)
 		for {
 			code, data := requestJSON(t, "GET", httpAddress+"/api/hypershell/v1/gateways/"+gateway.ID, owner, nil)
-			var row httpapi.Gateway
+			var row gatewayResponse
 			ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+owner)), 5*time.Second)
 			got, err := client.GetGateway(ctx, &pb.GetGatewayRequest{Id: gateway.ID})
 			cancel()

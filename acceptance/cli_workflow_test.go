@@ -19,7 +19,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/metadata"
 )
@@ -161,7 +160,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 		t.Fatal("configuration copied the token")
 	}
 	created := success("create", "gateway", "--name", "cli-workflow", "--cluster-id", f.cluster, "--release-id", f.release, "--server-dns-names", `["cli.example.test"]`)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if err := json.Unmarshal(created, &gateway); err != nil || gateway.ID == "" {
 		t.Fatal("invalid CLI creation response", err)
 	}
@@ -186,7 +185,7 @@ func TestGeneratedCLIWorkflow(t *testing.T) {
 	listed := success("list", "gateways", "--size", "1", "--search", "name = 'cli-workflow'")
 	var list struct {
 		Total int
-		Items []httpapi.Gateway
+		Items []gatewayResponse
 	}
 	if json.Unmarshal(listed, &list) != nil || list.Total != 1 || len(list.Items) != 1 || list.Items[0].ID != gateway.ID {
 		t.Fatal("CLI filtered list differs")

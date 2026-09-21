@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 )
@@ -165,7 +164,7 @@ func (w *browserGatewayWorkload) checkAllocationAccess() {
 func (w *browserGatewayWorkload) checkAllocatedDeletion(id string) {
 	w.t.Helper()
 	response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("Gateway deletion setup failed")
 	}

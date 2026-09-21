@@ -73,6 +73,13 @@ jobs:
               'TestRESTCatalogMappingsOwnPointers',
               'TestRESTCatalogMappingsRejectInvalidValues',
               'TestRESTCatalogMappingsPreserveEmptyReference',
+              'TestRESTGatewayMappingPreservesEveryField',
+              'TestRESTGatewayMappingSelectsObservations',
+              'TestRESTGatewayMappingOwnsStorage',
+              'TestRESTGatewayMappingRejectsInvalidValues',
+              'TestRESTGatewayMappingAcceptsListBounds',
+              'TestRESTGrantMappingPreservesFieldsAndOwnership',
+              'TestRESTGrantMappingRejectsInvalidValues',
             },
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)

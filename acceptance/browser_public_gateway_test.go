@@ -8,8 +8,6 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 )
 
 type browserPublicGateway struct {
@@ -73,7 +71,7 @@ func (w *browserGatewayWorkload) publicWorkerSettings(env map[string]string, fil
 	return target
 }
 
-func (w *browserGatewayWorkload) requirePublicEndpoint(gateway httpapi.Gateway) {
+func (w *browserGatewayWorkload) requirePublicEndpoint(gateway gatewayResponse) {
 	w.t.Helper()
 	if w.public == nil {
 		return
@@ -84,12 +82,12 @@ func (w *browserGatewayWorkload) requirePublicEndpoint(gateway httpapi.Gateway) 
 	}
 }
 
-func (w *browserGatewayWorkload) publicRPCAddress(gateway httpapi.Gateway) string {
+func (w *browserGatewayWorkload) publicRPCAddress(gateway gatewayResponse) string {
 	w.requirePublicEndpoint(gateway)
 	return net.JoinHostPort("gw-"+gateway.Namespace+"."+w.public.Domain, "443")
 }
 
-func (w *browserGatewayWorkload) recordPublicRPC(gateway httpapi.Gateway) {
+func (w *browserGatewayWorkload) recordPublicRPC(gateway gatewayResponse) {
 	w.t.Helper()
 	if w.public == nil {
 		return

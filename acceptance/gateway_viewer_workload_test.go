@@ -33,7 +33,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		return response.StatusCode, response.Body
 	}
 	code, body := ownerAPI("GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 200 || json.Unmarshal(body, &gateway) != nil || gateway.ID != id {
 		t.Fatal("viewer workflow Gateway read failed", code)
 	}
@@ -51,7 +51,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 	visibleGateways := func(want []string) {
 		t.Helper()
 		code, body := viewerAPI("GET", "/gateways", nil)
-		var result httpapi.GatewayList
+		var result gatewayListResponse
 		if code != 200 || json.Unmarshal(body, &result) != nil {
 			t.Fatal("list viewer Gateways", code)
 		}

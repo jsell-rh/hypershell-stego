@@ -15,7 +15,6 @@ import (
 	"github.com/jackc/pgx/v5"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -242,7 +241,7 @@ func (w *browserGatewayWorkload) check(id string) {
 	deadline := time.Now().Add(180 * time.Second)
 	for {
 		response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-		var gateway httpapi.Gateway
+		var gateway gatewayResponse
 		if response.StatusCode == 200 && json.Unmarshal(response.Body, &gateway) == nil && gateway.Status != nil && *gateway.Status == "Healthy" && gateway.Phase != nil && *gateway.Phase == "Running" {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			object, code, err := w.kubernetes.Request(ctx, http.MethodGet, "/apis/apps/v1/namespaces/"+gateway.Namespace+"/deployments/openshell-gateway", nil)

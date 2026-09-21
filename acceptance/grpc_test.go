@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/contracts"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
@@ -150,7 +149,7 @@ func TestGatewayWorkflowAcrossRESTAndGRPC(t *testing.T) {
 	awaitQueueEmpty(t, f)
 	path := httpAddress + "/api/hypershell/v1/gateways"
 	code, data := requestJSON(t, "GET", path+"/"+id, owner, nil)
-	var rest httpapi.Gateway
+	var rest gatewayResponse
 	if json.Unmarshal(data, &rest) != nil || code != 200 || rest.ID != id || rest.Namespace != gateway.Namespace || rest.CreatedBy != "alice" || !rest.CreatedAt.Equal(gateway.Metadata.CreatedAt.AsTime()) || rest.SupervisorImage == nil || *rest.SupervisorImage != gateway.GetSupervisorImage() {
 		t.Fatalf("REST did not retrieve gRPC creation: %d %s", code, data)
 	}

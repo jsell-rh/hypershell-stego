@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	logpb "go.opentelemetry.io/proto/otlp/logs/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
@@ -38,7 +37,7 @@ func TestGatewayDatabaseSignalsAcrossRestart(t *testing.T) {
 	owner := token(t, key, "alice", "gateway:creator")
 	other := token(t, key, "mallory")
 	private := []string{owner, other, f.dsn, "private-database-gateway", "private-rejected-gateway", "reject_private_database_event"}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	gatewayGrants := func() int {
 		t.Helper()
 		var total int
@@ -110,13 +109,13 @@ func TestGatewayDatabaseSignalsAcrossRestart(t *testing.T) {
 			call("GET", "/"+gateway.ID, other, "", 404, "success")
 			var page struct {
 				Total int
-				Items []httpapi.Gateway
+				Items []gatewayResponse
 			}
 			if json.Unmarshal(call("GET", "", other, "", 200, "success"), &page) != nil || page.Total != 0 || len(page.Items) != 0 {
 				t.Fatal("list exposed the Gateway")
 			}
 		} else {
-			var got httpapi.Gateway
+			var got gatewayResponse
 			if json.Unmarshal(call("GET", "/"+gateway.ID, owner, "", 200, "success"), &got) != nil || got.ID != gateway.ID || got.Name != gateway.Name {
 				t.Fatal("restart lost the Gateway")
 			}

@@ -11,7 +11,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -43,7 +42,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	}
 	path := httpAddress + "/api/hypershell/v1/gateways"
 	code, data := requestJSON(t, "POST", path, creator, []byte(fmt.Sprintf(`{"name":"original","cluster_id":%q,"release_id":%q,"server_dns_names":["old.example.test"]}`, f.cluster, f.release)))
-	var original httpapi.Gateway
+	var original gatewayResponse
 	if code != 201 || json.Unmarshal(data, &original) != nil {
 		t.Fatalf("create: %d %s", code, data)
 	}
@@ -58,7 +57,7 @@ func TestGatewayMutationWorkflowAcrossTransportsAndRestart(t *testing.T) {
 	}
 	event("Create", "gateway.created")
 	code, data = requestJSON(t, "PATCH", path+"/"+original.ID, owner, []byte(`{"name":"rest-patch","external_dns":"","tls_mode":"passthrough","service_type":"ClusterIP","image":"gateway:v2","supervisor_image":"supervisor:v2","server_dns_names":["new.example.test"],"oidc":"{}","route":"{}","credential_driver":"driver-a"}`))
-	var patched httpapi.Gateway
+	var patched gatewayResponse
 	if code != 200 || json.Unmarshal(data, &patched) != nil {
 		t.Fatalf("REST patch: %d %s", code, data)
 	}

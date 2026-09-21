@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"io"
 	"net/http"
 	"net/url"
@@ -42,7 +41,7 @@ func TestGatewayDatabasePoolWaitCancellationAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, input)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(body, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("Gateway creation failed", code)
 	}

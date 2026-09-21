@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/metadata"
@@ -58,11 +57,11 @@ func TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime(t *testin
 	stop, address, rpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	bearer := token(t, key, "shared-owner", "gateway:creator")
-	create := func(name string) httpapi.Gateway {
+	create := func(name string) gatewayResponse {
 		t.Helper()
 		input, _ := json.Marshal(f.request(name))
 		code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", bearer, input)
-		var row httpapi.Gateway
+		var row gatewayResponse
 		if code != 201 || json.Unmarshal(body, &row) != nil {
 			t.Fatal("local shared Gateway creation failed", code)
 		}

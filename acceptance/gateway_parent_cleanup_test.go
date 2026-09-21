@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -62,7 +61,7 @@ FOR EACH ROW WHEN (NEW.kind LIKE 'managed%.deleted') EXECUTE FUNCTION audit_pare
 	for _, name := range []string{"first", "second"} {
 		body, _ := json.Marshal(f.request(name))
 		code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, body)
-		var row httpapi.Gateway
+		var row gatewayResponse
 		if code != 201 || json.Unmarshal(data, &row) != nil {
 			t.Fatal("create Gateway", code)
 		}

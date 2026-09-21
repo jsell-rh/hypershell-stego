@@ -11,7 +11,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -129,7 +128,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	next(observer, pb.EventType_EVENT_TYPE_CREATED, renewed)
 	request, _ = json.Marshal(f.request("global-role-owner"))
 	code, body := requestJSON(t, "POST", base+"/gateways", creator, request)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatal("create from projected role", code, string(body))
 	}

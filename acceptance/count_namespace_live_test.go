@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/sandboxcount"
 	"github.com/jsell-rh/hypershell-stego/out/deploy/allocation"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -138,7 +137,7 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		deadline := time.Now().Add(35 * time.Second)
 		for {
 			code, data := requestJSON(t, "GET", address+"/api/hypershell/v1/gateways/"+row.Metadata.Id, owner, nil)
-			var rest httpapi.Gateway
+			var rest gatewayResponse
 			rpc, err := client.GetGateway(call(owner), &pb.GetGatewayRequest{Id: row.Metadata.Id})
 			if code == 200 && json.Unmarshal(data, &rest) == nil && rest.ActiveSandboxCount != nil && *rest.ActiveSandboxCount == want && err == nil && rpc.Gateway.GetActiveSandboxCount() == want {
 				return

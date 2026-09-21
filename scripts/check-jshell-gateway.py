@@ -73,6 +73,8 @@ REQUIRED = [
     "TestGeneratedCLICatalogWorkflow",
     "TestGeneratedCLIApplyWorkflow",
     "TestRESTCatalogMappingRejectsStoredTimestamp",
+    "TestRESTGatewayGrantMappingsRejectStoredFaults",
+    "TestGatewayGrantWorkflowAcrossTransportsAndRestart",
 ]
 
 

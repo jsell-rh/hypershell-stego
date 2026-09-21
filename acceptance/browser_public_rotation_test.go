@@ -14,7 +14,6 @@ import (
 	"reflect"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	protocol "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
@@ -34,7 +33,7 @@ func (w *browserGatewayWorkload) readPublicRotationObject(path, id, namespace st
 	return object
 }
 
-func (w *browserGatewayWorkload) publicCertificate(secret kube.Object, gateway httpapi.Gateway) *x509.Certificate {
+func (w *browserGatewayWorkload) publicCertificate(secret kube.Object, gateway gatewayResponse) *x509.Certificate {
 	w.t.Helper()
 	certificate, err := kube.VerifyServerTLSSecret(secret, publicGatewayOwner(gateway.ID), kube.ServerTLSSecretTarget{Namespace: gateway.Namespace, Name: publicCertificateName, DNSName: "gw-" + gateway.Namespace + "." + w.public.Domain, Roots: w.public.roots})
 	if err != nil {
@@ -51,7 +50,7 @@ func (w *browserGatewayWorkload) publicCertificate(secret kube.Object, gateway h
 	return leaf
 }
 
-func (w *browserGatewayWorkload) probePublicCertificate(ctx context.Context, gateway httpapi.Gateway, leaf *x509.Certificate) error {
+func (w *browserGatewayWorkload) probePublicCertificate(ctx context.Context, gateway gatewayResponse, leaf *x509.Certificate) error {
 	probe, err := rpc.NewTLSProbe(rpc.TLSProbeOptions{Address: w.publicRPCAddress(gateway), Roots: w.public.roots, PeerCertificateSHA256: sha256.Sum256(leaf.Raw)})
 	if err != nil {
 		return err
@@ -71,7 +70,7 @@ func (w *browserGatewayWorkload) probePublicCertificate(ctx context.Context, gat
 	return nil
 }
 
-func (w *browserGatewayWorkload) readPublicProvider(gateway httpapi.Gateway) *protocol.ProviderResponse {
+func (w *browserGatewayWorkload) readPublicProvider(gateway gatewayResponse) *protocol.ProviderResponse {
 	w.t.Helper()
 	directory := w.t.TempDir()
 	ca := filepath.Join(directory, "ca.pem")
@@ -99,7 +98,7 @@ func (w *browserGatewayWorkload) readPublicProvider(gateway httpapi.Gateway) *pr
 func (w *browserGatewayWorkload) checkPublicCertificateRotation(id string) {
 	w.t.Helper()
 	response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("public rotation Gateway read failed")
 	}

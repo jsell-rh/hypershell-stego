@@ -126,7 +126,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 			t.Fatal("CLI role read differs from its list")
 		}
 	}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	data := success("alice", "create", "gateway", "--name", "cli-grants", "--cluster-id", f.cluster, "--release-id", f.release)
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("CLI did not create the Gateway")
@@ -139,7 +139,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 		} else {
 			denied("bob", "404", "get", "gateway", gateway.ID)
 		}
-		var list httpapi.GatewayList
+		var list gatewayListResponse
 		want := int64(0)
 		if visible {
 			want = 1

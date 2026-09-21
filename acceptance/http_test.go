@@ -20,7 +20,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/jsell-rh/hypershell-stego/contracts"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/segmentio/ksuid"
 )
 
@@ -124,7 +123,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 	if status != http.StatusCreated {
 		t.Fatalf("create status %d: %s", status, data)
 	}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if err := json.Unmarshal(data, &gateway); err != nil {
 		t.Fatal(err)
 	}
@@ -208,7 +207,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 		t.Fatal("REST accepted a removed viewer grant")
 	}
 	status, data = requestJSON(t, "GET", path+"?page=1&size=1", owner, nil)
-	var list httpapi.GatewayList
+	var list gatewayListResponse
 	if err := json.Unmarshal(data, &list); err != nil {
 		t.Fatal(err)
 	}

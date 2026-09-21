@@ -6,31 +6,27 @@ import (
 	"net/http"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/application/contract"
+	"github.com/jsell-rh/hypershell-stego/out/application/responses"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
 const grantPath = "/api/hypershell/v1/role_bindings"
 
-type grantItem struct {
-	Reference
-	RoleID    string  `json:"role_id"`
-	UserID    string  `json:"user_id"`
-	GatewayID *string `json:"gateway_id,omitempty"`
-	Scope     string  `json:"scope"`
-}
+type grantItem = contract.RoleBinding
 
 type grantList struct {
-	Kind  string      `json:"kind"`
-	Href  string      `json:"href"`
-	Page  int         `json:"page"`
-	Size  int         `json:"size"`
-	Total int64       `json:"total"`
-	Items []grantItem `json:"items"`
+	Kind  string       `json:"kind"`
+	Href  string       `json:"href"`
+	Page  int          `json:"page"`
+	Size  int          `json:"size"`
+	Total int64        `json:"total"`
+	Items []*grantItem `json:"items"`
 }
 
-func presentGrant(row model.RoleBinding) grantItem {
-	return grantItem{Reference: Reference{ID: row.ID, Kind: "RoleBinding", Href: grantPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, RoleID: row.RoleID, UserID: row.UserID, GatewayID: row.GatewayID, Scope: row.Scope}
+func presentGrant(row model.RoleBinding) (*grantItem, error) {
+	return responses.RoleBinding(row)
 }
 
 func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways.Service) error {
@@ -41,9 +37,13 @@ func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways
 		if err != nil {
 			return nil, err
 		}
-		result := grantList{Kind: "RoleBindingList", Href: grantPath, Page: q.Page, Size: len(page.Items), Total: page.Total, Items: make([]grantItem, 0, len(page.Items))}
+		result := grantList{Kind: "RoleBindingList", Href: grantPath, Page: q.Page, Size: len(page.Items), Total: page.Total, Items: make([]*grantItem, 0, len(page.Items))}
 		for _, item := range page.Items {
-			result.Items = append(result.Items, presentGrant(item.Grant))
+			value, err := presentGrant(item.Grant)
+			if err != nil {
+				return nil, err
+			}
+			result.Items = append(result.Items, value)
 		}
 		return transport.ProjectListIfSelected(result, q.Fields, "items")
 	}, http.StatusOK, writeError)
@@ -55,12 +55,12 @@ func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways
 			return gateways.GrantRequest{}, transport.ErrRequest
 		}
 		return transport.JSONBody[gateways.GrantRequest](r)
-	}, func(ctx context.Context, input gateways.GrantRequest) (grantItem, error) {
+	}, func(ctx context.Context, input gateways.GrantRequest) (*grantItem, error) {
 		row, err := service.CreateGrant(ctx, gateways.PrincipalFromContext(ctx), input)
 		if err != nil {
-			return grantItem{}, err
+			return nil, err
 		}
-		return presentGrant(row), nil
+		return presentGrant(row)
 	}, http.StatusCreated, writeError)
 	if err != nil {
 		return err
@@ -77,12 +77,12 @@ func registerGrants(mux *http.ServeMux, verifier *requestAuth, service *gateways
 		}
 		return r.PathValue("id"), nil
 	}
-	get, err := endpoint(verifier, target, func(ctx context.Context, id string) (grantItem, error) {
+	get, err := endpoint(verifier, target, func(ctx context.Context, id string) (*grantItem, error) {
 		row, err := service.GetGrant(ctx, gateways.PrincipalFromContext(ctx), id)
 		if err != nil {
-			return grantItem{}, err
+			return nil, err
 		}
-		return presentGrant(row), nil
+		return presentGrant(row)
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

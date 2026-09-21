@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -42,7 +41,7 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	controller := call(token(t, key, "controller"))
 	path := httpAddress + "/api/hypershell/v1/gateways"
 	code, data := requestJSON(t, "POST", path, token(t, key, "alice", "gateway:creator"), []byte(fmt.Sprintf(`{"name":"version-check","cluster_id":%q,"release_id":%q}`, f.cluster, f.release)))
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(data, &gateway) != nil {
 		t.Fatalf("create: %d %s", code, data)
 	}
@@ -163,7 +162,7 @@ func TestGatewayRejectsOldObservationAcrossRESTGRPCAndRestart(t *testing.T) {
 	}{{"status = 'Healthy'", 0}, {"status = 'ObservationPending'", 1}} {
 		code, data = requestJSON(t, "GET", path+"?search="+url.QueryEscape(filter.expression), owner, nil)
 		var page struct {
-			Items []httpapi.Gateway `json:"items"`
+			Items []gatewayResponse `json:"items"`
 		}
 		if code != 200 || json.Unmarshal(data, &page) != nil || len(page.Items) != filter.want {
 			t.Fatalf("status filter used stale data: %s: %d %s", filter.expression, code, data)

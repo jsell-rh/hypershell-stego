@@ -164,7 +164,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 		t.Fatal("CLI rejected or changed nullable catalog fields")
 	}
 	success("admin", "delete", "gateway-release", nullable.ID, "--yes")
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	data := success("alice", "create", "gateway", "--name", "catalog-cli", "--cluster-id", entries[0].id, "--release-id", entries[1].id)
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" || gateway.ClusterID != entries[0].id || gateway.ReleaseID != entries[1].id {
 		t.Fatal("CLI Gateway did not use the returned catalog IDs")

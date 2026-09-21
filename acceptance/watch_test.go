@@ -13,7 +13,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
@@ -123,7 +122,7 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	path := httpAddress + "/api/hypershell/v1/gateways"
 	body := []byte(fmt.Sprintf(`{"name":"watch-create","cluster_id":%q,"release_id":%q}`, f.cluster, f.release))
 	code, data := requestJSON(t, "POST", path, token(t, key, "alice", "gateway:creator"), body)
-	var rest httpapi.Gateway
+	var rest gatewayResponse
 	if code != 201 || json.Unmarshal(data, &rest) != nil {
 		t.Fatalf("watch REST create: %d %s", code, data)
 	}

@@ -41,7 +41,7 @@ func TestGatewayGrantWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, body := requestJSON(t, "POST", base+"/gateways", owner, encoded)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(body, &gateway) != nil {
 		t.Fatalf("create Gateway: %d %s", code, body)
 	}
@@ -77,7 +77,7 @@ func TestGatewayGrantWorkflowAcrossTransportsAndRestart(t *testing.T) {
 			t.Fatal("gRPC access", err)
 		}
 		code, body := requestJSON(t, "GET", base+"/gateways?size=1", viewer, nil)
-		var list httpapi.GatewayList
+		var list gatewayListResponse
 		wantedTotal := visibleBase
 		if want {
 			wantedTotal++
@@ -143,7 +143,7 @@ func TestGatewayGrantWorkflowAcrossTransportsAndRestart(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, body = requestJSON(t, "POST", base+"/gateways", token(t, key, "bob", "gateway:creator"), anchorBody)
-	var anchor httpapi.Gateway
+	var anchor gatewayResponse
 	if code != 201 || json.Unmarshal(body, &anchor) != nil {
 		t.Fatal("create watch barrier", code)
 	}

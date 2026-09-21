@@ -8,7 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"github.com/segmentio/ksuid"
@@ -33,11 +32,11 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	owner := token(t, key, "owner", "gateway:creator")
-	create := func(name string) httpapi.Gateway {
+	create := func(name string) gatewayResponse {
 		t.Helper()
 		input, _ := json.Marshal(f.request(name))
 		code, body := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, input)
-		var row httpapi.Gateway
+		var row gatewayResponse
 		if code != 201 || json.Unmarshal(body, &row) != nil {
 			t.Fatal("Gateway creation failed", code)
 		}
@@ -154,7 +153,7 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	if count(t, f.db, "stego_effect_bindings") != 2 {
 		t.Fatal("component registrations do not have separate records")
 	}
-	for _, row := range []httpapi.Gateway{early, bound} {
+	for _, row := range []gatewayResponse{early, bound} {
 		if code, _ := requestJSON(t, "DELETE", address+"/api/hypershell/v1/gateways/"+row.ID, owner, nil); code != 202 {
 			t.Fatal("Gateway deletion failed", code)
 		}
@@ -166,7 +165,7 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	defer connection.Close()
 	client = control.NewGatewayIdentityServiceClient(connection)
-	for _, row := range []httpapi.Gateway{early, bound} {
+	for _, row := range []gatewayResponse{early, bound} {
 		for _, component := range []control.GatewaySQLComponent{control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_GATEWAY, control.GatewaySQLComponent_GATEWAY_SQL_COMPONENT_CONSOLE} {
 			expected := ""
 			if row.ID == bound.ID {
@@ -232,7 +231,7 @@ func TestGatewayDeletionBeforeWorkloadStartup(t *testing.T) {
 	_, connection = grpcClient(t, grpcAddress, tlsIdentity)
 	defer connection.Close()
 	client = control.NewGatewayIdentityServiceClient(connection)
-	for _, row := range []httpapi.Gateway{early, bound} {
+	for _, row := range []gatewayResponse{early, bound} {
 		if _, err := client.ObserveGatewayCleanup(versioned("sql-worker", revision(row.ID)), &control.ObserveGatewayCleanupRequest{Id: row.ID, Owner: "sql", Target: f.cluster, Complete: true}); err != nil {
 			t.Fatal("restart lost console cleanup completion", err)
 		}

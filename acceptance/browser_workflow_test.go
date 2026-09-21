@@ -25,7 +25,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	web "github.com/jsell-rh/hypershell-stego/out/application/client"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -690,7 +689,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 	} else {
 		response = alice.api(t, "POST", "/gateways", body)
 	}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != expectedStatus || json.Unmarshal(response.Body, &gateway) != nil {
 		t.Fatal("browser Gateway creation failed", response.StatusCode)
 	}
@@ -721,7 +720,7 @@ func runBrowserGatewayWorkflow(t *testing.T, deployment *kubernetesBrowser) {
 		workload.checkEarlyDeletion(early)
 		if workload.public != nil && rendered != nil {
 			response := alice.api(t, "GET", "/gateways/"+gateway.ID, nil)
-			var current httpapi.Gateway
+			var current gatewayResponse
 			if response.StatusCode != 200 || json.Unmarshal(response.Body, &current) != nil {
 				t.Fatal("public Gateway read failed")
 			}

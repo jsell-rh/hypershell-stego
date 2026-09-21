@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/metadata"
 )
@@ -69,7 +68,7 @@ func TestGatewayBackgroundTaskAbortAndRestart(t *testing.T) {
 			owner := token(t, key, "alice")
 			input, _ := json.Marshal(f.request("private-task-gateway"))
 			code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", creator, input)
-			var gateway httpapi.Gateway
+			var gateway gatewayResponse
 			if code != 201 || json.Unmarshal(data, &gateway) != nil {
 				t.Fatal("Gateway creation failed", code)
 			}

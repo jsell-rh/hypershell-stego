@@ -10,8 +10,6 @@ import (
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 )
 
 func TestGeneratedStartupFailurePrivacy(t *testing.T) {
@@ -98,7 +96,7 @@ func TestGatewayDatabaseFailureLogPrivacy(t *testing.T) {
 	if status != http.StatusCreated {
 		t.Fatalf("database recovery returned %d", status)
 	}
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if err := json.Unmarshal(data, &gateway); err != nil {
 		t.Fatal(err)
 	}

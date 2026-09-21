@@ -18,6 +18,8 @@ import (
 	_ "github.com/jsell-rh/hypershell-stego/internal/schema"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
+	responsecontract "github.com/jsell-rh/hypershell-stego/out/application/contract"
+	"github.com/jsell-rh/hypershell-stego/out/application/responses"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	contract "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
@@ -34,35 +36,15 @@ type Reference struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 }
-type Gateway struct {
-	Reference
-	Name               string   `json:"name"`
-	ClusterID          string   `json:"cluster_id"`
-	ReleaseID          string   `json:"release_id"`
-	Namespace          string   `json:"namespace"`
-	ExternalDNS        *string  `json:"external_dns,omitempty"`
-	TLSMode            *string  `json:"tls_mode,omitempty"`
-	ServiceType        *string  `json:"service_type,omitempty"`
-	Status             *string  `json:"status,omitempty"`
-	Phase              *string  `json:"phase,omitempty"`
-	Image              *string  `json:"image,omitempty"`
-	SupervisorImage    *string  `json:"supervisor_image,omitempty"`
-	ServerDNSNames     []string `json:"server_dns_names,omitempty"`
-	RouteAddress       *string  `json:"route_address,omitempty"`
-	ConsoleAddress     *string  `json:"console_address,omitempty"`
-	OIDC               *string  `json:"oidc,omitempty"`
-	Route              *string  `json:"route,omitempty"`
-	CredentialDriver   *string  `json:"credential_driver,omitempty"`
-	ActiveSandboxCount *int32   `json:"active_sandbox_count,omitempty"`
-	CreatedBy          string   `json:"created_by,omitempty"`
-}
+type Gateway = responsecontract.Gateway
+
 type GatewayList struct {
-	Kind  string    `json:"kind"`
-	Href  string    `json:"href"`
-	Page  int       `json:"page"`
-	Size  int       `json:"size"`
-	Total int64     `json:"total"`
-	Items []Gateway `json:"items"`
+	Kind  string     `json:"kind"`
+	Href  string     `json:"href"`
+	Page  int        `json:"page"`
+	Size  int        `json:"size"`
+	Total int64      `json:"total"`
+	Items []*Gateway `json:"items"`
 }
 type patchRequest struct {
 	ID    string
@@ -122,10 +104,10 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	}
 	create, err := endpoint(verifier, func(r *http.Request) (gateways.CreateRequest, error) {
 		return transport.JSONBody[gateways.CreateRequest](r)
-	}, func(ctx context.Context, request gateways.CreateRequest) (Gateway, error) {
+	}, func(ctx context.Context, request gateways.CreateRequest) (*Gateway, error) {
 		row, err := service.Create(ctx, gateways.PrincipalFromContext(ctx), request)
 		if err != nil {
-			return Gateway{}, err
+			return nil, err
 		}
 		return present(row, gateways.PrincipalFromContext(ctx).Username)
 	}, http.StatusCreated, writeError)
@@ -137,14 +119,14 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 			return "", transport.ErrRequest
 		}
 		return r.PathValue("id"), nil
-	}, func(ctx context.Context, id string) (Gateway, error) {
+	}, func(ctx context.Context, id string) (*Gateway, error) {
 		row, err := service.Get(ctx, gateways.PrincipalFromContext(ctx), id)
 		if err != nil {
-			return Gateway{}, err
+			return nil, err
 		}
 		creators, err := creatorNames(ctx, database, []string{row.ID})
 		if err != nil {
-			return Gateway{}, err
+			return nil, err
 		}
 		return present(row, creators[row.ID])
 	}, http.StatusOK, writeError)
@@ -160,7 +142,7 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		if !ok {
 			return nil, errors.New("unexpected Gateway storage result")
 		}
-		response := GatewayList{Kind: "GatewayList", Href: collectionPath, Page: request.Page, Size: len(rows), Total: result.Total, Items: make([]Gateway, 0, len(rows))}
+		response := GatewayList{Kind: "GatewayList", Href: collectionPath, Page: request.Page, Size: len(rows), Total: result.Total, Items: make([]*Gateway, 0, len(rows))}
 		ids := make([]string, len(rows))
 		for i, row := range rows {
 			ids[i] = row.ID
@@ -187,14 +169,14 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 		}
 		patch, err := transport.JSONBody[gateways.PatchRequest](r)
 		return patchRequest{ID: r.PathValue("id"), Patch: patch}, err
-	}, func(ctx context.Context, request patchRequest) (Gateway, error) {
+	}, func(ctx context.Context, request patchRequest) (*Gateway, error) {
 		row, err := service.Update(ctx, gateways.PrincipalFromContext(ctx), request.ID, request.Patch)
 		if err != nil {
-			return Gateway{}, err
+			return nil, err
 		}
 		creators, err := creatorNames(ctx, database, []string{row.ID})
 		if err != nil {
-			return Gateway{}, err
+			return nil, err
 		}
 		return present(row, creators[row.ID])
 	}, http.StatusOK, writeError)
@@ -247,16 +229,9 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	return &managedApplication{Handler: mux, accounts: accounts, close: closeProvider}, nil
 }
 
-func present(row model.Gateway, creator string) (Gateway, error) {
-	row = row.CurrentObservations()
-	var names []string
-	if len(row.ServerDnsNames) > 0 {
-		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {
-			return Gateway{}, errors.New("stored server DNS names are invalid")
-		}
-	}
-	return Gateway{Reference: Reference{ID: row.ID, Kind: "Gateway", Href: collectionPath + "/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, ClusterID: row.ClusterID, ReleaseID: row.ReleaseID, Namespace: row.Namespace,
-		ExternalDNS: row.ExternalDns, TLSMode: row.TlsMode, ServiceType: row.ServiceType, Status: row.Status, Phase: row.Phase, Image: row.Image, SupervisorImage: row.SupervisorImage, ServerDNSNames: names, RouteAddress: row.RouteAddress, ConsoleAddress: row.ConsoleAddress, OIDC: row.Oidc, Route: row.Route, CredentialDriver: row.CredentialDriver, ActiveSandboxCount: row.ActiveSandboxCount, CreatedBy: creator}, nil
+func present(row model.Gateway, creator string) (*Gateway, error) {
+	// The application selects observations and resolves the creator before conversion.
+	return responses.Gateway(row.CurrentObservations(), responses.GatewayInput{Creator: creator})
 }
 
 func parsePage(r *http.Request) (pageRequest, error) {

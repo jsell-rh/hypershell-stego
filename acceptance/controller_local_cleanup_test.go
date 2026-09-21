@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"github.com/segmentio/ksuid"
@@ -30,7 +29,7 @@ func TestControllerLocalSQLCleanupRequiresExactGrantAndVersion(t *testing.T) {
 	owner := token(t, key, "owner", "gateway:creator")
 	body, _ := json.Marshal(f.request("sql-cleanup"))
 	code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, body)
-	var row httpapi.Gateway
+	var row gatewayResponse
 	if code != 201 || json.Unmarshal(data, &row) != nil {
 		t.Fatal("Gateway creation failed", code)
 	}

@@ -20,7 +20,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	logpb "go.opentelemetry.io/proto/otlp/logs/v1"
 	tracepb "go.opentelemetry.io/proto/otlp/trace/v1"
 	"google.golang.org/protobuf/proto"
@@ -102,7 +101,7 @@ func TestGeneratedCLIObservabilityAcrossRestart(t *testing.T) {
 	}
 	run("success", nil, "login", "--url", proxy.URL, "--token-file", tokenFile, "--ca-file", ca)
 	data := run("success", nil, "create", "gateway", "--name", "private-cli-gateway", "--cluster-id", f.cluster, "--release-id", f.release)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("CLI stdout is not a Gateway")
 	}
@@ -126,7 +125,7 @@ func TestGeneratedCLIObservabilityAcrossRestart(t *testing.T) {
 	stop, address, _, _, apiOutput = startBothWithLogs(t, apiBinary, f.dsn, brokerConfig, apiEnv...)
 	backend.Store(address)
 	data = run("success", nil, "get", "gateway", gateway.ID)
-	var got httpapi.Gateway
+	var got gatewayResponse
 	if json.Unmarshal(data, &got) != nil || got.ID != gateway.ID || got.Name != gateway.Name {
 		t.Fatal("restart changed the retained Gateway")
 	}
@@ -139,7 +138,7 @@ func TestGeneratedCLIObservabilityAcrossRestart(t *testing.T) {
 	listener.Close()
 	started := time.Now()
 	data = run("success", []string{"OTEL_EXPORTER_OTLP_ENDPOINT=https://" + unavailable}, "get", "gateway", gateway.ID)
-	got = httpapi.Gateway{}
+	got = gatewayResponse{}
 	if time.Since(started) > 6*time.Second || json.Unmarshal(data, &got) != nil || got.ID != gateway.ID || got.Name != gateway.Name {
 		t.Fatal("collector loss prevented CLI completion")
 	}

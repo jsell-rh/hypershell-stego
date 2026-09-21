@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 )
 
@@ -29,7 +28,7 @@ func (w *browserGatewayWorkload) startRenderedDashboard(id string) *renderedBrow
 		w.t.Fatal(err)
 	}
 	response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil || gateway.ConsoleAddress == nil || *gateway.ConsoleAddress != origin {
 		w.t.Fatal("ready Gateway has no verified console address")
 	}

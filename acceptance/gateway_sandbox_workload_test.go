@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -21,7 +20,7 @@ import (
 	"google.golang.org/protobuf/types/dynamicpb"
 )
 
-func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway httpapi.Gateway, service protoreflect.ServiceDescriptor, connection *grpc.ClientConn, owner, denied string, call gatewayCall, checkCount func(int32)) func(*grpc.ClientConn, string) {
+func gatewaySandboxWorkflow(t *testing.T, k *kubeFixture, gateway gatewayResponse, service protoreflect.ServiceDescriptor, connection *grpc.ClientConn, owner, denied string, call gatewayCall, checkCount func(int32)) func(*grpc.ClientConn, string) {
 	t.Helper()
 	ns, err := gatewayworkload.SandboxNamespace(gateway.ID)
 	if err != nil {

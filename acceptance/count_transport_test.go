@@ -10,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	identitypb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
@@ -74,7 +73,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 			t.Fatalf("gRPC count: %v %v", response, err)
 		}
 		code, data := requestJSON(t, "GET", httpAddress+"/api/hypershell/v1/gateways/"+id, owner, nil)
-		var row httpapi.Gateway
+		var row gatewayResponse
 		if code != 200 || json.Unmarshal(data, &row) != nil || row.ActiveSandboxCount == nil || *row.ActiveSandboxCount != want {
 			t.Fatalf("REST count: %d %s", code, data)
 		}

@@ -14,7 +14,6 @@ import (
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -226,7 +225,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	body, _ := json.Marshal(gateways.CreateRequest{Name: "api-placed", ClusterID: cluster.ID, ReleaseID: releaseID})
 	code, data = requestJSON(t, "POST", base+"/gateways", creator, body)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(data, &gateway) != nil || gateway.ID == "" {
 		t.Fatal("API placement", code, string(data))
 	}

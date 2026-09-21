@@ -7,7 +7,6 @@ import (
 	"time"
 
 	protocol "github.com/jsell-rh/hypershell-stego/contracts/gateway"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/out/auth"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -23,7 +22,7 @@ import (
 func (w *browserGatewayWorkload) checkRPC(id string) {
 	w.t.Helper()
 	response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil {
 		w.t.Fatal("Gateway read failed")
 	}

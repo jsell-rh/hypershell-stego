@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayworkload"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc/metadata"
@@ -85,7 +84,7 @@ stego_finalized_at IS NOT NULL FROM gateways WHERE id=$1`, id, w.f.cluster).Scan
 		record.RetainedNamespaces[name] = kube.String(object, "metadata", "uid")
 	}
 	response := w.owner.api(w.t, "GET", "/gateways/"+id, nil)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if response.StatusCode != 200 || json.Unmarshal(response.Body, &gateway) != nil || gateway.ID != id || gateway.Phase == nil || *gateway.Phase != "Deleting" {
 		w.t.Fatal("REST hid a Gateway with pending allocation cleanup", response.StatusCode)
 	}

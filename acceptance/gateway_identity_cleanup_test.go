@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	"google.golang.org/grpc/codes"
@@ -40,7 +39,7 @@ func TestGatewayIdentityCleanupIsAtomicAndSurvivesRestart(t *testing.T) {
 	root := address + "/api/hypershell/v1/gateways"
 	body, _ := json.Marshal(map[string]string{"name": "cleanup", "cluster_id": f.cluster, "release_id": f.release})
 	code, data := requestJSON(t, "POST", root, owner, body)
-	var row httpapi.Gateway
+	var row gatewayResponse
 	if code != 201 || json.Unmarshal(data, &row) != nil {
 		t.Fatalf("create: %d %s", code, data)
 	}

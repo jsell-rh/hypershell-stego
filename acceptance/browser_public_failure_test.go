@@ -13,7 +13,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
@@ -75,7 +74,7 @@ func (w *browserGatewayWorkload) checkPublicEgressLoss(id string, remove, restor
 	for _, gatewayID := range w.gatewayIDs {
 		for {
 			response := w.owner.api(w.t, "GET", "/gateways/"+gatewayID, nil)
-			var gateway httpapi.Gateway
+			var gateway gatewayResponse
 			if response.StatusCode == 200 && json.Unmarshal(response.Body, &gateway) == nil && gateway.Phase != nil && *gateway.Phase == "Degraded" && gateway.Status != nil && (*gateway.Status == "WorkloadUnavailable" || *gateway.Status == "WorkloadNotReady") && (gateway.RouteAddress == nil || *gateway.RouteAddress == "") {
 				break
 			}

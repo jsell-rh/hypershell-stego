@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
@@ -30,7 +29,7 @@ func TestGatewayRequestsRejectRetiredDatabaseField(t *testing.T) {
 	base := address + "/api/hypershell/v1/gateways"
 	body, _ := json.Marshal(f.request("without-database-field"))
 	code, output := requestJSON(t, "POST", base, creator, body)
-	var row httpapi.Gateway
+	var row gatewayResponse
 	if code != 201 || json.Unmarshal(output, &row) != nil || row.ID == "" {
 		t.Fatal("creation without the retired field failed", code)
 	}

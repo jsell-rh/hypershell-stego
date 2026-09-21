@@ -11,7 +11,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gatewayidentity"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	runtime "github.com/jsell-rh/hypershell-stego/out/controller"
 	rpc "github.com/jsell-rh/hypershell-stego/out/grpcapi/client"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
@@ -44,7 +43,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	owner := token(t, signingKey, "alice", "gateway:creator")
 	body, _ := json.Marshal(map[string]string{"name": "protected-provider", "cluster_id": f.cluster, "release_id": f.release})
 	code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", owner, body)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(data, &gateway) != nil {
 		t.Fatal("Gateway creation failed", code)
 	}

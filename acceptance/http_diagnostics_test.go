@@ -18,7 +18,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	logcollector "go.opentelemetry.io/proto/otlp/collector/logs/v1"
 	metriccollector "go.opentelemetry.io/proto/otlp/collector/metrics/v1"
 	tracecollector "go.opentelemetry.io/proto/otlp/collector/trace/v1"
@@ -113,7 +112,7 @@ func gatewayHTTPDiagnosticPrivacy(t *testing.T, binary string, exported bool) {
 	owner := token(t, key, "alice")
 	input, _ := json.Marshal(f.request("private-http-diagnostic-gateway"))
 	code, data := requestJSON(t, "POST", address+"/api/hypershell/v1/gateways", creator, input)
-	var gateway httpapi.Gateway
+	var gateway gatewayResponse
 	if code != 201 || json.Unmarshal(data, &gateway) != nil {
 		t.Fatal("Gateway creation failed", code)
 	}
