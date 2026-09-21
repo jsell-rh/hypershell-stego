@@ -130,9 +130,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: e4eb3fd35340c5b5ef339e918b08ffe385c611067d2a06468e01071f15adf4a7
+                sha256: 7ae30043c4b794e8ef75e2c85158149d885b66d9a917b53d4285bfcf7bb406f1
                 mode: 420
-        sha256: dc86e0e0b036f084487ce182458d1b50a3c8b352dd50697e37a1a536d4ce8ace
+        sha256: 87908669d76340d2a0e6d3e43fbbfb95e2c00087e040355e910d09702623a900
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -141,7 +141,7 @@ last_applied:
         vcs: git
         revision: 3666fed3ef8d31e5957cdd775ca8345e31384930
         source_state: clean
-    service_hash: e4eb3fd35340c5b5ef339e918b08ffe385c611067d2a06468e01071f15adf4a7
+    service_hash: 7ae30043c4b794e8ef75e2c85158149d885b66d9a917b53d4285bfcf7bb406f1
     registry_sha: 0ebc3006a0f9d751453ab5c28d2a3042354c9523152ed483be1a0581d8b451f7
     registry_content_sha256: 945865b7c5445eaf0740aedeecdd11e7347cc66e6b44f924d1025395b50bccc3
     components:
@@ -479,13 +479,13 @@ last_applied:
         controller/watch_keyed.go: 96ba9dafba032f5aee97edfc66851eb9bccd70f5ec1d91a3227907fee882df07
         deploy/Containerfile: f330ecb550ec63a0825e7618026d113a8a0abb8c8dde7c2ae725b41054b090a1
         deploy/Containerfile.dockerignore: c3fd3dcf5dadfbbf78e90fc85f796348a130eeb502eb478f3c81c6519b431613
-        deploy/allocation/allocation.go: 6ca53490cdaada71f58d9cc697be82bc1146b7ca435871cf77e1da246c3e5cca
+        deploy/allocation/allocation.go: 389460c4374be5ed964b7e7878f6b1f7fc86ef6a9f68230c584b2c0f0a0fc365
         deploy/render/main.go: 64b25955b83f58593709d15799ad5770a8c38ad216193e8f802d90e63f8b1d59
         deploy/render/manifest.json.tmpl: a8d56604334ff0486de1aad7bf7aaf69890cf77ac72abf4a0ec89b1c6ee8f8da
         deploy/render/rpc-provisioner.json.tmpl: f63ebd6d715f590d1585f848251e5174bcf75983e34e9a60962cc764ed8c6c4c
         deploy/render/worker-gateway-identity.json.tmpl: a5e7aac19486d2622d286bda4792bfa570e5b6812116653d3d3cab513c79b4f5
         deploy/render/worker-gateway-workload.json.tmpl: cb7c226fc9ff7a015e99b92099fa16c4b6813589b03d33a8e2dbf09597a6a72a
-        deploy/render/worker-namespace-allocation.json.tmpl: 59b63666912f2ac4a3d4901973e71d9ae1b2600b3f1d0ebac81ba7818446cd36
+        deploy/render/worker-namespace-allocation.json.tmpl: c84cd7fa5cc03f2cf35402e9f876444af2bf12f0a5acde71b0c8a0be81a97cd7
         deploy/render/worker-sandbox-count.json.tmpl: f8a205fb17feea43715c1ed6a4603983416a6c4c949a5c14a1094e5ac284bb74
         deploy/resources.go: e68e2fa98549160001a601a89b8fd6d9d0d8adcc23f0ad6c71ef03226f08c9a6
         deploy/rpc/provisioner/Containerfile: 6fe28e4557ce02bb0e6096e4c38febcf479d9d7f730e0157e6fad9b4edfe90d7
