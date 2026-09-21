@@ -24,7 +24,18 @@ application images passed independent source, content, private registry, and
 signature checks. See the [application evidence](console-rollout-application-evidence.json)
 and [image evidence](console-rollout-image-evidence.json).
 
-The complete live Gateway workflow remains required before main acceptance.
-The frozen fixture is separate from the application source. It supplies only
-the existing test inspection permissions. Live review will also check the common
-digest on the console Deployment, ReplicaSet, and ready Pod.
+The complete live Gateway workflow passed all 11 required tests. Review checked
+REST and gRPC access, denied requests, event delivery, restart, regeneration,
+telemetry, four browser images, and cleanup. The console Deployment, ReplicaSet,
+and ready Pod used the same common digest. The old annotation was absent, and
+the console Pod did not match the Gateway Service. This observation read no
+Secret contents and changed no cluster resources. See the
+[live workflow evidence](console-rollout-browser-evidence.json).
+
+The frozen fixture supplies the existing test inspection permissions. The test
+resources were removed, the shared Lease was free, and all 32 standing resources
+were unchanged. This accepts the common console rollout path. It does not prove
+production capacity, live Kata isolation, or OpenShell Sandbox execution.
+
+The largest normal cleanup observation with 100 live accounts was 32.69
+seconds. The 30-second target was not met. The target remains open.

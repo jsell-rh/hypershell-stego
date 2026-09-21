@@ -1,0 +1,208 @@
+{
+  "source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+  "fixture_source": "ecdec89ac716af977b990455b97099bb7438710d",
+  "compiler": "5c4afa11c289e086893a8fbc5da1aca5f1e64b64",
+  "run": 35546479170,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35546479170",
+  "qualified": true,
+  "checked_at": "2026-09-21T00:23:53.334686+00:00",
+  "required_tests_passed": 11,
+  "workflow_seconds": 553.7,
+  "source_files_checked": 1668,
+  "generated_hashes_checked": 429,
+  "generation_inventory": {
+    "source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+    "fixture_source": "ecdec89ac716af977b990455b97099bb7438710d",
+    "run": 35546479170,
+    "qualified": true,
+    "generation_hashes": 429,
+    "complete_generated_archive_files": 430,
+    "all_files_match_frozen_fixture": true,
+    "first_repeat_and_after_tests_match": true,
+    "generated_archive_sha256": "fa141087f980d26b68e8472170a13c0e08647555c1279c5f69db52fd6391dffc",
+    "checked_at": "2026-09-21T00:23:45.240054+00:00"
+  },
+  "console_rollout": {
+    "source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+    "fixture_source": "ecdec89ac716af977b990455b97099bb7438710d",
+    "run": 35546479170,
+    "job_uid": "d27a5f73-dd3f-4d14-b2d3-e82c6333380a",
+    "checked_at": "2026-09-21T00:15:16.321389+00:00",
+    "namespace": "openshell-8e5ed309db3121a4",
+    "namespace_uid": "73dd1334-a8f3-4fb5-8a9d-ba63546a0f8c",
+    "gateway_id": "3Jc9ogC60vPpcg6BgH9lo0BdoOv",
+    "deployment": {
+      "name": "hypershell-gateway-console",
+      "namespace": "openshell-8e5ed309db3121a4",
+      "uid": "d543ad18-998f-4014-9a17-e14b5f1528c1",
+      "resourceVersion": "8813702"
+    },
+    "replicaset": {
+      "name": "hypershell-gateway-console-6c54fcfdbb",
+      "namespace": "openshell-8e5ed309db3121a4",
+      "uid": "9bb4056c-8161-4ee7-af58-f20f8256ed79",
+      "resourceVersion": "8813701"
+    },
+    "pod": {
+      "name": "hypershell-gateway-console-6c54fcfdbb-jzvx6",
+      "namespace": "openshell-8e5ed309db3121a4",
+      "uid": "020ece85-621b-49a0-bbe4-7cc205a2c1af",
+      "resourceVersion": "8813698"
+    },
+    "annotation": "stego.dev/config-sha256",
+    "digest": "c6f29941c73542792c0ca750fe03c9dbaec000a56effa28039b6978ce4853194",
+    "deployment_generation": 1,
+    "deployment_and_ready_pod_digest_match": true,
+    "console_does_not_match_gateway_service": true,
+    "legacy_annotation_absent": true,
+    "secret_contents_read": false,
+    "cluster_changes": false,
+    "qualified": true,
+    "scope": "One ready console from this bounded workflow. The construction tests separately prove content changes and metadata stability."
+  },
+  "screenshots_reviewed": 4,
+  "normal_cleanup": {
+    "schema": 2,
+    "scope": "normal_gateway_cleanup",
+    "stage": "complete",
+    "observation": "sequential_completion_checks",
+    "target_seconds": 30,
+    "capacity_fixture": false,
+    "live_accounts_per_measured_gateway": 100,
+    "complete": true,
+    "installation_data_preserved": true,
+    "gateways": [
+      {
+        "gateway_id": "3Jc9oB2LOFNiVWOLHyDOuK4k64r",
+        "account_rows_before_request": 100,
+        "undeleted_account_rows_before_request": 100,
+        "accepted_response_observed_at": "2026-09-21T00:20:56.724422102Z",
+        "complete": true,
+        "observed_upper_bound_seconds": 32.690681239,
+        "within_target_observed": false,
+        "accounts_created_through_rest": 100,
+        "accounts_with_verified_token_issuance": 100,
+        "accounts_closed": 100,
+        "journals_closed": 100,
+        "provider_clients_absent": 100,
+        "provider_users_absent": 100,
+        "cleanup_success_audits": 100,
+        "account_scope_sealed": true,
+        "completion_observations": {
+          "account_cleanup_recorded": {
+            "last_pending_observed_seconds": 4.219881118,
+            "first_complete_after_last_pending_seconds": 5.238208813,
+            "observed_regressions": 0
+          },
+          "account_proof_complete": {
+            "first_complete_after_last_pending_seconds": 32.69067622,
+            "observed_regressions": 0
+          },
+          "all_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.786642479,
+            "first_complete_after_last_pending_seconds": 31.879267232,
+            "observed_regressions": 0
+          },
+          "allocation_bindings_absent": {
+            "first_complete_after_last_pending_seconds": 31.924301477,
+            "observed_regressions": 0
+          },
+          "allocation_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.786641572,
+            "first_complete_after_last_pending_seconds": 31.879266233,
+            "observed_regressions": 0
+          },
+          "console_state_namespace_absent": {
+            "last_pending_observed_seconds": 29.760302098,
+            "first_complete_after_last_pending_seconds": 30.780144525,
+            "observed_regressions": 0
+          },
+          "gateway_finalized": {
+            "last_pending_observed_seconds": 30.786642083,
+            "first_complete_after_last_pending_seconds": 31.879266793,
+            "observed_regressions": 0
+          },
+          "gateway_namespace_absent": {
+            "last_pending_observed_seconds": 12.489798323,
+            "first_complete_after_last_pending_seconds": 13.557930757,
+            "observed_regressions": 0
+          },
+          "gateway_state_namespace_absent": {
+            "last_pending_observed_seconds": 29.755383199,
+            "first_complete_after_last_pending_seconds": 30.77650489,
+            "observed_regressions": 0
+          },
+          "identity_cleanup_recorded": {
+            "last_pending_observed_seconds": 0.120088101,
+            "first_complete_after_last_pending_seconds": 1.153656789,
+            "observed_regressions": 0
+          },
+          "owner_http_404": {
+            "first_complete_after_last_pending_seconds": 32.198779274,
+            "observed_regressions": 0
+          },
+          "sandbox_namespace_absent": {
+            "last_pending_observed_seconds": 20.240114126,
+            "first_complete_after_last_pending_seconds": 21.324152161,
+            "observed_regressions": 0
+          },
+          "sql_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.324609231,
+            "first_complete_after_last_pending_seconds": 22.351823132,
+            "observed_regressions": 0
+          },
+          "sql_objects_absent": {
+            "first_complete_after_last_pending_seconds": 32.099761193,
+            "observed_regressions": 0
+          },
+          "workload_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.324608965,
+            "first_complete_after_last_pending_seconds": 22.351822869,
+            "observed_regressions": 0
+          }
+        }
+      }
+    ]
+  },
+  "largest_cleanup_observed_upper_bound_seconds": 32.690681239,
+  "cleanup": {
+    "run": 35546479170,
+    "source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+    "checked_at": "2026-09-21T00:23:02.643206+00:00",
+    "browser_empty": true,
+    "api_run": null,
+    "api_status": "not dispatched",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+  },
+  "controller_trace_proof_sha256": "b1b78312f1957d5895662b70971e4a372d72894ad081bf30b9bd57c1578e73be",
+  "proof_sha256": {
+    "console-rollout-observation.json": "010e2c3bc4a557223580a2c66a404e22e8fbd80a832c41cfb48c7670b3fdc51d",
+    "generation-inventory-review.json": "598e4be2ed7d3c76e7669d2bd72ff1ee7347da64771039029531635ca8dc71b8",
+    "image-delivery-verification.json": "f5283125b21ba9ef2c98a298b207079f72571f0610a37a1c50f03905e0acca00",
+    "verification.json": "0caebe9ef6e146b61a6cc3ee379455e2ffc33a86dad67a2d983c1de2daf18692",
+    "controller-trace-verification.json": "b1b78312f1957d5895662b70971e4a372d72894ad081bf30b9bd57c1578e73be",
+    "account-verification.json": "a10bf0ea78a8eb3740a3c4557a5427741becc7ebd6152ac5f5b9b929836952df",
+    "phase-verification.json": "df394efd73ddbb6061c74964fc16c5d3a0984e0b70177a86ed90d5cbb47c4d25",
+    "independent-cleanup.json": "411d86b49c42165f7704d2c3ff8e8a48d677f7058da307c543be4c5bff51c73f",
+    "admitted-pod-verification.json": "889d1dd1e4b14944ccdc564ee444f878b824e8620d5851739147371d1f4424a9",
+    "visual-review.json": "f0871a9dc3697a59fd68b88419d7661c68e069c6776c01645254f573bfdf2155",
+    "allocator-log-observation/cleanup-window-review.json": "3a145f977811b30aa3c99665d77a84af4223a3b01212511b3d370a2558c691ef",
+    "namespace-deletion-observation-current-gate/cleanup-window-review.json": "6e53d7f0a1ddb74328749486b9dc56bad3000e76d8bf0abc282e575df4a7dd12"
+  },
+  "not_proved": [
+    "RDS failover",
+    "Live Kata isolation",
+    "Production capacity and remaining enterprise requirements",
+    "Native Sandbox packet isolation",
+    "Live OpenShell Sandbox execution"
+  ],
+  "capacity_target_proved": false,
+  "scope": "Complete bounded Gateway workflow with common console configuration rollout. Production capacity and deferred Sandbox behavior remain open."
+}
