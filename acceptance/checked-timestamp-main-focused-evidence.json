@@ -1,0 +1,23 @@
+{
+  "source": "52001546a0d29dccdbe6e6ba04808a5c6b68f488",
+  "compiler": "f18286e8cbe6d1b1e489015a8965e403cd09046f",
+  "run": 35553410591,
+  "qualified": true,
+  "roots": [
+    "TestCleanupSummaryTimestampPresence",
+    "TestGatewayNetworkTimestampResponses",
+    "TestGatewayReleaseTimestampResponses",
+    "TestManagedClusterTimestampResponses",
+    "TestTimestampPresentersPreserveContract",
+    "TestTimestampPresentersRejectInvalidRecords"
+  ],
+  "root_count": 6,
+  "case_count": 100,
+  "selected_module": "v0.0.0-20260920233219-cd240e7a3f11",
+  "source_archive_sha256": "1c9ef5a8026976717343719aa6225bd205d33c417eba6510a5daf01b4de883f9",
+  "test_log_sha256": "7477e9eafe98e03668eb2f5852484f61b2416cd73a6d9720aad8b571900bffe0",
+  "checked_at": "2026-09-21T02:15:30.118485+00:00",
+  "scope": "Consumer timestamp conversion through catalog handlers, lists, watches, and presenters. Full application, signed images, and the complete live workflow remain required.",
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35553410591",
+  "independent_record_sha256": "b23582a20782ce2bc2ad4a3e9163af2db2cb5834b9d7368d469375194745cb7c"
+}
