@@ -13,6 +13,221 @@ import (
 // ErrConversion contains no supplied value. The caller selects the public status.
 var ErrConversion = errors.New("response conversion failed")
 
+// GatewayInput contains values prepared by the application.
+type GatewayInput struct {
+	Creator string
+}
+
+// Gateway converts a prepared value after the caller checks access.
+func Gateway(value model0.Gateway, input GatewayInput) (*contract.Gateway, error) {
+	result := &contract.Gateway{}
+	{
+		if value.ActiveSandboxCount != nil {
+			v := *value.ActiveSandboxCount
+			result.ActiveSandboxCount = &v
+		}
+	}
+	{
+		v := value.ClusterID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.ClusterId = v
+	}
+	{
+		if value.ConsoleAddress != nil {
+			v := *value.ConsoleAddress
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.ConsoleAddress = &v
+		}
+	}
+	{
+		v := value.CreatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.CreatedAt = &v
+	}
+	{
+		v := input.Creator
+		if v != "" {
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.CreatedBy = &v
+		}
+	}
+	{
+		if value.CredentialDriver != nil {
+			v := *value.CredentialDriver
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.CredentialDriver = &v
+		}
+	}
+	{
+		if value.ExternalDns != nil {
+			v := *value.ExternalDns
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.ExternalDns = &v
+		}
+	}
+	{
+		v := value.ID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		v = "/api/hypershell/v1/gateways/" + v
+		result.Href = &v
+	}
+	{
+		v := value.ID
+		if v != "" {
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Id = &v
+		}
+	}
+	{
+		if value.Image != nil {
+			v := *value.Image
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Image = &v
+		}
+	}
+	{
+		v := "Gateway"
+		result.Kind = &v
+	}
+	{
+		v := value.Name
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Name = v
+	}
+	{
+		v := value.Namespace
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Namespace = &v
+	}
+	{
+		if value.Oidc != nil {
+			v := *value.Oidc
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Oidc = &v
+		}
+	}
+	{
+		if value.Phase != nil {
+			v := *value.Phase
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Phase = &v
+		}
+	}
+	{
+		v := value.ReleaseID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.ReleaseId = v
+	}
+	{
+		if value.Route != nil {
+			v := *value.Route
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Route = &v
+		}
+	}
+	{
+		if value.RouteAddress != nil {
+			v := *value.RouteAddress
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.RouteAddress = &v
+		}
+	}
+	{
+		v, err := jsonStrings(value.ServerDnsNames, 262144, 128, 253)
+		if err != nil {
+			return nil, ErrConversion
+		}
+		if v == nil {
+			v = make([]string, 0)
+		}
+		if len(v) != 0 {
+			result.ServerDnsNames = &v
+		}
+	}
+	{
+		if value.ServiceType != nil {
+			v := *value.ServiceType
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.ServiceType = &v
+		}
+	}
+	{
+		if value.Status != nil {
+			v := *value.Status
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Status = &v
+		}
+	}
+	{
+		if value.SupervisorImage != nil {
+			v := *value.SupervisorImage
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.SupervisorImage = &v
+		}
+	}
+	{
+		if value.TlsMode != nil {
+			v := *value.TlsMode
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.TlsMode = &v
+		}
+	}
+	{
+		v := value.UpdatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.UpdatedAt = &v
+	}
+	return result, nil
+}
+
 // GatewayNetwork converts a prepared value after the caller checks access.
 func GatewayNetwork(value model0.GatewayNetwork) (*contract.GatewayNetwork, error) {
 	result := &contract.GatewayNetwork{}
@@ -288,6 +503,89 @@ func ManagedCluster(value model0.ManagedCluster) (*contract.ManagedCluster, erro
 			return nil, ErrConversion
 		}
 		result.UpdatedAt = &v
+	}
+	return result, nil
+}
+
+// RoleBinding converts a prepared value after the caller checks access.
+func RoleBinding(value model0.RoleBinding) (*contract.RoleBinding, error) {
+	result := &contract.RoleBinding{}
+	{
+		v := value.CreatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.CreatedAt = &v
+	}
+	{
+		if value.GatewayID != nil {
+			v := *value.GatewayID
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.GatewayId = &v
+		}
+	}
+	{
+		v := value.ID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		v = "/api/hypershell/v1/role_bindings/" + v
+		result.Href = &v
+	}
+	{
+		v := value.ID
+		if v != "" {
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Id = &v
+		}
+	}
+	{
+		v := "RoleBinding"
+		result.Kind = &v
+	}
+	{
+		v := value.RoleID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.RoleId = v
+	}
+	{
+		v := value.Scope
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		switch v {
+		case "gateway", "global":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.RoleBindingScope(v)
+		result.Scope = enumValue
+	}
+	{
+		v := value.UpdatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.UpdatedAt = &v
+	}
+	{
+		v := value.UserID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.UserId = &v
 	}
 	return result, nil
 }

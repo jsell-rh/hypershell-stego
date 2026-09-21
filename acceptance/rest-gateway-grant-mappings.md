@@ -15,8 +15,10 @@ selection, invalid stored values, list bounds, access, restart, and recovery
 after repair. The required live API set also includes the complete grant
 REST/gRPC/event/restart workflow.
 
-This source branch contains application source and compiler pins only. Generated
-output is pending. The compiler release must pass signature and installation
-checks before CI regeneration starts. Application tests, generated output review,
-and the bounded live Gateway workflow remain required. This is not an accepted
-application release.
+CI run 35572421767 generated this output with the verified compiler release
+f972410b9709b7b39a09bc8f9a03dbcc0747c89d. Source review checked all changed
+files. The OpenAPI models and 428 other generated or module files are unchanged.
+The generated file hashes and all 41 recorded source inputs match.
+
+Application checks and the bounded live Gateway workflow remain required.
+This candidate is not an accepted application release.
