@@ -1,8 +1,6 @@
 package gatewayworkload
 
 import (
-	"encoding/base64"
-	"errors"
 	"fmt"
 
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
@@ -81,25 +79,25 @@ func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease
 	mounts := []workload.Mount{{Name: "tmp", Path: "/tmp"}, {Name: "config", Path: "/etc/openshell-config"}}
 	secrets := []struct {
 		name, volume, path string
-		data               any
+		data               map[string]any
 	}{
-		{"openshell-server-tls", "tls", "/etc/openshell-tls", kube.Nested(server, "data")},
+		{"openshell-server-tls", "tls", "/etc/openshell-tls", kube.NestedMap(server, "data")},
 		{keysName, "keys", "/etc/openshell-jwt", keys},
 		{"openshell-gateway-db-credentials", "database", "/etc/openshell-db", dbData},
 	}
 	if publicServer != nil {
 		secrets = append(secrets, struct {
 			name, volume, path string
-			data               any
-		}{"openshell-public-tls", "public-tls", "/etc/openshell-public-tls", kube.Nested(publicServer, "data")})
+			data               map[string]any
+		}{"openshell-public-tls", "public-tls", "/etc/openshell-public-tls", kube.NestedMap(publicServer, "data")})
 	}
-	configuration, err := workloadDependency("ConfigMap", Name+"-config", kube.Nested(config, "data"))
+	configuration, err := workload.DependencyFromData("ConfigMap", Name+"-config", kube.NestedMap(config, "data"))
 	if err != nil {
 		return nil, err
 	}
 	dependencies := []workload.Dependency{configuration}
 	for _, secret := range secrets {
-		dependency, err := workloadDependency("Secret", secret.name, secret.data)
+		dependency, err := workload.DependencyFromData("Secret", secret.name, secret.data)
 		if err != nil {
 			return nil, err
 		}
@@ -134,41 +132,6 @@ func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease
 	result := make([]resource, 0, len(built))
 	for _, entry := range built {
 		result = append(result, resource{entry.Collection, object(entry.Object)})
-	}
-	return result, nil
-}
-
-// Only contents enter the common digest. Kubernetes metadata does not cause a restart.
-func workloadDependency(kind, name string, value any) (workload.Dependency, error) {
-	var data map[string]any
-	switch v := value.(type) {
-	case object:
-		data = v
-	case map[string]any:
-		data = v
-	default:
-		return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
-	}
-	result := workload.Dependency{Kind: kind, Name: name, Data: map[string][]byte{}}
-	if len(data) == 0 || len(data) > 256 {
-		return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
-	}
-	total := 0
-	for key, value := range data {
-		text, ok := value.(string)
-		if !ok || len(text) > (2<<20)-total {
-			return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
-		}
-		total += len(text)
-		raw := []byte(text)
-		if kind == "Secret" {
-			var err error
-			raw, err = base64.StdEncoding.Strict().DecodeString(text)
-			if err != nil {
-				return workload.Dependency{}, errors.New("Gateway workload dependency is invalid")
-			}
-		}
-		result.Data[key] = raw
 	}
 	return result, nil
 }

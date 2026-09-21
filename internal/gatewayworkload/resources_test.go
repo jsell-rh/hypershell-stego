@@ -140,7 +140,7 @@ func TestGatewayWorkloadDigestTracksVerifiedDependencies(t *testing.T) {
 }
 
 func TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources(t *testing.T) {
-	for _, name := range []string{"invalid encoding", "oversized dependency", "missing data", "wrong data type", "missing environment key", "invalid image", "missing account"} {
+	for _, name := range []string{"invalid encoding", "noncanonical encoding", "invalid configuration text", "oversized dependency", "missing data", "wrong data type", "missing environment key", "invalid image", "missing account"} {
 		t.Run(name, func(t *testing.T) {
 			gw, release := records(t)
 			config, db, keys, server, public := workloadTestInputs(true)
@@ -148,6 +148,10 @@ func TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources(t *testing.T)
 			switch name {
 			case "invalid encoding":
 				db["uri"] = "private invalid encoding"
+			case "noncanonical encoding":
+				db["uri"] = base64.StdEncoding.EncodeToString([]byte("private value")) + "\n"
+			case "invalid configuration text":
+				config["data"].(object)["gateway.toml"] = string([]byte{0xff})
 			case "oversized dependency":
 				db["uri"] = strings.Repeat("a", (2<<20)+1)
 			case "missing data":
