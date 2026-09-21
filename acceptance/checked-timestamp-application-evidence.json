@@ -157,5 +157,6 @@
     "focused": "8643cdab5e39642a1985fd336b3f123f87b7bf5ce641f79bcbed9cd9a92249dd",
     "full": "0c0144e49b5d94b35623f02d78e5f8651d11f371460f4ac8cebf730df63ebcf9"
   },
-  "live_workflow_qualification_pending": true
+  "live_workflow_qualification_pending": false,
+  "live_workflow_evidence": "checked-timestamp-browser-evidence.json"
 }

@@ -23,4 +23,23 @@ See the [generation evidence](checked-timestamp-generation-evidence.json).
 The focused adapter checks cover invalid created and updated values, all three
 catalog services, rejection of partial lists, watch failure, valid wire and JSON
 conversion, optional presence, and identity checks before storage access.
-Application and complete workflow results are still required before acceptance.
+The hosted application suite passed 1,294 core cases. All 100 focused timestamp
+cases passed, and all seven images passed independent verification. The complete
+live workflow passed all 11 required tests. Review checked REST and gRPC access,
+denied requests, event delivery, restart, regeneration, telemetry, four browser
+views, and cleanup. See the [application evidence](checked-timestamp-application-evidence.json),
+[image evidence](checked-timestamp-image-evidence.json), and
+[live evidence](checked-timestamp-browser-evidence.json).
+
+Two original read-only test observers selected a failed preflight record. New
+readers checked the same live run. A third reader saved all public image records
+before a missing local policy stopped it. Independent review matched those records
+to the dispatch policy and CI archive. The earlier failures and all replacement
+results remain in the evidence. No application test was repeated.
+
+This accepts checked timestamp conversion. Complete declarative response mapping,
+production capacity, live Kata isolation, and the enterprise requirements remain
+open.
+
+The largest normal cleanup observation with 100 live accounts was 30.84
+seconds. The 30-second target remains open.

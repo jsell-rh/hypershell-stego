@@ -96,5 +96,8 @@
     "images": "3daf8b398ffbe3d3ac6a3deaf9b786cf2b462fbadb011a69b66e2d1b29cae594"
   },
   "historical_failure_cause_proved": false,
-  "live_workflow_qualification_pending": true
+  "live_workflow_qualification_pending": false,
+  "live_workflow_evidence": "checked-timestamp-browser-evidence.json",
+  "live_workflow_source": "967bc1d8754d46f566b563794eba4d272e4b55db",
+  "scope": "The live workflow checks the unchanged production source. The test-only restart change has separate hosted provider and recovery results."
 }

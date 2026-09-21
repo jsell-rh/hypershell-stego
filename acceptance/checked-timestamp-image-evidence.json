@@ -178,5 +178,6 @@
     "registry-qualification.json": "962369f0d9f0c38fa7f851bebb253fad3cf5f809f1ec9604093ce45058259c7e",
     "signature-qualification.json": "d4fea22425bb906afa6c2cad542134f28e383714031fcbd8c296f6c12eb58469"
   },
-  "live_workflow_qualification_pending": true
+  "live_workflow_qualification_pending": false,
+  "live_workflow_evidence": "checked-timestamp-browser-evidence.json"
 }
