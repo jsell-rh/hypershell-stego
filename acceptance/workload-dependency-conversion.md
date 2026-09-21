@@ -1,0 +1,25 @@
+# Common workload dependency conversion
+
+Hypershell now calls `workload.DependencyFromData` for its verified ConfigMap
+and Secret contents. `kubernetes.NestedMap` accepts both generated objects and
+maps from the Kubernetes API. The local conversion helper is removed.
+
+STEGO checks entry counts, encoded and decoded size limits, canonical base64,
+and valid ConfigMap text. It returns owned byte slices. Invalid input returns
+no dependency and a fixed error. The configuration digest format is unchanged.
+Hypershell retains dependency selection, ownership, certificate trust, placement,
+OpenShell settings, image selection, and account rules.
+
+Compiler `d8c37d20` passed 145 generated cases, all 37 compiler packages, and
+both generated examples. Its signed immutable release and fresh installation
+passed verification. Regeneration checked all 428 output and module files,
+419 recorded generated hashes, and 41 input hashes. Only the two common helpers,
+compiler identity, and three generation records changed. All 422 other files
+were unchanged. The selected Gateway console module therefore remains valid;
+its complete source comparison is still required in application CI.
+
+The application adds rejection checks for line separators in encoded Secret
+data and invalid UTF-8 in configuration text. Application compilation, full
+checks, image verification, and a complete live workflow remain required before
+main acceptance. The earlier console rollout workflow does not qualify this
+new dependency conversion path.
