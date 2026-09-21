@@ -406,6 +406,54 @@ overrides:
   http-application:
     factory_package: internal/httpapi
   grpc-application:
+    response_mappings:
+      - name: ManagedCluster
+        provider: postgres-adapter
+        model: ManagedCluster
+        message: hypershell.v1.ManagedCluster
+        fields:
+          - {target: metadata.id, source: id}
+          - {target: metadata.created_at, source: created_time}
+          - {target: metadata.updated_at, source: updated_time}
+          - {target: metadata.kind, constant: ManagedCluster}
+          - {target: metadata.href, source: id, prefix: /api/hypershell/v1/managed_clusters/}
+          - {target: name, source: name}
+          - {target: provider, source: provider}
+          - {target: region, source: region}
+          - {target: kubeconfig_secret, source: kubeconfig_secret}
+          - {target: status, source: status}
+          - {target: api_server_url, source: api_server_url}
+      - name: GatewayRelease
+        provider: postgres-adapter
+        model: GatewayRelease
+        message: hypershell.v1.GatewayRelease
+        fields:
+          - {target: metadata.id, source: id}
+          - {target: metadata.created_at, source: created_time}
+          - {target: metadata.updated_at, source: updated_time}
+          - {target: metadata.kind, constant: GatewayRelease}
+          - {target: metadata.href, source: id, prefix: /api/hypershell/v1/gateway_releases/}
+          - {target: name, source: name}
+          - {target: image, source: image}
+          - {target: rollout_strategy, source: rollout_strategy}
+          - {target: canary_percent, source: canary_percent}
+          - {target: canary_duration, source: canary_duration}
+          - {target: status, source: status}
+      - name: GatewayNetwork
+        provider: postgres-adapter
+        model: GatewayNetwork
+        message: hypershell.v1.GatewayNetwork
+        fields:
+          - {target: metadata.id, source: id}
+          - {target: metadata.created_at, source: created_time}
+          - {target: metadata.updated_at, source: updated_time}
+          - {target: metadata.kind, constant: GatewayNetwork}
+          - {target: metadata.href, source: id, prefix: /api/hypershell/v1/gateway_networks/}
+          - {target: name, source: name}
+          - {target: topology, source: topology}
+          - {target: tunnel_mode, source: tunnel_mode}
+          - {target: hub_gateway_id, source: hub_gateway_id}
+          - {target: status, source: status}
     processes:
       - {name: provisioner, factory_package: internal/serviceaccountprovisioner}
     watch_events: true
