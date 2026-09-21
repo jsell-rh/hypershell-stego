@@ -1,0 +1,254 @@
+{
+  "schema": 1,
+  "source": "b145ee5bfc0f080cbbd265a0e5a6a74a537c71be",
+  "fixture_source": "17f4bdb0b61aa5547ba1de05d2de1af3e3b8e3d8",
+  "compiler": "6d68417d4310d30744f9fc5cbf714580d45e5c81",
+  "compiler_sha256": "b9513201981b6824592f4afc7757b8aef7908766d2fcd610f436be3b64df84b1",
+  "run": 35560310922,
+  "url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35560310922",
+  "qualified": true,
+  "checked_at": "2026-09-21T04:35:06.398344+00:00",
+  "required_tests_passed": 11,
+  "workflow_seconds": 561.52,
+  "source_files_checked": 1707,
+  "generated_hashes_checked": 431,
+  "generation_inventory": {
+    "source": "b145ee5bfc0f080cbbd265a0e5a6a74a537c71be",
+    "fixture_source": "17f4bdb0b61aa5547ba1de05d2de1af3e3b8e3d8",
+    "run": 35560310922,
+    "qualified": true,
+    "generation_hashes": 431,
+    "complete_generated_archive_files": 432,
+    "all_files_match_frozen_fixture": true,
+    "first_repeat_and_after_tests_match": true,
+    "generated_archive_sha256": "b384f1387773aea944b76f38ddf0bdb888f8fc20850039c51245a53a03d0f0bd",
+    "checked_at": "2026-09-21T04:35:00.736725+00:00"
+  },
+  "console_rollout": {
+    "source": "b145ee5bfc0f080cbbd265a0e5a6a74a537c71be",
+    "fixture_source": "17f4bdb0b61aa5547ba1de05d2de1af3e3b8e3d8",
+    "run": 35560310922,
+    "job_uid": "2651f3d7-7bab-4046-b33f-8e047c0e2ea9",
+    "checked_at": "2026-09-21T04:26:38.359371+00:00",
+    "namespace": "openshell-c5111927407e46d3",
+    "namespace_uid": "d47aaea1-9621-441f-a88f-62b7a2beaaeb",
+    "gateway_id": "3JceO1L1czVpkODNcKrqcz8GBMz",
+    "deployment": {
+      "name": "hypershell-gateway-console",
+      "namespace": "openshell-c5111927407e46d3",
+      "uid": "b0924467-08f0-4b32-9a13-97a7efb7e545",
+      "resourceVersion": "8897284"
+    },
+    "replicaset": {
+      "name": "hypershell-gateway-console-7f7b5549cf",
+      "namespace": "openshell-c5111927407e46d3",
+      "uid": "5539095a-09a0-48aa-8b6c-574242eacd1e",
+      "resourceVersion": "8897283"
+    },
+    "pod": {
+      "name": "hypershell-gateway-console-7f7b5549cf-jpts7",
+      "namespace": "openshell-c5111927407e46d3",
+      "uid": "656fa8bb-03aa-40f5-be78-0d147826ce63",
+      "resourceVersion": "8897280"
+    },
+    "annotation": "stego.dev/config-sha256",
+    "digest": "e3ddbc0c024de11e7c49668c27907a9b3d91e48da18e82fe256839576c2c58a9",
+    "deployment_generation": 1,
+    "deployment_and_ready_pod_digest_match": true,
+    "console_does_not_match_gateway_service": true,
+    "legacy_annotation_absent": true,
+    "secret_contents_read": false,
+    "cluster_changes": false,
+    "qualified": true,
+    "scope": "One ready console from this bounded workflow. The construction tests separately prove content changes and metadata stability."
+  },
+  "common_image_delivery": {
+    "source": "b145ee5bfc0f080cbbd265a0e5a6a74a537c71be",
+    "fixture_source": "17f4bdb0b61aa5547ba1de05d2de1af3e3b8e3d8",
+    "run": 35560310922,
+    "image_run": 35558811445,
+    "image_attempt": 1,
+    "qualified": true,
+    "checked_at": "2026-09-21T04:34:51.504203+00:00",
+    "images": {
+      "hypershell": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell@sha256:e904843483fdfda162d6209f1e9c5fbd0e621801334e03580230a7b718c450d3",
+      "hypershell-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-console@sha256:6eb6cf5d3cec019cc4ba53b50774014915dbe135bf9140e9bed4238cc55b9997",
+      "hypershell-provisioner": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-provisioner@sha256:46788f633120920ee5f3801b16c271e99382295c8fbb6f70e193fb8f85308a37",
+      "hypershell-gateway-console": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-console@sha256:3badc9bda84971d310db3172de623ede00ceca5dbd8459c5485ee9497cd90e78",
+      "hypershell-namespace-allocation": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-namespace-allocation@sha256:29e49a23714eb97bc221d62edb3d7b2881e132e9597b97beccbb955e60134241",
+      "hypershell-gateway-identity": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-identity@sha256:d9309b43b4863bf0855ac87d968af4227638d05dcbf022ee2c93d67495c3e9e0",
+      "hypershell-gateway-workload": "image-registry.openshift-image-registry.svc:5000/stego-service-ci/hypershell-gateway-workload@sha256:37c4c84e278c67b1a466f82a746568eb60934771594911b2bdd65f34f73b0d7d"
+    },
+    "compiler_sha256": "fe53e7b22db3699a67abd55d366c11f929665cd9c2509699ff91348f03220d21",
+    "image_set_sha256": "3f86ace7831d5831c01b477f66473b7c4f02e9f6b4e3ee87a5d2ca9eb9a683d8",
+    "registry_ca_sha256": "a0d47fad024f724c9ada5363f83dfacd6f1ce8d2e4dd5cffd1a86ae1f93ecbdb",
+    "registry_policy": {
+      "format": 1,
+      "token_origins": [],
+      "blob_origins": [
+        "https://2sf62fcjk3cr6ob60log2b05mtfb7im5-image-registry-us-east-1.s3.dualstack.us-east-1.amazonaws.com"
+      ]
+    },
+    "same_job_and_pod": true,
+    "complete_source_checks": 7,
+    "complete_registry_receipts": 7,
+    "compiler_matches_published_package": true,
+    "private_publisher_files_archived": false,
+    "scope": "Exact image, source, publication, compiler, and transfer records. The application workflow requires its separate checks."
+  },
+  "screenshots_reviewed": 4,
+  "normal_cleanup": {
+    "schema": 2,
+    "scope": "normal_gateway_cleanup",
+    "stage": "complete",
+    "observation": "sequential_completion_checks",
+    "target_seconds": 30,
+    "capacity_fixture": false,
+    "live_accounts_per_measured_gateway": 100,
+    "complete": true,
+    "installation_data_preserved": true,
+    "gateways": [
+      {
+        "gateway_id": "3JceNfbfeUrnHfiucQuLiQlW779",
+        "account_rows_before_request": 100,
+        "undeleted_account_rows_before_request": 100,
+        "accepted_response_observed_at": "2026-09-21T04:32:25.605928903Z",
+        "complete": true,
+        "observed_upper_bound_seconds": 32.703981876,
+        "within_target_observed": false,
+        "accounts_created_through_rest": 100,
+        "accounts_with_verified_token_issuance": 100,
+        "accounts_closed": 100,
+        "journals_closed": 100,
+        "provider_clients_absent": 100,
+        "provider_users_absent": 100,
+        "cleanup_success_audits": 100,
+        "account_scope_sealed": true,
+        "completion_observations": {
+          "account_cleanup_recorded": {
+            "last_pending_observed_seconds": 5.269861209,
+            "first_complete_after_last_pending_seconds": 6.358289425,
+            "observed_regressions": 0
+          },
+          "account_proof_complete": {
+            "first_complete_after_last_pending_seconds": 32.703976927,
+            "observed_regressions": 0
+          },
+          "all_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.555605385,
+            "first_complete_after_last_pending_seconds": 31.621286813,
+            "observed_regressions": 0
+          },
+          "allocation_bindings_absent": {
+            "first_complete_after_last_pending_seconds": 31.684097092000002,
+            "observed_regressions": 0
+          },
+          "allocation_cleanup_recorded": {
+            "last_pending_observed_seconds": 30.555604281,
+            "first_complete_after_last_pending_seconds": 31.621285756,
+            "observed_regressions": 0
+          },
+          "console_state_namespace_absent": {
+            "last_pending_observed_seconds": 29.465302115,
+            "first_complete_after_last_pending_seconds": 30.506209223,
+            "observed_regressions": 0
+          },
+          "gateway_finalized": {
+            "last_pending_observed_seconds": 30.555604882,
+            "first_complete_after_last_pending_seconds": 31.621286182,
+            "observed_regressions": 0
+          },
+          "gateway_namespace_absent": {
+            "last_pending_observed_seconds": 12.711634272,
+            "first_complete_after_last_pending_seconds": 13.747077908,
+            "observed_regressions": 0
+          },
+          "gateway_state_namespace_absent": {
+            "last_pending_observed_seconds": 30.49057908,
+            "first_complete_after_last_pending_seconds": 31.599904457,
+            "observed_regressions": 0
+          },
+          "identity_cleanup_recorded": {
+            "last_pending_observed_seconds": 0.036565855,
+            "first_complete_after_last_pending_seconds": 1.051582793,
+            "observed_regressions": 0
+          },
+          "owner_http_404": {
+            "first_complete_after_last_pending_seconds": 31.786559947,
+            "observed_regressions": 0
+          },
+          "sandbox_namespace_absent": {
+            "last_pending_observed_seconds": 21.039472046,
+            "first_complete_after_last_pending_seconds": 22.174110011,
+            "observed_regressions": 0
+          },
+          "sql_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.039839002,
+            "first_complete_after_last_pending_seconds": 22.174555623,
+            "observed_regressions": 0
+          },
+          "sql_objects_absent": {
+            "first_complete_after_last_pending_seconds": 31.748078922,
+            "observed_regressions": 0
+          },
+          "workload_cleanup_recorded": {
+            "last_pending_observed_seconds": 21.039838722,
+            "first_complete_after_last_pending_seconds": 22.1745549,
+            "observed_regressions": 0
+          }
+        }
+      }
+    ]
+  },
+  "largest_cleanup_observed_upper_bound_seconds": 32.703981876,
+  "cleanup": {
+    "run": 35560310922,
+    "source": "b145ee5bfc0f080cbbd265a0e5a6a74a537c71be",
+    "checked_at": "2026-09-21T04:34:36.602722+00:00",
+    "browser_empty": true,
+    "api_run": null,
+    "api_status": "not dispatched",
+    "runtime": [],
+    "fixtures": [],
+    "allocations": [],
+    "ci_jobs": [],
+    "lease_holder": "",
+    "installed_resources_unchanged": 32,
+    "installation_uid": "32e31091-b7b7-4bbc-a541-ed04ee42265d",
+    "scope": "Both test fixtures are absent, the shared lease is free, and all standing installation resources are unchanged."
+  },
+  "proof_sha256": {
+    "console-rollout-observation.json": "e8e1373076600f04fce3a0763d1576cc57d0761dfbfbebe6e2589a4b8e9396ef",
+    "generation-inventory-review.json": "ff713eb25be812ca140844caf9c01917ea64f5d09833677af921c82b95f79f2f",
+    "image-delivery-verification.json": "44f930d13052e84754fe08e10abb10696c7bb26ff1085f3d05371cefc17bdea3",
+    "verification.json": "94606b04966dde1d111213ce02017b1c7bfdd18c449fd416ed7070dd5a71939c",
+    "controller-trace-verification.json": "d16fca5920ec2ffb6dd1c8144d011bcabce162fb1c8fbf532bd4ca0a8a4cb61b",
+    "account-verification.json": "80ce478b426a5483b80d07a1c4a94ba0e516db10d15b475e3b21d0a1fecf4e88",
+    "phase-verification.json": "496ae06d318b145555dc3e54831713f9a6e11bc4e347268cb9da5eea58e31473",
+    "independent-cleanup.json": "b80a3c8206263dc75fd4680a6e26dcca207a27d1ffd538132b60213c24b5a9bb",
+    "admitted-pod-verification.json": "55c89eb90d37acb956065e119a001e0804b9a1bcf3ff1c4e7f1eb285774beb3c",
+    "visual-review.json": "18c009704631cfde8206b72c08a1d8b012ef69e1cc6078c3f1fd3f0c78d65fc4",
+    "allocator-log-observation/cleanup-window-review.json": "2db6d9862cb5f741d7d1f9665e4ccd93207aeddfdcad07fefc343a95da5f1710",
+    "namespace-deletion-observation/cleanup-window-review.json": "0e0eefd6f13a1186ae51696c72a708fdc08a4c156426ba7781f7804541923c6a"
+  },
+  "reader_process_exits": {
+    "collect.py": 0,
+    "observe-runtime.py": 0,
+    "await-admitted-pod.py": 0,
+    "observe-image-delivery.py": 0,
+    "observe-allocator-logs.py": 0,
+    "observe-namespace-deletion.py": 0,
+    "observe-console-rollout.py": 0
+  },
+  "not_proved": [
+    "RDS failover",
+    "Live Kata isolation",
+    "Production capacity and remaining enterprise requirements",
+    "Native Sandbox packet isolation",
+    "Live OpenShell Sandbox execution",
+    "Complete declarative response mapping",
+    "Historical event timeout cause"
+  ],
+  "capacity_target_proved": false,
+  "scope": "Complete bounded Gateway workflow with generated catalog response mapping. Hypershell retains access, observation, and public error policy."
+}
