@@ -76,6 +76,8 @@ REQUIRED = [
     "TestRESTGatewayGrantMappingsRejectStoredFaults",
     "TestGRPCGrantMappingRejectsStoredFaultAcrossRestart",
     "TestRESTAccountMappingRejectsStoredFaultsAcrossRestart",
+    "TestRoleDiscoveryThroughGeneratedRuntime",
+    "TestRESTRoleMappingRejectsStoredFaultsAcrossRestart",
     "TestGatewayGrantWorkflowAcrossTransportsAndRestart",
 ]
 

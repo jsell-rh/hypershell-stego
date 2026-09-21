@@ -545,6 +545,21 @@ overrides:
       - {target: user_id, source: user_id}
       - {target: gateway_id, source: gateway_id}
       - {target: scope, source: scope}
+    - name: Role
+      provider: postgres-adapter
+      model: Role
+      schema: Role
+      fields:
+      - {target: id, source: id, omit_empty: true}
+      - {target: created_at, source: created_time}
+      - {target: updated_at, source: updated_time}
+      - {target: kind, constant: Role}
+      - {target: href, source: id, prefix: /api/hypershell/v1/roles/}
+      - {target: name, source: name}
+      - {target: display_name, source: display_name}
+      - {target: description, source: description}
+      - {target: permissions, source: permissions, conversion: json_object, max_bytes: 262144, max_nodes: 4096, max_depth: 16, max_scalar_bytes: 16384, on_empty: omit}
+      - {target: built_in, source: built_in}
     - name: ServiceAccount
       provider: postgres-adapter
       model: ServiceAccount
