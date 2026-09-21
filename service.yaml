@@ -627,6 +627,25 @@ overrides:
           - {target: tunnel_mode, source: tunnel_mode}
           - {target: hub_gateway_id, source: hub_gateway_id}
           - {target: status, source: status}
+      - name: RoleBinding
+        provider: postgres-adapter
+        model: RoleBinding
+        message: hypershell.v1.RoleBinding
+        inputs:
+          - {name: RoleName, type: string}
+          - {name: Username, type: string}
+        fields:
+          - {target: metadata.id, source: id}
+          - {target: metadata.created_at, source: created_time}
+          - {target: metadata.updated_at, source: updated_time}
+          - {target: metadata.kind, constant: RoleBinding}
+          - {target: metadata.href, source: id, prefix: /api/hypershell/v1/role_bindings/}
+          - {target: role_id, source: role_id}
+          - {target: user_id, source: user_id}
+          - {target: gateway_id, source: gateway_id}
+          - {target: scope, source: scope}
+          - {target: role_name, input: RoleName}
+          - {target: username, input: Username}
     processes:
       - {name: provisioner, factory_package: internal/serviceaccountprovisioner}
     watch_events: true
