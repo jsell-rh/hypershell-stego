@@ -1,4 +1,4 @@
-name: Checked transport timestamps
+name: Checked transport responses
 
 on:
   workflow_dispatch:
@@ -6,6 +6,7 @@ on:
     paths:
       - internal/grpcapi/**
       - out/grpcapi/transport/**
+      - out/grpcapi/mapping/**
       - .github/workflows/timestamp-conversion.yml
 
 permissions:
@@ -32,7 +33,7 @@ jobs:
         with:
           go-version: '1.26.8'
           cache: true
-      - name: Check timestamp conversion through the application adapters
+      - name: Check response conversion through the application adapters
         run: |
           set -euo pipefail
           mkdir -p "$RUNNER_TEMP/timestamps"
@@ -55,6 +56,8 @@ jobs:
               'TestTimestampPresentersPreserveContract',
               'TestTimestampPresentersRejectInvalidRecords',
               'TestCleanupSummaryTimestampPresence',
+              'TestCatalogMappingsPreserveEveryField',
+              'TestCatalogMappingsRejectInvalidTextPrivately',
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)
           started = [e['Test'] for e in events if e['Action'] == 'run' and e.get('Test')]
@@ -63,7 +66,7 @@ jobs:
           assert {name for name in passed if '/' not in name} == required
           PYCHECK
           git diff --exit-code
-      - name: Retain timestamp test records
+      - name: Retain response conversion test records
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
         with:

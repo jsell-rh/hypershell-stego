@@ -7,6 +7,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
+	mapping "github.com/jsell-rh/hypershell-stego/out/grpcapi/mapping"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
@@ -21,11 +22,7 @@ type networkServer struct {
 }
 
 func presentGatewayNetwork(row model.GatewayNetwork) (*pb.GatewayNetwork, error) {
-	metadata, err := catalogMetadata(row.Meta, "GatewayNetwork", "/api/hypershell/v1/gateway_networks")
-	if err != nil {
-		return nil, err
-	}
-	return &pb.GatewayNetwork{Metadata: metadata, Name: row.Name, Topology: row.Topology, TunnelMode: row.TunnelMode, HubGatewayId: row.HubGatewayID, Status: row.Status}, nil
+	return mapping.GatewayNetwork(row)
 }
 func (s *networkServer) CreateGatewayNetwork(ctx context.Context, r *pb.CreateGatewayNetworkRequest) (*pb.CreateGatewayNetworkResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.NetworkCreate{Name: r.Name, Topology: r.Topology, TunnelMode: r.TunnelMode, HubGatewayID: r.HubGatewayId, Status: r.Status})

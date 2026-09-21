@@ -9,8 +9,8 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	mapping "github.com/jsell-rh/hypershell-stego/out/grpcapi/mapping"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
-	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -26,17 +26,6 @@ func catalogPage(page, size int32) (int32, int32) {
 		size = 20
 	}
 	return page, size
-}
-func catalogMetadata(m model.Meta, entity, path string) (*pb.ObjectReference, error) {
-	created, err := transport.Timestamp(m.CreatedTime)
-	if err != nil {
-		return nil, err
-	}
-	updated, err := transport.Timestamp(m.UpdatedTime)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.ObjectReference{Id: m.ID, Kind: entity, Href: path + "/" + m.ID, CreatedAt: created, UpdatedAt: updated}, nil
 }
 func watchCatalog[T, C, P, R any](resource *catalog.Resource[T, C, P], source events.Source, prefix string, stream grpc.ServerStreamingServer[R], present func(T, pb.EventType, string) (*R, error)) error {
 	ctx := stream.Context()
@@ -101,11 +90,7 @@ type clusterServer struct {
 }
 
 func presentManagedCluster(row model.ManagedCluster) (*pb.ManagedCluster, error) {
-	metadata, err := catalogMetadata(row.Meta, "ManagedCluster", "/api/hypershell/v1/managed_clusters")
-	if err != nil {
-		return nil, err
-	}
-	return &pb.ManagedCluster{Metadata: metadata, Name: row.Name, Provider: row.Provider, Region: row.Region, KubeconfigSecret: row.KubeconfigSecret, Status: row.Status, ApiServerUrl: row.ApiServerUrl}, nil
+	return mapping.ManagedCluster(row)
 }
 func (s *clusterServer) CreateManagedCluster(ctx context.Context, r *pb.CreateManagedClusterRequest) (*pb.CreateManagedClusterResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.ClusterCreate{Name: r.Name, Provider: r.Provider, Region: r.Region, KubeconfigSecret: r.KubeconfigSecret, Status: r.Status, ApiServerUrl: r.ApiServerUrl})
@@ -192,11 +177,7 @@ type releaseServer struct {
 }
 
 func presentGatewayRelease(row model.GatewayRelease) (*pb.GatewayRelease, error) {
-	metadata, err := catalogMetadata(row.Meta, "GatewayRelease", "/api/hypershell/v1/gateway_releases")
-	if err != nil {
-		return nil, err
-	}
-	return &pb.GatewayRelease{Metadata: metadata, Name: row.Name, Image: row.Image, RolloutStrategy: row.RolloutStrategy, CanaryPercent: row.CanaryPercent, CanaryDuration: row.CanaryDuration, Status: row.Status}, nil
+	return mapping.GatewayRelease(row)
 }
 func (s *releaseServer) CreateGatewayRelease(ctx context.Context, r *pb.CreateGatewayReleaseRequest) (*pb.CreateGatewayReleaseResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.ReleaseCreate{Name: r.Name, Image: r.Image, RolloutStrategy: r.RolloutStrategy, CanaryPercent: r.CanaryPercent, CanaryDuration: r.CanaryDuration, Status: r.Status})
