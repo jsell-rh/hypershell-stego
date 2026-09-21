@@ -405,6 +405,101 @@ overrides:
     factory_package: internal/cli
   http-application:
     factory_package: internal/httpapi
+    document: contracts/extensions/openapi.yaml
+    references:
+    - contracts/extensions/openapi.gateways.yaml
+    - contracts/extensions/openapi.gatewayNetworks.yaml
+    - contracts/extensions/openapi.gatewayReleases.yaml
+    - contracts/extensions/openapi.managedClusters.yaml
+    - contracts/extensions/openapi.roleBindings.yaml
+    - contracts/extensions/openapi.roles.yaml
+    - contracts/extensions/openapi.serviceAccounts.yaml
+    response_mappings:
+    - name: ManagedCluster
+      provider: postgres-adapter
+      model: ManagedCluster
+      schema: ManagedCluster
+      fields:
+      - target: id
+        source: id
+        omit_empty: true
+      - target: created_at
+        source: created_time
+      - target: updated_at
+        source: updated_time
+      - target: kind
+        constant: ManagedCluster
+      - target: href
+        source: id
+        prefix: /api/hypershell/v1/managed_clusters/
+      - target: name
+        source: name
+      - target: provider
+        source: provider
+      - target: region
+        source: region
+      - target: kubeconfig_secret
+        source: kubeconfig_secret
+      - target: status
+        source: status
+      - target: api_server_url
+        source: api_server_url
+    - name: GatewayRelease
+      provider: postgres-adapter
+      model: GatewayRelease
+      schema: GatewayRelease
+      fields:
+      - target: id
+        source: id
+        omit_empty: true
+      - target: created_at
+        source: created_time
+      - target: updated_at
+        source: updated_time
+      - target: kind
+        constant: GatewayRelease
+      - target: href
+        source: id
+        prefix: /api/hypershell/v1/gateway_releases/
+      - target: name
+        source: name
+      - target: image
+        source: image
+      - target: rollout_strategy
+        source: rollout_strategy
+      - target: canary_percent
+        source: canary_percent
+      - target: canary_duration
+        source: canary_duration
+      - target: status
+        source: status
+    - name: GatewayNetwork
+      provider: postgres-adapter
+      model: GatewayNetwork
+      schema: GatewayNetwork
+      fields:
+      - target: id
+        source: id
+        omit_empty: true
+      - target: created_at
+        source: created_time
+      - target: updated_at
+        source: updated_time
+      - target: kind
+        constant: GatewayNetwork
+      - target: href
+        source: id
+        prefix: /api/hypershell/v1/gateway_networks/
+      - target: name
+        source: name
+      - target: topology
+        source: topology
+      - target: tunnel_mode
+        source: tunnel_mode
+      - target: hub_gateway_id
+        source: hub_gateway_id
+      - target: status
+        source: status
   grpc-application:
     response_mappings:
       - name: Gateway

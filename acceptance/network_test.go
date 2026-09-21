@@ -20,7 +20,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
@@ -157,7 +156,7 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	body := []byte(`{"name":"regional","topology":"hub-spoke","tunnel_mode":"wireguard","hub_gateway_id":"reference-only","status":"planned"}`)
 	code, data := requestJSON(t, "POST", path, admin, body)
-	var network httpapi.GatewayNetwork
+	var network catalogGatewayNetwork
 	if code != 201 || json.Unmarshal(data, &network) != nil {
 		t.Fatal("network creation", code, string(data))
 	}
@@ -286,14 +285,14 @@ func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 		return output
 	}
 	cliRun("login", "--url", proxy.URL, "--token-file", tokenPath, "--ca-file", caPath)
-	var cliNetwork httpapi.GatewayNetwork
+	var cliNetwork catalogGatewayNetwork
 	if json.Unmarshal(cliRun("create", "gatewayNetwork", "--name", "from-cli", "--topology", "mesh"), &cliNetwork) != nil || cliNetwork.ID == "" {
 		t.Fatal("CLI network create")
 	}
 	cliRun("get", "gateway-network", cliNetwork.ID)
 	var list struct {
 		Total int
-		Items []httpapi.GatewayNetwork
+		Items []catalogGatewayNetwork
 	}
 	if json.Unmarshal(cliRun("list", "gatewayNetworks", "--search", "id = '"+cliNetwork.ID+"'", "--size", "1", "--order-by", "name asc"), &list) != nil || list.Total != 1 || len(list.Items) != 1 || list.Items[0].ID != cliNetwork.ID {
 		t.Fatal("network filtered list")

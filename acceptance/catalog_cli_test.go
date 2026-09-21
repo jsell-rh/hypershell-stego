@@ -134,7 +134,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 		}
 		denied("alice", "403", "delete", entry.name, entry.id, "--yes")
 	}
-	var release httpapi.GatewayRelease
+	var release catalogGatewayRelease
 	if json.Unmarshal(success("alice", "get", "gateway-release", entries[1].id), &release) != nil || release.CanaryPercent == nil || *release.CanaryPercent != 0 || release.Image != "registry.example/gateway:v1" {
 		t.Fatal("CLI lost the zero canary percentage")
 	}
@@ -159,7 +159,7 @@ func TestGeneratedCLICatalogWorkflow(t *testing.T) {
 	if err := os.WriteFile(bodyFile, []byte(`{"name":"nullable","image":"registry.example/gateway:v2","canary_percent":null,"status":null}`), 0600); err != nil {
 		t.Fatal(err)
 	}
-	var nullable httpapi.GatewayRelease
+	var nullable catalogGatewayRelease
 	if json.Unmarshal(success("admin", "create", "gateway-release", "--body", bodyFile), &nullable) != nil || nullable.ID == "" || nullable.CanaryPercent != nil || nullable.Status != nil {
 		t.Fatal("CLI rejected or changed nullable catalog fields")
 	}

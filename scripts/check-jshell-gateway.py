@@ -72,6 +72,7 @@ REQUIRED = [
     "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
     "TestGeneratedCLICatalogWorkflow",
     "TestGeneratedCLIApplyWorkflow",
+    "TestRESTCatalogMappingRejectsStoredTimestamp",
 ]
 
 

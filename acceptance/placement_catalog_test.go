@@ -87,7 +87,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	}
 	clusterBody := []byte(`{"name":"primary-cluster","provider":"kubernetes","region":"east","kubeconfig_secret":"cluster-access","status":"ready","api_server_url":"https://cluster.example.test:6443"}`)
 	code, data := requestJSON(t, "POST", base+"/managed_clusters", admin, clusterBody)
-	var cluster httpapi.ManagedCluster
+	var cluster catalogManagedCluster
 	if code != 201 || json.Unmarshal(data, &cluster) != nil {
 		t.Fatal("cluster creation", code, string(data))
 	}
@@ -129,7 +129,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("cluster cross-transport read", gotCluster, err)
 	}
 	code, data = requestJSON(t, "GET", base+"/gateway_releases/"+releaseID, creator, nil)
-	var restRelease httpapi.GatewayRelease
+	var restRelease catalogGatewayRelease
 	if code != 200 || json.Unmarshal(data, &restRelease) != nil || restRelease.Image != release.GatewayRelease.Image || restRelease.CanaryPercent == nil || *restRelease.CanaryPercent != 10 {
 		t.Fatal("release cross-transport read", code, string(data))
 	}
@@ -328,7 +328,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	code, data = requestJSON(t, "POST", base+"/gateway_releases", admin, []byte(`{"name":"spare","image":"registry.example/gateway:v2"}`))
-	var spareRelease httpapi.GatewayRelease
+	var spareRelease catalogGatewayRelease
 	if code != 201 || json.Unmarshal(data, &spareRelease) != nil {
 		t.Fatal("REST release create", code, string(data))
 	}

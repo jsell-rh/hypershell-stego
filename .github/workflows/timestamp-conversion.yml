@@ -5,6 +5,9 @@ on:
   push:
     paths:
       - internal/grpcapi/**
+      - internal/httpapi/**
+      - out/application/contract/**
+      - out/application/responses/**
       - out/grpcapi/transport/**
       - out/grpcapi/mapping/**
       - .github/workflows/timestamp-conversion.yml
@@ -43,13 +46,14 @@ jobs:
           go mod download github.com/jsell-rh/hypershell-stego/gateway-console
           go list -m -json github.com/jsell-rh/hypershell-stego/gateway-console > "$RUNNER_TEMP/timestamps/selected-gateway-console.json"
           python3 scripts/check-gateway-console-inputs.py "$RUNNER_TEMP/timestamps/selected-gateway-console.json"
-          go test -json -race -count=1 -mod=readonly -timeout=3m ./internal/grpcapi \
+          go test -json -race -count=1 -mod=readonly -timeout=3m ./internal/grpcapi ./internal/httpapi \
             | tee "$RUNNER_TEMP/timestamps/tests.jsonl"
           python3 - "$RUNNER_TEMP/timestamps/tests.jsonl" <<'PYCHECK'
           import json, sys
           from pathlib import Path
           events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
           required = {
+            "github.com/jsell-rh/hypershell-stego/internal/grpcapi": {
               'TestManagedClusterTimestampResponses',
               'TestGatewayReleaseTimestampResponses',
               'TestGatewayNetworkTimestampResponses',
@@ -62,12 +66,22 @@ jobs:
               'TestGatewayMappingSelectsObservationsBeforeConversion',
               'TestGatewayMappingRejectsInvalidDNSListsPrivately',
               'TestGatewayMappingAcceptsDNSListBounds',
+            },
+            "github.com/jsell-rh/hypershell-stego/internal/httpapi": {
+              'TestListProjectionCoversPublicResponseFields',
+              'TestRESTCatalogMappingsPreserveEveryField',
+              'TestRESTCatalogMappingsOwnPointers',
+              'TestRESTCatalogMappingsRejectInvalidValues',
+              'TestRESTCatalogMappingsPreserveEmptyReference',
+            },
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)
-          started = [e['Test'] for e in events if e['Action'] == 'run' and e.get('Test')]
-          passed = [e['Test'] for e in events if e['Action'] == 'pass' and e.get('Test')]
+          started = [(e['Package'], e['Test']) for e in events if e['Action'] == 'run' and e.get('Test')]
+          passed = [(e['Package'], e['Test']) for e in events if e['Action'] == 'pass' and e.get('Test')]
           assert len(started) == len(set(started)) and sorted(started) == sorted(passed)
-          assert {name for name in passed if '/' not in name} == required
+          for package, names in required.items():
+              assert {name for owner, name in passed if owner == package and '/' not in name} == names
+              assert any(e['Action'] == 'pass' and e['Package'] == package and not e.get('Test') for e in events)
           PYCHECK
           git diff --exit-code
       - name: Retain response conversion test records

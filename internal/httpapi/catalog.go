@@ -8,6 +8,8 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/catalog"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
+	"github.com/jsell-rh/hypershell-stego/out/application/contract"
+	"github.com/jsell-rh/hypershell-stego/out/application/responses"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
@@ -37,7 +39,7 @@ func catalogID(r *http.Request) (string, error) {
 	}
 	return r.PathValue("id"), nil
 }
-func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, resource *catalog.Resource[T, C, P], entity, path string, present func(T) R) error {
+func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, resource *catalog.Resource[T, C, P], entity, path string, present func(T) (R, error)) error {
 	create, err := endpoint(auth, func(r *http.Request) (C, error) {
 		if r.URL.RawQuery != "" {
 			var zero C
@@ -50,7 +52,7 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 			var zero R
 			return zero, err
 		}
-		return present(row), nil
+		return present(row)
 	}, http.StatusCreated, writeError)
 	if err != nil {
 		return err
@@ -61,7 +63,7 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 			var zero R
 			return zero, err
 		}
-		return present(row), nil
+		return present(row)
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err
@@ -78,7 +80,7 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 			var zero R
 			return zero, err
 		}
-		return present(row), nil
+		return present(row)
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err
@@ -100,7 +102,11 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 		}
 		response := catalogList[R]{Kind: entity + "List", Href: path, Page: q.Page, Size: len(rows), Total: result.Total, Items: make([]R, 0, len(rows))}
 		for _, row := range rows {
-			response.Items = append(response.Items, present(row))
+			value, err := present(row)
+			if err != nil {
+				return nil, err
+			}
+			response.Items = append(response.Items, value)
 		}
 		return transport.ProjectListIfSelected(response, q.Fields, "items")
 	}, http.StatusOK, writeError)
@@ -115,45 +121,22 @@ func registerCatalog[T, C, P, R any](mux *http.ServeMux, auth *requestAuth, reso
 	return nil
 }
 
-type ManagedCluster struct {
-	Reference
-	Name             string  `json:"name"`
-	Provider         string  `json:"provider"`
-	Region           *string `json:"region,omitempty"`
-	KubeconfigSecret string  `json:"kubeconfig_secret"`
-	Status           *string `json:"status,omitempty"`
-	ApiServerUrl     *string `json:"api_server_url,omitempty"`
+type ManagedCluster = contract.ManagedCluster
+
+func presentManagedCluster(row model.ManagedCluster) (*ManagedCluster, error) {
+	return responses.ManagedCluster(row)
 }
 
-func presentManagedCluster(row model.ManagedCluster) ManagedCluster {
-	return ManagedCluster{Reference: Reference{ID: row.ID, Kind: "ManagedCluster", Href: "/api/hypershell/v1/managed_clusters/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Provider: row.Provider, Region: row.Region, KubeconfigSecret: row.KubeconfigSecret, Status: row.Status, ApiServerUrl: row.ApiServerUrl}
+type GatewayRelease = contract.GatewayRelease
+
+func presentGatewayRelease(row model.GatewayRelease) (*GatewayRelease, error) {
+	return responses.GatewayRelease(row)
 }
 
-type GatewayRelease struct {
-	Reference
-	Name            string  `json:"name"`
-	Image           string  `json:"image"`
-	RolloutStrategy *string `json:"rollout_strategy,omitempty"`
-	CanaryPercent   *int32  `json:"canary_percent,omitempty"`
-	CanaryDuration  *string `json:"canary_duration,omitempty"`
-	Status          *string `json:"status,omitempty"`
-}
+type GatewayNetwork = contract.GatewayNetwork
 
-func presentGatewayRelease(row model.GatewayRelease) GatewayRelease {
-	return GatewayRelease{Reference: Reference{ID: row.ID, Kind: "GatewayRelease", Href: "/api/hypershell/v1/gateway_releases/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Image: row.Image, RolloutStrategy: row.RolloutStrategy, CanaryPercent: row.CanaryPercent, CanaryDuration: row.CanaryDuration, Status: row.Status}
-}
-
-type GatewayNetwork struct {
-	Reference
-	Name         string  `json:"name"`
-	Topology     *string `json:"topology,omitempty"`
-	TunnelMode   *string `json:"tunnel_mode,omitempty"`
-	HubGatewayID *string `json:"hub_gateway_id,omitempty"`
-	Status       *string `json:"status,omitempty"`
-}
-
-func presentGatewayNetwork(row model.GatewayNetwork) GatewayNetwork {
-	return GatewayNetwork{Reference: Reference{ID: row.ID, Kind: "GatewayNetwork", Href: "/api/hypershell/v1/gateway_networks/" + row.ID, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}, Name: row.Name, Topology: row.Topology, TunnelMode: row.TunnelMode, HubGatewayID: row.HubGatewayID, Status: row.Status}
+func presentGatewayNetwork(row model.GatewayNetwork) (*GatewayNetwork, error) {
+	return responses.GatewayNetwork(row)
 }
 func registerPlacement(mux *http.ServeMux, auth *requestAuth, service *catalog.Service) error {
 	if err := registerCatalog(mux, auth, service.Networks, "GatewayNetwork", "/api/hypershell/v1/gateway_networks", presentGatewayNetwork); err != nil {
