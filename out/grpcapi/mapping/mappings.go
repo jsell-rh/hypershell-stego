@@ -464,3 +464,94 @@ func ManagedCluster(value storage.ManagedCluster) (*v1.ManagedCluster, error) {
 	}
 	return result, nil
 }
+
+// RoleBindingInput contains values prepared by the application.
+type RoleBindingInput struct {
+	RoleName string
+	Username string
+}
+
+// RoleBinding converts a prepared value. The caller must first check access.
+func RoleBinding(value storage.RoleBinding, input RoleBindingInput) (*v1.RoleBinding, error) {
+	result := &v1.RoleBinding{}
+	{
+		result.Metadata = &v1.ObjectReference{}
+		{
+			converted := value.ID
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Metadata.Id = converted
+		}
+		{
+			converted, err := transport.Timestamp(value.CreatedTime)
+			if err != nil {
+				return nil, ErrConversion
+			}
+			result.Metadata.CreatedAt = converted
+		}
+		{
+			converted, err := transport.Timestamp(value.UpdatedTime)
+			if err != nil {
+				return nil, ErrConversion
+			}
+			result.Metadata.UpdatedAt = converted
+		}
+		{
+			converted := "RoleBinding"
+			result.Metadata.Kind = converted
+		}
+		{
+			converted := "/api/hypershell/v1/role_bindings/" + value.ID
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Metadata.Href = converted
+		}
+	}
+	{
+		converted := value.RoleID
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.RoleId = converted
+	}
+	{
+		converted := value.Scope
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.Scope = converted
+	}
+	{
+		converted := value.UserID
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.UserId = &converted
+	}
+	{
+		if value.GatewayID != nil {
+			converted := *value.GatewayID
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.GatewayId = &converted
+		}
+	}
+	{
+		converted := input.RoleName
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.RoleName = converted
+	}
+	{
+		converted := input.Username
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.Username = converted
+	}
+	return result, nil
+}

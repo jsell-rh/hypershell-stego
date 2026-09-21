@@ -66,6 +66,9 @@ jobs:
               'TestGatewayMappingSelectsObservationsBeforeConversion',
               'TestGatewayMappingRejectsInvalidDNSListsPrivately',
               'TestGatewayMappingAcceptsDNSListBounds',
+              'TestGRPCGrantMappingPreservesContract',
+              'TestGRPCGrantMappingOwnsValues',
+              'TestGRPCGrantMappingRejectsInvalidValues',
             },
             "github.com/jsell-rh/hypershell-stego/internal/httpapi": {
               'TestListProjectionCoversPublicResponseFields',

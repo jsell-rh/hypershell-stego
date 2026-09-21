@@ -3,11 +3,11 @@ package grpcapi
 import (
 	"context"
 	"errors"
-	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	mapping "github.com/jsell-rh/hypershell-stego/out/grpcapi/mapping"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -22,17 +22,12 @@ type grantServer struct {
 }
 
 func presentGrant(view gateways.GrantView) (*pb.RoleBinding, error) {
-	row := view.Grant
-	created, err := transport.Timestamp(row.CreatedTime)
-	if err != nil {
-		return nil, err
-	}
-	updated, err := transport.Timestamp(row.UpdatedTime)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.RoleBinding{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "RoleBinding", Href: "/api/hypershell/v1/role_bindings/" + row.ID, CreatedAt: created, UpdatedAt: updated}, RoleId: row.RoleID, UserId: &row.UserID, GatewayId: row.GatewayID, Scope: row.Scope, RoleName: view.RoleName, Username: view.Username}, nil
+	return mapping.RoleBinding(view.Grant, mapping.RoleBindingInput{
+		RoleName: view.RoleName,
+		Username: view.Username,
+	})
 }
+
 func (s *grantServer) ListRoleBindings(ctx context.Context, req *pb.ListRoleBindingsRequest) (*pb.ListRoleBindingsResponse, error) {
 	if req.GetUserId() == "" || (req.GatewayId != nil && req.GetGatewayId() == "") {
 		return nil, status.Error(codes.InvalidArgument, "user_id and a nonempty optional gateway_id are required")
