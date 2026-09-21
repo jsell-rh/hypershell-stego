@@ -1,0 +1,24 @@
+{
+  "source": "25fc0fc520332d345cbc8099d8ef1a4d9449483d",
+  "compiler": "f18286e8cbe6d1b1e489015a8965e403cd09046f",
+  "run": 35550520419,
+  "source_archive_sha256": "53d34491074bfada5c489c6fcaa6ddff7e0550bb5f99939fb798f9da19d3aa07",
+  "generated_archive_sha256": "d524a8432fc184c65077d3b6e9edd30dee75935cb6c3e85e83c20737954232e9",
+  "files": 429,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/grpcapi/transport/conversion.go"
+  ],
+  "unchanged_generated_and_module_files": 424,
+  "common_helpers_match_pinned_compiler_template": true,
+  "cli_change_is_compiler_identity_only": true,
+  "recorded_generated_hashes_checked": 420,
+  "recorded_source_input_hashes_checked": 41,
+  "compiler_executed_locally": false,
+  "output_applied": true,
+  "application_tests_passed": false,
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35550520419"
+}
