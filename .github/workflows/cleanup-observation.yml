@@ -1,0 +1,27 @@
+name: Cleanup observation checks
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/cleanup-observation.yml'
+      - 'scripts/collect-gateway-cleanup.py'
+      - 'scripts/test_gateway_cleanup_observation.py'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cleanup-observation-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observation:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - name: Check observation scope and incomplete reads
+        run: timeout 15s python3 -B scripts/test_gateway_cleanup_observation.py
