@@ -44,7 +44,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 	}
 	bobSubject := recipient.Subject
 	code, body = ownerAPI("GET", "/roles?search=name%20%3D%20%27gateway%3Aviewer%27", nil)
-	var roles httpapi.RoleList
+	var roles roleListResponse
 	if code != 200 || json.Unmarshal(body, &roles) != nil || roles.Total != 1 || len(roles.Items) != 1 || roles.Items[0].Name != "gateway:viewer" || roles.Items[0].ID == "" {
 		t.Fatal("viewer workflow role read failed", code)
 	}

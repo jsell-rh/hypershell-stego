@@ -116,12 +116,12 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	}
 	roles := map[string]string{}
 	for _, name := range []string{"gateway:owner", "gateway:viewer"} {
-		var list httpapi.RoleList
+		var list roleListResponse
 		if json.Unmarshal(success("alice", "list", "roles", "--search", "name = '"+name+"'", "--size", "1"), &list) != nil || list.Total != 1 || len(list.Items) != 1 || list.Items[0].Name != name {
 			t.Fatal("CLI could not discover the role")
 		}
 		roles[name] = list.Items[0].ID
-		var role httpapi.Role
+		var role roleResponse
 		if json.Unmarshal(success("alice", "get", "roles", roles[name]), &role) != nil || role.Name != name {
 			t.Fatal("CLI role read differs from its list")
 		}

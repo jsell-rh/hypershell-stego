@@ -13,7 +13,6 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/contracts"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/segmentio/ksuid"
 )
 
@@ -34,10 +33,10 @@ func applyRoleCatalog(ctx context.Context, db *sql.DB) error {
 	}
 	return err
 }
-func discoverRole(t testing.TB, root, bearer, name string) httpapi.Role {
+func discoverRole(t testing.TB, root, bearer, name string) roleResponse {
 	t.Helper()
 	code, body := requestJSON(t, "GET", root+"/roles?search="+url.QueryEscape("name = '"+name+"'"), bearer, nil)
-	var result httpapi.RoleList
+	var result roleListResponse
 	if code != 200 || json.Unmarshal(body, &result) != nil || result.Total != 1 || len(result.Items) != 1 || result.Items[0].Name != name {
 		t.Fatal("role discovery", code, string(body))
 	}
@@ -133,11 +132,11 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal(err)
 	}
 	listSchema := reference.OpenAPI.Paths.Value("/api/hypershell/v1/roles").Get.Responses.Status(200).Value.Content.Get("application/json").Schema.Value
-	list := func(query string, total int64) httpapi.RoleList {
+	list := func(query string, total int64) roleListResponse {
 		t.Helper()
 		code, body := requestJSON(t, "GET", root+"/roles"+query, bearer, nil)
 		var value any
-		var result httpapi.RoleList
+		var result roleListResponse
 		if code != 200 || json.Unmarshal(body, &value) != nil || listSchema.VisitJSON(value) != nil || json.Unmarshal(body, &result) != nil || result.Total != total || result.Size != len(result.Items) {
 			t.Fatal("role list", code, string(body))
 		}
@@ -178,7 +177,7 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 		}
 		ids[role.Name] = role.ID
 		code, body := requestJSON(t, "GET", root+"/roles/"+role.ID, bearer, nil)
-		var single httpapi.Role
+		var single roleResponse
 		if code != 200 || json.Unmarshal(body, &single) != nil || single.ID != role.ID || single.Name != role.Name {
 			t.Fatal("get role", code, string(body))
 		}
