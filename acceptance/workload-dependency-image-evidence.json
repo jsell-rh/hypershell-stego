@@ -312,7 +312,8 @@
     "registry-qualification.json": "72f79776b6a40233a46992f4ee76965a0d2e896c79c12526602f66a486734e88",
     "signature-qualification.json": "5195dd7017204ea95afe275976152c41924207f85adf17c8e852036bbbaeb198"
   },
-  "live_workflow_qualification_pending": true,
-  "scope": "Seven candidate images. Native source, image contents, registry fixture transfer, and signatures passed independent review. Cluster delivery and the complete application workflow remain required.",
-  "production_capacity_proved": false
+  "live_workflow_qualification_pending": false,
+  "scope": "Seven candidate images. Native source, image contents, registry fixture transfer, and signatures passed independent review. The separate live evidence records cluster delivery and the complete application workflow.",
+  "production_capacity_proved": false,
+  "live_workflow_evidence": "workload-dependency-browser-evidence.json"
 }

@@ -26,5 +26,19 @@ registry fixture, and signature verification. See the
 [application evidence](workload-dependency-application-evidence.json) and
 [image evidence](workload-dependency-image-evidence.json).
 
-A complete live workflow remains required before main acceptance. The earlier
-console rollout workflow does not qualify this new dependency conversion path.
+The complete live workflow passed all 11 required tests. Review checked REST
+and gRPC access, denied requests, event delivery, restart, generated output,
+telemetry, four browser views, and cleanup. The ready console retained the common
+configuration digest on its Deployment, ReplicaSet, and Pod. All test resources
+were removed, the shared Lease was free, and 32 standing resources were unchanged.
+See the [live evidence](workload-dependency-browser-evidence.json).
+
+A separate regeneration check on the acceptance branch matched all 428 generated
+and module files, 419 output hashes, and 41 input hashes. The patch was empty.
+See the [regeneration evidence](workload-dependency-regeneration-evidence.json).
+This accepts the common dependency conversion. Production capacity, live Kata
+isolation, complete response mapping, and the remaining enterprise requirements
+stay open.
+
+The largest normal cleanup observation with 100 live accounts was 32.34
+seconds. The 30-second target was not met. The target remains open.
