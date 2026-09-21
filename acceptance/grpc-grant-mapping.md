@@ -46,3 +46,13 @@ remaining enterprise requirements are not proved.
 
 See [the evidence record](grpc-grant-workflow-evidence.json) for exact run IDs
 and proof hashes. The nullable service-account mapper is separate work.
+
+Exact main source `c42b2ed` also passed all 13 automatic hosted groups and API
+run `35582475435`. Review checked 1,422 core cases in 397 roots, 214 focused
+cases in 27 roots, all 56 required API roots, all 434 generated and module
+files, and seven signed images. API cleanup removed both test fixtures and
+allocations, released the shared lease, and preserved all 32 standing resources.
+Only four acceptance documents differ from the accepted browser and event
+source `62adcf0`. No separate main browser or event run is claimed. See the
+[main evidence](grpc-grant-main-evidence.json). The service-account candidate
+and the remaining enterprise requirements are still open.
