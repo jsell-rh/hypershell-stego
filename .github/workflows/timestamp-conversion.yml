@@ -83,6 +83,10 @@ jobs:
               'TestRESTGatewayMappingAcceptsListBounds',
               'TestRESTGrantMappingPreservesFieldsAndOwnership',
               'TestRESTGrantMappingRejectsInvalidValues',
+              'TestRESTAccountMappingPreservesEveryField',
+              'TestRESTAccountMappingAcceptsPublicEnums',
+              'TestRESTAccountMappingOwnsValues',
+              'TestRESTAccountMappingRejectsInvalidValues',
             },
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)

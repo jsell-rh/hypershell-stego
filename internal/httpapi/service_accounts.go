@@ -11,28 +11,14 @@ import (
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/serviceaccounts"
+	"github.com/jsell-rh/hypershell-stego/out/application/contract"
+	"github.com/jsell-rh/hypershell-stego/out/application/responses"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 )
 
-type accountItem struct {
-	ID              string     `json:"id"`
-	GatewayID       string     `json:"gateway_id"`
-	Name            string     `json:"name"`
-	Description     *string    `json:"description"`
-	CredentialType  string     `json:"credential_type"`
-	Role            string     `json:"role"`
-	Status          string     `json:"status"`
-	CreatedByUserID string     `json:"created_by_user_id"`
-	ClientID        string     `json:"client_id"`
-	Subject         string     `json:"subject"`
-	ExpiresAt       time.Time  `json:"expires_at"`
-	RevokedAt       *time.Time `json:"revoked_at"`
-	LastError       *string    `json:"last_error"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
+type accountItem = contract.OpenShellGatewayServiceAccountListItem
 type accountCredential struct {
 	serviceaccounts.Connection
 	ClientSecret string `json:"client_secret"`
@@ -69,8 +55,8 @@ type accountInput struct {
 	List          serviceaccounts.ListOptions
 }
 
-func presentAccount(row model.ServiceAccount) accountItem {
-	return accountItem{ID: row.ID, GatewayID: row.GatewayID, Name: row.Name, Description: row.Description, CredentialType: row.CredentialType, Role: row.Role, Status: row.Status, CreatedByUserID: row.CreatedByUserID, ClientID: row.ClientID, Subject: row.Subject, ExpiresAt: row.ExpiresAt, RevokedAt: row.RevokedAt, LastError: row.LastError, CreatedAt: row.CreatedTime, UpdatedAt: row.UpdatedTime}
+func presentAccount(row model.ServiceAccount) (*accountItem, error) {
+	return responses.ServiceAccount(row)
 }
 func accountTarget(r *http.Request) (accountInput, error) {
 	if r.URL.RawQuery != "" {
@@ -92,7 +78,11 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 		if err != nil {
 			return accountCreateResponse{}, err
 		}
-		return accountCreateResponse{accountItem: presentAccount(created.Account), Credential: accountCredential{Connection: created.Connection, ClientSecret: created.Secret}}, nil
+		item, err := presentAccount(created.Account)
+		if err != nil {
+			return accountCreateResponse{}, err
+		}
+		return accountCreateResponse{accountItem: *item, Credential: accountCredential{Connection: created.Connection, ClientSecret: created.Secret}}, nil
 	}, 201, accountError)
 	if err != nil {
 		return err
@@ -106,7 +96,11 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 		if err != nil {
 			return accountGetResponse{}, err
 		}
-		return accountGetResponse{accountItem: presentAccount(row), Connection: connection}, nil
+		item, err := presentAccount(row)
+		if err != nil {
+			return accountGetResponse{}, err
+		}
+		return accountGetResponse{accountItem: *item, Connection: connection}, nil
 	}, 200, accountError)
 	if err != nil {
 		return err
@@ -165,7 +159,11 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 			return accountListResponse{}, errors.New("unexpected account list")
 		}
 		for _, row := range rows {
-			response.Items = append(response.Items, presentAccount(row))
+			item, err := presentAccount(row)
+			if err != nil {
+				return accountListResponse{}, err
+			}
+			response.Items = append(response.Items, *item)
 		}
 		return response, nil
 	}, 200, accountError)
@@ -186,8 +184,11 @@ func registerAccounts(mux *http.ServeMux, verifier *requestAuth, service *servic
 			if complete {
 				status = 200
 			}
-			item := presentAccount(row)
-			return transport.Reply[accountItem]{Status: status, Value: &item}, nil
+			item, err := presentAccount(row)
+			if err != nil {
+				return transport.Reply[accountItem]{}, err
+			}
+			return transport.Reply[accountItem]{Status: status, Value: item}, nil
 		}, accountError)
 		if err != nil {
 			return err
