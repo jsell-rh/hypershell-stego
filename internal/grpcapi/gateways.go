@@ -3,7 +3,6 @@ package grpcapi
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"math"
 
@@ -11,6 +10,7 @@ import (
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
+	mapping "github.com/jsell-rh/hypershell-stego/out/grpcapi/mapping"
 	control "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/controlplane/v1"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
@@ -184,23 +184,8 @@ func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysReque
 	return response, nil
 }
 func present(row model.Gateway) (*pb.Gateway, error) {
-	row = row.CurrentObservations()
-	var names []string
-	if len(row.ServerDnsNames) > 0 {
-		if err := json.Unmarshal(row.ServerDnsNames, &names); err != nil {
-			return nil, err
-		}
-	}
-	created, err := transport.Timestamp(row.CreatedTime)
-	if err != nil {
-		return nil, err
-	}
-	updated, err := transport.Timestamp(row.UpdatedTime)
-	if err != nil {
-		return nil, err
-	}
-	return &pb.Gateway{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "Gateway", Href: "/api/hypershell/v1/gateways/" + row.ID, CreatedAt: created, UpdatedAt: updated}, Name: row.Name, ClusterId: row.ClusterID, ReleaseId: row.ReleaseID, Namespace: row.Namespace,
-		ExternalDns: row.ExternalDns, TlsMode: row.TlsMode, ServiceType: row.ServiceType, Status: row.Status, Phase: row.Phase, Image: row.Image, SupervisorImage: row.SupervisorImage, ServerDnsNames: names, RouteAddress: row.RouteAddress, ConsoleAddress: row.ConsoleAddress, Oidc: row.Oidc, Route: row.Route, CredentialDriver: row.CredentialDriver, ActiveSandboxCount: row.ActiveSandboxCount}, nil
+	// The application selects the current domain view before field conversion.
+	return mapping.Gateway(row.CurrentObservations())
 }
 func mapError(err error) error {
 	switch {

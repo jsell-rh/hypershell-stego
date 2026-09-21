@@ -14,6 +14,196 @@ import (
 // ErrConversion contains no supplied value. The caller selects the public status.
 var ErrConversion = errors.New("response conversion failed")
 
+// Gateway converts a prepared value. The caller must first check access.
+func Gateway(value storage.Gateway) (*v1.Gateway, error) {
+	result := &v1.Gateway{}
+	{
+		result.Metadata = &v1.ObjectReference{}
+		{
+			converted := value.ID
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Metadata.Id = converted
+		}
+		{
+			converted, err := transport.Timestamp(value.CreatedTime)
+			if err != nil {
+				return nil, ErrConversion
+			}
+			result.Metadata.CreatedAt = converted
+		}
+		{
+			converted, err := transport.Timestamp(value.UpdatedTime)
+			if err != nil {
+				return nil, ErrConversion
+			}
+			result.Metadata.UpdatedAt = converted
+		}
+		{
+			converted := "Gateway"
+			result.Metadata.Kind = converted
+		}
+		{
+			converted := "/api/hypershell/v1/gateways/" + value.ID
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Metadata.Href = converted
+		}
+	}
+	{
+		converted := value.Name
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.Name = converted
+	}
+	{
+		converted := value.ClusterID
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.ClusterId = converted
+	}
+	{
+		converted := value.ReleaseID
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.ReleaseId = converted
+	}
+	{
+		converted := value.Namespace
+		if !utf8.ValidString(converted) {
+			return nil, ErrConversion
+		}
+		result.Namespace = converted
+	}
+	{
+		if value.ExternalDns != nil {
+			converted := *value.ExternalDns
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.ExternalDns = &converted
+		}
+	}
+	{
+		if value.TlsMode != nil {
+			converted := *value.TlsMode
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.TlsMode = &converted
+		}
+	}
+	{
+		if value.ServiceType != nil {
+			converted := *value.ServiceType
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.ServiceType = &converted
+		}
+	}
+	{
+		if value.Status != nil {
+			converted := *value.Status
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Status = &converted
+		}
+	}
+	{
+		if value.Phase != nil {
+			converted := *value.Phase
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Phase = &converted
+		}
+	}
+	{
+		if value.Image != nil {
+			converted := *value.Image
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Image = &converted
+		}
+	}
+	{
+		if value.SupervisorImage != nil {
+			converted := *value.SupervisorImage
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.SupervisorImage = &converted
+		}
+	}
+	{
+		converted, err := jsonStrings(value.ServerDnsNames, 262144, 128, 253)
+		if err != nil {
+			return nil, ErrConversion
+		}
+		result.ServerDnsNames = converted
+	}
+	{
+		if value.RouteAddress != nil {
+			converted := *value.RouteAddress
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.RouteAddress = &converted
+		}
+	}
+	{
+		if value.Oidc != nil {
+			converted := *value.Oidc
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Oidc = &converted
+		}
+	}
+	{
+		if value.Route != nil {
+			converted := *value.Route
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.Route = &converted
+		}
+	}
+	{
+		if value.CredentialDriver != nil {
+			converted := *value.CredentialDriver
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.CredentialDriver = &converted
+		}
+	}
+	{
+		if value.ActiveSandboxCount != nil {
+			converted := *value.ActiveSandboxCount
+			result.ActiveSandboxCount = &converted
+		}
+	}
+	{
+		if value.ConsoleAddress != nil {
+			converted := *value.ConsoleAddress
+			if !utf8.ValidString(converted) {
+				return nil, ErrConversion
+			}
+			result.ConsoleAddress = &converted
+		}
+	}
+	return result, nil
+}
+
 // GatewayNetwork converts a prepared value. The caller must first check access.
 func GatewayNetwork(value storage.GatewayNetwork) (*v1.GatewayNetwork, error) {
 	result := &v1.GatewayNetwork{}

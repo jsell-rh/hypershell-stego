@@ -407,6 +407,39 @@ overrides:
     factory_package: internal/httpapi
   grpc-application:
     response_mappings:
+      - name: Gateway
+        provider: postgres-adapter
+        model: Gateway
+        message: hypershell.v1.Gateway
+        fields:
+          - {target: metadata.id, source: id}
+          - {target: metadata.created_at, source: created_time}
+          - {target: metadata.updated_at, source: updated_time}
+          - {target: metadata.kind, constant: Gateway}
+          - {target: metadata.href, source: id, prefix: /api/hypershell/v1/gateways/}
+          - {target: name, source: name}
+          - {target: cluster_id, source: cluster_id}
+          - {target: release_id, source: release_id}
+          - {target: namespace, source: namespace}
+          - {target: external_dns, source: external_dns}
+          - {target: tls_mode, source: tls_mode}
+          - {target: service_type, source: service_type}
+          - {target: status, source: status}
+          - {target: phase, source: phase}
+          - {target: image, source: image}
+          - {target: supervisor_image, source: supervisor_image}
+          - {target: route_address, source: route_address}
+          - {target: console_address, source: console_address}
+          - {target: oidc, source: oidc}
+          - {target: route, source: route}
+          - {target: credential_driver, source: credential_driver}
+          - {target: active_sandbox_count, source: active_sandbox_count}
+          - target: server_dns_names
+            source: server_dns_names
+            conversion: json_strings
+            max_bytes: 262144
+            max_items: 128
+            max_item_bytes: 253
       - name: ManagedCluster
         provider: postgres-adapter
         model: ManagedCluster

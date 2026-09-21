@@ -58,6 +58,10 @@ jobs:
               'TestCleanupSummaryTimestampPresence',
               'TestCatalogMappingsPreserveEveryField',
               'TestCatalogMappingsRejectInvalidTextPrivately',
+              'TestGatewayMappingPreservesEveryField',
+              'TestGatewayMappingSelectsObservationsBeforeConversion',
+              'TestGatewayMappingRejectsInvalidDNSListsPrivately',
+              'TestGatewayMappingAcceptsDNSListBounds',
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)
           started = [e['Test'] for e in events if e['Action'] == 'run' and e.get('Test')]
