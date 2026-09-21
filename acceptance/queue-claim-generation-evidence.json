@@ -1,0 +1,46 @@
+{
+  "source": "dba16589709dcde4c7219ea69f002fd8345d14f6",
+  "compiler": "65b18de83ccea83c242fdea3291a5a40bf6397e7",
+  "run": 35553671797,
+  "source_archive_sha256": "725cf51ce1b5081b1493a0de0b1de6cf12f46ae5f99c154ed6ab4b6a585f13d0",
+  "generated_archive_sha256": "9682a2fb476a97b1e74a5d7133562106b72141e8e0d927f8c0fed275e569578c",
+  "files": 429,
+  "changed_files": [
+    ".stego/state.yaml",
+    "console/.stego/state.yaml",
+    "gateway-console/.stego/state.yaml",
+    "out/cli/command/version.go",
+    "out/outbox/queue.go"
+  ],
+  "unchanged_generated_and_module_files": 424,
+  "queue_delta_matches_pinned_compiler_template": true,
+  "existing_storage_contract_wiring_unchanged": true,
+  "cli_change_is_compiler_identity_only": true,
+  "recorded_generated_hashes_checked": 420,
+  "recorded_source_input_hashes_checked": 41,
+  "compiler_executed_locally": false,
+  "generation_files_applied": true,
+  "application_qualified": false,
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35553671797",
+  "inspection_sha256": "42fe2d8f97877a0fed728874c002f310d7569d260986b87c30efc7732f4ee18e",
+  "review_corrections": {
+    "namespace-review-correction.json": {
+      "source": "dba16589709dcde4c7219ea69f002fd8345d14f6",
+      "run": 35553671797,
+      "old_script_sha256": "99e6315072a4fe62d850089271955445423e704433b0b2766d8a44a5c2af2667",
+      "new_script_sha256": "754c3f40946d8d40502e50d5f6391633087090aad0f59dfb2f9ef5134d2ea594",
+      "old_failure_log_sha256": "827dce85bd19f607ae150b71c8074240ba0532455addf39276514bd3c8231631",
+      "cause": "The offline reviewer expected internal/outbox. The application declares the outbox namespace in service.yaml.",
+      "changed_expectation": "out/outbox/queue.go",
+      "application_test_repeated": false,
+      "original_records_preserved": true
+    },
+    "storage-contract-review-correction.json": {
+      "prior_review_sha256": "754c3f40946d8d40502e50d5f6391633087090aad0f59dfb2f9ef5134d2ea594",
+      "corrected_review_sha256": "533fbe5517b683123f4ef420535c65a3f81d0b723eac2fbf6733fa9fc38e90b6",
+      "cause": "The queue generator uses the declared storage contract. The plain template has a local Message struct. The corrected review checks the exact template delta and retains the existing generated storage alias and import.",
+      "application_test_repeated": false,
+      "original_records_preserved": true
+    }
+  }
+}
