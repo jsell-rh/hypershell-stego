@@ -1,0 +1,18 @@
+{
+  "source": "dc6cd0e6e0aaa77106647b206059ea932469b04e",
+  "compiler": "65b18de83ccea83c242fdea3291a5a40bf6397e7",
+  "run": 35556198775,
+  "qualified": true,
+  "checked_at": "2026-09-21T03:04:30.185463+00:00",
+  "complete_generated_inventory_matches": true,
+  "generated_and_module_files": 429,
+  "generated_hashes_checked": 420,
+  "input_hashes_checked": 41,
+  "generation_patch_empty": true,
+  "source_archive_sha256": "c746f13ef4a777e369f79922a7655d204c667cad2a0045b8092a313e8da9b98b",
+  "generated_archive_sha256": "c44db95ea22ca4391c3ca85729134e0736d33f4cffdc3af09d0ccc7ad750f35d",
+  "compiler_executed_locally": false,
+  "scope": "All three generated roots match the exact acceptance source. The accepted browser workflow and remaining main checks have separate records.",
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35556198775",
+  "independent_record_sha256": "5abf3757f845248cb222af5613976d1c0b4bba7df8c59e289e73133a16074c0a"
+}

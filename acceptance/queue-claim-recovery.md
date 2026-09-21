@@ -37,3 +37,14 @@ all 32 standing resources. Normal cleanup with 100 accounts took an observed
 change. They do not establish production capacity, live Kata isolation, RDS
 failover, or the cause of the historical event timeout. Exact main push checks
 have separate results.
+
+
+The exact main source `dc6cd0e6` also passed all 1,294 core cases, the rendered
+browser check in CI, seven image and signature reviews, and 52 required live
+API cases. Regeneration matched all 429 generated and module files with an
+empty patch. Independent cleanup checks found no test resources, a free Lease,
+and all 32 standing resources unchanged. See the
+[main hosted results](queue-claim-main-hosted-evidence.json),
+[main API results](queue-claim-main-api-evidence.json), and
+[main regeneration results](queue-claim-main-regeneration-evidence.json).
+The cleanup target and other limits above remain open.
