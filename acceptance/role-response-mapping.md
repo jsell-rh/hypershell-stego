@@ -31,5 +31,10 @@ projection, count-only requests, repair, and restart. The bounded jshell API
 suite includes Role discovery and this stored-fault test. Existing grant,
 CLI, network, and browser viewer checks remain required.
 
-Compiler release verification, regenerated output, all candidate checks, and
-the complete Gateway workflow remain pending for this application change.
+The immutable compiler release is `52306a6b16f2e68e55d7884104a4614f82f1938b`.
+Its signatures and installation passed verification. Generation run
+`35591897980` changed six files: the Role mapping, its common object decoder,
+the CLI compiler identity, and three state records. The other 429 generated
+and module files are unchanged. The decoder matches the released template.
+
+Candidate application checks and the complete Gateway workflow remain pending.

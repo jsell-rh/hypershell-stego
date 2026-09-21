@@ -508,6 +508,91 @@ func ManagedCluster(value model0.ManagedCluster) (*contract.ManagedCluster, erro
 	return result, nil
 }
 
+// Role converts a prepared value after the caller checks access.
+func Role(value model0.Role) (*contract.Role, error) {
+	result := &contract.Role{}
+	{
+		v := value.BuiltIn
+		result.BuiltIn = &v
+	}
+	{
+		v := value.CreatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.CreatedAt = &v
+	}
+	{
+		if value.Description != nil {
+			v := *value.Description
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Description = &v
+		}
+	}
+	{
+		if value.DisplayName != nil {
+			v := *value.DisplayName
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.DisplayName = &v
+		}
+	}
+	{
+		v := value.ID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		v = "/api/hypershell/v1/roles/" + v
+		result.Href = &v
+	}
+	{
+		v := value.ID
+		if v != "" {
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Id = &v
+		}
+	}
+	{
+		v := "Role"
+		result.Kind = &v
+	}
+	{
+		v := value.Name
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Name = v
+	}
+	{
+		v, err := jsonObject(value.Permissions, 262144, 4096, 16, 16384)
+		if err != nil {
+			return nil, ErrConversion
+		}
+		if v != nil {
+			result.Permissions = &v
+		}
+	}
+	{
+		v := value.UpdatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.UpdatedAt = &v
+	}
+	return result, nil
+}
+
 // RoleBinding converts a prepared value after the caller checks access.
 func RoleBinding(value model0.RoleBinding) (*contract.RoleBinding, error) {
 	result := &contract.RoleBinding{}
