@@ -16,7 +16,33 @@ corrupts one owner's grant timestamp in its private database, and checks gRPC
 list filtering, private errors, and watch termination across API restart. Repair
 must restore the complete list. The bounded API gate requires this test.
 
-These tests are required but have not yet passed for this application source.
-Regeneration, complete application tests, the live API gate, and the full browser
-workflow remain required. This change does not establish production capacity or
-complete the enterprise goal.
+Application source `62adcf0` passed all 14 hosted check groups. The full suite
+passed 1,422 cases in 397 root tests and retained all 1,404 prior cases. The
+focused transport suite passed 214 cases in 27 roots. API run `35579620505`
+passed all 56 required roots, including the stored grant fault across restart.
+An earlier API run failed while downloading the OpenShift client, before the
+application test started. Its failure and cleanup records are retained.
+
+Browser run `35580560335` passed all 11 required roots. It used the exact source,
+compiler, and signed images. The full browser workflow took 561.88 seconds.
+Review verified login, Gateway creation, grants, filtered and denied requests,
+REST and gRPC, event delivery, restart, session rotation, logout, SQL recovery,
+and durable deletion. All 435 generation hashes matched across repeated runs
+and after the tests. All four rendered images were viewed. No layout defect
+was seen. Logs, metrics, and traces were correlated for the expected workers
+and browser backends.
+
+Both test fixtures and their allocations are absent. The shared test lease is
+free. All 32 standing cluster resources are unchanged. A trace evidence reader
+initially used the previous full CI run path. A separate corrected reader
+verified this source and all unchanged trace requirements against the same
+collected result. No cluster test was repeated for that reader error.
+
+The measured Gateway had 100 accounts with verified token issuance. Cleanup
+and all completion checks took approximately 31.65 seconds in this observation. The
+30-second target is not proved. This is not a 100-Gateway capacity test. Live
+Kata and upstream Sandbox execution remain deferred. RDS failover and the
+remaining enterprise requirements are not proved.
+
+See [the evidence record](grpc-grant-workflow-evidence.json) for exact run IDs
+and proof hashes. The nullable service-account mapper is separate work.
