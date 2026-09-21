@@ -1,0 +1,182 @@
+{
+  "source": "967bc1d8754d46f566b563794eba4d272e4b55db",
+  "run": 35550670545,
+  "qualified": true,
+  "applications": [
+    {
+      "application": "hypershell",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": ".",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "800787a5b97e5f6caea892ecf5e11a0a10af9fb40f15e94df635af18270878e3",
+      "image_record_sha256": "62ead638c5934892f28ec334d074ca2056fb533406d8b53ec90b65b9481106cc",
+      "bundle_sha256": "ea172a8016a7e2964fd2e94d5ca6567bf04ae6290b089086cd804b0f318ac0c9",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-console",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": "console",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "7dbdbff0f09d4c64874a488c7b8364fc93a0e720f8235a6acf5fc7cb6e1b3f20",
+      "image_record_sha256": "bf756eef7fb82994d7a4bb0663899d50eec714797e822467d096060401d9b9b0",
+      "bundle_sha256": "f9e25d3fa8917bf894393a5ea1b403dbe924d8f167cb33f61243041e941f4b4d",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-provisioner",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": ".",
+        "target": "out/grpcapi/processes/provisioner",
+        "entrypoint": "rpc",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "cdd4fc76a97f714a2f1b14789708be366079336aeba2f640b7881e378e1b1f90",
+      "image_record_sha256": "edb5a2f357fdfd60346892bfb3d94abe786003fe4a3cfe0d6b22ecb092c6493e",
+      "bundle_sha256": "35c28645bdd997adc2e6c54b428847963b5108c8c65e0e175eef2d437b6ddca6",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-gateway-console",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": "gateway-console",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "9a2f08fdba2b6e7710e14b7cf6148d952cf353c702c6b9f82ea78eb301a28e5e",
+      "image_record_sha256": "b711c02012b3c59db3643a0709d18bc401eda3d130e960fbad0a95dd0d99b6b4",
+      "bundle_sha256": "f35d93cd2c12dc53fd79e521ee4f33cd91874436255efd01f54e2f30f67f4624",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-namespace-allocation",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": ".",
+        "target": "out/deploy/workers/namespace-allocation",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "18bdbf33865385564f9719a1c78fef817eb320394dc2d764414f1b14484e9a5f",
+      "image_record_sha256": "bdf4ea94989768eea7e92ab604c306d8d09f78942d33afd8dc5a339346692571",
+      "bundle_sha256": "e02c6d1fbc2b9c32ff96684c53a100f7e8ea3ef3fd8ced392c4e5bde2ec0c8ec",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-gateway-identity",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": ".",
+        "target": "out/deploy/workers/gateway-identity",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "7373654aca9323f9dab85ce30a3c1eb68e5177bb23ef1d715fab4ec88bf7965f",
+      "image_record_sha256": "31478ab6435c4b727bea2de36c811c2c951ab570134f2c6b48dd4ec17dbb0e19",
+      "bundle_sha256": "895226f79ca9206671799d1f22dde6f05d0b5a7c6f76e330c53aa215010fedad",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    },
+    {
+      "application": "hypershell-gateway-workload",
+      "policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/checked-timestamp-adoption-20260921",
+        "revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "967bc1d8754d46f566b563794eba4d272e4b55db",
+        "module": ".",
+        "target": "out/deploy/workers/gateway-workload",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "build_record_sha256": "6ea290720120db73d47222ea963fe1585d6ef02c088aba936397b6e759de7c2b",
+      "image_record_sha256": "f618a73924e81b62496b141e034718a50c8fe10de3dd69ba49a876628255d38d",
+      "bundle_sha256": "82075ce67386f12291888ea8434f774562dd6f8b14409032e1adecbf11dc95fd",
+      "real_rejection_cases": 11,
+      "independently_authenticated": true
+    }
+  ],
+  "proof_sha256": {
+    "application-qualification.json": "7639bb0c4af23bc1af9617cd1d11b231760a79d9b82b83ef7fd27b7dcefcac28",
+    "image-qualification.json": "cde6628bb8cc21ec83b90e86abc5a179fd94408985aecb5a4957f8f096785c3e",
+    "registry-qualification.json": "962369f0d9f0c38fa7f851bebb253fad3cf5f809f1ec9604093ce45058259c7e",
+    "signature-qualification.json": "d4fea22425bb906afa6c2cad542134f28e383714031fcbd8c296f6c12eb58469"
+  },
+  "live_workflow_qualification_pending": true
+}

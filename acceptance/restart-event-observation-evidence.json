@@ -1,0 +1,100 @@
+{
+  "source": "9602389e0190c241f8abf4877b7feddb1b9cf1af",
+  "runtime_source": "967bc1d8754d46f566b563794eba4d272e4b55db",
+  "qualified_at": "2026-09-21T02:04:04.810220+00:00",
+  "focused": {
+    "source": "9602389e0190c241f8abf4877b7feddb1b9cf1af",
+    "base_source": "967bc1d8754d46f566b563794eba4d272e4b55db",
+    "run": 35551701942,
+    "qualified": true,
+    "roots": [
+      "TestGatewayCleanupDeadlineReopensConfirmation",
+      "TestGatewayProviderDeadlineCommitsFailureAndRecovers",
+      "TestGatewaySQLCleanupDeadlineKeepsStateUntilRecovery",
+      "TestGeneratedRuntimeRecoversUnfinishedClaim",
+      "TestIdentityCleanupDeadlineReopensConfirmation"
+    ],
+    "case_count": 5,
+    "production_files_unchanged": true,
+    "generated_lease_and_event_check_unchanged": true,
+    "source_archive_sha256": "8893decab1b64529e125c6f2ecf7217080349b5bac76e3097a61065847f7c4e0",
+    "test_log_sha256": "556ab481a304e9a1fa854bb8ccc816550e02a45c80db47ae2e38bafe19adf0e5",
+    "checked_at": "2026-09-21T01:45:24.405609+00:00",
+    "scope": "Provider recovery uses the existing queue recovery bound after API restart. The historical lease origin remains unknown; no ten-second recovery claim."
+  },
+  "provider": {
+    "source": "9602389e0190c241f8abf4877b7feddb1b9cf1af",
+    "run": 35551701965,
+    "qualified": true,
+    "required_roots": [
+      "TestClientReadsRequireExactIdentity",
+      "TestDatabaseFixtureCleanupDiagnostics",
+      "TestGatewayCleanupDeadlineReopensConfirmation",
+      "TestLateKeycloakCreationIsRemovedAfterCleanupAndRestart",
+      "TestManagedInventoryHandlesConcurrentRemoval",
+      "TestManagedInventoryUsesGatewaySearchAndChecksOwnership",
+      "TestPostgresSignalEvidenceAcceptsCredentialPreparation",
+      "TestPostgresSignalEvidenceAcceptsManagedSchema",
+      "TestPostgresSignalEvidenceRequiresControllerAndLog",
+      "TestUnknownGatewayClientsCloseAcrossProcessRestart",
+      "TestUnrelatedClientSnapshotComparison"
+    ],
+    "required_roots_passed": 11,
+    "cleanup_checked": true,
+    "source_archive_verified": true,
+    "record_sha256": {
+      "tests.log": "e65e68d1c866b668ed844c98d458a5e3f7458ba2401c32de71dd8ad1b739a4d1",
+      "inventory.log": "f5f28b410d0dd6432c13b8fc70feedb784382b533d664b2a517a16b64bb3d4d5",
+      "source-commit": "f173ac0a2bec6645a004943b50926cdbf3e9a126f84b38a63954630432caa32c",
+      "source-archive.sha256": "538b4f5fe09134abbe8d010d5746930befe38e2cb302f286f9f730a8ff2d4f95",
+      "cleanup.json": "61e23bb6437febd3384ead2cafc8770f568002ee8cfd4b6191ac1af34e5e6459"
+    },
+    "checked_at": "2026-09-21T01:47:54.914106+00:00",
+    "scope": "Hosted real provider discovery and cleanup. The live browser workflow remains required."
+  },
+  "production_files_unchanged": true,
+  "native_application_artifacts_match_runtime_source": {
+    "hypershell": {
+      "sha256": "c985f0f6300ba820518de4ce4d98bd279d00807236d97f0bffabd63eef6d7345",
+      "size": 48747203
+    },
+    "hypershell-console": {
+      "sha256": "b0bc01c7baa8c696ecb32da9cfe53fbd1c379d4d399b7e085feccb67729ca529",
+      "size": 35729785
+    },
+    "hypershell-provisioner": {
+      "sha256": "625c31937459978754048b1895bcb3c161ab50385d2faa9f309e22c0d4ae3255",
+      "size": 36275675
+    },
+    "hypershell-gateway-console": {
+      "sha256": "7328d5ad6db8da23d3c74a8264f8380c42c646c5323f650cc58860071ea379e8",
+      "size": 41536548
+    },
+    "hypershell-namespace-allocation": {
+      "sha256": "e0d00c0ed7036bee7a7007e4df32537017000045a97991d25cdd269f211c9439",
+      "size": 34490155
+    },
+    "hypershell-gateway-identity": {
+      "sha256": "5918024de574da9982bf0c7baa2ba8403ea083ed641abdbe633276992427b00b",
+      "size": 36151019
+    },
+    "hypershell-gateway-workload": {
+      "sha256": "ae292ee31781f1d5bb55d67b6f0d17889865279023dc441d5f708d9369176cb8",
+      "size": 35661079
+    }
+  },
+  "changed_files": [
+    ".github/workflows/restart-events.yml",
+    "acceptance/gateway_observation_deadline_test.go",
+    "acceptance/restart-event-observation.md"
+  ],
+  "images_run": 35551702453,
+  "authenticated_images": 7,
+  "proof_sha256": {
+    "focused": "99251024a18c7704b408c887e6181fdaa1726ad1affb2087f8484f1cf123a059",
+    "provider": "d027f1498a6be7edadd8c9c36fd0f3fa057cc3baaf2f8b85f8861df0a91d1f6e",
+    "images": "3daf8b398ffbe3d3ac6a3deaf9b786cf2b462fbadb011a69b66e2d1b29cae594"
+  },
+  "historical_failure_cause_proved": false,
+  "live_workflow_qualification_pending": true
+}
