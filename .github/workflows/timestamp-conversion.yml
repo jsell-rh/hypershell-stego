@@ -87,6 +87,8 @@ jobs:
               'TestRESTAccountMappingAcceptsPublicEnums',
               'TestRESTAccountMappingOwnsValues',
               'TestRESTAccountMappingRejectsInvalidValues',
+              'TestRESTRoleMappingPreservesEveryField',
+              'TestRESTRoleMappingPreservesObjectValues',
             },
           }
           assert not any(e['Action'] in {'fail', 'skip'} for e in events)
