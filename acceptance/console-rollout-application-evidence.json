@@ -1,0 +1,50 @@
+{
+  "source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+  "run": 35545078011,
+  "qualified": true,
+  "checked_at": "2026-09-21T00:02:46.436982+00:00",
+  "jobs": {
+    "acceptance (browser)": "success",
+    "web-console": "success",
+    "acceptance (core)": "success",
+    "service-image": "success",
+    "sandbox-workload": "skipped"
+  },
+  "baseline_source": "e0f3d7bb9ae93666e9a1381137a57df57a0416f8",
+  "core_cases_retained": 1176,
+  "core_cases_passed": 1192,
+  "core_top_level_tests": 368,
+  "prior_test_definitions_retained": true,
+  "added_core_cases": [
+    "TestConsoleVerifiedContentsControlGeneratedRollout",
+    "TestCountBindingFixtureUsesIdentity",
+    "TestCountBindingFixtureUsesIdentity/continued",
+    "TestCountBindingFixtureUsesIdentity/deleting",
+    "TestCountBindingFixtureUsesIdentity/duplicate",
+    "TestCountBindingFixtureUsesIdentity/extra-subject",
+    "TestCountBindingFixtureUsesIdentity/missing",
+    "TestCountBindingFixtureUsesIdentity/new-name",
+    "TestCountBindingFixtureUsesIdentity/no-list-version",
+    "TestCountBindingFixtureUsesIdentity/no-uid",
+    "TestCountBindingFixtureUsesIdentity/no-version",
+    "TestCountBindingFixtureUsesIdentity/reordered",
+    "TestCountBindingFixtureUsesIdentity/valid",
+    "TestCountBindingFixtureUsesIdentity/wrong-namespace",
+    "TestCountBindingFixtureUsesIdentity/wrong-owner",
+    "TestCountBindingFixtureUsesIdentity/wrong-subject"
+  ],
+  "core_skips": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "rendered_browser_test_passed": true,
+  "log_sha256": "fabc0e3439f21ba08451d71f254a66f49c35a562577351849ef7bd2e02af8ee7",
+  "sandbox_deferral_preserved": true,
+  "scope": "Hosted application checks. Live workflow and capacity remain separate requirements.",
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35545078011",
+  "independent_record_sha256": "c9579e2663da6657e14ff69cf26ed40a28c5519346227f95a32ce697c291fda9",
+  "live_workflow_qualification_pending": true
+}

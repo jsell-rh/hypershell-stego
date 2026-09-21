@@ -182,7 +182,7 @@
     "signature-qualification.json": "16bf0a024c8931fa7df1ffe2287fc4b692038d4d3ef0939f78a7595f32dbd279"
   },
   "applications_executed_locally": false,
-  "full_application_qualification_pending": true,
+  "full_application_qualification_pending": false,
   "live_workflow_qualification_pending": true,
   "production_capacity_proved": false
 }
