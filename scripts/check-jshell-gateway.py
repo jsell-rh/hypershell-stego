@@ -75,6 +75,7 @@ REQUIRED = [
     "TestRESTCatalogMappingRejectsStoredTimestamp",
     "TestRESTGatewayGrantMappingsRejectStoredFaults",
     "TestGRPCGrantMappingRejectsStoredFaultAcrossRestart",
+    "TestRESTAccountMappingRejectsStoredFaultsAcrossRestart",
     "TestGatewayGrantWorkflowAcrossTransportsAndRestart",
 ]
 

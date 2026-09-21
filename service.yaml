@@ -545,6 +545,26 @@ overrides:
       - {target: user_id, source: user_id}
       - {target: gateway_id, source: gateway_id}
       - {target: scope, source: scope}
+    - name: ServiceAccount
+      provider: postgres-adapter
+      model: ServiceAccount
+      schema: OpenShellGatewayServiceAccountListItem
+      fields:
+      - {target: id, source: id}
+      - {target: gateway_id, source: gateway_id}
+      - {target: name, source: name}
+      - {target: description, source: description, on_absent: emit_null}
+      - {target: credential_type, source: credential_type}
+      - {target: role, source: role}
+      - {target: status, source: status}
+      - {target: created_by_user_id, source: created_by_user_id}
+      - {target: client_id, source: client_id}
+      - {target: subject, source: subject}
+      - {target: expires_at, source: expires_at}
+      - {target: revoked_at, source: revoked_at, on_absent: emit_null}
+      - {target: last_error, source: last_error, on_absent: emit_null}
+      - {target: created_at, source: created_time}
+      - {target: updated_at, source: updated_time}
   grpc-application:
     response_mappings:
       - name: Gateway

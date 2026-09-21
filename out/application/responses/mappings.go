@@ -7,6 +7,7 @@ import (
 	errors "errors"
 	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	model0 "github.com/jsell-rh/hypershell-stego/out/storage"
+	nullable "github.com/oapi-codegen/nullable"
 	utf8 "unicode/utf8"
 )
 
@@ -586,6 +587,159 @@ func RoleBinding(value model0.RoleBinding) (*contract.RoleBinding, error) {
 			return nil, ErrConversion
 		}
 		result.UserId = &v
+	}
+	return result, nil
+}
+
+// ServiceAccount converts a prepared value after the caller checks access.
+func ServiceAccount(value model0.ServiceAccount) (*contract.OpenShellGatewayServiceAccountListItem, error) {
+	result := &contract.OpenShellGatewayServiceAccountListItem{}
+	{
+		v := value.ClientID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.ClientId = v
+	}
+	{
+		v := value.CreatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.CreatedAt = v
+	}
+	{
+		v := value.CreatedByUserID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.CreatedByUserId = v
+	}
+	{
+		v := value.CredentialType
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		switch v {
+		case "client_secret":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.OpenShellGatewayServiceAccountListItemCredentialType(v)
+		result.CredentialType = enumValue
+	}
+	{
+		if value.Description != nil {
+			v := *value.Description
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.Description = nullable.NewNullableWithValue(v)
+		} else {
+			result.Description.SetNull()
+		}
+	}
+	{
+		v := value.ExpiresAt
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.ExpiresAt = v
+	}
+	{
+		v := value.GatewayID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.GatewayId = v
+	}
+	{
+		v := value.ID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Id = v
+	}
+	{
+		if value.LastError != nil {
+			v := *value.LastError
+			if !utf8.ValidString(v) {
+				return nil, ErrConversion
+			}
+			result.LastError = nullable.NewNullableWithValue(v)
+		} else {
+			result.LastError.SetNull()
+		}
+	}
+	{
+		v := value.Name
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Name = v
+	}
+	{
+		if value.RevokedAt != nil {
+			v := *value.RevokedAt
+			if _, offset := v.Zone(); offset%60 != 0 {
+				return nil, ErrConversion
+			}
+			if _, err := v.MarshalJSON(); err != nil {
+				return nil, ErrConversion
+			}
+			result.RevokedAt = nullable.NewNullableWithValue(v)
+		} else {
+			result.RevokedAt.SetNull()
+		}
+	}
+	{
+		v := value.Role
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		switch v {
+		case "openshell-admin", "openshell-user":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.OpenShellGatewayServiceAccountRole(v)
+		result.Role = enumValue
+	}
+	{
+		v := value.Status
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		switch v {
+		case "degraded", "deleting", "error", "expired", "provisioning", "ready", "revoked", "revoking":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.OpenShellGatewayServiceAccountStatus(v)
+		result.Status = enumValue
+	}
+	{
+		v := value.Subject
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Subject = v
+	}
+	{
+		v := value.UpdatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.UpdatedAt = v
 	}
 	return result, nil
 }
