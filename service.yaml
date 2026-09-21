@@ -157,6 +157,45 @@ overrides:
           - {direction: egress, namespace: self, pod_label: app, pod_value: identity-fixture, port: 8443, protocol: TCP}
           - {direction: egress, namespace: self, pod_label: app, pod_value: stego-fixture, port: 19093, protocol: TCP}
     allocation_roles:
+      - name: fixture-gateway-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [configmaps], resource_names: [openshell-gateway-config], verbs: [get]}
+          - {api_group: "", resources: [secrets], resource_names: [openshell-client-tls, openshell-gateway-db-credentials, openshell-gateway-keys, openshell-public-tls, openshell-server-tls, hypershell-gateway-console-files], verbs: [get]}
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+          - {api_group: "", resources: [pods], verbs: [get, list, watch, create, delete]}
+          - {api_group: "", resources: [pods/log], verbs: [get]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
+          - {api_group: apps, resources: [deployments], resource_names: [hypershell-gateway-console, openshell-gateway], verbs: [get, list, watch]}
+          - {api_group: cert-manager.io, resources: [certificates], resource_names: [openshell-public-tls], verbs: [get]}
+          - {api_group: cert-manager.io, resources: [certificates/status], resource_names: [openshell-public-tls], verbs: [update]}
+      - name: fixture-state-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], resource_names: [openshell-gateway-state], verbs: [get]}
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+      - name: fixture-console-state-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], resource_names: [gateway-console-state], verbs: [get]}
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+      - name: fixture-sandbox-inspector
+        scope: namespace
+        rules:
+          - {api_group: "", resources: [secrets], resource_names: [openshell-client-tls], verbs: [get]}
+          - {api_group: "", resources: [resourcequotas], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], resource_names: [stego-allocation], verbs: [get]}
+          - {api_group: networking.k8s.io, resources: [networkpolicies], verbs: [list]}
+          - {api_group: "", resources: [pods], verbs: [get, list, watch, create, delete]}
+          - {api_group: "", resources: [pods/log], verbs: [get]}
+          - {api_group: "", resources: [serviceaccounts], verbs: [get]}
+          - {api_group: rbac.authorization.k8s.io, resources: [rolebindings], verbs: [get, list]}
       - name: sandbox-count
         scope: namespace
         rules:
@@ -236,6 +275,7 @@ overrides:
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: gateway, namespace: allocated}
           - {external_role: "system:openshift:scc:nonroot-v2", service_account: console, namespace: allocated}
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
+          - {role: fixture-gateway-inspector, service_account: service-check, namespace: control}
       - name: sandbox
         service_accounts: [sandbox]
         namespace_prefix: openshell-sandbox-
@@ -284,6 +324,7 @@ overrides:
           - {role: sandbox-count, service_account: hypershell-sandbox-count, namespace: control}
           - {role: gateway-runtime, service_account: gateway, namespace: profile, subject_profile: gateway}
           - {external_role: "system:openshift:scc:privileged", service_account: sandbox, namespace: allocated}
+          - {role: fixture-sandbox-inspector, service_account: service-check, namespace: control}
       - name: gateway-state
         network_isolation: true
         identity_config_map: openshell-state-identity
@@ -301,6 +342,7 @@ overrides:
           - {resource: requests.storage, value: "0"}
         bindings:
           - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}
+          - {role: fixture-state-inspector, service_account: service-check, namespace: control}
       - name: gateway-console-state
         network_isolation: true
         identity_config_map: gateway-console-state-identity
@@ -318,6 +360,7 @@ overrides:
           - {resource: requests.storage, value: "0"}
         bindings:
           - {role: gateway-state, service_account: hypershell-gateway-workload, namespace: control}
+          - {role: fixture-console-state-inspector, service_account: service-check, namespace: control}
     workers:
       - name: namespace-allocation
         namespace_allocator: true
