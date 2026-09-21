@@ -1,0 +1,36 @@
+{
+  "source": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+  "run": 35547679136,
+  "qualified": true,
+  "checked_at": "2026-09-21T00:52:02.856670+00:00",
+  "jobs": {
+    "acceptance (browser)": "success",
+    "web-console": "success",
+    "acceptance (core)": "success",
+    "service-image": "success",
+    "sandbox-workload": "skipped"
+  },
+  "baseline_source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+  "core_cases_retained": 1192,
+  "core_cases_passed": 1194,
+  "core_top_level_tests": 368,
+  "prior_test_definitions_retained": true,
+  "added_core_cases": [
+    "TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources/invalid_configuration_text",
+    "TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources/noncanonical_encoding"
+  ],
+  "core_skips": [
+    "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+    "TestGeneratedKubernetesBrowserGatewayWorkflow",
+    "TestGeneratedKubernetesServiceGatewayWorkflow",
+    "TestNamespaceCountWithLiveKubernetes",
+    "TestRealProviderAccountCapacity"
+  ],
+  "rendered_browser_test_passed": true,
+  "log_sha256": "2057b2532a8b9a80bae034be4cf6f6ed88bcac2f28db12d5c76efde4bd94bb22",
+  "sandbox_deferral_preserved": true,
+  "scope": "Hosted application checks. Live workflow and capacity remain separate requirements.",
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35547679136",
+  "independent_record_sha256": "16378f1386043b1f659a216bda449b60fc88400cc9b12584c91aa54a464a4b21",
+  "live_workflow_qualification_pending": true
+}

@@ -1,0 +1,318 @@
+{
+  "source": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+  "run": 35547635392,
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35547635392",
+  "qualified": true,
+  "applications": [
+    {
+      "application": "hypershell",
+      "module": ".",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "6e241ec48f8929e0595fcf20612ea040d6be68b1da24be775bbe92615750f499",
+        "size": 48746326
+      },
+      "image_manifest": {
+        "sha256": "e86f59de8d1ea866c35906e7255dffa4437651326f6d291a24407a780ab832b2",
+        "size": 406
+      },
+      "image_record_sha256": "26e2f3b469a84a8f3a8c668950b8a59e3d3ff66b115926058cbce856e1dd9e15",
+      "signature_bundle_sha256": "c9817175fa78cf8e2c5da68b5d289cda6afcf232312571858db7eb50d654d5ac",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": ".",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-console",
+      "module": "console",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "b0bc01c7baa8c696ecb32da9cfe53fbd1c379d4d399b7e085feccb67729ca529",
+        "size": 35729785
+      },
+      "image_manifest": {
+        "sha256": "3ea647abfddffcb4217ed07c8ff7536eda6edcea2087f30a355d4ff4ded17e0a",
+        "size": 406
+      },
+      "image_record_sha256": "497dcd6cef18fa2c6c685a142b80ab153125a6ef5e393c1889fbed20143132a2",
+      "signature_bundle_sha256": "07f4aaecb19b3b9f0a6e8ddde632c4a4d72ee8098cfa5fa48ad157c33dd2ed8b",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": "console",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-gateway-console",
+      "module": "gateway-console",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "7328d5ad6db8da23d3c74a8264f8380c42c646c5323f650cc58860071ea379e8",
+        "size": 41536548
+      },
+      "image_manifest": {
+        "sha256": "c4fe6e747d3c00ea7fead893679f4da86c5fa44e0a2d5e29dbd413128bdd7c13",
+        "size": 406
+      },
+      "image_record_sha256": "498d241e6cd0340d45b6e253087670e55a48aa2371d0fd211576b8a03b466b56",
+      "signature_bundle_sha256": "21affdf6a909efe41eba7ad2947599739d1670061c0757b8e74495e82ab9f53f",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": "gateway-console",
+        "target": "out",
+        "entrypoint": "service",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-gateway-identity",
+      "module": ".",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "5918024de574da9982bf0c7baa2ba8403ea083ed641abdbe633276992427b00b",
+        "size": 36151019
+      },
+      "image_manifest": {
+        "sha256": "27579f123c4f3463554e284808d54166c7aba2f21981ec31295c595fdda8fc59",
+        "size": 406
+      },
+      "image_record_sha256": "35ef3e30b9c5273d774afeb002e460292297b9e0e329c5ac243c5cf8d1abe447",
+      "signature_bundle_sha256": "e6818f54ad5b8a3da57596d93fc4d1caf53f0a8c79b7e269cb43611eeb4b3c21",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": ".",
+        "target": "out/deploy/workers/gateway-identity",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-gateway-workload",
+      "module": ".",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "ae292ee31781f1d5bb55d67b6f0d17889865279023dc441d5f708d9369176cb8",
+        "size": 35661079
+      },
+      "image_manifest": {
+        "sha256": "3db6caa5c39df06f8db6361aa53970626df9f6efe759fdc0cbef9fc790daf0b0",
+        "size": 406
+      },
+      "image_record_sha256": "9f73e643eb197c863f914884377e09806fbf1dd5aef425227bc3db3e4f2a7b44",
+      "signature_bundle_sha256": "a63934b7f9b63389ebcfe0e3806d1cabe7643bc75e2e6cf20867df268946ec18",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": ".",
+        "target": "out/deploy/workers/gateway-workload",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-namespace-allocation",
+      "module": ".",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "e0d00c0ed7036bee7a7007e4df32537017000045a97991d25cdd269f211c9439",
+        "size": 34490155
+      },
+      "image_manifest": {
+        "sha256": "22ff8ff6edd484f4dcddf511914a01b851537107ff96eddd6525ac7cdab8a8ca",
+        "size": 406
+      },
+      "image_record_sha256": "11af585725f344e3bce381d7b3af91032a27eb3b0870e268e1ca04c9e871c73b",
+      "signature_bundle_sha256": "58a97c6f77ef5e508f1802a7b67b33fefba2fd4259cd8e146407fcaabe9a8d86",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": ".",
+        "target": "out/deploy/workers/namespace-allocation",
+        "entrypoint": "worker",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    },
+    {
+      "application": "hypershell-provisioner",
+      "module": ".",
+      "source_inventory": {
+        "files": 1674,
+        "bytes": 27478228,
+        "sha256": "ac1aea6e7caeed4f7f8b23114273b4198d455eceba067b5401fecdf20818db91"
+      },
+      "artifact": {
+        "sha256": "47a07524689bbb45cb7864f92c4fbe4260f9163f00dcfd1fff867713f308e82e",
+        "size": 36275659
+      },
+      "image_manifest": {
+        "sha256": "f963f688248c10a643bcc89be407017706634420c4939d45a2b94d58c3def6ab",
+        "size": 406
+      },
+      "image_record_sha256": "00c0eec4902453a00f7b8dfb38c9be7624ade75aac5dcce716eb7aec7f9111e5",
+      "signature_bundle_sha256": "4f9663d4be14b8fa0101b7a32c842007bffd440691b73057d1446280fd901bf3",
+      "signature_policy": {
+        "format": 2,
+        "repository": "jsell-rh/hypershell-stego",
+        "signer_repository": "jsell-rh/stego",
+        "signer_workflow": ".github/workflows/application-target.yml",
+        "signer_revision": "d863fcb5e28887d39cd255e36a2bf56b0bc3825d",
+        "reference": "refs/heads/codex/workload-dependency-adoption-20260921",
+        "revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "compiler_revision": "ff0f902e258e6e85ed253daefc6767bf33c2f54d",
+        "compiler_sha256": "58c3cdb26c9b0a781e46e6ef5ae3483dc390d9956cdc2765a62493d1f4ffb07f",
+        "application_revision": "c3e88f1623d189e2a4d84df00a9d1dbf7118508d",
+        "module": ".",
+        "target": "out/grpcapi/processes/provisioner",
+        "entrypoint": "rpc",
+        "trust_store_sha256": "305d7bb5c087deae0dbfaec9cf305ae5a11c1751a9f109609a5484378595c95b"
+      },
+      "source_archives_checked": 2,
+      "native_verification_cases": 10,
+      "image_verification_cases": 7,
+      "registry_verification_cases": 6,
+      "signature_rejection_cases": 11,
+      "independently_authenticated": true,
+      "registry_fixture_bytes_match": true,
+      "registry_fixture_stopped": true
+    }
+  ],
+  "proof_sha256": {
+    "application-qualification.json": "b83682e3a1b66d62b91fd977a17b82e0ab8eb4197999e9240fef6b122b3b1f27",
+    "image-qualification.json": "6167f821bf28852d90d1ec1b64b503e62105e7bf5605dab26b9a7fe4ee761868",
+    "registry-qualification.json": "72f79776b6a40233a46992f4ee76965a0d2e896c79c12526602f66a486734e88",
+    "signature-qualification.json": "5195dd7017204ea95afe275976152c41924207f85adf17c8e852036bbbaeb198"
+  },
+  "live_workflow_qualification_pending": true,
+  "scope": "Seven candidate images. Native source, image contents, registry fixture transfer, and signatures passed independent review. Cluster delivery and the complete application workflow remain required.",
+  "production_capacity_proved": false
+}

@@ -19,7 +19,12 @@ were unchanged. The selected Gateway console module therefore remains valid;
 its complete source comparison is still required in application CI.
 
 The application adds rejection checks for line separators in encoded Secret
-data and invalid UTF-8 in configuration text. Application compilation, full
-checks, image verification, and a complete live workflow remain required before
-main acceptance. The earlier console rollout workflow does not qualify this
-new dependency conversion path.
+data and invalid UTF-8 in configuration text. All 45 focused cases and 1,194
+core cases passed. The full check retains all 1,192 prior cases and the five
+recorded exclusions. All seven application images passed source, content,
+registry fixture, and signature verification. See the
+[application evidence](workload-dependency-application-evidence.json) and
+[image evidence](workload-dependency-image-evidence.json).
+
+A complete live workflow remains required before main acceptance. The earlier
+console rollout workflow does not qualify this new dependency conversion path.
