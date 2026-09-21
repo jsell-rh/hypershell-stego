@@ -20,15 +20,23 @@ type networkServer struct {
 	source   events.Source
 }
 
-func presentGatewayNetwork(row model.GatewayNetwork) *pb.GatewayNetwork {
-	return &pb.GatewayNetwork{Metadata: catalogMetadata(row.Meta, "GatewayNetwork", "/api/hypershell/v1/gateway_networks"), Name: row.Name, Topology: row.Topology, TunnelMode: row.TunnelMode, HubGatewayId: row.HubGatewayID, Status: row.Status}
+func presentGatewayNetwork(row model.GatewayNetwork) (*pb.GatewayNetwork, error) {
+	metadata, err := catalogMetadata(row.Meta, "GatewayNetwork", "/api/hypershell/v1/gateway_networks")
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GatewayNetwork{Metadata: metadata, Name: row.Name, Topology: row.Topology, TunnelMode: row.TunnelMode, HubGatewayId: row.HubGatewayID, Status: row.Status}, nil
 }
 func (s *networkServer) CreateGatewayNetwork(ctx context.Context, r *pb.CreateGatewayNetworkRequest) (*pb.CreateGatewayNetworkResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.NetworkCreate{Name: r.Name, Topology: r.Topology, TunnelMode: r.TunnelMode, HubGatewayID: r.HubGatewayId, Status: r.Status})
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.CreateGatewayNetworkResponse{GatewayNetwork: presentGatewayNetwork(row)}, nil
+	value, err := presentGatewayNetwork(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.CreateGatewayNetworkResponse{GatewayNetwork: value}, nil
 }
 func (s *networkServer) UpdateGatewayNetwork(ctx context.Context, r *pb.UpdateGatewayNetworkRequest) (*pb.UpdateGatewayNetworkResponse, error) {
 	if r.Id == "" {
@@ -38,7 +46,11 @@ func (s *networkServer) UpdateGatewayNetwork(ctx context.Context, r *pb.UpdateGa
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.UpdateGatewayNetworkResponse{GatewayNetwork: presentGatewayNetwork(row)}, nil
+	value, err := presentGatewayNetwork(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.UpdateGatewayNetworkResponse{GatewayNetwork: value}, nil
 }
 func (s *networkServer) GetGatewayNetwork(ctx context.Context, r *pb.GetGatewayNetworkRequest) (*pb.GetGatewayNetworkResponse, error) {
 	if r.Id == "" {
@@ -48,7 +60,11 @@ func (s *networkServer) GetGatewayNetwork(ctx context.Context, r *pb.GetGatewayN
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetGatewayNetworkResponse{GatewayNetwork: presentGatewayNetwork(row)}, nil
+	value, err := presentGatewayNetwork(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GetGatewayNetworkResponse{GatewayNetwork: value}, nil
 }
 func (s *networkServer) DeleteGatewayNetwork(ctx context.Context, r *pb.DeleteGatewayNetworkRequest) (*pb.DeleteGatewayNetworkResponse, error) {
 	if r.Id == "" {
@@ -71,12 +87,20 @@ func (s *networkServer) ListGatewayNetworks(ctx context.Context, r *pb.ListGatew
 	}
 	response := &pb.ListGatewayNetworksResponse{Metadata: &pb.ListMeta{Page: page, Size: size, Total: int32(result.Total)}, Items: make([]*pb.GatewayNetwork, 0, len(rows))}
 	for _, row := range rows {
-		response.Items = append(response.Items, presentGatewayNetwork(row))
+		value, err := presentGatewayNetwork(row)
+		if err != nil {
+			return nil, mapError(err)
+		}
+		response.Items = append(response.Items, value)
 	}
 	return response, nil
 }
 func (s *networkServer) WatchGatewayNetworks(_ *pb.WatchGatewayNetworksRequest, stream grpc.ServerStreamingServer[pb.WatchGatewayNetworksResponse]) error {
-	return watchCatalog(s.resource, s.source, "gatewaynetwork", stream, func(row model.GatewayNetwork, kind pb.EventType, id string) *pb.WatchGatewayNetworksResponse {
-		return &pb.WatchGatewayNetworksResponse{Type: kind, ResourceId: id, GatewayNetwork: presentGatewayNetwork(row)}
+	return watchCatalog(s.resource, s.source, "gatewaynetwork", stream, func(row model.GatewayNetwork, kind pb.EventType, id string) (*pb.WatchGatewayNetworksResponse, error) {
+		value, err := presentGatewayNetwork(row)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.WatchGatewayNetworksResponse{Type: kind, ResourceId: id, GatewayNetwork: value}, nil
 	})
 }

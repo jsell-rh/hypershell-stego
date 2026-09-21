@@ -1,0 +1,73 @@
+name: Checked transport timestamps
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - internal/grpcapi/**
+      - out/grpcapi/transport/**
+      - .github/workflows/timestamp-conversion.yml
+
+permissions:
+  contents: read
+
+concurrency:
+  group: timestamp-conversion-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  timestamps:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    env:
+      GOMAXPROCS: '2'
+      GOMEMLIMIT: 768MiB
+      GOFLAGS: -p=2
+      GOWORK: 'off'
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: '1.26.8'
+          cache: true
+      - name: Check timestamp conversion through the application adapters
+        run: |
+          set -euo pipefail
+          mkdir -p "$RUNNER_TEMP/timestamps"
+          git rev-parse HEAD > "$RUNNER_TEMP/timestamps/source-commit"
+          git archive HEAD | sha256sum > "$RUNNER_TEMP/timestamps/source-archive.sha256"
+          cp .stego/compiler-revision "$RUNNER_TEMP/timestamps/compiler-revision"
+          go mod download github.com/jsell-rh/hypershell-stego/gateway-console
+          go list -m -json github.com/jsell-rh/hypershell-stego/gateway-console > "$RUNNER_TEMP/timestamps/selected-gateway-console.json"
+          python3 scripts/check-gateway-console-inputs.py "$RUNNER_TEMP/timestamps/selected-gateway-console.json"
+          go test -json -race -count=1 -mod=readonly -timeout=3m ./internal/grpcapi \
+            | tee "$RUNNER_TEMP/timestamps/tests.jsonl"
+          python3 - "$RUNNER_TEMP/timestamps/tests.jsonl" <<'PYCHECK'
+          import json, sys
+          from pathlib import Path
+          events = [json.loads(line) for line in Path(sys.argv[1]).read_text().splitlines()]
+          required = {
+              'TestManagedClusterTimestampResponses',
+              'TestGatewayReleaseTimestampResponses',
+              'TestGatewayNetworkTimestampResponses',
+              'TestTimestampPresentersPreserveContract',
+              'TestTimestampPresentersRejectInvalidRecords',
+              'TestCleanupSummaryTimestampPresence',
+          }
+          assert not any(e['Action'] in {'fail', 'skip'} for e in events)
+          started = [e['Test'] for e in events if e['Action'] == 'run' and e.get('Test')]
+          passed = [e['Test'] for e in events if e['Action'] == 'pass' and e.get('Test')]
+          assert len(started) == len(set(started)) and sorted(started) == sorted(passed)
+          assert {name for name in passed if '/' not in name} == required
+          PYCHECK
+          git diff --exit-code
+      - name: Retain timestamp test records
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: timestamps-${{ github.sha }}
+          path: ${{ runner.temp }}/timestamps/
+          if-no-files-found: error
+          retention-days: 14
