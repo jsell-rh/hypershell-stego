@@ -183,6 +183,7 @@
   },
   "applications_executed_locally": false,
   "full_application_qualification_pending": false,
-  "live_workflow_qualification_pending": true,
-  "production_capacity_proved": false
+  "live_workflow_qualification_pending": false,
+  "production_capacity_proved": false,
+  "live_workflow_evidence": "console-rollout-browser-evidence.json"
 }

@@ -46,5 +46,6 @@
   "scope": "Hosted application checks. Live workflow and capacity remain separate requirements.",
   "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35545078011",
   "independent_record_sha256": "c9579e2663da6657e14ff69cf26ed40a28c5519346227f95a32ce697c291fda9",
-  "live_workflow_qualification_pending": true
+  "live_workflow_qualification_pending": false,
+  "live_workflow_evidence": "console-rollout-browser-evidence.json"
 }
