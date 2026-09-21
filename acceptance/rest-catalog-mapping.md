@@ -19,9 +19,8 @@ values, and private conversion errors. A database check tests malformed stored
 timestamps through get, list, field selection, pagination, access denial,
 restart, and repair.
 
-Before acceptance, verify the signed compiler release, regenerate all modules in
-CI, retain the existing checks, and run the complete Gateway workflow. Gateway
-and grant REST mapping remain separate work. No test pass is claimed here.
+The acceptance checks below passed for this catalog change. Gateway and grant
+REST mapping remain separate work.
 
 Compiler `ca25ab06` passed exact-source checks and signature verification. A
 separate installation matched all five verified release files. Regeneration run
@@ -32,5 +31,20 @@ generated and module files stayed unchanged.
 
 The complete model declarations match the existing SDK wire model declarations.
 Source review covered all 32 mapping fields, timestamp checks, owned pointers,
-and fixed errors. Full application checks and the live Gateway workflow remain
-required before acceptance.
+and fixed errors. All ten hosted checks passed. API run `35570053583` passed 53
+required roots. Browser run `35570745086` passed all 11 required roots. The
+rendered workflow took 542 seconds. Review checked 1722 source files, 434
+repeated generation hashes, and all four screenshots. Cleanup left the 32
+standing installation resources unchanged.
+
+The browser workflow proved login, Gateway creation, grants, REST/gRPC access,
+events, restart, browser sessions, account lifecycle, correlated telemetry,
+and namespace finalization. A cleanup reader had an outdated prior-API
+assertion. Its correction checked the exact completed API proof and the same
+cluster state; no workflow rerun was needed.
+
+One measured Gateway had 100 service accounts. Complete cleanup had an observed
+upper bound of 32.566 seconds, above the 30-second target. The 100-Gateway
+capacity target is not proved. Live Kata, native Sandbox execution, RDS failover,
+and the remaining enterprise requirements remain open. See the
+[workflow evidence](rest-catalog-workflow-evidence.json).
