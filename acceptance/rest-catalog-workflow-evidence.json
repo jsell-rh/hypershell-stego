@@ -1,0 +1,71 @@
+{
+  "source": "98f4106c1bfbd23ad7ade025aa877337779bdb85",
+  "compiler": "ca25ab06aff3dddf0e7d2bc1c472a40821ccd0a6",
+  "checked_at": "2026-09-21T07:19:51.972987+00:00",
+  "scope": "Generated REST catalog response mappings. Gateway and grant REST adoption and the broader enterprise requirements remain open.",
+  "hosted_runs": {
+    "Build console asset candidate": 35567942299,
+    "Upstream dashboard source checks": 35567939054,
+    "Event recovery after restart": 35567936426,
+    "Journal recovery checks": 35567933615,
+    "Real provider discovery and cleanup": 35567930522,
+    "Regenerate with the pinned compiler": 35567927425,
+    "Gateway and contract checks": 35567924400,
+    "Common application images": 35567866706,
+    "Generated Gateway console": 35567865925,
+    "Checked transport responses": 35567865949
+  },
+  "api": {
+    "run": 35570053583,
+    "required_roots_passed": 53,
+    "generated_hashes_match": 434,
+    "atomic_owner_and_event_writes": true,
+    "rest_grpc_restart_and_access_checks": true,
+    "independent_cleanup": true
+  },
+  "browser": {
+    "run": 35570745086,
+    "fixture_source": "535bbcae047188b2ff132dafbdb86726fba79d37",
+    "required_roots_passed": 11,
+    "seconds": 542.0,
+    "source_files_match": 1722,
+    "generation_hashes_match": 434,
+    "screenshots_viewed": 4,
+    "layout_defects_seen": false,
+    "accounts_per_measured_gateway": 100,
+    "cleanup_upper_bounds_seconds": [
+      32.566277124
+    ],
+    "cleanup_target_seconds": 30,
+    "cleanup_target_met": false,
+    "capacity_target_proved": false,
+    "standing_resources_unchanged": 32
+  },
+  "browser_proof_sha256": {
+    "console-rollout-observation.json": "5bad473994a5edec11eb7944077355f25dd1cefda1575ee43f176a0d48a968aa",
+    "generation-inventory-review.json": "f5b015a52bdf5dea901fa41a050fa912743c2f84a1745705d4f8bac70a9968e3",
+    "image-delivery-verification.json": "fcf95a381990aa4e3977ef923e53a426ba346df382295ffb1dccef13e10d327a",
+    "verification.json": "8c21f9295b27c036138fac487865295726807b2d5339addc6436ef4961797b9c",
+    "controller-trace-verification.json": "de684e37ff3a7241f0efec667f8c0234f7ef6535276d8be2b86cfa5d76305455",
+    "account-verification.json": "678baac40cff0c2a5681683d26ab61e5ab5fcd5554a2e467cd29032e8ccdd733",
+    "phase-verification.json": "a826785f995f648d63a1f2530dd40191b3a44ede5f507acd07a93c086bf844a8",
+    "independent-cleanup.json": "2fd41408b15fe2ac013ec75e726e1ef6f9f5ed6428a091f7f9fa297635465aa6",
+    "admitted-pod-verification.json": "a43fa5ca2b0db3b12ac28d7cffc2123bc85a8264d740025646058e5e7e4d76db",
+    "visual-review.json": "c287ab5661b2d6b8d7a3de5720dcccef6077b5f2511d9dd3fbfa0e43b5152538",
+    "allocator-log-observation/cleanup-window-review.json": "759edcd6e6379bb3a6fd9ac901c6df3e556ad4d6628d158479f3382739cb84b4",
+    "namespace-deletion-observation/cleanup-window-review.json": "807830161f2c980a78caddd8637e087a852cc6d671618817f338eebd1856979b"
+  },
+  "reader_correction": {
+    "reason": "The cleanup reader incorrectly expected no prior API run. A corrected reader required the exact completed API proof and retained all cleanup checks.",
+    "test_rerun": false,
+    "cleanup_reader_record_sha256": "ac3544f00a18329d1a4c5d58148fff736090012cce501c0ebc8235b91a340acc",
+    "qualification_reader_record_sha256": "7979bb4083790e74a7e08570499189946da007fcd9a75ad8354041143656285a"
+  },
+  "not_proved": [
+    "100-Gateway concurrent capacity",
+    "Cleanup within the 30-second target",
+    "Live Kata and upstream OpenShell Sandbox execution",
+    "RDS failover",
+    "Remaining enterprise completion requirements"
+  ]
+}
