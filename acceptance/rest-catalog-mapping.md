@@ -1,6 +1,6 @@
 # REST catalog mapping candidate
 
-Status: source preparation. Generated output and execution evidence are pending.
+Status: generated candidate. Application execution evidence is pending.
 This branch does not establish application acceptance.
 
 The service declares all 32 response properties for ManagedCluster,
@@ -22,3 +22,15 @@ restart, and repair.
 Before acceptance, verify the signed compiler release, regenerate all modules in
 CI, retain the existing checks, and run the complete Gateway workflow. Gateway
 and grant REST mapping remain separate work. No test pass is claimed here.
+
+Compiler `ca25ab06` passed exact-source checks and signature verification. A
+separate installation matched all five verified release files. Regeneration run
+`35567725658` produced 433 generated and module files. Review checked 424 output
+hashes and 41 source-input hashes. Exactly two generated files were added; the
+CLI compiler identity and three generation state files changed. The other 427
+generated and module files stayed unchanged.
+
+The complete model declarations match the existing SDK wire model declarations.
+Source review covered all 32 mapping fields, timestamp checks, owned pointers,
+and fixed errors. Full application checks and the live Gateway workflow remain
+required before acceptance.
