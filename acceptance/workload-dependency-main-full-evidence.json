@@ -1,0 +1,42 @@
+{
+  "schema": 1,
+  "source": "a1cdd3e621e97cc40df03206a7b687fd45eb97fe",
+  "compiler": "d8c37d20dafbf6906203b10805cf30cba5b02692",
+  "run": 35550149538,
+  "workflow_url": "https://github.com/jsell-rh/hypershell-stego/actions/runs/35550149538",
+  "qualified": true,
+  "independent_review": {
+    "source": "a1cdd3e621e97cc40df03206a7b687fd45eb97fe",
+    "run": 35550149538,
+    "qualified": true,
+    "checked_at": "2026-09-21T01:40:09.607077+00:00",
+    "jobs": {
+      "acceptance (browser)": "success",
+      "web-console": "success",
+      "acceptance (core)": "success",
+      "service-image": "success",
+      "sandbox-workload": "skipped"
+    },
+    "baseline_source": "a1ad728d1712fe9503fee4287a40bf7be8c49240",
+    "core_cases_retained": 1192,
+    "core_cases_passed": 1194,
+    "core_top_level_tests": 368,
+    "prior_test_definitions_retained": true,
+    "added_core_cases": [
+      "TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources/invalid_configuration_text",
+      "TestGatewayWorkloadRejectsInvalidDependenciesWithoutResources/noncanonical_encoding"
+    ],
+    "core_skips": [
+      "TestGatewaySQLUsesDurableStateAndRetainsSuppliedServer",
+      "TestGeneratedKubernetesBrowserGatewayWorkflow",
+      "TestGeneratedKubernetesServiceGatewayWorkflow",
+      "TestNamespaceCountWithLiveKubernetes",
+      "TestRealProviderAccountCapacity"
+    ],
+    "rendered_browser_test_passed": true,
+    "log_sha256": "bf883da5e584d39d694d1745052b2db83046cacb9832ec0693adab6562308959",
+    "sandbox_deferral_preserved": true,
+    "scope": "Hosted application checks. Live workflow and capacity remain separate requirements."
+  },
+  "scope": "Exact main application suite after dependency conversion adoption. The earlier event timeout remains unexplained. This record does not establish production capacity or live Kata behavior."
+}
