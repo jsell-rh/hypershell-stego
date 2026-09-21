@@ -6,11 +6,11 @@ last_applied:
             module_name: github.com/jsell-rh/hypershell-stego/console
             go_version: 1.26.8
             output_dir: out
-            registry_ref: d8c37d20dafbf6906203b10805cf30cba5b02692
+            registry_ref: f18286e8cbe6d1b1e489015a8965e403cd09046f
         files:
             .stego/config.yaml:
                 exists: true
-                sha256: bf26c7426869ec3a7fcea6e411b3a34de148fcb7e8e4348eff0a1e99a1352d77
+                sha256: 331b9d5233dd219b0bd73ad5a0ac4f23030fa22914eab7da691531e05cd96116
                 mode: 420
             go.mod:
                 exists: true
@@ -28,37 +28,37 @@ last_applied:
                 exists: true
                 sha256: 677404ba290aa54e40fe78e656a6cbd31df273820036e7453b2cbd24eaaac6ec
                 mode: 420
-        sha256: 1e6ace8377ee67359df7854b0384df90e4493934e05daad4f7eaf1c98ef3b129
+        sha256: 1c528b477e980ad573f7ae0fb4eb318627d2d458e9edaf813f55d0ac8f3b106c
     compiler_build:
         go_version: go1.26.8
         goos: linux
         goarch: amd64
-        module_version: v0.0.0-20260921000200-d8c37d20dafb
+        module_version: v0.0.0-20260921005722-f18286e8cbe6
         vcs: git
-        revision: d8c37d20dafbf6906203b10805cf30cba5b02692
+        revision: f18286e8cbe6d1b1e489015a8965e403cd09046f
         source_state: clean
     service_hash: 28da56c0bb6bfe31414f234d20bae7fb8a60ce0045cfb01cb27261dae55c0179
-    registry_sha: d8c37d20dafbf6906203b10805cf30cba5b02692
-    registry_content_sha256: 8da0eb61ba5edac089223838310d9c5547400eab63a215970a3e10a39fd4d468
+    registry_sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
+    registry_content_sha256: 483bd5094ed2910f7316115d8d331198646593a0081229760ebed66a09c2cef8
     components:
         browser-backend:
             version: 4.5.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
         browser-telemetry:
             version: 1.3.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
         health-check:
             version: 1.1.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
         kubernetes-service:
             version: 1.29.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
         otel-tracing:
             version: 1.19.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
         postgres-adapter:
             version: 4.10.0
-            sha: d8c37d20dafbf6906203b10805cf30cba5b02692
+            sha: f18286e8cbe6d1b1e489015a8965e403cd09046f
     files:
         browser/backend.go: edd59ae4f21a1f63b446dc8c9dae98e93ed63f77457a8369f1a3c2420fb47afb
         browser/client/client.go: 749417cae296bbe6173551ad4725c00b1c0a4b486d7bfa22dc514355ee3fe65e

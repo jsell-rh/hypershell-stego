@@ -10,12 +10,12 @@ import (
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
 	storage "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
+	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 	model "github.com/jsell-rh/hypershell-stego/out/storage"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func catalogPage(page, size int32) (int32, int32) {
@@ -27,10 +27,18 @@ func catalogPage(page, size int32) (int32, int32) {
 	}
 	return page, size
 }
-func catalogMetadata(m model.Meta, entity, path string) *pb.ObjectReference {
-	return &pb.ObjectReference{Id: m.ID, Kind: entity, Href: path + "/" + m.ID, CreatedAt: timestamppb.New(m.CreatedTime), UpdatedAt: timestamppb.New(m.UpdatedTime)}
+func catalogMetadata(m model.Meta, entity, path string) (*pb.ObjectReference, error) {
+	created, err := transport.Timestamp(m.CreatedTime)
+	if err != nil {
+		return nil, err
+	}
+	updated, err := transport.Timestamp(m.UpdatedTime)
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ObjectReference{Id: m.ID, Kind: entity, Href: path + "/" + m.ID, CreatedAt: created, UpdatedAt: updated}, nil
 }
-func watchCatalog[T, C, P, R any](resource *catalog.Resource[T, C, P], source events.Source, prefix string, stream grpc.ServerStreamingServer[R], present func(T, pb.EventType, string) *R) error {
+func watchCatalog[T, C, P, R any](resource *catalog.Resource[T, C, P], source events.Source, prefix string, stream grpc.ServerStreamingServer[R], present func(T, pb.EventType, string) (*R, error)) error {
 	ctx := stream.Context()
 	p := gateways.PrincipalFromContext(ctx)
 	if _, err := resource.List(ctx, p, catalog.Query{Page: 1, Size: 0}); err != nil {
@@ -76,7 +84,11 @@ func watchCatalog[T, C, P, R any](resource *catalog.Resource[T, C, P], source ev
 		if err != nil {
 			return mapError(err)
 		}
-		if err := stream.Send(present(row, kind, event.ResourceKey)); err != nil {
+		response, err := present(row, kind, event.ResourceKey)
+		if err != nil {
+			return mapError(err)
+		}
+		if err := stream.Send(response); err != nil {
 			return err
 		}
 	}
@@ -88,15 +100,23 @@ type clusterServer struct {
 	source   events.Source
 }
 
-func presentManagedCluster(row model.ManagedCluster) *pb.ManagedCluster {
-	return &pb.ManagedCluster{Metadata: catalogMetadata(row.Meta, "ManagedCluster", "/api/hypershell/v1/managed_clusters"), Name: row.Name, Provider: row.Provider, Region: row.Region, KubeconfigSecret: row.KubeconfigSecret, Status: row.Status, ApiServerUrl: row.ApiServerUrl}
+func presentManagedCluster(row model.ManagedCluster) (*pb.ManagedCluster, error) {
+	metadata, err := catalogMetadata(row.Meta, "ManagedCluster", "/api/hypershell/v1/managed_clusters")
+	if err != nil {
+		return nil, err
+	}
+	return &pb.ManagedCluster{Metadata: metadata, Name: row.Name, Provider: row.Provider, Region: row.Region, KubeconfigSecret: row.KubeconfigSecret, Status: row.Status, ApiServerUrl: row.ApiServerUrl}, nil
 }
 func (s *clusterServer) CreateManagedCluster(ctx context.Context, r *pb.CreateManagedClusterRequest) (*pb.CreateManagedClusterResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.ClusterCreate{Name: r.Name, Provider: r.Provider, Region: r.Region, KubeconfigSecret: r.KubeconfigSecret, Status: r.Status, ApiServerUrl: r.ApiServerUrl})
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.CreateManagedClusterResponse{ManagedCluster: presentManagedCluster(row)}, nil
+	value, err := presentManagedCluster(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.CreateManagedClusterResponse{ManagedCluster: value}, nil
 }
 func (s *clusterServer) UpdateManagedCluster(ctx context.Context, r *pb.UpdateManagedClusterRequest) (*pb.UpdateManagedClusterResponse, error) {
 	if r.Id == "" {
@@ -106,7 +126,11 @@ func (s *clusterServer) UpdateManagedCluster(ctx context.Context, r *pb.UpdateMa
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.UpdateManagedClusterResponse{ManagedCluster: presentManagedCluster(row)}, nil
+	value, err := presentManagedCluster(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.UpdateManagedClusterResponse{ManagedCluster: value}, nil
 }
 func (s *clusterServer) GetManagedCluster(ctx context.Context, r *pb.GetManagedClusterRequest) (*pb.GetManagedClusterResponse, error) {
 	if r.Id == "" {
@@ -116,7 +140,11 @@ func (s *clusterServer) GetManagedCluster(ctx context.Context, r *pb.GetManagedC
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetManagedClusterResponse{ManagedCluster: presentManagedCluster(row)}, nil
+	value, err := presentManagedCluster(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GetManagedClusterResponse{ManagedCluster: value}, nil
 }
 func (s *clusterServer) DeleteManagedCluster(ctx context.Context, r *pb.DeleteManagedClusterRequest) (*pb.DeleteManagedClusterResponse, error) {
 	if r.Id == "" {
@@ -139,13 +167,21 @@ func (s *clusterServer) ListManagedClusters(ctx context.Context, r *pb.ListManag
 	}
 	response := &pb.ListManagedClustersResponse{Metadata: &pb.ListMeta{Page: page, Size: size, Total: int32(result.Total)}, Items: make([]*pb.ManagedCluster, 0, len(rows))}
 	for _, row := range rows {
-		response.Items = append(response.Items, presentManagedCluster(row))
+		value, err := presentManagedCluster(row)
+		if err != nil {
+			return nil, mapError(err)
+		}
+		response.Items = append(response.Items, value)
 	}
 	return response, nil
 }
 func (s *clusterServer) WatchManagedClusters(_ *pb.WatchManagedClustersRequest, stream grpc.ServerStreamingServer[pb.WatchManagedClustersResponse]) error {
-	return watchCatalog(s.resource, s.source, "managedcluster", stream, func(row model.ManagedCluster, kind pb.EventType, id string) *pb.WatchManagedClustersResponse {
-		return &pb.WatchManagedClustersResponse{Type: kind, ResourceId: id, ManagedCluster: presentManagedCluster(row)}
+	return watchCatalog(s.resource, s.source, "managedcluster", stream, func(row model.ManagedCluster, kind pb.EventType, id string) (*pb.WatchManagedClustersResponse, error) {
+		value, err := presentManagedCluster(row)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.WatchManagedClustersResponse{Type: kind, ResourceId: id, ManagedCluster: value}, nil
 	})
 }
 
@@ -155,15 +191,23 @@ type releaseServer struct {
 	source   events.Source
 }
 
-func presentGatewayRelease(row model.GatewayRelease) *pb.GatewayRelease {
-	return &pb.GatewayRelease{Metadata: catalogMetadata(row.Meta, "GatewayRelease", "/api/hypershell/v1/gateway_releases"), Name: row.Name, Image: row.Image, RolloutStrategy: row.RolloutStrategy, CanaryPercent: row.CanaryPercent, CanaryDuration: row.CanaryDuration, Status: row.Status}
+func presentGatewayRelease(row model.GatewayRelease) (*pb.GatewayRelease, error) {
+	metadata, err := catalogMetadata(row.Meta, "GatewayRelease", "/api/hypershell/v1/gateway_releases")
+	if err != nil {
+		return nil, err
+	}
+	return &pb.GatewayRelease{Metadata: metadata, Name: row.Name, Image: row.Image, RolloutStrategy: row.RolloutStrategy, CanaryPercent: row.CanaryPercent, CanaryDuration: row.CanaryDuration, Status: row.Status}, nil
 }
 func (s *releaseServer) CreateGatewayRelease(ctx context.Context, r *pb.CreateGatewayReleaseRequest) (*pb.CreateGatewayReleaseResponse, error) {
 	row, err := s.resource.Create(ctx, gateways.PrincipalFromContext(ctx), catalog.ReleaseCreate{Name: r.Name, Image: r.Image, RolloutStrategy: r.RolloutStrategy, CanaryPercent: r.CanaryPercent, CanaryDuration: r.CanaryDuration, Status: r.Status})
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.CreateGatewayReleaseResponse{GatewayRelease: presentGatewayRelease(row)}, nil
+	value, err := presentGatewayRelease(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.CreateGatewayReleaseResponse{GatewayRelease: value}, nil
 }
 func (s *releaseServer) UpdateGatewayRelease(ctx context.Context, r *pb.UpdateGatewayReleaseRequest) (*pb.UpdateGatewayReleaseResponse, error) {
 	if r.Id == "" {
@@ -173,7 +217,11 @@ func (s *releaseServer) UpdateGatewayRelease(ctx context.Context, r *pb.UpdateGa
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.UpdateGatewayReleaseResponse{GatewayRelease: presentGatewayRelease(row)}, nil
+	value, err := presentGatewayRelease(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.UpdateGatewayReleaseResponse{GatewayRelease: value}, nil
 }
 func (s *releaseServer) GetGatewayRelease(ctx context.Context, r *pb.GetGatewayReleaseRequest) (*pb.GetGatewayReleaseResponse, error) {
 	if r.Id == "" {
@@ -183,7 +231,11 @@ func (s *releaseServer) GetGatewayRelease(ctx context.Context, r *pb.GetGatewayR
 	if err != nil {
 		return nil, mapError(err)
 	}
-	return &pb.GetGatewayReleaseResponse{GatewayRelease: presentGatewayRelease(row)}, nil
+	value, err := presentGatewayRelease(row)
+	if err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.GetGatewayReleaseResponse{GatewayRelease: value}, nil
 }
 func (s *releaseServer) DeleteGatewayRelease(ctx context.Context, r *pb.DeleteGatewayReleaseRequest) (*pb.DeleteGatewayReleaseResponse, error) {
 	if r.Id == "" {
@@ -206,12 +258,20 @@ func (s *releaseServer) ListGatewayReleases(ctx context.Context, r *pb.ListGatew
 	}
 	response := &pb.ListGatewayReleasesResponse{Metadata: &pb.ListMeta{Page: page, Size: size, Total: int32(result.Total)}, Items: make([]*pb.GatewayRelease, 0, len(rows))}
 	for _, row := range rows {
-		response.Items = append(response.Items, presentGatewayRelease(row))
+		value, err := presentGatewayRelease(row)
+		if err != nil {
+			return nil, mapError(err)
+		}
+		response.Items = append(response.Items, value)
 	}
 	return response, nil
 }
 func (s *releaseServer) WatchGatewayReleases(_ *pb.WatchGatewayReleasesRequest, stream grpc.ServerStreamingServer[pb.WatchGatewayReleasesResponse]) error {
-	return watchCatalog(s.resource, s.source, "gatewayrelease", stream, func(row model.GatewayRelease, kind pb.EventType, id string) *pb.WatchGatewayReleasesResponse {
-		return &pb.WatchGatewayReleasesResponse{Type: kind, ResourceId: id, GatewayRelease: presentGatewayRelease(row)}
+	return watchCatalog(s.resource, s.source, "gatewayrelease", stream, func(row model.GatewayRelease, kind pb.EventType, id string) (*pb.WatchGatewayReleasesResponse, error) {
+		value, err := presentGatewayRelease(row)
+		if err != nil {
+			return nil, err
+		}
+		return &pb.WatchGatewayReleasesResponse{Type: kind, ResourceId: id, GatewayRelease: value}, nil
 	})
 }

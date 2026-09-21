@@ -291,6 +291,9 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	close(provider.release)
 	stopController = startController()
 	await(healthyPhase, healthyStatus, 8*time.Second)
+	// Restart can leave a committed claim without a received result. Require
+	// delivery within the generated lease recovery limit before reading Kafka.
+	awaitQueueEmptyAfterRestart(t, f)
 	event(action, kind)
 	if cleanup {
 		if code, _ := requestJSON(t, "GET", address+path+"/"+created.ID, owner, nil); code != 200 {

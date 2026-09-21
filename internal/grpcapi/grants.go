@@ -3,6 +3,7 @@ package grpcapi
 import (
 	"context"
 	"errors"
+	transport "github.com/jsell-rh/hypershell-stego/out/grpcapi/transport"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	events "github.com/jsell-rh/hypershell-stego/out/contracts/events"
@@ -12,7 +13,6 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type grantServer struct {
@@ -23,11 +23,12 @@ type grantServer struct {
 
 func presentGrant(view gateways.GrantView) (*pb.RoleBinding, error) {
 	row := view.Grant
-	created, updated := timestamppb.New(row.CreatedTime), timestamppb.New(row.UpdatedTime)
-	if err := created.CheckValid(); err != nil {
+	created, err := transport.Timestamp(row.CreatedTime)
+	if err != nil {
 		return nil, err
 	}
-	if err := updated.CheckValid(); err != nil {
+	updated, err := transport.Timestamp(row.UpdatedTime)
+	if err != nil {
 		return nil, err
 	}
 	return &pb.RoleBinding{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "RoleBinding", Href: "/api/hypershell/v1/role_bindings/" + row.ID, CreatedAt: created, UpdatedAt: updated}, RoleId: row.RoleID, UserId: &row.UserID, GatewayId: row.GatewayID, Scope: row.Scope, RoleName: view.RoleName, Username: view.Username}, nil

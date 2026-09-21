@@ -18,7 +18,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type server struct {
@@ -192,11 +191,12 @@ func present(row model.Gateway) (*pb.Gateway, error) {
 			return nil, err
 		}
 	}
-	created, updated := timestamppb.New(row.CreatedTime), timestamppb.New(row.UpdatedTime)
-	if err := created.CheckValid(); err != nil {
+	created, err := transport.Timestamp(row.CreatedTime)
+	if err != nil {
 		return nil, err
 	}
-	if err := updated.CheckValid(); err != nil {
+	updated, err := transport.Timestamp(row.UpdatedTime)
+	if err != nil {
 		return nil, err
 	}
 	return &pb.Gateway{Metadata: &pb.ObjectReference{Id: row.ID, Kind: "Gateway", Href: "/api/hypershell/v1/gateways/" + row.ID, CreatedAt: created, UpdatedAt: updated}, Name: row.Name, ClusterId: row.ClusterID, ReleaseId: row.ReleaseID, Namespace: row.Namespace,
