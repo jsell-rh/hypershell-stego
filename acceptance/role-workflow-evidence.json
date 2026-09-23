@@ -1,0 +1,92 @@
+{
+  "source": "b5ee359162964d6ee383d9b54dc1b75253463fc7",
+  "compiler": "52306a6b16f2e68e55d7884104a4614f82f1938b",
+  "checked_at": "2026-09-23T18:12:00+00:00",
+  "qualified": true,
+  "scope": "Accepted generated Role responses and the complete rendered Gateway workflow. The remaining enterprise requirements stay open.",
+  "remaining_requirements": [
+    "C3",
+    "C4",
+    "C5",
+    "C6",
+    "C7",
+    "H1",
+    "H2",
+    "H3"
+  ],
+  "deferred": [
+    "Live Kata and upstream Sandbox execution",
+    "Native Sandbox packet probes",
+    "RDS failover",
+    "Production capacity"
+  ],
+  "hosted_runs": {
+    "Allocation finalization checks": 35880297242,
+    "Build console asset candidate": 35880267410,
+    "Common application images": 35880312185,
+    "Count fixture rendering": 35880304676,
+    "Database access workflow checks": 35880272320,
+    "Event recovery after restart": 35880280804,
+    "Gateway and contract checks": 35880253504,
+    "Gateway workload construction checks": 35880293119,
+    "Generated Gateway console": 35880262465,
+    "Journal recovery checks": 35880276782,
+    "Real provider discovery and cleanup": 35880288967,
+    "Regenerate with the pinned compiler": 35880258194,
+    "Sandbox adapter checks": 35880284598,
+    "Upstream dashboard source checks": 35880301261
+  },
+  "api": {
+    "run": 35884290611,
+    "required_roots": 59,
+    "cases_passed": 93,
+    "failed": [],
+    "missing": 0
+  },
+  "browser": {
+    "run": 35894616139,
+    "fixture_source": "eb7be18e680ff1372f40a2007e5cdbbda2c9b7b2",
+    "image_run": 35592854743,
+    "seconds": 571.58,
+    "generation_hashes_match": 436,
+    "deterministic_generation": true,
+    "no_test_mutation": true,
+    "signed_images": 7,
+    "public_connection_verified": true,
+    "cleanup": {
+      "allocations_absent": true,
+      "test_resources_absent": true,
+      "namespace_retained": "stego-service-ci",
+      "live_jobs_created": 0,
+      "ci_access_checks": 17
+    },
+    "measured_gateway": {
+      "live_accounts_per_measured_gateway": 100,
+      "accounts_with_verified_token_issuance": 100,
+      "observed_cleanup_upper_bound_seconds": 36.014349402,
+      "cleanup_target_seconds": 30
+    },
+    "proof_sha256": {
+      "verify.json": "53150546e0c8174350882a681a141d1ff242684eb953fc6c92e87b23657617dd",
+      "gateway-cleanup-timing.json": "f26e5c385da0a0e1d8d61b0f73abdfb1f12ce147282cf1bc286ab5e4040d560c"
+    }
+  },
+  "failed_attempts": [
+    {
+      "run": 35880384504,
+      "reason": "Expired one-hour CI credential before the run started"
+    },
+    {
+      "run": 35882430918,
+      "reason": "Expired one-hour CI credential before the run started"
+    },
+    {
+      "run": 35884303987,
+      "reason": "Browser image publish failed; the dispatch omitted the operator registry blob origin from the registry policy"
+    },
+    {
+      "run": 35893405131,
+      "reason": "Expired one-hour CI credential after queueing behind the shared live-test concurrency group"
+    }
+  ]
+}

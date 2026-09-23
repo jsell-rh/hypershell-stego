@@ -37,4 +37,21 @@ Its signatures and installation passed verification. Generation run
 the CLI compiler identity, and three state records. The other 429 generated
 and module files are unchanged. The decoder matches the released template.
 
-Candidate application checks and the complete Gateway workflow remain pending.
+
+Source `b5ee359` passed all 14 hosted groups. API run `35884290611` passed
+all 59 required roots with 93 cases and no failures. Browser run `35894616139`
+used fixture `eb7be18e` and image run `35592854743`. Its complete scenario
+took 571.58 seconds. Repeated generation matched all 436 hashes, and the
+suite left them unchanged. All seven signed images passed the common checks.
+The public Gateway connection was verified. The measured Gateway held 100
+accounts with verified token issuance. The observed cleanup upper bound was
+36.01 seconds against the 30-second target; the target and 100-Gateway
+capacity remain unproved. Both test fixtures and allocations were absent
+after cleanup, no live Job remained, and all 17 standing access checks passed.
+
+Four dispatch attempts failed before the accepted run: two expired one-hour
+CI credentials, one omitted registry blob origin in the dispatch policy, and
+one credential expired while queued behind the shared live-test group. The
+operator refreshed the credential and supplied the operator registry policy.
+See the [workflow evidence](role-workflow-evidence.json). This change does
+not complete the enterprise goal.
