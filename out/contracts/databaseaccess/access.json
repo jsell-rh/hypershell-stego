@@ -175,10 +175,38 @@
     {
       "component": "postgres-adapter",
       "schema": "stego_schema",
+      "name": "epoch_seq",
+      "kind": "sequence",
+      "privileges": [
+        "USAGE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
       "name": "generation",
       "kind": "table",
       "privileges": [
         "SELECT"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
+      "name": "identity",
+      "kind": "table",
+      "privileges": [
+        "SELECT"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
+      "name": "writer_lease",
+      "kind": "table",
+      "privileges": [
+        "SELECT",
+        "UPDATE"
       ]
     }
   ]

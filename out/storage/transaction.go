@@ -247,16 +247,27 @@ func (s *Store) withTransaction(ctx context.Context, isolation sql.IsolationLeve
 	if db.Error != nil {
 		return db.Error
 	}
+	// Every write transaction takes or re-asserts the single-writer lease.
+	// A store that lost the lease to a newer process fails closed permanently.
+	if err := s.fence.acquire(db); err != nil {
+		return err
+	}
 	// Rollback also runs if the callback panics. A successful commit makes this
 	// rollback harmless. Panic recovery remains the caller's responsibility.
 	defer db.Rollback()
+	// Every write transaction advances the database epoch. The non-transactional
+	// sequence read survives rollback, so an epoch lower than the store's
+	// high-water mark proves the database lost committed state: fail closed.
+	if err := s.epoch(db); err != nil {
+		return err
+	}
 	raw, err := sqlTransaction(db)
 	if err != nil {
 		return err
 	}
 	state := &transactionState{}
 	defer func() { state.mu.Lock(); state.closed = true; state.mu.Unlock() }()
-	scope := &Store{db: db, transaction: state}
+	scope := &Store{db: db, transaction: state, identity: s.identity, fence: s.fence}
 	callbackErr := fn(ctx, scope)
 	state.mu.Lock()
 	state.closed = true
@@ -273,6 +284,24 @@ func (s *Store) withTransaction(ctx context.Context, isolation sql.IsolationLeve
 		}
 	}
 	return raw.Commit()
+}
+
+// epoch advances the monotonic database write epoch and observes the result.
+// The sequence increment is not rolled back when the transaction aborts.
+// The identity row is read in the same statement so a database replaced
+// under this process is also rejected.
+func (s *Store) epoch(db *gorm.DB) error {
+	if s == nil || s.identity == nil {
+		return ErrDatabaseRollback
+	}
+	var row struct {
+		Epoch    int64
+		Identity string
+	}
+	if err := db.Raw("SELECT nextval('stego_schema.epoch_seq') AS epoch, database_id AS identity FROM stego_schema.identity WHERE singleton").Scan(&row).Error; err != nil {
+		return err
+	}
+	return s.identity.observe(row.Epoch, row.Identity)
 }
 
 // sqlTransaction accepts the direct and prepared-statement GORM transaction

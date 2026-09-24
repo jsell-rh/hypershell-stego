@@ -1,6 +1,6 @@
 registry:
   - url: https://github.com/jsell-rh/stego.git
-    ref: 52306a6b16f2e68e55d7884104a4614f82f1938b
+    ref: 67768b1de53f70d6818dfedf773231e1f4a53c33
     path: registry
   - url: ./registry
     ref: application

@@ -85,12 +85,6 @@ func run() (stegoErr error) {
 	if err != nil {
 		return err
 	}
-	stegoStage = "component[2].constructor[0]"
-	runtime, err := events.NewRuntime(ctx, sqlDB)
-	if err != nil {
-		return err
-	}
-	defer runtime.Close()
 	stegoStage = "component[5].constructor[0]"
 	source, err := outbox.NewSource(ctx, sqlDB)
 	if err != nil {
@@ -113,6 +107,12 @@ func run() (stegoErr error) {
 	if err != nil {
 		return err
 	}
+	stegoStage = "component[2].constructor[0]"
+	runtime, err := events.NewRuntime(store, tracingRuntime, ctx, sqlDB)
+	if err != nil {
+		return err
+	}
+	defer runtime.Close()
 	stegoStage = "component[4].constructor[0]"
 	handler, err := application.NewHandler(store, verifierFromEnvironment, sqlDB)
 	if err != nil {

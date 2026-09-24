@@ -14,6 +14,10 @@ var errControllerPanic = errors.New("controller callback did not return")
 
 type controllerTelemetryKey struct{}
 
+// controllerOperationKey marks a context that already records controller work.
+// Helpers use it to avoid a second record for work an enclosing operation owns.
+type controllerOperationKey struct{}
+
 // One private provider set aggregates overlapping controllers in this process.
 // The last caller flushes it. New callers wait for that bounded flush to finish.
 var controllerTelemetryOwner struct {
@@ -91,7 +95,44 @@ func beginControllerWork(ctx context.Context, operation string) (context.Context
 	if telemetry == nil {
 		return ctx, func(error, bool) {}
 	}
-	return telemetry.Begin(ctx, operation)
+	ctx, end := telemetry.Begin(ctx, operation)
+	return context.WithValue(ctx, controllerOperationKey{}, struct{}{}), end
+}
+
+// beginHelperWork records a standalone helper pass. A pass inside an enclosing
+// controller operation records nothing; that operation already covers the work.
+func beginHelperWork(ctx context.Context, operation string) (context.Context, func(error, bool)) {
+	if ctx == nil {
+		return ctx, func(error, bool) {}
+	}
+	if _, active := ctx.Value(controllerOperationKey{}).(struct{}); active {
+		return ctx, func(error, bool) {}
+	}
+	telemetry, _ := ctx.Value(controllerTelemetryKey{}).(*tracing.ControllerTelemetry)
+	if telemetry == nil {
+		return ctx, func(error, bool) {}
+	}
+	ctx, end := telemetry.Begin(ctx, operation)
+	return context.WithValue(ctx, controllerOperationKey{}, struct{}{}), end
+}
+
+// controllerHelperWork records one standalone helper operation. A panic still
+// propagates without its value entering telemetry.
+func controllerHelperWork(ctx context.Context, operation string, work func(context.Context) error) error {
+	if ctx == nil {
+		return work(ctx)
+	}
+	ctx, end := beginHelperWork(ctx, operation)
+	completed := false
+	defer func() {
+		if !completed {
+			end(errControllerPanic, false)
+		}
+	}()
+	err := work(ctx)
+	completed = true
+	end(err, false)
+	return err
 }
 func controllerNotice(ctx context.Context, phase string) {
 	if telemetry, ok := ctx.Value(controllerTelemetryKey{}).(*tracing.ControllerTelemetry); ok {
@@ -124,6 +165,7 @@ func controllerResultWork(ctx context.Context, work func(context.Context) (Recon
 	end := func(tracing.ControllerWorkResult) {}
 	if telemetry != nil {
 		ctx, end = telemetry.BeginResult(ctx, "reconcile")
+		ctx = context.WithValue(ctx, controllerOperationKey{}, struct{}{})
 	}
 	completed := false
 	defer func() {

@@ -7,7 +7,9 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"github.com/google/uuid"
 	"gorm.io/gorm"
+	"sync"
 	"time"
 )
 
@@ -15,6 +17,283 @@ const SchemaGeneration = "controller-local-v2"
 const SchemaDefinition = "58d3dab40d9b5948f228cb98668ff2d47cd5c2294c4308c43219d99499e9ac91"
 
 var ErrSchemaGeneration = errors.New("database schema generation is not supported")
+var ErrDatabaseRollback = errors.New("database was restored to an earlier state")
+var ErrWriterFenced = errors.New("store lost the writer lease to a newer process")
+
+// databaseIdentity holds the unique identifier minted at bootstrap and the
+// in-process high-water mark of the monotonic write epoch. A restored backup
+// replays an old identifier or a lower epoch; either fails closed.
+type databaseIdentity struct {
+	mu     sync.Mutex
+	id     string
+	epoch  int64
+	rolled bool
+}
+
+// DatabaseIdentity returns the identifier recorded at bootstrap. Store it
+// outside the database before the first restart to detect a restored backup.
+func (s *Store) DatabaseIdentity() (string, error) {
+	if s == nil || s.db == nil {
+		return "", ErrDatabaseRollback
+	}
+	return s.identity.read(s.db)
+}
+
+// DatabaseEpoch returns the current write epoch high-water mark.
+func (s *Store) DatabaseEpoch() (int64, error) {
+	if s == nil || s.db == nil {
+		return 0, ErrDatabaseRollback
+	}
+	return s.identity.current(s.db)
+}
+
+// RememberDatabaseIdentity pins the expected database identifier. Use it at
+// startup with a value persisted outside the database to reject a database
+// restored from a backup of another instance.
+func (s *Store) RememberDatabaseIdentity(id string) error {
+	if s == nil || s.identity == nil {
+		return ErrDatabaseRollback
+	}
+	return s.identity.remember(id)
+}
+
+// DatabaseIdentityEpoch returns the bootstrap identifier with the epoch
+// high-water mark observed by this process. Store it outside the database
+// before the first restart to detect a restored backup across processes.
+func (s *Store) DatabaseIdentityEpoch() (string, int64, error) {
+	if s == nil || s.db == nil {
+		return "", 0, ErrDatabaseRollback
+	}
+	id, err := s.identity.read(s.db)
+	if err != nil {
+		return "", 0, err
+	}
+	epoch, err := s.identity.current(s.db)
+	return id, epoch, err
+}
+
+// rememberIdentity sets the identifier this process expects the database to
+// keep. Callers obtain it from DatabaseIdentity in a previous process.
+func (i *databaseIdentity) remember(id string) error {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if id == "" {
+		return ErrDatabaseRollback
+	}
+	if i.id == "" {
+		i.id = id
+		return nil
+	}
+	if i.id != id {
+		i.rolled = true
+		return ErrDatabaseRollback
+	}
+	return nil
+}
+func (i *databaseIdentity) read(db *gorm.DB) (string, error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.rolled {
+		return "", ErrDatabaseRollback
+	}
+	var id string
+	if err := db.Raw("SELECT database_id FROM stego_schema.identity WHERE singleton").Scan(&id).Error; err != nil || id == "" {
+		return "", ErrDatabaseRollback
+	}
+	if i.id == "" {
+		i.id = id
+	} else if i.id != id {
+		i.rolled = true
+		return "", ErrDatabaseRollback
+	}
+	return id, nil
+}
+func (i *databaseIdentity) current(db *gorm.DB) (int64, error) {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.rolled {
+		return 0, ErrDatabaseRollback
+	}
+	var row struct {
+		Last   int64
+		Called bool
+	}
+	if err := db.Raw("SELECT last_value AS last, is_called AS called FROM stego_schema.epoch_seq").Scan(&row).Error; err != nil {
+		return 0, err
+	}
+	if row.Called && row.Last > i.epoch {
+		i.epoch = row.Last
+	}
+	return i.epoch, nil
+}
+
+// writerFence holds the single-writer lease this process asserts on the write
+// path. The first write takes the lease unconditionally: the newest writer
+// wins. Every later write re-asserts it. A store that lost the lease fails
+// closed permanently.
+type writerFence struct {
+	mu     sync.Mutex
+	taken  bool
+	fenced bool
+	holder string
+}
+
+// acquire takes or re-asserts the writer lease inside an open write
+// transaction. The first assertion is unconditional; a later writer takes the
+// lease from any predecessor. A re-assertion that no longer matches means a
+// newer process holds the lease: the store is fenced and stays fenced.
+func (f *writerFence) acquire(db *gorm.DB) error {
+	if f == nil {
+		return ErrWriterFenced
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.fenced {
+		return ErrWriterFenced
+	}
+	if f.holder == "" {
+		f.holder = uuid.NewString()
+	}
+	if !f.taken {
+		if err := db.Exec("UPDATE stego_schema.writer_lease SET holder=? WHERE singleton", f.holder).Error; err != nil {
+			return err
+		}
+		f.taken = true
+		return nil
+	}
+	result := db.Exec("UPDATE stego_schema.writer_lease SET holder=? WHERE singleton AND (holder=? OR holder='')", f.holder, f.holder)
+	if result.Error != nil {
+		return result.Error
+	}
+	if result.RowsAffected != 1 {
+		f.fenced = true
+		return ErrWriterFenced
+	}
+	return nil
+}
+
+// check reports whether this store still holds the writer lease. A store that
+// never wrote reports success: it never asserted a lease. This method does not
+// take the lease and does not write.
+func (f *writerFence) check(db *gorm.DB) error {
+	if f == nil {
+		return ErrWriterFenced
+	}
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	if f.fenced {
+		return ErrWriterFenced
+	}
+	if !f.taken {
+		return nil
+	}
+	var holder string
+	if err := db.Raw("SELECT holder FROM stego_schema.writer_lease WHERE singleton").Scan(&holder).Error; err != nil {
+		return err
+	}
+	if holder != f.holder {
+		f.fenced = true
+		return ErrWriterFenced
+	}
+	return nil
+}
+
+// WriterLeaseCheck reports whether this store still holds the database writer
+// lease. Background workers use it before they claim work. It does not write.
+func (s *Store) WriterLeaseCheck(ctx context.Context) error {
+	if s == nil || s.db == nil || s.fence == nil {
+		return ErrWriterFenced
+	}
+	return s.fence.check(s.db.WithContext(ctx))
+}
+
+// observe is called with the epoch value and identity read inside each write
+// transaction. A lower epoch means the database lost committed state. A
+// changed identity means a different database was restored under this process.
+func (i *databaseIdentity) observe(epoch int64, identity string) error {
+	i.mu.Lock()
+	defer i.mu.Unlock()
+	if i.rolled || epoch <= 0 || identity == "" {
+		return ErrDatabaseRollback
+	}
+	if i.id != "" && i.id != identity {
+		i.rolled = true
+		return ErrDatabaseRollback
+	}
+	if i.id == "" {
+		i.id = identity
+	}
+	if epoch > i.epoch {
+		i.epoch = epoch
+		return nil
+	}
+	i.rolled = true
+	return ErrDatabaseRollback
+}
+
+// RestoreRecord names the state a restore must preserve together with the
+// database objects in the generated backup manifest. The schema generation
+// and definition identify the schema release; the database identity and
+// epoch identify the exact data generation. A backup without these values
+// cannot be verified after restore.
+type RestoreRecord struct {
+	SchemaGeneration string
+	SchemaDefinition string
+	DatabaseIdentity string
+	DatabaseEpoch    int64
+}
+
+// ErrRestore is returned when the database does not match a recorded restore
+// point. The store stays usable; verification is read-only.
+var ErrRestore = errors.New("database does not match the recorded restore point")
+
+// ReadRestoreRecord reads the restore record from the live database. Record
+// it together with the backup so the restore can be verified.
+func (s *Store) ReadRestoreRecord(ctx context.Context) (RestoreRecord, error) {
+	if s == nil || s.db == nil {
+		return RestoreRecord{}, ErrRestore
+	}
+	record := RestoreRecord{SchemaGeneration: SchemaGeneration, SchemaDefinition: SchemaDefinition}
+	db := s.db.WithContext(ctx)
+	if err := db.Raw("SELECT database_id FROM stego_schema.identity WHERE singleton").Scan(&record.DatabaseIdentity).Error; err != nil || record.DatabaseIdentity == "" {
+		return RestoreRecord{}, ErrRestore
+	}
+	var row struct {
+		Last   int64
+		Called bool
+	}
+	if err := db.Raw("SELECT last_value AS last, is_called AS called FROM stego_schema.epoch_seq").Scan(&row).Error; err != nil {
+		return RestoreRecord{}, ErrRestore
+	}
+	record.DatabaseEpoch = row.Last
+	return record, nil
+}
+
+// VerifyRestore checks a restored database against a record taken with the
+// backup. It runs the schema verification and the epoch check first: a
+// restored backup fails there. It then requires the recorded identity and
+// epoch to match the database exactly, so a partial restore that mixes
+// objects from different points in time is rejected. It reads only.
+func (s *Store) VerifyRestore(ctx context.Context, record RestoreRecord) error {
+	if s == nil || s.db == nil {
+		return ErrRestore
+	}
+	if record.SchemaGeneration != SchemaGeneration || record.SchemaDefinition != SchemaDefinition {
+		return ErrRestore
+	}
+	db := s.db.WithContext(ctx)
+	if err := VerifySchema(db); err != nil {
+		return err
+	}
+	current, err := s.ReadRestoreRecord(ctx)
+	if err != nil {
+		return err
+	}
+	if current.DatabaseIdentity != record.DatabaseIdentity || current.DatabaseEpoch != record.DatabaseEpoch {
+		return ErrRestore
+	}
+	return nil
+}
 
 // VerifySchema reads the release marker before storage can serve requests.
 // The application role needs SELECT, but must not have schema or table DDL rights.
@@ -31,6 +310,41 @@ func VerifySchema(db *gorm.DB) error {
 		}
 		return nil
 	}, &sql.TxOptions{ReadOnly: true, Isolation: sql.LevelReadCommitted})
+}
+
+// ReadRestoreRecordDB and VerifyRestoreDB are the package-level forms used
+// before a Store exists. They share the Store methods' checks.
+func ReadRestoreRecordDB(db *gorm.DB) (RestoreRecord, error) {
+	s := &Store{db: db}
+	return s.ReadRestoreRecord(db.Statement.Context)
+}
+func VerifyRestoreDB(db *gorm.DB, record RestoreRecord) error {
+	s := &Store{db: db}
+	return s.VerifyRestore(db.Statement.Context, record)
+}
+
+// ErrMigrationLedger reports a migration ledger that does not match the
+// registered migrations: a re-application, a version gap, an edited
+// migration, or a ledger that is missing or unreadable.
+var ErrMigrationLedger = errors.New("migration ledger mismatch")
+
+// AppliedMigrations returns the recorded migration versions in apply order.
+// It reads only and fails closed when the ledger is absent.
+func AppliedMigrations(db *gorm.DB) ([]string, error) {
+	if db == nil || db.Config == nil || db.Statement == nil || db.Statement.Context == nil || db.Error != nil {
+		return nil, ErrMigrationLedger
+	}
+	ctx, cancel := context.WithTimeout(db.Statement.Context, 5*time.Second)
+	defer cancel()
+	var rows []struct{ Version string }
+	if err := db.WithContext(ctx).Raw("SELECT version FROM stego_schema.migrations ORDER BY version").Scan(&rows).Error; err != nil {
+		return nil, ErrMigrationLedger
+	}
+	versions := make([]string, 0, len(rows))
+	for _, row := range rows {
+		versions = append(versions, row.Version)
+	}
+	return versions, nil
 }
 
 // BootstrapSchema initializes only an empty database. All callback statements
@@ -71,7 +385,21 @@ func BootstrapSchema(db *gorm.DB, initialize func(*gorm.DB) error) error {
 		if tx.Exec(`CREATE SCHEMA stego_schema AUTHORIZATION CURRENT_USER;
    REVOKE ALL ON SCHEMA stego_schema FROM PUBLIC;
    CREATE TABLE stego_schema.generation(singleton boolean PRIMARY KEY CHECK(singleton),generation text NOT NULL,definition text NOT NULL);
-   REVOKE ALL ON TABLE stego_schema.generation FROM PUBLIC`).Error != nil {
+   REVOKE ALL ON TABLE stego_schema.generation FROM PUBLIC;
+   CREATE TABLE stego_schema.identity(singleton boolean PRIMARY KEY CHECK(singleton),database_id text NOT NULL);
+   REVOKE ALL ON TABLE stego_schema.identity FROM PUBLIC;
+   CREATE SEQUENCE stego_schema.epoch_seq AS bigint MAXVALUE 9223372036854775807;
+   REVOKE ALL ON SEQUENCE stego_schema.epoch_seq FROM PUBLIC;
+   CREATE TABLE stego_schema.writer_lease(singleton boolean PRIMARY KEY CHECK(singleton),holder text NOT NULL);
+   REVOKE ALL ON TABLE stego_schema.writer_lease FROM PUBLIC;
+   CREATE TABLE stego_schema.migrations(version text PRIMARY KEY,digest text NOT NULL,applied_at timestamptz NOT NULL DEFAULT now());
+   REVOKE ALL ON TABLE stego_schema.migrations FROM PUBLIC`).Error != nil {
+			return ErrSchemaGeneration
+		}
+		if tx.Exec("INSERT INTO stego_schema.identity(singleton,database_id) VALUES(true,?)", databaseUUID()).Error != nil {
+			return ErrSchemaGeneration
+		}
+		if tx.Exec("INSERT INTO stego_schema.writer_lease(singleton,holder) VALUES(true,'')").Error != nil {
 			return ErrSchemaGeneration
 		}
 		if err := initialize(tx); err != nil {
@@ -86,6 +414,10 @@ func BootstrapSchema(db *gorm.DB, initialize func(*gorm.DB) error) error {
 
 // An unmarked schema is eligible only for the separate empty-database check.
 // Never query an unknown relation that could be a view or use row security.
+// databaseUUID returns a fresh unique database identifier. Generate it inside
+// the bootstrap transaction so every database receives one value.
+func databaseUUID() string { return uuid.NewString() }
+
 func readSchemaGeneration(db *gorm.DB) (bool, error) {
 	var schemaExists bool
 	if db.Raw("SELECT EXISTS(SELECT 1 FROM pg_catalog.pg_namespace WHERE nspname='stego_schema')").Scan(&schemaExists).Error != nil {
@@ -94,8 +426,63 @@ func readSchemaGeneration(db *gorm.DB) (bool, error) {
 	if !schemaExists {
 		return false, nil
 	}
-	// Keep the inspected relation stable until the transaction ends.
-	if db.Exec("LOCK TABLE stego_schema.generation IN ACCESS SHARE MODE").Error != nil {
+	// An identity table is required; a database without one cannot be checked
+	// for restore-induced rollback and fails closed.
+	var identityShape bool
+	if err := db.Raw(`SELECT EXISTS(
+  SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='stego_schema' AND c.relname='identity' AND c.relkind='r' AND c.relpersistence='p'
+  AND NOT c.relrowsecurity AND NOT c.relforcerowsecurity AND NOT c.relispartition
+  AND c.relowner=n.nspowner
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhparent=c.oid OR i.inhrelid=c.oid)
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(c.relacl,pg_catalog.acldefault('r',c.relowner))) a WHERE a.grantee<>c.relowner AND a.privilege_type<>'SELECT')
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped)=2
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull
+   AND ((a.attname='singleton' AND a.atttypid='pg_catalog.bool'::pg_catalog.regtype)
+    OR (a.attname='database_id' AND a.atttypid='pg_catalog.text'::pg_catalog.regtype)))=2
+  AND EXISTS(SELECT 1 FROM pg_catalog.pg_class s JOIN pg_catalog.pg_namespace sn ON sn.oid=s.relnamespace
+   WHERE sn.nspname='stego_schema' AND s.relname='epoch_seq' AND s.relkind='S' AND s.relpersistence='p')
+ )`).Scan(&identityShape).Error; err != nil || !identityShape {
+		return false, ErrSchemaGeneration
+	}
+	// A writer lease table is required; a database without one cannot fence a
+	// stale writer and fails closed. Its only permitted non-owner grants are
+	// SELECT and UPDATE: the lease is asserted and read, never anything else.
+	var leaseShape bool
+	if err := db.Raw(`SELECT EXISTS(
+  SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='stego_schema' AND c.relname='writer_lease' AND c.relkind='r' AND c.relpersistence='p'
+  AND NOT c.relrowsecurity AND NOT c.relforcerowsecurity AND NOT c.relispartition
+  AND c.relowner=n.nspowner
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhparent=c.oid OR i.inhrelid=c.oid)
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(c.relacl,pg_catalog.acldefault('r',c.relowner))) a WHERE a.grantee<>c.relowner AND a.privilege_type<>'SELECT' AND a.privilege_type<>'UPDATE')
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped)=2
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull
+   AND ((a.attname='singleton' AND a.atttypid='pg_catalog.bool'::pg_catalog.regtype)
+    OR (a.attname='holder' AND a.atttypid='pg_catalog.text'::pg_catalog.regtype)))=2
+ )`).Scan(&leaseShape).Error; err != nil || !leaseShape {
+		return false, ErrSchemaGeneration
+	}
+	// A migration ledger is required; a database without one cannot check
+	// applied schema changes and fails closed. Its only permitted non-owner
+	// grants are SELECT and INSERT: the runner records, never edits.
+	var ledgerShape bool
+	if err := db.Raw(`SELECT EXISTS(
+  SELECT 1 FROM pg_catalog.pg_class c JOIN pg_catalog.pg_namespace n ON n.oid=c.relnamespace
+  WHERE n.nspname='stego_schema' AND c.relname='migrations' AND c.relkind='r' AND c.relpersistence='p'
+  AND NOT c.relrowsecurity AND NOT c.relforcerowsecurity AND NOT c.relispartition
+  AND c.relowner=n.nspowner
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.pg_inherits i WHERE i.inhparent=c.oid OR i.inhrelid=c.oid)
+  AND NOT EXISTS(SELECT 1 FROM pg_catalog.aclexplode(COALESCE(c.relacl,pg_catalog.acldefault('r',c.relowner))) a WHERE a.grantee<>c.relowner AND a.privilege_type<>'SELECT' AND a.privilege_type<>'INSERT')
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped)=3
+  AND (SELECT count(*) FROM pg_catalog.pg_attribute a WHERE a.attrelid=c.oid AND a.attnum>0 AND NOT a.attisdropped AND a.attnotnull
+   AND ((a.attname='version' AND a.atttypid='pg_catalog.text'::pg_catalog.regtype)
+    OR (a.attname='digest' AND a.atttypid='pg_catalog.text'::pg_catalog.regtype)
+    OR (a.attname='applied_at' AND a.atttypid='pg_catalog.timestamptz'::pg_catalog.regtype)))=3
+ )`).Scan(&ledgerShape).Error; err != nil || !ledgerShape {
+		return false, ErrSchemaGeneration
+	}
+	if db.Exec("LOCK TABLE stego_schema.generation IN ACCESS SHARE MODE; LOCK TABLE stego_schema.identity IN ACCESS SHARE MODE").Error != nil {
 		return false, ErrSchemaGeneration
 	}
 	var safe bool

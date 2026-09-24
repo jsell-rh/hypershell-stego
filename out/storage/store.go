@@ -46,6 +46,8 @@ var _ stegostorage.Transaction = (*Store)(nil)
 type Store struct {
 	db          *gorm.DB
 	transaction *transactionState
+	identity    *databaseIdentity
+	fence       *writerFence
 }
 
 var schemaInitialization sync.Mutex
@@ -99,7 +101,7 @@ func NewStore(db *gorm.DB) (*Store, error) {
 	if err := verifyResourceStateScopes(db); err != nil {
 		return nil, err
 	}
-	return &Store{db: db}, nil
+	return &Store{db: db, identity: &databaseIdentity{}, fence: &writerFence{}}, nil
 }
 
 // Create inserts a new entity record. Computed fields are excluded.
