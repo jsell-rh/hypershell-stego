@@ -91,12 +91,14 @@ type helperWorkRecord struct {
 }
 
 // awaitHelperTelemetry collects controller work records until the check passes.
-// The controller closes its telemetry before Monitor or Run returns. All
-// records are in the channel when this function starts.
-func awaitHelperTelemetry(t *testing.T, logs <-chan *logcollector.ExportLogsServiceRequest, check func([]helperWorkRecord) bool) []helperWorkRecord {
+// It returns the accumulated records so a later call can extend them. The
+// controller closes its telemetry before Monitor or Run returns.
+func awaitHelperTelemetry(t *testing.T, logs <-chan *logcollector.ExportLogsServiceRequest, records []helperWorkRecord, check func([]helperWorkRecord) bool) []helperWorkRecord {
 	t.Helper()
 	deadline := time.After(8 * time.Second)
-	records := []helperWorkRecord{}
+	if records == nil {
+		records = []helperWorkRecord{}
+	}
 	for {
 		if check(records) {
 			return records
@@ -163,7 +165,7 @@ func TestHelperTelemetryRecordsStandaloneCleanup(t *testing.T) {
 	if err != nil || !membership.Sealed {
 		t.Fatal("standalone cleanup did not seal the account scope", membership, err)
 	}
-	records := awaitHelperTelemetry(t, logs, func(records []helperWorkRecord) bool {
+	records := awaitHelperTelemetry(t, logs, nil, func(records []helperWorkRecord) bool {
 		return len(records) >= 3
 	})
 	// Two passes give three scan records. The first pass runs one cycle. The
@@ -193,7 +195,7 @@ func TestHelperTelemetryRecordsCleanupFailureOutcome(t *testing.T) {
 	if err != nil || failures != 2 {
 		t.Fatal("standalone cleanup did not fail each pass", err, failures)
 	}
-	records := awaitHelperTelemetry(t, logs, func(records []helperWorkRecord) bool {
+	records := awaitHelperTelemetry(t, logs, nil, func(records []helperWorkRecord) bool {
 		return len(records) >= 2
 	})
 	if len(records) != 2 || countHelperRecords(records, "scan", "failure", false) != 2 {
@@ -218,7 +220,8 @@ func TestHelperTelemetrySkipsCleanupInsideSweep(t *testing.T) {
 	done := make(chan error, 1)
 	go func() { done <- accounts.Run(work) }()
 	// Wait for the durable proof. The seal commits inside the second round
-	// reconcile. The sweep then waits one second before the next round.
+	// reconcile. The sweep then waits one second before the next round. The
+	// work record of that reconcile gates the cancel below.
 	sealed := false
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
@@ -235,6 +238,13 @@ func TestHelperTelemetrySkipsCleanupInsideSweep(t *testing.T) {
 	if !sealed {
 		t.Fatal("the sweep did not complete the gateway cleanup")
 	}
+	// The seal commits inside the second reconcile, but its work record is
+	// emitted after the reconcile returns. Cancel only after that record
+	// arrives. An earlier cancel records a canceled outcome for work that
+	// finished.
+	records := awaitHelperTelemetry(t, logs, nil, func(records []helperWorkRecord) bool {
+		return countHelperRecords(records, "reconcile", "success", false) >= 1
+	})
 	cancelWork()
 	if err := <-done; err != nil {
 		t.Fatal(err)
@@ -242,7 +252,7 @@ func TestHelperTelemetrySkipsCleanupInsideSweep(t *testing.T) {
 	if provider.calls != 101 || provider.inventory != 1 {
 		t.Fatal("sweep cleanup proof is absent", provider.calls, provider.inventory)
 	}
-	records := awaitHelperTelemetry(t, logs, func(records []helperWorkRecord) bool {
+	records = awaitHelperTelemetry(t, logs, records, func(records []helperWorkRecord) bool {
 		scans, reconciles := 0, 0
 		for _, record := range records {
 			if record.operation == "scan" {
