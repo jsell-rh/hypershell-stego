@@ -28,10 +28,8 @@ func TestEpochRollbackOnRestoredDatabaseIsRejected(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// The runtime role holds USAGE on the epoch sequence, so the store cannot
-	// read last_value directly. The operator connection observes the sequence.
-	var high int64
-	if err := f.db.QueryRow("SELECT last_value FROM stego_schema.epoch_seq").Scan(&high); err != nil || high < 2 {
+	high, err := f.storage.DatabaseEpoch()
+	if err != nil || high < 2 {
 		t.Fatal("epoch did not advance over two writes", high, err)
 	}
 	// Simulate a restore of an earlier backup: reset the epoch sequence to a

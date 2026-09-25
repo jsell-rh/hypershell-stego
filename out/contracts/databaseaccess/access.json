@@ -178,6 +178,7 @@
       "name": "epoch_seq",
       "kind": "sequence",
       "privileges": [
+        "SELECT",
         "USAGE"
       ]
     },

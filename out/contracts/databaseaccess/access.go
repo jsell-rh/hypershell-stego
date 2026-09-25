@@ -34,7 +34,7 @@ var objects = []object{
 	{"public", "users", "table", "DELETE,INSERT,SELECT,UPDATE"},
 	{"stego_outbox", "messages", "table", "DELETE,INSERT,SELECT,UPDATE"},
 	{"stego_outbox", "messages_sequence_seq", "sequence", ""},
-	{"stego_schema", "epoch_seq", "sequence", "USAGE"},
+	{"stego_schema", "epoch_seq", "sequence", "SELECT,USAGE"},
 	{"stego_schema", "generation", "table", "SELECT"},
 	{"stego_schema", "identity", "table", "SELECT"},
 }
