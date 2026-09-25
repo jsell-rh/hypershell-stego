@@ -62,22 +62,6 @@ func migrateResourceVersions(db *gorm.DB) error {
 	return nil
 }
 
-// fenceAutocommit guards a direct write outside WithTransaction. Inside a
-// transaction the lease is already asserted; an autocommit write takes or
-// re-asserts it first. A fenced store fails closed permanently.
-func (s *Store) fenceAutocommit(ctx context.Context) error {
-	if s == nil {
-		return errors.New("conditional write requires a store")
-	}
-	if s.transaction != nil {
-		return nil
-	}
-	if s.fence == nil {
-		return ErrWriterFenced
-	}
-	return s.fence.acquire(s.db.WithContext(ctx))
-}
-
 // Startup fails if a required column or trigger is absent or differs from the
 // generated contract. Database administrators remain trusted; they can change
 // schema after startup. Application roles must not have DDL privileges.
@@ -167,9 +151,7 @@ func (s *Store) FinalizeDeletionIfVersion(ctx context.Context, entity, id string
 	}
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
-	if err := s.fenceAutocommit(operation); err != nil {
-		return err
-	}
+
 	switch entity {
 	case "Gateway":
 		result := s.db.WithContext(operation).Exec("UPDATE \"gateways\" SET stego_finalized_at=clock_timestamp(),updated_time=now() WHERE id=? AND id COLLATE \"C\"=? AND stego_revision=? AND deleted_at IS NOT NULL AND stego_finalized_at IS NULL AND stego_cleanup=E'{\"accounts\":true,\"allocation\":true,\"identity\":true,\"sql\":true,\"workload\":true}'::jsonb", id, id, version)
@@ -196,9 +178,6 @@ func (s *Store) ObserveCleanupIfVersion(ctx context.Context, entity, id string, 
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
 
-	if err := s.fenceAutocommit(operation); err != nil {
-		return err
-	}
 	switch entity {
 	case "Gateway":
 		switch owner {
@@ -298,9 +277,6 @@ func (s *Store) ReplaceIfVersion(ctx context.Context, entity, id string, version
 	}
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
-	if err := s.fenceAutocommit(operation); err != nil {
-		return err
-	}
 	switch entity {
 	case "Gateway":
 
@@ -403,9 +379,6 @@ func (s *Store) ObserveIfVersion(ctx context.Context, entity, id string, version
 		return err
 	}
 	args = append(args, group, id, id, version)
-	if err := s.fenceAutocommit(operation); err != nil {
-		return err
-	}
 	result := s.db.WithContext(operation).Exec(statement, args...)
 	if result.Error != nil {
 		if isUniqueConstraintError(result.Error) {
@@ -491,9 +464,6 @@ func (s *Store) ObserveTargetCleanupIfVersion(ctx context.Context, entity, id st
 	}
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
-	if err := s.fenceAutocommit(operation); err != nil {
-		return err
-	}
 	switch entity {
 	case "Gateway":
 		switch owner {

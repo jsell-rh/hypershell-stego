@@ -398,6 +398,7 @@ overrides:
   postgres-adapter:
     migrations: external
     schema_generation: controller-local-v2
+    writer_lease: off
   jwt-auth:
     roles_claim: realm_access.roles
     mode: verifier

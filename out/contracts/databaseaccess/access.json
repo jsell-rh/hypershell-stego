@@ -198,16 +198,6 @@
       "privileges": [
         "SELECT"
       ]
-    },
-    {
-      "component": "postgres-adapter",
-      "schema": "stego_schema",
-      "name": "writer_lease",
-      "kind": "table",
-      "privileges": [
-        "SELECT",
-        "UPDATE"
-      ]
     }
   ]
 }

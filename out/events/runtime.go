@@ -11,7 +11,6 @@ import (
 	"sync"
 
 	stegooutbox "github.com/jsell-rh/hypershell-stego/out/outbox"
-	stegostorage "github.com/jsell-rh/hypershell-stego/out/storage"
 	stegoevents "github.com/jsell-rh/hypershell-stego/out/tracing"
 )
 
@@ -30,14 +29,12 @@ type Runtime struct {
 }
 
 // NewRuntime reads deployment settings. Secret values come from files.
-// The storage store supplies the writer-lease check: this runtime stops
-// claiming outbox work when its process loses the database writer lease.
-func NewRuntime(store *stegostorage.Store, tracingRuntime *stegoevents.Runtime, ctx context.Context, db *sql.DB) (*Runtime, error) {
+func NewRuntime(tracingRuntime *stegoevents.Runtime, ctx context.Context, db *sql.DB) (*Runtime, error) {
 	config, err := ConfigFromEnvironment()
 	if err != nil {
 		return nil, err
 	}
-	return NewRuntimeWithConfig(store, ctx, db, config, tracingRuntime)
+	return NewRuntimeWithConfig(ctx, db, config, tracingRuntime)
 }
 
 func ConfigFromEnvironment() (Config, error) {
@@ -63,14 +60,11 @@ func ConfigFromEnvironment() (Config, error) {
 	}, nil
 }
 
-func NewRuntimeWithConfig(store *stegostorage.Store, ctx context.Context, db *sql.DB, config Config, tracingRuntime *stegoevents.Runtime) (*Runtime, error) {
+func NewRuntimeWithConfig(ctx context.Context, db *sql.DB, config Config, tracingRuntime *stegoevents.Runtime) (*Runtime, error) {
 	if ctx == nil {
 		return nil, errors.New("Kafka runtime requires a context")
 	}
-	if store == nil {
-		return nil, errors.New("Kafka runtime requires a storage store")
-	}
-	queue, err := stegooutbox.NewWithFence(db, store.WriterLeaseCheck)
+	queue, err := stegooutbox.New(db)
 	if err != nil {
 		return nil, err
 	}

@@ -248,14 +248,6 @@
         "name": "migrations",
         "kind": "table"
       }
-    },
-    {
-      "component": "postgres-adapter",
-      "object": {
-        "schema": "stego_schema",
-        "name": "writer_lease",
-        "kind": "table"
-      }
     }
   ]
 }

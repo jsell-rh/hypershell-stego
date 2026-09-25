@@ -37,7 +37,6 @@ var objects = []object{
 	{"stego_schema", "epoch_seq", "sequence", "USAGE"},
 	{"stego_schema", "generation", "table", "SELECT"},
 	{"stego_schema", "identity", "table", "SELECT"},
-	{"stego_schema", "writer_lease", "table", "SELECT,UPDATE"},
 }
 var schemas = []string{"public", "stego_outbox", "stego_schema"}
 

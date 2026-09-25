@@ -108,7 +108,7 @@ func run() (stegoErr error) {
 		return err
 	}
 	stegoStage = "component[2].constructor[0]"
-	runtime, err := events.NewRuntime(store, tracingRuntime, ctx, sqlDB)
+	runtime, err := events.NewRuntime(tracingRuntime, ctx, sqlDB)
 	if err != nil {
 		return err
 	}

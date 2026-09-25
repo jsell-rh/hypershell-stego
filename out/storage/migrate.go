@@ -123,11 +123,18 @@ func orderedMigrations() []Migration {
 // appliedMigrations reads the ledger in apply order. It fails closed when
 // the ledger is missing or unreadable.
 func appliedMigrations(db *gorm.DB) ([]Migration, error) {
-	var rows []Migration
+	var rows []struct {
+		Name   string
+		Digest string
+	}
 	if err := db.Raw("SELECT version AS name, digest FROM stego_schema.migrations ORDER BY version").Scan(&rows).Error; err != nil {
 		return nil, ErrMigrationLedger
 	}
-	return rows, nil
+	applied := make([]Migration, len(rows))
+	for i, row := range rows {
+		applied[i] = Migration{Name: row.Name, Digest: row.Digest}
+	}
+	return applied, nil
 }
 
 // checkLedger rejects any mismatch between the applied versions and the
