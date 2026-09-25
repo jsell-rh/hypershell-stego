@@ -61,12 +61,9 @@ REST `409` or gRPC `AlreadyExists` when its database uses the deployment
 provider. A patch that keeps the same cluster succeeds. Shared CNPG placement
 keeps its prior behavior. No database migration workflow exists yet.
 
-Apply `migrations/000009_database_cluster_placement.sql` before the API starts.
-It adds a nullable cluster reference and an index. It can run again. It does
-not infer the location of existing databases from a Gateway that could have
-moved. Existing records and standalone catalog creations remain unassigned;
-the namespace allocator rejects them. Operators must verify their actual
-location before assignment. A repair command is not yet supplied.
+The retired migration `000009_database_cluster_placement.sql` is removed. The
+current schema has no `managed_databases` table. Git history retains the file
+for the retired model.
 
 A live deployment database prevents deletion of its managed cluster, even
 after Gateway deletion. Database deletion retains the cluster reference for
@@ -158,11 +155,9 @@ query; the domain selects and authorizes its filter. The client checks the
 returned scope before it supplies a metric sample. No database record IDs enter
 the metric sample.
 
-Apply migration `000010_database_provider_placement.sql` after migration 000009.
-It prevents a CNPG row from acquiring a deployment-cluster scope. Deploy the
-new API and exact grants before the new workers. Verify and record legacy
-placement before enabling allocation for existing deployment databases. Public
-REST and protobuf resource shapes do not change.
+The retired migration `000010_database_provider_placement.sql` is removed with
+migration 000009. The current schema has no `managed_databases` table. Git
+history retains both files for the retired model.
 
 ## Cluster access check attempts
 

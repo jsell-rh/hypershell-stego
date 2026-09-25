@@ -57,13 +57,9 @@ after retries of explicit transaction conflicts. The startup test runs the gener
 binary with an unknown provider and requires it to exit with a configuration error.
 Existing shared-database workflows now select CNPG explicitly.
 
-Apply `migrations/000007_deployment_database_names.sql` after migration 000006 and
-before starting this API. The new migration widens database names to 261 characters.
-The API uses a 261-byte limit. This holds a valid 255-byte Gateway name plus the
-six-byte database name prefix and suffix. The migration preserves existing IDs,
-names, namespaces, and timestamps, and can run again. A test creates a Gateway
-with a 255-byte name and checks its complete database name. The API does not run
-schema migrations at startup.
+The retired migration `000007_deployment_database_names.sql` is removed. The
+current schema has no `managed_databases` table. Git history retains the file
+for the retired model.
 
 Run `scripts/check-gateway.sh` with PostgreSQL and Docker available for the full
 gate. The focused command is:
