@@ -58,7 +58,9 @@ def conditions(status):
 
 
 def pod_summary(pod, namespace):
-    if pod.get('kind') != 'Pod' or pod['metadata'].get('namespace') != namespace:
+    # Namespace list items carry no kind field. The namespace-scoped read
+    # and the metadata namespace check below prove the Pod scope.
+    if pod['metadata'].get('namespace') != namespace:
         raise ValueError('Pod scope differs')
     spec, status = pod.get('spec', {}), pod.get('status', {})
     result = identity(pod)
@@ -114,7 +116,9 @@ def collect(context, fixture_namespace):
             found = {}
             for item in read(path):
                 meta = item['metadata']
-                if item.get('kind') != 'Namespace' or meta.get('labels', {}).get(ALLOCATOR_LABEL) != marker:
+                # Namespace list items carry no kind field. The label
+                # selector response membership proves the resource kind.
+                if meta.get('labels', {}).get(ALLOCATOR_LABEL) != marker:
                     raise ValueError('Namespace owner differs')
                 name = meta['name']
                 if name in found or not re.fullmatch(r'[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?', name):

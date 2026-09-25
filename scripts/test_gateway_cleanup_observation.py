@@ -15,7 +15,8 @@ MARKER = hashlib.sha256(b'fixture.hypershell-namespace-allocation').hexdigest()[
 
 
 def namespace(uid='namespace-one'):
-    return {'kind': 'Namespace', 'metadata': {'name': 'owned', 'uid': uid,
+    # Namespace list items from the real API carry no kind field.
+    return {'metadata': {'name': 'owned', 'uid': uid,
             'deletionTimestamp': '2026-09-21T11:00:00Z', 'labels': {observation.ALLOCATOR_LABEL: MARKER},
             'annotations': {'private': 'PRIVATE_DATA'}}, 'spec': {'finalizers': ['kubernetes']},
             'status': {'conditions': [{'type': 'NamespaceContentRemaining', 'status': 'True',
@@ -23,7 +24,7 @@ def namespace(uid='namespace-one'):
 
 
 def pod():
-    return {'kind': 'Pod', 'metadata': {'name': 'pod', 'namespace': 'owned', 'uid': 'pod-one',
+    return {'metadata': {'name': 'pod', 'namespace': 'owned', 'uid': 'pod-one',
             'deletionTimestamp': '2026-09-21T11:00:01Z', 'deletionGracePeriodSeconds': 30,
             'ownerReferences': [{'kind': 'ReplicaSet', 'name': 'rs', 'uid': 'rs-one', 'controller': True}]},
             'spec': {'terminationGracePeriodSeconds': 30, 'env': 'PRIVATE_DATA', 'command': ['PRIVATE_DATA']},
