@@ -6,7 +6,7 @@ on:
     paths-ignore:
       - '**/*.md'
       # These records describe completed checks and are not runtime inputs.
-      - 'acceptance/*-evidence.json'
+      - 'acceptance/*-evidence*.json'
   pull_request:
   workflow_dispatch:
     inputs:
