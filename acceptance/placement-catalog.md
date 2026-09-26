@@ -75,25 +75,11 @@ include the retained deleted record. Runtime token expiry and stream limits appl
 Events for different resource keys can arrive in either order. Kafka consumers
 must handle duplicate delivery by message ID.
 
-Apply `migrations/000006_placement_catalog.sql` before this API starts. Stop the old
-API first. For an empty catalog, the migration supplies all fields and constraints.
-For existing name-only rows, add the required columns and supply real data first:
-
-```sql
-ALTER TABLE managed_clusters ADD COLUMN IF NOT EXISTS provider varchar(64);
-ALTER TABLE managed_clusters ADD COLUMN IF NOT EXISTS kubeconfig_secret varchar(253);
-ALTER TABLE gateway_releases ADD COLUMN IF NOT EXISTS image varchar(2048);
-ALTER TABLE managed_databases ADD COLUMN IF NOT EXISTS provider text;
-ALTER TABLE managed_databases ADD COLUMN IF NOT EXISTS namespace varchar(29);
-```
-
-Set these fields for each existing row by its ID. Use actual cluster providers,
-secret references, and release images. Managed database provider must be `cnpg`
-or `deployment`. This includes retained deleted rows. Calculate each database
-namespace with `go run ./cmd/catalog-namespace <database-ksuid>`. Do not change IDs,
-creation times, or update times. Then run the migration. It fails and rolls back
-if required data is missing or violates its constraints. The API does not run
-this migration on startup.
+The retired catalog migration `000006_placement_catalog.sql` is removed. The
+current schema has no `managed_databases` table, and the fresh-generation
+bootstrap supplies all cluster and release columns. Old installations are
+rejected by the schema generation check, not migrated. Git history retains
+the migration file for the retired model.
 
 STEGO generates numeric PostgreSQL checks for the declared 0–100 canary range.
 The API also checks this range before storage. Inputs have bounded string lengths.

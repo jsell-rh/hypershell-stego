@@ -19,8 +19,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	command "github.com/jsell-rh/hypershell-stego/out/cli/command"
+	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc/codes"
@@ -97,7 +97,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 			t.Fatalf("CLI request did not return HTTP %s: %v %s", code, err, problem)
 		}
 	}
-	users := map[string]httpapi.CurrentUser{}
+	users := map[string]contract.CurrentUser{}
 	for _, name := range []string{"alice", "bob", "carol"} {
 		configs[name] = filepath.Join(directory, name+".json")
 		file := filepath.Join(directory, name+".token")
@@ -105,11 +105,11 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 			t.Fatal(err)
 		}
 		success(name, "login", "--url", proxy.URL, "--token-file", file, "--ca-file", ca)
-		var user httpapi.CurrentUser
-		if json.Unmarshal(success(name, "get", "current-user"), &user) != nil || user.ID == "" || user.Username != name {
+		var user contract.CurrentUser
+		if json.Unmarshal(success(name, "get", "current-user"), &user) != nil || user.Id == "" || user.Username != name {
 			t.Fatal("CLI current user differs from the authenticated user")
 		}
-		if _, err := ksuid.Parse(user.ID); err != nil {
+		if _, err := ksuid.Parse(user.Id); err != nil {
 			t.Fatal("CLI did not return an application user ID")
 		}
 		users[name] = user
@@ -162,7 +162,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 		}
 	}
 	checkAccess(false)
-	grantArgs := []string{"create", "roleBinding", "--gateway-id", gateway.ID, "--role-id", roles["gateway:viewer"], "--scope", "gateway", "--user-id", users["bob"].ID}
+	grantArgs := []string{"create", "roleBinding", "--gateway-id", gateway.ID, "--role-id", roles["gateway:viewer"], "--scope", "gateway", "--user-id", users["bob"].Id}
 	applyFile := func(label, id, user, role string) string {
 		t.Helper()
 		metadata := map[string]string{"name": label}
@@ -179,7 +179,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 		}
 		return path
 	}
-	bindingFile := applyFile("bob-viewer", "", users["bob"].ID, roles["gateway:viewer"])
+	bindingFile := applyFile("bob-viewer", "", users["bob"].Id, roles["gateway:viewer"])
 	applyResult := func(path, want string) string {
 		t.Helper()
 		var results []command.ApplyResult
@@ -190,7 +190,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	}
 	bindingID := applyResult(bindingFile, "created")
 	var grant grantResponse
-	if json.Unmarshal(success("alice", "get", "role-binding", bindingID), &grant) != nil || grant.GatewayID != gateway.ID || grant.RoleID != roles["gateway:viewer"] || grant.UserID != users["bob"].ID || grant.Scope != "gateway" || grant.Kind != "RoleBinding" || grant.Href != "/api/hypershell/v1/role_bindings/"+grant.ID || grant.CreatedAt.IsZero() {
+	if json.Unmarshal(success("alice", "get", "role-binding", bindingID), &grant) != nil || grant.GatewayID != gateway.ID || grant.RoleID != roles["gateway:viewer"] || grant.UserID != users["bob"].Id || grant.Scope != "gateway" || grant.Kind != "RoleBinding" || grant.Href != "/api/hypershell/v1/role_bindings/"+grant.ID || grant.CreatedAt.IsZero() {
 		t.Fatal("CLI grant response differs from the API contract")
 	}
 	if _, err := ksuid.Parse(grant.ID); err != nil {
@@ -202,15 +202,15 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	if applyResult(bindingFile, "unchanged") != grant.ID || writes.Load() != beforeRepeat {
 		t.Fatal("repeat apply wrote a grant")
 	}
-	selected := applyFile("selected-binding", grant.ID, users["bob"].ID, roles["gateway:viewer"])
+	selected := applyFile("selected-binding", grant.ID, users["bob"].Id, roles["gateway:viewer"])
 	if applyResult(selected, "unchanged") != grant.ID || writes.Load() != beforeRepeat {
 		t.Fatal("selected binding changed")
 	}
-	mismatched := applyFile("changed-identity", grant.ID, users["carol"].ID, roles["gateway:viewer"])
+	mismatched := applyFile("changed-identity", grant.ID, users["carol"].Id, roles["gateway:viewer"])
 	if _, _, err := run("alice", "apply", "-f", mismatched, "-o", "json"); err == nil || writes.Load() != beforeRepeat {
 		t.Fatal("apply replaced immutable identity")
 	}
-	unauthorized := applyFile("unauthorized", "", users["carol"].ID, roles["gateway:viewer"])
+	unauthorized := applyFile("unauthorized", "", users["carol"].Id, roles["gateway:viewer"])
 	if _, problem, err := run("carol", "apply", "-f", unauthorized, "-o", "json"); err == nil || !strings.Contains(problem, "HTTP 404") {
 		t.Fatal("denied grant apply succeeded", err, problem)
 	}
@@ -224,7 +224,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 		t.Fatal("CLI disclosed another user's grants")
 	}
 	denied("alice", "409", grantArgs...)
-	denied("bob", "404", "create", "role-binding", "--gateway-id", gateway.ID, "--role-id", roles["gateway:owner"], "--scope", "gateway", "--user-id", users["bob"].ID)
+	denied("bob", "404", "create", "role-binding", "--gateway-id", gateway.ID, "--role-id", roles["gateway:owner"], "--scope", "gateway", "--user-id", users["bob"].Id)
 	denied("bob", "404", "delete", "roleBinding", grant.ID, "--yes")
 	denied("carol", "404", "delete", "role-binding", grant.ID, "--yes")
 	var owners struct {
@@ -273,7 +273,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	if applyResult(bindingFile, "unchanged") != restored.ID {
 		t.Fatal("apply selected deleted grant")
 	}
-	concurrent := applyFile("carol-viewer", "", users["carol"].ID, roles["gateway:viewer"])
+	concurrent := applyFile("carol-viewer", "", users["carol"].Id, roles["gateway:viewer"])
 	type concurrentResult struct {
 		data    []byte
 		problem string
@@ -314,7 +314,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	}
 	readGrantEvent(t, consumer, concurrentID, gateway.ID, "Create", "rolebinding.created")
 	var bindingCount int
-	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE gateway_id=$1 AND user_id=$2 AND role_id=$3 AND deleted_at IS NULL", gateway.ID, users["carol"].ID, roles["gateway:viewer"]).Scan(&bindingCount); err != nil || bindingCount != 1 {
+	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE gateway_id=$1 AND user_id=$2 AND role_id=$3 AND deleted_at IS NULL", gateway.ID, users["carol"].Id, roles["gateway:viewer"]).Scan(&bindingCount); err != nil || bindingCount != 1 {
 		t.Fatal("duplicate live binding", bindingCount, err)
 	}
 	for _, user := range []string{"alice", "bob", "carol"} {

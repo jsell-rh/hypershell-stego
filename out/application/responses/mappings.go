@@ -8,11 +8,117 @@ import (
 	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	model0 "github.com/jsell-rh/hypershell-stego/out/storage"
 	nullable "github.com/oapi-codegen/nullable"
+	time "time"
 	utf8 "unicode/utf8"
 )
 
 // ErrConversion contains no supplied value. The caller selects the public status.
 var ErrConversion = errors.New("response conversion failed")
+
+// CurrentUserInput contains values prepared by the application.
+type CurrentUserInput struct {
+	ExpiresAt time.Time
+	Issuer    string
+	Subject   string
+}
+
+// CurrentUser converts a prepared value after the caller checks access.
+func CurrentUser(value model0.User, input CurrentUserInput) (*contract.CurrentUser, error) {
+	result := &contract.CurrentUser{}
+	{
+		v := value.CreatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.CreatedAt = v
+	}
+	{
+		v := value.Email
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Email = v
+	}
+	{
+		v := input.ExpiresAt
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.ExpiresAt = v
+	}
+	{
+		v := "/api/hypershell/v1/users/me"
+		switch v {
+		case "/api/hypershell/v1/users/me":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.CurrentUserHref(v)
+		result.Href = enumValue
+	}
+	{
+		v := value.ID
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Id = v
+	}
+	{
+		v := input.Issuer
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Issuer = v
+	}
+	{
+		v := "User"
+		switch v {
+		case "User":
+		default:
+			return nil, ErrConversion
+		}
+		enumValue := contract.CurrentUserKind(v)
+		result.Kind = enumValue
+	}
+	{
+		v := value.Name
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Name = v
+	}
+	{
+		v := input.Subject
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Subject = v
+	}
+	{
+		v := value.UpdatedTime
+		if _, offset := v.Zone(); offset%60 != 0 {
+			return nil, ErrConversion
+		}
+		if _, err := v.MarshalJSON(); err != nil {
+			return nil, ErrConversion
+		}
+		result.UpdatedAt = v
+	}
+	{
+		v := value.Username
+		if !utf8.ValidString(v) {
+			return nil, ErrConversion
+		}
+		result.Username = v
+	}
+	return result, nil
+}
 
 // GatewayInput contains values prepared by the application.
 type GatewayInput struct {

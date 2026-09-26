@@ -4,25 +4,16 @@ import (
 	"context"
 	"io"
 	"net/http"
-	"time"
 
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
+	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
+	"github.com/jsell-rh/hypershell-stego/out/application/responses"
 	"github.com/jsell-rh/hypershell-stego/out/application/transport"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 )
 
 const currentUserPath = "/api/hypershell/v1/users/me"
-
-type CurrentUser struct {
-	Reference
-	Username  string    `json:"username"`
-	Email     string    `json:"email"`
-	Name      string    `json:"name"`
-	Issuer    string    `json:"issuer"`
-	Subject   string    `json:"subject"`
-	ExpiresAt time.Time `json:"expires_at"`
-}
 
 func registerCurrentUser(mux *http.ServeMux, verifier *requestAuth, service *users.Service) error {
 	handler, err := endpoint(verifier, func(r *http.Request) (struct{}, error) {
@@ -36,13 +27,17 @@ func registerCurrentUser(mux *http.ServeMux, verifier *requestAuth, service *use
 			}
 		}
 		return struct{}{}, nil
-	}, func(ctx context.Context, _ struct{}) (CurrentUser, error) {
+	}, func(ctx context.Context, _ struct{}) (*contract.CurrentUser, error) {
 		user, err := service.Current(ctx, gateways.PrincipalFromContext(ctx))
 		if err != nil {
-			return CurrentUser{}, err
+			return nil, err
 		}
 		identity := auth.IdentityFromContext(ctx)
-		return CurrentUser{Issuer: identity.Issuer, Subject: identity.UserID, ExpiresAt: identity.ExpiresAt.UTC(), Reference: Reference{ID: user.ID, Kind: "User", Href: currentUserPath, CreatedAt: user.CreatedTime, UpdatedAt: user.UpdatedTime}, Username: user.Username, Email: user.Email, Name: user.Name}, nil
+		return responses.CurrentUser(user, responses.CurrentUserInput{
+			Issuer:    identity.Issuer,
+			Subject:   identity.UserID,
+			ExpiresAt: identity.ExpiresAt.UTC(),
+		})
 	}, http.StatusOK, writeError)
 	if err != nil {
 		return err

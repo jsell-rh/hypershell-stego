@@ -236,7 +236,7 @@ func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	readEvent(t, kafkaConsumer(t, config), gateway.ID)
 	user := currentUser(t, base, owner)
 	grants := pb.NewRoleBindingServiceClient(connection)
-	bindings, err := grants.ListRoleBindings(call(owner), &pb.ListRoleBindingsRequest{UserId: &user.ID, GatewayId: &gateway.ID})
+	bindings, err := grants.ListRoleBindings(call(owner), &pb.ListRoleBindingsRequest{UserId: &user.Id, GatewayId: &gateway.ID})
 	if err != nil || len(bindings.GetItems()) != 1 || bindings.Items[0].GetRoleName() != "gateway:owner" {
 		t.Fatal("placed owner grant", bindings, err)
 	}

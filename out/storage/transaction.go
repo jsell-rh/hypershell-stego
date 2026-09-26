@@ -250,13 +250,19 @@ func (s *Store) withTransaction(ctx context.Context, isolation sql.IsolationLeve
 	// Rollback also runs if the callback panics. A successful commit makes this
 	// rollback harmless. Panic recovery remains the caller's responsibility.
 	defer db.Rollback()
+	// Every write transaction advances the database epoch. The non-transactional
+	// sequence read survives rollback, so an epoch lower than the store's
+	// high-water mark proves the database lost committed state: fail closed.
+	if err := s.epoch(db); err != nil {
+		return err
+	}
 	raw, err := sqlTransaction(db)
 	if err != nil {
 		return err
 	}
 	state := &transactionState{}
 	defer func() { state.mu.Lock(); state.closed = true; state.mu.Unlock() }()
-	scope := &Store{db: db, transaction: state}
+	scope := &Store{db: db, transaction: state, identity: s.identity}
 	callbackErr := fn(ctx, scope)
 	state.mu.Lock()
 	state.closed = true
@@ -273,6 +279,19 @@ func (s *Store) withTransaction(ctx context.Context, isolation sql.IsolationLeve
 		}
 	}
 	return raw.Commit()
+}
+
+// epoch advances the monotonic database write epoch and observes the result.
+// The sequence increment is not rolled back when the transaction aborts.
+// The identity row is read in the same statement so a database replaced
+// under this process is also rejected. advance holds the identity lock
+// across the read and the record, so concurrent transactions in this
+// process observe epoch values in handout order.
+func (s *Store) epoch(db *gorm.DB) error {
+	if s == nil || s.identity == nil {
+		return ErrDatabaseRollback
+	}
+	return s.identity.advance(db)
 }
 
 // sqlTransaction accepts the direct and prepared-statement GORM transaction

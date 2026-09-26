@@ -27,6 +27,11 @@ type StreamScanOptions struct {
 // tolerate repeated work. MaxItems permits one extra receive to establish EOF;
 // an excess value is rejected before emit. No whole-scan time bound is implied.
 func ScanStream[T any](ctx context.Context, source StreamSource[T], emit func(T) error, options StreamScanOptions) error {
+	return controllerHelperWork(ctx, "scan", func(ctx context.Context) error {
+		return scanStreamUnchecked(ctx, source, emit, options)
+	})
+}
+func scanStreamUnchecked[T any](ctx context.Context, source StreamSource[T], emit func(T) error, options StreamScanOptions) error {
 	if ctx == nil || source == nil || emit == nil {
 		return scanError("context, stream source, and emitter are required")
 	}

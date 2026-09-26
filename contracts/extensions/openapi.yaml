@@ -56,6 +56,8 @@ paths:
     $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings'
   /api/hypershell/v1/role_bindings/{id}:
     $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings~1{id}'
+  /api/hypershell/v1/users/me:
+    $ref: 'current-user.openapi.yaml#/paths/~1api~1hypershell~1v1~1users~1me'
   # AUTO-ADD NEW PATHS
 components:
   schemas:
@@ -152,6 +154,8 @@ components:
       $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBinding'
     RoleBindingList:
       $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBindingList'
+    CurrentUser:
+      $ref: 'current-user.openapi.yaml#/components/schemas/CurrentUser'
     # AUTO-ADD NEW SCHEMAS
   parameters:
     id:

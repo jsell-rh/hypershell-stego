@@ -1,0 +1,253 @@
+{
+  "format": 1,
+  "objects": [
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "gateway_networks",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "gateway_releases",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "gateways",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "managed_clusters",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "role_bindings",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "roles",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "service_account_audits",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "service_accounts",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_effect_binding_guard",
+        "kind": "trigger"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_effect_bindings",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_guard_effect_binding",
+        "kind": "function"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_guard_resource_state",
+        "kind": "function"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_guard_resource_state_scope",
+        "kind": "function"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_revision",
+        "kind": "trigger"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_state",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_state_guard",
+        "kind": "trigger"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_state_key_guard",
+        "kind": "trigger"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_state_scope_guard",
+        "kind": "trigger"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_resource_state_scopes",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_revision_a74e503354fdd464eff1440f",
+        "kind": "function"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_scan_checkpoints",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "stego_track_resource_state_keys",
+        "kind": "function"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "public",
+        "name": "users",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "outbox",
+      "object": {
+        "schema": "stego_outbox",
+        "name": "messages",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "outbox",
+      "object": {
+        "schema": "stego_outbox",
+        "name": "messages_sequence_seq",
+        "kind": "sequence"
+      }
+    },
+    {
+      "component": "postgres-client",
+      "object": {
+        "schema": "stego_provisioning",
+        "name": "resources",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-client",
+      "object": {
+        "schema": "stego_provisioning",
+        "name": "server_identity",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "stego_schema",
+        "name": "epoch_seq",
+        "kind": "sequence"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "stego_schema",
+        "name": "generation",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "stego_schema",
+        "name": "identity",
+        "kind": "table"
+      }
+    },
+    {
+      "component": "postgres-adapter",
+      "object": {
+        "schema": "stego_schema",
+        "name": "migrations",
+        "kind": "table"
+      }
+    }
+  ]
+}

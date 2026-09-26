@@ -151,6 +151,7 @@ func (s *Store) FinalizeDeletionIfVersion(ctx context.Context, entity, id string
 	}
 	operation, cancel := context.WithTimeout(ctx, transactionTimeout)
 	defer cancel()
+
 	switch entity {
 	case "Gateway":
 		result := s.db.WithContext(operation).Exec("UPDATE \"gateways\" SET stego_finalized_at=clock_timestamp(),updated_time=now() WHERE id=? AND id COLLATE \"C\"=? AND stego_revision=? AND deleted_at IS NOT NULL AND stego_finalized_at IS NULL AND stego_cleanup=E'{\"accounts\":true,\"allocation\":true,\"identity\":true,\"sql\":true,\"workload\":true}'::jsonb", id, id, version)

@@ -398,7 +398,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	}
 	waitRoles("bob", bobID, nil)
 	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway"}
-	grant.UserID = recipient.ID
+	grant.UserID = recipient.Id
 	grant.RoleID = discoverRole(t, root, alice, "gateway:viewer").ID
 	body, _ = json.Marshal(grant)
 	code, body = requestJSON(t, "POST", root+"/role_bindings", alice, body)
@@ -509,7 +509,7 @@ func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {
 	}
 	automationBindings := make([]string, 0, 2)
 	for _, role := range []string{"gateway:viewer", "gateway:owner"} {
-		encoded, _ := json.Marshal(gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: automation.ID, RoleID: discoverRole(t, root, alice, role).ID})
+		encoded, _ := json.Marshal(gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: automation.Id, RoleID: discoverRole(t, root, alice, role).ID})
 		if code, _ := requestJSON(t, "POST", root+"/role_bindings", automationToken, encoded); code != 404 {
 			t.Fatal("automation added its own owner or viewer grant", code)
 		}

@@ -376,6 +376,7 @@ overrides:
     error_codes: [service_account_name_exists]
     document: contracts/extensions/openapi.yaml
     references:
+      - contracts/extensions/current-user.openapi.yaml
       - contracts/extensions/openapi.gateways.yaml
       - contracts/extensions/openapi.gatewayNetworks.yaml
       - contracts/extensions/openapi.gatewayReleases.yaml
@@ -386,6 +387,7 @@ overrides:
   go-sdk:
     document: contracts/extensions/openapi.yaml
     references:
+      - contracts/extensions/current-user.openapi.yaml
       - contracts/extensions/openapi.gateways.yaml
       - contracts/extensions/openapi.gatewayNetworks.yaml
       - contracts/extensions/openapi.gatewayReleases.yaml
@@ -398,6 +400,7 @@ overrides:
   postgres-adapter:
     migrations: external
     schema_generation: controller-local-v2
+    writer_lease: off
   jwt-auth:
     roles_claim: realm_access.roles
     mode: verifier
@@ -407,6 +410,7 @@ overrides:
     factory_package: internal/httpapi
     document: contracts/extensions/openapi.yaml
     references:
+    - contracts/extensions/current-user.openapi.yaml
     - contracts/extensions/openapi.gateways.yaml
     - contracts/extensions/openapi.gatewayNetworks.yaml
     - contracts/extensions/openapi.gatewayReleases.yaml
@@ -580,6 +584,26 @@ overrides:
       - {target: last_error, source: last_error, on_absent: emit_null}
       - {target: created_at, source: created_time}
       - {target: updated_at, source: updated_time}
+    - name: CurrentUser
+      provider: postgres-adapter
+      model: User
+      schema: CurrentUser
+      inputs:
+      - {name: Issuer, type: string}
+      - {name: Subject, type: string}
+      - {name: ExpiresAt, type: timestamp}
+      fields:
+      - {target: id, source: id}
+      - {target: created_at, source: created_time}
+      - {target: updated_at, source: updated_time}
+      - {target: kind, constant: User}
+      - {target: href, constant: /api/hypershell/v1/users/me}
+      - {target: username, source: username}
+      - {target: email, source: email}
+      - {target: name, source: name}
+      - {target: issuer, input: Issuer}
+      - {target: subject, input: Subject}
+      - {target: expires_at, input: ExpiresAt}
   grpc-application:
     response_mappings:
       - name: Gateway

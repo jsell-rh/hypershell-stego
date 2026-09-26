@@ -102,8 +102,14 @@ external DNS, TLS mode, and public Service configuration.
 The Gateway Pod runs as UID/GID 1000. It has a read-only root filesystem,
 no added capabilities, no privilege escalation, seccomp, and CPU and memory
 limits. The namespace uses the restricted Pod security policy. The Deployment
-has one replica and uses `Recreate`; rolling upgrades and multiple active
-Gateway replicas need separate evidence.
+has one replica and uses `Recreate`. Each Gateway writes only its own
+database through one process. The store rejects a restored or replaced
+database on every write; see `epoch_rollback_test.go` and
+`restore_record_test.go`. The writer lease is off for this deployment, so
+concurrent live writers on
+one database are not fenced. `Recreate` keeps that single writer during
+rollout. Rolling upgrades and multiple active Gateway replicas still need
+separate workload evidence.
 
 The controller requires these settings:
 

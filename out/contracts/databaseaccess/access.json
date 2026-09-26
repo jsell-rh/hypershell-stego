@@ -175,7 +175,26 @@
     {
       "component": "postgres-adapter",
       "schema": "stego_schema",
+      "name": "epoch_seq",
+      "kind": "sequence",
+      "privileges": [
+        "SELECT",
+        "USAGE"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
       "name": "generation",
+      "kind": "table",
+      "privileges": [
+        "SELECT"
+      ]
+    },
+    {
+      "component": "postgres-adapter",
+      "schema": "stego_schema",
+      "name": "identity",
       "kind": "table",
       "privileges": [
         "SELECT"

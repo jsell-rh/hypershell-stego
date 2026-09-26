@@ -58,5 +58,6 @@ role catalog.
 
 Placement catalog permissions now describe the variant access rules. Platform
 admins can change placement records. Gateway creators can read and list them.
-Migration 000006 updates this metadata and preserves role IDs. The repeatable
-000004 seed uses the same values. This metadata does not replace access checks.
+The removed migration 000006 updated this metadata for the retired model. The
+repeatable 000004 seed uses the same values. This metadata does not replace
+access checks.

@@ -27,7 +27,9 @@ type recoveryQueryLog struct {
 func (l *recoveryQueryLog) Trace(_ context.Context, _ time.Time, query func() (string, int64), _ error) {
 	sql, _ := query()
 	sql = strings.ToLower(strings.TrimSpace(sql))
-	if strings.HasPrefix(sql, "select ") {
+	// Runtime bookkeeping under stego_schema (write epoch, schema gate) is
+	// O(1) per operation and not part of the bounded domain read contract.
+	if strings.HasPrefix(sql, "select ") && !strings.Contains(sql, "stego_schema.") {
 		l.reads.Add(1)
 	}
 	if strings.Contains(sql, "count(") {
