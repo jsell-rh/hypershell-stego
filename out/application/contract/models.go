@@ -11,6 +11,36 @@ import (
 	"github.com/oapi-codegen/nullable"
 )
 
+// Defines values for CurrentUserHref.
+const (
+	Apihypershellv1usersme CurrentUserHref = "/api/hypershell/v1/users/me"
+)
+
+// Valid indicates whether the value is a known member of the CurrentUserHref enum.
+func (e CurrentUserHref) Valid() bool {
+	switch e {
+	case Apihypershellv1usersme:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CurrentUserKind.
+const (
+	User CurrentUserKind = "User"
+)
+
+// Valid indicates whether the value is a known member of the CurrentUserKind enum.
+func (e CurrentUserKind) Valid() bool {
+	switch e {
+	case User:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OpenShellGatewayServiceAccountConnectionGrantType.
 const (
 	OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials OpenShellGatewayServiceAccountConnectionGrantType = "client_credentials"
@@ -262,6 +292,33 @@ func (e ListGatewayServiceAccountsParamsOrder) Valid() bool {
 		return false
 	}
 }
+
+// CurrentUser defines model for CurrentUser.
+type CurrentUser struct {
+	CreatedAt time.Time `json:"created_at"`
+	Email     string    `json:"email"`
+
+	// ExpiresAt Access-token expiry for this request. This is not an expiry of the user record.
+	ExpiresAt time.Time       `json:"expires_at"`
+	Href      CurrentUserHref `json:"href"`
+	Id        string          `json:"id"`
+
+	// Issuer Issuer from the access token verified for this request.
+	Issuer string          `json:"issuer"`
+	Kind   CurrentUserKind `json:"kind"`
+	Name   string          `json:"name"`
+
+	// Subject Subject from the verified access token. This is not the application user ID.
+	Subject   string    `json:"subject"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Username  string    `json:"username"`
+}
+
+// CurrentUserHref defines model for CurrentUser.Href.
+type CurrentUserHref string
+
+// CurrentUserKind defines model for CurrentUser.Kind.
+type CurrentUserKind string
 
 // Error defines model for Error.
 type Error struct {

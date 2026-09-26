@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
+	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	store "github.com/jsell-rh/hypershell-stego/out/contracts/storage"
 )
 
@@ -86,14 +86,14 @@ func testConcurrentCurrentUser(t *testing.T, throughHTTP bool) {
 			if response.StatusCode != http.StatusOK {
 				return "", fmt.Errorf("current-user status %d", response.StatusCode)
 			}
-			var row httpapi.CurrentUser
+			var row contract.CurrentUser
 			if err := json.Unmarshal(body, &row); err != nil {
 				return "", err
 			}
 			if row.Subject != "new-recipient" || row.CreatedAt.IsZero() || row.UpdatedAt.IsZero() {
 				return "", errors.New("current-user response lost identity fields")
 			}
-			return row.ID, nil
+			return row.Id, nil
 		}
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)

@@ -9,6 +9,8 @@ import (
 	wire "github.com/jsell-rh/hypershell-stego/out/sdk/internal/wire"
 )
 
+const Apihypershellv1usersme = wire.Apihypershellv1usersme
+const User = wire.User
 const OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials = wire.OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials
 const OpenShellGatewayServiceAccountCreateRequestCredentialTypeClientSecret = wire.OpenShellGatewayServiceAccountCreateRequestCredentialTypeClientSecret
 const OpenShellGatewayServiceAccountCreateResponseCredentialTypeClientSecret = wire.OpenShellGatewayServiceAccountCreateResponseCredentialTypeClientSecret
@@ -42,6 +44,9 @@ const ListGatewayServiceAccountsParamsSortStatus = wire.ListGatewayServiceAccoun
 const ListGatewayServiceAccountsParamsOrderAsc = wire.ListGatewayServiceAccountsParamsOrderAsc
 const ListGatewayServiceAccountsParamsOrderDesc = wire.ListGatewayServiceAccountsParamsOrderDesc
 
+type CurrentUser = wire.CurrentUser
+type CurrentUserHref = wire.CurrentUserHref
+type CurrentUserKind = wire.CurrentUserKind
 type Error = wire.Error
 type Gateway = wire.Gateway
 type GatewayList = wire.GatewayList
@@ -188,6 +193,8 @@ type DeleteRoleBindingResponse = wire.DeleteRoleBindingResponse
 type GetRoleBindingResponse = wire.GetRoleBindingResponse
 type ListRolesResponse = wire.ListRolesResponse
 type GetRoleResponse = wire.GetRoleResponse
+type GetCurrentUserResponse200Headers = wire.GetCurrentUserResponse200Headers
+type GetCurrentUserResponse = wire.GetCurrentUserResponse
 
 func (c *Client) ListGatewayNetworksWithResponse(ctx context.Context, arg1 *ListGatewayNetworksParams) (*ListGatewayNetworksResponse, error) {
 	if err := c.acquire(ctx); err != nil {
@@ -725,6 +732,23 @@ func (c *Client) GetRoleWithResponse(ctx context.Context, arg1 OpenapiRolesId) (
 	defer cancel()
 	c.bind(&ctx)
 	response, err := c.wire.GetRoleWithResponse(ctx, arg1)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	if err != nil {
+		return nil, errors.New("SDK request failed")
+	}
+	return response, nil
+}
+func (c *Client) GetCurrentUserWithResponse(ctx context.Context) (*GetCurrentUserResponse, error) {
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+	defer c.release()
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	c.bind(&ctx)
+	response, err := c.wire.GetCurrentUserWithResponse(ctx)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

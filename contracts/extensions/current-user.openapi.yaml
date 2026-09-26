@@ -44,7 +44,6 @@ components:
       properties:
         id:
           type: string
-          pattern: '^[0-9A-Za-z]{27}$'
         kind:
           type: string
           enum: [User]

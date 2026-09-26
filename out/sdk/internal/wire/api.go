@@ -20,6 +20,36 @@ import (
 	"github.com/oapi-codegen/runtime"
 )
 
+// Defines values for CurrentUserHref.
+const (
+	Apihypershellv1usersme CurrentUserHref = "/api/hypershell/v1/users/me"
+)
+
+// Valid indicates whether the value is a known member of the CurrentUserHref enum.
+func (e CurrentUserHref) Valid() bool {
+	switch e {
+	case Apihypershellv1usersme:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for CurrentUserKind.
+const (
+	User CurrentUserKind = "User"
+)
+
+// Valid indicates whether the value is a known member of the CurrentUserKind enum.
+func (e CurrentUserKind) Valid() bool {
+	switch e {
+	case User:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OpenShellGatewayServiceAccountConnectionGrantType.
 const (
 	OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials OpenShellGatewayServiceAccountConnectionGrantType = "client_credentials"
@@ -271,6 +301,33 @@ func (e ListGatewayServiceAccountsParamsOrder) Valid() bool {
 		return false
 	}
 }
+
+// CurrentUser defines model for CurrentUser.
+type CurrentUser struct {
+	CreatedAt time.Time `json:"created_at"`
+	Email     string    `json:"email"`
+
+	// ExpiresAt Access-token expiry for this request. This is not an expiry of the user record.
+	ExpiresAt time.Time       `json:"expires_at"`
+	Href      CurrentUserHref `json:"href"`
+	Id        string          `json:"id"`
+
+	// Issuer Issuer from the access token verified for this request.
+	Issuer string          `json:"issuer"`
+	Kind   CurrentUserKind `json:"kind"`
+	Name   string          `json:"name"`
+
+	// Subject Subject from the verified access token. This is not the application user ID.
+	Subject   string    `json:"subject"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Username  string    `json:"username"`
+}
+
+// CurrentUserHref defines model for CurrentUser.Href.
+type CurrentUserHref string
+
+// CurrentUserKind defines model for CurrentUser.Kind.
+type CurrentUserKind string
 
 // Error defines model for Error.
 type Error struct {
@@ -1539,6 +1596,11 @@ type ClientInterface interface {
 	//
 	// Corresponds with GET /api/hypershell/v1/roles/{id} (the `GetRole` operationId).
 	GetRole(ctx context.Context, id OpenapiRolesId, reqEditors ...RequestEditorFn) (*http.Response, error)
+
+	// GetCurrentUser performs a GET /api/hypershell/v1/users/me (the `GetCurrentUser` operationId) request.
+	//
+	// Resolve the verified issuer and subject. Create the user record if absent. Update profile fields from verified claims. Do not assign roles. Query parameters and request bodies are rejected.
+	GetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 }
 
 // ListGatewayNetworks Returns a list of gatewayNetworks
@@ -2201,6 +2263,21 @@ func (c *Client) ListRoles(ctx context.Context, params *ListRolesParams, reqEdit
 // Corresponds with GET /api/hypershell/v1/roles/{id} (the `GetRole` operationId).
 func (c *Client) GetRole(ctx context.Context, id OpenapiRolesId, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetRoleRequest(c.Server, id)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetCurrentUser performs a GET /api/hypershell/v1/users/me (the `GetCurrentUser` operationId) request.
+//
+// Resolve the verified issuer and subject. Create the user record if absent. Update profile fields from verified claims. Do not assign roles. Query parameters and request bodies are rejected.
+func (c *Client) GetCurrentUser(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetCurrentUserRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -3903,6 +3980,33 @@ func NewGetRoleRequest(server string, id OpenapiRolesId) (*http.Request, error) 
 	return req, nil
 }
 
+// NewGetCurrentUserRequest constructs an http.Request for the GetCurrentUser method
+func NewGetCurrentUserRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/hypershell/v1/users/me")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 func (c *Client) applyEditors(ctx context.Context, req *http.Request, additionalEditors []RequestEditorFn) error {
 	for _, r := range c.RequestEditors {
 		if err := r(ctx, req); err != nil {
@@ -4240,6 +4344,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/hypershell/v1/roles/{id} (the `GetRole` operationId).
 	GetRoleWithResponse(ctx context.Context, id OpenapiRolesId, reqEditors ...RequestEditorFn) (*GetRoleResponse, error)
+
+	// GetCurrentUserWithResponse performs a GET /api/hypershell/v1/users/me (the `GetCurrentUser` operationId) request.
+	//
+	// Resolve the verified issuer and subject. Create the user record if absent. Update profile fields from verified claims. Do not assign roles. Query parameters and request bodies are rejected.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserResponse, error)
 }
 
 type ListGatewayNetworksResponse struct {
@@ -6332,6 +6443,54 @@ func (r GetRoleResponse) ContentType() string {
 	return ""
 }
 
+// GetCurrentUserResponse200Headers the declared response headers of an HTTP 200 response for GetCurrentUser
+type GetCurrentUserResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetCurrentUserResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *CurrentUser
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetCurrentUserResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetCurrentUserResponse) GetJSON200() *CurrentUser {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r GetCurrentUserResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetCurrentUserResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetCurrentUserResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetCurrentUserResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 // ListGatewayNetworksWithResponse Returns a list of gatewayNetworks
 //
 // Returns a wrapper object for the known response body format(s).
@@ -6876,6 +7035,19 @@ func (c *ClientWithResponses) GetRoleWithResponse(ctx context.Context, id Openap
 		return nil, err
 	}
 	return ParseGetRoleResponse(rsp)
+}
+
+// GetCurrentUserWithResponse performs a GET /api/hypershell/v1/users/me (the `GetCurrentUser` operationId) request.
+//
+// Resolve the verified issuer and subject. Create the user record if absent. Update profile fields from verified claims. Do not assign roles. Query parameters and request bodies are rejected.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetCurrentUserWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetCurrentUserResponse, error) {
+	rsp, err := c.GetCurrentUser(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetCurrentUserResponse(rsp)
 }
 
 // ParseListGatewayNetworksResponse parses an HTTP response from a ListGatewayNetworksWithResponse call
@@ -8561,6 +8733,57 @@ func ParseGetRoleResponse(rsp *http.Response) (*GetRoleResponse, error) {
 		}
 		response.JSON500 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseGetCurrentUserResponse parses an HTTP response from a GetCurrentUserWithResponse call
+func ParseGetCurrentUserResponse(rsp *http.Response) (*GetCurrentUserResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetCurrentUserResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest CurrentUser
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 400:
+		break // No content-type
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case rsp.StatusCode == 409:
+		break // No content-type
+
+	case rsp.StatusCode == 500:
+		break // No content-type
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetCurrentUserResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil

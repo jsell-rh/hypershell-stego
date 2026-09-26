@@ -20,6 +20,10 @@ last_applied:
                 exists: true
                 sha256: 27ab02a17e43d765f38c615a7af1d905ddcff24a38b15bdea4f73cc04856d8c2
                 mode: 420
+            contracts/extensions/current-user.openapi.yaml:
+                exists: true
+                sha256: a3ee24dcb692b30ff1292cdabf5991e5d3a1c6096dd043744712290fe62f202c
+                mode: 420
             contracts/extensions/gateways.proto:
                 exists: true
                 sha256: 84ce8aac2404fb3200e149e07d2e3b4fa3349748b3cb6cf0eaa8ca66dc88d3f5
@@ -54,7 +58,7 @@ last_applied:
                 mode: 420
             contracts/extensions/openapi.yaml:
                 exists: true
-                sha256: 642cce071b45694102fe959cf7bd81118767a306fad09dd8f4e3b1cbdc1fda1a
+                sha256: 3604784e264b5396088ceb4b687163a0e62de638f85750c8ba4e2a6e6c4c0c8e
                 mode: 420
             contracts/extensions/service_account_inventory.proto:
                 exists: true
@@ -130,9 +134,9 @@ last_applied:
                 mode: 420
             service.yaml:
                 exists: true
-                sha256: f2a70d7305cdc23d8b5e4abec30129101af9b4149f4b3fbf84f094b56e08af69
+                sha256: e41b7e450c243583d4f621ae36615bee517bd6365aa4be7faa9086ed877eb6a3
                 mode: 420
-        sha256: f3caeb1f854f2f9a86ab3c680d2e3eb38aaf88175246b649b61b3ffddad99b77
+        sha256: 9ac1c78eb4f650f0bf6cb09e0f01e80063bfcb71602a7598fc8493da69c83a3e
     compiler_build:
         go_version: go1.26.8
         goos: linux
@@ -141,7 +145,7 @@ last_applied:
         vcs: git
         revision: 94d285d7a13466d4bb53a3ddf8737888f29fea5a
         source_state: clean
-    service_hash: f2a70d7305cdc23d8b5e4abec30129101af9b4149f4b3fbf84f094b56e08af69
+    service_hash: e41b7e450c243583d4f621ae36615bee517bd6365aa4be7faa9086ed877eb6a3
     registry_sha: f2089e4d1f299f7bd32024ffc571a902cea2bfefbaea26d5ce705db756a873e5
     registry_content_sha256: 2a19bda7d9e1e88f4777fc451f43d5c04c8b5bde11d1a295398f00b1695ada08
     components:
@@ -431,10 +435,10 @@ last_applied:
     files:
         application/bridge.go: 8d78e87c032a4a09f8ca77fb92e1a6ddf83b39bfe947f343a065882f54ad2749
         application/client/client.go: 9b735a6185b24b47c702aececc5b78d8f3faa03590579a62d6179e09a50088c5
-        application/contract/models.go: ee75ad41077d06ec591e765bbff1b1368fde98b4d84e607393a0e34b544915bc
+        application/contract/models.go: ed73865eb6689e20b1733ce56be94272d2ad646a4f7c154fa17cd95a2a600353
         application/responses/json_objects.go: 9c2e5e5239e041e02216f9b2f9428ae1b0eebcf91a7097a7183808623729ec5a
         application/responses/json_strings.go: 0c013cc97da0fdfad3eae3350cebd08ed8bc7f498ac3dfe4391b4d72a5225873
-        application/responses/mappings.go: eedfb0e6d201286f08f0631718bffd0f654578fab8ec2e4b73b6cc1f7cf89a42
+        application/responses/mappings.go: 3f97f079444034ae7b44f7f21c03cb1bf23b06d31a48a4a457d1abafc7d9209a
         application/transport/endpoint.go: 841ad88d9b25514f127043ef0114f8f888602440d3a1b3ec61c6714ba7009d0d
         application/transport/fields.go: 7a54836a1f73c895b370f99e4d89896697691f5f6df26b96b0245759a2f25bd4
         auth/grants.go: 91a304d5e8a6f764287a39cfc58d6b7c5d63359853dde87d9b9cd809de83dca8
@@ -585,10 +589,10 @@ last_applied:
         postgres/credentials.go: 7452bcf866de974b42d9418a5208800e58b55379827c9b61a5a357b9d722cac6
         postgres/provision.go: 77fd3a0af7fef290d30bddcc3b11a3f352b93a9a3561de76a8346ef6ad3498fe
         postgres/schema.go: aa71bfe0b0de2209214542eab2fdfb2024bf518e84a9b3b62da377af50fd6b05
-        sdk/api.go: 1b58e3576841fa437aaef203d3db9fa353d8f62098a1c13ae89d6404488f1468
+        sdk/api.go: ee39adddb104474d75763a4f42359b94de03cc50a803a03cc332239a6522e0ab
         sdk/client.go: f602279a7917daa389c6df1ee62e2eaebc472192df595a33470cd42d685d0e07
         sdk/internal/transport/client.go: 01f8acf80ba62a9cfcf33db22d92782198dc30bc90f61b6e75ad01facc5bdb76
-        sdk/internal/wire/api.go: 9b53925730ce1e4b6f2419d240fa8e4148f6e8986d3cc4a7bdda6e75a86f76da
+        sdk/internal/wire/api.go: ea495516e654cff50650eeaf4dc2a49695bfcc1de5f3709ddf69248868a94696
         search/field_map.go: 58d1cb2376aa269122ea98be20c1dcadb8d075718fa9d4dc866943c023cfd0b7
         search/search.go: 659978afd6ae1f55ea9b3460f6bb35fb52282e3ad56145bdd9f80f74bba0478b
         storage/checkpoints.go: 75df704470c3ddc5dd4ba29ff9b73acedf4a3fde7885600b52db656af03206fd
@@ -632,7 +636,7 @@ last_applied:
         tracing/service.go: c385c803aa9c54e37436cfb4a004a1ad468317b6d435498407a706dae9bcdac5
         tracing/signals.go: 3adee95980b02c32284916b7e46083f2cc0d0dc8394ca402c49177290ec163cb
         tracing/startup.go: ba2cc8272fddb2c9c18cf10199b7ffe3df430ea88f3d02a6902e00908d154160
-        tssdk/index.d.ts: de345a064fd04eb995816712ab4285be1403b64e99ac9f3cab91a07451f617ee
-        tssdk/index.js: ba733f5aec8ef741fc149b1fa32c8c6d3a2dad5df9785c8667354e3117d40987
+        tssdk/index.d.ts: fca9fd7dbd61eccd395bbcd2cdc36fc597880a585f6fbb051b7ad01af63e5123
+        tssdk/index.js: 38166dcdccb7378f08e2df5628855224a9f8afd1594c7c264a38a1d7cd05b137
         tssdk/package.json: 476b03dac55c3eca9be66ccdd8753bfb2c93f12966732edb6792ef98477cd080
         workload/workload.go: bc52f23a880ea9b2264f9c9b32dc0168cbeb79228db718d8563a40082616f741

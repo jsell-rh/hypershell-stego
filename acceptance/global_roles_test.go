@@ -69,7 +69,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 			t.Fatalf("global workflow event: %v %v, want %v %s", event, err, kind, id)
 		}
 		row := event.GetRoleBinding()
-		if row.GetScope() == "global" && (row.GatewayId != nil || row.GetUserId() != user.ID) {
+		if row.GetScope() == "global" && (row.GatewayId != nil || row.GetUserId() != user.Id) {
 			t.Fatal("global stream scope or identity", row)
 		}
 		return row
@@ -80,7 +80,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	adminRole := discoverRole(t, base, both, "platform:admin").ID
 	for _, row := range rows {
 		ids[row.RoleID] = row.ID
-		if row.UserID != user.ID {
+		if row.UserID != user.Id {
 			t.Fatal("global grantee")
 		}
 	}
@@ -106,7 +106,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 			t.Fatal("global deletion bypassed issuer", code)
 		}
 	}
-	request, _ := json.Marshal(gateways.GrantRequest{RoleID: creatorRole, UserID: user.ID, Scope: "global"})
+	request, _ := json.Marshal(gateways.GrantRequest{RoleID: creatorRole, UserID: user.Id, Scope: "global"})
 	if code, _ := requestJSON(t, "POST", base+"/role_bindings", both, request); code != 403 {
 		t.Fatal("global creation bypassed issuer", code)
 	}
@@ -117,7 +117,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	next(observer, pb.EventType_EVENT_TYPE_DELETED, ids[creatorRole])
 	next(observer, pb.EventType_EVENT_TYPE_DELETED, ids[adminRole])
 	globals(plain, 0)
-	rpc, err := client.ListRoleBindings(call(creator), &pb.ListRoleBindingsRequest{UserId: &user.ID})
+	rpc, err := client.ListRoleBindings(call(creator), &pb.ListRoleBindingsRequest{UserId: &user.Id})
 	if err != nil || len(rpc.GetItems()) != 1 || rpc.Items[0].GatewayId != nil || rpc.Items[0].GetRoleName() != "gateway:creator" {
 		t.Fatal("gRPC global projection", rpc, err)
 	}
@@ -133,7 +133,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("create from projected role", code, string(body))
 	}
 	var ownerID string
-	if err := f.db.QueryRow("SELECT id FROM role_bindings WHERE gateway_id=$1 AND user_id=$2", gateway.ID, user.ID).Scan(&ownerID); err != nil {
+	if err := f.db.QueryRow("SELECT id FROM role_bindings WHERE gateway_id=$1 AND user_id=$2", gateway.ID, user.Id).Scan(&ownerID); err != nil {
 		t.Fatal(err)
 	}
 	next(observer, pb.EventType_EVENT_TYPE_CREATED, ownerID)
@@ -149,7 +149,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	if !replay[renewed] || !replay[ownerID] {
 		t.Fatal("global and Gateway replay", replay)
 	}
-	rpc, err = client.ListRoleBindings(call(plain), &pb.ListRoleBindingsRequest{UserId: &user.ID})
+	rpc, err = client.ListRoleBindings(call(plain), &pb.ListRoleBindingsRequest{UserId: &user.Id})
 	if err != nil || len(rpc.GetItems()) != 1 || rpc.Items[0].GetMetadata().GetId() != ownerID || rpc.Items[0].GetGatewayId() != gateway.ID {
 		t.Fatal("gRPC role removal changed owner grant", rpc, err)
 	}
@@ -163,7 +163,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	}
 	recipient := currentUser(t, base, token(t, key, "bob"))
 	viewer := discoverRole(t, base, plain, "gateway:viewer")
-	request, _ = json.Marshal(gateways.GrantRequest{UserID: recipient.ID, RoleID: viewer.ID, GatewayID: gateway.ID, Scope: "gateway"})
+	request, _ = json.Marshal(gateways.GrantRequest{UserID: recipient.Id, RoleID: viewer.ID, GatewayID: gateway.ID, Scope: "gateway"})
 	code, body = requestJSON(t, "POST", base+"/role_bindings", plain, request)
 	var grant grantResponse
 	if code != 201 || json.Unmarshal(body, &grant) != nil {
@@ -173,7 +173,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	next(privileged, pb.EventType_EVENT_TYPE_CREATED, grant.ID)
 	// The existing privileged stream must not restore its old creator claim.
 	var count int
-	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE user_id=$1 AND scope='global' AND deleted_at IS NULL", user.ID).Scan(&count); err != nil || count != 0 {
+	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE user_id=$1 AND scope='global' AND deleted_at IS NULL", user.Id).Scan(&count); err != nil || count != 0 {
 		t.Fatal("old stream restored roles", count, err)
 	}
 	if code, _ := requestJSON(t, "GET", base+"/gateways/"+gateway.ID, token(t, key, "bob"), nil); code != 200 {
@@ -190,7 +190,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	if code, _ := requestJSON(t, "POST", base+"/gateways", failed, request); code != 500 {
 		t.Fatal("preparation became success or auth failure", code)
 	}
-	if _, err := client.ListRoleBindings(call(failed), &pb.ListRoleBindingsRequest{UserId: &user.ID}); status.Code(err) != codes.Internal {
+	if _, err := client.ListRoleBindings(call(failed), &pb.ListRoleBindingsRequest{UserId: &user.Id}); status.Code(err) != codes.Internal {
 		t.Fatal("gRPC preparation failure", err)
 	}
 	if err := f.db.QueryRow("SELECT count(*) FROM users WHERE subject='failed-user'").Scan(&count); err != nil || count != 0 {

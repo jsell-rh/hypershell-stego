@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
+	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	"github.com/jsell-rh/hypershell-stego/internal/gateways"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
 	keycloak "github.com/jsell-rh/hypershell-stego/internal/serviceaccountkeycloak"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -38,8 +38,8 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		t.Fatal("viewer workflow Gateway read failed", code)
 	}
 	code, body = viewerAPI("GET", "/users/me", nil)
-	var recipient httpapi.CurrentUser
-	if code != 200 || json.Unmarshal(body, &recipient) != nil || recipient.ID == "" || recipient.Subject == "" {
+	var recipient contract.CurrentUser
+	if code != 200 || json.Unmarshal(body, &recipient) != nil || recipient.Id == "" || recipient.Subject == "" {
 		t.Fatal("viewer workflow identity read failed", code)
 	}
 	bobSubject := recipient.Subject
@@ -64,7 +64,7 @@ func (w *browserGatewayWorkload) startViewerWorkflow(id string, browser *console
 		}
 	}
 	visibleGateways(nil)
-	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: recipient.ID, RoleID: roles.Items[0].ID}
+	grant := gateways.GrantRequest{GatewayID: gateway.ID, Scope: "gateway", UserID: recipient.Id, RoleID: roles.Items[0].ID}
 	encoded, _ := json.Marshal(grant)
 	code, body = ownerAPI("POST", "/role_bindings", encoded)
 	var binding struct{ ID string }

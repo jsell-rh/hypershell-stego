@@ -8,12 +8,12 @@ import (
 
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/golang-jwt/jwt/v5"
-	"github.com/jsell-rh/hypershell-stego/internal/httpapi"
+	contract "github.com/jsell-rh/hypershell-stego/out/application/contract"
 	"github.com/jsell-rh/hypershell-stego/internal/users"
 	"github.com/segmentio/ksuid"
 )
 
-func currentUser(t testing.TB, root, bearer string) httpapi.CurrentUser {
+func currentUser(t testing.TB, root, bearer string) contract.CurrentUser {
 	t.Helper()
 	code, body := requestJSON(t, "GET", root+"/users/me", bearer, nil)
 	schema, err := openapi3.NewLoader().LoadFromFile("../contracts/extensions/current-user.openapi.yaml")
@@ -30,13 +30,13 @@ func currentUser(t testing.TB, root, bearer string) httpapi.CurrentUser {
 	if err := schema.Paths.Value("/api/hypershell/v1/users/me").Get.Responses.Status(200).Value.Content.Get("application/json").Schema.Value.VisitJSON(actual); err != nil {
 		t.Fatal("current user schema", code, err)
 	}
-	var user httpapi.CurrentUser
+	var user contract.CurrentUser
 	var fields map[string]json.RawMessage
 	if code != 200 || json.Unmarshal(body, &user) != nil || json.Unmarshal(body, &fields) != nil {
 		t.Fatal("current user", code, string(body))
 	}
-	id, err := ksuid.Parse(user.ID)
-	if err != nil || id == ksuid.Nil || id.String() != user.ID || user.Kind != "User" || user.Href != "/api/hypershell/v1/users/me" || user.CreatedAt.IsZero() || user.UpdatedAt.IsZero() || len(fields) != 11 || user.Issuer == "" || user.Subject == "" || user.ExpiresAt.IsZero() {
+	id, err := ksuid.Parse(user.Id)
+	if err != nil || id == ksuid.Nil || id.String() != user.Id || user.Kind != contract.User || user.Href != "/api/hypershell/v1/users/me" || user.CreatedAt.IsZero() || user.UpdatedAt.IsZero() || len(fields) != 11 || user.Issuer == "" || user.Subject == "" || user.ExpiresAt.IsZero() {
 		t.Fatal("current user shape", user)
 	}
 	return user
@@ -84,19 +84,19 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("profile", user)
 	}
 	again := currentUser(t, root, bearer)
-	if again.ID != user.ID || !again.CreatedAt.Equal(user.CreatedAt) || !again.UpdatedAt.Equal(user.UpdatedAt) {
+	if again.Id != user.Id || !again.CreatedAt.Equal(user.CreatedAt) || !again.UpdatedAt.Equal(user.UpdatedAt) {
 		t.Fatal("unchanged identity was rewritten")
 	}
-	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE user_id=$1", user.ID).Scan(&count); err != nil || count != 0 {
+	if err := f.db.QueryRow("SELECT count(*) FROM role_bindings WHERE user_id=$1", user.Id).Scan(&count); err != nil || count != 0 {
 		t.Fatal("self lookup assigned a role", err)
 	}
 	renamedBearer := sign("recipient", "renamed-bob", "new@example.test", "hypershell", time.Now().Add(time.Hour))
 	renamed := currentUser(t, root, renamedBearer)
-	if renamed.ID != user.ID || !renamed.CreatedAt.Equal(user.CreatedAt) || !renamed.UpdatedAt.After(user.UpdatedAt) || renamed.Username != "renamed-bob" || renamed.Name != "renamed-bob Example" || renamed.Email != "new@example.test" {
+	if renamed.Id != user.Id || !renamed.CreatedAt.Equal(user.CreatedAt) || !renamed.UpdatedAt.After(user.UpdatedAt) || renamed.Username != "renamed-bob" || renamed.Name != "renamed-bob Example" || renamed.Email != "new@example.test" {
 		t.Fatal("profile change altered identity or lost timestamps", renamed)
 	}
 	other := currentUser(t, root, sign("other-subject", "renamed-bob", "new@example.test", "hypershell", time.Now().Add(time.Hour)))
-	if other.ID == user.ID {
+	if other.Id == user.Id {
 		t.Fatal("profile reuse adopted an identity")
 	}
 
@@ -108,7 +108,7 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("failed profile update reported success", code)
 	}
 	var stored string
-	if err := f.db.QueryRow("SELECT username FROM users WHERE id=$1", user.ID).Scan(&stored); err != nil || stored != "renamed-bob" {
+	if err := f.db.QueryRow("SELECT username FROM users WHERE id=$1", user.Id).Scan(&stored); err != nil || stored != "renamed-bob" {
 		t.Fatal("failed profile update changed user", stored, err)
 	}
 	if _, err := f.db.Exec("DROP TRIGGER reject_profile ON users; DROP FUNCTION reject_profile()"); err != nil {
@@ -118,17 +118,17 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 	stop, address = startApplication(t, binary, f.dsn, config, settings...)
 	root = address + "/api/hypershell/v1"
 	after := currentUser(t, root, renamedBearer)
-	if after.ID != user.ID || !after.CreatedAt.Equal(user.CreatedAt) || !after.UpdatedAt.Equal(renamed.UpdatedAt) {
+	if after.Id != user.Id || !after.CreatedAt.Equal(user.CreatedAt) || !after.UpdatedAt.Equal(renamed.UpdatedAt) {
 		t.Fatal("restart changed identity", after)
 	}
 	// A deleted identity cannot be restored through a login request.
-	if _, err := f.db.Exec("UPDATE users SET deleted_at=now() WHERE id=$1", other.ID); err != nil {
+	if _, err := f.db.Exec("UPDATE users SET deleted_at=now() WHERE id=$1", other.Id); err != nil {
 		t.Fatal(err)
 	}
 	if code, _ := requestJSON(t, "GET", root+"/users/me", sign("other-subject", "renamed-bob", "new@example.test", "hypershell", time.Now().Add(time.Hour)), nil); code != 409 {
 		t.Fatal("deleted identity restored", code)
 	}
-	if err := f.db.QueryRow("SELECT count(*) FROM users WHERE id=$1 AND deleted_at IS NOT NULL", other.ID).Scan(&count); err != nil || count != 1 {
+	if err := f.db.QueryRow("SELECT count(*) FROM users WHERE id=$1 AND deleted_at IS NOT NULL", other.Id).Scan(&count); err != nil || count != 1 {
 		t.Fatal("deleted identity changed", err)
 	}
 	stop()
@@ -139,7 +139,7 @@ func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 		t.Fatal("old issuer remained trusted", code)
 	}
 	foreign := currentUser(t, root, sign("recipient", "renamed-bob", "new@example.test", "hypershell", time.Now().Add(time.Hour)))
-	if foreign.ID == user.ID {
+	if foreign.Id == user.Id {
 		t.Fatal("different issuer adopted identity")
 	}
 }

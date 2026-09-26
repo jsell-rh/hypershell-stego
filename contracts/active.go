@@ -11,7 +11,7 @@ import (
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
-//go:embed extensions/openapi*.yaml
+//go:embed extensions/openapi*.yaml extensions/current-user.openapi.yaml
 var activeOpenAPI embed.FS
 
 // LoadActiveOpenAPI resolves the current REST contract from embedded files.
