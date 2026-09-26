@@ -117,17 +117,25 @@ func (c *Controller) reconcile(ctx context.Context, key string) (runtime.Reconci
 				return runtime.ReconcileResult{}, nil
 			}
 			remove := func(operation context.Context) (bool, error) {
-				if done, err := c.allocator.Delete(operation, "gateway", name, id); err != nil || !done {
-					return false, err
-				}
-				// Remove retained Sandbox allocations when creation is disabled.
-				// The Gateway must stop creating work first.
+				// Request both deletions before waiting for either namespace.
+				// A namespace with a deletion timestamp rejects new objects, so a
+				// Gateway that is still terminating cannot create Sandbox work.
+				// Delete returns only after the namespace is absent, so the
+				// Sandbox request is sent in the same pass before waiting.
+				gatewayDone, gatewayErr := c.allocator.Delete(operation, "gateway", name, id)
 				sandboxName, err := gatewayworkload.SandboxNamespace(id)
 				if err != nil {
 					return false, err
 				}
-				if done, err := c.allocator.Delete(operation, "sandbox", sandboxName, id); err != nil || !done {
-					return false, err
+				sandboxDone, sandboxErr := c.allocator.Delete(operation, "sandbox", sandboxName, id)
+				if gatewayErr != nil {
+					return false, gatewayErr
+				}
+				if sandboxErr != nil {
+					return false, sandboxErr
+				}
+				if !gatewayDone || !sandboxDone {
+					return false, nil
 				}
 				sqlHistory := response.GetCleanupTargets()["sql"]
 				if sqlHistory == nil {
