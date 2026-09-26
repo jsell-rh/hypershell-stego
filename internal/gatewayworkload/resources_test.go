@@ -54,7 +54,7 @@ func TestGatewayWorkloadPreservesRuntimeContract(t *testing.T) {
 		t.Fatal("Gateway image changed")
 	}
 	c := object(containers[0])
-	for key, want := range map[string]string{"cpu": "100m", "memory": "256Mi", "ephemeral-storage": "32Mi"} {
+	for key, want := range map[string]string{"cpu": "50m", "memory": "128Mi", "ephemeral-storage": "16Mi"} {
 		if kube.String(c, "resources", "requests", key) != want {
 			t.Fatal("Gateway resource request changed", key)
 		}
