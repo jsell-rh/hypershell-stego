@@ -1,0 +1,60 @@
+{
+  "schema": 1,
+  "source": "47aa9eda03ab5ac99af05da712048f307abc47e5",
+  "checked_at": "2026-09-26T10:48:50+00:00",
+  "saved_context": "default/api-jshell-8u58-p3-openshiftapps-com:443/johnsell",
+  "previous_check": {
+    "checked_at": "2026-09-20T08:13:13.650324+00:00",
+    "all_nodes_allocatable_cpu_millicores": 7500,
+    "evidence": "jshell-capacity-budget-evidence.json"
+  },
+  "nodes": [
+    {
+      "node_uid": "0f833131-1186-41ae-97ce-761de4fe3b89",
+      "cpu_millicores": 1500,
+      "memory": "6815264Ki",
+      "unschedulable": false
+    },
+    {
+      "node_uid": "f39cb8ef-1e35-45f5-b6bf-9ac120699ecb",
+      "cpu_millicores": 1500,
+      "memory": "6815272Ki",
+      "unschedulable": false
+    },
+    {
+      "node_uid": "c2a5f829-a299-459d-b8ed-8e3361fe72e6",
+      "cpu_millicores": 1500,
+      "memory": "6815260Ki",
+      "unschedulable": false
+    },
+    {
+      "node_uid": "b1c45c63-9fdb-4c95-814a-6aa517fbc686",
+      "cpu_millicores": 1500,
+      "memory": "6815272Ki",
+      "unschedulable": false
+    },
+    {
+      "node_uid": "bd7ef7f5-9a49-41c4-874e-5181210f7ca2",
+      "cpu_millicores": 1500,
+      "memory": "6815272Ki",
+      "unschedulable": false
+    }
+  ],
+  "node_response_sha256": "76820379d867625bf04d42c619dc132628369d00f3defa6a594dc6297521c45b",
+  "all_nodes_allocatable_cpu_millicores": 7500,
+  "gateway_render_source": "internal/gatewayworkload/resources.go",
+  "gateway_render_source_sha256": "1569e93e240f9e8101e0bf54f1b5ec4091ddc3b291dcdf12991300322338d983",
+  "gateway_server_cpu_request_millicores": 100,
+  "gateway_server_memory_request": "256Mi",
+  "target_gateways": 100,
+  "minimum_gateway_server_cpu_request_millicores": 10000,
+  "full_target_fits_current_declared_cpu_requests": false,
+  "capacity_test_run": false,
+  "resource_requests_changed": false,
+  "limits": [
+    "This sums every node, including nodes that taints or policy can exclude. It is an upper bound, not free capacity.",
+    "Only one server Pod per Gateway is included in the lower bound. Consoles, databases, control-plane workers, Sandbox Pods, and platform services require more resources.",
+    "This is a scheduling budget check. It does not measure performance or set a product limit.",
+    "The user targets 100 Gateways per instance and 100 service accounts per Gateway. Larger instances remain supported in the intended scope."
+  ]
+}
