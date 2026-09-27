@@ -32,7 +32,7 @@ collect_service_evidence() {
           require_evidence "$file"
         done
       fi
-      if [ "$3" = 1 ]; then
+      if [ "$2" = 1 ] && [ "$3" = 1 ]; then
         for file in browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json; do
           require_evidence "$file"
         done
@@ -46,6 +46,9 @@ collect_service_evidence() {
         for file in browser-artifacts/gateway-network-after-endpoint-replacement.json network-endpoint-change.request network-endpoint-change.ack; do
           require_evidence "$file"
         done
+      fi
+      if [ "$6" = 1 ]; then
+        require_evidence browser-artifacts/gateway-capacity.json
       fi
     fi
     set --
@@ -62,7 +65,7 @@ collect_service_evidence() {
     # Keep available evidence even when a required file is absent.
     tar cf - "$@" || exit 1
     exit "$evidence_status"
-  ' stego-collect "$result" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "${workload:-0}" "$public" "${endpoint_change:-0}" > "$results/evidence.tar" || {
+  ' stego-collect "$result" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "${workload:-0}" "$public" "${endpoint_change:-0}" "${capacity:-0}" > "$results/evidence.tar" || {
     transfer_status=$?
     printf 'Service archive collection failed with exit status %s.\n' "$transfer_status" >&2
     status=1

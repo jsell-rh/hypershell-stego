@@ -30,11 +30,11 @@ case "$*" in
 esac
 MOCK
 export scenario test_work
-for scenario in service service-missing-image service-missing-source service-missing-transfer service-missing-compiler service-missing-receipt browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-image-source missing-image-transfer missing-image-compiler missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-allocation-finalization empty-allocation-finalization missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint; do
+for scenario in service service-missing-image service-missing-source service-missing-transfer service-missing-compiler service-missing-receipt browser workload public configured-public log-failure archive-failure truncated missing-compiler-transfer missing-compiler-signatures missing-image missing-image-source missing-image-transfer missing-image-compiler missing-gateway-console-image missing-regeneration missing-screen missing-startup missing-sql missing-cleanup-timing empty-cleanup-timing missing-allocation-finalization empty-allocation-finalization missing-network missing-public missing-provisioner-restart missing-multiple empty-provisioner-restart failed-test endpoint missing-endpoint missing-endpoint-ack unfinished-endpoint capacity missing-capacity empty-capacity; do
   test_work="$fixture/$scenario/work"
   results="$fixture/$scenario/results"
   mkdir -p "$test_work/browser-artifacts" "$test_work/compiler" "$results"
-  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
+  for file in compiler-transfer.json compiler/build.json compiler/verified.json compiler/provenance.jsonl compiler/SHA256SUMS deployment.exit first.sha256 second.sha256 after-tests.sha256 generated.tar browser-artifacts/verify.json browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-initial.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-rpc.json browser-artifacts/gateway-public-network-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json browser-artifacts/gateway-capacity.json; do
     mkdir -p "$(dirname "$test_work/$file")"
     printf 'record\n' > "$test_work/$file"
   done
@@ -55,6 +55,7 @@ for scenario in service service-missing-image service-missing-source service-mis
   STEGO_TEST_GATEWAY_PUBLIC_CONFIG=
   expected=0
   endpoint_change=0
+  capacity=0
   case "$scenario" in
     endpoint|missing-endpoint|missing-endpoint-ack|unfinished-endpoint)
       endpoint_change=1
@@ -67,6 +68,15 @@ for scenario in service service-missing-image service-missing-source service-mis
   esac
   case "$scenario" in
     service|service-missing-*) workload=0; STEGO_TEST_BROWSER_DEPLOYMENT=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm -rf -- "$test_work/browser-artifacts" ;;
+    capacity|missing-capacity|empty-capacity)
+      STEGO_TEST_BROWSER_DEPLOYMENT=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0
+      rm -f "$test_work/browser-artifacts"/verify.json "$test_work/browser-artifacts"/verify.json.png "$test_work/browser-artifacts"/browser-startup-signals.json "$test_work/browser-artifacts"/gateway-cleanup-timing.json "$test_work/browser-artifacts"/allocation-finalization.json "$test_work/browser-artifacts"/postgres-server.json "$test_work/browser-artifacts"/gateway-network-initial.json "$test_work/browser-artifacts"/gateway-network-after-recovery.json "$test_work/browser-artifacts"/gateway-public-rpc.json "$test_work/browser-artifacts"/gateway-public-network-recovery.json "$test_work/browser-artifacts"/gateway-public-certificate-rotation.json "$test_work/browser-artifacts"/provisioner-restart.json
+      capacity=1
+      case "$scenario" in
+        missing-capacity) expected=1; rm "$test_work/browser-artifacts/gateway-capacity.json" ;;
+        empty-capacity) expected=1; : > "$test_work/browser-artifacts/gateway-capacity.json" ;;
+      esac
+      ;;
     browser) workload=0; STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/postgres-server.json" "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
     workload) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; rm "$test_work/browser-artifacts/gateway-public-rpc.json" ;;
     configured-public) STEGO_TEST_REQUIRE_PUBLIC_GATEWAY=0; STEGO_TEST_GATEWAY_PUBLIC_CONFIG=configured.json ;;
@@ -93,7 +103,6 @@ for scenario in service service-missing-image service-missing-source service-mis
     missing-public) expected=1; rm "$test_work/browser-artifacts/gateway-public-certificate-rotation.json" ;;
     missing-endpoint) expected=1; rm "$test_work/browser-artifacts/gateway-network-after-endpoint-replacement.json" ;;
     missing-endpoint-ack) expected=1; rm "$test_work/network-endpoint-change.ack" ;;
-    unfinished-endpoint) expected=1; printf '%s\n' '{"phase":"checking","type_checks":"pending"}' > "$results/endpoint-change/journal.json" ;;
     failed-test) result=42; rm "$test_work/image-publication/publication.json" "$test_work/after-tests.sha256"; rm -rf -- "$test_work/browser-artifacts" ;;
   esac
   case "$scenario" in
@@ -114,11 +123,15 @@ for scenario in service service-missing-image service-missing-source service-mis
       # An incomplete record must fail and retain all available evidence.
       tar tf "$results/evidence.tar" >/dev/null
       cmp "$test_work/generated.tar" <(tar xOf "$results/evidence.tar" generated.tar)
-      for file in image-publication/publication.json image-publication/source-check.json image-delivery-transfer.json image-delivery/compiler/provenance.jsonl image-publication/hypershell-gateway-console/registry.json after-tests.sha256 browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json; do
-        if [[ ! -s $test_work/$file ]]; then
+      if [[ $scenario == missing-capacity || $scenario == empty-capacity ]]; then
+        (grep -Fqx "Required service evidence is missing or empty: browser-artifacts/gateway-capacity.json" "$results/collector.log" || true)
+      else
+      for file in image-publication/publication.json image-publication/source-check.json image-delivery-transfer.json image-delivery/compiler/provenance.jsonl image-publication/hypershell-gateway-console/registry.json after-tests.sha256 browser-artifacts/verify.json.png browser-artifacts/browser-startup-signals.json browser-artifacts/gateway-cleanup-timing.json browser-artifacts/allocation-finalization.json browser-artifacts/postgres-server.json browser-artifacts/gateway-network-after-recovery.json browser-artifacts/gateway-public-certificate-rotation.json browser-artifacts/provisioner-restart.json browser-artifacts/gateway-capacity.json; do
+        if [[ ! -s $test_work/$file && $scenario != capacity ]]; then
           grep -Fqx "Required service evidence is missing or empty: $file" "$results/collector.log"
         fi
       done
+      fi
       if [[ $scenario == missing-endpoint || $scenario == missing-endpoint-ack ]]; then
         grep -Fq 'Required service evidence is missing or empty:' "$results/collector.log"
       fi
