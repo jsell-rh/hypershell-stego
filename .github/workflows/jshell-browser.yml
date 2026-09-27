@@ -27,6 +27,14 @@ on:
         description: Test the public Gateway with the operator configuration
         type: boolean
         default: true
+      capacity:
+        description: Run the Gateway capacity profile without the browser Deployment
+        type: boolean
+        default: false
+      capacity_gateways:
+        description: Gateway count for the capacity run
+        type: number
+        default: 100
       sandbox_network:
         description: Run fixed native Sandbox packet probes under an operator-held lease
         type: boolean
@@ -56,7 +64,7 @@ jobs:
   gateway-workload:
     environment: jshell-ci
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    timeout-minutes: ${{ inputs.capacity && 90 || 40 }}
     steps:
       - name: Check the operator lease inputs
         env:
@@ -152,7 +160,7 @@ jobs:
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
       - name: Write the public test configuration
-        if: inputs.public_gateway
+        if: inputs.public_gateway && !inputs.capacity
         env:
           PUBLIC_CONFIG: ${{ vars.JSHELL_GATEWAY_PUBLIC_CONFIG }}
         run: |
@@ -166,9 +174,11 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig
           STEGO_TEST_CONTEXT: jshell-ci
-          STEGO_TEST_PREINSTALLED: '1'
-          STEGO_TEST_BROWSER_DEPLOYMENT: '1'
+          STEGO_TEST_PREINSTALLED: ${{ inputs.capacity && '0' || '1' }}
+          STEGO_TEST_BROWSER_DEPLOYMENT: ${{ inputs.capacity && '0' || '1' }}
           STEGO_TEST_BROWSER_WORKLOAD: '1'
+          STEGO_TEST_KUBERNETES_CAPACITY: ${{ inputs.capacity && '1' || '0' }}
+          STEGO_TEST_CAPACITY_GATEWAYS: ${{ inputs.capacity_gateways }}
           STEGO_TEST_GATEWAY_CLUSTER_ISSUER: acp-hypershell-test-ca
           STEGO_TEST_RESULTS: ${{ runner.temp }}/gateway-browser
           STEGO_TEST_HELD_LEASE_HOLDER: ${{ inputs.held_lease_holder }}
