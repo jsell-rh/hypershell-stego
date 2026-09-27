@@ -6,11 +6,11 @@ import ssl
 from public_gateway_fixture import CERTIFICATE
 
 
-def apply_internal_fixture(document, workload, browser):
+def apply_internal_fixture(document, workload, browser, capacity='0'):
     path = os.environ.get('STEGO_TEST_GATEWAY_INTERNAL_CA_FILE', '')
     if not path:
         return
-    if workload != '1' or browser != '1' or not Path(path).is_absolute():
+    if workload != '1' or (browser != '1' and capacity != '1') or not Path(path).is_absolute():
         raise ValueError('Internal Gateway trust requires a complete workflow and an absolute path')
     with Path(path).open('rb') as source:
         raw = source.read((512 << 10) + 1)
