@@ -208,6 +208,12 @@ func startKubernetesKeycloak(t *testing.T, namespace string, apply func(any), co
 		// including the final controller and supplied-database cleanup.
 		identityDeadlineSeconds = 900
 	}
+	if os.Getenv("STEGO_TEST_KUBERNETES_CAPACITY") == "1" {
+		realmConfig["accessTokenLifespan"] = 3600
+		// The capacity run provisions many Gateways. Keep the provider
+		// available past the convergence budget.
+		identityDeadlineSeconds = 3600
+	}
 	realm, err := json.Marshal(realmConfig)
 	if err != nil {
 		t.Fatal(err)
