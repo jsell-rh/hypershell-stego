@@ -12,12 +12,12 @@ root=Path(tempfile.mkdtemp(prefix='stego-ci-identity-'))
 prefix=['oc','--kubeconfig='+str(args.kubeconfig),'--context='+args.context,'--request-timeout=15s']
 checks=[]
 for verb,resource,ns,want in [('create','jobs.batch','stego-ci',True),('get','pods/log','stego-ci',True),('create','pods/exec','stego-ci',True),('patch','leases.coordination.k8s.io/jshell-live-test','stego-ci',True),('create','jobs.batch','default',False),('get','secrets','default',False),('create','clusterroles.rbac.authorization.k8s.io','',False),('patch','validatingadmissionpolicies.admissionregistration.k8s.io','',False),('create','namespaces','',False),('create','rolebindings.rbac.authorization.k8s.io','stego-ci',False),('create','serviceaccounts/token','stego-ci',False),('patch','leases.coordination.k8s.io/other','stego-ci',False),('get','secrets','stego-ci-access',False),('create','jobs.batch','stego-ci-access',False),('create','serviceaccounts/token','stego-ci-access',False),('impersonate','users','',False),('get','secrets/cli-test-postgres','stego-ci',True),('get','secrets/unlisted','stego-ci',False)]:
- args=prefix+['auth','can-i',verb,resource]
+ cmd=prefix+['auth','can-i',verb,resource]
  if resource in ['pods/log','pods/exec','serviceaccounts/token']:
   parent,subresource=resource.split('/')
-  args=prefix+['auth','can-i',verb,parent,'--subresource='+subresource]
- if ns:args+=['-n',ns]
- r=subprocess.run(args,capture_output=True,text=True,timeout=25)
+  cmd=prefix+['auth','can-i',verb,parent,'--subresource='+subresource]
+ if ns:cmd+=['-n',ns]
+ r=subprocess.run(cmd,capture_output=True,text=True,timeout=25)
  value=r.stdout.strip()
  if value not in ['yes','no'] or r.returncode!=(0 if value=='yes' else 1) or (value=='yes')!=want:raise RuntimeError('Permission check failed: '+repr((verb,resource,ns,value,r.stderr)))
  checks.append({'verb':verb,'resource':resource,'namespace':ns,'allowed':want})
