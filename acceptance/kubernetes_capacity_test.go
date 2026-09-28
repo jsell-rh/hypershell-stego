@@ -171,6 +171,16 @@ func TestGeneratedKubernetesGatewayCapacity(t *testing.T) {
 			// Dump the pending Gateway Deployment states and pod conditions of
 			// the first few Gateways. This distinguishes a missing Deployment
 			// from an unschedulable or not-ready pod.
+			// Record the fixture service Pod container states. A terminated
+			// container explains observation loss during the run.
+			for _, line := range strings.Split(p.output("get", "pods", "-l", "app=stego-fixture", "-o", "jsonpath={range .items[*]}{.metadata.name}{\" phase=\"}{.status.phase}{\" restarts=\"}{.status.containerStatuses[0].restartCount}{\" lastReason=\"}{.status.containerStatuses[0].lastState.terminated.reason}{\" lastExit=\"}{.status.containerStatuses[0].lastState.terminated.exitCode}{\"\\n\"}{end}"), "\n") {
+				if line != "" {
+					t.Log("service pod:", line)
+				}
+			}
+			for _, name := range []string{"hypershell", "hypershell-namespace-allocation", "hypershell-gateway-identity", "hypershell-gateway-workload"} {
+				t.Logf("deployment %s: %s", name, p.output("get", "deployment/"+name, "-o", "jsonpath={.status.readyReplicas}/{.status.replicas}"))
+			}
 			diagnostics, diagCancel := context.WithTimeout(context.Background(), 60*time.Second)
 			for index, gateway := range gateways {
 				if !gateway.deployed.IsZero() || index >= 5 {

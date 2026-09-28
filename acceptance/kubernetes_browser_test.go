@@ -48,6 +48,20 @@ func TestGeneratedKubernetesBrowserGatewayWorkflow(t *testing.T) {
 	}
 }
 func (p *kubernetesBrowser) host(name string) string { return name + "." + p.namespace + ".svc" }
+
+// output reads a command result without failing the test. It serves failed
+// run diagnostics, where the fixture Pod may already be terminated.
+func (p *kubernetesBrowser) output(args ...string) string {
+	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+	defer cancel()
+	cmd := exec.CommandContext(ctx, p.oc, append([]string{"--namespace=" + p.namespace, "--request-timeout=50s"}, args...)...)
+	out, err := cmd.CombinedOutput()
+	if err != nil {
+		return string(out) + "\n" + err.Error()
+	}
+	return string(out)
+}
+
 func (p *kubernetesBrowser) command(input []byte, args ...string) []byte {
 	p.t.Helper()
 	ctx, cancel := context.WithTimeout(context.Background(), 190*time.Second)
@@ -356,7 +370,7 @@ func (p *kubernetesBrowser) start(name, module, image string, id testIdentity, e
 		if stopped {
 			return retained
 		}
-		return string(p.command(nil, "logs", "deployment/"+name, "--tail=10000"))
+		return p.output("logs", "deployment/"+name, "--tail=10000")
 	}
 	stop := func() {
 		if stopped {
