@@ -58,6 +58,7 @@ def write_kubeconfig(path, server_bundle, context, user, token, namespace):
             os.replace(temporary, path)
         finally:
             temporary.unlink(missing_ok=True)
+    return config
 
 
 def publish_secret(config, repository, environment, name):
