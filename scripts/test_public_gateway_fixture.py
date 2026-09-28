@@ -128,6 +128,9 @@ class PublicGatewayFixture(unittest.TestCase):
         self.assertNotIn('max_connections=40', postgres['args'])
         self.assertEqual(postgres['resources']['limits']['memory'], '1Gi')
         self.assertEqual(pod['containers'][0]['resources']['limits']['memory'], '4Gi')
+        volumes = {v['name']: v for v in pod['volumes']}
+        self.assertEqual(volumes['postgres']['emptyDir'], {'sizeLimit': '4Gi'})
+        self.assertEqual(postgres['resources']['limits']['ephemeral-storage'], '4Gi')
         self.assertIn('run-capacity-deployment-pod.sh', job['spec']['template']['spec']['containers'][0]['command'][-1])
         settings = {row['name']: row.get('value') for row in pod['containers'][0]['env']}
         self.assertEqual(settings['STEGO_TEST_KUBERNETES_CAPACITY'], '1')

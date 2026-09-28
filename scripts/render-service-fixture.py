@@ -85,6 +85,14 @@ def fixture(ns, directory, browser, workload, issuer, capacity='0', gateways='')
                 postgres=next(c for c in spec['initContainers'] if c['name']=='postgres')
                 postgres['args']=['max_connections=400' if value=='max_connections=40' else value for value in postgres['args']]
                 postgres['resources']['limits']['memory']='1Gi'
+                # Each Gateway provisions its own database with
+                # CREATE DATABASE ... TEMPLATE template0. A measured run of
+                # 100 databases needs 1.19 GiB (448 MiB of it is WAL) on the
+                # postgres emptyDir. The standing 1 GiB limit evicted the Pod
+                # mid-run, so the capacity profile gets a larger volume.
+                postgresVolume=next(v for v in spec['volumes'] if v['name']=='postgres')
+                postgresVolume['emptyDir']['sizeLimit']='4Gi'
+                postgres['resources']['limits']['ephemeral-storage']='4Gi'
                 test=spec['containers'][0]
                 # The capacity test keeps an in-process API server, a race-enabled
                 # test binary, and 100 concurrent Gateway health checks in memory.

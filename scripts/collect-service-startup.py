@@ -12,7 +12,7 @@ import subprocess
 def summary(pod):
     metadata, spec, status = (pod.get(k, {}) for k in ('metadata', 'spec', 'status'))
     result = {k: metadata.get(k) for k in ('name', 'namespace', 'uid', 'creationTimestamp')}
-    result.update(phase=status.get('phase'), reason=status.get('reason'), node=spec.get('nodeName'))
+    result.update(phase=status.get('phase'), reason=status.get('reason'), message=status.get('message'), node=spec.get('nodeName'))
     result['conditions'] = [{k: c.get(k) for k in ('type', 'status', 'reason', 'message', 'lastTransitionTime')}
                             for c in status.get('conditions', [])]
     result['containers'] = [{'name': c.get('name'), 'restart_policy': c.get('restartPolicy'),
