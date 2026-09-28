@@ -23,13 +23,23 @@ fi
 chmod 700 "$results"
 oc_cmd=(oc --context "$STEGO_TEST_CONTEXT" --request-timeout=30s)
 workload=${STEGO_TEST_BROWSER_WORKLOAD:-0}
+capacity=${STEGO_TEST_KUBERNETES_CAPACITY:-0}
+capacity_gateways=${STEGO_TEST_CAPACITY_GATEWAYS:-}
+[[ $capacity == 0 || $capacity == 1 ]]
+if [[ $capacity == 1 ]]; then
+  [[ $capacity_gateways =~ ^[0-9]+$ && $capacity_gateways -ge 1 && $capacity_gateways -le 200 ]]
+fi
 endpoint_change=$(PYTHONDONTWRITEBYTECODE=1 python3 -c 'import sys; from pathlib import Path; sys.path.insert(0,"scripts"); from gateway_endpoint_fixture import enabled; print(int(enabled(Path.cwd())))')
 [[ $workload == 0 || $workload == 1 ]]
 if [[ $endpoint_change == 1 ]]; then
-  [[ $workload == 1 && $preinstalled == 0 ]]
+  [[ $workload == 1 && $preinstalled == 0 && $capacity == 0 ]]
 fi
-if [[ $preinstalled == 1 ]]; then [[ $workload == 1 ]]; fi
+if [[ $preinstalled == 1 ]]; then [[ $workload == 1 && $capacity == 0 ]]; fi
 sandbox_network=$(PYTHONDONTWRITEBYTECODE=1 python3 -c 'import sys; from pathlib import Path; sys.path.insert(0,"scripts"); from sandbox_network_fixture import enabled; print(int(enabled(Path.cwd())))')
+if [[ $sandbox_network == 1 && $capacity == 1 ]]; then
+  echo 'The capacity run does not use the sandbox network fixture.' >&2
+  exit 1
+fi
 if [[ $sandbox_network == 1 ]]; then
   [[ $preinstalled == 1 && $workload == 1 ]]
   # The operator must restore the production policy before releasing this Lease.
@@ -37,7 +47,12 @@ if [[ $sandbox_network == 1 ]]; then
   : "${STEGO_TEST_HELD_LEASE_UID:?Native packet probes require the exact Lease UID}"
 fi
 if [[ $workload == 1 ]]; then
-  [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
+  if [[ $capacity == 0 ]]; then
+    [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]
+  else
+    [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 0 ]]
+    [[ $preinstalled == 0 ]]
+  fi
   : "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:?Set the existing test ClusterIssuer}"
   : "${STEGO_TEST_GATEWAY_INTERNAL_CA_FILE:?Set the operator-supplied internal Gateway CA file}"
   test -s acceptance/browser-inspection-source.json
@@ -107,17 +122,20 @@ cleanup_resources() {
     "${oc_cmd[@]}" --request-timeout=0 wait --for=delete namespace "$namespace" --timeout=60s || true
   fi
   # Check absence before releasing the shared Lease. Read errors retain the Lease.
-  python3 - "$STEGO_TEST_CONTEXT" "$namespace" "$results" <<'CHECK_CLEANUP'
+  python3 - "$STEGO_TEST_CONTEXT" "$namespace" "$results" "$capacity" <<'CHECK_CLEANUP'
 import hashlib, json, subprocess, sys, time
 from pathlib import Path
-context, namespace, directory = sys.argv[1:]
+context, namespace, directory, capacity = sys.argv[1:]
 root = Path(directory)
 marker = hashlib.sha256((namespace + '.hypershell-namespace-allocation').encode()).hexdigest()[:32]
 command = ['oc', '--context', context, '--request-timeout=20s']
+# The capacity run deletes hundreds of Gateway namespaces. Finalizers need a
+# longer window before the run may release the shared live-test Lease.
+attempts, pause = (60, 10) if capacity == '1' else (12, 5)
 def get(*words):
     result = subprocess.run(command + ['get', *words, '-o', 'json'], check=True, capture_output=True, text=True, timeout=30)
     return json.loads(result.stdout) if result.stdout.strip() else None
-for attempt in range(12):
+for attempt in range(attempts):
     remaining = []
     for kind in ['namespaces', 'clusterroles', 'clusterrolebindings', 'validatingadmissionpolicies', 'validatingadmissionpolicybindings']:
         for obj in get(kind)['items']:
@@ -128,9 +146,9 @@ for attempt in range(12):
     if not remaining:
         (root / 'cleanup.json').write_text(json.dumps({'namespace_absent': namespace, 'owned_resources_absent': True}) + '\n')
         break
-    if attempt == 11:
+    if attempt == attempts - 1:
         raise RuntimeError('Resources remain; keep the live-test Lease: ' + ', '.join(remaining))
-    time.sleep(5)
+    time.sleep(pause)
 CHECK_CLEANUP
 }
 cleanup() {
@@ -196,7 +214,9 @@ if [[ $endpoint_change == 1 ]]; then
   python3 scripts/network_peer_fixture.py create --context "$STEGO_TEST_CONTEXT" \
     --namespace "$namespace" --results "$results" --endpoint-change
 fi
-python3 scripts/render-service-fixture.py "$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}"
+render_args=("$namespace" "$results" "${STEGO_TEST_BROWSER_DEPLOYMENT:-0}" "$workload" "${STEGO_TEST_GATEWAY_CLUSTER_ISSUER:-}")
+if [[ $capacity == 1 ]]; then render_args+=("$capacity" "$capacity_gateways"); fi
+python3 scripts/render-service-fixture.py "${render_args[@]}"
 # Persistent CI keeps the operator installation and replaces only test data.
 if [[ $preinstalled == 1 ]]; then
   python3 - "$results" <<'CI_OBJECTS'
@@ -256,7 +276,9 @@ EXEC_PERMISSION
 group=$("${oc_cmd[@]}" get namespace "$namespace" -o jsonpath='{.metadata.annotations.openshift\.io/sa\.scc\.supplemental-groups}')
 group=${group%%/*}
 [[ $group =~ ^[1-9][0-9]*$ ]]
-if [[ ${STEGO_TEST_BROWSER_DEPLOYMENT:-0} == 1 ]]; then
+if [[ $workload == 1 ]]; then
+  # Both the browser Deployment and the capacity run compare the frozen
+  # cluster render inside the Pod before applying namespace resources.
   cluster_args=(--context "$STEGO_TEST_CONTEXT" --namespace "$namespace" --fs-group "$group" --results "$results")
   if [[ $workload == 1 ]]; then cluster_args+=(--workload); fi
   if [[ $preinstalled == 1 ]]; then

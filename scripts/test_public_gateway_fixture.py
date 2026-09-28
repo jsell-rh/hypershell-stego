@@ -76,6 +76,8 @@ class PublicGatewayFixture(unittest.TestCase):
         environment = dict(os.environ, STEGO_TEST_GATEWAY_PUBLIC_CONFIG=config_path,
                            STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(root / 'ca.pem'),
                            STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='1')
+        capacity_environment = dict(os.environ, STEGO_TEST_GATEWAY_INTERNAL_CA_FILE=str(root / 'ca.pem'),
+                                    STEGO_TEST_REQUIRE_PUBLIC_GATEWAY='0')
         subprocess.run([sys.executable, str(script), 'stego-service-ci', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())
@@ -116,6 +118,19 @@ class PublicGatewayFixture(unittest.TestCase):
         settings = {row['name']: row.get('value') for row in job['spec']['template']['spec']['containers'][0]['env']}
         self.assertEqual(settings['STEGO_TEST_BROWSER_PUBLIC_CA_SHA256'], hashlib.sha256(self.config['ca_pem'].encode()).hexdigest())
         self.assertNotIn('STEGO_TEST_UNRELATED_NETWORK_HOST', settings)
+        subprocess.run([sys.executable, str(script), 'stego-service-ci', str(root), '0', '1', 'test-ca', '1', '100'],
+                       check=True, capture_output=True, timeout=5, env=capacity_environment)
+        document = json.loads((root / 'job.json').read_text())
+        job = next(item for item in document['items'] if item['kind'] == 'Job')
+        pod = job['spec']['template']['spec']
+        postgres = next(c for c in pod['initContainers'] if c['name'] == 'postgres')
+        self.assertIn('max_connections=400', postgres['args'])
+        self.assertNotIn('max_connections=40', postgres['args'])
+        self.assertEqual(postgres['resources']['limits']['memory'], '1Gi')
+        self.assertIn('run-capacity-deployment-pod.sh', job['spec']['template']['spec']['containers'][0]['command'][-1])
+        settings = {row['name']: row.get('value') for row in pod['containers'][0]['env']}
+        self.assertEqual(settings['STEGO_TEST_KUBERNETES_CAPACITY'], '1')
+        self.assertEqual(settings['STEGO_TEST_CAPACITY_GATEWAYS'], '100')
         subprocess.run([sys.executable, str(script), 'stego-service-20260915-123abc', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())
@@ -136,6 +151,16 @@ class PublicGatewayFixture(unittest.TestCase):
                     apply_internal_fixture(document, '1', '1')
             self.assertEqual(document, {'items': []})
         with patch.dict(os.environ, {'STEGO_TEST_GATEWAY_INTERNAL_CA_FILE': str(self.root / 'ca.pem')}):
+            for workload, browser, capacity in [('0', '1', '0'), ('1', '0', '0')]:
+                with self.assertRaises(ValueError):
+                    apply_internal_fixture(document, workload, browser, capacity)
+            self.assertEqual(document, {'items': []})
+            document = {'items': [
+                {'kind': 'ConfigMap', 'metadata': {'name': 'database-ca'}, 'data': {}},
+                {'kind': 'Job', 'metadata': {'name': 'service-check'}, 'spec': {'template': {'spec': {
+                    'volumes': [], 'containers': [{'env': [], 'volumeMounts': []}]}}}}]}
+            apply_internal_fixture(document, '1', '0', '1')
+            self.assertIn('gateway-internal-ca.pem', document['items'][0]['data'])
             for workload, browser in [('0', '1'), ('1', '0')]:
                 with self.assertRaises(ValueError):
                     apply_internal_fixture(document, workload, browser)

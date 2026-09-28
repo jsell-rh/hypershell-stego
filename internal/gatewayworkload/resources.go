@@ -119,7 +119,7 @@ func resources(gw *pb.Gateway, serviceAccount string, release *pb.GatewayRelease
 			Args: []string{"--config", "/etc/openshell-config/gateway.toml", "--drivers", "kubernetes"},
 			Env:  env, Mounts: mounts,
 			Ports:     []workload.Port{{Name: "grpc", Number: 8080}, {Name: "health", Number: 8081}},
-			Requests:  workload.Resources{CPUMilli: 100, MemoryMi: 256, EphemeralMi: 32},
+			Requests:  workload.Resources{CPUMilli: 50, MemoryMi: 128, EphemeralMi: 16},
 			Limits:    workload.Resources{CPUMilli: 500, MemoryMi: 512, EphemeralMi: 256},
 			Startup:   workload.HTTPProbe{Path: "/healthz", Port: "health", PeriodSeconds: 2, TimeoutSeconds: 1, FailureThreshold: 60},
 			Readiness: workload.HTTPProbe{Path: "/readyz", Port: "health", PeriodSeconds: 2, TimeoutSeconds: 1, FailureThreshold: 3},

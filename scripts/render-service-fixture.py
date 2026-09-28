@@ -12,7 +12,7 @@ from gateway_endpoint_fixture import inputs as endpoint_inputs
 PROJECT = Path(__file__).resolve().parent.parent
 
 
-def fixture(ns, directory, browser, workload, issuer):
+def fixture(ns, directory, browser, workload, issuer, capacity='0', gateways=''):
     root = Path(directory)
     if workload not in ('0', '1'):
         raise ValueError('Invalid workload fixture flag')
@@ -38,7 +38,7 @@ def fixture(ns, directory, browser, workload, issuer):
                 test['env'] += [{'name':'STEGO_TEST_KUBERNETES_BROWSER','value':'1'},{'name':'STEGO_REQUIRE_BROWSER','value':'1'},{'name':'PATH','value':'/work/bin:/usr/local/go/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'}]
     if workload=='1':
         import re
-        if browser!='1' or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',issuer): raise SystemExit('Invalid Gateway test profile')
+        if (browser!='1' and capacity!='1') or not re.fullmatch(r'[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?',issuer): raise SystemExit('Invalid Gateway test profile')
         endpoints = kubernetes_endpoints(root)
         change = endpoint_inputs(PROJECT, root, ns)
         for item in job['items']:
@@ -71,10 +71,23 @@ def fixture(ns, directory, browser, workload, issuer):
             for item in job['items']:
                 if item['kind'] == 'Job':
                     item['spec']['template']['spec']['containers'][0]['env'].append({'name': 'STEGO_TEST_UNRELATED_NETWORK_HOST', 'value': host})
+    if capacity=='1':
+        if workload!='1' or browser=='1' or not gateways.isdigit() or not 1 <= int(gateways) <= 200:
+            raise SystemExit('Invalid capacity fixture profile')
+        for item in job['items']:
+            if item['kind']=='Job':
+                spec=item['spec']['template']['spec']
+                postgres=next(c for c in spec['initContainers'] if c['name']=='postgres')
+                postgres['args']=['max_connections=400' if value=='max_connections=40' else value for value in postgres['args']]
+                postgres['resources']['limits']['memory']='1Gi'
+                test=spec['containers'][0]
+                test['command'][-1]=test['command'][-1].replace('run-service-deployment-pod.sh','run-capacity-deployment-pod.sh')
+                test['env'] += [{'name':'STEGO_TEST_KUBERNETES_CAPACITY','value':'1'},{'name':'STEGO_TEST_CAPACITY_GATEWAYS','value':gateways}]
+                item['spec']['activeDeadlineSeconds']=3600
     from public_gateway_fixture import apply_public_fixture
     apply_public_fixture(job, ns, workload, browser)
     from internal_gateway_fixture import apply_internal_fixture
-    apply_internal_fixture(job, workload, browser)
+    apply_internal_fixture(job, workload, browser, capacity)
     for item in job['items']:
         if item['kind'] == 'Role' and item['metadata']['name'] == 'service-check':
             for rule in list(item['rules']):
@@ -90,8 +103,8 @@ def fixture(ns, directory, browser, workload, issuer):
 
 
 def main():
-    if len(sys.argv) != 6:
-        raise SystemExit('Require namespace, output directory, browser flag, workload flag, and issuer')
+    if len(sys.argv) not in (6, 8):
+        raise SystemExit('Require namespace, output directory, browser flag, workload flag, and issuer; capacity adds capacity flag and Gateway count')
     ns, root = sys.argv[1], Path(sys.argv[2])
     job = fixture(ns, root, *sys.argv[3:])
     password=secrets.token_hex(24)
