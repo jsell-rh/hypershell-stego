@@ -131,6 +131,13 @@ class PublicGatewayFixture(unittest.TestCase):
         settings = {row['name']: row.get('value') for row in pod['containers'][0]['env']}
         self.assertEqual(settings['STEGO_TEST_KUBERNETES_CAPACITY'], '1')
         self.assertEqual(settings['STEGO_TEST_CAPACITY_GATEWAYS'], '100')
+        role = next(item for item in document['items'] if item['kind'] == 'Role' and item['metadata']['name'] == 'service-check')
+        scale = next(rule for rule in role['rules'] if 'deployments/scale' in rule['resources'])
+        self.assertIn('hypershell', scale['resourceNames'])
+        installers = [item for item in document['items'] if item['kind'] == 'ClusterRoleBinding'
+                      and item['metadata']['name'] == 'stego-service-ci.control-account-installer']
+        self.assertEqual(len(installers), 1)
+        self.assertEqual(installers[0]['roleRef']['name'], 'stego-service-ci.hypershell-namespace-allocation.control-account-installer')
         subprocess.run([sys.executable, str(script), 'stego-service-20260915-123abc', str(root), '1', '1', 'test-ca'],
                        check=True, capture_output=True, timeout=5, env=environment)
         document = json.loads((root / 'job.json').read_text())

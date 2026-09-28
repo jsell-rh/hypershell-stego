@@ -320,7 +320,7 @@ class InspectionBoundary(unittest.TestCase):
 
     def test_global_fixture_permissions_are_public_reads_only(self):
         document = json.loads((ROOT / 'acceptance/browser-workload-rbac.json').read_text())
-        role, binding = document['items']
+        role, binding, installer = document['items']
         self.assertEqual(role['kind'], 'ClusterRole')
         self.assertEqual(role['rules'], [
             {'apiGroups': [''], 'resources': ['namespaces'], 'verbs': ['get']},
@@ -328,6 +328,12 @@ class InspectionBoundary(unittest.TestCase):
             {'apiGroups': ['rbac.authorization.k8s.io'], 'resources': ['clusterrolebindings'], 'verbs': ['get', 'list']},
         ])
         self.assertEqual(binding['subjects'], [{'kind': 'ServiceAccount', 'name': 'service-check', 'namespace': '@NAMESPACE@'}])
+        self.assertEqual(installer['kind'], 'ClusterRoleBinding')
+        self.assertEqual(installer['metadata']['name'], '@NAMESPACE@.control-account-installer')
+        self.assertEqual(installer['metadata']['labels'], {'stego.test/browser-run': '@NAMESPACE@'})
+        self.assertEqual(installer['roleRef'], {'apiGroup': 'rbac.authorization.k8s.io', 'kind': 'ClusterRole',
+                                                'name': '@NAMESPACE@.hypershell-namespace-allocation.control-account-installer'})
+        self.assertEqual(installer['subjects'], [{'kind': 'ServiceAccount', 'name': 'service-check', 'namespace': '@NAMESPACE@'}])
 
 
 class InspectionRecordBounds(unittest.TestCase):

@@ -75,6 +75,11 @@ def fixture(ns, directory, browser, workload, issuer, capacity='0', gateways='')
         if workload!='1' or browser=='1' or not gateways.isdigit() or not 1 <= int(gateways) <= 200:
             raise SystemExit('Invalid capacity fixture profile')
         for item in job['items']:
+            if item['kind']=='Role' and item['metadata']['name']=='service-check':
+                # The capacity test scales the API Deployment itself to zero on
+                # cleanup, so its name joins the permitted Deployment names.
+                for rule in item['rules']:
+                    if 'deployments/scale' in rule['resources']: rule['resourceNames'] += ['hypershell']
             if item['kind']=='Job':
                 spec=item['spec']['template']['spec']
                 postgres=next(c for c in spec['initContainers'] if c['name']=='postgres')
