@@ -29,7 +29,7 @@ export STEGO_TEST_SERVICE_IMAGE STEGO_TEST_ALLOCATION_WORKER_IMAGE STEGO_TEST_ID
 export STEGO_TEST_OC=/work/oc
 export STEGO_BROWSER_ARTIFACT_DIR=/work/browser-artifacts
 mkdir -p /work/browser-artifacts
-go test -v -race -mod=readonly -count=1 -timeout=25m -run '^TestGeneratedKubernetesGatewayCapacity$' ./acceptance
+go test -v -race -mod=readonly -count=1 -timeout=30m -run '^TestGeneratedKubernetesGatewayCapacity$' ./acceptance
 xargs sha256sum < /work/generated-files > /work/after-tests.sha256
 cmp /work/first.sha256 /work/after-tests.sha256
 (cd /work/compiler && sha256sum --check SHA256SUMS)

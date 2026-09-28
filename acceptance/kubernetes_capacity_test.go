@@ -160,12 +160,67 @@ func TestGeneratedKubernetesGatewayCapacity(t *testing.T) {
 		}
 		return nil
 	}
+	failureMutex := sync.Mutex{}
+	failureCounts := map[string][]string{}
 	deadline := time.Now().Add(25 * time.Minute)
 	for remaining := gateways; len(remaining) > 0; {
 		if time.Now().After(deadline) {
 			for _, logs := range workload.outputs {
 				t.Log(logs())
 			}
+			// Dump the pending Gateway Deployment states and pod conditions of
+			// the first few Gateways. This distinguishes a missing Deployment
+			// from an unschedulable or not-ready pod.
+			diagnostics, diagCancel := context.WithTimeout(context.Background(), 60*time.Second)
+			for index, gateway := range gateways {
+				if !gateway.deployed.IsZero() || index >= 5 {
+					continue
+				}
+				object, code, err := workload.kubernetes.Request(diagnostics, http.MethodGet, "/apis/apps/v1/namespaces/"+gateway.namespace+"/deployments/openshell-gateway", nil)
+				if err != nil {
+					t.Logf("pending Gateway %s: deployment request failed: %v", gateway.id, err)
+					continue
+				}
+				if code != http.StatusOK {
+					t.Logf("pending Gateway %s: deployment HTTP %d", gateway.id, code)
+					continue
+				}
+				encoded, _ := json.Marshal(object)
+				var deployment struct {
+					Status struct {
+						Conditions []struct{ Type, Reason, Message string }
+					}
+				}
+				if json.Unmarshal(encoded, &deployment) == nil {
+					for _, condition := range deployment.Status.Conditions {
+						t.Logf("pending Gateway %s deployment condition %s: %s %s", gateway.id, condition.Type, condition.Reason, condition.Message)
+					}
+				}
+				pods, podCode, podErr := workload.kubernetes.Request(diagnostics, http.MethodGet, "/api/v1/namespaces/"+gateway.namespace+"/pods", nil)
+				if podErr == nil && podCode == http.StatusOK {
+					encoded, _ = json.Marshal(pods)
+					var list struct {
+						Items []struct {
+							Metadata struct{ Name string }
+							Status   struct {
+								Phase      string
+								Conditions []struct{ Type, Reason, Message string }
+							}
+						}
+					}
+					if json.Unmarshal(encoded, &list) == nil {
+						for _, pod := range list.Items {
+							t.Logf("pending Gateway %s pod %s phase %s", gateway.id, pod.Metadata.Name, pod.Status.Phase)
+							for _, condition := range pod.Status.Conditions {
+								if condition.Reason != "" || condition.Message != "" {
+									t.Logf("pending Gateway %s pod condition %s: %s %s", gateway.id, condition.Type, condition.Reason, condition.Message)
+								}
+							}
+						}
+					}
+				}
+			}
+			diagCancel()
 			var pending []string
 			for _, gateway := range gateways {
 				if gateway.deployed.IsZero() {
@@ -184,6 +239,10 @@ func TestGeneratedKubernetesGatewayCapacity(t *testing.T) {
 				defer cancel()
 				if err := check(ctx, gateway); err == nil {
 					gateway.deployed = time.Now()
+				} else {
+					failureMutex.Lock()
+					failureCounts[err.Error()] = append(failureCounts[err.Error()], gateway.id)
+					failureMutex.Unlock()
 				}
 			}(gateway)
 		}
@@ -196,6 +255,17 @@ func TestGeneratedKubernetesGatewayCapacity(t *testing.T) {
 		}
 		remaining = next
 		if len(remaining) == before {
+			failureMutex.Lock()
+			keys := make([]string, 0, len(failureCounts))
+			for key := range failureCounts {
+				keys = append(keys, key)
+			}
+			sort.Strings(keys)
+			for _, key := range keys {
+				t.Logf("no-progress round: %s × %d (example %s)", key, len(failureCounts[key]), failureCounts[key][0])
+			}
+			clear(failureCounts)
+			failureMutex.Unlock()
 			time.Sleep(5 * time.Second)
 		}
 	}
