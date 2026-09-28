@@ -86,6 +86,11 @@ def fixture(ns, directory, browser, workload, issuer, capacity='0', gateways='')
                 postgres['args']=['max_connections=400' if value=='max_connections=40' else value for value in postgres['args']]
                 postgres['resources']['limits']['memory']='1Gi'
                 test=spec['containers'][0]
+                # The capacity test keeps an in-process API server, a race-enabled
+                # test binary, and 100 concurrent Gateway health checks in memory.
+                # The standing 3 GiB limit killed the container mid-run before the
+                # test wrote any output, so the capacity profile gets more room.
+                test['resources']['limits']['memory']='4Gi'
                 test['command'][-1]=test['command'][-1].replace('run-service-deployment-pod.sh','run-capacity-deployment-pod.sh')
                 test['env'] += [{'name':'STEGO_TEST_KUBERNETES_CAPACITY','value':'1'},{'name':'STEGO_TEST_CAPACITY_GATEWAYS','value':gateways}]
                 item['spec']['activeDeadlineSeconds']=3600
