@@ -1,0 +1,567 @@
+{
+  "apiVersion": "v1",
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "ServiceAccount",
+      "metadata": {
+        "name": "hypershell-capacity",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci-access"
+      }
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "hypershell-capacity",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "stego-ci"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "coordination.k8s.io"
+          ],
+          "resources": [
+            "leases"
+          ],
+          "verbs": [
+            "get",
+            "update",
+            "patch"
+          ],
+          "resourceNames": [
+            "jshell-live-test"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "Role",
+      "metadata": {
+        "name": "hypershell-capacity",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        },
+        "namespace": "default"
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            "discovery.k8s.io"
+          ],
+          "resources": [
+            "endpointslices"
+          ],
+          "verbs": [
+            "get",
+            "list"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "services"
+          ],
+          "verbs": [
+            "get"
+          ],
+          "resourceNames": [
+            "kubernetes"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRole",
+      "metadata": {
+        "name": "hypershell-capacity",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "rules": [
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "namespaces"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "delete",
+            "patch"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "clusterroles",
+            "clusterrolebindings"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "delete",
+            "escalate",
+            "bind"
+          ]
+        },
+        {
+          "apiGroups": [
+            "admissionregistration.k8s.io"
+          ],
+          "resources": [
+            "validatingadmissionpolicies",
+            "validatingadmissionpolicybindings"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "batch"
+          ],
+          "resources": [
+            "jobs"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            ""
+          ],
+          "resources": [
+            "pods",
+            "pods/log",
+            "pods/exec",
+            "secrets",
+            "configmaps",
+            "services",
+            "resourcequotas",
+            "serviceaccounts",
+            "serviceaccounts/token"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "networking.k8s.io"
+          ],
+          "resources": [
+            "networkpolicies"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "rbac.authorization.k8s.io"
+          ],
+          "resources": [
+            "roles",
+            "rolebindings"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
+          ]
+        },
+        {
+          "apiGroups": [
+            "apps"
+          ],
+          "resources": [
+            "deployments",
+            "deployments/scale"
+          ],
+          "verbs": [
+            "get",
+            "list",
+            "watch",
+            "create",
+            "patch",
+            "delete"
+          ]
+        }
+      ]
+    },
+    {
+      "apiVersion": "rbac.authorization.k8s.io/v1",
+      "kind": "ClusterRoleBinding",
+      "metadata": {
+        "name": "hypershell-capacity",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "roleRef": {
+        "apiGroup": "rbac.authorization.k8s.io",
+        "kind": "ClusterRole",
+        "name": "hypershell-capacity"
+      },
+      "subjects": [
+        {
+          "kind": "ServiceAccount",
+          "name": "hypershell-capacity",
+          "namespace": "stego-ci-access"
+        }
+      ]
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-cluster-objects",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                "rbac.authorization.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "clusterroles",
+                "clusterrolebindings"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "admissionregistration.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "validatingadmissionpolicies",
+                "validatingadmissionpolicybindings"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "matchPolicy": "Equivalent",
+        "matchConditions": [
+          {
+            "name": "isCapacityIdentity",
+            "expression": "request.userInfo.username == 'system:serviceaccount:stego-ci-access:hypershell-capacity'"
+          }
+        ],
+        "variables": [
+          {
+            "name": "o",
+            "expression": "object != null ? object : oldObject"
+          }
+        ],
+        "validations": [
+          {
+            "expression": "request.operation == 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\.)')",
+            "message": "The capacity identity may only create or update cluster objects named for its test run"
+          },
+          {
+            "expression": "request.operation != 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\.)') || (has(variables.o.metadata.labels) && (('stego.dev/allocator' in variables.o.metadata.labels && variables.o.metadata.labels['stego.dev/allocator'].matches('^[0-9a-f]{32}$')) || ('stego.test/browser-run' in variables.o.metadata.labels && variables.o.metadata.labels['stego.test/browser-run'].matches('^stego-service-[0-9]{8}-[0-9a-f]{6}$')) || ('hypershell.redhat.io/gateway-id' in variables.o.metadata.labels && variables.o.metadata.labels['app.kubernetes.io/managed-by'] == 'hypershell-gateway-controller')))",
+            "message": "The capacity identity may only delete cluster objects named for its test run or carrying rendered run labels"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-namespaces",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "namespaces"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "matchPolicy": "Equivalent",
+        "matchConditions": [
+          {
+            "name": "isCapacityIdentity",
+            "expression": "request.userInfo.username == 'system:serviceaccount:stego-ci-access:hypershell-capacity'"
+          }
+        ],
+        "variables": [
+          {
+            "name": "o",
+            "expression": "object != null ? object : oldObject"
+          }
+        ],
+        "validations": [
+          {
+            "expression": "variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}(-peer)?$') || variables.o.metadata.name.matches('^openshell(-sandbox|-state|-console)?-[a-z0-9][a-z0-9-]*$')",
+            "message": "The capacity identity may only write namespaces named for its test run or its Gateways"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicy",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-namespaced-writes",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "failurePolicy": "Fail",
+        "matchConstraints": {
+          "resourceRules": [
+            {
+              "apiGroups": [
+                "batch"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "jobs"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                ""
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "pods",
+                "pods/log",
+                "pods/exec",
+                "secrets",
+                "configmaps",
+                "services",
+                "resourcequotas",
+                "serviceaccounts",
+                "serviceaccounts/token"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "networking.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "networkpolicies"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "rbac.authorization.k8s.io"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "roles",
+                "rolebindings"
+              ],
+              "scope": "*"
+            },
+            {
+              "apiGroups": [
+                "apps"
+              ],
+              "apiVersions": [
+                "v1"
+              ],
+              "operations": [
+                "CREATE",
+                "UPDATE",
+                "DELETE"
+              ],
+              "resources": [
+                "deployments",
+                "deployments/scale"
+              ],
+              "scope": "*"
+            }
+          ]
+        },
+        "matchPolicy": "Equivalent",
+        "matchConditions": [
+          {
+            "name": "isCapacityIdentity",
+            "expression": "request.userInfo.username == 'system:serviceaccount:stego-ci-access:hypershell-capacity'"
+          }
+        ],
+        "variables": [
+          {
+            "name": "o",
+            "expression": "object != null ? object : oldObject"
+          }
+        ],
+        "validations": [
+          {
+            "expression": "namespaceObject != null && (namespaceObject.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}(-peer)?$') || namespaceObject.metadata.name.matches('^openshell(-sandbox|-state|-console)?-[a-z0-9][a-z0-9-]*$'))",
+            "message": "The capacity identity may only write inside namespaces named for its test run or its Gateways"
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-cluster-objects",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-ci-capacity-boundary-cluster-objects",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-namespaces",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-ci-capacity-boundary-namespaces",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    },
+    {
+      "apiVersion": "admissionregistration.k8s.io/v1",
+      "kind": "ValidatingAdmissionPolicyBinding",
+      "metadata": {
+        "name": "stego-ci-capacity-boundary-namespaced-writes",
+        "labels": {
+          "app.kubernetes.io/managed-by": "stego-ci"
+        }
+      },
+      "spec": {
+        "policyName": "stego-ci-capacity-boundary-namespaced-writes",
+        "validationActions": [
+          "Deny"
+        ]
+      }
+    }
+  ]
+}
