@@ -180,7 +180,7 @@ jobs:
       - name: Run the generated Gateway workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          KUBECONFIG: ${{ inputs.capacity && runner.temp ~ '/jshell-capacity.kubeconfig' || runner.temp ~ '/jshell.kubeconfig' }}
+          KUBECONFIG: ${{ inputs.capacity && format('{0}/jshell-capacity.kubeconfig', runner.temp) || format('{0}/jshell.kubeconfig', runner.temp) }}
           STEGO_TEST_CONTEXT: ${{ inputs.capacity && 'jshell-capacity' || 'jshell-ci' }}
           STEGO_TEST_PREINSTALLED: ${{ inputs.capacity && '0' || '1' }}
           STEGO_TEST_BROWSER_DEPLOYMENT: ${{ inputs.capacity && '0' || '1' }}
