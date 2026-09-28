@@ -252,12 +252,14 @@
             "rolebindings"
           ],
           "verbs": [
+            "bind",
+            "create",
+            "delete",
+            "escalate",
             "get",
             "list",
-            "watch",
-            "create",
             "patch",
-            "delete"
+            "watch"
           ]
         },
         {
