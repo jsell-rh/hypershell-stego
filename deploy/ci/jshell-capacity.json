@@ -321,11 +321,11 @@
         ],
         "validations": [
           {
-            "expression": "request.operation == 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\.)')",
+            "expression": "request.operation == 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\\\.)')",
             "message": "The capacity identity may only create or update cluster objects named for its test run"
           },
           {
-            "expression": "request.operation != 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\.)') || (has(variables.o.metadata.labels) && (('stego.dev/allocator' in variables.o.metadata.labels && variables.o.metadata.labels['stego.dev/allocator'].matches('^[0-9a-f]{32}$')) || ('stego.test/browser-run' in variables.o.metadata.labels && variables.o.metadata.labels['stego.test/browser-run'].matches('^stego-service-[0-9]{8}-[0-9a-f]{6}$')) || ('hypershell.redhat.io/gateway-id' in variables.o.metadata.labels && variables.o.metadata.labels['app.kubernetes.io/managed-by'] == 'hypershell-gateway-controller')))",
+            "expression": "request.operation != 'DELETE' ? true : variables.o.metadata.name.matches('^stego-service-[0-9]{8}-[0-9a-f]{6}($|\\\\.)') || (has(variables.o.metadata.labels) && (('stego.dev/allocator' in variables.o.metadata.labels && variables.o.metadata.labels['stego.dev/allocator'].matches('^[0-9a-f]{32}$')) || ('stego.test/browser-run' in variables.o.metadata.labels && variables.o.metadata.labels['stego.test/browser-run'].matches('^stego-service-[0-9]{8}-[0-9a-f]{6}$')) || ('hypershell.redhat.io/gateway-id' in variables.o.metadata.labels && variables.o.metadata.labels['app.kubernetes.io/managed-by'] == 'hypershell-gateway-controller')))",
             "message": "The capacity identity may only delete cluster objects named for its test run or carrying rendered run labels"
           }
         ]
