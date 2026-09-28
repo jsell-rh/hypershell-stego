@@ -159,6 +159,14 @@ jobs:
           test -n "$CI_KUBECONFIG"
           umask 077
           printf '%s' "$CI_KUBECONFIG" > "$RUNNER_TEMP/jshell.kubeconfig"
+      - name: Write the private capacity credential
+        if: inputs.capacity
+        env:
+          CAPACITY_KUBECONFIG: ${{ secrets.JSHELL_CAPACITY_KUBECONFIG }}
+        run: |
+          test -n "$CAPACITY_KUBECONFIG"
+          umask 077
+          printf '%s' "$CAPACITY_KUBECONFIG" > "$RUNNER_TEMP/jshell-capacity.kubeconfig"
       - name: Write the public test configuration
         if: inputs.public_gateway && !inputs.capacity
         env:
@@ -172,8 +180,8 @@ jobs:
       - name: Run the generated Gateway workflow
         env:
           GH_TOKEN: ${{ github.token }}
-          KUBECONFIG: ${{ runner.temp }}/jshell.kubeconfig
-          STEGO_TEST_CONTEXT: jshell-ci
+          KUBECONFIG: ${{ inputs.capacity && runner.temp ~ '/jshell-capacity.kubeconfig' || runner.temp ~ '/jshell.kubeconfig' }}
+          STEGO_TEST_CONTEXT: ${{ inputs.capacity && 'jshell-capacity' || 'jshell-ci' }}
           STEGO_TEST_PREINSTALLED: ${{ inputs.capacity && '0' || '1' }}
           STEGO_TEST_BROWSER_DEPLOYMENT: ${{ inputs.capacity && '0' || '1' }}
           STEGO_TEST_BROWSER_WORKLOAD: '1'
@@ -186,7 +194,7 @@ jobs:
         run: bash "$GITHUB_WORKSPACE/browser-source/scripts/check-service-deployment.sh"
       - name: Remove local credentials
         if: always()
-        run: rm -f -- "$RUNNER_TEMP/jshell.kubeconfig" "$RUNNER_TEMP/gateway-browser/ci-token" "$RUNNER_TEMP/gateway-browser/private-job.json" "$RUNNER_TEMP/gateway-browser/server.key" "$RUNNER_TEMP/gateway-browser/ca.key"
+        run: rm -f -- "$RUNNER_TEMP/jshell.kubeconfig" "$RUNNER_TEMP/jshell-capacity.kubeconfig" "$RUNNER_TEMP/gateway-browser/ci-token" "$RUNNER_TEMP/gateway-browser/private-job.json" "$RUNNER_TEMP/gateway-browser/server.key" "$RUNNER_TEMP/gateway-browser/ca.key"
       - name: Save test evidence
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
