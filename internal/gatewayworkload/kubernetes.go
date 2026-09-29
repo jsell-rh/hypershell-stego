@@ -26,6 +26,7 @@ type Options struct {
 	PublicDomain, PublicIssuer, PublicCAFile, PublicRouter string
 	SQLBindings                                            SQLBindings
 	ConsoleSQLBindings                                     ConsoleSQLBindings
+	SandboxEnabled                                         bool
 	SandboxRuntimeClass                                    string
 	ControlNamespace                                       string
 	DatabaseConfigFile                                     string
@@ -216,7 +217,7 @@ func (k *Kubernetes) Ensure(ctx context.Context, gw *pb.Gateway, release *pb.Gat
 	}
 	sandboxNS := ns
 	sandboxAccount := Name + "-sandbox"
-	if k.options.SandboxRuntimeClass != "" {
+	if k.options.SandboxEnabled {
 		sandboxNS, _ = SandboxNamespace(id)
 		if sandboxAccount, err = k.ensureSandbox(ctx, id, sandboxNS, core, k.internalRoots); err != nil {
 			return err

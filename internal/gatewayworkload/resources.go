@@ -10,8 +10,12 @@ import (
 
 func configuration(ns, sandboxNS, sandboxAccount string, o Options) string {
 	topology := "combined"
-	if o.SandboxRuntimeClass != "" {
+	if o.SandboxEnabled {
 		topology = "sidecar"
+	}
+	runtimeClass := ""
+	if o.SandboxRuntimeClass != "" {
+		runtimeClass = fmt.Sprintf("default_runtime_class_name = %q\n", o.SandboxRuntimeClass)
 	}
 	publicTLS := ""
 	if o.PublicDomain != "" {
@@ -51,14 +55,13 @@ ttl_secs = 3600
 grpc_endpoint = "https://openshell-gateway.%s.svc.cluster.local:8080"
 service_account_name = %q
 supervisor_sideload_method = "image-volume"
-default_runtime_class_name = %q
-sa_token_ttl_secs = 3600
+%ssa_token_ttl_secs = 3600
 app_armor_profile = "Unconfined"
 topology = %q
 [openshell.drivers.kubernetes.sidecar]
 proxy_uid = 1337
 process_binary_aware_network_policy = true
-`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, publicTLS, ns, sandboxAccount, o.SandboxRuntimeClass, topology)
+`, sandboxNS, o.SandboxImage, o.SupervisorImage, ns, publicTLS, ns, sandboxAccount, runtimeClass, topology)
 }
 
 type resource struct {
