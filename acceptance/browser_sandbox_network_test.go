@@ -35,10 +35,10 @@ func (w *browserGatewayWorkload) nativeSandboxNetworkEnabled() bool {
 	data, err := io.ReadAll(io.LimitReader(f, (1<<20)+1))
 	var record struct {
 		Native *struct {
-			RuntimeClass string `json:"runtime_class"`
-			Handler      string `json:"runtime_handler"`
-			Production   string `json:"production_runtime_class"`
-			VM           *bool  `json:"vm_isolation_tested"`
+			RuntimeClass string  `json:"runtime_class"`
+			Handler      string  `json:"runtime_handler"`
+			Production   *string `json:"production_runtime_class"`
+			VM           *bool   `json:"vm_isolation_tested"`
 		} `json:"sandbox_network_probe"`
 	}
 	if err != nil || len(data) > 1<<20 || json.Unmarshal(data, &record) != nil {
@@ -48,7 +48,8 @@ func (w *browserGatewayWorkload) nativeSandboxNetworkEnabled() bool {
 		return false
 	}
 	n := record.Native
-	if n.RuntimeClass != sandboxNetworkRuntimeClass || n.Handler != "crun" || n.Production != "kata" || n.VM == nil || *n.VM {
+	empty := ""
+	if n.RuntimeClass != sandboxNetworkRuntimeClass || n.Handler != "crun" || n.Production != nil && *n.Production != empty || n.VM == nil || *n.VM {
 		w.t.Fatal("native network fixture scope differs")
 	}
 	return true

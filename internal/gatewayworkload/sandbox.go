@@ -44,11 +44,13 @@ func (k *Kubernetes) checkSandboxAdmission(ctx context.Context, id, ns, account 
 	if !sandboxProbeUnchanged(admitted, expected) {
 		return errors.New("Admission changed the Sandbox setup probe")
 	}
-	rejected := sandboxProbe(id, ns, account, k.options)
-	delete(rejected["spec"].(object), "runtimeClassName")
-	_, code, err := k.client.Request(ctx, http.MethodPost, path, rejected)
-	if err == nil || (code != http.StatusForbidden && code != http.StatusUnprocessableEntity) {
-		return errors.New("Sandbox runtime rejection was not confirmed")
+	if k.options.SandboxRuntimeClass != "" {
+		rejected := sandboxProbe(id, ns, account, k.options)
+		delete(rejected["spec"].(object), "runtimeClassName")
+		_, code, err := k.client.Request(ctx, http.MethodPost, path, rejected)
+		if err == nil || (code != http.StatusForbidden && code != http.StatusUnprocessableEntity) {
+			return errors.New("Sandbox runtime rejection was not confirmed")
+		}
 	}
 	return nil
 }
@@ -146,8 +148,7 @@ func sandboxProbe(id, ns, account string, options Options) object {
 	}
 	network := helper("openshell-supervisor-network", []string{"SYS_PTRACE", "DAC_READ_SEARCH"})
 	network["volumeMounts"] = []object{{"name": "openshell-client-tls", "mountPath": "/identity", "readOnly": true}}
-	probe["spec"] = object{
-		"runtimeClassName": options.SandboxRuntimeClass, "serviceAccountName": account, "automountServiceAccountToken": false, "restartPolicy": "Never",
+	spec := object{"serviceAccountName": account, "automountServiceAccountToken": false, "restartPolicy": "Never",
 		"securityContext": object{"seccompProfile": object{"type": "RuntimeDefault"}},
 		"containers": []object{
 			{"name": "agent", "image": options.SandboxImage, "resources": resources(), "securityContext": object{"runAsUser": 1000, "runAsNonRoot": true, "allowPrivilegeEscalation": false, "capabilities": object{"drop": []string{"ALL"}}}},
@@ -159,6 +160,10 @@ func sandboxProbe(id, ns, account string, options Options) object {
 		},
 		"volumes": []object{{"name": "socket-state", "emptyDir": object{}}, {"name": "openshell-client-tls", "secret": object{"secretName": "openshell-client-tls"}}},
 	}
+	if options.SandboxRuntimeClass != "" {
+		spec["runtimeClassName"] = options.SandboxRuntimeClass
+	}
+	probe["spec"] = spec
 	return probe
 }
 

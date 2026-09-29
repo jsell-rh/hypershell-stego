@@ -22,13 +22,12 @@ class InspectionBoundary(unittest.TestCase):
     def test_native_network_declaration_changes_only_the_sandbox_class(self):
         source = (ROOT / 'service.yaml').read_text()
         fixture = sandbox_network.declaration(source)
-        self.assertEqual(fixture.replace(sandbox_network.RUNTIME_CLASS, 'kata', 1), source)
+        self.assertEqual(fixture.replace('        pod_runtime_class: ' + sandbox_network.RUNTIME_CLASS + '\n', '', 1), source)
         self.assertFalse(sandbox_network.record()['vm_isolation_tested'])
-        for invalid in [fixture,
-                        source.replace('      - name: sandbox\n', '      - name: other\n'),
-                        source.replace('        pod_runtime_class: kata\n', ''),
+        self.assertIsNone(sandbox_network.record()['production_runtime_class'])
+        for invalid in [source.replace('      - name: sandbox\n', '      - name: other\n'),
                         source.replace('        pod_security: isolated-runtime\n', '        pod_security: restricted\n'),
-                        source.replace('        pod_runtime_class: kata\n', '        pod_runtime_class: kata\n' * 2),
+                        source.replace('        pod_security: isolated-runtime\n', '        pod_security: isolated-runtime\n        pod_runtime_class: kata\n'),
                         source + '      - name: sandbox\n']:
             with self.subTest(source=invalid[-80:]), self.assertRaises(ValueError):
                 sandbox_network.declaration(invalid)
@@ -260,7 +259,6 @@ class InspectionBoundary(unittest.TestCase):
         original['items'].append({'kind': 'ValidatingAdmissionPolicy',
             'metadata': {'name': base + '.pods.sandbox'},
             'spec': {'failurePolicy': 'Fail', 'validations': [
-                {'expression': sandbox_network.EXPRESSION + '"kata"'},
                 {'expression': 'KEEP_POD_GUARDS'}]}})
         fixture = copy.deepcopy(original)
         names = json.dumps(['hypershell-gateway-workload', 'hypershell-namespace-allocation', 'hypershell-sandbox-count'], separators=(',', ':'))
@@ -274,7 +272,7 @@ class InspectionBoundary(unittest.TestCase):
         inspection.verify_manifests(json.dumps(original), json.dumps(fixture))
         native = copy.deepcopy(fixture)
         rules = native['items'][4]['spec']['validations']
-        rules[0]['expression'] = sandbox_network.EXPRESSION + json.dumps(sandbox_network.RUNTIME_CLASS)
+        rules.insert(0, {'expression': sandbox_network.EXPRESSION + json.dumps(sandbox_network.RUNTIME_CLASS)})
         restored = sandbox_network.restore_manifest(json.dumps(native))
         inspection.verify_manifests(json.dumps(original), restored)
         with self.assertRaises(ValueError):

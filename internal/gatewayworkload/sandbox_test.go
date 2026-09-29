@@ -98,6 +98,10 @@ func TestSandboxSetupRejectsChangedOrMissingGuards(t *testing.T) {
 
 func TestSandboxProbeRetainsUpstreamSetup(t *testing.T) {
 	pod := sandboxProbe("owner", "sandbox", "allocated-account", Options{SandboxRuntimeClass: "kata", SandboxImage: "workload", SupervisorImage: "supervisor"})
+	classless := sandboxProbe("owner", "sandbox", "allocated-account", Options{SandboxImage: "workload", SupervisorImage: "supervisor"})
+	if _, present := classless["spec"].(object)["runtimeClassName"]; present {
+		t.Fatal("classless probe declared a runtime class")
+	}
 	spec := pod["spec"].(object)
 	if spec["serviceAccountName"] != "allocated-account" || spec["automountServiceAccountToken"] != false {
 		t.Fatal("allocated account was lost")
@@ -144,10 +148,14 @@ func TestSandboxWithoutAllocationCannotReachKubernetes(t *testing.T) {
 // Namespace, account, and admission checks remain in each Ensure operation.
 func TestSandboxConstructorUsesGeneratedAllocation(t *testing.T) {
 	base := fixture(t, func(http.ResponseWriter, *http.Request) { t.Error("constructor reached Kubernetes") })
-	for _, mode := range []string{"configured", "invalid runtime", "missing control namespace", "missing SQL state"} {
+	for _, mode := range []string{"configured", "classless", "invalid runtime", "missing control namespace", "missing SQL state"} {
 		t.Run(mode, func(t *testing.T) {
 			options := base.options
+			options.SandboxEnabled = true
 			options.SandboxRuntimeClass = "kata"
+			if mode == "classless" {
+				options.SandboxRuntimeClass = ""
+			}
 			switch mode {
 			case "invalid runtime":
 				options.SandboxRuntimeClass = "kata/foreign"
@@ -157,7 +165,7 @@ func TestSandboxConstructorUsesGeneratedAllocation(t *testing.T) {
 				options.SQLBindings = nil
 			}
 			client, err := NewKubernetes(options)
-			if mode != "configured" {
+			if mode != "configured" && mode != "classless" {
 				if err == nil {
 					client.Close()
 					t.Fatal("invalid Sandbox configuration was accepted")
@@ -168,7 +176,7 @@ func TestSandboxConstructorUsesGeneratedAllocation(t *testing.T) {
 				t.Fatal("configured Sandbox allocation was rejected", err)
 			}
 			defer client.Close()
-			if client.allocation == nil || client.options.SandboxRuntimeClass != "kata" {
+			if client.allocation == nil || client.options.SandboxRuntimeClass == "" && mode != "classless" || mode == "classless" && client.options.SandboxRuntimeClass != "" {
 				t.Fatal("Sandbox lost its allocator or runtime")
 			}
 		})

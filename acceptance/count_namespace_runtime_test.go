@@ -23,12 +23,27 @@ import (
 
 type countNamespace struct {
 	owner, uid     string
+	profile        countProfile
+	annotations    kube.Object
 	policy         kube.Object
 	pods           []kube.Object
 	denied         bool
 	denials, opens int
 	watches        map[chan kube.Object]bool
 }
+
+// countProfile mirrors the generated allocation profile fields the fake
+// namespace responses must present.
+type countProfile struct {
+	Name            string
+	Manager         string
+	ServiceAccounts []string
+	PodSecurity     string
+}
+
+var gatewayCountProfile = countProfile{Name: "gateway", Manager: "hypershell-gateway-controller", ServiceAccounts: []string{"gateway", "console"}}
+var sandboxCountProfile = countProfile{Name: "sandbox", Manager: "hypershell-gateway-controller", ServiceAccounts: []string{"sandbox", "gateway"}, PodSecurity: "isolated-runtime"}
+
 type countKubernetes struct {
 	mu         sync.Mutex
 	namespaces map[string]*countNamespace
@@ -64,18 +79,11 @@ func (k *countKubernetes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if len(parts) == 5 {
-		annotations := kube.Object{}
-		for _, alias := range []string{"gateway", "console"} {
-			name, err := k.allocator.ServiceAccountName("gateway", parts[4], ns.owner, alias)
-			if err != nil {
-				k.invalid++
-				k.mu.Unlock()
-				w.WriteHeader(http.StatusInternalServerError)
-				return
-			}
-			annotations["stego.dev/service-account-"+alias] = name
+		labels := kube.Object{allocation.MarkerLabel: k.allocator.Marker(), allocation.ProfileLabel: ns.profile.Name, "hypershell.redhat.io/gateway-id": ns.owner, "app.kubernetes.io/managed-by": ns.profile.Manager}
+		if ns.profile.PodSecurity == "isolated-runtime" {
+			labels["pod-security.kubernetes.io/enforce"] = "privileged"
 		}
-		result := kube.Object{"metadata": kube.Object{"name": parts[4], "uid": ns.uid, "resourceVersion": "1", "annotations": annotations, "labels": kube.Object{allocation.MarkerLabel: k.allocator.Marker(), allocation.ProfileLabel: "gateway", "hypershell.redhat.io/gateway-id": ns.owner, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}}}
+		result := kube.Object{"metadata": kube.Object{"name": parts[4], "uid": ns.uid, "resourceVersion": "1", "annotations": ns.annotations, "labels": labels}}
 		k.mu.Unlock()
 		_ = json.NewEncoder(w).Encode(result)
 		return
@@ -117,11 +125,42 @@ func (k *countKubernetes) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+// accountAnnotations derives the service-account annotations a namespace must
+// carry for its profile. The sandbox profile binds the Gateway workload
+// account from the gateway profile, so that alias is derived against the
+// gateway namespace; the derivation is owner-scoped and matches.
+func (k *countKubernetes) accountAnnotations(t *testing.T, profile countProfile, namespace, owner string) kube.Object {
+	t.Helper()
+	annotations := kube.Object{}
+	for _, alias := range profile.ServiceAccounts {
+		aliasProfile, aliasNamespace := profile.Name, namespace
+		if profile.Name == "sandbox" && alias == "gateway" {
+			aliasProfile, aliasNamespace = "gateway", strings.TrimPrefix(namespace, "openshell-sandbox-")
+			aliasNamespace = "openshell-" + aliasNamespace
+		}
+		name, err := k.allocator.ServiceAccountName(aliasProfile, aliasNamespace, owner, alias)
+		if err != nil {
+			t.Fatal(err)
+		}
+		annotations["stego.dev/service-account-"+alias] = name
+	}
+	return annotations
+}
+
 func (k *countKubernetes) add(t *testing.T, row *pb.Gateway, denied bool) {
 	policy := allocationPolicyFixture(t, "count-control", "gateway", row.Namespace, row.Metadata.Id)
+	sandboxNamespace, err := gatewayworkload.SandboxNamespace(row.Metadata.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sandboxPolicy := allocationPolicyFixture(t, "count-control", "sandbox", sandboxNamespace, row.Metadata.Id)
+	gatewayAnnotations := k.accountAnnotations(t, gatewayCountProfile, row.Namespace, row.Metadata.Id)
+	sandboxAnnotations := k.accountAnnotations(t, sandboxCountProfile, sandboxNamespace, row.Metadata.Id)
 	k.mu.Lock()
 	defer k.mu.Unlock()
-	k.namespaces[row.Namespace] = &countNamespace{policy: policy, owner: row.Metadata.Id, uid: "uid-" + row.Namespace, denied: denied, watches: map[chan kube.Object]bool{}}
+	k.namespaces[row.Namespace] = &countNamespace{policy: policy, profile: gatewayCountProfile, annotations: gatewayAnnotations, owner: row.Metadata.Id, uid: "uid-" + row.Namespace, denied: denied, watches: map[chan kube.Object]bool{}}
+	k.namespaces[sandboxNamespace] = &countNamespace{policy: sandboxPolicy, profile: sandboxCountProfile, annotations: sandboxAnnotations, owner: row.Metadata.Id, uid: "uid-" + sandboxNamespace, denied: denied, watches: map[chan kube.Object]bool{}}
 }
 func (k *countKubernetes) pod(t *testing.T, ns, uid string) {
 	t.Helper()
@@ -178,8 +217,6 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	}
 	one, two := create("namespace-one"), create("namespace-two")
 	provider := &countKubernetes{namespaces: map[string]*countNamespace{}}
-	provider.add(t, one, false)
-	provider.add(t, two, false)
 	server := httptest.NewTLSServer(provider)
 	defer server.Close()
 	files := t.TempDir()
@@ -200,6 +237,8 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	provider.add(t, one, false)
+	provider.add(t, two, false)
 	worker := buildProgram(t, "./out/deploy/workers/sandbox-count")
 	workerSettings := []string{"HYPERSHELL_CONTROL_NAMESPACE=count-control", "HYPERSHELL_MANAGED_CLUSTER_ID=" + f.cluster, "HYPERSHELL_SANDBOX_COUNT_RESYNC=1s", "HYPERSHELL_SANDBOX_COUNT_WATCH_LIMIT=4"}
 	stopWorker, logs := startDatabaseController(t, worker, k, rpcAddress, tlsIdentity.config.CAFile, controller, workerSettings...)
@@ -220,6 +259,15 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 			time.Sleep(25 * time.Millisecond)
 		}
 	}
+	// The count worker watches the sandbox namespace whenever sandbox is
+	// enabled, so all fixture interactions target that namespace.
+	watchNamespace := func(row *pb.Gateway) string {
+		sandbox, err := gatewayworkload.SandboxNamespace(row.Metadata.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return sandbox
+	}
 	wait := func(check func() bool) {
 		t.Helper()
 		deadline := time.Now().Add(8 * time.Second)
@@ -233,14 +281,14 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	wait(func() bool {
 		provider.mu.Lock()
 		defer provider.mu.Unlock()
-		return provider.namespaces[one.Namespace].opens > 0 && provider.namespaces[two.Namespace].opens > 0
+		return provider.namespaces[watchNamespace(one)].opens > 0 && provider.namespaces[watchNamespace(two)].opens > 0
 	})
 	readCount(one, 0)
 	readCount(two, 0)
-	provider.pod(t, one.Namespace, "one-pod")
+	provider.pod(t, watchNamespace(one), "one-pod")
 	readCount(one, 1)
 	readGatewayEvent(t, consumer, one.Metadata.Id, "Update", "gateway.updated")
-	provider.pod(t, two.Namespace, "two-pod")
+	provider.pod(t, watchNamespace(two), "two-pod")
 	readCount(two, 1)
 	readGatewayEvent(t, consumer, two.Metadata.Id, "Update", "gateway.updated")
 	// A denied baseline must preserve the API value, including through rescan.
@@ -253,30 +301,30 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	wait(func() bool {
 		provider.mu.Lock()
 		defer provider.mu.Unlock()
-		return provider.namespaces[three.Namespace].denials >= 2
+		return provider.namespaces[watchNamespace(three)].denials >= 2
 	})
 	readCount(three, 9)
 	provider.mu.Lock()
-	provider.namespaces[three.Namespace].denied = false
+	provider.namespaces[watchNamespace(three)].denied = false
 	provider.mu.Unlock()
 	readCount(three, 0)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	// No Pod event tells the old watch about this namespace replacement.
 	provider.mu.Lock()
-	provider.namespaces[two.Namespace].uid = "new-namespace-uid"
-	provider.namespaces[two.Namespace].pods = nil
+	provider.namespaces[watchNamespace(two)].uid = "new-namespace-uid"
+	provider.namespaces[watchNamespace(two)].pods = nil
 	provider.mu.Unlock()
 	readCount(two, 0)
 	readGatewayEvent(t, consumer, two.Metadata.Id, "Update", "gateway.updated")
 	wait(func() bool {
 		provider.mu.Lock()
 		defer provider.mu.Unlock()
-		return provider.namespaces[two.Namespace].opens >= 2
+		return provider.namespaces[watchNamespace(two)].opens >= 2
 	})
 	stopWorker()
 	stop()
 	provider.mu.Lock()
-	provider.namespaces[one.Namespace].pods = nil
+	provider.namespaces[watchNamespace(one)].pods = nil
 	provider.mu.Unlock()
 	stop, address, rpcAddress = startBoth(t, binary, f.dsn, config, settings...)
 	connection.Close()
@@ -292,7 +340,7 @@ func TestNamespaceCountWorkflowThroughGeneratedWorker(t *testing.T) {
 	wait(func() bool {
 		provider.mu.Lock()
 		defer provider.mu.Unlock()
-		return len(provider.namespaces[three.Namespace].watches) == 0
+		return len(provider.namespaces[watchNamespace(three)].watches) == 0
 	})
 	provider.mu.Lock()
 	invalid := provider.invalid

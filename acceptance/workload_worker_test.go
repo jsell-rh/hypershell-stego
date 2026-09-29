@@ -57,6 +57,7 @@ func TestGeneratedWorkloadWorkerStartupPrivacy(t *testing.T) {
 				"HYPERSHELL_GATEWAY_OIDC_ISSUER=https://issuer.invalid",
 				"HYPERSHELL_GATEWAY_SANDBOX_IMAGE=" + image,
 				"HYPERSHELL_GATEWAY_SUPERVISOR_IMAGE=" + image,
+				"HYPERSHELL_GATEWAY_SANDBOX_ENABLED=false",
 				"HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS=",
 				"HYPERSHELL_GATEWAY_TRUST_BUNDLE=/private-worker-trust",
 				"HYPERSHELL_KUBERNETES_URL=http://private-worker-provider.invalid/private?token=private-worker-startup",

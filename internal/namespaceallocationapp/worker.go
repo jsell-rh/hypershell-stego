@@ -43,7 +43,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 		return err
 	}
 	defer connection.Close()
-	controller, err := namespaceallocation.New(cluster.ClusterID, allocator, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), namespaceallocation.Options{ConsoleDomain: options.ConsoleDomain, SandboxEnabled: cluster.SandboxRuntimeClass != ""})
+	controller, err := namespaceallocation.New(cluster.ClusterID, allocator, pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), namespaceallocation.Options{ConsoleDomain: options.ConsoleDomain, SandboxEnabled: cluster.SandboxEnabled})
 	if err != nil {
 		return err
 	}

@@ -131,6 +131,7 @@ overrides:
           - {"name": "TokenFile", "env": "HYPERSHELL_KUBERNETES_TOKEN_FILE", "type": "string", "min_length": 1, "max_length": 4096}
           - {"name": "ControlNamespace", "env": "HYPERSHELL_CONTROL_NAMESPACE", "type": "string", "min_length": 1, "max_length": 63}
           - {"name": "ClusterID", "env": "HYPERSHELL_MANAGED_CLUSTER_ID", "type": "string", "min_length": 1, "max_length": 128}
+          - {"name": "SandboxEnabled", "env": "HYPERSHELL_GATEWAY_SANDBOX_ENABLED", "type": "boolean", "default": "true"}
           - {"name": "SandboxRuntimeClass", "env": "HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS", "type": "string", "min_length": 0, "max_length": 63, "default": ""}
       - name: NamespaceWorker
         fields:
@@ -244,7 +245,6 @@ overrides:
         manager: hypershell-gateway-controller
         pod_security: isolated-runtime
         pod_network_provider: openshift-ovn-node-identity
-        pod_runtime_class: kata
         pod_service_account: sandbox
         pod_annotations: [openshell.io/sandbox-id, agents.x-k8s.io/propagated-labels, agents.x-k8s.io/propagated-annotations]
         pod_capability_grants:

@@ -68,6 +68,7 @@ func TestWorkloadClusterConfigurationPrecedesConnectionSetup(t *testing.T) {
 		"HYPERSHELL_KUBERNETES_TOKEN_FILE":         absent,
 		"HYPERSHELL_CONTROL_NAMESPACE":             "private-namespace\n",
 		"HYPERSHELL_MANAGED_CLUSTER_ID":            "fixture",
+		"HYPERSHELL_GATEWAY_SANDBOX_ENABLED":       "false",
 		"HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS": "",
 	} {
 		t.Setenv(key, value)

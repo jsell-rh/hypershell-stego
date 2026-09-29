@@ -120,6 +120,7 @@ type ClusterWorker struct {
 	TokenFile           string
 	ControlNamespace    string
 	ClusterID           string
+	SandboxEnabled      bool
 	SandboxRuntimeClass string
 }
 
@@ -202,6 +203,21 @@ func ReadClusterWorker(lookup func(string) (string, bool)) (ClusterWorker, error
 			return ClusterWorker{}, &Error{group: "ClusterWorker", field: "ClusterID", reason: "invalid"}
 		}
 		result.ClusterID = value
+	}
+	{
+		raw, present := lookup("HYPERSHELL_GATEWAY_SANDBOX_ENABLED")
+		if !present {
+			raw = "true"
+			present = true
+		}
+		if !present {
+			return ClusterWorker{}, &Error{group: "ClusterWorker", field: "SandboxEnabled", reason: "missing"}
+		}
+		value, ok := readBoolean(raw)
+		if !ok {
+			return ClusterWorker{}, &Error{group: "ClusterWorker", field: "SandboxEnabled", reason: "invalid"}
+		}
+		result.SandboxEnabled = value
 	}
 	{
 		raw, present := lookup("HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS")
