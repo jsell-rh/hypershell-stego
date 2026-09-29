@@ -377,6 +377,7 @@ overrides:
     document: contracts/extensions/openapi.yaml
     references:
       - contracts/extensions/current-user.openapi.yaml
+      - contracts/extensions/gateway-metrics.openapi.yaml
       - contracts/extensions/openapi.gateways.yaml
       - contracts/extensions/openapi.gatewayNetworks.yaml
       - contracts/extensions/openapi.gatewayReleases.yaml
@@ -388,6 +389,7 @@ overrides:
     document: contracts/extensions/openapi.yaml
     references:
       - contracts/extensions/current-user.openapi.yaml
+      - contracts/extensions/gateway-metrics.openapi.yaml
       - contracts/extensions/openapi.gateways.yaml
       - contracts/extensions/openapi.gatewayNetworks.yaml
       - contracts/extensions/openapi.gatewayReleases.yaml
@@ -411,6 +413,7 @@ overrides:
     document: contracts/extensions/openapi.yaml
     references:
     - contracts/extensions/current-user.openapi.yaml
+    - contracts/extensions/gateway-metrics.openapi.yaml
     - contracts/extensions/openapi.gateways.yaml
     - contracts/extensions/openapi.gatewayNetworks.yaml
     - contracts/extensions/openapi.gatewayReleases.yaml

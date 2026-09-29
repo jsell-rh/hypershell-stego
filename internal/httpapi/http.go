@@ -225,6 +225,9 @@ func New(repository gateways.Repository, rawVerifier *auth.Verifier, database *s
 	if err := registerGrants(mux, verifier, service); err != nil {
 		return nil, err
 	}
+	if err := registerGatewayMetrics(mux, verifier, service); err != nil {
+		return nil, err
+	}
 	complete = true
 	return &managedApplication{Handler: mux, accounts: accounts, close: closeProvider}, nil
 }

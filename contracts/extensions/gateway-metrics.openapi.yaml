@@ -1,0 +1,75 @@
+openapi: 3.0.3
+info:
+  title: Hypershell gateway metrics extension
+  version: 1.0.0
+  description: This route extends the pinned reference API. It counts visible gateways per workload phase.
+paths:
+  /api/hypershell/v1/metrics/gateways:
+    get:
+      operationId: getGatewayPhaseCounts
+      description: Count gateways per workload phase for the caller. The count follows the gateway list visibility rule. Control-plane subjects and platform administrators count the whole fleet. Other users count gateways with an owner or viewer grant. Phase and status are controller-owned fields. A gateway with no observed workload phase counts in no bucket. Query parameters and request bodies are rejected.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The phase counts for gateways visible to the caller.
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+                enum: [no-store]
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GatewayPhaseCounts'
+        '400':
+          description: The request contains query parameters or a body.
+        '401':
+          description: The access token or required identity claims are invalid.
+        '409':
+          description: A concurrent write caused a conflict. Retry the request.
+        '500':
+          description: The counts could not be read. No successful response is returned.
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    GatewayPhaseCounts:
+      type: object
+      additionalProperties: false
+      required: [kind, href, counts]
+      properties:
+        kind:
+          type: string
+          enum: [GatewayPhaseCounts]
+        href:
+          type: string
+          enum: [/api/hypershell/v1/metrics/gateways]
+        counts:
+          type: object
+          additionalProperties: false
+          required: [Running, Provisioning, Degraded, Failed]
+          properties:
+            Running:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Gateways whose workload is running and healthy.
+            Provisioning:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Gateways whose workload is not ready.
+            Degraded:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Gateways whose workload is unavailable.
+            Failed:
+              type: integer
+              format: int64
+              minimum: 0
+              description: Gateways whose workload failed. The controller does not write this phase in this release. The count stays zero.

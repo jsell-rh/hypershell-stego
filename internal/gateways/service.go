@@ -243,6 +243,48 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 	return result, err
 }
 
+// GatewayPhaseCounts reports visible Gateway counts for each workload phase.
+// Phase and status are controller-owned. A gateway with no observed workload
+// phase counts in no bucket. Counts follow the list visibility rule.
+func (s *Service) PhaseCounts(ctx context.Context, principal Principal) (map[string]int64, error) {
+	counts := map[string]int64{"Running": 0, "Provisioning": 0, "Degraded": 0, "Failed": 0}
+	if err := validatePrincipal(principal); err != nil {
+		return nil, err
+	}
+	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
+		user, err := syncUser(ctx, tx, principal)
+		if err != nil {
+			return err
+		}
+		opts := store.ListOptions{Page: 1, Size: 0, CountOnly: true, IncludeDeleting: true}
+		if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "platform:admin") {
+			owner, err := findRole(ctx, tx, "gateway:owner")
+			if err != nil {
+				return err
+			}
+			viewer, err := findRole(ctx, tx, "gateway:viewer")
+			if err != nil {
+				return err
+			}
+			opts.Related = []store.RelatedFilter{{Entity: "RoleBinding", ForeignField: "gateway_id", Values: map[string][]string{"user_id": {user.ID}, "role_id": {owner.ID, viewer.ID}, "scope": {"gateway"}}}}
+		}
+		for phase := range counts {
+			opts := opts
+			opts.Filter = &store.RowFilter{Field: "phase", Values: []string{phase}}
+			result, err := tx.List(ctx, "Gateway", "", "", opts)
+			if err != nil {
+				return err
+			}
+			counts[phase] = result.Total
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return counts, nil
+}
+
 func findRole(ctx context.Context, storage store.Storage, name string) (model.Role, error) {
 	reader, ok := storage.(store.CursorReader)
 	if !ok {

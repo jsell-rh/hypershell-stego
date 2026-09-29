@@ -11,6 +11,8 @@ import (
 
 const Apihypershellv1usersme = wire.Apihypershellv1usersme
 const User = wire.User
+const Apihypershellv1metricsgateways = wire.Apihypershellv1metricsgateways
+const GatewayPhaseCountsKindGatewayPhaseCounts = wire.GatewayPhaseCountsKindGatewayPhaseCounts
 const OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials = wire.OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials
 const OpenShellGatewayServiceAccountCreateRequestCredentialTypeClientSecret = wire.OpenShellGatewayServiceAccountCreateRequestCredentialTypeClientSecret
 const OpenShellGatewayServiceAccountCreateResponseCredentialTypeClientSecret = wire.OpenShellGatewayServiceAccountCreateResponseCredentialTypeClientSecret
@@ -54,6 +56,9 @@ type GatewayNetwork = wire.GatewayNetwork
 type GatewayNetworkList = wire.GatewayNetworkList
 type GatewayNetworkPatchRequest = wire.GatewayNetworkPatchRequest
 type GatewayPatchRequest = wire.GatewayPatchRequest
+type GatewayPhaseCounts = wire.GatewayPhaseCounts
+type GatewayPhaseCountsHref = wire.GatewayPhaseCountsHref
+type GatewayPhaseCountsKind = wire.GatewayPhaseCountsKind
 type GatewayRelease = wire.GatewayRelease
 type GatewayReleaseList = wire.GatewayReleaseList
 type GatewayReleasePatchRequest = wire.GatewayReleasePatchRequest
@@ -187,6 +192,8 @@ type DeleteManagedClusterResponse = wire.DeleteManagedClusterResponse
 type GetManagedClusterResponse = wire.GetManagedClusterResponse
 type UpdateManagedClusterResponse = wire.UpdateManagedClusterResponse
 type GetMetadataResponse = wire.GetMetadataResponse
+type GetGatewayPhaseCountsResponse200Headers = wire.GetGatewayPhaseCountsResponse200Headers
+type GetGatewayPhaseCountsResponse = wire.GetGatewayPhaseCountsResponse
 type ListRoleBindingsResponse = wire.ListRoleBindingsResponse
 type CreateRoleBindingResponse = wire.CreateRoleBindingResponse
 type DeleteRoleBindingResponse = wire.DeleteRoleBindingResponse
@@ -630,6 +637,23 @@ func (c *Client) GetMetadataWithResponse(ctx context.Context) (*GetMetadataRespo
 	defer cancel()
 	c.bind(&ctx)
 	response, err := c.wire.GetMetadataWithResponse(ctx)
+	if ctx.Err() != nil {
+		return nil, ctx.Err()
+	}
+	if err != nil {
+		return nil, errors.New("SDK request failed")
+	}
+	return response, nil
+}
+func (c *Client) GetGatewayPhaseCountsWithResponse(ctx context.Context) (*GetGatewayPhaseCountsResponse, error) {
+	if err := c.acquire(ctx); err != nil {
+		return nil, err
+	}
+	defer c.release()
+	ctx, cancel := context.WithTimeout(ctx, c.timeout)
+	defer cancel()
+	c.bind(&ctx)
+	response, err := c.wire.GetGatewayPhaseCountsWithResponse(ctx)
 	if ctx.Err() != nil {
 		return nil, ctx.Err()
 	}

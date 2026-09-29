@@ -41,6 +41,36 @@ func (e CurrentUserKind) Valid() bool {
 	}
 }
 
+// Defines values for GatewayPhaseCountsHref.
+const (
+	Apihypershellv1metricsgateways GatewayPhaseCountsHref = "/api/hypershell/v1/metrics/gateways"
+)
+
+// Valid indicates whether the value is a known member of the GatewayPhaseCountsHref enum.
+func (e GatewayPhaseCountsHref) Valid() bool {
+	switch e {
+	case Apihypershellv1metricsgateways:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GatewayPhaseCountsKind.
+const (
+	GatewayPhaseCountsKindGatewayPhaseCounts GatewayPhaseCountsKind = "GatewayPhaseCounts"
+)
+
+// Valid indicates whether the value is a known member of the GatewayPhaseCountsKind enum.
+func (e GatewayPhaseCountsKind) Valid() bool {
+	switch e {
+	case GatewayPhaseCountsKindGatewayPhaseCounts:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OpenShellGatewayServiceAccountConnectionGrantType.
 const (
 	OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials OpenShellGatewayServiceAccountConnectionGrantType = "client_credentials"
@@ -447,6 +477,31 @@ type GatewayPatchRequest struct {
 	SupervisorImage  *string   `json:"supervisor_image,omitempty"`
 	TlsMode          *string   `json:"tls_mode,omitempty"`
 }
+
+// GatewayPhaseCounts defines model for GatewayPhaseCounts.
+type GatewayPhaseCounts struct {
+	Counts struct {
+		// Degraded Gateways whose workload is unavailable.
+		Degraded int64 `json:"Degraded"`
+
+		// Failed Gateways whose workload failed. The controller does not write this phase in this release. The count stays zero.
+		Failed int64 `json:"Failed"`
+
+		// Provisioning Gateways whose workload is not ready.
+		Provisioning int64 `json:"Provisioning"`
+
+		// Running Gateways whose workload is running and healthy.
+		Running int64 `json:"Running"`
+	} `json:"counts"`
+	Href GatewayPhaseCountsHref `json:"href"`
+	Kind GatewayPhaseCountsKind `json:"kind"`
+}
+
+// GatewayPhaseCountsHref defines model for GatewayPhaseCounts.Href.
+type GatewayPhaseCountsHref string
+
+// GatewayPhaseCountsKind defines model for GatewayPhaseCounts.Kind.
+type GatewayPhaseCountsKind string
 
 // GatewayRelease defines model for GatewayRelease.
 type GatewayRelease struct {

@@ -8,6 +8,7 @@ export interface RequestSchemas {
 "GatewayNetworkList": (((RequestSchemas["List"]) & (({ "items"?: (Array<RequestSchemas["GatewayNetwork"]>); } & { [key: string]: unknown }))));
 "GatewayNetworkPatchRequest": ({ "hub_gateway_id"?: (string); "name"?: (string); "status"?: (string); "topology"?: (string); "tunnel_mode"?: (string); } & { [key: string]: unknown });
 "GatewayPatchRequest": ({ "cluster_id"?: (string); "credential_driver"?: (string); "external_dns"?: (string); "image"?: (string); "name"?: (string); "oidc"?: (string); "phase"?: (string); "release_id"?: (string); "route"?: (string); "server_dns_names"?: (Array<(string)>); "service_type"?: (string); "status"?: (string); "supervisor_image"?: (string); "tls_mode"?: (string); });
+"GatewayPhaseCounts": ({ "counts": ({ "Degraded": (number); "Failed": (number); "Provisioning": (number); "Running": (number); }); "href": (("/api/hypershell/v1/metrics/gateways")) & (string); "kind": (("GatewayPhaseCounts")) & (string); });
 "GatewayRelease": (((RequestSchemas["ObjectReference"]) & (({ "canary_duration"?: (string); "canary_percent"?: (number); "image": (string); "name": (string); "rollout_strategy"?: (string); "status"?: (string); } & { [key: string]: unknown }))));
 "GatewayReleaseList": (((RequestSchemas["List"]) & (({ "items"?: (Array<RequestSchemas["GatewayRelease"]>); } & { [key: string]: unknown }))));
 "GatewayReleasePatchRequest": ({ "canary_duration"?: (string); "canary_percent"?: (number); "image"?: (string); "name"?: (string); "rollout_strategy"?: (string); "status"?: (string); } & { [key: string]: unknown });
@@ -42,6 +43,7 @@ export interface Schemas {
 "GatewayNetworkList": (((Schemas["List"]) & (({ "items"?: (Array<Schemas["GatewayNetwork"]>); } & { [key: string]: unknown }))));
 "GatewayNetworkPatchRequest": ({ "hub_gateway_id"?: (string); "name"?: (string); "status"?: (string); "topology"?: (string); "tunnel_mode"?: (string); } & { [key: string]: unknown });
 "GatewayPatchRequest": ({ "cluster_id"?: (string); "credential_driver"?: (string); "external_dns"?: (string); "image"?: (string); "name"?: (string); "oidc"?: (string); "phase"?: (string); "release_id"?: (string); "route"?: (string); "server_dns_names"?: (Array<(string)>); "service_type"?: (string); "status"?: (string); "supervisor_image"?: (string); "tls_mode"?: (string); });
+"GatewayPhaseCounts": ({ "counts": ({ "Degraded": (number); "Failed": (number); "Provisioning": (number); "Running": (number); }); "href": (("/api/hypershell/v1/metrics/gateways")) & (string); "kind": (("GatewayPhaseCounts")) & (string); });
 "GatewayRelease": (((Schemas["ObjectReference"]) & (({ "canary_duration"?: (string); "canary_percent"?: (number); "image": (string); "name": (string); "rollout_strategy"?: (string); "status"?: (string); } & { [key: string]: unknown }))));
 "GatewayReleaseList": (((Schemas["List"]) & (({ "items"?: (Array<Schemas["GatewayRelease"]>); } & { [key: string]: unknown }))));
 "GatewayReleasePatchRequest": ({ "canary_duration"?: (string); "canary_percent"?: (number); "image"?: (string); "name"?: (string); "rollout_strategy"?: (string); "status"?: (string); } & { [key: string]: unknown });
@@ -90,6 +92,7 @@ logout(options?: RequestOptions): Promise<void>;
 "getCurrentUser"(input?: {  }, options?: RequestOptions): Promise<Result<(Schemas["CurrentUser"])>>;
 "getGateway"(input: { "id": (string) }, options?: RequestOptions): Promise<Result<(Schemas["Gateway"])>>;
 "getGatewayNetwork"(input: { "id": (string) }, options?: RequestOptions): Promise<Result<(Schemas["GatewayNetwork"])>>;
+"getGatewayPhaseCounts"(input?: {  }, options?: RequestOptions): Promise<Result<(Schemas["GatewayPhaseCounts"])>>;
 "getGatewayRelease"(input: { "id": (string) }, options?: RequestOptions): Promise<Result<(Schemas["GatewayRelease"])>>;
 "getGatewayServiceAccount"(input: { "gateway_id": (string); "service_account_id": (string) }, options?: RequestOptions): Promise<Result<(Schemas["OpenShellGatewayServiceAccountGetResponse"])>>;
 "getManagedCluster"(input: { "id": (string) }, options?: RequestOptions): Promise<Result<(Schemas["ManagedCluster"])>>;

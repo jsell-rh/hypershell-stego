@@ -58,6 +58,8 @@ paths:
     $ref: 'openapi.roleBindings.yaml#/paths/~1api~1hypershell~1v1~1role_bindings~1{id}'
   /api/hypershell/v1/users/me:
     $ref: 'current-user.openapi.yaml#/paths/~1api~1hypershell~1v1~1users~1me'
+  /api/hypershell/v1/metrics/gateways:
+    $ref: 'gateway-metrics.openapi.yaml#/paths/~1api~1hypershell~1v1~1metrics~1gateways'
   # AUTO-ADD NEW PATHS
 components:
   schemas:
@@ -156,6 +158,8 @@ components:
       $ref: 'openapi.roleBindings.yaml#/components/schemas/RoleBindingList'
     CurrentUser:
       $ref: 'current-user.openapi.yaml#/components/schemas/CurrentUser'
+    GatewayPhaseCounts:
+      $ref: 'gateway-metrics.openapi.yaml#/components/schemas/GatewayPhaseCounts'
     # AUTO-ADD NEW SCHEMAS
   parameters:
     id:

@@ -50,6 +50,36 @@ func (e CurrentUserKind) Valid() bool {
 	}
 }
 
+// Defines values for GatewayPhaseCountsHref.
+const (
+	Apihypershellv1metricsgateways GatewayPhaseCountsHref = "/api/hypershell/v1/metrics/gateways"
+)
+
+// Valid indicates whether the value is a known member of the GatewayPhaseCountsHref enum.
+func (e GatewayPhaseCountsHref) Valid() bool {
+	switch e {
+	case Apihypershellv1metricsgateways:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GatewayPhaseCountsKind.
+const (
+	GatewayPhaseCountsKindGatewayPhaseCounts GatewayPhaseCountsKind = "GatewayPhaseCounts"
+)
+
+// Valid indicates whether the value is a known member of the GatewayPhaseCountsKind enum.
+func (e GatewayPhaseCountsKind) Valid() bool {
+	switch e {
+	case GatewayPhaseCountsKindGatewayPhaseCounts:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for OpenShellGatewayServiceAccountConnectionGrantType.
 const (
 	OpenShellGatewayServiceAccountConnectionGrantTypeClientCredentials OpenShellGatewayServiceAccountConnectionGrantType = "client_credentials"
@@ -456,6 +486,31 @@ type GatewayPatchRequest struct {
 	SupervisorImage  *string   `json:"supervisor_image,omitempty"`
 	TlsMode          *string   `json:"tls_mode,omitempty"`
 }
+
+// GatewayPhaseCounts defines model for GatewayPhaseCounts.
+type GatewayPhaseCounts struct {
+	Counts struct {
+		// Degraded Gateways whose workload is unavailable.
+		Degraded int64 `json:"Degraded"`
+
+		// Failed Gateways whose workload failed. The controller does not write this phase in this release. The count stays zero.
+		Failed int64 `json:"Failed"`
+
+		// Provisioning Gateways whose workload is not ready.
+		Provisioning int64 `json:"Provisioning"`
+
+		// Running Gateways whose workload is running and healthy.
+		Running int64 `json:"Running"`
+	} `json:"counts"`
+	Href GatewayPhaseCountsHref `json:"href"`
+	Kind GatewayPhaseCountsKind `json:"kind"`
+}
+
+// GatewayPhaseCountsHref defines model for GatewayPhaseCounts.Href.
+type GatewayPhaseCountsHref string
+
+// GatewayPhaseCountsKind defines model for GatewayPhaseCounts.Kind.
+type GatewayPhaseCountsKind string
 
 // GatewayRelease defines model for GatewayRelease.
 type GatewayRelease struct {
@@ -1558,6 +1613,11 @@ type ClientInterface interface {
 	// Corresponds with GET /api/hypershell/v1/metadata (the `GetMetadata` operationId).
 	GetMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
 
+	// GetGatewayPhaseCounts performs a GET /api/hypershell/v1/metrics/gateways (the `GetGatewayPhaseCounts` operationId) request.
+	//
+	// Count gateways per workload phase for the caller. The count follows the gateway list visibility rule. Control-plane subjects and platform administrators count the whole fleet. Other users count gateways with an owner or viewer grant. Phase and status are controller-owned fields. A gateway with no observed workload phase counts in no bucket. Query parameters and request bodies are rejected.
+	GetGatewayPhaseCounts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error)
+
 	// ListRoleBindings List role bindings
 	//
 	// Corresponds with GET /api/hypershell/v1/role_bindings (the `ListRoleBindings` operationId).
@@ -2154,6 +2214,21 @@ func (c *Client) UpdateManagedCluster(ctx context.Context, id OpenapiManagedClus
 // Corresponds with GET /api/hypershell/v1/metadata (the `GetMetadata` operationId).
 func (c *Client) GetMetadata(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
 	req, err := NewGetMetadataRequest(c.Server)
+	if err != nil {
+		return nil, err
+	}
+	req = req.WithContext(ctx)
+	if err := c.applyEditors(ctx, req, reqEditors); err != nil {
+		return nil, err
+	}
+	return c.Client.Do(req)
+}
+
+// GetGatewayPhaseCounts performs a GET /api/hypershell/v1/metrics/gateways (the `GetGatewayPhaseCounts` operationId) request.
+//
+// Count gateways per workload phase for the caller. The count follows the gateway list visibility rule. Control-plane subjects and platform administrators count the whole fleet. Other users count gateways with an owner or viewer grant. Phase and status are controller-owned fields. A gateway with no observed workload phase counts in no bucket. Query parameters and request bodies are rejected.
+func (c *Client) GetGatewayPhaseCounts(ctx context.Context, reqEditors ...RequestEditorFn) (*http.Response, error) {
+	req, err := NewGetGatewayPhaseCountsRequest(c.Server)
 	if err != nil {
 		return nil, err
 	}
@@ -3634,6 +3709,33 @@ func NewGetMetadataRequest(server string) (*http.Request, error) {
 	return req, nil
 }
 
+// NewGetGatewayPhaseCountsRequest constructs an http.Request for the GetGatewayPhaseCounts method
+func NewGetGatewayPhaseCountsRequest(server string) (*http.Request, error) {
+	var err error
+
+	serverURL, err := url.Parse(server)
+	if err != nil {
+		return nil, err
+	}
+
+	operationPath := fmt.Sprintf("/api/hypershell/v1/metrics/gateways")
+	if operationPath[0] == '/' {
+		operationPath = "." + operationPath
+	}
+
+	queryURL, err := serverURL.Parse(operationPath)
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest(http.MethodGet, queryURL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
 // NewListRoleBindingsRequest constructs an http.Request for the ListRoleBindings method
 func NewListRoleBindingsRequest(server string, params *ListRoleBindingsParams) (*http.Request, error) {
 	var err error
@@ -4295,6 +4397,13 @@ type ClientWithResponsesInterface interface {
 	//
 	// Corresponds with GET /api/hypershell/v1/metadata (the `GetMetadata` operationId).
 	GetMetadataWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetMetadataResponse, error)
+
+	// GetGatewayPhaseCountsWithResponse performs a GET /api/hypershell/v1/metrics/gateways (the `GetGatewayPhaseCounts` operationId) request.
+	//
+	// Count gateways per workload phase for the caller. The count follows the gateway list visibility rule. Control-plane subjects and platform administrators count the whole fleet. Other users count gateways with an owner or viewer grant. Phase and status are controller-owned fields. A gateway with no observed workload phase counts in no bucket. Query parameters and request bodies are rejected.
+	//
+	// Returns a wrapper object for the known response body format(s).
+	GetGatewayPhaseCountsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetGatewayPhaseCountsResponse, error)
 
 	// ListRoleBindingsWithResponse List role bindings
 	//
@@ -6120,6 +6229,54 @@ func (r GetMetadataResponse) ContentType() string {
 	return ""
 }
 
+// GetGatewayPhaseCountsResponse200Headers the declared response headers of an HTTP 200 response for GetGatewayPhaseCounts
+type GetGatewayPhaseCountsResponse200Headers struct {
+	CacheControl *string
+}
+
+type GetGatewayPhaseCountsResponse struct {
+	Body         []byte
+	HTTPResponse *http.Response
+	// JSON200 the response for an HTTP 200 `application/json` response
+	JSON200 *GatewayPhaseCounts
+	// Headers200 the parsed response headers for an HTTP 200 response
+	Headers200 *GetGatewayPhaseCountsResponse200Headers
+}
+
+// GetJSON200 returns the response for an HTTP 200 `application/json` response
+func (r GetGatewayPhaseCountsResponse) GetJSON200() *GatewayPhaseCounts {
+	return r.JSON200
+}
+
+// GetBody returns the raw response body bytes
+func (r GetGatewayPhaseCountsResponse) GetBody() []byte {
+	return r.Body
+}
+
+// Status returns HTTPResponse.Status
+func (r GetGatewayPhaseCountsResponse) Status() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Status
+	}
+	return http.StatusText(0)
+}
+
+// StatusCode returns HTTPResponse.StatusCode
+func (r GetGatewayPhaseCountsResponse) StatusCode() int {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.StatusCode
+	}
+	return 0
+}
+
+// ContentType is a convenience method to retrieve the Content-Type value from the HTTP response headers
+func (r GetGatewayPhaseCountsResponse) ContentType() string {
+	if r.HTTPResponse != nil {
+		return r.HTTPResponse.Header.Get("Content-Type")
+	}
+	return ""
+}
+
 type ListRoleBindingsResponse struct {
 	Body         []byte
 	HTTPResponse *http.Response
@@ -6944,6 +7101,19 @@ func (c *ClientWithResponses) GetMetadataWithResponse(ctx context.Context, reqEd
 		return nil, err
 	}
 	return ParseGetMetadataResponse(rsp)
+}
+
+// GetGatewayPhaseCountsWithResponse performs a GET /api/hypershell/v1/metrics/gateways (the `GetGatewayPhaseCounts` operationId) request.
+//
+// Count gateways per workload phase for the caller. The count follows the gateway list visibility rule. Control-plane subjects and platform administrators count the whole fleet. Other users count gateways with an owner or viewer grant. Phase and status are controller-owned fields. A gateway with no observed workload phase counts in no bucket. Query parameters and request bodies are rejected.
+//
+// Returns a wrapper object for the known response body format(s).
+func (c *ClientWithResponses) GetGatewayPhaseCountsWithResponse(ctx context.Context, reqEditors ...RequestEditorFn) (*GetGatewayPhaseCountsResponse, error) {
+	rsp, err := c.GetGatewayPhaseCounts(ctx, reqEditors...)
+	if err != nil {
+		return nil, err
+	}
+	return ParseGetGatewayPhaseCountsResponse(rsp)
 }
 
 // ListRoleBindingsWithResponse List role bindings
@@ -8467,6 +8637,57 @@ func ParseGetMetadataResponse(rsp *http.Response) (*GetMetadataResponse, error) 
 		}
 		response.JSON200 = &dest
 
+	}
+
+	return response, nil
+}
+
+// ParseGetGatewayPhaseCountsResponse parses an HTTP response from a GetGatewayPhaseCountsWithResponse call
+func ParseGetGatewayPhaseCountsResponse(rsp *http.Response) (*GetGatewayPhaseCountsResponse, error) {
+	bodyBytes, err := io.ReadAll(rsp.Body)
+	defer func() { _ = rsp.Body.Close() }()
+	if err != nil {
+		return nil, err
+	}
+
+	response := &GetGatewayPhaseCountsResponse{
+		Body:         bodyBytes,
+		HTTPResponse: rsp,
+	}
+
+	switch {
+	case strings.Contains(rsp.Header.Get("Content-Type"), "json") && rsp.StatusCode == 200:
+		var dest GatewayPhaseCounts
+		if err := json.Unmarshal(bodyBytes, &dest); err != nil {
+			return nil, err
+		}
+		response.JSON200 = &dest
+
+	case rsp.StatusCode == 400:
+		break // No content-type
+
+	case rsp.StatusCode == 401:
+		break // No content-type
+
+	case rsp.StatusCode == 409:
+		break // No content-type
+
+	case rsp.StatusCode == 500:
+		break // No content-type
+
+	}
+
+	switch {
+	case rsp.StatusCode == 200:
+		var headers GetGatewayPhaseCountsResponse200Headers
+		if values := rsp.Header.Values("Cache-Control"); len(values) > 0 {
+			var value string
+			if err := runtime.BindStyledParameterWithOptions("simple", "Cache-Control", values[0], &value, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationHeader, Explode: false, Required: false, Type: "string", Format: ""}); err != nil {
+				return nil, err
+			}
+			headers.CacheControl = &value
+		}
+		response.Headers200 = &headers
 	}
 
 	return response, nil
