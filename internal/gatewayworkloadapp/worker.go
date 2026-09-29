@@ -58,7 +58,7 @@ func Run(ctx context.Context, metrics *runtime.Metrics) error {
 		return err
 	}
 	defer provider.Close()
-	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider)
+	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider, cluster.ClusterID)
 	if err != nil {
 		return err
 	}

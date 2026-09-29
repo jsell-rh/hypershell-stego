@@ -956,9 +956,11 @@ func (x *DeleteGatewayRequest) GetId() string {
 }
 
 type ListGatewaysRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Page          int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
-	Size          int32                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Page  int32                  `protobuf:"varint,1,opt,name=page,proto3" json:"page,omitempty"`
+	Size  int32                  `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	// When set, results contain only gateways assigned to this cluster.
+	ClusterId     *string `protobuf:"bytes,3,opt,name=cluster_id,json=clusterId,proto3,oneof" json:"cluster_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1005,6 +1007,13 @@ func (x *ListGatewaysRequest) GetSize() int32 {
 		return x.Size
 	}
 	return 0
+}
+
+func (x *ListGatewaysRequest) GetClusterId() string {
+	if x != nil && x.ClusterId != nil {
+		return *x.ClusterId
+	}
+	return ""
 }
 
 type ListGatewaysResponse struct {
@@ -1095,8 +1104,11 @@ func (*DeleteGatewayResponse) Descriptor() ([]byte, []int) {
 	return file_hypershell_v1_gateways_proto_rawDescGZIP(), []int{14}
 }
 
+// When cluster_id is set, the stream contains only gateways assigned to that
+// cluster. Events that cannot be attributed to the cluster are skipped.
 type WatchGatewaysRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
+	ClusterId     *string                `protobuf:"bytes,1,opt,name=cluster_id,json=clusterId,proto3,oneof" json:"cluster_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -1129,6 +1141,13 @@ func (x *WatchGatewaysRequest) ProtoReflect() protoreflect.Message {
 // Deprecated: Use WatchGatewaysRequest.ProtoReflect.Descriptor instead.
 func (*WatchGatewaysRequest) Descriptor() ([]byte, []int) {
 	return file_hypershell_v1_gateways_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *WatchGatewaysRequest) GetClusterId() string {
+	if x != nil && x.ClusterId != nil {
+		return *x.ClusterId
+	}
+	return ""
 }
 
 type WatchGatewaysResponse struct {
@@ -1317,15 +1336,21 @@ const file_hypershell_v1_gateways_proto_rawDesc = "" +
 	"\x1dSetActiveSandboxCountResponse\x120\n" +
 	"\x14active_sandbox_count\x18\x01 \x01(\x05R\x12activeSandboxCount\"&\n" +
 	"\x14DeleteGatewayRequest\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"=\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"p\n" +
 	"\x13ListGatewaysRequest\x12\x12\n" +
 	"\x04page\x18\x01 \x01(\x05R\x04page\x12\x12\n" +
-	"\x04size\x18\x02 \x01(\x05R\x04size\"y\n" +
+	"\x04size\x18\x02 \x01(\x05R\x04size\x12\"\n" +
+	"\n" +
+	"cluster_id\x18\x03 \x01(\tH\x00R\tclusterId\x88\x01\x01B\r\n" +
+	"\v_cluster_id\"y\n" +
 	"\x14ListGatewaysResponse\x12,\n" +
 	"\x05items\x18\x01 \x03(\v2\x16.hypershell.v1.GatewayR\x05items\x123\n" +
 	"\bmetadata\x18\x02 \x01(\v2\x17.hypershell.v1.ListMetaR\bmetadata\"\x17\n" +
-	"\x15DeleteGatewayResponse\"\x16\n" +
-	"\x14WatchGatewaysRequest\"\x98\x01\n" +
+	"\x15DeleteGatewayResponse\"I\n" +
+	"\x14WatchGatewaysRequest\x12\"\n" +
+	"\n" +
+	"cluster_id\x18\x01 \x01(\tH\x00R\tclusterId\x88\x01\x01B\r\n" +
+	"\v_cluster_id\"\x98\x01\n" +
 	"\x15WatchGatewaysResponse\x12,\n" +
 	"\x04type\x18\x01 \x01(\x0e2\x18.hypershell.v1.EventTypeR\x04type\x120\n" +
 	"\agateway\x18\x02 \x01(\v2\x16.hypershell.v1.GatewayR\agateway\x12\x1f\n" +
@@ -1418,6 +1443,8 @@ func file_hypershell_v1_gateways_proto_init() {
 	file_hypershell_v1_gateways_proto_msgTypes[0].OneofWrappers = []any{}
 	file_hypershell_v1_gateways_proto_msgTypes[1].OneofWrappers = []any{}
 	file_hypershell_v1_gateways_proto_msgTypes[5].OneofWrappers = []any{}
+	file_hypershell_v1_gateways_proto_msgTypes[12].OneofWrappers = []any{}
+	file_hypershell_v1_gateways_proto_msgTypes[15].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

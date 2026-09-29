@@ -17,7 +17,7 @@ func (s *Service) EventGateway(ctx context.Context, p Principal, id string, dele
 	if !validID(id) {
 		return model.Gateway{}, store.ErrNotFound
 	}
-	result, err := s.list(ctx, p, id, 1, 1, "", nil, deleted)
+	result, err := s.list(ctx, p, id, 1, 1, "", nil, deleted, "")
 	if err != nil {
 		return model.Gateway{}, err
 	}

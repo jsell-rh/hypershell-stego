@@ -38,7 +38,7 @@ func TestPublicEndpointObservation(t *testing.T) {
 				api.err = status.Error(codes.Aborted, "resource changed")
 			}
 			current := &stateFixture{state: &control.GetGatewayIdentityStateResponse{CleanupTargets: workloadHistory(testClusterID), Gateway: gw, ResourceVersion: 77, ResourceGeneration: 3, ObservedGeneration: 3}}
-			c, err := New(api, current, &releaseFixture{row: release}, provider)
+			c, err := New(api, current, &releaseFixture{row: release}, provider, testClusterID)
 			if err != nil {
 				t.Fatal(err)
 			}

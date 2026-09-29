@@ -13,6 +13,7 @@ import (
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 const QueueCapacity = 1024
@@ -45,25 +46,26 @@ type Controller struct {
 	state    control.GatewayIdentityServiceClient
 	releases pb.GatewayReleaseServiceClient
 	provider Provider
+	cluster  string
 }
-
 // Source returns live hints and retained IDs without a provider inventory.
-// Callers must read current state before they act on an ID.
-func Source(api pb.GatewayServiceClient, state control.GatewayIdentityServiceClient) (runtime.Source[string], error) {
+// Callers must read current state before they act on an ID. A non-empty
+// cluster scopes the watch and the recovery scan to that managed cluster.
+func Source(api pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, cluster string) (runtime.Source[string], error) {
 	if api == nil || state == nil {
 		return runtime.Source[string]{}, errors.New("Gateway source requires API and state clients")
 	}
-	c := &Controller{gateways: api, state: state}
+	c := &Controller{gateways: api, state: state, cluster: cluster}
 	return runtime.Source[string]{Watch: c.watch, Scan: func(ctx context.Context, emit func(string) error) error {
-		return runtime.Scan(ctx, gatewayrecovery.Source(state), emit, runtime.ScanOptions{PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout})
+		return runtime.Scan(ctx, gatewayrecovery.Source(state, cluster), emit, runtime.ScanOptions{PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout})
 	}}, nil
 }
 
-func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, releases pb.GatewayReleaseServiceClient, provider Provider) (*Controller, error) {
+func New(gateways pb.GatewayServiceClient, state control.GatewayIdentityServiceClient, releases pb.GatewayReleaseServiceClient, provider Provider, cluster string) (*Controller, error) {
 	if gateways == nil || state == nil || releases == nil || provider == nil {
 		return nil, errors.New("Gateway workload controller dependencies are required")
 	}
-	return &Controller{gateways, state, releases, provider}, nil
+	return &Controller{gateways: gateways, state: state, releases: releases, provider: provider, cluster: cluster}, nil
 }
 
 // Run connects domain state and actions to the generated controller runtime.
@@ -87,7 +89,7 @@ func (c *Controller) RunWithMetrics(ctx context.Context, metrics *runtime.Metric
 	})
 }
 func (c *Controller) watch(ctx context.Context) (func() (string, error), error) {
-	stream, err := c.gateways.WatchGateways(ctx, &pb.WatchGatewaysRequest{})
+	stream, err := c.gateways.WatchGateways(ctx, &pb.WatchGatewaysRequest{ClusterId: proto.String(c.cluster)})
 	if err != nil {
 		return nil, err
 	}
@@ -106,7 +108,7 @@ func (c *Controller) watch(ctx context.Context) (func() (string, error), error) 
 	}, nil
 }
 func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error {
-	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state), enqueue, runtime.ScanOptions{
+	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state, c.cluster), enqueue, runtime.ScanOptions{
 		PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout,
 	}); err != nil {
 		return err

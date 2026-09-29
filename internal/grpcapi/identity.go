@@ -75,7 +75,7 @@ func (s *identityServer) GetGatewayIdentityUser(ctx context.Context, request *pb
 }
 
 func (s *identityServer) ListGatewayReconcileIDs(ctx context.Context, request *pb.ListGatewayReconcileIDsRequest) (*pb.ListGatewayReconcileIDsResponse, error) {
-	ids, err := s.service.ReconcileIDs(ctx, gateways.PrincipalFromContext(ctx), request.GetAfterId())
+	ids, err := s.service.ReconcileIDs(ctx, gateways.PrincipalFromContext(ctx), request.GetAfterId(), request.GetClusterId())
 	if err != nil {
 		return nil, mapError(err)
 	}

@@ -115,7 +115,13 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
 	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller"]`)
-	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
+	if identityResource {
+		// The identity worker is fleet-wide; a bound grant would scope its
+		// watch to one cluster.
+		settings = withControllerWriteGrants(t, settings, writeGrant("controller", "configure.identity", ""))
+	} else {
+		settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.workload", f.cluster))
+	}
 	if cleanup {
 		if identityResource {
 			settings = withCleanupGrants(t, settings, cleanupGrant("controller", "Gateway", "identity", ""))
@@ -182,7 +188,7 @@ func testProviderDeadlineObservation(t *testing.T, resource string, cleanup bool
 		if identityResource {
 			controller, err = gatewayidentity.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), &deadlineIdentityObservationProvider{provider})
 		} else {
-			controller, err = gatewayworkload.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider)
+			controller, err = gatewayworkload.New(pb.NewGatewayServiceClient(connection), control.NewGatewayIdentityServiceClient(connection), pb.NewGatewayReleaseServiceClient(connection), provider, f.cluster)
 		}
 		if err != nil {
 			t.Fatal(err)

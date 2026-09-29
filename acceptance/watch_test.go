@@ -30,11 +30,15 @@ type gatewayWatch struct {
 	cancel  context.CancelFunc
 }
 
-func watchGateways(t testing.TB, client pb.GatewayServiceClient, ctx context.Context) *gatewayWatch {
+func watchGateways(t testing.TB, client pb.GatewayServiceClient, ctx context.Context, cluster ...string) *gatewayWatch {
 	t.Helper()
 	ctx, cancel := context.WithCancel(ctx)
 	t.Cleanup(cancel)
-	stream, err := client.WatchGateways(ctx, &pb.WatchGatewaysRequest{})
+	request := &pb.WatchGatewaysRequest{}
+	if len(cluster) > 0 {
+		request.ClusterId = proto.String(cluster[0])
+	}
+	stream, err := client.WatchGateways(ctx, request)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -110,10 +114,10 @@ func TestGatewayWatchThroughGeneratedRuntime(t *testing.T) {
 	adminCtx := call(token(t, key, "admin", "platform:admin"))
 	controllerCtx := call(token(t, key, "controller"))
 	a := watchGateways(t, client, ownerCtx)
+	controller := watchGateways(t, client, controllerCtx, f.cluster)
 	a2 := watchGateways(t, client, ownerCtx)
 	viewer := watchGateways(t, client, viewerCtx)
 	admin := watchGateways(t, client, adminCtx)
-	controller := watchGateways(t, client, controllerCtx)
 	// Header completion establishes the subscription before the initial list.
 	list, err := client.ListGateways(ownerCtx, &pb.ListGatewaysRequest{})
 	if err != nil || list.Metadata.Total != 0 {

@@ -165,7 +165,12 @@ func (s *server) ListGateways(ctx context.Context, request *pb.ListGatewaysReque
 	if size < 1 || size > 500 {
 		size = 20
 	}
-	result, err := s.service.List(ctx, gateways.PrincipalFromContext(ctx), int(page), int(size))
+	principal := gateways.PrincipalFromContext(ctx)
+	// A bound control-plane caller must scope its reads to a bound cluster.
+	if err := s.service.AuthorizeCluster(principal, request.GetClusterId()); err != nil {
+		return nil, mapError(err)
+	}
+	result, err := s.service.ListCluster(ctx, principal, int(page), int(size), request.GetClusterId())
 	if err != nil {
 		return nil, mapError(err)
 	}

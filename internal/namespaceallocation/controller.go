@@ -54,7 +54,7 @@ func New(cluster string, allocator Allocator, gatewaysAPI pb.GatewayServiceClien
 			return nil, err
 		}
 	}
-	gatewaySource, err := gatewayworkload.Source(gatewaysAPI, state)
+	gatewaySource, err := gatewayworkload.Source(gatewaysAPI, state, cluster)
 	if err != nil {
 		return nil, err
 	}

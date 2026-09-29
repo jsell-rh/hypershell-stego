@@ -83,7 +83,7 @@ func TestGatewaySQLCleanupPreservesOtherGatewayThroughGeneratedRuntime(t *testin
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 45*time.Second)
 	defer cancel()
 	provider := &sharedCleanupProvider{cluster: f.cluster, gateway: first.ID}
-	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider)
+	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider, f.cluster)
 	if err != nil {
 		t.Fatal(err)
 	}

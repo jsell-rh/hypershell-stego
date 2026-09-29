@@ -130,6 +130,8 @@ message DeleteGatewayRequest {
 message ListGatewaysRequest {
   int32 page = 1;
   int32 size = 2;
+  // When set, results contain only gateways assigned to this cluster.
+  optional string cluster_id = 3;
 }
 
 message ListGatewaysResponse {
@@ -139,7 +141,9 @@ message ListGatewaysResponse {
 
 message DeleteGatewayResponse {}
 
-message WatchGatewaysRequest {}
+// When cluster_id is set, the stream contains only gateways assigned to that
+// cluster. Events that cannot be attributed to the cluster are skipped.
+message WatchGatewaysRequest { optional string cluster_id = 1; }
 
 message WatchGatewaysResponse {
   EventType type = 1;

@@ -704,6 +704,7 @@ func (x *GetGatewayIdentityUserResponse) GetRole() string {
 type ListGatewayReconcileIDsRequest struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	AfterId       string                 `protobuf:"bytes,1,opt,name=after_id,json=afterId,proto3" json:"after_id,omitempty"`
+	ClusterId     string                 `protobuf:"bytes,2,opt,name=cluster_id,json=clusterId,proto3" json:"cluster_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -741,6 +742,13 @@ func (*ListGatewayReconcileIDsRequest) Descriptor() ([]byte, []int) {
 func (x *ListGatewayReconcileIDsRequest) GetAfterId() string {
 	if x != nil {
 		return x.AfterId
+	}
+	return ""
+}
+
+func (x *ListGatewayReconcileIDsRequest) GetClusterId() string {
+	if x != nil {
+		return x.ClusterId
 	}
 	return ""
 }
@@ -2486,9 +2494,11 @@ const file_hypershell_controlplane_v1_gateway_identity_proto_rawDesc = "" +
 	"\auser_id\x18\x02 \x01(\tR\x06userId\x12\x16\n" +
 	"\x06issuer\x18\x03 \x01(\tR\x06issuer\x12\x18\n" +
 	"\asubject\x18\x04 \x01(\tR\asubject\x12\x12\n" +
-	"\x04role\x18\x05 \x01(\tR\x04role\";\n" +
+	"\x04role\x18\x05 \x01(\tR\x04role\"Z\n" +
 	"\x1eListGatewayReconcileIDsRequest\x12\x19\n" +
-	"\bafter_id\x18\x01 \x01(\tR\aafterId\"3\n" +
+	"\bafter_id\x18\x01 \x01(\tR\aafterId\x12\x1d\n" +
+	"\n" +
+	"cluster_id\x18\x02 \x01(\tR\tclusterId\"3\n" +
 	"\x1fListGatewayReconcileIDsResponse\x12\x10\n" +
 	"\x03ids\x18\x01 \x03(\tR\x03ids\"s\n" +
 	"\x1eSetObservedSandboxCountRequest\x12\x1c\n" +

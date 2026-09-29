@@ -69,7 +69,7 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 	}
 	queries.counts.Store(0)
 	queries.reads.Store(0)
-	ids, err := service.ReconcileIDs(ctx, principal("controller"), "")
+	ids, err := service.ReconcileIDs(ctx, principal("controller"), "", "")
 	if err != nil || len(ids) != 2 || !slices.Contains(ids, live.ID) || !slices.Contains(ids, deleted.ID) {
 		t.Fatal("recovery omitted live or deleted Gateway", err)
 	}
@@ -78,7 +78,7 @@ func TestRecoveryPagesAvoidTotals(t *testing.T) {
 	}
 	queries.counts.Store(0)
 	queries.reads.Store(0)
-	_, err = service.ReconcileIDs(ctx, principal("outsider"), "")
+	_, err = service.ReconcileIDs(ctx, principal("outsider"), "", "")
 	if !errors.Is(err, gateways.ErrForbidden) || queries.reads.Load() != 0 {
 		t.Fatal("unauthorized recovery read", err)
 	}
@@ -122,7 +122,7 @@ func TestGatewayRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
 	var actual []string
 	after := ""
 	for page := range 3 {
-		ids, err := service.ReconcileIDs(ctx, principal("controller"), after)
+		ids, err := service.ReconcileIDs(ctx, principal("controller"), after, "")
 		want := 100
 		if page == 2 {
 			want = 5
@@ -141,7 +141,7 @@ func TestGatewayRecoveryCursorSurvivesEarlierDeletion(t *testing.T) {
 	if !slices.Equal(actual, expected) {
 		t.Fatal("deletion changed recovery order or omitted an ID")
 	}
-	if ids, err := service.ReconcileIDs(ctx, principal("controller"), after); err != nil || len(ids) != 0 {
+	if ids, err := service.ReconcileIDs(ctx, principal("controller"), after, ""); err != nil || len(ids) != 0 {
 		t.Fatal("recovery did not end", err)
 	}
 	row, err := service.IdentityState(ctx, principal("controller"), expected[0])

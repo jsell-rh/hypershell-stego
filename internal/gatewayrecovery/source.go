@@ -14,13 +14,15 @@ const PageSize = 100
 
 // Source includes live and retained deleted Gateway IDs. The private API checks
 // the control-plane identity. Domain actions must read current trusted state.
-func Source(api control.GatewayIdentityServiceClient) runtime.CursorSource[string] {
+// A non-empty cluster restricts pages to that managed cluster.
+func Source(api control.GatewayIdentityServiceClient, cluster string) runtime.CursorSource[string] {
 	return func(ctx context.Context, after string, limit int) (runtime.CursorPage[string], error) {
 		var page runtime.CursorPage[string]
 		if api == nil || limit != PageSize {
 			return page, fmt.Errorf("%w: invalid Gateway recovery source", runtime.ErrScanContract)
 		}
-		response, err := api.ListGatewayReconcileIDs(ctx, &control.ListGatewayReconcileIDsRequest{AfterId: after})
+		request := &control.ListGatewayReconcileIDsRequest{AfterId: after, ClusterId: cluster}
+		response, err := api.ListGatewayReconcileIDs(ctx, request)
 		if err != nil {
 			return page, err
 		}

@@ -132,7 +132,7 @@ func TestWorkloadPendingRecheckKeepsCleanupIncomplete(t *testing.T) {
 				current.state.Deleted = false
 				provider.err = errors.Join(ErrPending, errors.New("provider failed"))
 			}
-			controller, err := New(api, current, &releaseFixture{row: release}, provider)
+			controller, err := New(api, current, &releaseFixture{row: release}, provider, testClusterID)
 			if err != nil {
 				t.Fatal(err)
 			}

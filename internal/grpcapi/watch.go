@@ -12,9 +12,17 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-func (s *server) WatchGateways(_ *pb.WatchGatewaysRequest, stream grpc.ServerStreamingServer[pb.WatchGatewaysResponse]) error {
+func (s *server) WatchGateways(request *pb.WatchGatewaysRequest, stream grpc.ServerStreamingServer[pb.WatchGatewaysResponse]) error {
 	ctx := stream.Context()
 	principal := gateways.PrincipalFromContext(ctx)
+	// A bound control-plane caller must scope its stream to a bound cluster.
+	clusterFilter := ""
+	if request != nil {
+		clusterFilter = request.GetClusterId()
+	}
+	if err := s.service.AuthorizeCluster(principal, clusterFilter); err != nil {
+		return mapError(err)
+	}
 	if _, err := s.service.List(ctx, principal, 1, 0); err != nil {
 		return mapError(err)
 	}
@@ -55,6 +63,10 @@ func (s *server) WatchGateways(_ *pb.WatchGatewaysRequest, stream grpc.ServerStr
 		}
 		if err != nil {
 			return mapError(err)
+		}
+		// A cluster-scoped stream skips Gateways placed on other clusters.
+		if clusterFilter != "" && row.ClusterID != clusterFilter {
+			continue
 		}
 		gateway, err := present(row)
 		if err != nil {

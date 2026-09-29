@@ -85,7 +85,7 @@ func TestGatewayBacklogLargerThanQueueMakesProgress(t *testing.T) {
 	ctx, cancel := context.WithTimeout(metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+token(t, key, "controller"))), 195*time.Second)
 	defer cancel()
 	provider := &backlogProvider{cluster: f.cluster, failed: ids[0]}
-	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider)
+	controller, err := gatewayworkload.New(pb.NewGatewayServiceClient(connection), state, pb.NewGatewayReleaseServiceClient(connection), provider, f.cluster)
 	if err != nil {
 		t.Fatal(err)
 	}

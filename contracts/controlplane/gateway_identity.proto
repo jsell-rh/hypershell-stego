@@ -76,7 +76,7 @@ message GetGatewayIdentityUserResponse {
 // Recovery includes live and deleted rows. Only configured controllers can read
 // these IDs. Pages contain at most 100 IDs in database ID order. Start a live watch
 // before the first page, and repeat the scan to recover concurrent changes.
-message ListGatewayReconcileIDsRequest { string after_id = 1; }
+message ListGatewayReconcileIDsRequest { string after_id = 1; string cluster_id = 2; }
 message ListGatewayReconcileIDsResponse { repeated string ids = 1; }
 
 // The current cluster assignment is checked under the same row lock as the count.

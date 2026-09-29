@@ -39,18 +39,26 @@ func (s *Service) IdentityState(ctx context.Context, p Principal, id string) (mo
 }
 
 // ReconcileIDs supplies bounded recovery pages without resource contents. The
-// cursor must be a canonical KSUID before the generated storage call.
-func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after string) ([]string, error) {
+// cursor must be a canonical KSUID before the generated storage call. A bound
+// control-plane caller must name one of its bound clusters; an empty cluster
+// ID keeps the fleet page.
+func (s *Service) ReconcileIDs(ctx context.Context, p Principal, after, clusterID string) ([]string, error) {
 	if err := validatePrincipal(p); err != nil {
 		return nil, err
 	}
 	if !s.isControlPlane(p) {
 		return nil, ErrForbidden
 	}
+	if err := s.AuthorizeCluster(p, clusterID); err != nil {
+		return nil, err
+	}
 	if after != "" && !validID(after) {
 		return nil, ErrInvalid
 	}
 	options := store.CursorOptions{AfterID: after, Limit: 100, Deletion: store.CursorAll, Fields: []string{"id"}}
+	if clusterID != "" {
+		options.Filter = &store.RowFilter{Field: "cluster_id", Values: []string{clusterID}}
+	}
 	var ids []string
 	err := s.repository.WithTransaction(ctx, func(ctx context.Context, tx store.Transaction) error {
 		reader, ok := tx.(store.CursorReader)

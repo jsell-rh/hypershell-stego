@@ -17,6 +17,10 @@ type Options struct {
 	CleanupPolicy         *auth.GrantPolicy
 	ProviderStatePolicy   *auth.GrantPolicy
 	ControllerWritePolicy *auth.GrantPolicy
+	// ControllerWriteGrants lists the parsed controller-write grants. A
+	// non-empty Gateway target binds that control-plane subject to one
+	// managed cluster for cluster-scoped reads.
+	ControllerWriteGrants []auth.Grant
 	DefaultReleaseID      string
 	DefaultClusterID      string
 	DefaultCreatorRole    bool
@@ -46,15 +50,20 @@ func OptionsFromEnvironment() (Options, error) {
 			return Options{}, err
 		}
 	}
+	if raw := os.Getenv("HYPERSHELL_PROVIDER_STATE_GRANTS"); raw != "" {
+		options.ProviderStatePolicy, err = auth.ParseGrantPolicy([]byte(raw))
+		if err != nil {
+			return Options{}, err
+		}
+	}
 	if raw := os.Getenv("HYPERSHELL_CONTROLLER_WRITE_GRANTS"); raw != "" {
 		options.ControllerWritePolicy, err = auth.ParseGrantPolicy([]byte(raw))
 		if err != nil {
 			return Options{}, err
 		}
-	}
-	if raw := os.Getenv("HYPERSHELL_PROVIDER_STATE_GRANTS"); raw != "" {
-		options.ProviderStatePolicy, err = auth.ParseGrantPolicy([]byte(raw))
-		if err != nil {
+		// The strict parser validated the document; retain the parsed
+		// grants so cluster binding can enumerate Gateway targets.
+		if err := json.Unmarshal([]byte(raw), &options.ControllerWriteGrants); err != nil {
 			return Options{}, err
 		}
 	}

@@ -17,6 +17,7 @@ import (
 	kube "github.com/jsell-rh/hypershell-stego/out/kubernetes"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/proto"
 )
 
 type Source interface {
@@ -155,7 +156,7 @@ func (c *Controller) refresh(ctx context.Context, enqueue func(string) error) er
 	seen := map[string]bool{}
 	for page := int32(1); ; page++ {
 		call, stop := context.WithTimeout(ctx, 5*time.Second)
-		result, err := c.gateways.ListGateways(call, &pb.ListGatewaysRequest{Page: page, Size: 100})
+		result, err := c.gateways.ListGateways(call, &pb.ListGatewaysRequest{Page: page, Size: 100, ClusterId: proto.String(c.cluster)})
 		stop()
 		if err != nil {
 			return err

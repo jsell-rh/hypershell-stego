@@ -206,7 +206,7 @@ func testIndependentResourceCleanup(t *testing.T, cleanupOwner string) {
 	if cleanupOwner == "identity" {
 		controller, err = gatewayidentity.New(api, state, &blockedIdentityCleanupProvider{provider})
 	} else {
-		controller, err = gatewayworkload.New(api, state, pb.NewGatewayReleaseServiceClient(connection), provider)
+		controller, err = gatewayworkload.New(api, state, pb.NewGatewayReleaseServiceClient(connection), provider, f.cluster)
 	}
 	if err != nil {
 		t.Fatal(err)

@@ -93,7 +93,7 @@ func (c *Controller) watch(ctx context.Context) (func() (string, error), error) 
 	}, nil
 }
 func (c *Controller) seed(ctx context.Context, enqueue func(string) error) error {
-	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state), enqueue, runtime.ScanOptions{
+	if err := runtime.Scan(ctx, gatewayrecovery.Source(c.state, ""), enqueue, runtime.ScanOptions{
 		PageSize: gatewayrecovery.PageSize, MaxPages: 10000, PageTimeout: ReconcileTimeout,
 	}); err != nil {
 		return err

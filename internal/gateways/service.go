@@ -57,6 +57,7 @@ type Service struct {
 	cleanupPolicy         *auth.GrantPolicy
 	providerStatePolicy   *auth.GrantPolicy
 	controllerWritePolicy *auth.GrantPolicy
+	controllerWriteGrants []auth.Grant
 	defaultReleaseID      string
 	defaultClusterID      string
 	defaultCreatorRole    bool
@@ -85,7 +86,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID, defaultCreatorRole: selected.DefaultCreatorRole}, nil
+	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, controllerWriteGrants: selected.ControllerWriteGrants, cleanupPolicy: selected.CleanupPolicy, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID, defaultCreatorRole: selected.DefaultCreatorRole}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.
@@ -180,7 +181,7 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 	if !validID(id) {
 		return model.Gateway{}, store.ErrNotFound
 	}
-	result, err := s.list(ctx, principal, id, 1, 1, "", nil, false)
+	result, err := s.list(ctx, principal, id, 1, 1, "", nil, false, "")
 	if err != nil {
 		return model.Gateway{}, err
 	}
@@ -193,19 +194,31 @@ func (s *Service) Get(ctx context.Context, principal Principal, id string) (mode
 	}
 	return rows[0], nil
 }
-
 func (s *Service) List(ctx context.Context, principal Principal, page, size int) (store.ListResult, error) {
 	return s.Search(ctx, principal, page, size, "", nil)
+}
+
+// ListCluster narrows the list to one managed cluster. An empty cluster ID
+// keeps the fleet view. The handler enforces the cluster binding first.
+func (s *Service) ListCluster(ctx context.Context, principal Principal, page, size int, clusterID string) (store.ListResult, error) {
+	return s.searchCluster(ctx, principal, page, size, "", nil, clusterID)
 }
 
 func (s *Service) Search(ctx context.Context, principal Principal, page, size int, search string, order []store.OrderByField) (store.ListResult, error) {
 	if page < 1 || size < 0 || size > 500 || page > 1000000 {
 		return store.ListResult{}, ErrInvalid
 	}
-	return s.list(ctx, principal, "", page, size, search, order, false)
+	return s.list(ctx, principal, "", page, size, search, order, false, "")
 }
 
-func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int, search string, order []store.OrderByField, includeDeleted bool) (store.ListResult, error) {
+func (s *Service) searchCluster(ctx context.Context, principal Principal, page, size int, search string, order []store.OrderByField, clusterID string) (store.ListResult, error) {
+	if page < 1 || size < 0 || size > 500 || page > 1000000 {
+		return store.ListResult{}, ErrInvalid
+	}
+	return s.list(ctx, principal, "", page, size, search, order, false, clusterID)
+}
+
+func (s *Service) list(ctx context.Context, principal Principal, id string, page, size int, search string, order []store.OrderByField, includeDeleted bool, clusterID string) (store.ListResult, error) {
 	var result store.ListResult
 	if err := validatePrincipal(principal); err != nil {
 		return result, err
@@ -232,6 +245,9 @@ func (s *Service) list(ctx context.Context, principal Principal, id string, page
 				return err
 			}
 			opts.Related = []store.RelatedFilter{{Entity: "RoleBinding", ForeignField: "gateway_id", Values: map[string][]string{"user_id": {user.ID}, "role_id": {owner.ID, viewer.ID}, "scope": {"gateway"}}}}
+		}
+		if clusterID != "" {
+			opts.Filter = &store.RowFilter{Field: "cluster_id", Values: []string{clusterID}}
 		}
 		field := ""
 		if id != "" {

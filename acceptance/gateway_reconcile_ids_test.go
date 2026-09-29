@@ -74,7 +74,7 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 		if status.Code(err) != codes.PermissionDenied && status.Code(err) != codes.Unauthenticated {
 			t.Fatal("untrusted caller read recovery IDs", err)
 		}
-		err = runtime.Scan(denied, gatewayrecovery.Source(client), func(string) error {
+		err = runtime.Scan(denied, gatewayrecovery.Source(client, ""), func(string) error {
 			t.Fatal("denied scan emitted work")
 			return nil
 		}, runtime.ScanOptions{PageSize: 100, MaxPages: 10, PageTimeout: time.Second})
@@ -124,7 +124,7 @@ func TestGatewayRecoveryIDsThroughGeneratedRuntime(t *testing.T) {
 	}
 	for attempt := range 2 {
 		var scanned []string
-		if err := runtime.Scan(controller, gatewayrecovery.Source(client), func(id string) error {
+		if err := runtime.Scan(controller, gatewayrecovery.Source(client, ""), func(id string) error {
 			scanned = append(scanned, id)
 			return nil
 		}, runtime.ScanOptions{PageSize: 100, MaxPages: 10, PageTimeout: time.Second}); err != nil {

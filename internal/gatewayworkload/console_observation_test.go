@@ -26,7 +26,7 @@ func TestConsoleAddressRequiresSuccessfulCurrentObservation(t *testing.T) {
 			api := &apiFixture{}
 			state := &stateFixture{state: &control.GetGatewayIdentityStateResponse{Gateway: gw, ResourceVersion: 42, ResourceGeneration: 3, CleanupTargets: workloadHistory(testClusterID)}}
 			provider := &providerFixture{console: &address, err: test.err}
-			controller, err := New(api, state, &releaseFixture{row: release}, provider)
+			controller, err := New(api, state, &releaseFixture{row: release}, provider, testClusterID)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -77,6 +77,42 @@ func TestGeneratedGatewayDescriptorsMatchReleaseContract(t *testing.T) {
 			message.ReservedRange = append(message.ReservedRange, &descriptorpb.DescriptorProto_ReservedRange{Start: proto.Int32(number), End: proto.Int32(number + 1)})
 			message.ReservedName = append(message.ReservedName, "database_id")
 		}
+		// The fork adds an optional cluster_id filter to the list and watch
+		// requests of the gateways contract. Mirror it onto the captured
+		// reference so the comparison covers only the shared surface.
+		if actual.Path() == "hypershell/v1/gateways.proto" {
+			var clusterField *descriptorpb.FieldDescriptorProto
+			for _, message := range expected.MessageType {
+				if message.GetName() != "UpdateGatewayRequest" {
+					continue
+				}
+				for _, field := range message.Field {
+					if field.GetName() == "cluster_id" && field.GetNumber() == 4 {
+						clusterField = field
+					}
+				}
+			}
+			if clusterField == nil {
+				t.Fatal("captured optional cluster_id field differs")
+			}
+			for _, message := range expected.MessageType {
+				number := int32(0)
+				switch message.GetName() {
+				case "ListGatewaysRequest":
+					number = 3
+				case "WatchGatewaysRequest":
+					number = 1
+				}
+				if number == 0 {
+					continue
+				}
+				extension := proto.Clone(clusterField).(*descriptorpb.FieldDescriptorProto)
+				extension.Number = proto.Int32(number)
+				extension.OneofIndex = proto.Int32(int32(len(message.OneofDecl)))
+				message.OneofDecl = append(message.OneofDecl, &descriptorpb.OneofDescriptorProto{Name: proto.String("_cluster_id")})
+				message.Field = append(message.Field, extension)
+			}
+		}
 		descriptor := pb.File_hypershell_v1_gateways_proto
 		if actual.Path() == "hypershell/v1/common.proto" {
 			descriptor = pb.File_hypershell_v1_common_proto
