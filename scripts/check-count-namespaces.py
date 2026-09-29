@@ -229,7 +229,9 @@ exit "$code"
             try:
                 oc("exec", pod, "--", "test", "-f", "/work/" + name)
                 return True
-            except subprocess.CalledProcessError:
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                # An exec request can stall while the Pod is busy. The wait
+                # loop keeps polling until its own deadline.
                 return False
 
         def wait_file(name):
