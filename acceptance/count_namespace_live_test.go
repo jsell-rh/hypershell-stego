@@ -346,6 +346,8 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	if err != nil || newSandboxUID == oldSandboxUID {
 		t.Fatal("sandbox namespace UID did not change", err)
 	}
+	// The replacement namespace starts empty, so the fixture count restarts.
+	fixture[three.Metadata.Id] = 0
 	readCount(three, 0)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	pods(three, 1)
