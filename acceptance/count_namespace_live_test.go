@@ -203,9 +203,10 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 			t.Fatal("expected direct denial", path, code, err)
 		}
 	}
-	// The workload role can create bare Pods only in the sandbox namespace, and
-	// the sandbox admission policy fixes their shape: an agent container, the
-	// allocated service account, no token mount, and no runtime class.
+	// The workload role can create bare Pods only in the sandbox namespace,
+	// and the sandbox admission policy fixes their shape: an agent container,
+	// the allocated service account, no token mount, and no runtime class.
+	fixture := map[string]int{}
 	pods := func(row *pb.Gateway, count int) {
 		t.Helper()
 		namespace := sandboxNamespace(row)
@@ -215,7 +216,9 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		}
 		collection := "/api/v1/namespaces/" + namespace + "/pods"
 		deadline := time.Now().Add(90 * time.Second)
-		for i := 0; i < count; i++ {
+		// The fixture only grows: no client can delete these Pods, so each call
+		// adds only the Pods that the target count still needs.
+		for i := fixture[row.Metadata.Id]; i < count; i++ {
 			name := fmt.Sprintf("count-fixture-%d", i)
 			desired := kube.Object{
 				"apiVersion": "v1", "kind": "Pod",
@@ -257,6 +260,7 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 				time.Sleep(time.Second)
 			}
 		}
+		fixture[row.Metadata.Id] = count
 	}
 	pods(one, 1)
 	readCount(one, 1)
