@@ -25,6 +25,7 @@ func TestCounterConfigurationFailsBeforeProviderSetup(t *testing.T) {
 				"HYPERSHELL_KUBERNETES_TOKEN_FILE":         "/absent-cluster-token",
 				"HYPERSHELL_CONTROL_NAMESPACE":             "control",
 				"HYPERSHELL_MANAGED_CLUSTER_ID":            "fixture",
+				"HYPERSHELL_GATEWAY_SANDBOX_ENABLED":       "false",
 				"HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS": "",
 				"HYPERSHELL_SANDBOX_COUNT_WATCH_LIMIT":     "0",
 				"HYPERSHELL_SANDBOX_COUNT_RESYNC":          "0s",

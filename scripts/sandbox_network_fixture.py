@@ -2,6 +2,8 @@
 
 This fixture tests packet rules. It does not test OpenShell or VM isolation.
 The production declaration and all other Pod guards must remain unchanged.
+The production Sandbox profile is classless; the test copy declares a fixed
+native runtime class so the generated class guard exists and is exercised.
 """
 import json
 import re
@@ -11,7 +13,6 @@ from gateway_endpoint_fixture import read_json, INSPECTION_RECORD_LIMIT
 
 RUNTIME_CLASS = 'stego-ci-sandbox-network'
 RUNTIME_HANDLER = 'crun'
-PRODUCTION_CLASS = 'kata'
 EXPRESSION = 'has(object.spec.runtimeClassName) && object.spec.runtimeClassName == '
 
 
@@ -35,15 +36,16 @@ def declaration(source):
         raise ValueError('Require one Sandbox allocation profile')
     match = matches[0]
     block = match.group()
-    before = '        pod_runtime_class: ' + PRODUCTION_CLASS + '\n'
-    if block.count(before) != 1 or block.count('        pod_security: isolated-runtime\n') != 1:
-        raise ValueError('Require the isolated Sandbox profile with its production runtime')
-    changed = block.replace(before, '        pod_runtime_class: ' + RUNTIME_CLASS + '\n', 1)
+    if block.count('        pod_runtime_class: ') != 0 or block.count('        pod_security: isolated-runtime\n') != 1:
+        raise ValueError('Require the classless isolated Sandbox profile')
+    before = '        pod_security: isolated-runtime\n'
+    after = before + '        pod_runtime_class: ' + RUNTIME_CLASS + '\n'
+    changed = block.replace(before, after, 1)
     return source[:match.start()] + changed + source[match.end():]
 
 
 def restore_manifest(raw):
-    """Restore only the class guard before the existing strict render comparison."""
+    """Remove only the class guard before the existing strict render comparison."""
     document = json.loads(raw)
     policies = [item for item in document['items'] if item['kind'] == 'ValidatingAdmissionPolicy' and item['metadata']['name'].endswith('.hypershell-namespace-allocation.pods.sandbox')]
     if len(policies) != 1:
@@ -52,12 +54,12 @@ def restore_manifest(raw):
     selected = [rule for rule in rules if rule['expression'] == EXPRESSION + json.dumps(RUNTIME_CLASS)]
     if len(selected) != 1:
         raise ValueError('The native runtime guard is missing or repeated')
-    selected[0]['expression'] = EXPRESSION + json.dumps(PRODUCTION_CLASS)
+    rules.remove(selected[0])
     return json.dumps(document).encode()
 
 
 def record():
     return {'runtime_class': RUNTIME_CLASS, 'runtime_handler': RUNTIME_HANDLER,
-            'production_runtime_class': PRODUCTION_CLASS,
+            'production_runtime_class': None,
             'vm_isolation_tested': False,
-            'scope': 'Native packet probes only. The exact runtime class guard changes in the test copy. All other Pod, account, namespace, quota, and network rules stay unchanged.'}
+            'scope': 'Native packet probes only. The classless production Sandbox profile gains one fixed runtime class in the test copy. All other Pod, account, namespace, quota, and network rules stay unchanged.'}

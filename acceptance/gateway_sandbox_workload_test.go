@@ -205,7 +205,8 @@ func sandboxAdmissionChecks(t *testing.T, k *kubeFixture, ns string) {
 	}
 	original := list.Items[0]
 	spec := original["spec"].(map[string]any)
-	if spec["runtimeClassName"] != os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") {
+	class, _ := spec["runtimeClassName"].(string)
+	if class != os.Getenv("STEGO_TEST_SANDBOX_RUNTIME_CLASS") {
 		t.Fatal("sandbox selected a different runtime")
 	}
 	original["metadata"] = map[string]any{"name": "isolation-denial-check", "namespace": ns, "ownerReferences": original["metadata"].(map[string]any)["ownerReferences"]}

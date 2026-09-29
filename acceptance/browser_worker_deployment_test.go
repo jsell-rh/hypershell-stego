@@ -58,8 +58,9 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 			env["HYPERSHELL_KUBERNETES_TOKEN_FILE"] = "/var/run/stego-kubernetes/token"
 			if worker.name == "namespace-allocation" {
 				// Allocate the declared Sandbox boundary without starting a Sandbox
-				// workload. The ordinary fixture has no isolated runtime.
-				env["HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"] = "kata"
+				// workload. The ordinary fixture runs classless; the native network
+				// fixture selects its fixed runtime class.
+				env["HYPERSHELL_GATEWAY_SANDBOX_ENABLED"] = "true"
 				if w.nativeSandboxNetworkEnabled() {
 					env["HYPERSHELL_GATEWAY_SANDBOX_RUNTIME_CLASS"] = sandboxNetworkRuntimeClass
 				}
@@ -71,6 +72,7 @@ func (w *browserGatewayWorkload) startWorkers(address, ca string) {
 				target = append(target, "--egress", "network-probe="+w.endpointChange.Initial)
 			}
 			if worker.name == "gateway-workload" {
+				env["HYPERSHELL_GATEWAY_SANDBOX_ENABLED"] = "true"
 				if w.nativeSandboxNetworkEnabled() {
 					// Use the real allocation, account, admission, and identity-copy path.
 					// The native fixture does not start an OpenShell Sandbox workload.
