@@ -110,6 +110,23 @@ func (s *identityServer) ObserveGatewayCleanup(ctx context.Context, request *pb.
 	return &pb.ObserveGatewayCleanupResponse{}, nil
 }
 
+func (s *identityServer) ObserveGatewayNetworkStatus(ctx context.Context, request *pb.ObserveGatewayNetworkStatusRequest) (*pb.ObserveGatewayNetworkStatusResponse, error) {
+	if request.GetId() == "" {
+		return nil, status.Error(codes.InvalidArgument, "id is required")
+	}
+	version, present, err := transport.ResourceVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if !present {
+		return nil, mapError(gateways.ErrObservationRequired)
+	}
+	if err := s.service.ObserveNetworkStatus(ctx, gateways.PrincipalFromContext(ctx), request.Id, version, request.GetStatus()); err != nil {
+		return nil, mapError(err)
+	}
+	return &pb.ObserveGatewayNetworkStatusResponse{}, nil
+}
+
 func (s *identityServer) ScanGatewayIdentityUsers(ctx context.Context, request *pb.ScanGatewayIdentityUsersRequest) (*pb.ScanGatewayIdentityUsersResponse, error) {
 	refs, more, err := s.service.IdentityUserReferences(ctx, gateways.PrincipalFromContext(ctx), request.GetGatewayId(), request.GetAfterGrantId(), int(request.GetPageSize()))
 	if err != nil {

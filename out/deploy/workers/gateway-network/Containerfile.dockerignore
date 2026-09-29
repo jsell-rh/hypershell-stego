@@ -1,0 +1,15 @@
+**
+!go.mod
+!go.sum
+!contracts/
+!contracts/**
+!internal/
+!internal/**
+!out/
+!out/**
+**/.*/**
+**/.*
+**/*.key
+**/*.pem
+**/*.p12
+**/*.pfx

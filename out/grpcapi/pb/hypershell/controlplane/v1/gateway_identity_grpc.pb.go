@@ -37,6 +37,7 @@ const (
 	GatewayIdentityService_SaveGatewayIdentityCheckpoint_FullMethodName    = "/hypershell.controlplane.v1.GatewayIdentityService/SaveGatewayIdentityCheckpoint"
 	GatewayIdentityService_GetGatewayCleanupSummary_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/GetGatewayCleanupSummary"
 	GatewayIdentityService_ObserveGatewayCleanup_FullMethodName            = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayCleanup"
+	GatewayIdentityService_ObserveGatewayNetworkStatus_FullMethodName      = "/hypershell.controlplane.v1.GatewayIdentityService/ObserveGatewayNetworkStatus"
 	GatewayIdentityService_SetObservedSandboxCount_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/SetObservedSandboxCount"
 	GatewayIdentityService_ListGatewayReconcileIDs_FullMethodName          = "/hypershell.controlplane.v1.GatewayIdentityService/ListGatewayReconcileIDs"
 	GatewayIdentityService_ScanGatewayIdentityUsers_FullMethodName         = "/hypershell.controlplane.v1.GatewayIdentityService/ScanGatewayIdentityUsers"
@@ -68,6 +69,7 @@ type GatewayIdentityServiceClient interface {
 	SaveGatewayIdentityCheckpoint(ctx context.Context, in *SaveGatewayIdentityCheckpointRequest, opts ...grpc.CallOption) (*GatewayIdentityCheckpoint, error)
 	GetGatewayCleanupSummary(ctx context.Context, in *GetGatewayCleanupSummaryRequest, opts ...grpc.CallOption) (*CleanupSummary, error)
 	ObserveGatewayCleanup(ctx context.Context, in *ObserveGatewayCleanupRequest, opts ...grpc.CallOption) (*ObserveGatewayCleanupResponse, error)
+	ObserveGatewayNetworkStatus(ctx context.Context, in *ObserveGatewayNetworkStatusRequest, opts ...grpc.CallOption) (*ObserveGatewayNetworkStatusResponse, error)
 	SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(ctx context.Context, in *ListGatewayReconcileIDsRequest, opts ...grpc.CallOption) (*ListGatewayReconcileIDsResponse, error)
 	ScanGatewayIdentityUsers(ctx context.Context, in *ScanGatewayIdentityUsersRequest, opts ...grpc.CallOption) (*ScanGatewayIdentityUsersResponse, error)
@@ -244,6 +246,16 @@ func (c *gatewayIdentityServiceClient) ObserveGatewayCleanup(ctx context.Context
 	return out, nil
 }
 
+func (c *gatewayIdentityServiceClient) ObserveGatewayNetworkStatus(ctx context.Context, in *ObserveGatewayNetworkStatusRequest, opts ...grpc.CallOption) (*ObserveGatewayNetworkStatusResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ObserveGatewayNetworkStatusResponse)
+	err := c.cc.Invoke(ctx, GatewayIdentityService_ObserveGatewayNetworkStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *gatewayIdentityServiceClient) SetObservedSandboxCount(ctx context.Context, in *SetObservedSandboxCountRequest, opts ...grpc.CallOption) (*SetObservedSandboxCountResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetObservedSandboxCountResponse)
@@ -327,6 +339,7 @@ type GatewayIdentityServiceServer interface {
 	SaveGatewayIdentityCheckpoint(context.Context, *SaveGatewayIdentityCheckpointRequest) (*GatewayIdentityCheckpoint, error)
 	GetGatewayCleanupSummary(context.Context, *GetGatewayCleanupSummaryRequest) (*CleanupSummary, error)
 	ObserveGatewayCleanup(context.Context, *ObserveGatewayCleanupRequest) (*ObserveGatewayCleanupResponse, error)
+	ObserveGatewayNetworkStatus(context.Context, *ObserveGatewayNetworkStatusRequest) (*ObserveGatewayNetworkStatusResponse, error)
 	SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error)
 	ListGatewayReconcileIDs(context.Context, *ListGatewayReconcileIDsRequest) (*ListGatewayReconcileIDsResponse, error)
 	ScanGatewayIdentityUsers(context.Context, *ScanGatewayIdentityUsersRequest) (*ScanGatewayIdentityUsersResponse, error)
@@ -390,6 +403,9 @@ func (UnimplementedGatewayIdentityServiceServer) GetGatewayCleanupSummary(contex
 }
 func (UnimplementedGatewayIdentityServiceServer) ObserveGatewayCleanup(context.Context, *ObserveGatewayCleanupRequest) (*ObserveGatewayCleanupResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ObserveGatewayCleanup not implemented")
+}
+func (UnimplementedGatewayIdentityServiceServer) ObserveGatewayNetworkStatus(context.Context, *ObserveGatewayNetworkStatusRequest) (*ObserveGatewayNetworkStatusResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ObserveGatewayNetworkStatus not implemented")
 }
 func (UnimplementedGatewayIdentityServiceServer) SetObservedSandboxCount(context.Context, *SetObservedSandboxCountRequest) (*SetObservedSandboxCountResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method SetObservedSandboxCount not implemented")
@@ -719,6 +735,24 @@ func _GatewayIdentityService_ObserveGatewayCleanup_Handler(srv interface{}, ctx 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _GatewayIdentityService_ObserveGatewayNetworkStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ObserveGatewayNetworkStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayIdentityServiceServer).ObserveGatewayNetworkStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: GatewayIdentityService_ObserveGatewayNetworkStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayIdentityServiceServer).ObserveGatewayNetworkStatus(ctx, req.(*ObserveGatewayNetworkStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _GatewayIdentityService_SetObservedSandboxCount_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetObservedSandboxCountRequest)
 	if err := dec(in); err != nil {
@@ -897,6 +931,10 @@ var GatewayIdentityService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ObserveGatewayCleanup",
 			Handler:    _GatewayIdentityService_ObserveGatewayCleanup_Handler,
+		},
+		{
+			MethodName: "ObserveGatewayNetworkStatus",
+			Handler:    _GatewayIdentityService_ObserveGatewayNetworkStatus_Handler,
 		},
 		{
 			MethodName: "SetObservedSandboxCount",

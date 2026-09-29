@@ -19,7 +19,7 @@ import (
 )
 
 func TestGeneratedWorkloadWorkerStartupPrivacy(t *testing.T) {
-	for _, name := range []string{"namespace-allocation", "gateway-identity", "gateway-workload", "sandbox-count"} {
+	for _, name := range []string{"namespace-allocation", "gateway-identity", "gateway-network", "gateway-workload", "sandbox-count"} {
 		t.Run(name, func(t *testing.T) {
 			binary := buildProgram(t, "./out/deploy/workers/"+name)
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)

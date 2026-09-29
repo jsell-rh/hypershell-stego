@@ -294,6 +294,28 @@
                 },
                 "podSelector": {
                   "matchLabels": {
+                    "app.kubernetes.io/name": "hypershell-gateway-network"
+                  }
+                }
+              }
+            ],
+            "ports": [
+              {
+                "port": 9090,
+                "protocol": "TCP"
+              }
+            ]
+          },
+          {
+            "from": [
+              {
+                "namespaceSelector": {
+                  "matchLabels": {
+                    "kubernetes.io/metadata.name": "{{.Namespace}}"
+                  }
+                },
+                "podSelector": {
+                  "matchLabels": {
                     "app": "stego-fixture"
                   }
                 }

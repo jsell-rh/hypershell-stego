@@ -22,6 +22,7 @@ service GatewayIdentityService {
  rpc SaveGatewayIdentityCheckpoint(SaveGatewayIdentityCheckpointRequest) returns (GatewayIdentityCheckpoint);
  rpc GetGatewayCleanupSummary(GetGatewayCleanupSummaryRequest) returns (CleanupSummary);
  rpc ObserveGatewayCleanup(ObserveGatewayCleanupRequest) returns (ObserveGatewayCleanupResponse);
+ rpc ObserveGatewayNetworkStatus(ObserveGatewayNetworkStatusRequest) returns (ObserveGatewayNetworkStatusResponse);
  rpc SetObservedSandboxCount(SetObservedSandboxCountRequest) returns (SetObservedSandboxCountResponse);
  rpc ListGatewayReconcileIDs(ListGatewayReconcileIDsRequest) returns (ListGatewayReconcileIDsResponse);
  rpc ScanGatewayIdentityUsers(ScanGatewayIdentityUsersRequest) returns (ScanGatewayIdentityUsersResponse);
@@ -134,6 +135,12 @@ message ObserveGatewayIdentityResponse {}
 // Data is a bounded STEGO scan-cycle record. The generation and checkpoint
 // version identify the input observed before work. A stale save must fail.
 message GatewayIdentityCycle { string gateway_id = 1; string data = 2; int64 version = 3; int64 resource_generation = 4; int64 resource_version = 5; }
+
+// The network controller reports its deterministic reconciliation verdict. The
+// status is control-plane owned. Use the resource revision read before the
+// observation in the request metadata. A stale save must fail.
+message ObserveGatewayNetworkStatusRequest { string id = 1; string status = 2; }
+message ObserveGatewayNetworkStatusResponse {}
 message SaveGatewayIdentityCycleRequest { string gateway_id = 1; string data = 2; int64 expected_version = 3; int64 resource_generation = 4; int64 resource_version = 5; }
 
 // This summary identifies an authorized cleanup scope. It contains no IDs.
