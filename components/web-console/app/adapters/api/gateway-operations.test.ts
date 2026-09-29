@@ -622,6 +622,30 @@ describe("gateway API operations adapter", () => {
     );
   });
 
+  it("sorts the sandbox column by the authoritative count field", async () => {
+    gatewayApi.list.mockResolvedValue({
+      status: 200,
+      etag: null,
+      body: gatewayList([], 0, 1),
+    });
+
+    await controlPlane.listGateways(
+      {
+        ...listRequest,
+        page: 1,
+        search: "",
+        sortDirection: "desc",
+        sortField: "activeSandboxes",
+      },
+      context,
+    );
+
+    expect(gatewayApi.list).toHaveBeenCalledWith(
+      expect.objectContaining({ orderBy: "active_sandbox_count desc" }),
+      { signal: undefined },
+    );
+  });
+
   it("maps explicit OIDC connection values from the gateway response", async () => {
     gatewayApi.get.mockResolvedValue({
       status: 200,

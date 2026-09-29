@@ -71,6 +71,7 @@ function requirePage<T>(value: {
 const placementPageSize = defaultGatewayListRequest.size;
 
 const gatewaySortFields = {
+  activeSandboxes: "active_sandbox_count",
   cluster: "cluster_id",
   created: "created_at",
   endpoint: "route_address",
