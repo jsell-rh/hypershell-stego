@@ -28,7 +28,7 @@ func TestSandboxCountWorkflowThroughGeneratedRuntime(t *testing.T) {
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
 	foreign := ksuid.New().String()
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","second"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["controller","second"]`, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	settings = withControllerWriteGrants(t, settings, writeGrant("controller", "observe.sandbox-count", f.cluster), writeGrant("second", "observe.sandbox-count", foreign))
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)

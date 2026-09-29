@@ -26,7 +26,7 @@ func TestGatewayProviderStateAcrossGRPCAndRestart(t *testing.T) {
 	signingKey, settings := issuer(t)
 	apiTLS := identity(t, "localhost")
 	directory := filepath.Dir(apiTLS.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["identity","cleanup","unassigned"]`)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), `HYPERSHELL_CONTROL_PLANE_SUBJECTS=["identity","cleanup","unassigned"]`, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	settings = withControllerWriteGrants(t, settings, writeGrant("identity", "configure.identity", ""))
 	settings = withCleanupGrants(t, settings, cleanupGrant("cleanup", "Gateway", "identity", ""))
 	binary := buildApplication(t)

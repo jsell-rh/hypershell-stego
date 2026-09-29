@@ -5,6 +5,7 @@ import (
 	"errors"
 	auth "github.com/jsell-rh/hypershell-stego/out/auth"
 	"os"
+	"strconv"
 	"strings"
 	"unicode/utf8"
 )
@@ -18,6 +19,7 @@ type Options struct {
 	ControllerWritePolicy *auth.GrantPolicy
 	DefaultReleaseID      string
 	DefaultClusterID      string
+	DefaultCreatorRole    bool
 }
 
 func OptionsFromEnvironment() (Options, error) {
@@ -25,6 +27,16 @@ func OptionsFromEnvironment() (Options, error) {
 	var err error
 	options.DefaultReleaseID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_RELEASE_ID")
 	options.DefaultClusterID = os.Getenv("HYPERSHELL_DEFAULT_GATEWAY_CLUSTER_ID")
+	options.DefaultCreatorRole = true
+	if raw, set := os.LookupEnv("HYPERSHELL_DEFAULT_GATEWAY_CREATOR"); set {
+		if raw == "" {
+			options.DefaultCreatorRole = false
+		} else if value, err := strconv.ParseBool(raw); err == nil {
+			options.DefaultCreatorRole = value
+		} else {
+			return Options{}, errors.New("HYPERSHELL_DEFAULT_GATEWAY_CREATOR must be a boolean")
+		}
+	}
 	if err = validateDefaults(options); err != nil {
 		return Options{}, err
 	}

@@ -51,6 +51,9 @@ func (s *Service) PrepareRequest(ctx context.Context, p Principal) error {
 		for _, role := range roles {
 			row, present := existing[role.ID]
 			wanted := slices.Contains(p.Roles, role.Name)
+			if role.Name == "gateway:creator" && s.defaultCreatorRole {
+				wanted = true
+			}
 			if wanted == present {
 				continue
 			}

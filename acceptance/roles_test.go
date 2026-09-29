@@ -123,6 +123,7 @@ func TestRoleDiscoveryThroughGeneratedRuntime(t *testing.T) {
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
 	binary := buildApplication(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	stop, address := startApplication(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
 	root := address + "/api/hypershell/v1"

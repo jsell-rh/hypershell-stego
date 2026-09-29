@@ -59,6 +59,7 @@ type Service struct {
 	controllerWritePolicy *auth.GrantPolicy
 	defaultReleaseID      string
 	defaultClusterID      string
+	defaultCreatorRole    bool
 }
 
 func New(repository Repository, options ...Options) (*Service, error) {
@@ -84,7 +85,7 @@ func New(repository Repository, options ...Options) (*Service, error) {
 			subjects[subject] = true
 		}
 	}
-	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID}, nil
+	return &Service{providerStatePolicy: selected.ProviderStatePolicy, controllerWritePolicy: selected.ControllerWritePolicy, cleanupPolicy: selected.CleanupPolicy, repository: repository, controlPlaneSubjects: subjects, defaultReleaseID: selected.DefaultReleaseID, defaultClusterID: selected.DefaultClusterID, defaultCreatorRole: selected.DefaultCreatorRole}, nil
 }
 
 // Create commits the Gateway, owner grant, placement, and events as one change.
@@ -93,7 +94,7 @@ func (s *Service) Create(ctx context.Context, principal Principal, request Creat
 	if err := validatePrincipal(principal); err != nil {
 		return gateway, err
 	}
-	if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "gateway:creator") {
+	if !s.isControlPlane(principal) && !slices.Contains(principal.Roles, "gateway:creator") && !s.defaultCreatorRole {
 		return gateway, ErrForbidden
 	}
 	if request.Phase != nil || request.Status != nil {

@@ -118,7 +118,7 @@ func TestGatewayWorkflowAcrossRESTAndGRPC(t *testing.T) {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	binary := buildApplication(t)
 	stop, httpAddress, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	client, connection := grpcClient(t, grpcAddress, tlsIdentity)

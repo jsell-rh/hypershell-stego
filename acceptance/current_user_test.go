@@ -45,6 +45,7 @@ func currentUser(t testing.TB, root, bearer string) contract.CurrentUser {
 func TestCurrentUserThroughGeneratedRuntime(t *testing.T) {
 	f := database(t)
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	_, config := broker(t, identity(t, "localhost"))
 	binary := buildApplication(t)
 	stop, address := startApplication(t, binary, f.dsn, config, settings...)

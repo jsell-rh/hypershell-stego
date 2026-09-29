@@ -209,7 +209,8 @@ func (k *keycloakFixture) apiLoginSetup(t *testing.T) ([]string, []byte) {
 	if err := os.WriteFile(file, pem.EncodeToMemory(&pem.Block{Type: "PUBLIC KEY", Bytes: encoded}), 0600); err != nil {
 		t.Fatal(err)
 	}
-	return []string{"STEGO_AUTH_PUBLIC_KEY_FILE=" + file, "STEGO_AUTH_ISSUER=" + k.options.ServerURL + "/realms/workflow", "STEGO_AUTH_AUDIENCE=hypershell", "STEGO_AUTH_ROLES_CLAIM=resource_access.hypershell.roles"}, response.Body
+	settings := []string{"STEGO_AUTH_PUBLIC_KEY_FILE=" + file, "STEGO_AUTH_ISSUER=" + k.options.ServerURL + "/realms/workflow", "STEGO_AUTH_AUDIENCE=hypershell", "STEGO_AUTH_ROLES_CLAIM=resource_access.hypershell.roles", "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false"}
+	return settings, response.Body
 }
 
 func TestGatewayUserLoginFollowsStoredGrants(t *testing.T) {

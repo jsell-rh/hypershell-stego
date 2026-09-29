@@ -27,7 +27,7 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	key, settings := issuer(t)
 	tlsIdentity := identity(t, "localhost")
 	directory := filepath.Dir(tlsIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"), "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	binary := buildApplication(t)
 	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
@@ -216,6 +216,89 @@ func TestGlobalRolesThroughGeneratedRuntime(t *testing.T) {
 	readGrantEvent(t, consumer, restored[0].ID, "", "Create", "rolebinding.created")
 	if code, _ := requestJSON(t, "GET", base+"/gateways/"+gateway.ID, plain, nil); code != 200 {
 		t.Fatal("restart lost ownership", code)
+	}
+}
+
+// A role-less token still receives the default global creator binding and can
+// create a Gateway when the default is enabled. The binding survives a later
+// request that keeps no roles. Explicit disable keeps the strict claim rule.
+func TestDefaultGatewayCreatorRoleThroughGeneratedRuntime(t *testing.T) {
+	f := database(t)
+	_, config := broker(t, identity(t, "localhost"))
+	key, settings := issuer(t)
+	tlsIdentity := identity(t, "localhost")
+	directory := filepath.Dir(tlsIdentity.config.CAFile)
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(directory, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(directory, "server-key.pem"))
+	binary := buildApplication(t)
+	stop, address, grpcAddress := startBoth(t, binary, f.dsn, config, settings...)
+	defer func() { stop() }()
+	base := address + "/api/hypershell/v1"
+	_, connection := grpcClient(t, grpcAddress, tlsIdentity)
+	client := pb.NewRoleBindingServiceClient(connection)
+	call := func(bearer string) context.Context {
+		return metadata.NewOutgoingContext(context.Background(), metadata.Pairs("authorization", "Bearer "+bearer))
+	}
+	plain := token(t, key, "alice")
+	both := token(t, key, "alice", "gateway:creator", "platform:admin")
+	user := currentUser(t, base, plain)
+	globals := func(bearer string, want int) int64 {
+		t.Helper()
+		code, body := requestJSON(t, "GET", base+"/role_bindings?search="+url.QueryEscape("scope = 'global'"), bearer, nil)
+		var result grantListResponse
+		if code != 200 || json.Unmarshal(body, &result) != nil || result.Total != int64(want) {
+			t.Fatal("global list", code, string(body))
+		}
+		return result.Total
+	}
+	request, _ := json.Marshal(f.request("default-creator-gateway"))
+	code, body := requestJSON(t, "POST", base+"/gateways", plain, request)
+	var gateway gatewayResponse
+	if code != 201 || json.Unmarshal(body, &gateway) != nil {
+		t.Fatal("role-less create with default enabled", code, string(body))
+	}
+	if total := globals(plain, 1); total != 1 {
+		t.Fatal("default binding count", total)
+	}
+	// A role-less renewal keeps the binding. Only admin is claim-driven.
+	if total := globals(plain, 1); total != 1 {
+		t.Fatal("binding did not survive a role-less request", total)
+	}
+	// Platform admin stays claim-driven: removing it from the token removes
+	// the admin binding while the creator binding remains.
+	if total := globals(both, 2); total != 2 {
+		t.Fatal("claim-driven admin projection", total)
+	}
+	if total := globals(plain, 1); total != 1 {
+		t.Fatal("admin removal dropped the default creator binding", total)
+	}
+	// gRPC transport reads the same projection. The created Gateway also adds
+	// the gateway-scope owner grant, so count only global bindings here.
+	rpc, err := client.ListRoleBindings(call(plain), &pb.ListRoleBindingsRequest{UserId: &user.Id})
+	if err != nil {
+		t.Fatal("gRPC default projection", err)
+	}
+	global := 0
+	for _, item := range rpc.GetItems() {
+		if item.GetScope() == "global" {
+			if item.GetRoleName() != "gateway:creator" {
+				t.Fatal("unexpected global binding", item.GetRoleName())
+			}
+			global++
+		}
+	}
+	if global != 1 {
+		t.Fatal("gRPC default projection", global)
+	}
+	// Explicit disable keeps the strict claim rule.
+	stop()
+	stop, address, grpcAddress = startBoth(t, binary, f.dsn, config, append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")...)
+	base = address + "/api/hypershell/v1"
+	request, _ = json.Marshal(f.request("default-creator-disabled"))
+	if code, _ := requestJSON(t, "POST", base+"/gateways", plain, request); code != 403 {
+		t.Fatal("disabled default still created", code)
+	}
+	if total := globals(plain, 0); total != 0 {
+		t.Fatal("disabled default retained the binding", total)
 	}
 }
 

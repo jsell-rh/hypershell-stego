@@ -35,7 +35,7 @@ func TestGeneratedCLIGrantWorkflow(t *testing.T) {
 	key, settings := issuer(t)
 	rpcIdentity := identity(t, "localhost")
 	tlsDir := filepath.Dir(rpcIdentity.config.CAFile)
-	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(tlsDir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(tlsDir, "server-key.pem"))
+	settings = append(settings, "STEGO_GRPC_TLS_CERT="+filepath.Join(tlsDir, "server.pem"), "STEGO_GRPC_TLS_KEY="+filepath.Join(tlsDir, "server-key.pem"), "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	api, cli := buildApplication(t), buildProgram(t, "./out/cli/cmd")
 	stop, address, rpcAddress := startBoth(t, api, f.dsn, brokerConfig, settings...)
 	defer func() { stop() }()

@@ -113,6 +113,7 @@ func TestGatewayWorkflowThroughGeneratedRESTProcess(t *testing.T) {
 	_, config := broker(t, identity(t, "localhost"))
 	consumer := kafkaConsumer(t, config)
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	binary := buildApplication(t)
 	stop, address := startApplication(t, binary, f.dsn, config, settings...)
 	path := address + "/api/hypershell/v1/gateways"

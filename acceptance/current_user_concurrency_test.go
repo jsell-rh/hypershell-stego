@@ -58,6 +58,7 @@ func testConcurrentCurrentUser(t *testing.T, throughHTTP bool) {
 	}
 	if throughHTTP {
 		key, settings := issuer(t)
+		settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 		_, config := broker(t, identity(t, "localhost"))
 		stop, address := startApplication(t, buildApplication(t), f.dsn, config, settings...)
 		defer stop()
