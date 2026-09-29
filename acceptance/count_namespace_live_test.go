@@ -52,15 +52,27 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		t.Fatal(err)
 	}
 	var allocated []*pb.Gateway
+	sandboxNamespace := func(row *pb.Gateway) string {
+		t.Helper()
+		sandbox, err := gatewayworkload.SandboxNamespace(row.Metadata.Id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return sandbox
+	}
 	remove := func(row *pb.Gateway) error {
 		cleanup, done := context.WithTimeout(context.Background(), 100*time.Second)
 		defer done()
 		for cleanup.Err() == nil {
-			absent, err := a.Delete(cleanup, "gateway", row.Namespace, row.Metadata.Id)
-			if err != nil && !errors.Is(err, allocation.ErrPending) {
-				return err
+			gone, gatewayErr := a.Delete(cleanup, "gateway", row.Namespace, row.Metadata.Id)
+			if gatewayErr != nil && !errors.Is(gatewayErr, allocation.ErrPending) {
+				return gatewayErr
 			}
-			if absent {
+			absent, sandboxErr := a.Delete(cleanup, "sandbox", sandboxNamespace(row), row.Metadata.Id)
+			if sandboxErr != nil && !errors.Is(sandboxErr, allocation.ErrPending) {
+				return sandboxErr
+			}
+			if gone && absent {
 				return nil
 			}
 			time.Sleep(time.Second)
@@ -78,12 +90,13 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		t.Helper()
 		deadline := time.Now().Add(30 * time.Second)
 		for {
-			err := a.Ensure(ctx, "gateway", row.Namespace, row.Metadata.Id)
-			if err == nil {
+			gatewayErr := a.Ensure(ctx, "gateway", row.Namespace, row.Metadata.Id)
+			sandboxErr := a.Ensure(ctx, "sandbox", sandboxNamespace(row), row.Metadata.Id)
+			if gatewayErr == nil && sandboxErr == nil {
 				return
 			}
-			if !errors.Is(err, allocation.ErrPending) || time.Now().After(deadline) {
-				t.Fatal("allocate Gateway namespace:", err)
+			if time.Now().After(deadline) || (!errors.Is(gatewayErr, allocation.ErrPending) && gatewayErr != nil) || (!errors.Is(sandboxErr, allocation.ErrPending) && sandboxErr != nil) {
+				t.Fatal("allocate Gateway and Sandbox namespaces:", gatewayErr, sandboxErr)
 			}
 			time.Sleep(time.Second)
 		}
@@ -174,90 +187,100 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		}
 	}
 	for _, verb := range []string{"get", "list", "watch"} {
-		review(verb, "", "pods", one.Namespace, true)
+		review(verb, "", "pods", sandboxNamespace(one), true)
 	}
 	review("list", "", "pods", "", false)
 	review("list", "", "pods", control, false)
-	review("get", "", "secrets", one.Namespace, false)
-	review("create", "apps", "deployments", one.Namespace, false)
-	review("create", "rbac.authorization.k8s.io", "rolebindings", one.Namespace, false)
+	review("get", "", "secrets", sandboxNamespace(one), false)
+	review("create", "apps", "deployments", sandboxNamespace(one), false)
+	review("create", "rbac.authorization.k8s.io", "rolebindings", sandboxNamespace(one), false)
 	review("patch", "", "namespaces", "", false)
 	review("get", "", "namespaces", "", true)
-	for _, path := range []string{"/api/v1/pods", "/api/v1/namespaces/" + control + "/pods", "/api/v1/namespaces/" + one.Namespace + "/secrets/probe"} {
+	for _, path := range []string{"/api/v1/pods", "/api/v1/namespaces/" + control + "/pods", "/api/v1/namespaces/" + sandboxNamespace(one) + "/secrets/probe"} {
 		_, code, err := countClient.Request(ctx, http.MethodGet, path, nil)
 		var api *kube.APIError
 		if code != 403 || !errors.As(err, &api) || api.StatusCode != 403 {
 			t.Fatal("expected direct denial", path, code, err)
 		}
 	}
-	deployment := func(row *pb.Gateway, replicas int) {
+	// The workload role can create bare Pods only in the sandbox namespace,
+	// and the sandbox admission policy fixes their shape: an agent container,
+	// the allocated service account, no token mount, and no runtime class.
+	fixture := map[string]int{}
+	pods := func(row *pb.Gateway, count int) {
 		t.Helper()
-		labels := kube.Object{"app": "count-fixture", sandboxcount.SandboxLabel: "fixture", "hypershell.redhat.io/gateway-id": row.Metadata.Id}
-		desired := kube.Object{
-			"apiVersion": "apps/v1", "kind": "Deployment",
-			"metadata": kube.Object{"name": "count-fixture", "namespace": row.Namespace, "labels": labels},
-			"spec": kube.Object{
-				"replicas": replicas,
-				"selector": kube.Object{"matchLabels": kube.Object{"app": "count-fixture"}},
-				"template": kube.Object{
-					"metadata": kube.Object{"labels": labels},
-					"spec": kube.Object{
-						"automountServiceAccountToken": false, "terminationGracePeriodSeconds": 1,
-						"securityContext": kube.Object{"runAsNonRoot": true, "seccompProfile": kube.Object{"type": "RuntimeDefault"}},
-						"containers": []any{kube.Object{
-							"name": "idle", "image": os.Getenv("STEGO_TEST_IDLE_IMAGE"),
-							"command": []any{"/bin/sh", "-c", "sleep 900"},
-							"resources": kube.Object{
-								"requests": kube.Object{"cpu": "10m", "memory": "16Mi", "ephemeral-storage": "16Mi"},
-								"limits":   kube.Object{"cpu": "10m", "memory": "16Mi", "ephemeral-storage": "16Mi"},
-							},
-							"securityContext": kube.Object{
-								"allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true,
-								"capabilities": kube.Object{"drop": []any{"ALL"}},
-							},
-						}},
-					},
+		namespace := sandboxNamespace(row)
+		account, err := a.ServiceAccountName("sandbox", namespace, row.Metadata.Id, "sandbox")
+		if err != nil {
+			t.Fatal(err)
+		}
+		collection := "/api/v1/namespaces/" + namespace + "/pods"
+		deadline := time.Now().Add(90 * time.Second)
+		// The fixture only grows: no client can delete these Pods, so each call
+		// adds only the Pods that the target count still needs.
+		for i := fixture[row.Metadata.Id]; i < count; i++ {
+			name := fmt.Sprintf("count-fixture-%d", i)
+			desired := kube.Object{
+				"apiVersion": "v1", "kind": "Pod",
+				"metadata": kube.Object{"name": name, "namespace": namespace, "labels": kube.Object{sandboxcount.SandboxLabel: "fixture", "hypershell.redhat.io/gateway-id": row.Metadata.Id}},
+				"spec": kube.Object{
+					"automountServiceAccountToken": false, "restartPolicy": "Never", "terminationGracePeriodSeconds": 1,
+					"serviceAccountName": account,
+					"securityContext":    kube.Object{"runAsNonRoot": true, "runAsUser": 1000, "seccompProfile": kube.Object{"type": "RuntimeDefault"}},
+					"containers": []any{kube.Object{
+						"name": "agent", "image": os.Getenv("STEGO_TEST_IDLE_IMAGE"),
+						"command": []any{"/bin/sh", "-c", "sleep 900"},
+						"resources": kube.Object{
+							"requests": kube.Object{"cpu": "10m", "memory": "16Mi", "ephemeral-storage": "16Mi"},
+							"limits":   kube.Object{"cpu": "10m", "memory": "16Mi", "ephemeral-storage": "16Mi"},
+						},
+						"securityContext": kube.Object{
+							"runAsNonRoot": true, "runAsUser": 1000, "allowPrivilegeEscalation": false, "readOnlyRootFilesystem": true,
+							"capabilities": kube.Object{"drop": []any{"ALL"}},
+						},
+					}},
 				},
-			},
-		}
-		collection := "/apis/apps/v1/namespaces/" + row.Namespace + "/deployments"
-		if _, err := workloadClient.Ensure(ctx, collection, desired, kube.Owner{"hypershell.redhat.io/gateway-id": row.Metadata.Id}); err != nil {
-			t.Fatal("create bounded Pod deployment", err)
-		}
-		deadline := time.Now().Add(60 * time.Second)
-		for {
-			object, _, err := workloadClient.Request(ctx, http.MethodGet, collection+"/count-fixture", nil)
-			if err != nil {
-				t.Fatal(err)
 			}
-			if ready, ok := kube.Nested(object, "status", "readyReplicas").(json.Number); ok && string(ready) == fmt.Sprint(replicas) {
-				return
+			created, code, err := workloadClient.Request(ctx, http.MethodPost, collection, desired)
+			if err != nil || code != 201 {
+				t.Fatal("create bounded sandbox Pod", code, err, created)
 			}
-			if time.Now().After(deadline) {
-				t.Fatalf("bounded Pods did not become ready: %v", object["status"])
+			path := collection + "/" + name
+			for {
+				object, code, err := workloadClient.Request(ctx, http.MethodGet, path, nil)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if phase := kube.String(object, "status", "phase"); code == 200 && (phase == "Pending" || phase == "Running") {
+					break
+				}
+				if time.Now().After(deadline) {
+					t.Fatalf("bounded Pod %s did not exist: %v", name, object["status"])
+				}
+				time.Sleep(time.Second)
 			}
-			time.Sleep(time.Second)
 		}
+		fixture[row.Metadata.Id] = count
 	}
-	deployment(one, 1)
+	pods(one, 1)
 	readCount(one, 1)
 	readGatewayEvent(t, consumer, one.Metadata.Id, "Update", "gateway.updated")
-	deployment(two, 1)
+	pods(two, 1)
 	readCount(two, 1)
 	readGatewayEvent(t, consumer, two.Metadata.Id, "Update", "gateway.updated")
 	three := create("live-added")
-	deployment(three, 1)
+	pods(three, 1)
 	readCount(three, 1)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	// Remove the declared count binding, with live ownership and UID checks.
-	ownerLabels := kube.Owner{allocation.MarkerLabel: a.Marker(), allocation.ProfileLabel: "gateway", "hypershell.redhat.io/gateway-id": one.Metadata.Id, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}
-	bindingCollection := "/apis/rbac.authorization.k8s.io/v1/namespaces/" + one.Namespace + "/rolebindings"
+	ownerLabels := kube.Owner{allocation.MarkerLabel: a.Marker(), allocation.ProfileLabel: "sandbox", "hypershell.redhat.io/gateway-id": one.Metadata.Id, "app.kubernetes.io/managed-by": "hypershell-gateway-controller"}
+	bindingCollection := "/apis/rbac.authorization.k8s.io/v1/namespaces/" + sandboxNamespace(one) + "/rolebindings"
 	query := url.Values{"limit": {"64"}, "labelSelector": {allocation.MarkerLabel + "=" + a.Marker()}}
 	page, code, err := allocatorClient.Request(ctx, http.MethodGet, bindingCollection+"?"+query.Encode(), nil)
 	if err != nil || code != http.StatusOK {
 		t.Fatal("count binding snapshot", code, err)
 	}
-	binding, err := selectCountBinding(page, ownerLabels, control, one.Namespace)
+	binding, err := selectCountBinding(page, ownerLabels, control, sandboxNamespace(one))
 	if err != nil {
 		t.Fatal("count binding identity", err)
 	}
@@ -283,7 +306,7 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	review("list", "", "pods", one.Namespace, false)
+	review("list", "", "pods", sandboxNamespace(one), false)
 	stopWorker()
 	stopWorker, logs = startDatabaseController(t, worker, k, rpcAddress, tlsIdentity.config.CAFile, controller, workerSettings...)
 	deadline := time.Now().Add(20 * time.Second)
@@ -293,9 +316,9 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 		}
 		time.Sleep(200 * time.Millisecond)
 	}
-	deployment(one, 2)
+	pods(one, 2)
 	// Another namespace must still make progress while this read is denied.
-	deployment(two, 2)
+	pods(two, 2)
 	readCount(two, 2)
 	readGatewayEvent(t, consumer, two.Metadata.Id, "Update", "gateway.updated")
 	readCount(one, 1)
@@ -307,6 +330,10 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	oldSandboxUID, err := a.NamespaceUID(ctx, "sandbox", sandboxNamespace(three), three.Metadata.Id)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := remove(three); err != nil {
 		t.Fatal(err)
 	}
@@ -315,9 +342,15 @@ func TestNamespaceCountWithLiveKubernetes(t *testing.T) {
 	if err != nil || newUID == oldUID {
 		t.Fatal("namespace UID did not change", err)
 	}
+	newSandboxUID, err := a.NamespaceUID(ctx, "sandbox", sandboxNamespace(three), three.Metadata.Id)
+	if err != nil || newSandboxUID == oldSandboxUID {
+		t.Fatal("sandbox namespace UID did not change", err)
+	}
+	// The replacement namespace starts empty, so the fixture count restarts.
+	fixture[three.Metadata.Id] = 0
 	readCount(three, 0)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
-	deployment(three, 1)
+	pods(three, 1)
 	readCount(three, 1)
 	readGatewayEvent(t, consumer, three.Metadata.Id, "Update", "gateway.updated")
 	stopWorker()

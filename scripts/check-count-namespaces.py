@@ -229,7 +229,9 @@ exit "$code"
             try:
                 oc("exec", pod, "--", "test", "-f", "/work/" + name)
                 return True
-            except subprocess.CalledProcessError:
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
+                # An exec request can stall while the Pod is busy. The wait
+                # loop keeps polling until its own deadline.
                 return False
 
         def wait_file(name):
@@ -317,7 +319,12 @@ exit "$code"
             for item in owned:
                 meta = item["metadata"]
                 labels = meta.get("labels", {})
-                if not meta["name"].startswith("openshell-") or labels.get("stego.dev/allocation-profile") != "gateway" or labels.get("app.kubernetes.io/managed-by") != "hypershell-gateway-controller" or not labels.get("hypershell.redhat.io/gateway-id"):
+                name = meta["name"]
+                profile = labels.get("stego.dev/allocation-profile")
+                known = (name.startswith("openshell-sandbox-") and profile == "sandbox") or (
+                    name.startswith("openshell-") and not name.startswith("openshell-sandbox-") and profile == "gateway"
+                )
+                if not known or labels.get("app.kubernetes.io/managed-by") != "hypershell-gateway-controller" or not labels.get("hypershell.redhat.io/gateway-id"):
                     raise RuntimeError("Unexpected namespace identity; keep resources for inspection")
             for item in bindings:
                 meta = item["metadata"]
@@ -337,7 +344,7 @@ exit "$code"
                 oc("delete", item["kind"], item["metadata"]["name"], "--ignore-not-found", "--wait=true", "--timeout=30s")
             oc("delete", "namespace", namespace, "--wait=false")
             oc("wait", "--for=delete", "namespace/" + namespace, "--timeout=90s", timeout=105)
-            (result / "cleanup.json").write_text(json.dumps({"namespace_absent": namespace, "allocator_marker": marker, "gateway_namespaces_absent": True, "gateway_cluster_bindings_absent": True, "fallback": fallback}) + "\n")
+            (result / "cleanup.json").write_text(json.dumps({"namespace_absent": namespace, "allocator_marker": marker, "gateway_namespaces_absent": True, "sandbox_namespaces_absent": True, "gateway_cluster_bindings_absent": True, "fallback": fallback}) + "\n")
         live_lock.release(args.context, namespace)
     if code != 0:
         raise SystemExit("Live namespace count check failed; see " + str(result))
