@@ -1008,10 +1008,6 @@
             "message": "Pod requires a current allocation with its declared Pod security"
           },
           {
-            "expression": "has(object.spec.runtimeClassName) \u0026\u0026 object.spec.runtimeClassName == \"kata\"",
-            "message": "Pod must use the declared RuntimeClass"
-          },
-          {
             "expression": "namespaceObject != null \u0026\u0026 (has(namespaceObject.metadata.annotations) \u0026\u0026 \"stego.dev/service-account-sandbox\" in namespaceObject.metadata.annotations \u0026\u0026 namespaceObject.metadata.annotations[\"stego.dev/service-account-sandbox\"].matches(\"^sa-{{allocationID .Namespace `hypershell-namespace-allocation`}}-[a-z2-7]{26}$\")) \u0026\u0026 object.spec.serviceAccountName == namespaceObject.metadata.annotations[\"stego.dev/service-account-sandbox\"] \u0026\u0026 has(object.spec.automountServiceAccountToken) \u0026\u0026 !object.spec.automountServiceAccountToken",
             "message": "Pod must use its allocated ServiceAccount and disable automatic token mounting"
           },
