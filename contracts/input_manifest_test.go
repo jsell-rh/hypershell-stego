@@ -56,7 +56,8 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			Document   string   `yaml:"document"`
 			References []string `yaml:"references"`
 			ProtoFiles []struct {
-				Path string `yaml:"path"`
+				Path      string `yaml:"path"`
+				Reference string `yaml:"reference"`
 			} `yaml:"proto_files"`
 			Processes []struct {
 				FactoryPackage string `yaml:"factory_package"`
@@ -75,6 +76,12 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			t.Fatal("duplicate input declaration", input.Path)
 		}
 		expected[input.Path] = true
+		if input.Reference != "" {
+			if expected[input.Reference] {
+				t.Fatal("duplicate input declaration", input.Reference)
+			}
+			expected[input.Reference] = true
+		}
 	}
 	for _, process := range service.Overrides["grpc-application"].Processes {
 		if process.FactoryPackage == "" {

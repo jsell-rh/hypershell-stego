@@ -724,6 +724,7 @@ overrides:
         import_path: hypershell/v1/common.proto
       - path: contracts/extensions/gateways.proto
         import_path: hypershell/v1/gateways.proto
+        reference: contracts/reference/proto/hypershell/v1/gateways.proto
       - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
         import_path: hypershell/provisioner/v1/service_accounts.proto
       - path: contracts/extensions/console_credentials.proto

@@ -12,7 +12,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jsell-rh/hypershell-stego/contracts"
 	pb "github.com/jsell-rh/hypershell-stego/out/grpcapi/pb/hypershell/v1"
 	"github.com/segmentio/ksuid"
 	"google.golang.org/grpc"
@@ -21,113 +20,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/types/descriptorpb"
 )
-
-func TestGeneratedGatewayDescriptorsMatchReleaseContract(t *testing.T) {
-	reference, err := contracts.Load(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, actual := range []interface{ Path() string }{pb.File_hypershell_v1_common_proto, pb.File_hypershell_v1_gateways_proto} {
-		expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(actual.Path()))
-		// Reserve the retired field in requests and in the Gateway response.
-		for _, message := range expected.MessageType {
-			number := int32(0)
-			switch message.GetName() {
-			case "Gateway":
-				number = 6
-			case "CreateGatewayRequest":
-				number = 5
-			case "UpdateGatewayRequest":
-				number = 6
-			}
-			if number == 0 {
-				continue
-			}
-			found := false
-			retiredOneof := int32(-1)
-			fields := message.Field[:0]
-			for _, field := range message.Field {
-				if field.GetName() == "database_id" && field.GetNumber() == number {
-					found = true
-					if field.GetProto3Optional() {
-						retiredOneof = field.GetOneofIndex()
-					}
-					continue
-				}
-				fields = append(fields, field)
-			}
-			if !found {
-				t.Fatal("captured retired field differs")
-			}
-			message.Field = fields
-			if retiredOneof >= 0 {
-				if message.OneofDecl[retiredOneof].GetName() != "_database_id" {
-					t.Fatal("captured optional field group differs")
-				}
-				message.OneofDecl = append(message.OneofDecl[:retiredOneof], message.OneofDecl[retiredOneof+1:]...)
-				for _, field := range message.Field {
-					if field.OneofIndex != nil && field.GetOneofIndex() > retiredOneof {
-						field.OneofIndex = proto.Int32(field.GetOneofIndex() - 1)
-					}
-				}
-			}
-			message.ReservedRange = append(message.ReservedRange, &descriptorpb.DescriptorProto_ReservedRange{Start: proto.Int32(number), End: proto.Int32(number + 1)})
-			message.ReservedName = append(message.ReservedName, "database_id")
-		}
-		// The fork adds an optional cluster_id filter to the list and watch
-		// requests of the gateways contract. Mirror it onto the captured
-		// reference so the comparison covers only the shared surface.
-		if actual.Path() == "hypershell/v1/gateways.proto" {
-			var clusterField *descriptorpb.FieldDescriptorProto
-			for _, message := range expected.MessageType {
-				if message.GetName() != "UpdateGatewayRequest" {
-					continue
-				}
-				for _, field := range message.Field {
-					if field.GetName() == "cluster_id" && field.GetNumber() == 4 {
-						clusterField = field
-					}
-				}
-			}
-			if clusterField == nil {
-				t.Fatal("captured optional cluster_id field differs")
-			}
-			for _, message := range expected.MessageType {
-				number := int32(0)
-				switch message.GetName() {
-				case "ListGatewaysRequest":
-					number = 3
-				case "WatchGatewaysRequest":
-					number = 1
-				}
-				if number == 0 {
-					continue
-				}
-				extension := proto.Clone(clusterField).(*descriptorpb.FieldDescriptorProto)
-				extension.Number = proto.Int32(number)
-				extension.OneofIndex = proto.Int32(int32(len(message.OneofDecl)))
-				message.OneofDecl = append(message.OneofDecl, &descriptorpb.OneofDescriptorProto{Name: proto.String("_cluster_id")})
-				message.Field = append(message.Field, extension)
-			}
-		}
-		descriptor := pb.File_hypershell_v1_gateways_proto
-		if actual.Path() == "hypershell/v1/common.proto" {
-			descriptor = pb.File_hypershell_v1_common_proto
-		}
-		got := protodesc.ToFileDescriptorProto(descriptor)
-		// The application module owns Go import paths. Wire contracts stay fixed.
-		got.Options.GoPackage = nil
-		expected.Options.GoPackage = nil
-		got.SourceCodeInfo = nil
-		expected.SourceCodeInfo = nil
-		if !proto.Equal(got, expected) {
-			t.Fatalf("generated wire descriptor differs: %s", actual.Path())
-		}
-	}
-}
 
 func grpcClient(t testing.TB, address string, identity testIdentity) (pb.GatewayServiceClient, *grpc.ClientConn) {
 	t.Helper()
