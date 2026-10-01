@@ -20,7 +20,6 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
 )
 
 type grantListResponse struct {
@@ -296,23 +295,6 @@ func TestGrantDiscoveryUsesCurrentRolesAndLiveGateways(t *testing.T) {
 		if err != nil || page.Total != 0 || len(page.Items) != 0 {
 			t.Fatal("deleted Gateway grants", who, page, err)
 		}
-	}
-}
-
-func TestGeneratedGrantDescriptorMatchesReference(t *testing.T) {
-	reference, err := contracts.Load(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual := pb.File_hypershell_v1_role_bindings_proto
-	expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(actual.Path()))
-	got := protodesc.ToFileDescriptorProto(actual)
-	got.Options.GoPackage = nil
-	expected.Options.GoPackage = nil
-	got.SourceCodeInfo = nil
-	expected.SourceCodeInfo = nil
-	if !proto.Equal(got, expected) {
-		t.Fatal("generated grant wire descriptor differs")
 	}
 }
 

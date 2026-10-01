@@ -14,8 +14,6 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-const managedConsoleAttribute = "stego.owner.hypershell.console"
-
 var consoleDomainLabel = regexp.MustCompile(`^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$`)
 
 // GatewayConsoleOrigin selects an immutable host inside the operator's domain.
@@ -88,28 +86,11 @@ func ParseConsoleDomains(raw string) (map[string]string, error) {
 	return checkedConsoleDomains(domains)
 }
 
-func consoleIdentity(id string) (provider.ClientIdentity, error) {
-	if _, err := GatewayClientID(id); err != nil {
-		return provider.ClientIdentity{}, err
-	}
-	return provider.ClientIdentity{ClientID: "hs-console-" + id, Ownership: map[string]string{managedConsoleAttribute: "true", managedGatewayIDAttribute: id}}, nil
-}
-func consoleBinding(live *provider.ClientRepresentation, id string) (provider.ClientBinding, error) {
-	identity, err := consoleIdentity(id)
-	if err != nil || live == nil {
-		return provider.ClientBinding{}, provider.ErrOwnership
-	}
-	binding := provider.ClientBinding{ID: live.ID, ClientID: identity.ClientID, Attributes: identity.Ownership}
-	if err = binding.CheckOwnership(*live); err != nil {
-		return provider.ClientBinding{}, err
-	}
-	return binding, nil
-}
 func (c *Client) consoleLifecycle(id string, revision int64, cleanup bool) (*provider.BrowserClientLifecycle, error) {
 	if c.consoleJournal == nil || revision < 1 {
 		return nil, errors.New("console identity requires its protected journal and resource revision")
 	}
-	identity, err := consoleIdentity(id)
+	identity, err := provider.ConsoleClientIdentity(id)
 	if err != nil {
 		return nil, err
 	}
@@ -186,7 +167,7 @@ func (c *Client) GatewayConsoleCredentials(ctx context.Context, id, name, cluste
 	if err != nil {
 		return "", provider.Secret{}, err
 	}
-	native, err := gatewayBinding(&live, id)
+	native, err := provider.GatewayClientBinding(&live, id)
 	if err != nil {
 		return "", provider.Secret{}, err
 	}

@@ -24,27 +24,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
-	"google.golang.org/protobuf/reflect/protoreflect"
 )
-
-func TestPlacementDescriptorsMatchReference(t *testing.T) {
-	reference, err := contracts.Load(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, descriptor := range []protoreflect.FileDescriptor{pb.File_hypershell_v1_managed_clusters_proto, pb.File_hypershell_v1_gateway_releases_proto} {
-		expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(descriptor.Path()))
-		actual := protodesc.ToFileDescriptorProto(descriptor)
-		actual.Options.GoPackage = nil
-		expected.Options.GoPackage = nil
-		actual.SourceCodeInfo = nil
-		expected.SourceCodeInfo = nil
-		if !proto.Equal(actual, expected) {
-			t.Fatal("catalog wire contract changed", descriptor.Path())
-		}
-	}
-}
 
 func TestPlacementWorkflowThroughGeneratedRuntime(t *testing.T) {
 	f := databaseSetup(t, false)

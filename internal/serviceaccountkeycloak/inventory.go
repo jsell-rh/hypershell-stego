@@ -81,18 +81,18 @@ func (c *Client) PrepareGatewayInventoryCandidate(ctx context.Context, gatewayID
 	return true, nil
 }
 func managedInventoryAccount(client *provider.ClientRepresentation, gatewayID string) (string, string, bool, error) {
-	parent, account := client.Attributes[gatewayIDAttribute], client.Attributes[serviceAccountIDAttribute]
-	if client.Attributes["stego.owner."+managedAttribute] == "true" {
-		parent = client.Attributes["stego.owner."+gatewayIDAttribute]
-		account = client.Attributes["stego.owner."+serviceAccountIDAttribute]
+	parent, account := client.Attributes["hypershell.gateway-id"], client.Attributes["hypershell.service-account-id"]
+	if client.Attributes["stego.owner.hypershell.service-account"] == "true" {
+		parent = client.Attributes["stego.owner.hypershell.gateway-id"]
+		account = client.Attributes["stego.owner.hypershell.service-account-id"]
 	}
-	if client.Attributes[managedAttribute] != "true" && client.Attributes["stego.owner."+managedAttribute] != "true" {
+	if client.Attributes["hypershell.service-account"] != "true" && client.Attributes["stego.owner.hypershell.service-account"] != "true" {
 		return "", "", false, nil
 	}
 	if gatewayID != "" && parent != gatewayID {
 		return "", "", false, nil
 	}
-	if _, err := accountBinding(client, parent, account); err != nil {
+	if _, err := provider.ServiceAccountClientBinding(client, parent, account); err != nil {
 		return "", "", false, err
 	}
 	return parent, account, true, nil

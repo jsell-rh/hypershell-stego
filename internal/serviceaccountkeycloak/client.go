@@ -15,9 +15,6 @@ import (
 const (
 	RoleUser                       = "openshell-user"
 	RoleAdmin                      = "openshell-admin"
-	managedAttribute               = "hypershell.service-account"
-	gatewayIDAttribute             = "hypershell.gateway-id"
-	serviceAccountIDAttribute      = "hypershell.service-account-id"
 	creatorUserIDAttribute         = "hypershell.creator-user-id"
 	accessTokenLifespanAttribute   = "access.token.lifespan"
 	clientRefreshTokenAttribute    = "client_credentials.use_refresh_token"
@@ -117,31 +114,30 @@ func (c *Client) Configured() bool {
 
 func (c *Client) issuer() string { return c.keycloak.Issuer() }
 
-func accountIdentity(gatewayID, accountID string) (provider.ClientIdentity, error) {
+// validServiceAccountIDs rejects invalid resource IDs before any provider
+// call. The generated identity helpers accept them; this gate stays because
+// a malformed ID must fail closed without a provider round trip.
+func validServiceAccountIDs(gatewayID, accountID string) bool {
 	for _, id := range []string{gatewayID, accountID} {
 		value, err := ksuid.Parse(id)
 		if err != nil || value == ksuid.Nil || value.String() != id {
-			return provider.ClientIdentity{}, ErrNotManaged
+			return false
 		}
 	}
-	legacy := map[string]string{managedAttribute: "true", gatewayIDAttribute: gatewayID, serviceAccountIDAttribute: accountID}
-	ownership, renames := map[string]string{}, map[string]string{}
-	for key, value := range legacy {
-		next := "stego.owner." + key
-		ownership[next] = value
-		renames[key] = next
-	}
-	return provider.ClientIdentity{ClientID: "hs-sa-" + gatewayID + "-" + accountID, Ownership: ownership, LegacyAttributes: legacy, LegacyRenames: renames}, nil
+	return true
 }
 func (c *Client) accountLifecycle(gatewayID, accountID string, cleanup bool) (*provider.ServiceAccountClientLifecycle, error) {
-	identity, err := accountIdentity(gatewayID, accountID)
-	if err != nil {
-		return nil, err
+	if !validServiceAccountIDs(gatewayID, accountID) {
+		return nil, ErrNotManaged
 	}
 	if c.accountJournal == nil {
 		return nil, errors.New("service-account provider journal is required")
 	}
 	journal, err := c.accountJournal(gatewayID, accountID, cleanup)
+	if err != nil {
+		return nil, err
+	}
+	identity, err := provider.ServiceAccountClientIdentity(gatewayID, accountID)
 	if err != nil {
 		return nil, err
 	}
@@ -235,44 +231,15 @@ func (c *Client) ReconcileServiceAccount(ctx context.Context, spec ServiceAccoun
 	return err
 }
 
-func accountBinding(client *provider.ClientRepresentation, gatewayID, accountID string) (provider.ClientBinding, error) {
-	identity, err := accountIdentity(gatewayID, accountID)
-	if err != nil {
-		return provider.ClientBinding{}, err
-	}
-	if client == nil || client.ClientID != identity.ClientID {
-		return provider.ClientBinding{}, ErrNotManaged
-	}
-	attrs := identity.LegacyAttributes
-	current := false
-	for key := range identity.Ownership {
-		if _, ok := client.Attributes[key]; ok {
-			current = true
-		}
-	}
-	if current {
-		for key := range identity.LegacyAttributes {
-			if _, ok := client.Attributes[key]; ok {
-				return provider.ClientBinding{}, ErrNotManaged
-			}
-		}
-		attrs = identity.Ownership
-	}
-	binding := provider.ClientBinding{ID: client.ID, ClientID: identity.ClientID, Attributes: attrs}
-	if err = binding.CheckOwnership(*client); err != nil {
-		return provider.ClientBinding{}, err
-	}
-	return binding, nil
-}
 func (c *Client) requireManagedClient(ctx context.Context, uuid, gatewayID, accountID string) (*provider.ClientRepresentation, error) {
-	if _, err := accountIdentity(gatewayID, accountID); err != nil {
-		return nil, err
+	if !validServiceAccountIDs(gatewayID, accountID) {
+		return nil, ErrNotManaged
 	}
 	value, err := c.getClient(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
-	if _, err = accountBinding(value, gatewayID, accountID); err != nil {
+	if _, err = provider.ServiceAccountClientBinding(value, gatewayID, accountID); err != nil {
 		return nil, err
 	}
 	return value, nil
@@ -285,7 +252,7 @@ func (c *Client) DisableServiceAccount(ctx context.Context, uuid, gatewayID, acc
 	if err != nil {
 		return err
 	}
-	binding, err := accountBinding(value, gatewayID, accountID)
+	binding, err := provider.ServiceAccountClientBinding(value, gatewayID, accountID)
 	if err != nil {
 		return err
 	}
@@ -449,7 +416,7 @@ func (c *Client) serviceAccountRoles(ctx context.Context, spec ServiceAccountSpe
 	if err != nil {
 		return provider.RolePolicy{}, err
 	}
-	binding, err := gatewayAudienceBinding(live, spec.GatewayID, spec.GatewayClientID)
+	binding, err := provider.GatewayAudienceBinding(live, spec.GatewayID, spec.GatewayClientID)
 	if err != nil || binding.ClientID != spec.GatewayClientID {
 		return provider.RolePolicy{}, provider.ErrOwnership
 	}

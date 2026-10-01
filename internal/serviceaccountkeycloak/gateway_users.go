@@ -5,6 +5,8 @@ import (
 	"errors"
 	"strings"
 	"unicode/utf8"
+
+	provider "github.com/jsell-rh/hypershell-stego/out/keycloak"
 )
 
 // ReconcileGatewayUser changes only roles for this managed Gateway client.
@@ -46,7 +48,7 @@ func (c *Client) ReconcileGatewayUser(ctx context.Context, id, issuer, subject, 
 	if err != nil {
 		return err
 	}
-	binding, err := gatewayBinding(live, id)
+	binding, err := provider.GatewayClientBinding(live, id)
 	if err != nil {
 		return err
 	}

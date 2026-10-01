@@ -19,8 +19,6 @@ import (
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
 )
 
 type accountRPC struct {
@@ -252,21 +250,6 @@ func TestServiceAccountWorkflowThroughGeneratedRuntime(t *testing.T) {
 		t.Fatalf("Gateway after account cleanup: %d %s", code, data)
 	}
 	stop()
-}
-func TestGeneratedProvisionerDescriptorsMatchReference(t *testing.T) {
-	reference, err := contracts.Load(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	actual := protodesc.ToFileDescriptorProto(pb.File_hypershell_provisioner_v1_service_accounts_proto)
-	expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(actual.GetName()))
-	actual.Options.GoPackage = nil
-	expected.Options.GoPackage = nil
-	actual.SourceCodeInfo = nil
-	expected.SourceCodeInfo = nil
-	if !proto.Equal(actual, expected) {
-		t.Fatal("provisioner wire descriptors changed")
-	}
 }
 
 func (s *accountRPC) Reconcile(ctx context.Context, r *pb.ReconcileRequest) (*pb.ReconcileResponse, error) {

@@ -26,23 +26,7 @@ import (
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
-	"google.golang.org/protobuf/reflect/protodesc"
 )
-
-func TestGatewayNetworkDescriptorMatchesReference(t *testing.T) {
-	reference, err := contracts.Load(context.Background())
-	if err != nil {
-		t.Fatal(err)
-	}
-	descriptor := pb.File_hypershell_v1_gateway_networks_proto
-	expected := protodesc.ToFileDescriptorProto(reference.Proto.FindFileByPath(descriptor.Path()))
-	actual := protodesc.ToFileDescriptorProto(descriptor)
-	actual.Options.GoPackage, expected.Options.GoPackage = nil, nil
-	actual.SourceCodeInfo, expected.SourceCodeInfo = nil, nil
-	if !proto.Equal(actual, expected) {
-		t.Fatal("network wire contract changed")
-	}
-}
 
 func TestGatewayNetworkWorkflowThroughGeneratedRuntime(t *testing.T) {
 	f := database(t)

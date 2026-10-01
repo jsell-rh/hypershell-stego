@@ -12,10 +12,6 @@ import (
 	"github.com/segmentio/ksuid"
 )
 
-const gatewayAttribute = "hypershell.gateway"
-const managedGatewayAttribute = "stego.owner.hypershell.gateway"
-const managedGatewayIDAttribute = "stego.owner.hypershell.gateway-id"
-
 // GatewayClientID uses the immutable Gateway ID. A rename does not change tokens.
 func GatewayClientID(id string) (string, error) {
 	parsed, err := ksuid.Parse(id)
@@ -27,22 +23,11 @@ func GatewayClientID(id string) (string, error) {
 
 // Gateway policy supplies ownership, role names, claims, and login callbacks.
 // STEGO owns discovery, recovery records, provider changes, and cleanup.
-func gatewayIdentity(id string) (provider.NativeClientIdentity, error) {
-	clientID, err := GatewayClientID(id)
-	if err != nil {
-		return provider.NativeClientIdentity{}, err
-	}
-	return provider.NativeClientIdentity{ClientID: clientID,
-		Ownership:        map[string]string{managedGatewayAttribute: "true", managedGatewayIDAttribute: id},
-		LegacyAttributes: map[string]string{gatewayAttribute: "true", gatewayIDAttribute: id},
-		LegacyRenames:    map[string]string{gatewayAttribute: managedGatewayAttribute, gatewayIDAttribute: managedGatewayIDAttribute},
-	}, nil
-}
 func (c *Client) gatewayLifecycle(id string, revision int64, cleanup bool) (*provider.NativeClientLifecycle, error) {
 	if c.gatewayJournal == nil || revision < 1 {
 		return nil, errors.New("Gateway identity requires a protected journal and resource revision")
 	}
-	identity, err := gatewayIdentity(id)
+	identity, err := provider.GatewayClientIdentity(id)
 	if err != nil {
 		return nil, err
 	}
@@ -109,52 +94,12 @@ func (c *Client) DeleteGateway(ctx context.Context, id string, revision int64) e
 
 // Reads accept a complete legacy binding until its controller migrates it.
 // Mixed ownership keys are not a usable grant or service-account audience.
-func gatewayBinding(live *provider.ClientRepresentation, id string) (provider.ClientBinding, error) {
-	clientID, err := GatewayClientID(id)
-	if err != nil {
-		return provider.ClientBinding{}, err
-	}
-	return gatewayAudienceBinding(live, id, clientID)
-}
-
-// Stored legacy audiences can have an older public name. The trusted caller
-// must supply that exact name and Gateway ID. New ownership requires the
-// generated name, and both forms retain the common reserved-key checks.
-func gatewayAudienceBinding(live *provider.ClientRepresentation, id, clientID string) (provider.ClientBinding, error) {
-	expected, err := gatewayIdentity(id)
-	if err != nil {
-		return provider.ClientBinding{}, err
-	}
-	if live == nil || live.ClientID != clientID {
-		return provider.ClientBinding{}, provider.ErrOwnership
-	}
-	attributes := expected.LegacyAttributes
-	_, newKind := live.Attributes[managedGatewayAttribute]
-	_, newID := live.Attributes[managedGatewayIDAttribute]
-	if newKind || newID {
-		if clientID != expected.ClientID {
-			return provider.ClientBinding{}, provider.ErrOwnership
-		}
-		if _, ok := live.Attributes[gatewayAttribute]; ok {
-			return provider.ClientBinding{}, provider.ErrOwnership
-		}
-		if _, ok := live.Attributes[gatewayIDAttribute]; ok {
-			return provider.ClientBinding{}, provider.ErrOwnership
-		}
-		attributes = expected.Ownership
-	}
-	binding := provider.ClientBinding{ID: live.ID, ClientID: clientID, Attributes: attributes}
-	if err := binding.CheckOwnership(*live); err != nil {
-		return provider.ClientBinding{}, err
-	}
-	return binding, nil
-}
 func (c *Client) requireGateway(ctx context.Context, uuid, id string) (*provider.ClientRepresentation, error) {
 	live, err := c.getClient(ctx, uuid)
 	if err != nil {
 		return nil, err
 	}
-	if _, err = gatewayBinding(live, id); err != nil {
+	if _, err = provider.GatewayClientBinding(live, id); err != nil {
 		return nil, err
 	}
 	return live, nil
@@ -191,9 +136,9 @@ func (c *Client) GatewayIDs(ctx context.Context) ([]string, error) {
 				return provider.ErrOwnership
 			}
 			if prefix == "hs-gateway-" {
-				_, err = gatewayBinding(live, id)
+				_, err = provider.GatewayClientBinding(live, id)
 			} else {
-				_, err = consoleBinding(live, id)
+				_, err = provider.ConsoleClientBinding(live, id)
 			}
 			if err != nil {
 				return nil
