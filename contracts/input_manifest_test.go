@@ -76,7 +76,7 @@ func TestGeneratedProjectInputManifest(t *testing.T) {
 			t.Fatal("duplicate input declaration", input.Path)
 		}
 		expected[input.Path] = true
-		if input.Reference != "" {
+		if input.Reference != "" && input.Reference != input.Path {
 			if expected[input.Reference] {
 				t.Fatal("duplicate input declaration", input.Reference)
 			}
