@@ -614,6 +614,32 @@ overrides:
       - {target: issuer, input: Issuer}
       - {target: subject, input: Subject}
       - {target: expires_at, input: ExpiresAt}
+  keycloak-provider:
+    managed_clients:
+      - kind: service-account
+        client_id: hs-sa-{gateway}-{account}
+        ids: [gateway, account]
+        attributes:
+          - {key: hypershell.service-account, value: "true"}
+          - {key: hypershell.gateway-id, value: "{gateway}"}
+          - {key: hypershell.service-account-id, value: "{account}"}
+        legacy: true
+        legacy_client_id: true
+      - kind: gateway
+        client_id: hs-gateway-{gateway}
+        ids: [gateway]
+        attributes:
+          - {key: hypershell.gateway, value: "true"}
+          - {key: hypershell.gateway-id, value: "{gateway}"}
+        legacy: true
+        legacy_client_id: true
+      - kind: console
+        client_id: hs-console-{gateway}
+        ids: [gateway]
+        attributes:
+          - {key: hypershell.console, value: "true"}
+          - {key: hypershell.gateway-id, value: "{gateway}"}
+
   grpc-application:
     response_mappings:
       - name: Gateway
@@ -722,25 +748,31 @@ overrides:
     proto_files:
       - path: contracts/reference/proto/hypershell/v1/common.proto
         import_path: hypershell/v1/common.proto
+        reference: contracts/reference/proto/hypershell/v1/common.proto
       - path: contracts/extensions/gateways.proto
         import_path: hypershell/v1/gateways.proto
         reference: contracts/reference/proto/hypershell/v1/gateways.proto
       - path: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
         import_path: hypershell/provisioner/v1/service_accounts.proto
+        reference: contracts/reference/proto/hypershell/provisioner/v1/service_accounts.proto
       - path: contracts/extensions/console_credentials.proto
         import_path: hypershell/provisioner/v1/console_credentials.proto
       - path: contracts/extensions/service_account_inventory.proto
         import_path: hypershell/provisioner/v1/service_account_inventory.proto
       - path: contracts/reference/proto/hypershell/v1/role_bindings.proto
         import_path: hypershell/v1/role_bindings.proto
+        reference: contracts/reference/proto/hypershell/v1/role_bindings.proto
       - path: contracts/controlplane/gateway_identity.proto
         import_path: hypershell/controlplane/v1/gateway_identity.proto
       - path: contracts/reference/proto/hypershell/v1/managed_clusters.proto
         import_path: hypershell/v1/managed_clusters.proto
+        reference: contracts/reference/proto/hypershell/v1/managed_clusters.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_releases.proto
         import_path: hypershell/v1/gateway_releases.proto
+        reference: contracts/reference/proto/hypershell/v1/gateway_releases.proto
       - path: contracts/reference/proto/hypershell/v1/gateway_networks.proto
         import_path: hypershell/v1/gateway_networks.proto
+        reference: contracts/reference/proto/hypershell/v1/gateway_networks.proto
       - path: contracts/gateway/openshell.proto
         import_path: openshell.proto
       - path: contracts/gateway/datamodel.proto
