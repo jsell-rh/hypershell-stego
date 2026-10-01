@@ -20,6 +20,7 @@ func TestRESTRoleMappingRejectsStoredFaultsAcrossRestart(t *testing.T) {
 		}
 	}
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	_, config := broker(t, identity(t, "localhost"))
 	binary := buildApplication(t)
 	stop, address := startApplication(t, binary, f.dsn, config, settings...)

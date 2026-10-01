@@ -15,6 +15,7 @@ func TestRESTAccountMappingRejectsStoredFaultsAcrossRestart(t *testing.T) {
 	_, gateway := accountService(t, f, provider)
 	grantViewer(t, f, gateway.ID, "bob")
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	rpcSettings, _ := startAccountProvisioner(t, provider, key, settings)
 	settings = append(settings, rpcSettings...)
 	_, config := broker(t, identity(t, "localhost"))

@@ -12,6 +12,7 @@ func TestRESTGatewayGrantMappingsRejectStoredFaults(t *testing.T) {
 	f := database(t)
 	_, config := broker(t, identity(t, "localhost"))
 	key, settings := issuer(t)
+	settings = append(settings, "HYPERSHELL_DEFAULT_GATEWAY_CREATOR=false")
 	binary := buildApplication(t)
 	stop, address := startApplication(t, binary, f.dsn, config, settings...)
 	defer func() { stop() }()
